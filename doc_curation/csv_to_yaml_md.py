@@ -66,12 +66,6 @@ if __name__ == '__main__':
         csv_in="/home/vvasuki/Downloads/shruta-kathAH.csv",
         out_dir="/home/vvasuki/vvasuki-git/rahashtippanyah/content/sva-kathAH",
         field_type_map={
-            'लिङ्गम्': str,
-            'विषयः': list,
-            'पात्राणि': list,
-            'प्रारम्भः': datetime.date,
-            'अन्त्यदिनम्': datetime.date,
-            'रस्यता': str,
-            'रसः_भावः': list,
+            'सूत्रम्': str,
             'विवरणम्': FIELD_TYPE_MARKDOWN_SECTION
         }, file_namer=file_namer, date_format_converter=date_format_converter_us_to_yyyy_mm_dd)
