@@ -4,7 +4,6 @@ import logging
 import os
 import re
 
-import yaml
 import yamldown as yamldown
 from indic_transliteration import xsanscript
 import pandas
