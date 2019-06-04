@@ -27,4 +27,4 @@ def get_upaakhyaana_and_titles_from_path(dir_path, file_pattern="**/*.md"):
 
 
 # set_titles_from_filenames(dir_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata/01/007-sambhava", dry_run=False)
-get_upaakhyaana_and_titles_from_path(dir_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata/01/005-AstIka")
+get_upaakhyaana_and_titles_from_path(dir_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata/01/007-sambhava")
