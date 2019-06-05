@@ -1,11 +1,12 @@
-from typing import Tuple, Dict
 import codecs
 import logging
 import os
+from typing import Tuple, Dict
 
 import regex
 import yamldown
 from indic_transliteration import sanscript
+
 
 class MdFile(object):
     def __init__(self, file_path):
@@ -52,7 +53,7 @@ class MdFile(object):
     
     
     def set_title(self, dry_run, title):
-        md, yml = self.read_md_file()
+        yml, md = self.read_md_file()
         yml["title"] = title
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         if not dry_run:
