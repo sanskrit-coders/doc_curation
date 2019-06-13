@@ -25,5 +25,5 @@ def get_upaakhyaana_and_titles_from_path(dir_path, file_pattern="**/*.md"):
         print ("\t".join([str(i) for i in row]))
 
 
-set_titles_from_filenames(dir_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata/02-sabhA", dry_run=False)
-# get_upaakhyaana_and_titles_from_path(dir_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata/02-sabhA")
+set_titles_from_filenames(dir_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata/01-Adi-parva", dry_run=False)
+get_upaakhyaana_and_titles_from_path(dir_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata/01-Adi-parva/")
