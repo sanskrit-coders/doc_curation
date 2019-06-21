@@ -24,6 +24,6 @@ def get_upaakhyaana_and_titles_from_path(dir_path, file_pattern="**/*.md"):
     for row in zip(upaakhyaanas, titles):
         print ("\t".join([str(i) for i in row]))
 
-
-set_titles_from_filenames(dir_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata/01-Adi-parva", dry_run=False)
-get_upaakhyaana_and_titles_from_path(dir_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata/01-Adi-parva/")
+dir_path = "/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata/02-sabhA-parva/"
+set_titles_from_filenames(dir_path=dir_path, dry_run=False)
+get_upaakhyaana_and_titles_from_path(dir_path=dir_path)
