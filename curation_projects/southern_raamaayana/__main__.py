@@ -62,30 +62,30 @@ def dump_kaanda(kaanda, kaanda_index, output_directory_base):
         kaanda_id1 = "baala"
         kaanda_id2 = "bala"
         kaanda_id2_chapter_index = kaanda_id1
-        sarga_list = range(1, 77)
+        sarga_list = range(1, 78)
         chapter_title_xpath = '//div[@class="style1"]/text()'
     if kaanda == "ayodhyA":
         kaanda_id1 = "ayodhya"
         kaanda_id2 = "ayodhya"
-        sarga_list = range(1, 119)
+        sarga_list = range(1, 120)
         chapter_title_xpath = '//a[@class="nav"]/text()'
     if kaanda == "araNya":
         kaanda_id1 = "aranya"
         kaanda_id2 = "aranya"
-        sarga_list = range(1, 75)
+        sarga_list = range(1, 76)
     if kaanda == "kiShkindhA":
         kaanda_id1 = "kish"
         kaanda_id2 = "kishkindha"
         kaanda_id2_chapter_index = kaanda_id2
-        sarga_list = range(1, 67)
+        sarga_list = range(1, 68)
     if kaanda == "sundara":
         kaanda_id1 = "sundara"
         kaanda_id2 = "sundara"
-        sarga_list = range(1, 68)
+        sarga_list = range(1, 69)
     if kaanda == "yuddha":
         kaanda_id1 = "yuddha"
         kaanda_id2 = "yuddha"
-        sarga_list = range(1, 128)
+        sarga_list = range(1, 129)
     kaanda_id2_chapter_index = kaanda_id2_chapter_index or kaanda_id1
     sarga_to_title = get_sarga_titles(kaanda_id1=kaanda_id1, kaanda_id2=kaanda_id2_chapter_index, chapter_title_xpath=chapter_title_xpath)
     # logging.info(sarga_to_title)
