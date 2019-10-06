@@ -9,6 +9,8 @@ from lxml import html
 import requests
 
 # Remove all handlers associated with the root logger object.
+from doc_curation.text_data import raamaayana
+
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 logging.basicConfig(
@@ -55,37 +57,31 @@ def dump_sarga(title, shloka_items, output_path):
 def dump_kaanda(kaanda, kaanda_index, output_directory_base):
     kaanda_id1 = None
     kaanda_id2 = None
-    sarga_list = []
+    sarga_list = raamaayana.get_sarga_list(kaanda_index=kaanda_index)
     kaanda_id2_chapter_index = None
     chapter_title_xpath = '//div[@class="chpt"]/text()'
     if kaanda == "bAla":
         kaanda_id1 = "baala"
         kaanda_id2 = "bala"
         kaanda_id2_chapter_index = kaanda_id1
-        sarga_list = range(1, 78)
         chapter_title_xpath = '//div[@class="style1"]/text()'
     if kaanda == "ayodhyA":
         kaanda_id1 = "ayodhya"
         kaanda_id2 = "ayodhya"
-        sarga_list = range(1, 120)
         chapter_title_xpath = '//a[@class="nav"]/text()'
     if kaanda == "araNya":
         kaanda_id1 = "aranya"
         kaanda_id2 = "aranya"
-        sarga_list = range(1, 76)
     if kaanda == "kiShkindhA":
         kaanda_id1 = "kish"
         kaanda_id2 = "kishkindha"
         kaanda_id2_chapter_index = kaanda_id2
-        sarga_list = range(1, 68)
     if kaanda == "sundara":
         kaanda_id1 = "sundara"
         kaanda_id2 = "sundara"
-        sarga_list = range(1, 69)
     if kaanda == "yuddha":
         kaanda_id1 = "yuddha"
         kaanda_id2 = "yuddha"
-        sarga_list = range(1, 129)
     kaanda_id2_chapter_index = kaanda_id2_chapter_index or kaanda_id1
     sarga_to_title = get_sarga_titles(kaanda_id1=kaanda_id1, kaanda_id2=kaanda_id2_chapter_index, chapter_title_xpath=chapter_title_xpath)
     # logging.info(sarga_to_title)
