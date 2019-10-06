@@ -1,13 +1,21 @@
+import logging
 import os
 
 from   selenium import webdriver
 from   selenium.common.exceptions import TimeoutException
-
+from selenium.webdriver.chrome import options
 import json
 
 from doc_curation.text_data import raamaayana
 
-browser = webdriver.Chrome()
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
+
+
+options = options.Options()
+options.headless = True
+browser = webdriver.Chrome(options=options)
 
 configuration = {}
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'local_config.json'), 'r') as handle:
@@ -27,19 +35,26 @@ def login():
 def get_sarga_text():
     pass
 
-def get_kumbhakona_ramayana_text():
+def get_kumbhakona_ramayana_text(outfile):
     browser.find_element_by_link_text("वाल्मीकिरामायणम् प्राचीनपाठः").click()
     # browser.implicitly_wait(2)
-    for kaanda_index in raamaayana.kaanda_indices[0:1]:
+    for kaanda_index in raamaayana.kaanda_indices[1:]:
         browser.find_element_by_link_text("Kanda-%d" % kaanda_index).click()
-        for sarga_index in raamaayana.get_sarga_list_kumbhakonam(kaanda_index=kaanda_index)[0:1]:
+        for sarga_index in raamaayana.get_sarga_list_kumbhakonam(kaanda_index=kaanda_index):
+            logging.info("Kanda %d Sarga %d", kaanda_index, sarga_index)
             browser.find_element_by_link_text("Sarga-%d" % sarga_index).click()
             text_spans = browser.find_element_by_id("divResults").find_elements_by_tag_name("span")
+            lines = ["\n", "\n"]
             for span in text_spans:
-                print(span.text)
+                shloka = span.text
+                shloka = shloka.replace("। ", "।  \n")
+                shloka = shloka.replace("।।", " ॥ ")
+                lines.append(shloka + "  \n")
+            outfile.writelines(lines)
 
 
 if __name__ == '__main__':
     login()
-    get_kumbhakona_ramayana_text()
+    with open("/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/rAmAyaNa/kumbhakona.md", "a") as outfile:
+        get_kumbhakona_ramayana_text(outfile)
     # browser.close()s

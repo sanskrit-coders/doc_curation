@@ -20,6 +20,7 @@ def get_sarga_list_andhra(kaanda_index):
 
 
 def get_sarga_list_kumbhakonam(kaanda_index):
+    sarga_list = []
     if kaanda_index == 1:
         sarga_list = range(1, 78)
     elif kaanda_index == 2:
