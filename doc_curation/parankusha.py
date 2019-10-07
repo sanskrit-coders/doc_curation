@@ -1,13 +1,11 @@
+import json
 import logging
 import os
 
-from   selenium import webdriver
-from   selenium.common.exceptions import TimeoutException
+from selenium import webdriver
 from selenium.webdriver.chrome import options
-import json
-
-from doc_curation.text_data import raamaayana
 from selenium.webdriver.remote.remote_connection import LOGGER
+
 LOGGER.setLevel(logging.WARNING)
 from urllib3.connectionpool import log as urllibLogger
 urllibLogger.setLevel(logging.WARNING)
