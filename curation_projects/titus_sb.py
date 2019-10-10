@@ -1,19 +1,3 @@
-import json
-import logging
-import os
-
-from selenium import webdriver
-from selenium.webdriver.chrome import options
-from selenium.webdriver.remote.remote_connection import LOGGER
-
-LOGGER.setLevel(logging.WARNING)
-from urllib3.connectionpool import log as urllibLogger
-urllibLogger.setLevel(logging.WARNING)
-
-options = options.Options()
-options.headless = False
-browser = webdriver.Chrome(options=options)
-
 # Potential approaches: 
 # 
 # 1. Get pages in the range:
@@ -24,4 +8,16 @@ browser = webdriver.Chrome(options=options)
 # 2. Use web driver and select text levels.
 # 
 
+# noinspection PyUnresolvedReferences
+import logging
+import os
 
+from doc_curation import titus
+
+browser = titus.browser
+
+if __name__ == '__main__':
+    titus.navigate_to_part(base_page_url="http://titus.uni-frankfurt.de/texte/etcs/ind/aind/ved/yvw/sbm/sbm.htm", level_3_id=2, level_4_id=3)
+    titus.get_text()
+    browser.close()
+    pass
