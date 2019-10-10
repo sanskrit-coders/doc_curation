@@ -37,16 +37,22 @@ def dump_text(base_dir, do_transliteration=False):
             lines = ["\n"]
             for sentence in sentences:
                 sentence = roman.RomanScheme.simplify_accent_notation(sentence)
+                sentence = sentence.replace("/", ".")
+                if not sentence.endswith("."):
+                    sentence = sentence + ".."
                 if do_transliteration:
+                    if kaanda_index == 12:
+                        sentence = sanscript.transliterate(sentence, sanscript.IAST, sanscript.DEVANAGARI)
+                    else:
+                        sentence = sanscript.transliterate(sentence, sanscript.TITUS, sanscript.DEVANAGARI)
                     sentence = roman.RomanScheme.to_shatapatha_svara(sentence)
-                    sentence = sanscript.transliterate(sentence, sanscript.TITUS, sanscript.DEVANAGARI)
-                lines.append(sentence + ".  \n")
+                lines.append(sentence + "  \n")
             os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
             with open(outfile_path, "w") as outfile:
                 outfile.writelines(lines)
 
 
 if __name__ == '__main__':
-    dump_text(base_dir="/home/vvasuki/sanskrit/raw_etexts/shatapatha_brAhmaNa/sb_gretil", do_transliteration=False)
+    dump_text(base_dir="/home/vvasuki/sanskrit/raw_etexts/shatapatha_brAhmaNa/sb_gretil_sa", do_transliteration=True)
     browser.close()
     pass
