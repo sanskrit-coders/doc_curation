@@ -12,6 +12,7 @@
 import logging
 import os
 from indic_transliteration import sanscript
+from indic_transliteration.sanscript.schemes import roman
 
 from doc_curation import titus, text_data
 
@@ -31,11 +32,13 @@ def dump_text(base_dir):
                 logging.info("Skipping " + outfile_path)
                 continue
 
-            titus.navigate_to_part(base_page_url=titus_url, level_3_id=kaanda_index, level_4_id=3)
+            titus.navigate_to_part(base_page_url=titus_url, level_3_id=kaanda_index, level_4_id=sarga_index)
             sentences = titus.get_text()
             lines = ["\n"]
             for sentence in sentences:
-                sentence = sanscript.SCHEMES[sanscript.TITUS].simplify_accent_notation(sentence)
+                sentence = roman.RomanScheme.simplify_accent_notation(sentence)
+                # sentence = roman.RomanScheme.to_shatapatha_svara(sentence)
+                sentence = sanscript.transliterate(sentence, sanscript.TITUS, sanscript.DEVANAGARI)
                 lines.append(sentence + ".  \n")
             os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
             with open(outfile_path, "w") as outfile:
