@@ -35,7 +35,7 @@ def get_text():
     browser.switch_to.frame("etatext")
     text_elements = browser.find_elements_by_xpath("//span[@id='iovpla16']")
     assert len(text_elements) > 0
-    logging.info(text_elements)
+    # logging.info(text_elements)
     sentences = [element.text for element in text_elements]
     # logging.info(sentences)
     return sentences

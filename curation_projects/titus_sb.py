@@ -11,13 +11,38 @@
 # noinspection PyUnresolvedReferences
 import logging
 import os
+from indic_transliteration import sanscript
 
-from doc_curation import titus
+from doc_curation import titus, text_data
 
 browser = titus.browser
 
+def dump_text(base_dir):
+    unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "shatapatha.json")
+
+    titus_url = "http://titus.uni-frankfurt.de/texte/etcs/ind/aind/ved/yvw/sbm/sbm.htm"
+    for kaanda_index in text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[]):
+        sarga_list = text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[kaanda_index])
+        for sarga_index in sarga_list:
+            logging.info("kaanDa %d adhyaaya %d", kaanda_index, sarga_index)
+
+            outfile_path = os.path.join(base_dir, "%02d" % (kaanda_index), "%02d" % sarga_index + ".md")
+            if os.path.exists(outfile_path):
+                logging.info("Skipping " + outfile_path)
+                continue
+
+            titus.navigate_to_part(base_page_url=titus_url, level_3_id=kaanda_index, level_4_id=3)
+            sentences = titus.get_text()
+            lines = ["\n"]
+            for sentence in sentences:
+                sentence = sanscript.SCHEMES[sanscript.TITUS].simplify_accent_notation(sentence)
+                lines.append(sentence + ".  \n")
+            os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
+            with open(outfile_path, "w") as outfile:
+                outfile.writelines(lines)
+
+
 if __name__ == '__main__':
-    titus.navigate_to_part(base_page_url="http://titus.uni-frankfurt.de/texte/etcs/ind/aind/ved/yvw/sbm/sbm.htm", level_3_id=2, level_4_id=3)
-    titus.get_text()
+    dump_text(base_dir="/home/vvasuki/sanskrit/raw_etexts/shatapatha_brAhmaNa/sb_gretil")
     browser.close()
     pass
