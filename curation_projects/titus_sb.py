@@ -18,7 +18,7 @@ from doc_curation import titus, text_data
 
 browser = titus.browser
 
-def dump_text(base_dir):
+def dump_text(base_dir, do_transliteration=False):
     unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "shatapatha.json")
 
     titus_url = "http://titus.uni-frankfurt.de/texte/etcs/ind/aind/ved/yvw/sbm/sbm.htm"
@@ -37,8 +37,9 @@ def dump_text(base_dir):
             lines = ["\n"]
             for sentence in sentences:
                 sentence = roman.RomanScheme.simplify_accent_notation(sentence)
-                # sentence = roman.RomanScheme.to_shatapatha_svara(sentence)
-                sentence = sanscript.transliterate(sentence, sanscript.TITUS, sanscript.DEVANAGARI)
+                if do_transliteration:
+                    sentence = roman.RomanScheme.to_shatapatha_svara(sentence)
+                    sentence = sanscript.transliterate(sentence, sanscript.TITUS, sanscript.DEVANAGARI)
                 lines.append(sentence + ".  \n")
             os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
             with open(outfile_path, "w") as outfile:
@@ -46,6 +47,6 @@ def dump_text(base_dir):
 
 
 if __name__ == '__main__':
-    dump_text(base_dir="/home/vvasuki/sanskrit/raw_etexts/shatapatha_brAhmaNa/sb_gretil")
+    dump_text(base_dir="/home/vvasuki/sanskrit/raw_etexts/shatapatha_brAhmaNa/sb_gretil", do_transliteration=False)
     browser.close()
     pass
