@@ -18,7 +18,7 @@ class MdFile(object):
     def read_md_file(self) -> Tuple[Dict, str]:
         yml = {}
         md = ""
-        with open(self.file_path, 'r') as file:
+        with codecs.open(self.file_path, "r", 'utf-8') as file:
             (yml, md) = yamldown.load(file)
             logging.info((yml, md))
             if yml is None: yml = {}
@@ -54,8 +54,12 @@ class MdFile(object):
     def dump_to_file(self, yml, md, dry_run):
         if not dry_run:
             with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
-                out_file_obj.write(yamldown.dump(yml, md))
-        else:
+                import yaml
+                yamlout = yaml.dump(yml, default_flow_style=False, indent=2, allow_unicode=True)
+                dump = "---\n{yml}\n---\n{markdown}".format(yml=yamlout, markdown=md)
+                out_file_obj.write(dump)
+                # out_file_obj.write(yamldown.dump(yml, md)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5
+        else: 
             logging.info(yml)
             logging.info(md)
     

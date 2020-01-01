@@ -38,5 +38,6 @@ if __name__ == '__main__':
         adhyaaya = regex.findall("\\d\\d\\d", str(md_file.file_path))[0]
         adhyaaya_id = "%s-%s" % (kaanda, adhyaaya)
         logging.debug(adhyaaya_id)
+        (yml, _) = md_file.read_md_file()
         # logging.debug(adhyaaya_to_mp3_map[adhyaaya_id])
         md_file.prepend_to_content('<div class="audioEmbed"  caption="श्रीराम-हरिसीताराममूर्ति-घनपाठिभ्यां वचनम्" src="%s"></div>\n' % adhyaaya_to_mp3_map[adhyaaya_id], dry_run=False)
