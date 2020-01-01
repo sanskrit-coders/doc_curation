@@ -49,19 +49,32 @@ class MdFile(object):
         else:
             title_optitrans = os.path.basename(self.file_path).replace("-", " ", 1).replace(".md", "")
         title = sanscript.transliterate(data=title_optitrans, _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI)
-        self.set_title(dry_run, title)
+        self.set_title(dry_run=dry_run, title=title)
     
-    
-    def set_title(self, dry_run, title):
-        yml, md = self.read_md_file()
-        yml["title"] = title
-        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+    def dump_to_file(self, yml, md, dry_run):
         if not dry_run:
             with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
                 out_file_obj.write(yamldown.dump(yml, md))
         else:
             logging.info(yml)
             logging.info(md)
+    
+    def set_title(self, title, dry_run):
+        yml, md = self.read_md_file()
+        yml["title"] = title
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+        self.dump_to_file(yml=yml, md=md, dry_run=dry_run)
+
+    def prepend_to_content(self, prefix_text, dry_run=True):
+        (yml, md) = self.read_md_file()
+        self.dump_to_file(yml=yml, md=prefix_text + md, dry_run=dry_run)
+
+
+    def replace_in_content(self, pattern, replacement, dry_run=True):
+        (yml, md) = self.read_md_file()
+        md = regex.sub(pattern=pattern, repl=replacement, string=md)
+        self.dump_to_file(yml=yml, md=md, dry_run=dry_run)
+
     
     @classmethod
     def get_md_files_from_path(cls, dir_path, file_pattern, file_name_filter=None):

@@ -8,9 +8,9 @@ import yamldown
 from lxml import html
 import requests
 
-# Remove all handlers associated with the root logger object.
 from doc_curation import text_data
 
+# Remove all handlers associated with the root logger object.
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 logging.basicConfig(
