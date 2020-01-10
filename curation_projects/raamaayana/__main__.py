@@ -10,5 +10,5 @@ logging.basicConfig(
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
-md_file_path = "/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/rAmAyaNa/Andhra/"
+md_file_path = "/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/rAmAyaNa/AndhrapAThaH/"
 MdFile.fix_index_files(dir_path=md_file_path, dry_run=False)
