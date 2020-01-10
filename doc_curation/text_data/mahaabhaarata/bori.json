@@ -1,0 +1,76 @@
+{
+  "length": 18,
+  "01": {
+    "alt_title": "Adiparva",
+    "length": 225
+  },
+  "02": {
+    "alt_title": "sabhAparva",
+    "length": 72
+  },
+  "03": {
+    "alt_title": "vanaparva",
+    "length": 299
+  },
+  "04": {
+    "alt_title": "virATaparva",
+    "length": 67
+  },
+  "05": {
+    "alt_title": "udyogaparva",
+    "length": 197
+  },
+  "06": {
+    "alt_title": "bhIShmaparva",
+    "length": 117
+  },
+  "07": {
+    "alt_title": "droNaparva",
+    "length": 173
+  },
+  "08": {
+    "alt_title": "karNaparva",
+    "length": 69
+  },
+  "09": {
+    "alt_title": "shalyaparva",
+    "length": 64
+  },
+  "10": {
+    "alt_title": "sauptikaparva",
+    "length": 18
+  },
+  "11": {
+    "alt_title": "strIparva",
+    "length": 27
+  },
+  "12": {
+    "alt_title": "shAntiparva",
+    "length_actual": 353,
+    "length": 353
+  },
+  "13": {
+    "alt_title": "anushAsanaparva",
+    "length": 154
+  },
+  "14": {
+    "alt_title": "Ashvamedhikaparva",
+    "length": 96
+  },
+  "15": {
+    "alt_title": "AshramavAsikaparva",
+    "length": 47
+  },
+  "16": {
+    "alt_title": "mausalaparva",
+    "length": 9
+  },
+  "17": {
+    "alt_title": "mahAprAsthAnikaparva",
+    "length": 3
+  },
+  "18": {
+    "alt_title": "svargArohaNa",
+    "length": 5
+  }
+}

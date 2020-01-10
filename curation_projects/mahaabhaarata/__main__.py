@@ -1,9 +1,8 @@
 import logging
 import os
-
-# Remove all handlers associated with the root logger object.
 from doc_curation.md_helper import MdFile
 
+# Remove all handlers associated with the root logger object.
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 logging.basicConfig(

@@ -8,11 +8,11 @@ browser = parankusha.browser
 def get_ramayana_text(text_id, base_dir):
     browser.find_element_by_link_text(text_id).click()
     # browser.implicitly_wait(2)
-    unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "raamaayana_andhra.json")
+    unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "raamaayana/andhra.json")
     if text_id == "रामायणम्-नव्यपाठः":
-        unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "raamaayana_baroda.json")
+        unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "raamaayana/baroda.json")
     else:
-        unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "raamaayana_kumbhakonam.json")
+        unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "raamaayana/kumbhakonam.json")
 
     for kaanda_index in text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[]):
         browser.find_element_by_link_text("Kanda-%d" % kaanda_index).click()
