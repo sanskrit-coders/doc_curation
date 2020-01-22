@@ -4,7 +4,7 @@ from pathlib import Path
 
 import regex
 
-from doc_curation.md_helper import MdFile
+from curation_projects import raamaayana
 
 # Remove all handlers associated with the root logger object.
 for handler in logging.root.handlers[:]:
@@ -29,13 +29,10 @@ def get_adhyaaya_to_mp3_map():
 if __name__ == '__main__':
     adhyaaya_to_mp3_map = get_adhyaaya_to_mp3_map()
     # logging.debug(adhyaaya_to_mp3_map)
-    md_file_path = "/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/rAmAyaNa/Andhra/"
-    md_files = MdFile.get_md_files_from_path(dir_path=md_file_path, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
-    for md_file in md_files:
+    for md_file in raamaayana.get_adhyaaya_md_files():
         # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
         logging.debug(md_file.file_path)
-        kaanda = regex.findall("/\\d_", str(md_file.file_path))[0].replace("/", "").replace("_", "")
-        adhyaaya = regex.findall("\\d\\d\\d", str(md_file.file_path))[0]
+        (kaanda, adhyaaya) = raamaayana.get_kaanda_adhyaaya(md_file)
         adhyaaya_id = "%s-%s" % (kaanda, adhyaaya)
         logging.debug(adhyaaya_id)
         (yml, _) = md_file.read_md_file()
