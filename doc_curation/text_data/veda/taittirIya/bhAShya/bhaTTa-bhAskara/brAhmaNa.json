@@ -1,0 +1,116 @@
+{
+  "length": 3,
+  "unitName": "aShTaka",
+  "1": {
+    "length": 8,
+    "unitName": "prashna",
+    "1": {
+      "length": 10,
+      "unitName": "anuvAka"
+    },
+    "2": {
+      "length": 6,
+      "unitName": "anuvAka"
+    },
+    "3": {
+      "length": 10,
+      "unitName": "anuvAka"
+    },
+    "4": {
+      "length": 10,
+      "unitName": "anuvAka"
+    },
+    "5": {
+      "length": 12,
+      "unitName": "anuvAka"
+    },
+    "6": {
+      "length": 10,
+      "unitName": "anuvAka"
+    },
+    "7": {
+      "length": 10,
+      "unitName": "anuvAka"
+    },
+    "8": {
+      "length": 10,
+      "unitName": "anuvAka"
+    }
+  },
+  "2": {
+    "length": 8,
+    "unitName": "prashna",
+    "1": {
+      "length": 11,
+      "unitName": "anuvAka"
+    },
+    "2": {
+      "length": 11,
+      "unitName": "anuvAka"
+    },
+    "3": {
+      "length": 11,
+      "unitName": "anuvAka"
+    },
+    "4": {
+      "length": 8,
+      "unitName": "anuvAka"
+    },
+    "5": {
+      "length": 8,
+      "unitName": "anuvAka"
+    },
+    "6": {
+      "length": 20,
+      "unitName": "anuvAka"
+    },
+    "7": {
+      "length": 18,
+      "unitName": "anuvAka"
+    },
+    "8": {
+      "length": 9,
+      "unitName": "anuvAka"
+    }
+  },
+  "3": {
+    "length": 9,
+    "unitName": "prashna",
+    "1": {
+      "length": 6,
+      "unitName": "anuvAka"
+    },
+    "2": {
+      "length": 10,
+      "unitName": "anuvAka"
+    },
+    "3": {
+      "length": 11,
+      "unitName": "anuvAka"
+    },
+    "4": {
+      "length": 19,
+      "unitName": "anuvAka"
+    },
+    "5": {
+      "length": 13,
+      "unitName": "anuvAka"
+    },
+    "6": {
+      "length": 15,
+      "unitName": "anuvAka"
+    },
+    "7": {
+      "length": 14,
+      "unitName": "anuvAka"
+    },
+    "8": {
+      "length": 23,
+      "unitName": "anuvAka"
+    },
+    "9": {
+      "length": 23,
+      "unitName": "anuvAka"
+    }
+  }
+}

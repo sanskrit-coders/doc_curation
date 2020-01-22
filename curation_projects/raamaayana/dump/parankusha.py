@@ -3,6 +3,7 @@ import os
 
 from doc_curation import parankusha, text_data
 
+
 def get_ramayana_text(browser, text_id, base_dir):
     browser.find_element_by_link_text(text_id).click()
     # browser.implicitly_wait(2)
@@ -13,7 +14,10 @@ def get_ramayana_text(browser, text_id, base_dir):
         unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "raamaayana/kumbhakonam.json")
 
     for kaanda_index in text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[]):
-        browser.find_element_by_link_text("Kanda-%d" % kaanda_index).click()
+        kaanda_element = browser.find_element_by_link_text("Kanda-%d" % kaanda_index)
+        # kaanda_element.click()
+        # Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen 
+        browser.execute_script("arguments[0].click();", kaanda_element)
         sarga_list = text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[kaanda_index])
 
         for sarga_index in sarga_list:

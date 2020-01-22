@@ -22,7 +22,7 @@ with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'local_config
 configuration_parankusha = configuration['parankusha']
 
 def get_logged_in_browser(headless=True):
-    """Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine!"""
+    """Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen """
     opts = options.Options()
     opts.headless = headless
     browser = webdriver.Chrome(options=opts)
