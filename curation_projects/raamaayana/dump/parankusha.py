@@ -3,9 +3,7 @@ import os
 
 from doc_curation import parankusha, text_data
 
-browser = parankusha.browser
-
-def get_ramayana_text(text_id, base_dir):
+def get_ramayana_text(browser, text_id, base_dir):
     browser.find_element_by_link_text(text_id).click()
     # browser.implicitly_wait(2)
     unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "raamaayana/andhra.json")
@@ -40,8 +38,8 @@ def get_ramayana_text(text_id, base_dir):
 
 
 if __name__ == '__main__':
-    parankusha.login()
-    get_ramayana_text(text_id="वाल्मीकिरामायणम् प्राचीनपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/purANa/rAmAyaNam/kumbhakona")
+    browser = parankusha.login(headless=False)
+    get_ramayana_text(browser=browser, text_id="वाल्मीकिरामायणम् प्राचीनपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/purANa/rAmAyaNam/kumbhakona")
     # get_ramayana_text(text_id="रामायणम्-नव्यपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/purANa/rAmAyaNam/baroda")
     # with open("/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/rAmAyaNa/baroda.md", "a") as outfile:
     #     get_ramayana_text(text_id="रामायणम्-नव्यपाठः", outfile=outfile)
