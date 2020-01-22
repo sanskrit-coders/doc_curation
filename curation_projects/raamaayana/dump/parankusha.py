@@ -38,7 +38,7 @@ def get_ramayana_text(browser, text_id, base_dir):
 
 
 if __name__ == '__main__':
-    browser = parankusha.login(headless=False)
+    browser = parankusha.get_logged_in_browser(headless=False)
     get_ramayana_text(browser=browser, text_id="वाल्मीकिरामायणम् प्राचीनपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/purANa/rAmAyaNam/kumbhakona")
     # get_ramayana_text(text_id="रामायणम्-नव्यपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/purANa/rAmAyaNam/baroda")
     # with open("/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/rAmAyaNa/baroda.md", "a") as outfile:
