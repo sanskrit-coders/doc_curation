@@ -83,6 +83,9 @@ class MdFile(object):
         (yml, md) = self.read_md_file()
         self.dump_to_file(yml=yml, md=prefix_text + md, dry_run=dry_run)
 
+    def replace_content(self, new_content, dry_run=True):
+        (yml, _) = self.read_md_file()
+        self.dump_to_file(yml=yml, md=new_content, dry_run=dry_run)
 
     def replace_in_content(self, pattern, replacement, dry_run=True):
         (yml, md) = self.read_md_file()
@@ -92,6 +95,7 @@ class MdFile(object):
     @classmethod
     def get_md_files_from_path(cls, dir_path, file_pattern, file_name_filter=None):
         from pathlib import Path
+        # logging.debug(list(Path(dir_path).glob(file_pattern)))
         md_file_paths = sorted(filter(file_name_filter, Path(dir_path).glob(file_pattern)))
         return [MdFile(path) for path in md_file_paths]
     

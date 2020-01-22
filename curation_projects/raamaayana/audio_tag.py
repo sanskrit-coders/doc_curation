@@ -26,10 +26,11 @@ def get_adhyaaya_to_mp3_map():
         adhyaaya_to_mp3_map[adhyaaya_id] = web_mp3_path
     return adhyaaya_to_mp3_map
 
+
 if __name__ == '__main__':
     adhyaaya_to_mp3_map = get_adhyaaya_to_mp3_map()
     # logging.debug(adhyaaya_to_mp3_map)
-    for md_file in raamaayana.get_adhyaaya_md_files():
+    for md_file in raamaayana.get_adhyaaya_md_files(md_file_path ="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/rAmAyaNa/Andhra/"):
         # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
         logging.debug(md_file.file_path)
         (kaanda, adhyaaya) = raamaayana.get_kaanda_adhyaaya(md_file)
