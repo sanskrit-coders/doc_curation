@@ -35,12 +35,14 @@ def get_ramayana_text(text_id, base_dir):
             os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
             with open(outfile_path, "w") as outfile:
                 outfile.writelines(lines)
+        # Close the kANDa - else the driver may pick sarga from this kANDa when it is to pick the sarga from the next kANDa?!
+        browser.find_element_by_link_text("Kanda-%d" % kaanda_index).click()
 
 
 if __name__ == '__main__':
     parankusha.login()
-    # get_ramayana_text(text_id="वाल्मीकिरामायणम् प्राचीनपाठः", base_dir="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/rAmAyaNa/kumbhakona")
-    get_ramayana_text(text_id="रामायणम्-नव्यपाठः", base_dir="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/rAmAyaNa/baroda")
+    get_ramayana_text(text_id="वाल्मीकिरामायणम् प्राचीनपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/purANa/rAmAyaNam/kumbhakona")
+    # get_ramayana_text(text_id="रामायणम्-नव्यपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/purANa/rAmAyaNam/baroda")
     # with open("/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/rAmAyaNa/baroda.md", "a") as outfile:
     #     get_ramayana_text(text_id="रामायणम्-नव्यपाठः", outfile=outfile)
     browser.close()
