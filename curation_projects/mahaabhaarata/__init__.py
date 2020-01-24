@@ -10,7 +10,7 @@ def get_adhyaaya_md_files(md_file_path):
 
 def get_parva_adhyaaya(md_file):
     parva = regex.findall("/\\d\\d-", str(md_file.file_path))[0].replace("/", "").replace("-", "")
-    adhyaaya = regex.findall("\\d\\d\\d", str(md_file.file_path))[0]
+    adhyaaya = regex.findall("\\d\\d\\d", str(md_file.file_path))[-1]
     return (parva, adhyaaya)
 
 

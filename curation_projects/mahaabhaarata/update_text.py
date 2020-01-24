@@ -26,4 +26,4 @@ if __name__ == '__main__':
         audio_tag = next(iter(regex.findall("<div class.*div>", current_content.replace("\n", " "))), '')
         (_, target_content) = adhyaaya_to_source_file_map[adhyaaya_id].read_md_file()
         # logging.debug(adhyaaya_to_source_file_map[adhyaaya_id])
-        md_file.replace_content("%s\n\n%s" % (audio_tag, target_content), dry_run=True)
+        md_file.replace_content("%s\n\n%s" % (audio_tag, target_content), dry_run=False)
