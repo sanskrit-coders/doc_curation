@@ -38,8 +38,5 @@ def get_subunit_path_list(json_file, unit_path_list):
             subunit_path_list.append([subunit])
         else:
             for subsubunit_path in subsubunit_path_list:
-                logging.debug(unit_path_list)
-                logging.debug(subunit_list)
-                logging.debug(subsubunit_path)
                 subunit_path_list.append([subunit] + subsubunit_path)
     return subunit_path_list
