@@ -1,32 +1,26 @@
 {
   "length": 7,
-  "unitName": "kANDa",
+  "unitNameList": ["kANDa", "prashna"],
+  "unitNameListInSite": ["काण्डम्","प्रश्नः"],
   "1": {
-    "length": 8,
-    "unitName": "prashna"
+    "length": 8
   },
   "2": {
-    "length": 6,
-    "unitName": "prashna"
+    "length": 6
   },
   "3": {
-    "length": 5,
-    "unitName": "prashna"
+    "length": 5
   },
   "4": {
-    "length": 7,
-    "unitName": "prashna"
+    "length": 7
   },
   "5": {
-    "length": 7,
-    "unitName": "prashna"
+    "length": 7
   },
   "6": {
-    "length": 6,
-    "unitName": "prashna"
+    "length": 6
   },
   "7": {
-    "length": 5,
-    "unitName": "prashna"
+    "length": 5
   }
 }
