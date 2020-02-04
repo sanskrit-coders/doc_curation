@@ -59,12 +59,14 @@ def get_taittiriiya():
 
     # get_text(browser=browser, text_id="ब्राह्मणम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/mUlam/brAhmaNam", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/mUlam/brAhmaNa.json"))
     # get_text(browser=browser, text_id="ब्राह्मणस्य भट्टभास्करभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/bhaTTa-bhAskara/brAhmaNam/", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/bhAShya/bhaTTa-bhAskara/brAhmaNa.json"))
+    # get_text(browser=browser, text_id="ब्राह्मणस्य सायणभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/sAyaNa/brAhmaNam/", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/bhAShya/bhaTTa-bhAskara/brAhmaNa.json"))
 
     # get_text(browser=browser, text_id="आरण्यकम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/mUlam/AraNyakam", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/mUlam/AraNyaka.json"))
     # get_text(browser=browser, text_id="आरण्यकस्य भट्टभास्करभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/bhaTTa-bhAskara/AraNyakam/", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/bhAShya/bhaTTa-bhAskara/AraNyaka.json"))
+    # get_text(browser=browser, text_id="आरण्यकस्य सायणभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/sAyaNa/AraNyakam/", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/bhAShya/bhaTTa-bhAskara/AraNyaka.json"))
 
     # get_text(browser=browser, text_id="काठकम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/mUlam/kAThakam", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/mUlam/kAThaka.json"))
-    get_text(browser=browser, text_id="काठकस्य भट्टभास्करभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/bhaTTa-bhAskara/kAThakam/", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/bhAShya/bhaTTa-bhAskara/kAThaka.json"))
+    # get_text(browser=browser, text_id="काठकस्य भट्टभास्करभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/bhaTTa-bhAskara/kAThakam/", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/bhAShya/bhaTTa-bhAskara/kAThaka.json"))
     
 
 if __name__ == '__main__':
