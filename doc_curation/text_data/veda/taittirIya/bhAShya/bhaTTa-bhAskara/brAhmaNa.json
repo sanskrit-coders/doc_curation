@@ -1,116 +1,87 @@
 {
   "length": 3,
-  "unitName": "aShTaka",
   "1": {
     "length": 8,
-    "unitName": "prashna",
     "1": {
-      "length": 10,
-      "unitName": "anuvAka"
+      "length": 10
     },
     "2": {
-      "length": 6,
-      "unitName": "anuvAka"
+      "length": 6
     },
     "3": {
-      "length": 10,
-      "unitName": "anuvAka"
+      "length": 10
     },
     "4": {
-      "length": 10,
-      "unitName": "anuvAka"
+      "length": 10
     },
     "5": {
-      "length": 12,
-      "unitName": "anuvAka"
+      "length": 12
     },
     "6": {
-      "length": 10,
-      "unitName": "anuvAka"
+      "length": 10
     },
     "7": {
-      "length": 10,
-      "unitName": "anuvAka"
+      "length": 10
     },
     "8": {
-      "length": 10,
-      "unitName": "anuvAka"
+      "length": 10
     }
   },
   "2": {
     "length": 8,
-    "unitName": "prashna",
     "1": {
-      "length": 11,
-      "unitName": "anuvAka"
+      "length": 11
     },
     "2": {
-      "length": 11,
-      "unitName": "anuvAka"
+      "length": 11
     },
     "3": {
-      "length": 11,
-      "unitName": "anuvAka"
+      "length": 11
     },
     "4": {
-      "length": 8,
-      "unitName": "anuvAka"
+      "length": 8
     },
     "5": {
-      "length": 8,
-      "unitName": "anuvAka"
+      "length": 8
     },
     "6": {
-      "length": 20,
-      "unitName": "anuvAka"
+      "length": 20
     },
     "7": {
-      "length": 18,
-      "unitName": "anuvAka"
+      "length": 18
     },
     "8": {
-      "length": 9,
-      "unitName": "anuvAka"
+      "length": 9
     }
   },
   "3": {
     "length": 9,
-    "unitName": "prashna",
     "1": {
-      "length": 6,
-      "unitName": "anuvAka"
+      "length": 6
     },
     "2": {
-      "length": 10,
-      "unitName": "anuvAka"
+      "length": 10
     },
     "3": {
-      "length": 11,
-      "unitName": "anuvAka"
+      "length": 11
     },
     "4": {
-      "length": 19,
-      "unitName": "anuvAka"
+      "length": 19
     },
     "5": {
-      "length": 13,
-      "unitName": "anuvAka"
+      "length": 13
     },
     "6": {
-      "length": 15,
-      "unitName": "anuvAka"
+      "length": 15
     },
     "7": {
-      "length": 14,
-      "unitName": "anuvAka"
+      "length": 14
     },
     "8": {
-      "length": 23,
-      "unitName": "anuvAka"
+      "length": 23
     },
     "9": {
-      "length": 23,
-      "unitName": "anuvAka"
+      "length": 23
     }
   }
 }

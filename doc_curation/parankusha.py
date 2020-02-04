@@ -36,4 +36,10 @@ def get_logged_in_browser(headless=True):
     browser.get("http://parankusan.cloudapp.net/Integrated/Texts.aspx")
     return browser
 
-
+def click_link_by_text(browser, element_text):
+    subunit_element = browser.find_element_by_link_text(element_text)
+    logging.info("Clicking: %s" % element_text)
+    # subunit_element.click()
+    # Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen 
+    browser.execute_script("arguments[0].click();", subunit_element)
+    
