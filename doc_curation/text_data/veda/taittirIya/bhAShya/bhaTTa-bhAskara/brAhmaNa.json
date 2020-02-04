@@ -1,5 +1,7 @@
 {
   "length": 3,
+  "unitNameList": ["aShTaka", "prashna", "anuvAka"],
+  "unitNameListInSite": ["अष्टकम्-","प्रश्नः-", "अनुवाकः-"],
   "1": {
     "length": 8,
     "1": {
