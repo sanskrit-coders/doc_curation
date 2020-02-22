@@ -11,7 +11,7 @@ logging.basicConfig(
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
-if __name__ == '__main__':
+def reformat_audio_tag():
     adhyaaya_to_source_file_map = mahaabhaarata.get_adhyaaya_to_source_file_map()
     # logging.debug(adhyaaya_to_mp3_map)
     dest_md_files = mahaabhaarata.get_adhyaaya_md_files(md_file_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata")
