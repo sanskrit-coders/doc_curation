@@ -53,7 +53,10 @@ def get_text(browser, text_id, base_dir, unit_info_file):
 def get_taittiriiya():
     parankusha.click_link_by_text(browser=browser, element_text="ऋग्वेदः")
     parankusha.click_link_by_text(browser=browser, element_text="शुक्लयजुर्वेदः")
-    get_text(browser=browser, text_id="संहितायाः भट्टभास्करभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/bhaTTa-bhAskara/saMhitA", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/bhAShya/bhaTTa-bhAskara/saMhitA.json"))
+    parankusha.click_link_by_text(browser=browser, element_text="मूलपाठः")
+    # get_text(browser=browser, text_id="पदपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/padapAThaH/saMhitA", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/mUlam/saMhitA.json"))
+    get_text(browser=browser, text_id="क्रमपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/kramapAThaH/saMhitA", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/mUlam/saMhitA.json"))
+    # get_text(browser=browser, text_id="संहितायाः भट्टभास्करभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/bhaTTa-bhAskara/saMhitA", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/bhAShya/bhaTTa-bhAskara/saMhitA.json"))
     # get_text(browser=browser, text_id="संहितायाः सायणभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/sAyaNa/saMhitA", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/bhAShya/bhaTTa-bhAskara/saMhitA.json"))
     # get_text(browser=browser, text_id="संहिता", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/mUlam/saMhitA", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/mUlam/saMhitA.json"))
 
