@@ -14,6 +14,11 @@ def get_parva_adhyaaya(md_file):
     return (parva, adhyaaya)
 
 
+def get_adhyaaya_id(md_file):
+    (parva, adhyaaya) = get_parva_adhyaaya(md_file=md_file)
+    return "%03d-%03d" % (int(parva), int(adhyaaya))
+
+
 def get_adhyaaya_to_source_file_map():
     md_files = get_adhyaaya_md_files(md_file_path="/home/vvasuki/sanskrit/raw_etexts/purANa/mahAbhArata/kumbhakonam")
     final_map = {}
