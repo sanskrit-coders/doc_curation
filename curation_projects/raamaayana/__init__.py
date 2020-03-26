@@ -14,6 +14,11 @@ def get_kaanda_adhyaaya(md_file):
     return (kaanda, adhyaaya)
 
 
+def get_adhyaaya_id(md_file):
+    (kaanda, adhyaaya) = get_kaanda_adhyaaya(md_file)
+    return "%s-%s" % (kaanda, adhyaaya)
+
+
 def get_adhyaaya_to_source_file_map():
     md_files = get_adhyaaya_md_files(md_file_path="/home/vvasuki/sanskrit/raw_etexts/purANa/rAmAyaNam/kumbhakona")
     final_map = {}

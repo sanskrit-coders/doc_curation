@@ -14,7 +14,7 @@ logging.basicConfig(
 def reformat_audio_tag():
     adhyaaya_to_source_file_map = raamaayana.get_adhyaaya_to_source_file_map()
     # logging.debug(adhyaaya_to_mp3_map)
-    dest_md_files = raamaayana.get_adhyaaya_md_files(md_file_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/rAmAyaNa/AndhrapAThaH")
+    dest_md_files = raamaayana.get_adhyaaya_md_files(md_file_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padyam/purANam/rAmAyaNam/AndhrapAThaH")
     logging.debug(dest_md_files)
     for md_file in dest_md_files:
         # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")

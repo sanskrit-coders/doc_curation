@@ -1,14 +1,10 @@
 import logging
 import os
-
 import pprint
 
-import pandas
-
 import gspread
-import wget
+import pandas
 from oauth2client.service_account import ServiceAccountCredentials
-from indic_transliteration import xsanscript
 
 # Remove all handlers associated with the root logger object.
 for handler in logging.root.handlers[:]:
@@ -38,9 +34,29 @@ def get_sheet(spreadhsheet_id, worksheet_name, google_key):
     logging.debug(sheet_book.worksheets())
     return sheet_book.worksheet(worksheet_name)
 
-class DocData(object):
+
+class TitleSheet(object):
+    def __init__(self, spreadhsheet_id, worksheet_name, google_key,
+                 id_column, title_column=None):
+        self.data_sheet = get_sheet(spreadhsheet_id=spreadhsheet_id, worksheet_name=worksheet_name, google_key=google_key)
+        self.id_column = id_column
+        self.title_column = title_column
+        episode_sheet_values = self.data_sheet.get_all_values()
+        df = pandas.DataFrame(episode_sheet_values[1:], columns=episode_sheet_values.pop(0))
+        df = df.set_index(self.id_column)
+        self._df = df
+
+    def get_title(self, id):
+        try:
+            return self._df.loc[id, self.title_column]
+        except KeyError:
+            logging.debug("Could not find %s in the sheet", id)
+            return None
+
+
+class ImageSheet(object):
     """
-    Represents episode data stored in a Google spreadsheet.
+    Represents image data stored in a Google spreadsheet.
     """
     def __init__(self, spreadhsheet_id, worksheet_name, google_key,
                  url_column, file_name_column=None):
@@ -79,6 +95,7 @@ class DocData(object):
         return file_name
 
     def download_all(self, destination_dir, skip_existing=True):
+        import wget
         os.makedirs(destination_dir, exist_ok=True)
         for url in self.file_url_df.index:
             extension = os.path.splitext(url)[1]
