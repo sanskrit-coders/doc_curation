@@ -34,7 +34,8 @@ def get_upaakhyaana_and_titles_from_path(dir_path, file_pattern="**/*.md"):
     for row in zip(upaakhyaanas, titles):
         print ("\t".join([str(i) for i in row]))
 
-dir_path = "/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padyam/purANam/mahAbhAratam/02-sabhA-parva/"
+dir_path = "/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padyam/purANam/mahAbhAratam/03-vana-parva/"
 # set_titles_from_filenames(dir_path=dir_path, dry_run=True)
 # get_upaakhyaana_and_titles_from_path(dir_path=dir_path)
-set_titles_from_spreadsheet(dir_path=dir_path, dry_run=False)
+MdFile.fix_index_files(dir_path=dir_path, dry_run=False)
+# set_titles_from_spreadsheet(dir_path=dir_path, dry_run=False)

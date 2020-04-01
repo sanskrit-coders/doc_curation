@@ -1,0 +1,35 @@
+{
+  "length": 10,
+  "unitNameList": ["Mandala", "Sukta"],
+  "unitNameListInSite": ["Mandala-", "Sukta-"],
+  "1": {
+    "length": 191
+  },
+  "2": {
+    "length": 43
+  },
+  "3": {
+    "length": 62
+  },
+  "4": {
+    "length": 58
+  },
+  "5": {
+    "length": 87
+  },
+  "6": {
+    "length": 75
+  },
+  "7": {
+    "length": 104
+  },
+  "8": {
+    "length": 103
+  },
+  "9": {
+    "length": 114
+  },
+  "10": {
+    "length": 191
+  }
+}

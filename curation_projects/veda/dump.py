@@ -72,8 +72,14 @@ def get_taittiriiya():
     # get_text(browser=browser, text_id="काठकस्य भट्टभास्करभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/bhaTTa-bhAskara/kAThakam/", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/taittirIya/bhAShya/bhaTTa-bhAskara/kAThaka.json"))
     
 
+def get_rv():
+    # get_text(browser=browser, text_id="क्रमपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/kramapAThaH/saMhitA", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/shakala/saMhitA.json"))
+    get_text(browser=browser, text_id="पदपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/padapAThaH/saMhitA", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/shakala/saMhitA.json"))
+
+
 if __name__ == '__main__':
     browser = parankusha.get_logged_in_browser(headless=False)
-    get_taittiriiya()
+    # get_taittiriiya()
+    get_rv()
     # browser.implicitly_wait(13)
     browser.close()
