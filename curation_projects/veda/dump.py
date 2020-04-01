@@ -79,9 +79,20 @@ def get_rv():
     get_text(browser=browser, text_id="आरण्यकम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/AraNyakam", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/shakala/AraNyakam.json"))
 
 
+def get_kauthuma():
+    parankusha.click_link_by_text(browser=browser, element_text="ऋग्वेदः")
+    parankusha.click_link_by_text(browser=browser, element_text="यजुर्वेदः")
+    # get_text(browser=browser, text_id="संहिता", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/kauthuma/saMhitA", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/kauthuma/saMhitA.json"))
+    # get_text(browser=browser, text_id="छन्दःपदम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/kauthuma/ChandaHpadam", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/kauthuma/ChandaHpadam.json"))
+    get_text(browser=browser, text_id="स्तोभपदम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/kauthuma/stobhapadam", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/kauthuma/stobhapadam.json"))
+    # get_text(browser=browser, text_id="रहस्यगानम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/kauthuma/rahasyagAnam", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/kauthuma/rahasyagAnam.json"))
+
+
+
 if __name__ == '__main__':
     browser = parankusha.get_logged_in_browser(headless=False)
     # get_taittiriiya()
-    get_rv()
+    # get_rv()
+    get_kauthuma()
     # browser.implicitly_wait(13)
     browser.close()

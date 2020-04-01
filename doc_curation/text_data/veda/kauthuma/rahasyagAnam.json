@@ -1,0 +1,14 @@
+{
+  "length": 3,
+  "unitNameList": ["parva", "khaNDa"],
+  "unitNameListInSite": ["Parvam (पर्वम्)-", "Khandam (खण्डम्)-"],
+  "1": {
+    "length": 3
+  },
+  "2": {
+    "length": 4
+  },
+  "3": {
+    "length": 2
+  }
+}
