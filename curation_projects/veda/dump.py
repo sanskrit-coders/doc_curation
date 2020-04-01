@@ -74,7 +74,9 @@ def get_taittiriiya():
 
 def get_rv():
     # get_text(browser=browser, text_id="क्रमपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/kramapAThaH/saMhitA", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/shakala/saMhitA.json"))
-    get_text(browser=browser, text_id="पदपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/padapAThaH/saMhitA", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/shakala/saMhitA.json"))
+    # get_text(browser=browser, text_id="पदपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/padapAThaH/saMhitA", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/shakala/saMhitA.json"))
+    # get_text(browser=browser, text_id="ब्राह्मणम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/brAhmaNam", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/shakala/brAhmaNam.json"))
+    get_text(browser=browser, text_id="आरण्यकम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/AraNyakam", unit_info_file=os.path.join(os.path.dirname(text_data.__file__), "veda/shakala/AraNyakam.json"))
 
 
 if __name__ == '__main__':
