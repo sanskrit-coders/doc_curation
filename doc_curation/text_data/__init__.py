@@ -20,12 +20,14 @@ def get_subunit_data(json_file, unit_path_list):
             unit_data = unit_data[str(unit)]
         return unit_data
 
+
 def get_subunit_list(json_file, unit_path_list):
     unit_data = get_subunit_data(json_file, unit_path_list)
     if unit_data is None:
         return []
     else:
         return range(1, unit_data["length"] + 1)
+
 
 def get_subunit_path_list(json_file, unit_path_list):
     subunit_list = get_subunit_list(json_file, unit_path_list)
