@@ -22,7 +22,8 @@ browser.implicitly_wait(6)
 
 def get_item(item_url):
     logging.info(item_url)
-    item_browser =  webdriver.Chrome(options=opts)
+    item_browser = webdriver.Chrome()
+    item_browser.implicitly_wait(6)
     item_browser.get(item_url)
     root = browser.find_element_by_tag_name("h2").text.replace("कृदन्त - ", "").strip()
     data_rows = browser.find_element_by_css_selector(".declensionContainer").find_elements_by_css_selector(".row")
@@ -54,6 +55,6 @@ def get_entries_from_list(list_id):
 
 if __name__ == '__main__':
     # logging.debug(get_item("http://sanskritabhyas.in/hi/Kridanta/View/%E0%A4%AD%E0%A5%82"))
-    for list_id in range(1, 2):
+    for list_id in range(1, 3):
         items = get_entries_from_list(list_id=list_id)
         
