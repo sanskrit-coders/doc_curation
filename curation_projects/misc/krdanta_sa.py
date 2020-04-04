@@ -38,7 +38,7 @@ def get_item(item_url):
         values = row.find_element_by_css_selector(".col-8").text.split(" - ")
         headwords.extend(values)
     item_browser.close()
-    return (headwords, "\\n".join(body_data))
+    return (headwords, "<br>".join(body_data))
 
 
 def get_entries_from_list(list_id, outfile):
@@ -66,5 +66,6 @@ def dump_dict(outfile_path):
 
 
 if __name__ == '__main__':
-    # logging.debug(get_item("http://sanskritabhyas.in/hi/Kridanta/View/%E0%A4%AD%E0%A5%82"))
-    dump_dict("/home/vvasuki/indic-dict/stardict-sanskrit-vyAkaraNa/kRdanta-sa/kRdanta-sa-2.babylon")
+    item = get_item("http://sanskritabhyas.in/hi/Kridanta/View/%E0%A4%A4%E0%A5%8D%E0%A4%B5%E0%A4%BF%E0%A4%B7%E0%A5%8D-%E0%A4%AD%E0%A5%8D%E0%A4%B5%E0%A4%BE%E0%A4%A6%E0%A4%BF%E0%A4%83-%E0%A4%A4%E0%A5%8D%E0%A4%B5%E0%A4%BF%E0%A5%92%E0%A4%B7%E0%A4%81%E0%A5%91%E0%A5%92-%E0%A4%A6%E0%A5%80%E0%A4%AA%E0%A5%8D%E0%A4%A4%E0%A5%8C")
+    print("|".join(item[0]) + "\n" + item[1] + "\n\n")
+    # dump_dict("/home/vvasuki/indic-dict/stardict-sanskrit-vyAkaraNa/kRdanta-sa/kRdanta-sa-2.babylon")
