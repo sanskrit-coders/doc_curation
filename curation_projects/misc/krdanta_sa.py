@@ -25,6 +25,9 @@ def get_item(item_url):
     item_browser.implicitly_wait(6)
     item_browser.get(item_url)
     root = item_browser.find_element_by_tag_name("h2").text.replace("कृदन्त - ", "").strip()
+    if "error" in root:
+        logging.error("Could not retrieve: " + item_url)
+        raise IOError(item_url)
     data_rows = item_browser.find_element_by_css_selector(".declension").find_elements_by_css_selector(".row")
     body_data = [root]
     headwords = [root]
@@ -38,15 +41,19 @@ def get_item(item_url):
     return (headwords, "\\n".join(body_data))
 
 
-def get_entries_from_list(list_id):
+def get_entries_from_list(list_id, outfile):
     list_url = "http://sanskritabhyas.in/hi/Kridanta/List/%d" % (list_id)
     browser.get(list_url)
     item_elements = browser.find_elements_by_css_selector(".listWord")
     items = []
     for item_element in item_elements:
         item_url = item_element.get_attribute("href")
-        item = get_item(item_url)
-        items.append(item)
+        try:
+            item = get_item(item_url)
+            items.append(item)
+            outfile.writelines(["|".join(item[0]) + "\n", item[1] + "\n\n"])
+        except IOError:
+            logging.error("Could not retrieve: " + item_url)
     # logging.debug(items)
     return items
 
@@ -54,12 +61,10 @@ def get_entries_from_list(list_id):
 def dump_dict(outfile_path):
     os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
     with open(outfile_path, "w") as outfile:
-        for list_id in range(1, 13):
-            items = get_entries_from_list(list_id=list_id)
-            for item in items:
-                outfile.writelines(["|".join(item[0]), item[1]], "")
+        for list_id in range(7, 13):
+            items = get_entries_from_list(list_id=list_id, outfile=outfile)
 
 
 if __name__ == '__main__':
     # logging.debug(get_item("http://sanskritabhyas.in/hi/Kridanta/View/%E0%A4%AD%E0%A5%82"))
-    dump_dict("/home/vvasuki/indic-dict/stardict-sanskrit-vyAkaraNa/kRdanta-sa/kRdanta-sa.babylon")
+    dump_dict("/home/vvasuki/indic-dict/stardict-sanskrit-vyAkaraNa/kRdanta-sa/kRdanta-sa-2.babylon")
