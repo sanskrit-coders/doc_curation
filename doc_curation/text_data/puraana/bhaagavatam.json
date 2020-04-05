@@ -1,0 +1,41 @@
+{
+  "length": 12,
+  "unitNameList": ["skandha", "adhyAya"],
+  "unitNameListInSite": ["स्कन्धः", "अध्यायः"],
+  "1": {
+    "length": 19
+  },
+  "2": {
+    "length": 10
+  },
+  "3": {
+    "length": 33
+  },
+  "4": {
+    "length": 31
+  },
+  "5": {
+    "length": 26
+  },
+  "6": {
+    "length": 19
+  },
+  "7": {
+    "length": 14
+  },
+  "8": {
+    "length": 24
+  },
+  "9": {
+    "length": 24
+  },
+  "10": {
+    "length": 90
+  },
+  "11": {
+    "length": 31
+  },
+  "12": {
+    "length": 13
+  }
+}

@@ -7,7 +7,7 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome import options
 from selenium.webdriver.remote.remote_connection import LOGGER
 
-from doc_curation import md_helper
+from doc_curation import md_helper, text_data
 
 LOGGER.setLevel(logging.WARNING)
 from urllib3.connectionpool import log as urllibLogger
@@ -23,12 +23,11 @@ browser = webdriver.Chrome(options=opts)
 browser.implicitly_wait(6)
 
 
-def get_item_url(id, url_base, url_id_padding):
+def get_item_url_suffix(id, id_base, url_id_padding="%d"):
     import urllib.parse
-    dashaka_id = "%s_%s" % (url_base, sanscript.transliterate(url_id_padding % id, sanscript.SLP1, sanscript.DEVANAGARI))
+    dashaka_id = "%s_%s" % (id_base, sanscript.transliterate(url_id_padding % id, sanscript.SLP1, sanscript.DEVANAGARI))
     logging.info(dashaka_id)
-    item_url = "https://sa.wikisource.org/wiki/" + urllib.parse.quote(dashaka_id)
-    return item_url
+    return urllib.parse.quote(dashaka_id)
 
 
 def dump_item(title, item_url, outfile_path):
@@ -55,5 +54,22 @@ def dump_text(url_base, num_parts, dir_path, url_id_padding="%d"):
     for id in range(1, num_parts+1):
         outfile_path = os.path.join(dir_path, "%03d.md" % id)
         title = sanscript.transliterate("%03d" % id, sanscript.SLP1, sanscript.DEVANAGARI)
-        item_url = get_item_url(id=id, url_id_padding=url_id_padding, url_base=url_base)
+        item_url = "%s/%s" % (url_base, get_item_url_suffix(id=id, url_id_padding=url_id_padding, id_base=url_base))
         dump_item(title=title, outfile_path=outfile_path, item_url=item_url)
+
+
+
+def get_wiki_path(subunit_path, unit_data, url_id_padding="%2d"):
+    logging.debug(list(zip(subunit_path, unit_data["unitNameListInSite"])))
+    path_elements = []
+    for (subunit, unitNameInSite) in zip(subunit_path, unit_data["unitNameListInSite"]):
+        element_text = get_item_url_suffix(id=id, id_base=unitNameInSite, url_id_padding=url_id_padding)
+        path_elements.append(element_text)
+    return "/".join(path_elements)
+
+
+def dump_text(url_base, dir_path, unit_info_file):
+    unit_data = text_data.get_subunit_data(unit_info_file, [])
+    for subunit_path in text_data.get_subunit_path_list(json_file=unit_info_file, unit_path_list=[]):
+        relative_dir_path = "/".join(["%02d" % x for x in subunit_path[:-1]])
+        outfile_path = os.path.join(dir_path, relative_dir_path, "%03d.md" % subunit_path[-1])
