@@ -20,6 +20,7 @@ browser = webdriver.Chrome(options=options)
 
 def navigate_to_part(base_page_url, level_3_id, level_4_id=None, level_3_frame="etaindex"):
     browser.get(base_page_url)
+
     browser.switch_to.frame("vadd")
     browser.switch_to.frame(level_3_frame)
     Select(browser.find_element_by_name("TT3")).select_by_visible_text(str(level_3_id))
@@ -29,8 +30,12 @@ def navigate_to_part(base_page_url, level_3_id, level_4_id=None, level_3_frame="
         browser.switch_to.frame("vadd")
         browser.switch_to.frame("etaindexb")
         Select(browser.find_element_by_name("TT4")).select_by_visible_text(str(level_4_id))
-        browser.find_element_by_name("TTForm").submit()
         browser.switch_to.default_content()
+
+    browser.switch_to.frame("vadd")
+    browser.switch_to.frame("etaindexb")
+    browser.find_element_by_name("TTForm").submit()
+    browser.switch_to.default_content()
 
 def get_text():
     browser.switch_to.default_content()

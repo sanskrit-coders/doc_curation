@@ -37,6 +37,6 @@ def dump_text(base_dir, do_transliteration=False):
 
 
 if __name__ == '__main__':
-    dump_text(base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/vAjasaneyi/samhitA/", do_transliteration=True)
+    dump_text(base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/vAjasaneyi/samhitA/")
     browser.close()
     pass
