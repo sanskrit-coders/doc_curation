@@ -30,19 +30,22 @@ def get_item_url_suffix(id, id_base, url_id_padding="%d"):
     return urllib.parse.quote(dashaka_id)
 
 
-def dump_item(title, item_url, outfile_path):
+def dump_item(title, item_url, outfile_path, get_collapsible_content):
     if os.path.exists(outfile_path):
         logging.info("skipping: %s - it exists already", outfile_path)
         return
     logging.info(item_url)
     browser.get(item_url)
     text = ""
-    try:
-        text = browser.find_element_by_css_selector("div.poem").text
-    except NoSuchElementException:
-        content_element = browser.find_element_by_css_selector(".mw-parser-output")
-        para_elements = content_element.find_elements_by_tag_name("p")
-        text = "\n\n".join(map(lambda x : x.text, para_elements))
+    if not get_collapsible_content:
+        try:
+            text = browser.find_element_by_css_selector("div.poem").text
+        except NoSuchElementException:
+            content_element = browser.find_element_by_css_selector(".mw-parser-output")
+            para_elements = content_element.find_elements_by_tag_name("p")
+            text = "\n\n".join(map(lambda x : x.text, para_elements))
+    else:
+        text = browser.find_element_by_css_selector(".mw-collapsible-content").text
     os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
     with open(outfile_path, "w") as outfile:
         outfile.writelines(text.replace("\n", "  \n"))
@@ -50,12 +53,12 @@ def dump_item(title, item_url, outfile_path):
     md_file.set_title(title=title, dry_run=False)
 
 
-def dump_text(url_base, num_parts, dir_path, url_id_padding="%d"):
+def dump_text(url_base, num_parts, dir_path, url_id_padding="%d", get_collapsible_content=False):
     for id in range(1, num_parts+1):
         outfile_path = os.path.join(dir_path, "%03d.md" % id)
         title = sanscript.transliterate("%03d" % id, sanscript.SLP1, sanscript.DEVANAGARI)
         item_url = "https://sa.wikisource.org/wiki/%s" % (get_item_url_suffix(id=id, url_id_padding=url_id_padding, id_base=url_base))
-        dump_item(title=title, outfile_path=outfile_path, item_url=item_url)
+        dump_item(title=title, outfile_path=outfile_path, item_url=item_url, get_collapsible_content=get_collapsible_content)
 
 
 

@@ -34,10 +34,10 @@ if __name__ == '__main__':
     # wikisource.dump_text(url_base="श्रीमद्भागवतपुराणम्/स्कन्धः_१०/पूर्वार्धः/अध्यायः", num_parts=90, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANa/bhAgavata-purANam/10/", url_id_padding="%d")
     # wikisource.dump_text(url_base="श्रीमद्भागवतपुराणम्/स्कन्धः_१०/उत्तरार्धः/अध्यायः", num_parts=90, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANa/bhAgavata-purANam/10/", url_id_padding="%d")
 
-    wikisource.dump_deep_text(url_text_id="श्रीमद्भागवतपुराणम्", url_leaf_id_padding="%d", dir_path="/home/vvasuki/sanskrit/raw_etexts/purANa/bhAgavata-purANam/", unit_info_file="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/text_data/puraana/bhaagavatam.json", dry_run=False)
+    # wikisource.dump_deep_text(url_text_id="श्रीमद्भागवतपुराणम्", url_leaf_id_padding="%d", dir_path="/home/vvasuki/sanskrit/raw_etexts/purANa/bhAgavata-purANam/", unit_info_file="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/text_data/puraana/bhaagavatam.json", dry_run=False)
 
 
     # wikisource.dump_text(url_base="पैप्पलादसंहिता/काण्डम्", num_parts=20, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/paippalAda/", url_id_padding="%02d")
     # wikisource.dump_text(url_base="अथर्ववेदः/काण्डं", num_parts=20, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/shaunaka/visvara/")
-    # wikisource.dump_text(url_base="शुक्%E2%80%8Dलयजुर्वेदः/अध्यायः", num_parts=40, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/mAdhyandina/visvara/", url_id_padding="%02d")
+    wikisource.dump_text(url_base="शुक्%E2%80%8Dलयजुर्वेदः/अध्यायः", num_parts=40, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/mAdhyandina/visvara/", url_id_padding="%02d")
 
