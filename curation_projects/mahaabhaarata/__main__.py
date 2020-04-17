@@ -20,11 +20,6 @@ def set_titles_from_spreadsheet(dir_path, dry_run=False):
     )
     MdFile.devanaagarify_titles(md_files=mahaabhaarata.get_adhyaaya_md_files(dir_path), dry_run=dry_run)
 
-def set_titles_from_filenames(dir_path, file_pattern="**/*.md", dry_run=False):
-    md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
-    for md_file in md_files:
-        md_file.set_title_from_filename(dry_run=dry_run)
-
 
 def get_upaakhyaana_and_titles_from_path(dir_path, file_pattern="**/*.md"):
     md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)

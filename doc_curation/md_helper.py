@@ -98,7 +98,13 @@ class MdFile(object):
         # logging.debug(list(Path(dir_path).glob(file_pattern)))
         md_file_paths = sorted(filter(file_name_filter, Path(dir_path).glob(file_pattern)))
         return [MdFile(path) for path in md_file_paths]
-    
+
+    @classmethod
+    def set_titles_from_filenames(cls, dir_path, file_pattern="**/*.md", dry_run=False):
+        md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
+        for md_file in md_files:
+            md_file.set_title_from_filename(dry_run=dry_run)
+
     @classmethod
     def fix_index_files(cls, dir_path, dry_run=False):
         dirs = set([os.path.dirname(path) for path in Path(dir_path).glob("**/*.md")])
