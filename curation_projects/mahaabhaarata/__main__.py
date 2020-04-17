@@ -13,7 +13,6 @@ logging.basicConfig(
 
 
 def set_titles_from_spreadsheet(dir_path, dry_run=False):
-    # MdFile.fix_index_files(dir_path=md_file_path, dry_run=False)
     MdFile.fix_titles(
         md_files=mahaabhaarata.get_adhyaaya_md_files(dir_path),
         spreadhsheet_id="1sNH1AWhhoa5VATqMdLbF652s7srTG0Raa6K-sCwDR-8",
