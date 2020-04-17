@@ -71,7 +71,7 @@ def get_wiki_path(subunit_path, unit_data, url_id_padding="%2d"):
     return "/".join(path_elements)
 
 
-def dump_deep_text(url_text_id, url_leaf_id_padding, dir_path, unit_info_file, dry_run=False):
+def dump_deep_text(url_text_id, url_leaf_id_padding, dir_path, unit_info_file, get_collapsible_content=False, dry_run=False):
     unit_data = text_data.get_subunit_data(unit_info_file, [])
     for subunit_path in text_data.get_subunit_path_list(json_file=unit_info_file, unit_path_list=[]):
         relative_dir_path = "/".join(["%02d" % x for x in subunit_path[:-1]])
@@ -81,5 +81,5 @@ def dump_deep_text(url_text_id, url_leaf_id_padding, dir_path, unit_info_file, d
         title = sanscript.transliterate("%03d" % subunit_path[-1], sanscript.SLP1, sanscript.DEVANAGARI)
         logging.info("Getting %s to %s with title %s", item_url, outfile_path, title)
         if not dry_run:
-            dump_item(title=title, outfile_path=outfile_path, item_url=item_url)
+            dump_item(title=title, outfile_path=outfile_path, item_url=item_url, get_collapsible_content=get_collapsible_content)
 

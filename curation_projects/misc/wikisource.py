@@ -39,5 +39,7 @@ if __name__ == '__main__':
 
     # wikisource.dump_text(url_base="पैप्पलादसंहिता/काण्डम्", num_parts=20, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/paippalAda/", url_id_padding="%02d")
     # wikisource.dump_text(url_base="अथर्ववेदः/काण्डं", num_parts=20, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/shaunaka/visvara/")
-    wikisource.dump_text(url_base="शुक्%E2%80%8Dलयजुर्वेदः/अध्यायः", num_parts=40, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/mAdhyandina/visvara/", url_id_padding="%02d")
+
+    # wikisource.dump_text(url_base="ऋग्वेदः_खिलसूक्तानि/अध्यायः", num_parts=5, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/saMhitA/khilAni/visvara/", url_id_padding="%d")
+    wikisource.dump_text(url_base="शुक्लयजुर्वेदः/अध्यायः", num_parts=40, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/mAdhyandina/visvara/", url_id_padding="%02d")
 
