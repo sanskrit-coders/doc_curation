@@ -1,5 +1,5 @@
 {
-  "length": 12,
+  "length": 18,
   "unitNameList": ["lambaka", "taranga"],
   "unitNameListInSite": ["लम्बकः", "तरङ्गः"],
   "1": {
@@ -55,8 +55,5 @@
   },
   "18": {
     "length": 5
-  },
-  "19": {
-    "length": 36
   }
 }

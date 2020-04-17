@@ -23,9 +23,12 @@ browser = webdriver.Chrome(options=opts)
 browser.implicitly_wait(6)
 
 
-def get_item_url_suffix(id, id_base, url_id_padding="%d"):
+def get_item_url_suffix(id, id_base, url_id_padding="%d", transliterate_id=True):
     import urllib.parse
-    dashaka_id = "%s_%s" % (id_base, sanscript.transliterate(url_id_padding % id, sanscript.SLP1, sanscript.DEVANAGARI))
+    id = url_id_padding % id
+    if transliterate_id:
+        id = sanscript.transliterate(id, sanscript.SLP1, sanscript.DEVANAGARI)
+    dashaka_id = "%s_%s" % (id_base, id)
     logging.info(dashaka_id)
     return urllib.parse.quote(dashaka_id)
 
@@ -53,11 +56,11 @@ def dump_item(title, item_url, outfile_path, get_collapsible_content):
     md_file.set_title(title=title, dry_run=False)
 
 
-def dump_text(url_base, num_parts, dir_path, url_id_padding="%d", get_collapsible_content=False):
+def dump_text(url_base, num_parts, dir_path, url_id_padding="%d", get_collapsible_content=False, transliterate_id=True):
     for id in range(1, num_parts+1):
         outfile_path = os.path.join(dir_path, "%03d.md" % id)
         title = sanscript.transliterate("%03d" % id, sanscript.SLP1, sanscript.DEVANAGARI)
-        item_url = "https://sa.wikisource.org/wiki/%s" % (get_item_url_suffix(id=id, url_id_padding=url_id_padding, id_base=url_base))
+        item_url = "https://sa.wikisource.org/wiki/%s" % (get_item_url_suffix(id=id, url_id_padding=url_id_padding, id_base=url_base, transliterate_id=transliterate_id))
         dump_item(title=title, outfile_path=outfile_path, item_url=item_url, get_collapsible_content=get_collapsible_content)
 
 
