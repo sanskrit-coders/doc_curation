@@ -1,0 +1,62 @@
+{
+  "length": 12,
+  "unitNameList": ["lambaka", "taranga"],
+  "unitNameListInSite": ["लम्बकः", "तरङ्गः"],
+  "1": {
+    "length": 8
+  },
+  "2": {
+    "length": 6
+  },
+  "3": {
+    "length": 6
+  },
+  "4": {
+    "length": 3
+  },
+  "5": {
+    "length": 3
+  },
+  "6": {
+    "length": 8
+  },
+  "7": {
+    "length": 9
+  },
+  "8": {
+    "length": 7
+  },
+  "9": {
+    "length": 6
+  },
+  "10": {
+    "length": 10
+  },
+  "11": {
+    "length": 1
+  },
+  "12": {
+    "length": 36
+  },
+  "13": {
+    "length": 1
+  },
+  "14": {
+    "length": 4
+  },
+  "15": {
+    "length": 2
+  },
+  "16": {
+    "length": 3
+  },
+  "17": {
+    "length": 6
+  },
+  "18": {
+    "length": 5
+  },
+  "19": {
+    "length": 36
+  }
+}

@@ -41,5 +41,6 @@ if __name__ == '__main__':
     # wikisource.dump_text(url_base="अथर्ववेदः/काण्डं", num_parts=20, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/shaunaka/visvara/")
 
     # wikisource.dump_text(url_base="ऋग्वेदः_खिलसूक्तानि/अध्यायः", num_parts=5, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/saMhitA/khilAni/visvara/", url_id_padding="%d")
-    wikisource.dump_text(url_base="शुक्लयजुर्वेदः/अध्यायः", num_parts=40, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/mAdhyandina/visvara/", url_id_padding="%02d")
+    # wikisource.dump_text(url_base="शुक्लयजुर्वेदः/अध्यायः", num_parts=40, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/mAdhyandina/visvara/", url_id_padding="%02d")
+    wikisource.dump_deep_text(url_text_id="कथासरित्सागरः", url_leaf_id_padding="%d", dir_path="/home/vvasuki/sanskrit/raw_etexts/kAvyam/kathAsaritsAgaraH/", unit_info_file="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/text_data/kAvyam/kathAsaritsAgaraH.json", dry_run=False)
 
