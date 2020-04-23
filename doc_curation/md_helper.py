@@ -124,18 +124,17 @@ class MdFile(object):
     @classmethod
     def fix_titles(cls, md_files, 
                   spreadhsheet_id, worksheet_name, id_column, title_column, 
-                  md_file_to_id,
-                  dry_run=False):
+                  md_file_to_id, google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json', dry_run=False):
         # logging.debug(adhyaaya_to_mp3_map)
         logging.info("Fixing titles of %d files", len(md_files))
-        from doc_curation import google_sheets_index
-        doc_data = google_sheets_index.TitleSheet(spreadhsheet_id=spreadhsheet_id, worksheet_name=worksheet_name, google_key = '/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json', title_column=title_column, id_column=id_column)
+        from curation_utils.google import google_sheets_index
+        doc_data = google_sheets_index.IndexSheet(spreadhsheet_id=spreadhsheet_id, worksheet_name=worksheet_name, google_key=google_key, id_column=id_column)
         for md_file in md_files:
             # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
             logging.debug(md_file.file_path)
             adhyaaya_id = md_file_to_id(md_file)
             if adhyaaya_id != None:
                 logging.debug(adhyaaya_id)
-                title = doc_data.get_title(adhyaaya_id)
+                title = doc_data.get_value(adhyaaya_id, column_name=title_column)
                 if title != None:
                     md_file.set_title(title=title, dry_run=dry_run)
