@@ -10,15 +10,13 @@
 # noinspection PyUnresolvedReferences
 import logging
 import os
-from indic_transliteration import sanscript
-from indic_transliteration.sanscript.schemes import roman
 
 from doc_curation import titus, text_data
 
 browser = titus.browser
 
 def dump_text(base_dir, do_transliteration=False):
-    unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "veda/vAjasaneyi/samhitA.json")
+    unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "vedaH/vAjasaneyi/samhitA.json")
 
     titus_url = "http://titus.uni-frankfurt.de/texte/etcd/ind/aind/ved/yvw/vs/vs.htm"
     for kaanda_index in text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[]):

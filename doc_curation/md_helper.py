@@ -127,8 +127,8 @@ class MdFile(object):
                   md_file_to_id, google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json', dry_run=False):
         # logging.debug(adhyaaya_to_mp3_map)
         logging.info("Fixing titles of %d files", len(md_files))
-        from curation_utils.google import google_sheets_index
-        doc_data = google_sheets_index.IndexSheet(spreadhsheet_id=spreadhsheet_id, worksheet_name=worksheet_name, google_key=google_key, id_column=id_column)
+        from curation_utils.google import sheets
+        doc_data = sheets.IndexSheet(spreadhsheet_id=spreadhsheet_id, worksheet_name=worksheet_name, google_key=google_key, id_column=id_column)
         for md_file in md_files:
             # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
             logging.debug(md_file.file_path)

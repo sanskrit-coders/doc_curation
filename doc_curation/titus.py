@@ -37,10 +37,10 @@ def navigate_to_part(base_page_url, level_3_id, level_4_id=None, level_3_frame="
     browser.find_element_by_name("TTForm").submit()
     browser.switch_to.default_content()
 
-def get_text():
+def get_text(elements_xpath="//span[@id='iovpla16' or @id='iovmla16']"):
     browser.switch_to.default_content()
     browser.switch_to.frame("etatext")
-    text_elements = browser.find_elements_by_xpath("//span[@id='iovpla16']")
+    text_elements = browser.find_elements_by_xpath(elements_xpath)
     assert len(text_elements) > 0
     # logging.info(text_elements)
     sentences = [element.text for element in text_elements]
