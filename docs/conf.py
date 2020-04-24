@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# video_curation documentation build configuration file, created by
+# doc_curation documentation build configuration file, created by
 # sphinx-quickstart on Mon Jul 31 16:48:33 2017.
 #
 # This file is execfile()d with the current directory set to its
@@ -51,10 +51,10 @@ source_suffix = ['.rst', '.md']
 # source_suffix = '.md'
 
 # The master toctree document.
-master_doc = 'video_curation'
+master_doc = 'doc_curation'
 
 # General information about the project.
-project = 'video_curation'
+project = 'doc_curation'
 copyright = '2017, sanskrit-programmers'
 author = 'sanskrit-programmers'
 
@@ -150,7 +150,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'video_curation.tex', 'video_curation Documentation',
+    (master_doc, 'doc_curation.tex', 'doc_curation Documentation',
      'sanskrit-programmers', 'manual'),
 ]
 
@@ -160,7 +160,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'video_curation', 'video_curation Documentation',
+    (master_doc, 'doc_curation', 'doc_curation Documentation',
      [author], 1)
 ]
 
@@ -171,8 +171,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'video_curation', 'video_curation Documentation',
-     author, 'video_curation', 'A package for curating video file collections, with ability to sync with archive.org video items and github repos.',
+    (master_doc, 'doc_curation', 'doc_curation Documentation',
+     author, 'doc_curation', 'A package for curating video file collections, with ability to sync with archive.org video items and github repos.',
      'Miscellaneous'),
 ]
 
