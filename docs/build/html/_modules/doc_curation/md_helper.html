@@ -1,0 +1,244 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>doc_curation.md_helper &#8212; doc_curation 0.0.2 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for doc_curation.md_helper</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">codecs</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="kn">import</span> <span class="nn">regex</span>
+<span class="kn">import</span> <span class="nn">yamldown</span>
+<span class="kn">from</span> <span class="nn">indic_transliteration</span> <span class="kn">import</span> <span class="n">sanscript</span>
+
+<span class="c1"># Remove all handlers associated with the root logger object.</span>
+<span class="k">for</span> <span class="n">handler</span> <span class="ow">in</span> <span class="n">logging</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">handlers</span><span class="p">[:]:</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
+    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(levelname)s</span><span class="s2">:</span><span class="si">%(asctime)s</span><span class="s2">:</span><span class="si">%(module)s</span><span class="s2">:</span><span class="si">%(lineno)d</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="MdFile"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile">[docs]</a><span class="k">class</span> <span class="nc">MdFile</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span> <span class="o">=</span> <span class="n">file_path</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span>
+
+<div class="viewcode-block" id="MdFile.read_md_file"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.read_md_file">[docs]</a>    <span class="k">def</span> <span class="nf">read_md_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="n">yml</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">md</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">codecs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">yml</span><span class="p">,</span> <span class="n">md</span><span class="p">)</span> <span class="o">=</span> <span class="n">yamldown</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">((</span><span class="n">yml</span><span class="p">,</span> <span class="n">md</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">yml</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">yml</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">yml</span><span class="p">,</span> <span class="n">md</span><span class="p">)</span></div>
+    
+    
+<div class="viewcode-block" id="MdFile.get_title"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.get_title">[docs]</a>    <span class="k">def</span> <span class="nf">get_title</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">omit_chapter_id</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="p">(</span><span class="n">yml</span><span class="p">,</span> <span class="n">md</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_md_file</span><span class="p">()</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="n">yml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">omit_chapter_id</span> <span class="ow">and</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">title</span> <span class="o">=</span> <span class="n">regex</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;^[+०-९]+ +&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">title</span></div>
+    
+    
+<div class="viewcode-block" id="MdFile.get_upaakhyaana"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.get_upaakhyaana">[docs]</a>    <span class="k">def</span> <span class="nf">get_upaakhyaana</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">omit_id</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">upaakhyaana_optitrans</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">))</span>
+        <span class="n">upaakhyaana</span> <span class="o">=</span> <span class="n">sanscript</span><span class="o">.</span><span class="n">transliterate</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">upaakhyaana_optitrans</span><span class="p">,</span> <span class="n">_from</span><span class="o">=</span><span class="n">sanscript</span><span class="o">.</span><span class="n">OPTITRANS</span><span class="p">,</span> <span class="n">_to</span><span class="o">=</span><span class="n">sanscript</span><span class="o">.</span><span class="n">DEVANAGARI</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">omit_id</span><span class="p">:</span>
+            <span class="n">upaakhyaana</span> <span class="o">=</span> <span class="n">regex</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;^[+०-९]+-+&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">upaakhyaana</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">upaakhyaana</span></div>
+    
+    
+<div class="viewcode-block" id="MdFile.set_title_from_filename"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.set_title_from_filename">[docs]</a>    <span class="k">def</span> <span class="nf">set_title_from_filename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;_index.md&quot;</span><span class="p">:</span>
+            <span class="n">dir_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">))</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.md&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">title_optitrans</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span> <span class="o">+</span> <span class="n">dir_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">title_optitrans</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.md&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="n">sanscript</span><span class="o">.</span><span class="n">transliterate</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">title_optitrans</span><span class="p">,</span> <span class="n">_from</span><span class="o">=</span><span class="n">sanscript</span><span class="o">.</span><span class="n">OPTITRANS</span><span class="p">,</span> <span class="n">_to</span><span class="o">=</span><span class="n">sanscript</span><span class="o">.</span><span class="n">DEVANAGARI</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="MdFile.dump_to_file"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.dump_to_file">[docs]</a>    <span class="k">def</span> <span class="nf">dump_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yml</span><span class="p">,</span> <span class="n">md</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">codecs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_file_obj</span><span class="p">:</span>
+                <span class="kn">import</span> <span class="nn">yaml</span>
+                <span class="n">yamlout</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">yml</span><span class="p">,</span> <span class="n">default_flow_style</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">allow_unicode</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">dump</span> <span class="o">=</span> <span class="s2">&quot;---</span><span class="se">\n</span><span class="si">{yml}</span><span class="se">\n</span><span class="s2">---</span><span class="se">\n</span><span class="si">{markdown}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">yml</span><span class="o">=</span><span class="n">yamlout</span><span class="p">,</span> <span class="n">markdown</span><span class="o">=</span><span class="n">md</span><span class="p">)</span>
+                <span class="n">out_file_obj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">dump</span><span class="p">)</span>
+                <span class="c1"># out_file_obj.write(yamldown.dump(yml, md)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">yml</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">md</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="MdFile.set_title"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.set_title">[docs]</a>    <span class="k">def</span> <span class="nf">set_title</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">):</span>
+        <span class="n">yml</span><span class="p">,</span> <span class="n">md</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_md_file</span><span class="p">()</span>
+        <span class="n">yml</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dump_to_file</span><span class="p">(</span><span class="n">yml</span><span class="o">=</span><span class="n">yml</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">md</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MdFile.prepend_to_content"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.prepend_to_content">[docs]</a>    <span class="k">def</span> <span class="nf">prepend_to_content</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix_text</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="p">(</span><span class="n">yml</span><span class="p">,</span> <span class="n">md</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_md_file</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dump_to_file</span><span class="p">(</span><span class="n">yml</span><span class="o">=</span><span class="n">yml</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">prefix_text</span> <span class="o">+</span> <span class="n">md</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MdFile.replace_content"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.replace_content">[docs]</a>    <span class="k">def</span> <span class="nf">replace_content</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_content</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="p">(</span><span class="n">yml</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_md_file</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dump_to_file</span><span class="p">(</span><span class="n">yml</span><span class="o">=</span><span class="n">yml</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">new_content</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MdFile.replace_in_content"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.replace_in_content">[docs]</a>    <span class="k">def</span> <span class="nf">replace_in_content</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">replacement</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="p">(</span><span class="n">yml</span><span class="p">,</span> <span class="n">md</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_md_file</span><span class="p">()</span>
+        <span class="n">md</span> <span class="o">=</span> <span class="n">regex</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">pattern</span><span class="p">,</span> <span class="n">repl</span><span class="o">=</span><span class="n">replacement</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">md</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dump_to_file</span><span class="p">(</span><span class="n">yml</span><span class="o">=</span><span class="n">yml</span><span class="p">,</span> <span class="n">md</span><span class="o">=</span><span class="n">md</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MdFile.get_md_files_from_path"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.get_md_files_from_path">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_md_files_from_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dir_path</span><span class="p">,</span> <span class="n">file_pattern</span><span class="p">,</span> <span class="n">file_name_filter</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+        <span class="c1"># logging.debug(list(Path(dir_path).glob(file_pattern)))</span>
+        <span class="n">md_file_paths</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">file_name_filter</span><span class="p">,</span> <span class="n">Path</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">file_pattern</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">MdFile</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">md_file_paths</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="MdFile.set_titles_from_filenames"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.set_titles_from_filenames">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">set_titles_from_filenames</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dir_path</span><span class="p">,</span> <span class="n">file_pattern</span><span class="o">=</span><span class="s2">&quot;**/*.md&quot;</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">md_files</span> <span class="o">=</span> <span class="n">MdFile</span><span class="o">.</span><span class="n">get_md_files_from_path</span><span class="p">(</span><span class="n">dir_path</span><span class="o">=</span><span class="n">dir_path</span><span class="p">,</span> <span class="n">file_pattern</span><span class="o">=</span><span class="n">file_pattern</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">md_file</span> <span class="ow">in</span> <span class="n">md_files</span><span class="p">:</span>
+            <span class="n">md_file</span><span class="o">.</span><span class="n">set_title_from_filename</span><span class="p">(</span><span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MdFile.fix_index_files"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.fix_index_files">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">fix_index_files</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dir_path</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">dirs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">Path</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;**/*.md&quot;</span><span class="p">)])</span>
+        <span class="k">for</span> <span class="nb">dir</span> <span class="ow">in</span> <span class="n">dirs</span><span class="p">:</span>
+            <span class="n">index_file</span> <span class="o">=</span> <span class="n">MdFile</span><span class="p">(</span><span class="n">file_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">dir</span><span class="p">,</span> <span class="s2">&quot;_index.md&quot;</span><span class="p">))</span>
+            <span class="n">index_file</span><span class="o">.</span><span class="n">set_title_from_filename</span><span class="p">(</span><span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MdFile.devanaagarify_titles"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.devanaagarify_titles">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">devanaagarify_titles</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">md_files</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Fixing titles of </span><span class="si">%d</span><span class="s2"> files&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">md_files</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">md_file</span> <span class="ow">in</span> <span class="n">md_files</span><span class="p">:</span>
+            <span class="c1"># md_file.replace_in_content(&quot;&lt;div class=\&quot;audioEmbed\&quot;.+?&gt;&lt;/div&gt;\n&quot;, &quot;&quot;)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">md_file</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span>
+            <span class="n">title_fixed</span> <span class="o">=</span> <span class="n">sanscript</span><span class="o">.</span><span class="n">transliterate</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">md_file</span><span class="o">.</span><span class="n">get_title</span><span class="p">(),</span> <span class="n">_from</span><span class="o">=</span><span class="n">sanscript</span><span class="o">.</span><span class="n">OPTITRANS</span><span class="p">,</span> <span class="n">_to</span><span class="o">=</span><span class="n">sanscript</span><span class="o">.</span><span class="n">DEVANAGARI</span><span class="p">)</span>
+            <span class="n">md_file</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="n">title_fixed</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MdFile.fix_titles"><a class="viewcode-back" href="../../doc_curation_md_helper.html#doc_curation.md_helper.MdFile.fix_titles">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">fix_titles</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">md_files</span><span class="p">,</span> 
+                  <span class="n">spreadhsheet_id</span><span class="p">,</span> <span class="n">worksheet_name</span><span class="p">,</span> <span class="n">id_column</span><span class="p">,</span> <span class="n">title_column</span><span class="p">,</span> 
+                  <span class="n">md_file_to_id</span><span class="p">,</span> <span class="n">google_key</span><span class="o">=</span><span class="s1">&#39;/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json&#39;</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="c1"># logging.debug(adhyaaya_to_mp3_map)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Fixing titles of </span><span class="si">%d</span><span class="s2"> files&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">md_files</span><span class="p">))</span>
+        <span class="kn">from</span> <span class="nn">curation_utils.google</span> <span class="kn">import</span> <span class="n">sheets</span>
+        <span class="n">doc_data</span> <span class="o">=</span> <span class="n">sheets</span><span class="o">.</span><span class="n">IndexSheet</span><span class="p">(</span><span class="n">spreadhsheet_id</span><span class="o">=</span><span class="n">spreadhsheet_id</span><span class="p">,</span> <span class="n">worksheet_name</span><span class="o">=</span><span class="n">worksheet_name</span><span class="p">,</span> <span class="n">google_key</span><span class="o">=</span><span class="n">google_key</span><span class="p">,</span> <span class="n">id_column</span><span class="o">=</span><span class="n">id_column</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">md_file</span> <span class="ow">in</span> <span class="n">md_files</span><span class="p">:</span>
+            <span class="c1"># md_file.replace_in_content(&quot;&lt;div class=\&quot;audioEmbed\&quot;.+?&gt;&lt;/div&gt;\n&quot;, &quot;&quot;)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">md_file</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span>
+            <span class="n">adhyaaya_id</span> <span class="o">=</span> <span class="n">md_file_to_id</span><span class="p">(</span><span class="n">md_file</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">adhyaaya_id</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">adhyaaya_id</span><span class="p">)</span>
+                <span class="n">title</span> <span class="o">=</span> <span class="n">doc_data</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">adhyaaya_id</span><span class="p">,</span> <span class="n">column_name</span><span class="o">=</span><span class="n">title_column</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">title</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">md_file</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../doc_curation.html">doc_curation</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../doc_curation_pdf.html">doc_curation.pdf</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../doc_curation_md_helper.html">doc_curation.md_helper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../doc_curation_titus.html">doc_curation.titus</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../doc_curation_parankusha.html">doc_curation.parankusha</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../doc_curation_wikisource.html">doc_curation.wikisource</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../doc_curation.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, sanskrit-programmers.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

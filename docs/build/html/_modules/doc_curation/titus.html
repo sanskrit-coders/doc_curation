@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>doc_curation.titus &#8212; doc_curation 0.0.2 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for doc_curation.titus</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">selenium</span> <span class="kn">import</span> <span class="n">webdriver</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.chrome</span> <span class="kn">import</span> <span class="n">options</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.remote.remote_connection</span> <span class="kn">import</span> <span class="n">LOGGER</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.support.select</span> <span class="kn">import</span> <span class="n">Select</span>
+
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">urllib3.connectionpool</span> <span class="kn">import</span> <span class="n">log</span> <span class="k">as</span> <span class="n">urllibLogger</span>
+<span class="n">urllibLogger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
+
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
+    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(levelname)s</span><span class="s2">:</span><span class="si">%(asctime)s</span><span class="s2">:</span><span class="si">%(module)s</span><span class="s2">:</span><span class="si">%(lineno)d</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">options</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">Options</span><span class="p">()</span>
+<span class="n">options</span><span class="o">.</span><span class="n">headless</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">browser</span> <span class="o">=</span> <span class="n">webdriver</span><span class="o">.</span><span class="n">Chrome</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="navigate_to_part"><a class="viewcode-back" href="../../doc_curation_titus.html#doc_curation.titus.navigate_to_part">[docs]</a><span class="k">def</span> <span class="nf">navigate_to_part</span><span class="p">(</span><span class="n">base_page_url</span><span class="p">,</span> <span class="n">level_3_id</span><span class="p">,</span> <span class="n">level_4_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">level_3_frame</span><span class="o">=</span><span class="s2">&quot;etaindex&quot;</span><span class="p">):</span>
+    <span class="n">browser</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">base_page_url</span><span class="p">)</span>
+
+    <span class="n">browser</span><span class="o">.</span><span class="n">switch_to</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;vadd&quot;</span><span class="p">)</span>
+    <span class="n">browser</span><span class="o">.</span><span class="n">switch_to</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="n">level_3_frame</span><span class="p">)</span>
+    <span class="n">Select</span><span class="p">(</span><span class="n">browser</span><span class="o">.</span><span class="n">find_element_by_name</span><span class="p">(</span><span class="s2">&quot;TT3&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">select_by_visible_text</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">level_3_id</span><span class="p">))</span>
+    <span class="n">browser</span><span class="o">.</span><span class="n">switch_to</span><span class="o">.</span><span class="n">default_content</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">level_4_id</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">browser</span><span class="o">.</span><span class="n">switch_to</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;vadd&quot;</span><span class="p">)</span>
+        <span class="n">browser</span><span class="o">.</span><span class="n">switch_to</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;etaindexb&quot;</span><span class="p">)</span>
+        <span class="n">Select</span><span class="p">(</span><span class="n">browser</span><span class="o">.</span><span class="n">find_element_by_name</span><span class="p">(</span><span class="s2">&quot;TT4&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">select_by_visible_text</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">level_4_id</span><span class="p">))</span>
+        <span class="n">browser</span><span class="o">.</span><span class="n">switch_to</span><span class="o">.</span><span class="n">default_content</span><span class="p">()</span>
+
+    <span class="n">browser</span><span class="o">.</span><span class="n">switch_to</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;vadd&quot;</span><span class="p">)</span>
+    <span class="n">browser</span><span class="o">.</span><span class="n">switch_to</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;etaindexb&quot;</span><span class="p">)</span>
+    <span class="n">browser</span><span class="o">.</span><span class="n">find_element_by_name</span><span class="p">(</span><span class="s2">&quot;TTForm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">submit</span><span class="p">()</span>
+    <span class="n">browser</span><span class="o">.</span><span class="n">switch_to</span><span class="o">.</span><span class="n">default_content</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="get_text"><a class="viewcode-back" href="../../doc_curation_titus.html#doc_curation.titus.get_text">[docs]</a><span class="k">def</span> <span class="nf">get_text</span><span class="p">(</span><span class="n">elements_xpath</span><span class="o">=</span><span class="s2">&quot;//span[@id=&#39;iovpla16&#39; or @id=&#39;iovmla16&#39;]&quot;</span><span class="p">):</span>
+    <span class="n">browser</span><span class="o">.</span><span class="n">switch_to</span><span class="o">.</span><span class="n">default_content</span><span class="p">()</span>
+    <span class="n">browser</span><span class="o">.</span><span class="n">switch_to</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="s2">&quot;etatext&quot;</span><span class="p">)</span>
+    <span class="n">text_elements</span> <span class="o">=</span> <span class="n">browser</span><span class="o">.</span><span class="n">find_elements_by_xpath</span><span class="p">(</span><span class="n">elements_xpath</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">text_elements</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="c1"># logging.info(text_elements)</span>
+    <span class="n">sentences</span> <span class="o">=</span> <span class="p">[</span><span class="n">element</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">text_elements</span><span class="p">]</span>
+    <span class="c1"># logging.info(sentences)</span>
+    <span class="k">return</span> <span class="n">sentences</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../doc_curation.html">doc_curation</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../doc_curation_pdf.html">doc_curation.pdf</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../doc_curation_md_helper.html">doc_curation.md_helper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../doc_curation_titus.html">doc_curation.titus</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../doc_curation_parankusha.html">doc_curation.parankusha</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../doc_curation_wikisource.html">doc_curation.wikisource</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../doc_curation.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, sanskrit-programmers.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

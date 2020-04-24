@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>doc_curation.md_helper &#8212; doc_curation 0.0.2 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="doc_curation.titus" href="doc_curation_titus.html" />
+    <link rel="prev" title="doc_curation.pdf" href="doc_curation_pdf.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-doc_curation.md_helper">
+<span id="doc-curation-md-helper"></span><h1>doc_curation.md_helper<a class="headerlink" href="#module-doc_curation.md_helper" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="doc_curation.md_helper.MdFile">
+<em class="property">class </em><code class="sig-prename descclassname">doc_curation.md_helper.</code><code class="sig-name descname">MdFile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file_path</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.devanaagarify_titles">
+<em class="property">classmethod </em><code class="sig-name descname">devanaagarify_titles</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">md_files</span></em>, <em class="sig-param"><span class="n">dry_run</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.devanaagarify_titles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.devanaagarify_titles" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.dump_to_file">
+<code class="sig-name descname">dump_to_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">yml</span></em>, <em class="sig-param"><span class="n">md</span></em>, <em class="sig-param"><span class="n">dry_run</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.dump_to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.dump_to_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.fix_index_files">
+<em class="property">classmethod </em><code class="sig-name descname">fix_index_files</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dir_path</span></em>, <em class="sig-param"><span class="n">dry_run</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.fix_index_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.fix_index_files" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.fix_titles">
+<em class="property">classmethod </em><code class="sig-name descname">fix_titles</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">md_files</span></em>, <em class="sig-param"><span class="n">spreadhsheet_id</span></em>, <em class="sig-param"><span class="n">worksheet_name</span></em>, <em class="sig-param"><span class="n">id_column</span></em>, <em class="sig-param"><span class="n">title_column</span></em>, <em class="sig-param"><span class="n">md_file_to_id</span></em>, <em class="sig-param"><span class="n">google_key</span><span class="o">=</span><span class="default_value">'/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json'</span></em>, <em class="sig-param"><span class="n">dry_run</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.fix_titles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.fix_titles" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.get_md_files_from_path">
+<em class="property">classmethod </em><code class="sig-name descname">get_md_files_from_path</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dir_path</span></em>, <em class="sig-param"><span class="n">file_pattern</span></em>, <em class="sig-param"><span class="n">file_name_filter</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.get_md_files_from_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.get_md_files_from_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.get_title">
+<code class="sig-name descname">get_title</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">omit_chapter_id</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.get_title"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.get_title" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.get_upaakhyaana">
+<code class="sig-name descname">get_upaakhyaana</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">omit_id</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.get_upaakhyaana"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.get_upaakhyaana" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.prepend_to_content">
+<code class="sig-name descname">prepend_to_content</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">prefix_text</span></em>, <em class="sig-param"><span class="n">dry_run</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.prepend_to_content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.prepend_to_content" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.read_md_file">
+<code class="sig-name descname">read_md_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>Dict<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.read_md_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.read_md_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.replace_content">
+<code class="sig-name descname">replace_content</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_content</span></em>, <em class="sig-param"><span class="n">dry_run</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.replace_content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.replace_content" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.replace_in_content">
+<code class="sig-name descname">replace_in_content</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pattern</span></em>, <em class="sig-param"><span class="n">replacement</span></em>, <em class="sig-param"><span class="n">dry_run</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.replace_in_content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.replace_in_content" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.set_title">
+<code class="sig-name descname">set_title</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">title</span></em>, <em class="sig-param"><span class="n">dry_run</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.set_title"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.set_title" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.set_title_from_filename">
+<code class="sig-name descname">set_title_from_filename</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dry_run</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.set_title_from_filename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.set_title_from_filename" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="doc_curation.md_helper.MdFile.set_titles_from_filenames">
+<em class="property">classmethod </em><code class="sig-name descname">set_titles_from_filenames</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dir_path</span></em>, <em class="sig-param"><span class="n">file_pattern</span><span class="o">=</span><span class="default_value">'**/*.md'</span></em>, <em class="sig-param"><span class="n">dry_run</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/doc_curation/md_helper.html#MdFile.set_titles_from_filenames"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#doc_curation.md_helper.MdFile.set_titles_from_filenames" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="doc_curation.html">doc_curation</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="doc_curation_pdf.html">doc_curation.pdf</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">doc_curation.md_helper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="doc_curation_titus.html">doc_curation.titus</a></li>
+<li class="toctree-l1"><a class="reference internal" href="doc_curation_parankusha.html">doc_curation.parankusha</a></li>
+<li class="toctree-l1"><a class="reference internal" href="doc_curation_wikisource.html">doc_curation.wikisource</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="doc_curation.html">Documentation overview</a><ul>
+      <li>Previous: <a href="doc_curation_pdf.html" title="previous chapter">doc_curation.pdf</a></li>
+      <li>Next: <a href="doc_curation_titus.html" title="next chapter">doc_curation.titus</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, sanskrit-programmers.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/doc_curation_md_helper.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
