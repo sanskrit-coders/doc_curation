@@ -14,7 +14,8 @@ def ocr(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/
     """
     OCR some pdf with google drive. Automatically splits into 25 page bits and ocrs them individually.
     
-    :param pdf_path: 
+    :param pdf_path:
+    :param google_key: A json key which can be obtained from https://console.cloud.google.com/iam-admin/serviceaccounts (create a project, generate a key via "Actions" column.). 
     :return: 
     """
     split_into_small_pdfs(pdf_path=pdf_path)
