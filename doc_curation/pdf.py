@@ -1,3 +1,6 @@
+"""
+Curate and process pdf files.
+"""
 import logging
 import os
 
