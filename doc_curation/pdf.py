@@ -12,7 +12,7 @@ def ocr(pdf_path):
     from curation_utils.google.drive import DriveClient
     drive_client = DriveClient()
     pdf_segments = Path(_get_ocr_dir(pdf_path)).glob("*.pdf")
-    for pdf_segment in pdf_segments:
+    for pdf_segment in sorted(pdf_segments):
         drive_client.ocr_file(local_file_path=str(pdf_segment))
 
 def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_page=None, small_pdf_pages=25):
