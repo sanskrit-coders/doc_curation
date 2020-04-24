@@ -13,7 +13,7 @@ Submodules
 	:maxdepth: 5
 
 	doc_curation_doc_repo
-	doc_curation_google_api_helper
+	doc_curation_pdf
 
 
 Indices and tables

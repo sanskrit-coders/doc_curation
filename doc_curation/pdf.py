@@ -7,10 +7,16 @@ from pathlib import Path
 def _get_ocr_dir(pdf_path):
     return os.path.join(os.path.dirname(pdf_path), Path(pdf_path).stem + "_splits")
 
-def ocr(pdf_path):
+def ocr(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json'):
+    """
+    OCR some pdf with google drive. Automatically splits into 25 page bits and ocrs them individually.
+    
+    :param pdf_path: 
+    :return: 
+    """
     split_into_small_pdfs(pdf_path=pdf_path)
     from curation_utils.google.drive import DriveClient
-    drive_client = DriveClient()
+    drive_client = DriveClient(google_key=google_key)
     pdf_segments = Path(_get_ocr_dir(pdf_path)).glob("*.pdf")
     for pdf_segment in sorted(pdf_segments):
         drive_client.ocr_file(local_file_path=str(pdf_segment))

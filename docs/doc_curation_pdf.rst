@@ -1,7 +1,7 @@
-video_curation.google_api_helper
+doc_curation.pdf
 ========================================
 
-.. automodule:: video_curation.google_api_helper
+.. automodule:: doc_curation.pdf
 	:members:
 	:undoc-members:
 		:show-inheritance:
