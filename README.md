@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/sanskrit-coders/doc_curation.svg?branch=master)](https://travis-ci.org/sanskrit-coders/doc_curation)
+![Build status](https://github.com/sanskrit-coders/doc_curation/workflows/Python%20package/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/doc_curation/badge/?version=latest)](http://doc_curation.readthedocs.io/en/latest/?badge=latest)
 
 ## doc curation
@@ -50,6 +50,6 @@ twine upload dist/* --skip-existing
 Run `pytest` in the root directory.
 
 ## Auxiliary tools
-- [![Build Status](https://travis-ci.org/sanskrit-coders/doc_curation.svg?branch=master)](https://travis-ci.org/sanskrit-coders/doc_curation)
+![Build status](https://github.com/sanskrit-coders/doc_curation/workflows/Python%20package/badge.svg)
 - [![Documentation Status](https://readthedocs.org/projects/doc_curation/badge/?version=latest)](http://doc_curation.readthedocs.io/en/latest/?badge=latest)
 - [pyup](https://pyup.io/account/repos/github/sanskrit-coders/doc_curation/)
