@@ -15,9 +15,18 @@ A package for curating doc file collections. Prominent features:
 
 
 ## Installation or upgrade:
-* `sudo pip install doc_curation -U`
-* `sudo pip install git+https://github.com/sanskrit-coders/doc_curation/@master -U`
+* For stable version `pip install doc_curation -U`
+* For latest code `pip install git+https://github.com/sanskrit-coders/doc_curation/@master -U`
 * [Web](https://pypi.python.org/pypi/doc_curation).
+
+## Usage:
+* Enable Google Driver API and download service account key file having Google Driver API access.
+```python
+from doc_curation import pdf
+pdf_file = '/home/file.pdf'
+key_file = '/home/key.json'
+pdf.split_and_ocr_on_drive(pdf_file, key_file)
+```
 
 
 # For contributors
