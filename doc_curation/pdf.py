@@ -7,10 +7,13 @@ import os
 from pikepdf import Pdf
 from pathlib import Path
 
+from curation_utils import list_helper
+
+
 def _get_ocr_dir(pdf_path):
     return os.path.join(os.path.dirname(pdf_path), Path(pdf_path).stem + "_splits")
 
-def ocr(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json'):
+def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json'):
     """
     OCR some pdf with google drive. Automatically splits into 25 page bits and ocrs them individually.
     
@@ -26,9 +29,6 @@ def ocr(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/
         drive_client.ocr_file(local_file_path=str(pdf_segment))
 
 def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_page=None, small_pdf_pages=25):
-    def split(list_in, n):
-        k, m = divmod(len(list_in), n)
-        return (list_in[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
 
     pdf_name_stem = Path(pdf_path).stem
     if output_directory == None:
@@ -38,7 +38,7 @@ def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_pag
         if end_page == None:
             end_page = len(pdf.pages)
         pages = range(start_page, end_page+1)
-        page_sets = split(list_in=pages, n=small_pdf_pages)
+        page_sets = list_helper.divide_chunks(list_in=pages, n=small_pdf_pages)
         for page_set in page_sets:
             pages = [pdf.pages[i-1] for i in page_set]
             dest_pdf_path = os.path.join(output_directory, "%s_%04d-%04d.pdf" % (pdf_name_stem, page_set[0], page_set[-1]))
