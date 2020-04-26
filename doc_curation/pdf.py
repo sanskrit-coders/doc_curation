@@ -21,9 +21,10 @@ def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/
     :param google_key: A json key which can be obtained from https://console.cloud.google.com/iam-admin/serviceaccounts (create a project, generate a key via "Actions" column.). 
     :return: 
     """
-    split_into_small_pdfs(pdf_path=pdf_path)
+    # TODO: If a PDF has layers, google drive ocr fails. Need to print into a pdf in such a case. 
     from curation_utils.google.drive import DriveClient
     drive_client = DriveClient(google_key=google_key)
+    split_into_small_pdfs(pdf_path=pdf_path)
     pdf_segments = Path(_get_ocr_dir(pdf_path)).glob("*.pdf")
     for pdf_segment in sorted(pdf_segments):
         drive_client.ocr_file(local_file_path=str(pdf_segment))

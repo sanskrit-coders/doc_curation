@@ -1,11 +1,13 @@
 import asyncio
 import math
 import os
+import re
 import string
 import sys
 import time
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
+from functools import reduce
 
 import requests
 from lxml import etree
@@ -58,13 +60,8 @@ def get_word_page_components(word_page: str):
     descr_elem = get_first_matched_elem(page_elem, _get_class_matching_xpath('div', 'description'))
 
     #  print(hw_elem, hw_note_elem)
-
-    # for now return only strings for sake of output simplicity
-    descr_paragraphs = [
-        str(etree.tounicode(p_elem, method='text')).strip().replace('\n', '<br>')
-        for p_elem in descr_elem.xpath('p')
-    ]
-    description = '<br><br>'.join(descr_paragraphs)  # this will be supported by simple viewers without complete html support
+    description = reduce(
+        lambda s, n: s + etree.tostring(n, method='html', encoding='unicode', with_tail=False) + (n.tail or '').strip(), descr_elem, '')
 
     return {
         "headword": hw_elem.text.strip() if hw_elem is not None else None,
@@ -85,9 +82,9 @@ def get_bl_headwords(iast_word: str):
 def get_bl_body(components: dict):
     header_part = '<b>{}</b>'.format(components['headword']) if 'headword' in components else ''
     note_part = '<b><i>{}</i></b>'.format(components['headword_note']) if components.get('headword_note') else ''
-    descr_part = components.get('description', '').replace('\n', '<br>')
+    descr_part = components.get('description', '').replace('\n', ' ')
 
-    return '{}<br>{}------------------------------------------<br><br>{}'.format(
+    return '{}<br>{}------------------------------------------<br>{}'.format(
         header_part,
         note_part + '<br>' if note_part else '',
         descr_part
