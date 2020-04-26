@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/sanskrit-coders/doc_curation.svg?branch=master)](https://travis-ci.org/sanskrit-coders/doc_curation)
+![Build status](https://github.com/sanskrit-coders/doc_curation/workflows/Python%20package/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/doc_curation/badge/?version=latest)](http://doc_curation.readthedocs.io/en/latest/?badge=latest)
 
 ## doc curation
@@ -15,9 +15,18 @@ A package for curating doc file collections. Prominent features:
 
 
 ## Installation or upgrade:
-* `sudo pip install doc_curation -U`
-* `sudo pip install git+https://github.com/sanskrit-coders/doc_curation/@master -U`
+* For stable version `pip install doc_curation -U`
+* For latest code `pip install git+https://github.com/sanskrit-coders/doc_curation/@master -U`
 * [Web](https://pypi.python.org/pypi/doc_curation).
+
+## Usage:
+* Enable Google Driver API and download service account key file having Google Driver API access.
+```python
+from doc_curation import pdf
+pdf_file = '/home/file.pdf'
+key_file = '/home/key.json'
+pdf.split_and_ocr_on_drive(pdf_file, key_file)
+```
 
 
 # For contributors
@@ -41,6 +50,6 @@ twine upload dist/* --skip-existing
 Run `pytest` in the root directory.
 
 ## Auxiliary tools
-- [![Build Status](https://travis-ci.org/sanskrit-coders/doc_curation.svg?branch=master)](https://travis-ci.org/sanskrit-coders/doc_curation)
+- ![Build status](https://github.com/sanskrit-coders/doc_curation/workflows/Python%20package/badge.svg)
 - [![Documentation Status](https://readthedocs.org/projects/doc_curation/badge/?version=latest)](http://doc_curation.readthedocs.io/en/latest/?badge=latest)
 - [pyup](https://pyup.io/account/repos/github/sanskrit-coders/doc_curation/)
