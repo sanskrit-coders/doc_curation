@@ -7,7 +7,7 @@ import os
 from pikepdf import Pdf
 from pathlib import Path
 
-from curation_utils import list_helper
+from curation_utils import list_helper, file_helper
 
 
 def _get_ocr_dir(pdf_path):
@@ -26,14 +26,21 @@ def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/
     :return: 
     """
     # TODO: If a PDF has layers, google drive ocr fails. Need to print into a pdf in such a case. 
-    from curation_utils.google.drive import DriveClient
-    drive_client = DriveClient(google_key=google_key)
     split_into_small_pdfs(pdf_path=pdf_path, small_pdf_pages=small_pdf_pages, 
         start_page=start_page, end_page=end_page)
+    
+    # Do the OCR
+    from curation_utils.google import drive
+    drive_client = drive.get_cached_client(google_key=google_key)
     pdf_segments = Path(_get_ocr_dir(pdf_path)).glob("*.pdf")
+    ocr_segments = sorted([str(pdf_path) + ".txt" for pdf_path in pdf_segments])
     for pdf_segment in sorted(pdf_segments):
         drive_client.ocr_file(local_file_path=str(pdf_segment))
         os.remove(str(pdf_segment))
+    
+    # Combine the ocr segments
+    final_ocr_path = pdf_path + ".txt"
+    file_helper.concatenate_files(input_path_list=ocr_segments, output_path=final_ocr_path)
 
 
 def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_page=None, small_pdf_pages=25):
