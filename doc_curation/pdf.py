@@ -13,18 +13,21 @@ from curation_utils import list_helper
 def _get_ocr_dir(pdf_path):
     return os.path.join(os.path.dirname(pdf_path), Path(pdf_path).stem + "_splits")
 
-def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json'):
+def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json', small_pdf_pages=25):
     """
     OCR some pdf with google drive. Automatically splits into 25 page bits and ocrs them individually.
     
+    Sometimes, the operation may time out, or you might get an Internal service error. In that case, try reducing small_pdf_pages.
+    
     :param pdf_path:
     :param google_key: A json key which can be obtained from https://console.cloud.google.com/iam-admin/serviceaccounts (create a project, generate a key via "Actions" column.). 
+    :param small_pdf_pages: Number of pages per segment - an argument used for splitting the pdf into small bits for OCR-ing. 
     :return: 
     """
     # TODO: If a PDF has layers, google drive ocr fails. Need to print into a pdf in such a case. 
     from curation_utils.google.drive import DriveClient
     drive_client = DriveClient(google_key=google_key)
-    split_into_small_pdfs(pdf_path=pdf_path)
+    split_into_small_pdfs(pdf_path=pdf_path, small_pdf_pages=small_pdf_pages)
     pdf_segments = Path(_get_ocr_dir(pdf_path)).glob("*.pdf")
     for pdf_segment in sorted(pdf_segments):
         drive_client.ocr_file(local_file_path=str(pdf_segment))
