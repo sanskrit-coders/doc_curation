@@ -30,6 +30,7 @@ def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/
     
     We compress the pdf provided (if compression_power>0) because:
 
+     -  If drive API detects text in your pdf it won't OCR the image and will just return the text it found
      - If a PDF has layers, google drive ocr fails. Need to print into a pdf in such a case. 
      - One does not need insane resolution to OCR. I guessed that file size and/or resolution is a critical factor in determining if OCR via Drive API succeeds.
 
@@ -87,7 +88,7 @@ def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_pag
 
 # Adapted from https://github.com/theeko74/pdfc/blob/master/pdf_compressor.py
 def compress_with_gs(input_file_path, output_file_path, power=3):
-    """Function to compress PDF via Ghostscript command line interface
+    """Function to compress PDF and remove text via Ghostscript command line interface
     
     :param power: 0,1,2,3,4
     """
@@ -116,6 +117,7 @@ def compress_with_gs(input_file_path, output_file_path, power=3):
     try:
         subprocess.call(['gs', '-sDEVICE=pdfwrite', '-dCompatibilityLevel=1.4',
                          '-dPDFSETTINGS={}'.format(quality[power]),
+                         '-dFILTERTEXT',
                          '-dNOPAUSE', '-dQUIET', '-dBATCH',
                          '-sOutputFile={}'.format(output_file_path),
                          input_file_path]
