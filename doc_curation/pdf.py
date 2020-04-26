@@ -26,6 +26,7 @@ def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/
     :return: 
     """
     # TODO: If a PDF has layers, google drive ocr fails. Need to print into a pdf in such a case. 
+    # TODO: One does not need insane resolution to OCR. I guessed that file size and/or resolution is a critical factor in determining if OCR succeeds.  Could someone contribute python code to reduce the pdf resolution if it is too much? 
     split_into_small_pdfs(pdf_path=pdf_path, small_pdf_pages=small_pdf_pages, 
         start_page=start_page, end_page=end_page)
     
