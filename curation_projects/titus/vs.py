@@ -28,7 +28,7 @@ def dump_text(base_dir, do_transliteration=False):
             continue
 
         titus.navigate_to_part(base_page_url=titus_url, level_3_id=kaanda_index, level_3_frame="etaindexb")
-        sentences = titus.get_text()
+        sentences = titus.dump_text()
         os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
         with open(outfile_path, "w") as outfile:
             outfile.write("  \n".join(sentences))

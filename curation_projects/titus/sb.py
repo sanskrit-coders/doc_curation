@@ -33,7 +33,7 @@ def dump_text(base_dir, do_transliteration=False):
                 continue
 
             titus.navigate_to_part(base_page_url=titus_url, level_3_id=kaanda_index, level_4_id=sarga_index)
-            sentences = titus.get_text()
+            sentences = titus.dump_text()
             lines = ["\n"]
             for sentence in sentences:
                 sentence = roman.RomanScheme.simplify_accent_notation(sentence)
