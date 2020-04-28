@@ -50,14 +50,16 @@ class MdFile(object):
         return upaakhyaana
     
     
-    def set_title_from_filename(self, dry_run):
+    def set_title_from_filename(self, transliteration_target, dry_run):
         logging.info(self.file_path)
         if os.path.basename(self.file_path) == "_index.md":
             dir_name = os.path.basename(os.path.dirname(self.file_path)).replace(".md", "")
-            title_optitrans = "+" + dir_name.replace("-", " ", 1).replace("_", " ")
+            title_optitrans = "+" + dir_name
         else:
-            title_optitrans = os.path.basename(self.file_path).replace("-", " ", 1).replace(".md", "")
-        title = sanscript.transliterate(data=title_optitrans, _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI)
+            title_optitrans = os.path.basename(self.file_path).replace(".md", "")
+        title = title_optitrans.replace("_", " ")
+        if transliteration_target is not None:
+            title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target)
         self.set_title(dry_run=dry_run, title=title)
     
     def dump_to_file(self, yml, md, dry_run):
@@ -71,7 +73,7 @@ class MdFile(object):
         else:
             logging.info(self.file_path)
             logging.info(yml)
-            logging.info(md)
+            # logging.info(md)
     
     def set_title(self, title, dry_run):
         yml, md = self.read_md_file()
@@ -100,17 +102,17 @@ class MdFile(object):
         return [MdFile(path) for path in md_file_paths]
 
     @classmethod
-    def set_titles_from_filenames(cls, dir_path, file_pattern="**/*.md", dry_run=False):
+    def set_titles_from_filenames(cls, dir_path, transliteration_target, file_pattern="**/*.md", dry_run=False):
         md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
         for md_file in md_files:
-            md_file.set_title_from_filename(dry_run=dry_run)
+            md_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
 
     @classmethod
-    def fix_index_files(cls, dir_path, dry_run=False):
+    def fix_index_files(cls, dir_path, transliteration_target, dry_run=False):
         dirs = set([os.path.dirname(path) for path in Path(dir_path).glob("**/*.md")])
         for dir in dirs:
             index_file = MdFile(file_path=os.path.join(dir, "_index.md"))
-            index_file.set_title_from_filename(dry_run=dry_run)
+            index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
 
     @classmethod
     def devanaagarify_titles(cls, md_files, dry_run=False):
