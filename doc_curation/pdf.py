@@ -1,6 +1,7 @@
 """
 Curate and process pdf files.
 """
+import subprocess
 import errno
 import logging
 import os
@@ -46,7 +47,9 @@ def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/
     """
     
     compressed_pdf_path = pdf_path.replace(".pdf", "_tiny.pdf")
-    compress_with_gs(input_file_path=pdf_path, output_file_path=compressed_pdf_path, power=pdf_compression_power)
+    if not os.path.exists(compressed_pdf_path):
+        compress_with_gs(input_file_path=pdf_path, output_file_path=compressed_pdf_path, power=pdf_compression_power)
+        # compress_with_pdfimages(input_file_path=pdf_path, output_file_path=compressed_pdf_path)
     split_into_small_pdfs(pdf_path=compressed_pdf_path, small_pdf_pages=small_pdf_pages, start_page=start_page, end_page=end_page)
     
     # Do the OCR
@@ -86,6 +89,7 @@ def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_pag
             else:
                 logging.warning("%s exists", dest_pdf_path)
 
+
 # Adapted from https://github.com/theeko74/pdfc/blob/master/pdf_compressor.py
 def compress_with_gs(input_file_path, output_file_path, power=3):
     """Function to compress PDF and remove text via Ghostscript command line interface
@@ -113,7 +117,6 @@ def compress_with_gs(input_file_path, output_file_path, power=3):
 
     logging.info("Compress PDF...")
     initial_size = os.path.getsize(input_file_path)
-    import subprocess
     try:
         subprocess.call(['gs', '-sDEVICE=pdfwrite', '-dCompatibilityLevel=1.4',
                          '-dPDFSETTINGS={}'.format(quality[power]),
@@ -138,3 +141,10 @@ def compress_with_gs(input_file_path, output_file_path, power=3):
     return ratio
 
 
+def compress_with_pdfimages(input_file_path, output_file_path):
+    image_directory = _get_ocr_dir(input_file_path)
+    os.makedirs(image_directory, exist_ok=True)
+    subprocess.call(["pdfimages", "-j", input_file_path, image_directory  + "/page"])
+    # subprocess.call(["convert", input_file_path, image_directory  + "/page%04.jpg"])
+    subprocess.call(["convert", image_directory + "/*", output_file_path])
+    shutil.rmtree(image_directory)
