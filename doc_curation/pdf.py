@@ -45,11 +45,13 @@ def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/
     :param pdf_compression_power: 0,1,2,3,4
     :return: 
     """
-    
     compressed_pdf_path = pdf_path.replace(".pdf", "_tiny.pdf")
-    if not os.path.exists(compressed_pdf_path):
-        compress_with_gs(input_file_path=pdf_path, output_file_path=compressed_pdf_path, power=pdf_compression_power)
-        # compress_with_pdfimages(input_file_path=pdf_path, output_file_path=compressed_pdf_path)
+    if pdf_compression_power == 0:
+        compressed_pdf_path = pdf_path
+    else:
+        if not os.path.exists(compressed_pdf_path):
+            compress_with_gs(input_file_path=pdf_path, output_file_path=compressed_pdf_path, power=pdf_compression_power)
+            # compress_with_pdfimages(input_file_path=pdf_path, output_file_path=compressed_pdf_path)
     split_into_small_pdfs(pdf_path=compressed_pdf_path, small_pdf_pages=small_pdf_pages, start_page=start_page, end_page=end_page)
     
     # Do the OCR
@@ -140,6 +142,13 @@ def compress_with_gs(input_file_path, output_file_path, power=3):
     logging.info("Final file size is {0:.1f}MB".format(final_size / 1000000))
     return ratio
 
+
+def detext_via_ps(input_file_path, output_file_path):
+    os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+    ps_path = input_file_path.replace(".pdf", ".ps")
+    subprocess.call(["pdf2ps", input_file_path, ps_path])
+    subprocess.call(["ps2pdf", ps_path, output_file_path])
+    
 
 def compress_with_pdfimages(input_file_path, output_file_path):
     image_directory = _get_ocr_dir(input_file_path)
