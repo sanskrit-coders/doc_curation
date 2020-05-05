@@ -42,7 +42,7 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_css_selec
     if title_css_selector is not None:
         try:
             title_element = browser.find_element_by_css_selector(title_css_selector)
-            title = title_element.text
+            title = title_element.text.strip()
         except NoSuchElementException:
             title = "UNKNOWN_TITLE"
         md_file = md_helper.MdFile(file_path=outfile_path)

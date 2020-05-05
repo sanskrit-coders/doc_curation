@@ -4,6 +4,7 @@ import logging
 import os
 
 from curation_utils import dir_helper
+from doc_curation import text_data
 from doc_curation.md_helper import MdFile
 from doc_curation.scraping import html
 
@@ -34,7 +35,10 @@ def dump_files():
     LINK_FILE_PATH = "/home/vvasuki/sanskrit-coders/doc_curation/curation_projects/tipiTikA/links.txt"
     with open(LINK_FILE_PATH) as linkfile:
         for line in linkfile.readlines():
-            get_file(outdir="/home/vvasuki/paali-bhaasaa/raw_etexts/tipiTaka", url=line)
+            get_file(outdir="/home/vvasuki/paali-bhaasaa/raw_etexts/tipiTaka", url=line.strip())
 
 
-MdFile.fix_index_files(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=True)
+# MdFile.fix_index_files(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=False)
+MdFile.fix_title_numbering_in_path(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=False)
+MdFile.fix_title_numbering_in_path(dir_path="/home/vvasuki/vvasuki-git/pALi/content/01_tipiTaka", dry_run=False)
+# text_data.clean_file_names(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=False)

@@ -29,7 +29,7 @@ class MdFile(object):
         if os.path.exists(self.file_path):
             with codecs.open(self.file_path, "r", 'utf-8') as file:
                 (yml, md) = yamldown.load(file)
-                logging.info((yml, md))
+                # logging.info((yml, md))
                 if yml is None: yml = {}
         return (yml, md)
     
@@ -61,6 +61,17 @@ class MdFile(object):
         if transliteration_target is not None:
             title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target)
         self.set_title(dry_run=dry_run, title=title)
+    
+    def fix_title_numbering(self, dry_run):
+        title = self.get_title()
+        if title is None:
+            return
+
+        import regex
+        new_title = regex.sub("(^[०-९][^०-९])", "०\\1", title)
+        if title != new_title:
+            logging.info("Changing '%s' to '%s'", title, new_title)
+            self.set_title(title=new_title, dry_run=dry_run)
     
     def dump_to_file(self, yml, md, dry_run):
         if not dry_run:
@@ -100,6 +111,15 @@ class MdFile(object):
         # logging.debug(list(Path(dir_path).glob(file_pattern)))
         md_file_paths = sorted(filter(file_name_filter, Path(dir_path).glob(file_pattern)))
         return [MdFile(path) for path in md_file_paths]
+
+    @classmethod
+    def fix_title_numbering_in_path(cls, dir_path, file_pattern="**/*.md",  dry_run=False):
+        from pathlib import Path
+        # logging.debug(list(Path(dir_path).glob(file_pattern)))
+        md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
+        for md_file in md_files:
+            md_file.fix_title_numbering(dry_run=dry_run)
+
 
     @classmethod
     def set_titles_from_filenames(cls, dir_path, transliteration_target, file_pattern="**/*.md", dry_run=False):

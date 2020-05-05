@@ -3,6 +3,8 @@ import logging
 import os
 
 # Remove all handlers associated with the root logger object.
+from pathlib import Path
+
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 logging.basicConfig(
@@ -42,3 +44,17 @@ def get_subunit_path_list(json_file, unit_path_list):
             for subsubunit_path in subsubunit_path_list:
                 subunit_path_list.append([subunit] + subsubunit_path)
     return subunit_path_list
+
+
+def clean_file_names(dir_path, dry_run=False):
+    paths = list(Path(dir_path).glob("**/*"))
+    logging.info("Got %d paths", len(paths))
+    for path in paths:
+        path = str(path)
+        # logging.debug("Checking '%s'", path)
+        import regex
+        dest_path = regex.sub("[^a-zA-Z0-9 _\\-~./]", "", path)
+        if path != dest_path:
+            logging.info("Changing '%s' to '%s'", path, dest_path)
+            if not dry_run:
+                os.rename(path, dest_path)
