@@ -108,8 +108,10 @@ class MdFile(object):
             md_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
 
     @classmethod
-    def fix_index_files(cls, dir_path, transliteration_target, dry_run=False):
-        dirs = set([os.path.dirname(path) for path in Path(dir_path).glob("**/*.md")])
+    def fix_index_files(cls, dir_path, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
+        # Get all non hidden directories.
+        dirs = [x[0] for x in os.walk(dir_path) if "/." not in x[0]]
+        # set([os.path.dirname(path) for path in Path(dir_path).glob("**/")])
         for dir in dirs:
             index_file = MdFile(file_path=os.path.join(dir, "_index.md"))
             index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)

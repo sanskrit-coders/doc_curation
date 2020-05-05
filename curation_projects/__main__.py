@@ -1,4 +1,13 @@
 from doc_curation.md_helper import MdFile
+import logging
+
+# Remove all handlers associated with the root logger object.
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
+
 
 # MdFile.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/sanskrit/shixaa/granthAH", dry_run=False)
 
