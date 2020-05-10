@@ -39,6 +39,6 @@ def dump_files():
 
 
 # MdFile.fix_index_files(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=False)
-MdFile.fix_title_numbering_in_path(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=False)
-MdFile.fix_title_numbering_in_path(dir_path="/home/vvasuki/vvasuki-git/pALi/content/01_tipiTaka", dry_run=False)
+# MdFile.fix_title_numbering_in_path(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=False)
+# MdFile.fix_title_numbering_in_path(dir_path="/home/vvasuki/vvasuki-git/pALi/content/01_tipiTaka", dry_run=False)
 # text_data.clean_file_names(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=False)
