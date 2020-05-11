@@ -72,7 +72,20 @@ class MdFile(object):
         if title != new_title:
             logging.info("Changing '%s' to '%s'", title, new_title)
             self.set_title(title=new_title, dry_run=dry_run)
-    
+
+    def dump_mediawiki(self, outpath=None, dry_run=False):
+        (yml, md) = self.read_md_file()
+        import pypandoc
+        output = pypandoc.convert_text(md, 'mediawiki', format='md')
+        if outpath is None:
+            outpath = self.file_path.replace(".md", ".wiki")
+        if not dry_run:
+            with codecs.open(outpath, "w", 'utf-8') as out_file_obj:
+                out_file_obj.write(output)
+        else:
+            logging.info(output)
+
+
     def dump_to_file(self, yml, md, dry_run):
         if not dry_run:
             with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:

@@ -1,0 +1,11 @@
+pikepdf
+selenium
+urllib3
+regex
+yamldown
+pandas
+requests
+lxml
+pytest
+pypandoc
+setuptools
