@@ -136,6 +136,7 @@ class MdFile(object):
 
 
     def dump_to_file(self, yml, md, dry_run):
+        logging.info(self.file_path)
         if not dry_run:
             os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
             with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
@@ -145,7 +146,6 @@ class MdFile(object):
                 out_file_obj.write(dump)
                 # out_file_obj.write(yamldown.dump(yml, md)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5
         else:
-            logging.info(self.file_path)
             logging.info(yml)
             # logging.info(md)
     
@@ -194,13 +194,13 @@ class MdFile(object):
         
         remainder_file_path = os.path.join(out_dir, "_index.md")
         md = "\n".join(lines_till_section)
+        if not yml["title"].startswith("+"):
+            yml["title"] = "+" + yml["title"] 
+        MdFile(file_path=remainder_file_path).dump_to_file(yml=yml, md=md, dry_run=dry_run)
         if str(self.file_path) != str(remainder_file_path):
             logging.info("Removing %s as %s is different ", self.file_path, remainder_file_path)
             if not dry_run:
                 os.remove(path=self.file_path)
-        if not yml["title"].startswith("+"):
-            yml["title"] = "+" + yml["title"] 
-        MdFile(file_path=remainder_file_path).dump_to_file(yml=yml, md=md, dry_run=dry_run)
 
     @classmethod
     def get_md_files_from_path(cls, dir_path, file_pattern, file_name_filter=None):
