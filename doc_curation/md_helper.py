@@ -25,25 +25,34 @@ def get_lines_till_section(lines_in):
     return (peekable(lines_till_section), peekable(remaining))
 
 
+def reduce_section_depth(lines_in):
+    for line in lines_in:
+        if line.startswith("#"):
+            yield line[1:]
+        else:
+            yield line
+
+
 def get_section(lines_in):
     lines = list(lines_in)
     if not lines[0].startswith("#"):
         return lines_in
     header_prefix = lines[0].split()[0] + " "
-    lines_in_section = lines[0:1]
+    title = get_section_title(lines[0])
+    lines_in_section = []
     remaining = []
     if len(lines) > 1:
-        lines_in_section.extend(itertools.takewhile(lambda line: not line.startswith(header_prefix), lines[1:]))
+        lines_in_section = itertools.takewhile(lambda line: not line.startswith(header_prefix), lines[1:])
         remaining = itertools.dropwhile(lambda line: not line.startswith(header_prefix), lines[1:])
-    return (peekable(lines_in_section), peekable(remaining))
+    return (title, peekable(lines_in_section), peekable(remaining))
 
 
 def split_to_sections(lines_in):
     remaining = peekable(lines_in)
     sections = []
     while(remaining):
-        (lines_in_section, remaining) = get_section(remaining)
-        sections.append(lines_in_section)
+        (title, lines_in_section, remaining) = get_section(remaining)
+        sections.append((title, lines_in_section))
     return sections
 
 
@@ -52,7 +61,8 @@ def get_section_title(title_line):
     if len(splits) == 1:
         return None
     title = " ".join(splits[1:])
-    return title
+    title = regex.sub("\\s+", " ", title)
+    return title.strip()
 
 
 class MdFile(object):
@@ -157,7 +167,7 @@ class MdFile(object):
         md = regex.sub(pattern=pattern, repl=replacement, string=md)
         self.dump_to_file(yml=yml, md=md, dry_run=dry_run)
 
-    def split_to_bits(self):
+    def split_to_bits(self, source_script = sanscript.DEVANAGARI, dry_run=False):
         """
         
         Implementation notes: md parsers oft convert to html or json. Processing that output would be more complicated than what we need here.
@@ -165,12 +175,17 @@ class MdFile(object):
         """
         (yml, md) = self.read_md_file()
         lines = md.splitlines(keepends=False)
-        import itertools
-        md_lines = itertools.takewhile(lambda line: not line.startswith("#"), lines)
-        lines = list(itertools.dropwhile(lambda line: not line.startswith("#"), lines))
-        md = "\n".join(md_lines)
-        
-        # TODO: incomplete
+        (lines_till_section, remaining) = get_lines_till_section(lines)
+        sections = split_to_sections(remaining)
+        for (title, section_lines) in sections:
+            file_name = regex.sub("[ .]", "_", sanscript.transliterate(title, source_script, sanscript.OPTITRANS)) + ".md"
+            file_path = os.path.join(os.path.dirname(self.file_path), file_name)
+            section_yml = {"title": title}
+            section_md = "\n".join(reduce_section_depth(section_lines))
+            md_file = MdFile(file_path=file_path)
+            md_file.dump_to_file(yml = section_yml, md=section_md, dry_run=dry_run)
+        md = "\n".join(lines_till_section)
+        self.dump_to_file(yml=yml, md=md, dry_run=dry_run)
 
     @classmethod
     def get_md_files_from_path(cls, dir_path, file_pattern, file_name_filter=None):
