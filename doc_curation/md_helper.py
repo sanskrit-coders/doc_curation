@@ -3,6 +3,8 @@ import logging
 import os
 from pathlib import Path
 from typing import Tuple, Dict
+import itertools
+from more_itertools import peekable
 
 import regex
 import yamldown
@@ -14,6 +16,43 @@ for handler in logging.root.handlers[:]:
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
+
+
+def get_lines_till_section(lines_in):
+    lines = list(lines_in)
+    lines_till_section = itertools.takewhile(lambda line: not line.startswith("#"), lines)
+    remaining = itertools.dropwhile(lambda line: not line.startswith("#"), lines)
+    return (peekable(lines_till_section), peekable(remaining))
+
+
+def get_section(lines_in):
+    lines = list(lines_in)
+    if not lines[0].startswith("#"):
+        return lines_in
+    header_prefix = lines[0].split()[0] + " "
+    lines_in_section = lines[0:1]
+    remaining = []
+    if len(lines) > 1:
+        lines_in_section.extend(itertools.takewhile(lambda line: not line.startswith(header_prefix), lines[1:]))
+        remaining = itertools.dropwhile(lambda line: not line.startswith(header_prefix), lines[1:])
+    return (peekable(lines_in_section), peekable(remaining))
+
+
+def split_to_sections(lines_in):
+    remaining = peekable(lines_in)
+    sections = []
+    while(remaining):
+        (lines_in_section, remaining) = get_section(remaining)
+        sections.append(lines_in_section)
+    return sections
+
+
+def get_section_title(title_line):
+    splits = title_line.split()
+    if len(splits) == 1:
+        return None
+    title = " ".join(splits[1:])
+    return title
 
 
 class MdFile(object):
@@ -118,6 +157,21 @@ class MdFile(object):
         md = regex.sub(pattern=pattern, repl=replacement, string=md)
         self.dump_to_file(yml=yml, md=md, dry_run=dry_run)
 
+    def split_to_bits(self):
+        """
+        
+        Implementation notes: md parsers oft convert to html or json. Processing that output would be more complicated than what we need here.
+        :return: 
+        """
+        (yml, md) = self.read_md_file()
+        lines = md.splitlines(keepends=False)
+        import itertools
+        md_lines = itertools.takewhile(lambda line: not line.startswith("#"), lines)
+        lines = list(itertools.dropwhile(lambda line: not line.startswith("#"), lines))
+        md = "\n".join(md_lines)
+        
+        # TODO: incomplete
+
     @classmethod
     def get_md_files_from_path(cls, dir_path, file_pattern, file_name_filter=None):
         from pathlib import Path
@@ -148,6 +202,7 @@ class MdFile(object):
         for dir in dirs:
             index_file = MdFile(file_path=os.path.join(dir, "_index.md"))
             index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
+
 
     @classmethod
     def devanaagarify_titles(cls, md_files, dry_run=False):
