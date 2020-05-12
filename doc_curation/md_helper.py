@@ -18,6 +18,7 @@ logging.basicConfig(
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
+
 def get_lines_till_section(lines_in):
     lines = list(lines_in)
     lines_till_section = itertools.takewhile(lambda line: not line.startswith("#"), lines)
@@ -61,6 +62,7 @@ def get_section_title(title_line):
     if len(splits) == 1:
         return None
     title = " ".join(splits[1:])
+    title = regex.sub("[।॥. ]+", " ", title)
     title = regex.sub("\\s+", " ", title)
     return title.strip()
 
@@ -71,6 +73,7 @@ class MdFile(object):
 
     def __str__(self):
         return self.file_path
+
 
     def read_md_file(self) -> Tuple[Dict, str]:
         yml = {}
@@ -174,6 +177,7 @@ class MdFile(object):
         Implementation notes: md parsers oft convert to html or json. Processing that output would be more complicated than what we need here.
         :return: 
         """
+        logging.debug("Processing file: %s", self.file_path)
         if os.path.basename(self.file_path) == "_index.md":
             out_dir = os.path.dirname(self.file_path)
         else:
@@ -194,6 +198,7 @@ class MdFile(object):
         
         remainder_file_path = os.path.join(out_dir, "_index.md")
         md = "\n".join(lines_till_section)
+        logging.debug(yml)
         if not yml["title"].startswith("+"):
             yml["title"] = "+" + yml["title"] 
         MdFile(file_path=remainder_file_path).dump_to_file(yml=yml, md=md, dry_run=dry_run)

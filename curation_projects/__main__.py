@@ -1,3 +1,4 @@
+from doc_curation import md_helper
 from doc_curation.md_helper import MdFile
 import logging
 
@@ -15,4 +16,5 @@ logging.basicConfig(
 
 # MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/mImAMsA/pUrvA/granthAH/tantravArtikam/1_2.md").split_to_bits(dry_run=True)
 
-MdFile.split_all_to_bits(dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/mImAMsA/pUrvA/granthAH/tantravArtikam/", dry_run=False)
+# md_helper.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/kAvyam/stotram/stotrArNavaH.md", dry_run=False)
+MdFile.split_all_to_bits(dir_path="/home/vvasuki/sanskrit/raw_etexts/kAvyam/stotram/", dry_run=False)

@@ -10,6 +10,7 @@ import shutil
 from pikepdf import Pdf
 from pathlib import Path
 
+import doc_curation
 from curation_utils import list_helper, file_helper
 
 # Remove all handlers associated with the root logger object.
@@ -66,6 +67,7 @@ def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/
     # Combine the ocr segments
     final_ocr_path = pdf_path + ".txt"
     file_helper.concatenate_files(input_path_list=ocr_segments, output_path=final_ocr_path)
+    doc_curation.clear_bad_chars(file_path=final_ocr_path)
 
 
 def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_page=None, small_pdf_pages=25):
