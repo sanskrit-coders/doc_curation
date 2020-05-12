@@ -137,6 +137,7 @@ class MdFile(object):
 
     def dump_to_file(self, yml, md, dry_run):
         if not dry_run:
+            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
             with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
                 import yaml
                 yamlout = yaml.dump(yml, default_flow_style=False, indent=2, allow_unicode=True)
@@ -167,25 +168,39 @@ class MdFile(object):
         md = regex.sub(pattern=pattern, repl=replacement, string=md)
         self.dump_to_file(yml=yml, md=md, dry_run=dry_run)
 
-    def split_to_bits(self, source_script = sanscript.DEVANAGARI, dry_run=False):
+    def split_to_bits(self, source_script = sanscript.DEVANAGARI, indexed_title_pattern="%02d %s", dry_run=False):
         """
         
         Implementation notes: md parsers oft convert to html or json. Processing that output would be more complicated than what we need here.
         :return: 
         """
+        if os.path.basename(self.file_path) == "_index.md":
+            out_dir = os.path.dirname(self.file_path)
+        else:
+            out_dir = os.path.join(os.path.dirname(self.file_path), os.path.basename(self.file_path).replace(".md", ""))
         (yml, md) = self.read_md_file()
         lines = md.splitlines(keepends=False)
         (lines_till_section, remaining) = get_lines_till_section(lines)
         sections = split_to_sections(remaining)
-        for (title, section_lines) in sections:
+        for section_index, (title, section_lines) in enumerate(sections):
+            if indexed_title_pattern is not None:
+                title = indexed_title_pattern % (section_index + 1, title)
             file_name = regex.sub("[ .]", "_", sanscript.transliterate(title, source_script, sanscript.OPTITRANS)) + ".md"
-            file_path = os.path.join(os.path.dirname(self.file_path), file_name)
+            file_path = os.path.join(out_dir, file_name)
             section_yml = {"title": title}
             section_md = "\n".join(reduce_section_depth(section_lines))
             md_file = MdFile(file_path=file_path)
             md_file.dump_to_file(yml = section_yml, md=section_md, dry_run=dry_run)
+        
+        remainder_file_path = os.path.join(out_dir, "_index.md")
         md = "\n".join(lines_till_section)
-        self.dump_to_file(yml=yml, md=md, dry_run=dry_run)
+        if str(self.file_path) != str(remainder_file_path):
+            logging.info("Removing %s as %s is different ", self.file_path, remainder_file_path)
+            if not dry_run:
+                os.remove(path=self.file_path)
+        if not yml["title"].startswith("+"):
+            yml["title"] = "+" + yml["title"] 
+        MdFile(file_path=remainder_file_path).dump_to_file(yml=yml, md=md, dry_run=dry_run)
 
     @classmethod
     def get_md_files_from_path(cls, dir_path, file_pattern, file_name_filter=None):
@@ -245,3 +260,15 @@ class MdFile(object):
                 title = doc_data.get_value(adhyaaya_id, column_name=title_column)
                 if title != None:
                     md_file.set_title(title=title, dry_run=dry_run)
+
+    @classmethod
+    def split_all_to_bits(cls, dir_path, file_pattern="*.md", dry_run=False):
+        """
+        
+        :param dir_path: 
+        :param file_pattern: For recursive splitting, use "**/*.md"
+        :param dry_run: 
+        :return: 
+        """
+        for md_file in MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern):
+            md_file.split_to_bits(dry_run=dry_run)
