@@ -25,6 +25,12 @@ def _get_ocr_dir(pdf_path):
     return os.path.join(os.path.dirname(pdf_path), Path(pdf_path).stem + "_splits")
 
 
+def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf"):
+    file_paths = sorted(Path(dir_path).glob(file_pattern))
+    for file_path in file_paths:
+        split_and_ocr_on_drive(pdf_path=str(file_path), small_pdf_pages=small_pdf_pages)
+
+
 def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json', 
         small_pdf_pages=25, start_page=1, end_page=None, pdf_compression_power=0):
     """
@@ -46,6 +52,10 @@ def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/
     :param pdf_compression_power: 0,1,2,3,4
     :return: 
     """
+    final_ocr_path = pdf_path + ".txt"
+    if os.path.exists(final_ocr_path):
+        logging.warning("Skipping %s: %s exists", pdf_path, final_ocr_path)
+        return 
     compressed_pdf_path = pdf_path.replace(".pdf", "_tiny.pdf")
     if pdf_compression_power == 0:
         compressed_pdf_path = pdf_path
@@ -65,7 +75,6 @@ def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/
         os.remove(pdf_segment)
     
     # Combine the ocr segments
-    final_ocr_path = pdf_path + ".txt"
     file_helper.concatenate_files(input_path_list=ocr_segments, output_path=final_ocr_path)
     doc_curation.clear_bad_chars(file_path=final_ocr_path)
 

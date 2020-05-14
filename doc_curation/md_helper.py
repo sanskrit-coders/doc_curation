@@ -188,7 +188,7 @@ class MdFile(object):
         sections = split_to_sections(remaining)
         for section_index, (title, section_lines) in enumerate(sections):
             if indexed_title_pattern is not None:
-                title = indexed_title_pattern % (section_index + 1, title)
+                title = sanscript.transliterate(indexed_title_pattern % (section_index + 1, title), sanscript.OPTITRANS, source_script)
             file_name = regex.sub("[ .]", "_", sanscript.transliterate(title, source_script, sanscript.OPTITRANS)) + ".md"
             file_path = os.path.join(out_dir, file_name)
             section_yml = {"title": title}
