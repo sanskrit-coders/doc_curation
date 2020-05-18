@@ -43,7 +43,7 @@ def dump_text(init_url, out_path, overwrite=True):
         browser.get(url=url)
         next_url = browser.find_elements_by_css_selector(css_selector="td.utf>a")[-1].get_attribute("href")
         if next_url == url:
-            logging.info("Finished.")
+            logging.info("Finished %s.", out_path)
             return ("", None)
         text = browser.find_elements_by_css_selector(css_selector="td.utf+td.utf")[-2].text
         text = sanscript.transliterate(data=text, _from=sanscript.IAST, _to=sanscript.DEVANAGARI)
@@ -55,6 +55,7 @@ def dump_text(init_url, out_path, overwrite=True):
     with codecs.open(out_path, "w", 'utf-8') as file_out:
         while next_url is not None:
             (text, next_url) = get_text_and_url(url=next_url)
-            logging.debug(text)
+            # logging.debug(text)
+            print(".")
             file_out.write(text + "  \n")
 
