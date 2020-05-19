@@ -30,7 +30,7 @@ def dump_text(url, out_path, overwrite=True):
     browser.get(url)
     text_elements = browser.find_elements_by_css_selector("div.sam")
     if len(text_elements) == 0:
-        text_elements = [browser.find_elements_by_css_selector("table")[1]]
+        text_elements = [browser.find_elements_by_css_selector("table")[-1]]
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with codecs.open(out_path, "w", 'utf-8') as file_out:
         for text_element in text_elements:
@@ -41,9 +41,18 @@ def dump_text(url, out_path, overwrite=True):
 def dump_book(init_url, out_path, overwrite=True):
     logging.info("Dumping %s to %s", init_url, out_path)
     browser.get(init_url)
-    book_part_links = browser.find_elements_by_css_selector(css_selector="div.adLinks a")
+    
+    divs = browser.find_elements_by_css_selector(css_selector="div")
+    divs = [div for div in divs if 
+            (div.get_attribute("class") and "Links" in div.get_attribute("class")) or 
+            (div.get_attribute("id") and "left" in div.get_attribute("id"))]
+    
+    book_part_links = []
+    for div in divs:
+        book_part_links.extend(div.find_elements_by_css_selector("a"))
+
     if len(book_part_links) == 0:
-        book_part_links = browser.find_elements_by_css_selector(css_selector="div.suktaLinks a")
+        logging.error("Could not get book part links!")
     part_urls = [part.get_attribute("href") for part in book_part_links]
     for url in part_urls:
         file_name = url.split("/")[-1].split(".")[0] + ".md"
