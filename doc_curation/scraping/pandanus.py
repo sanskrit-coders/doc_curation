@@ -8,7 +8,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome import options
 from selenium.webdriver.remote.remote_connection import LOGGER
 
-from doc_curation import scraping
+from curation_utils import scraping
 
 LOGGER.setLevel(logging.WARNING)
 from urllib3.connectionpool import log as urllibLogger
@@ -19,7 +19,7 @@ logging.basicConfig(
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
-browser = scraping.get_browser(headless=False)
+browser = scraping.get_selenium_browser(headless=False)
 
 
 def rewind(init_url):

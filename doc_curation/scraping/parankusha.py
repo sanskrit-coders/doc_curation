@@ -3,7 +3,7 @@ import logging
 import os
 
 
-from doc_curation import scraping
+from curation_utils import scraping
 
 
 logging.basicConfig(
@@ -19,7 +19,7 @@ configuration_parankusha = configuration['parankusha']
 
 def get_logged_in_browser(headless=True):
     """Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen """
-    browser = scraping.get_browser(headless=headless)
+    browser = scraping.get_selenium_browser(headless=headless)
     browser.get("http://parankusan.cloudapp.net/Integrated/Texts.aspx")
     username = browser.find_element_by_id("txtUserName")
     username.send_keys(configuration_parankusha["user"])
