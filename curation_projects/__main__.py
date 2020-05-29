@@ -18,4 +18,4 @@ logging.basicConfig(
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
 # MdFile(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/nyAya-mAlA-vistaraH.md").split_to_bits(dry_run=False)
 
-MdFile.split_all_to_bits(dir_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/nyAya-mAlA-vistaraH/", dry_run=False)
+MdFile.split_all_to_bits(dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/mantraH/sangrahAH/taittirIyA/saMhitA/1", dry_run=False)
