@@ -6,6 +6,7 @@ import errno
 import logging
 import os
 import shutil
+import time
 
 from pikepdf import Pdf
 from pathlib import Path
@@ -73,6 +74,7 @@ def split_and_ocr_on_drive(pdf_path, google_key='/home/vvasuki/sysconf/kunchikA/
     for pdf_segment in sorted(pdf_segments):
         drive_client.ocr_file(local_file_path=str(pdf_segment))
         os.remove(pdf_segment)
+        time.sleep(1)
     
     # Combine the ocr segments
     file_helper.concatenate_files(input_path_list=ocr_segments, output_path=final_ocr_path)
