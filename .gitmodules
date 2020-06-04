@@ -1,3 +1,3 @@
 [submodule "doc_curation/tei_xsl"]
 	path = doc_curation/tei_xsl
-	url = git@github.com:vvasuki/Stylesheets.git
+	url = https://github.com/sanskrit-coders/Stylesheets.git
