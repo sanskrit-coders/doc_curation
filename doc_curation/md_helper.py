@@ -11,6 +11,8 @@ import yamldown
 from indic_transliteration import sanscript
 
 # Remove all handlers associated with the root logger object.
+import curation_utils.file_helper
+
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 logging.basicConfig(
@@ -91,6 +93,7 @@ class MdFile(object):
         title = yml.get("title", None)
         if omit_chapter_id and title is not None:
             title = regex.sub("^[+०-९]+ +", "", title)
+        title = regex.sub("^[+]+", "", title)
         return title
     
     
@@ -113,7 +116,31 @@ class MdFile(object):
         if transliteration_target is not None:
             title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target)
         self.set_title(dry_run=dry_run, title=title)
-    
+
+    def set_filename_from_title(self, transliteration_source, dry_run):
+        # logging.debug(self.file_path)
+        title = self.get_title(omit_chapter_id=False)
+        if transliteration_source is not None:
+            title = sanscript.transliterate(data=title, _from=transliteration_source, _to=sanscript.OPTITRANS)
+        if os.path.basename(self.file_path) == "_index.md":
+            current_path = os.path.dirname(self.file_path)
+            extension = ""
+        else:
+            current_path = self.file_path
+            extension = ".md"
+        file_name = title.strip()
+        file_name = regex.sub("[ _.]+", "_", file_name)
+        file_name = regex.sub("-+", "-", file_name)
+        file_name = file_name + extension
+        file_name = curation_utils.file_helper.clean_file_path(file_name)
+        file_path = os.path.join(os.path.dirname(current_path), file_name)
+        if current_path != file_path:
+            logging.info("Renaming %s to %s", current_path, file_path)
+            if not dry_run:
+                os.rename(src=current_path, dst=file_path)
+        self.file_path = file_path
+
+
     def fix_title_numbering(self, dry_run):
         title = self.get_title()
         if title is None:
@@ -228,6 +255,13 @@ class MdFile(object):
         md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
         for md_file in md_files:
             md_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
+
+    @classmethod
+    def set_filenames_from_titles(cls, dir_path, transliteration_source, file_pattern="**/*.md", file_name_filter=None, dry_run=False):
+        md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern, file_name_filter=file_name_filter)
+        for md_file in md_files:
+            md_file.set_filename_from_title(transliteration_source=transliteration_source, dry_run=dry_run)
+
 
     @classmethod
     def fix_index_files(cls, dir_path, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
