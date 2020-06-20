@@ -117,6 +117,27 @@ class MdFile(object):
             title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target)
         self.set_title(dry_run=dry_run, title=title)
 
+    def ensure_ordinal_in_title(self, transliteration_target, dry_run):
+        title = self.get_title(omit_chapter_id=False)
+        if regex.fullmatch("[+०-९0-9].+", title):
+            return 
+        if os.path.basename(self.file_path) == "_index.md":
+            if str(self.file_path).endswith("content/_index.md"):
+                return 
+            files = os.listdir(os.path.dirname(os.path.dirname(self.file_path)))
+        else:
+            files = os.listdir(os.path.dirname(self.file_path))
+        if "_index.md" in files:
+            files.remove("_index.md")
+        files.sort()
+        index = files.index(os.path.basename(self.file_path))
+        format = "%%0%dd" % (len(str(len(files))))
+        index = format % index
+        if transliteration_target:
+            index = sanscript.transliterate(index, sanscript.OPTITRANS, transliteration_target)
+        title = "%s %s" % (index, title)
+        self.set_title(title=title, dry_run=dry_run) 
+
     def set_filename_from_title(self, transliteration_source, dry_run):
         # logging.debug(self.file_path)
         title = self.get_title(omit_chapter_id=False)
@@ -242,12 +263,12 @@ class MdFile(object):
         return [MdFile(path) for path in md_file_paths]
 
     @classmethod
-    def fix_title_numbering_in_path(cls, dir_path, file_pattern="**/*.md",  dry_run=False):
+    def apply_function(cls, fn, dir_path, file_pattern="**/*.md",  file_name_filter=None, *args,**kwargs):
         from pathlib import Path
         # logging.debug(list(Path(dir_path).glob(file_pattern)))
-        md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
+        md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern, file_name_filter=file_name_filter)
         for md_file in md_files:
-            md_file.fix_title_numbering(dry_run=dry_run)
+            fn(md_file, *args, **kwargs)
 
 
     @classmethod
