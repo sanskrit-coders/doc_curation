@@ -22,8 +22,8 @@ def reformat_audio_tag():
         (kaanda, adhyaaya) = raamaayana.get_kaanda_adhyaaya(md_file)
         adhyaaya_id = "%s-%s" % (kaanda, adhyaaya)
         logging.debug(adhyaaya_id)
-        (yml, current_content) = md_file.read_md_file()
+        (yml, current_content) = md_file._read_yml_md_file()
         audio_tag = regex.findall("<div class.*div>", current_content.replace("\n", " "))[0]
-        (_, target_content) = adhyaaya_to_source_file_map[adhyaaya_id].read_md_file()
+        (_, target_content) = adhyaaya_to_source_file_map[adhyaaya_id]._read_yml_md_file()
         # logging.debug(adhyaaya_to_source_file_map[adhyaaya_id])
         md_file.replace_content("%s\n\n%s" % (audio_tag, target_content), dry_run=False)

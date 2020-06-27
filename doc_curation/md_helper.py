@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from typing import Tuple, Dict
 import itertools
+
+import toml
 from more_itertools import peekable
 
 import regex
@@ -70,14 +72,15 @@ def get_section_title(title_line):
 
 
 class MdFile(object):
-    def __init__(self, file_path):
+    def __init__(self, file_path, frontmatter_type="yaml"):
         self.file_path = file_path
+        self.frontmatter_type = frontmatter_type
 
     def __str__(self):
         return self.file_path
 
 
-    def read_md_file(self) -> Tuple[Dict, str]:
+    def _read_yml_md_file(self) -> Tuple[Dict, str]:
         yml = {}
         md = ""
         if os.path.exists(self.file_path):
@@ -86,8 +89,32 @@ class MdFile(object):
                 # logging.info((yml, md))
                 if yml is None: yml = {}
         return (yml, md)
-    
-    
+
+
+    def _read_toml_md_file(self) -> Tuple[Dict, str]:
+        yml = {}
+        md = ""
+        if os.path.exists(self.file_path):
+            with codecs.open(self.file_path, "r", 'utf-8') as file:
+                lines = file.readlines()
+                assert lines[0].strip() == "+++"
+                toml_lines = itertools.takewhile(lambda x: x!= "+++", lines[1:])
+                yml = toml.loads("\n".join(toml_lines))
+                md_lines = itertools.dropwhile(lambda x: x!= "+++", lines[1:])
+                md = "\n".join(md_lines[1:])
+                (yml, md) = yamldown.load(file)
+                # logging.info((yml, md))
+                if yml is None: yml = {}
+        return (yml, md)
+
+
+    def read_md_file(self) -> Tuple[Dict, str]:
+        if self.frontmatter_type == "yaml":
+            self._read_yml_md_file()
+        elif self.frontmatter_type == "toml":
+            self._read_toml_md_file()
+
+
     def get_title(self, omit_chapter_id=True):
         (yml, md) = self.read_md_file()
         title = yml.get("title", None)
@@ -186,7 +213,7 @@ class MdFile(object):
             logging.info(output)
 
 
-    def dump_to_file(self, yml, md, dry_run):
+    def _dump_to_file_yamlmd(self, yml, md, dry_run):
         logging.info(self.file_path)
         if not dry_run:
             os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
@@ -199,7 +226,27 @@ class MdFile(object):
         else:
             logging.info(yml)
             # logging.info(md)
-    
+
+    def _dump_to_file_tomlmd(self, yml, md, dry_run):
+        logging.info(self.file_path)
+        if not dry_run:
+            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+            with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
+                import toml
+                tomlout = toml.dumps(yml)
+                dump = "+++\n{frontmatter}\n+++\n{markdown}".format(frontmatter=tomlout, markdown=md)
+                out_file_obj.write(dump)
+                # out_file_obj.write(yamldown.dump(yml, md)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5
+        else:
+            logging.info(yml)
+            # logging.info(md)
+
+    def dump_to_file(self, yml, md, dry_run):
+        if self.frontmatter_type == "yaml":
+            self._dump_to_file_yamlmd(yml, md, dry_run)
+        elif self.frontmatter_type == "toml":
+            self._dump_to_file_tomlmd(yml, md, dry_run)
+
     def set_title(self, title, dry_run):
         yml, md = self.read_md_file()
         yml["title"] = title

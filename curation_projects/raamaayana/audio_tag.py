@@ -36,6 +36,6 @@ if __name__ == '__main__':
         (kaanda, adhyaaya) = raamaayana.get_kaanda_adhyaaya(md_file)
         adhyaaya_id = "%s-%s" % (kaanda, adhyaaya)
         logging.debug(adhyaaya_id)
-        (yml, _) = md_file.read_md_file()
+        (yml, _) = md_file._read_yml_md_file()
         # logging.debug(adhyaaya_to_mp3_map[adhyaaya_id])
         md_file.prepend_to_content('<div class="audioEmbed"  caption="श्रीराम-हरिसीताराममूर्ति-घनपाठिभ्यां वचनम्" src="%s"></div>\n' % adhyaaya_to_mp3_map[adhyaaya_id], dry_run=False)
