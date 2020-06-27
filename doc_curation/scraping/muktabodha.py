@@ -63,16 +63,19 @@ def get_front_matter(html):
             frontmatter[tag] = values[0]
         else:
             frontmatter[tag] = values
-    frontmatter.pop('Notes')
-    frontmatter.pop('E-text')
-    frontmatter["title_iast"] = get_title(frontmatter["Main title"])
+    if 'Notes' in frontmatter:
+        frontmatter.pop('Notes')
+    if 'E-text' in frontmatter:
+        frontmatter.pop('E-text')
+    frontmatter["title_iast"] = get_title(frontmatter["Uniform title"])
     if "Author" in frontmatter:
-        frontmatter["author_iast"] = get_title(frontmatter["Author"])
+        frontmatter["author_iast"] = get_author(frontmatter["Author"][0])
     frontmatter["title"] = sanscript.transliterate(data=frontmatter["title_iast"], _from=sanscript.IAST, _to=sanscript.DEVANAGARI)
     return frontmatter
 
 
 def process_catalog_page_selenium(url, out_dir):
+    logging.info("Processing catalog %s", url)
     browser.get(url=url)
     text_links = browser.find_elements_by_link_text("View in Unicode transliteration")
     if len(text_links) == 0:
