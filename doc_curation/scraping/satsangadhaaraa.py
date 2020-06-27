@@ -1,11 +1,7 @@
 import codecs
-import json
 import logging
 import os
 
-from indic_transliteration import sanscript
-from selenium import webdriver
-from selenium.webdriver.chrome import options
 from selenium.webdriver.remote.remote_connection import LOGGER
 
 from curation_utils import scraping

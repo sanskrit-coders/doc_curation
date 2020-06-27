@@ -15,5 +15,5 @@ def get_from_archive(item_id):
 
 
 if __name__ == '__main__':
-    pdf.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/kalpaH/mantras_between_fire_and_water_bali_staal_meij.pdf", small_pdf_pages=10, start_page=101)
+    pdf.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/nyAyaH/nyAya_siddhAnta_muktAvaliH_2_Tika.pdf", small_pdf_pages=10, start_page=1)
     # pdf.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/koshaH/raghuvIra-lokeshachandra", small_pdf_pages=10)
