@@ -9,6 +9,7 @@ def devanagarify(src_dir, dest_dir):
         filename = gretil.get_filename(file_path)
         dest_file = os.path.join(dest_dir, os.path.dirname(file_path).replace(src_dir, ""), filename)
         gretil.dump_devanaagarii(source_html=file_path, dest_file=dest_file)
+        # exit()
 
 
 if __name__ == '__main__':

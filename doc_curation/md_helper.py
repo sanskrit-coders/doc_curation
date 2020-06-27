@@ -320,15 +320,11 @@ class MdFile(object):
 
     @classmethod
     def set_titles_from_filenames(cls, dir_path, transliteration_target, file_pattern="**/*.md", dry_run=False):
-        md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
-        for md_file in md_files:
-            md_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
+        cls.apply_function(fn=MdFile.set_title_from_filename, dir_path=dir_path, file_pattern=file_pattern, transliteration_target=transliteration_target, dry_run=dry_run)
 
     @classmethod
     def set_filenames_from_titles(cls, dir_path, transliteration_source, file_pattern="**/*.md", file_name_filter=None, dry_run=False):
-        md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern, file_name_filter=file_name_filter)
-        for md_file in md_files:
-            md_file.set_filename_from_title(transliteration_source=transliteration_source, dry_run=dry_run)
+        cls.apply_function(fn=MdFile.set_filename_from_title, dir_path=dir_path, file_pattern=file_pattern, transliteration_source=transliteration_source, dry_run=dry_run, file_name_filter=file_name_filter)
 
 
     @classmethod
@@ -370,12 +366,4 @@ class MdFile(object):
 
     @classmethod
     def split_all_to_bits(cls, dir_path, file_pattern="*.md", dry_run=False):
-        """
-        
-        :param dir_path: 
-        :param file_pattern: For recursive splitting, use "**/*.md"
-        :param dry_run: 
-        :return: 
-        """
-        for md_file in MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern):
-            md_file.split_to_bits(dry_run=dry_run)
+        cls.apply_function(fn=MdFile.split_to_bits, dir_path=dir_path, file_pattern=file_pattern, dry_run=dry_run)
