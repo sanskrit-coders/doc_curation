@@ -241,30 +241,30 @@ class MdFile(object):
             logging.info(yml)
             # logging.info(md)
 
-    def dump_to_file(self, yml, md, dry_run):
+    def dump_to_file(self, metadata, md, dry_run):
         if self.frontmatter_type == "yaml":
-            self._dump_to_file_yamlmd(yml, md, dry_run)
+            self._dump_to_file_yamlmd(metadata, md, dry_run)
         elif self.frontmatter_type == "toml":
-            self._dump_to_file_tomlmd(yml, md, dry_run)
+            self._dump_to_file_tomlmd(metadata, md, dry_run)
 
     def set_title(self, title, dry_run):
         yml, md = self.read_md_file()
         yml["title"] = title
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-        self.dump_to_file(yml=yml, md=md, dry_run=dry_run)
+        self.dump_to_file(metadata=yml, md=md, dry_run=dry_run)
 
     def prepend_to_content(self, prefix_text, dry_run=True):
         (yml, md) = self.read_md_file()
-        self.dump_to_file(yml=yml, md=prefix_text + md, dry_run=dry_run)
+        self.dump_to_file(metadata=yml, md=prefix_text + md, dry_run=dry_run)
 
     def replace_content(self, new_content, dry_run=True):
         (yml, _) = self.read_md_file()
-        self.dump_to_file(yml=yml, md=new_content, dry_run=dry_run)
+        self.dump_to_file(metadata=yml, md=new_content, dry_run=dry_run)
 
     def replace_in_content(self, pattern, replacement, dry_run=True):
         (yml, md) = self.read_md_file()
         md = regex.sub(pattern=pattern, repl=replacement, string=md)
-        self.dump_to_file(yml=yml, md=md, dry_run=dry_run)
+        self.dump_to_file(metadata=yml, md=md, dry_run=dry_run)
 
     def split_to_bits(self, source_script = sanscript.DEVANAGARI, indexed_title_pattern="%02d %s", dry_run=False):
         """
@@ -289,14 +289,14 @@ class MdFile(object):
             section_yml = {"title": title}
             section_md = "\n".join(reduce_section_depth(section_lines))
             md_file = MdFile(file_path=file_path)
-            md_file.dump_to_file(yml = section_yml, md=section_md, dry_run=dry_run)
+            md_file.dump_to_file(metadata= section_yml, md=section_md, dry_run=dry_run)
         
         remainder_file_path = os.path.join(out_dir, "_index.md")
         md = "\n".join(lines_till_section)
         logging.debug(yml)
         if not yml["title"].startswith("+"):
             yml["title"] = "+" + yml["title"] 
-        MdFile(file_path=remainder_file_path).dump_to_file(yml=yml, md=md, dry_run=dry_run)
+        MdFile(file_path=remainder_file_path).dump_to_file(metadata=yml, md=md, dry_run=dry_run)
         if str(self.file_path) != str(remainder_file_path):
             logging.info("Removing %s as %s is different ", self.file_path, remainder_file_path)
             if not dry_run:

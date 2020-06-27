@@ -86,7 +86,7 @@ def process_catalog_page_selenium(url, out_dir):
     metadata = get_front_matter(catalog_body.get_attribute('innerHTML'))
     logging.info(metadata)
 
-    dest_file_path = get_file_path(out_dir=out_dir, title_iast=metadata["title_iast"], author_iast=metadata.get("author_iast", ""), catalog_number=metadata.get("Catalog number"))
+    dest_file_path = get_file_path(out_dir=out_dir, title_iast=metadata["title_iast"], author_iast=metadata.get("author_iast", ""), catalog_number=metadata.get("Catalog number", ""))
     if os.path.exists(dest_file_path):
         logging.warning("Skipping %s - already exists.", dest_file_path)
 
@@ -94,7 +94,7 @@ def process_catalog_page_selenium(url, out_dir):
     file = MdFile(file_path=dest_file_path, frontmatter_type="toml")
     text = get_text(url=text_url)
     text = text.replace("\n", "  \n")
-    file.dump_to_file(yml=metadata, md=text, dry_run=False)
+    file.dump_to_file(metadata=metadata, md=text, dry_run=False)
 
 
 def process_catalog_page_soup(url):
