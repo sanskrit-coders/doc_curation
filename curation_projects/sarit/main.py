@@ -10,7 +10,7 @@ def dump_markdown(src_dir, dest_dir):
     file_paths = sorted(Path(src_dir).glob("*.xml"))
     for file_path in file_paths:
         file_path = str(file_path)
-        md_path = os.path.join(dest_dir, os.path.dirname(file_path).replace(src_dir, dest_dir), os.path.basename(file_path).replace(".xml", ".md"))
+        md_path = os.path.join(dest_dir, os.path.dirname(file_path.replace(src_dir, dest_dir)), os.path.basename(file_path).replace(".xml", ".md"))
         logging.info("Converting %s to %s", file_path, md_path)
         tei.dump_md(tei_path=file_path, md_path=md_path, xsl=os.path.join(os.path.dirname(__file__), "xslt/tei-to-markdown-sarit.xsl"))
 

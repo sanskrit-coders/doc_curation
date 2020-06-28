@@ -72,6 +72,9 @@ def get_section_title(title_line):
 
 
 class MdFile(object):
+    YAML = "yaml"
+    TOML = "toml"
+    
     def __init__(self, file_path, frontmatter_type="yaml"):
         self.file_path = file_path
         self.frontmatter_type = frontmatter_type
@@ -114,9 +117,9 @@ class MdFile(object):
 
 
     def read_md_file(self) -> Tuple[Dict, str]:
-        if self.frontmatter_type == "yaml":
+        if self.frontmatter_type == MdFile.YAML:
             return self._read_yml_md_file()
-        elif self.frontmatter_type == "toml":
+        elif self.frontmatter_type == MdFile.TOML:
             return self._read_toml_md_file()
 
 
@@ -250,9 +253,9 @@ class MdFile(object):
             # logging.info(md)
 
     def dump_to_file(self, metadata, md, dry_run):
-        if self.frontmatter_type == "yaml":
+        if self.frontmatter_type == MdFile.YAML:
             self._dump_to_file_yamlmd(metadata, md, dry_run)
-        elif self.frontmatter_type == "toml":
+        elif self.frontmatter_type == MdFile.TOML:
             self._dump_to_file_tomlmd(metadata, md, dry_run)
 
     def set_title(self, title, dry_run):
@@ -312,7 +315,9 @@ class MdFile(object):
 
     def transliterate_content(self, source_scheme, dest_scheme=sanscript.DEVANAGARI, dry_run=False):
         (yml, md) = self.read_md_file()
-        md = sanscript.transliterate(data=md, _from=source_scheme, _to=dest_scheme, togglers={})
+        lines = md.split("\n")
+        lines = [sanscript.transliterate(data=line, _from=source_scheme, _to=dest_scheme, togglers={}) for line in lines]
+        md = "\n".join(lines)
         self.dump_to_file(yml, md=md, dry_run=dry_run)
 
     @classmethod
