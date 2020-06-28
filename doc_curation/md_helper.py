@@ -71,6 +71,12 @@ def get_section_title(title_line):
     return title.strip()
 
 
+def markdownify_plain_text(text_in):
+    text = text_in.replace("\n", "  \n")
+    text = regex.sub("^  $", "", text)
+    return text
+
+
 class MdFile(object):
     YAML = "yaml"
     TOML = "toml"

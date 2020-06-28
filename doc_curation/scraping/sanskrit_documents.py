@@ -9,6 +9,7 @@ from indic_transliteration import sanscript
 
 from bs4 import BeautifulSoup
 
+from doc_curation import md_helper
 from doc_curation.md_helper import MdFile
 
 
@@ -22,8 +23,7 @@ def get_text(src_file):
             return ""
         texts = [content_element.text for content_element in content_elements]
         text = "\n\n".join(texts)
-        text = text.replace("\n", "  \n")
-        text = regex.sub("^  $", "", text)
+        text = md_helper.markdownify_plain_text(text)
         return text
 
 
