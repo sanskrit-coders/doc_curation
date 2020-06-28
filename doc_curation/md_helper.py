@@ -77,7 +77,7 @@ class MdFile(object):
         self.frontmatter_type = frontmatter_type
 
     def __str__(self):
-        return self.file_path
+        return str(self.file_path)
 
 
     def _read_yml_md_file(self) -> Tuple[Dict, str]:
@@ -85,34 +85,39 @@ class MdFile(object):
         md = ""
         if os.path.exists(self.file_path):
             with codecs.open(self.file_path, "r", 'utf-8') as file:
-                (yml, md) = yamldown.load(file)
+                if file.readline().strip() == "---":
+                    (yml, md) = yamldown.load(file)
+                else:
+                    md = file.read()
                 # logging.info((yml, md))
                 if yml is None: yml = {}
         return (yml, md)
 
 
     def _read_toml_md_file(self) -> Tuple[Dict, str]:
-        yml = {}
+        toml = {}
         md = ""
         if os.path.exists(self.file_path):
             with codecs.open(self.file_path, "r", 'utf-8') as file:
                 lines = file.readlines()
-                assert lines[0].strip() == "+++"
-                toml_lines = itertools.takewhile(lambda x: x!= "+++", lines[1:])
-                yml = toml.loads("\n".join(toml_lines))
-                md_lines = itertools.dropwhile(lambda x: x!= "+++", lines[1:])
-                md = "\n".join(md_lines[1:])
-                (yml, md) = yamldown.load(file)
-                # logging.info((yml, md))
-                if yml is None: yml = {}
-        return (yml, md)
+                if file.readline().strip() == "+++":
+                    toml_lines = itertools.takewhile(lambda x: x!= "+++", lines[1:])
+                    toml = toml.loads("\n".join(toml_lines))
+                    md_lines = itertools.dropwhile(lambda x: x!= "+++", lines[1:])
+                    md = "\n".join(md_lines[1:])
+                    (toml, md) = yamldown.load(file)
+                    # logging.info((toml, md))
+                    if toml is None: toml = {}
+                else:
+                    md = "\n".join(file.readlines)
+        return (toml, md)
 
 
     def read_md_file(self) -> Tuple[Dict, str]:
         if self.frontmatter_type == "yaml":
-            self._read_yml_md_file()
+            return self._read_yml_md_file()
         elif self.frontmatter_type == "toml":
-            self._read_toml_md_file()
+            return self._read_toml_md_file()
 
 
     def get_title(self, omit_chapter_id=True):
@@ -302,19 +307,25 @@ class MdFile(object):
             if not dry_run:
                 os.remove(path=self.file_path)
 
+    def transliterate_content(self, source_scheme, dest_scheme=sanscript.DEVANAGARI, dry_run=False):
+        (yml, md) = self.read_md_file()
+        md = sanscript.transliterate(data=md, _from=source_scheme, _to=dest_scheme)
+        self.dump_to_file(yml, md=md, dry_run=dry_run)
+
     @classmethod
-    def get_md_files_from_path(cls, dir_path, file_pattern, file_name_filter=None):
+    def get_md_files_from_path(cls, dir_path, file_pattern, file_name_filter=None, frontmatter_type="yaml"):
         from pathlib import Path
         # logging.debug(list(Path(dir_path).glob(file_pattern)))
         md_file_paths = sorted(filter(file_name_filter, Path(dir_path).glob(file_pattern)))
-        return [MdFile(path) for path in md_file_paths]
+        return [MdFile(path, frontmatter_type=frontmatter_type) for path in md_file_paths]
 
     @classmethod
-    def apply_function(cls, fn, dir_path, file_pattern="**/*.md",  file_name_filter=None, *args,**kwargs):
+    def apply_function(cls, fn, dir_path, file_pattern="**/*.md",  file_name_filter=None, frontmatter_type="yaml", *args,**kwargs):
         from pathlib import Path
         # logging.debug(list(Path(dir_path).glob(file_pattern)))
-        md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern, file_name_filter=file_name_filter)
+        md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern, file_name_filter=file_name_filter, frontmatter_type=frontmatter_type)
         for md_file in md_files:
+            logging.info("Processing %s", md_file)
             fn(md_file, *args, **kwargs)
 
 

@@ -13,6 +13,9 @@ logging.basicConfig(
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
+MdFile.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-markdown", source_scheme=sanscript.IAST)
+
+
 # MdFile.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/sanskrit/shixaa/granthAH", dry_run=False)
 
 # MdFile.set_filenames_from_titles(dir_path="/home/vvasuki/vvasuki-git/pALi/content", transliteration_source=sanscript.DEVANAGARI, file_name_filter=lambda x: not str(x).endswith("_index.md"), dry_run=False)
