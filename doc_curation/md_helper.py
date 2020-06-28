@@ -86,6 +86,7 @@ class MdFile(object):
         if os.path.exists(self.file_path):
             with codecs.open(self.file_path, "r", 'utf-8') as file:
                 if file.readline().strip() == "---":
+                    file.seek(0)
                     (yml, md) = yamldown.load(file)
                 else:
                     md = file.read()
@@ -105,7 +106,6 @@ class MdFile(object):
                     toml = toml.loads("\n".join(toml_lines))
                     md_lines = itertools.dropwhile(lambda x: x!= "+++", lines[1:])
                     md = "\n".join(md_lines[1:])
-                    (toml, md) = yamldown.load(file)
                     # logging.info((toml, md))
                     if toml is None: toml = {}
                 else:
@@ -224,7 +224,10 @@ class MdFile(object):
             os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
             with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
                 import yaml
-                yamlout = yaml.dump(yml, default_flow_style=False, indent=2, allow_unicode=True)
+                if yml == {}:
+                    yamlout = ""
+                else:
+                    yamlout = yaml.dump(yml, default_flow_style=False, indent=2, allow_unicode=True)
                 dump = "---\n{yml}\n---\n{markdown}".format(yml=yamlout, markdown=md)
                 out_file_obj.write(dump)
                 # out_file_obj.write(yamldown.dump(yml, md)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5
@@ -309,7 +312,7 @@ class MdFile(object):
 
     def transliterate_content(self, source_scheme, dest_scheme=sanscript.DEVANAGARI, dry_run=False):
         (yml, md) = self.read_md_file()
-        md = sanscript.transliterate(data=md, _from=source_scheme, _to=dest_scheme)
+        md = sanscript.transliterate(data=md, _from=source_scheme, _to=dest_scheme, togglers={})
         self.dump_to_file(yml, md=md, dry_run=dry_run)
 
     @classmethod
