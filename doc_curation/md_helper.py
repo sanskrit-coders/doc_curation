@@ -14,6 +14,7 @@ from indic_transliteration import sanscript
 
 # Remove all handlers associated with the root logger object.
 import curation_utils.file_helper
+import doc_curation
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
@@ -98,6 +99,7 @@ class MdFile(object):
                     file.seek(0)
                     (yml, md) = yamldown.load(file)
                 else:
+                    file.seek(0)
                     md = file.read()
                 # logging.info((yml, md))
                 if yml is None: yml = {}
@@ -105,21 +107,26 @@ class MdFile(object):
 
 
     def _read_toml_md_file(self) -> Tuple[Dict, str]:
-        toml = {}
+        metadata = {}
         md = ""
         if os.path.exists(self.file_path):
             with codecs.open(self.file_path, "r", 'utf-8') as file:
-                lines = file.readlines()
-                if file.readline().strip() == "+++":
-                    toml_lines = itertools.takewhile(lambda x: x!= "+++", lines[1:])
-                    toml = toml.loads("\n".join(toml_lines))
-                    md_lines = itertools.dropwhile(lambda x: x!= "+++", lines[1:])
+                first_line = doc_curation.fix_line(file.readline()).strip()
+                if first_line == "+++":
+                    file.seek(0)
+                    lines = file.readlines()
+                    lines = [doc_curation.fix_line(line) for line in lines]
+                    toml_lines = itertools.takewhile(lambda x: x.strip() != "+++", lines[1:])
+                    metadata = toml.loads("\n".join(toml_lines))
+                    md_lines = list(itertools.dropwhile(lambda x: x.strip() != "+++", lines[1:]))
                     md = "\n".join(md_lines[1:])
                     # logging.info((toml, md))
-                    if toml is None: toml = {}
+                    if metadata is None: metadata = {}
                 else:
-                    md = "\n".join(file.readlines)
-        return (toml, md)
+                    logging.warning("No front-matter found.")
+                    file.seek(0)
+                    md = file.read()
+        return (metadata, md)
 
 
     def read_md_file(self) -> Tuple[Dict, str]:
@@ -300,12 +307,17 @@ class MdFile(object):
         sections = split_to_sections(remaining)
         for section_index, (title, section_lines) in enumerate(sections):
             if indexed_title_pattern is not None:
-                title = sanscript.transliterate(indexed_title_pattern % (section_index + 1, title), sanscript.OPTITRANS, source_script)
-            file_name = regex.sub("[ .]", "_", sanscript.transliterate(title, source_script, sanscript.OPTITRANS)) + ".md"
+                title = indexed_title_pattern % (section_index + 1, title)
+                if source_script is not None:
+                    title = sanscript.transliterate(title, sanscript.OPTITRANS, source_script)
+            title_in_file_name = title
+            if source_script is not None:
+                title_in_file_name = sanscript.transliterate(title, source_script, sanscript.OPTITRANS)
+            file_name = curation_utils.file_helper.clean_file_path("%s.md" % title_in_file_name)
             file_path = os.path.join(out_dir, file_name)
             section_yml = {"title": title}
             section_md = "\n".join(reduce_section_depth(section_lines))
-            md_file = MdFile(file_path=file_path)
+            md_file = MdFile(file_path=file_path, frontmatter_type=self.frontmatter_type)
             md_file.dump_to_file(metadata= section_yml, md=section_md, dry_run=dry_run)
         
         remainder_file_path = os.path.join(out_dir, "_index.md")
@@ -313,7 +325,7 @@ class MdFile(object):
         logging.debug(yml)
         if not yml["title"].startswith("+"):
             yml["title"] = "+" + yml["title"] 
-        MdFile(file_path=remainder_file_path).dump_to_file(metadata=yml, md=md, dry_run=dry_run)
+        MdFile(file_path=remainder_file_path, frontmatter_type=self.frontmatter_type).dump_to_file(metadata=yml, md=md, dry_run=dry_run)
         if str(self.file_path) != str(remainder_file_path):
             logging.info("Removing %s as %s is different ", self.file_path, remainder_file_path)
             if not dry_run:
@@ -353,12 +365,12 @@ class MdFile(object):
 
 
     @classmethod
-    def fix_index_files(cls, dir_path, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
+    def fix_index_files(cls, dir_path, frontmatter_type=TOML, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
         # Get all non hidden directories.
         dirs = [x[0] for x in os.walk(dir_path) if "/." not in x[0]]
         # set([os.path.dirname(path) for path in Path(dir_path).glob("**/")])
         for dir in dirs:
-            index_file = MdFile(file_path=os.path.join(dir, "_index.md"))
+            index_file = MdFile(file_path=os.path.join(dir, "_index.md"), frontmatter_type=frontmatter_type)
             index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
 
 

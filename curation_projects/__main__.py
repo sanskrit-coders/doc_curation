@@ -12,8 +12,7 @@ logging.basicConfig(
     level=logging.DEBUG,
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
-
-MdFile.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-markdown", source_scheme=sanscript.IAST)
+# MdFile.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-markdown", source_scheme=sanscript.IAST)
 
 
 # MdFile.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/sanskrit/shixaa/granthAH", dry_run=False)
@@ -25,6 +24,6 @@ MdFile.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/s
 # MdFile.set_titles_from_filenames(dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/history/history_of_the_indian_people", transliteration_target=None, dry_run=False)
 
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
-# MdFile(file_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/polity/geopolitics.md").split_to_bits(dry_run=False)
+MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/jyotisham/history/calendar_reform_comittee_report.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
 
 # MdFile.split_all_to_bits(dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/mantraH/sangrahAH/taittirIyA/saMhitA/1", dry_run=False)
