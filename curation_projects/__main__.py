@@ -24,6 +24,6 @@ logging.basicConfig(
 # MdFile.set_titles_from_filenames(dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/history/history_of_the_indian_people", transliteration_target=None, dry_run=False)
 
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
-MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/jyotisham/history/calendar_reform_comittee_report.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
+MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/jyotisham/history/calendar_reform_comittee_report/02_PART-A/01_Introductory.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
 
-# MdFile.split_all_to_bits(dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/mantraH/sangrahAH/taittirIyA/saMhitA/1", dry_run=False)
+# MdFile.split_all_to_bits(dir_path="/home/vvasuki/vvasuki-git/tipiTaka/content/01_mUlam/02_suttapiTaka/03_saMyutta-nikAyo/05_mahAvaggo", dry_run=False)

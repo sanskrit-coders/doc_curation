@@ -117,7 +117,7 @@ class MdFile(object):
                     lines = file.readlines()
                     lines = [doc_curation.fix_line(line) for line in lines]
                     toml_lines = itertools.takewhile(lambda x: x.strip() != "+++", lines[1:])
-                    metadata = toml.loads("\n".join(toml_lines))
+                    metadata = toml.loads("".join(toml_lines))
                     md_lines = list(itertools.dropwhile(lambda x: x.strip() != "+++", lines[1:]))
                     md = "\n".join(md_lines[1:])
                     # logging.info((toml, md))

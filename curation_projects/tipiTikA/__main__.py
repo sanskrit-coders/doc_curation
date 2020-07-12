@@ -4,6 +4,8 @@ import logging
 import os
 
 from curation_utils import dir_helper
+from indic_transliteration import sanscript
+
 from doc_curation import text_data
 from doc_curation.md_helper import MdFile
 from doc_curation.scraping import html
@@ -41,4 +43,4 @@ def dump_files():
 # MdFile.fix_index_files(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=False)
 # MdFile.fix_title_numbering_in_path(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=False)
 # MdFile.fix_title_numbering_in_path(dir_path="/home/vvasuki/vvasuki-git/pALi/content/01_tipiTaka", dry_run=False)
-# text_data.clean_file_names(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=False)
+MdFile.set_filenames_from_titles(dir_path="/home/vvasuki/vvasuki-git/tipiTaka/content/01_mUlam/02_suttapiTaka/04_anguttaranikAyo", transliteration_source=sanscript.DEVANAGARI, dry_run=False)
