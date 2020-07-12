@@ -55,6 +55,8 @@ def get_text(url):
     title_divs = browser.find_elements_by_css_selector("div.col-md-7")
     chapter_divs = browser.find_elements_by_css_selector("div.chapter")
     text_md = ""
+    if len(title_divs + chapter_divs) == 0:
+        return None
     for chapter_div in title_divs + chapter_divs:
         chapter_html = chapter_div.get_attribute('innerHTML')
         chapter_html = regex.sub("<(a|span)[^>]+>|</(a|span)>", "", chapter_html)
@@ -68,11 +70,14 @@ def get_text(url):
 def dump_text(url, dest_path):
     if os.path.exists(dest_path):
         logging.warning("Skipping %s", dest_path)
-        return 
+        return
     logging.info("Dumping %s to %s", url, dest_path)
+    md = get_text(url)
+    if md is None:
+        logging.warning("No content. Skipping %s.", url)
+        return 
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     with codecs.open(dest_path, "w", 'utf-8') as file_out:
-        md = get_text(url)
         file_out.write(md)
 
 
