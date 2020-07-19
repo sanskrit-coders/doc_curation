@@ -2,11 +2,9 @@ import logging
 
 from indic_transliteration import sanscript
 
-import doc_curation
 from doc_curation.md_helper import MdFile
 
 # Remove all handlers associated with the root logger object.
-from doc_curation.scraping import advaita_shaaradaa
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
@@ -14,7 +12,7 @@ logging.basicConfig(
     level=logging.DEBUG,
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
-advaita_shaaradaa.dump_texts(dest_dir="/home/vvasuki/sanskrit/raw_etexts/vedAntam/advaitam/advaita-shAradA")
+# advaita_shaaradaa.dump_texts(dest_dir="/home/vvasuki/sanskrit/raw_etexts/vedAntam/advaitam/advaita-shAradA")
 
 # MdFile.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-markdown", source_scheme=sanscript.IAST)
 
@@ -28,6 +26,7 @@ advaita_shaaradaa.dump_texts(dest_dir="/home/vvasuki/sanskrit/raw_etexts/vedAnta
 # MdFile.set_titles_from_filenames(dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/history/history_of_the_indian_people", transliteration_target=None, dry_run=False)
 
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
-# MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/jyotisham/history/calendar_reform_comittee_report/02_PART-A/01_Introductory.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
+# MdFile(file_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/polity/sick-india/orgs/rss/bunch_of_thoughts_golwalkar/05_Part_Four_-_Moulding_Men.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
 
+MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/jyotisham/history/calendar_reform_comittee_report/04_PART_C_History_of_the_Calendar_in_different_Countries_through_the_Ages/06_Indian_Calendar.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
 # MdFile.split_all_to_bits(dir_path="/home/vvasuki/vvasuki-git/tipiTaka/content/01_mUlam/02_suttapiTaka/03_saMyutta-nikAyo/05_mahAvaggo", dry_run=False)

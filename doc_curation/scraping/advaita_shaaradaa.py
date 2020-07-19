@@ -5,7 +5,10 @@ import os
 import pypandoc
 import regex
 from bs4 import BeautifulSoup
+from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.remote_connection import LOGGER
+from selenium.webdriver.support.expected_conditions import presence_of_element_located
+from selenium.webdriver.support.wait import WebDriverWait
 
 from curation_utils import scraping
 
@@ -48,9 +51,16 @@ prakarana_texts = ["vivekachudamani", "shrutisarasamuddharanam", "shatashloki", 
 
 def get_text(url):
     browser.get(url=url)
-    chapter_links = browser.find_elements_by_css_selector(css_selector=".sidebar li:not(.special) a")
+    chapter_links = browser.find_elements_by_css_selector(css_selector="ul#sidebar > li:not(.special) > a")
     for chapter_link in chapter_links:
+        target = chapter_link.get_attribute("href").replace(url, "").replace("/", "")
+        if chapter_link.text.strip() == "" or target == "#":
+            continue
+        logging.debug("Clicking %s, waiting for %s", chapter_link.text, target)
         chapter_link.click()
+        element = WebDriverWait(browser, 20).until(
+            presence_of_element_located((By.CSS_SELECTOR, target))
+        )
     
     title_divs = browser.find_elements_by_css_selector("div.col-md-7")
     chapter_divs = browser.find_elements_by_css_selector("div.chapter")

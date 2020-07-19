@@ -15,5 +15,5 @@ def get_from_archive(item_id):
 
 
 if __name__ == '__main__':
-    pdf.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/jyotiSham/calendar_reform_comittee_report.pdf", small_pdf_pages=10, start_page=1)
-    # pdf.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/koshaH/raghuvIra-lokeshachandra", small_pdf_pages=10)
+    pdf.split_and_ocr_on_drive(pdf_path="//home/vvasuki/Documents/books/granthasangrahaH/jyotiSham/Hamlet's Mill - An Essay on Myth and the Frame of Time - Giorgio de Santillana and Hertha von Dechend (1969).pdf", small_pdf_pages=5, start_page=1)
+    # pdf.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/jyotiSham/Hamlet's Mill - An Essay on Myth and the Frame of Time - Giorgio de Santillana and Hertha von Dechend (1969).pdf", small_pdf_pages=15)

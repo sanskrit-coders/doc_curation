@@ -119,7 +119,7 @@ class MdFile(object):
                     toml_lines = itertools.takewhile(lambda x: x.strip() != "+++", lines[1:])
                     metadata = toml.loads("".join(toml_lines))
                     md_lines = list(itertools.dropwhile(lambda x: x.strip() != "+++", lines[1:]))
-                    md = "\n".join(md_lines[1:])
+                    md = "".join(md_lines[1:])
                     # logging.info((toml, md))
                     if metadata is None: metadata = {}
                 else:
@@ -251,18 +251,18 @@ class MdFile(object):
             logging.info(yml)
             # logging.info(md)
 
-    def _dump_to_file_tomlmd(self, yml, md, dry_run):
+    def _dump_to_file_tomlmd(self, metadata, md, dry_run):
         logging.info(self.file_path)
         if not dry_run:
             os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
             with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
                 import toml
-                tomlout = toml.dumps(yml)
+                tomlout = toml.dumps(metadata)
                 dump = "+++\n{frontmatter}\n+++\n{markdown}".format(frontmatter=tomlout, markdown=md)
                 out_file_obj.write(dump)
                 # out_file_obj.write(yamldown.dump(yml, md)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5
         else:
-            logging.info(yml)
+            logging.info(metadata)
             # logging.info(md)
 
     def dump_to_file(self, metadata, md, dry_run):
@@ -301,7 +301,7 @@ class MdFile(object):
             out_dir = os.path.dirname(self.file_path)
         else:
             out_dir = os.path.join(os.path.dirname(self.file_path), os.path.basename(self.file_path).replace(".md", ""))
-        (yml, md) = self.read_md_file()
+        (metadata, md) = self.read_md_file()
         lines = md.splitlines(keepends=False)
         (lines_till_section, remaining) = get_lines_till_section(lines)
         sections = split_to_sections(remaining)
@@ -322,10 +322,10 @@ class MdFile(object):
         
         remainder_file_path = os.path.join(out_dir, "_index.md")
         md = "\n".join(lines_till_section)
-        logging.debug(yml)
-        if not yml["title"].startswith("+"):
-            yml["title"] = "+" + yml["title"] 
-        MdFile(file_path=remainder_file_path, frontmatter_type=self.frontmatter_type).dump_to_file(metadata=yml, md=md, dry_run=dry_run)
+        logging.debug(metadata)
+        if not metadata["title"].startswith("+"):
+            metadata["title"] = "+" + metadata["title"] 
+        MdFile(file_path=remainder_file_path, frontmatter_type=self.frontmatter_type).dump_to_file(metadata=metadata, md=md, dry_run=dry_run)
         if str(self.file_path) != str(remainder_file_path):
             logging.info("Removing %s as %s is different ", self.file_path, remainder_file_path)
             if not dry_run:
