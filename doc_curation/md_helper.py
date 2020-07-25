@@ -16,6 +16,7 @@ from indic_transliteration import sanscript
 # Remove all handlers associated with the root logger object.
 import curation_utils.file_helper
 import doc_curation
+from curation_utils import file_helper
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
@@ -136,6 +137,9 @@ class MdFile(object):
             subprocess.call(['Ted', '--saveTo', source_file, html_path])
             source_file = html_path
             source_format = "html"
+            if not os.path.exists(html_path):
+                logging.warning("Could not convert rtf to html, skipping %s", source_file)
+                return 
         
         with open(source_file, 'r') as fin:
             filters = None
@@ -417,12 +421,18 @@ class MdFile(object):
 
 
     
-def rtf_to_md_recursive(source_dir, dry_run=False):
+def import_md_recursive(source_dir, file_extension, source_format=None, dry_run=False):
     from pathlib import Path
     # logging.debug(list(Path(dir_path).glob(file_pattern)))
-    rtf_file_paths = sorted(Path(source_dir).glob("**/*.rtf"))
-    for rtf_path in rtf_file_paths:
-        md_path = str(rtf_path).replace(".rtf", ".md")
-        logging.info("Processing %s to %s", rtf_path, md_path)
+    source_paths = sorted(Path(source_dir).glob("**/*." + file_extension))
+    if source_format is None:
+        source_format = file_extension
+    for source_path in source_paths:
+        md_path = str(source_path).replace("." + file_extension, ".md")
+        md_path = file_helper.clean_file_path(md_path)
+        if os.path.exists(md_path):
+            logging.info("Skipping %s", md_path)
+            continue
+        logging.info("Processing %s to %s", source_path, md_path)
         md_file = MdFile(file_path=md_path, frontmatter_type=MdFile.TOML)
-        md_file.import_with_pandoc(source_file=rtf_path, source_format="rtf", dry_run=dry_run)
+        md_file.import_with_pandoc(source_file=source_path, source_format="rtf", dry_run=dry_run)

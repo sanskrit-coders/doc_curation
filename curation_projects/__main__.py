@@ -2,6 +2,7 @@ import logging
 
 from indic_transliteration import sanscript
 
+from curation_utils import file_helper
 from doc_curation import md_helper
 from doc_curation.md_helper import MdFile
 
@@ -32,4 +33,5 @@ logging.basicConfig(
 # MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/jyotisham/history/Hamlet's_Mill_An_Essay_on_Myth_and_the_Frame_of_Time_Santillana_Dechend.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
 # MdFile.split_all_to_bits(dir_path="/home/vvasuki/vvasuki-git/tipiTaka/content/01_mUlam/02_suttapiTaka/03_saMyutta-nikAyo/05_mahAvaggo", dry_run=False)
 
-md_helper.rtf_to_md_recursive("/home/vvasuki/Downloads/peterFreund")
+# md_helper.import_md_recursive(source_dir="/home/vvasuki/Downloads/peterFreund", file_extension="txt")
+file_helper.copy_file_tree(source_dir="/home/vvasuki/Downloads/peterFreund", dest_dir="/home/vvasuki/sanskrit/raw_etexts/mixed/peterFreund", file_pattern="**/*.md")
