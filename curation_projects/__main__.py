@@ -2,6 +2,7 @@ import logging
 
 from indic_transliteration import sanscript
 
+from doc_curation import md_helper
 from doc_curation.md_helper import MdFile
 
 # Remove all handlers associated with the root logger object.
@@ -28,5 +29,7 @@ logging.basicConfig(
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
 # MdFile(file_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/polity/sick-india/orgs/rss/bunch_of_thoughts_golwalkar/05_Part_Four_-_Moulding_Men.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
 
-MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/jyotisham/history/calendar_reform_comittee_report/04_PART_C_History_of_the_Calendar_in_different_Countries_through_the_Ages/06_Indian_Calendar.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
+# MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/jyotisham/history/Hamlet's_Mill_An_Essay_on_Myth_and_the_Frame_of_Time_Santillana_Dechend.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
 # MdFile.split_all_to_bits(dir_path="/home/vvasuki/vvasuki-git/tipiTaka/content/01_mUlam/02_suttapiTaka/03_saMyutta-nikAyo/05_mahAvaggo", dry_run=False)
+
+md_helper.rtf_to_md_recursive("/home/vvasuki/Downloads/peterFreund")

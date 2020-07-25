@@ -1,6 +1,7 @@
 import codecs
 import logging
 import os
+import subprocess
 from pathlib import Path
 from typing import Tuple, Dict
 import itertools
@@ -128,6 +129,18 @@ class MdFile(object):
                     md = file.read()
         return (metadata, md)
 
+    def import_with_pandoc(self, source_file, source_format, dry_run, metadata={}, pandoc_extra_args=['--atx-headers']):
+        import pypandoc
+        if source_format == "rtf":
+            html_path = str(source_file).replace(".rtf", ".html")
+            subprocess.call(['Ted', '--saveTo', source_file, html_path])
+            source_file = html_path
+            source_format = "html"
+        
+        with open(source_file, 'r') as fin:
+            filters = None
+            md = pypandoc.convert_text(source=fin.read(), to="gfm-raw_html", format=source_format, extra_args=pandoc_extra_args, filters=filters)
+            self.dump_to_file(metadata=metadata, md=md, dry_run=dry_run)
 
     def read_md_file(self) -> Tuple[Dict, str]:
         if self.frontmatter_type == MdFile.YAML:
@@ -143,16 +156,14 @@ class MdFile(object):
             title = regex.sub("^[+०-९]+ +", "", title)
         title = regex.sub("^[+]+", "", title)
         return title
-    
-    
+
     def get_upaakhyaana(self, omit_id=True):
         upaakhyaana_optitrans = os.path.basename(os.path.dirname(self.file_path))
         upaakhyaana = sanscript.transliterate(data=upaakhyaana_optitrans, _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI)
         if omit_id:
             upaakhyaana = regex.sub("^[+०-९]+-+", "", upaakhyaana)
         return upaakhyaana
-    
-    
+
     def set_title_from_filename(self, transliteration_target, dry_run):
         logging.info(self.file_path)
         if os.path.basename(self.file_path) == "_index.md":
@@ -232,7 +243,6 @@ class MdFile(object):
                 out_file_obj.write(output)
         else:
             logging.info(output)
-
 
     def _dump_to_file_yamlmd(self, yml, md, dry_run):
         logging.info(self.file_path)
@@ -404,3 +414,15 @@ class MdFile(object):
     @classmethod
     def split_all_to_bits(cls, dir_path, file_pattern="*.md", dry_run=False):
         cls.apply_function(fn=MdFile.split_to_bits, dir_path=dir_path, file_pattern=file_pattern, dry_run=dry_run)
+
+
+    
+def rtf_to_md_recursive(source_dir, dry_run=False):
+    from pathlib import Path
+    # logging.debug(list(Path(dir_path).glob(file_pattern)))
+    rtf_file_paths = sorted(Path(source_dir).glob("**/*.rtf"))
+    for rtf_path in rtf_file_paths:
+        md_path = str(rtf_path).replace(".rtf", ".md")
+        logging.info("Processing %s to %s", rtf_path, md_path)
+        md_file = MdFile(file_path=md_path, frontmatter_type=MdFile.TOML)
+        md_file.import_with_pandoc(source_file=rtf_path, source_format="rtf", dry_run=dry_run)
