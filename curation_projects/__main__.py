@@ -30,8 +30,11 @@ logging.basicConfig(
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
 # MdFile(file_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/polity/sick-india/orgs/rss/bunch_of_thoughts_golwalkar/05_Part_Four_-_Moulding_Men.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
 
-# MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/jyotisham/history/Hamlet's_Mill_An_Essay_on_Myth_and_the_Frame_of_Time_Santillana_Dechend.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
+# MdFile(file_path="/home/vvasuki/sanskrit/raw_etexts/mixed/peterFreund/AyurvedaH/sharngadhara_samhita.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=sanscript.DEVANAGARI)
 # MdFile.split_all_to_bits(dir_path="/home/vvasuki/vvasuki-git/tipiTaka/content/01_mUlam/02_suttapiTaka/03_saMyutta-nikAyo/05_mahAvaggo", dry_run=False)
 
+
+MdFile(file_path="/home/vvasuki/vvasuki-git/notes-hugo/content/artha/materials/cloth.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
+
 # md_helper.import_md_recursive(source_dir="/home/vvasuki/Downloads/peterFreund", file_extension="txt")
-file_helper.copy_file_tree(source_dir="/home/vvasuki/Downloads/peterFreund", dest_dir="/home/vvasuki/sanskrit/raw_etexts/mixed/peterFreund", file_pattern="**/*.md")
+# file_helper.copy_file_tree(source_dir="/home/vvasuki/Downloads/peterFreund", dest_dir="/home/vvasuki/sanskrit/raw_etexts/mixed/peterFreund", file_pattern="**/*.md")

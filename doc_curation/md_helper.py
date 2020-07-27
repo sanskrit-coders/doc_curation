@@ -146,10 +146,23 @@ class MdFile(object):
             md = pypandoc.convert_text(source=fin.read(), to="gfm-raw_html", format=source_format, extra_args=pandoc_extra_args, filters=filters)
             self.dump_to_file(metadata=metadata, md=md, dry_run=dry_run)
 
+    def get_frontmatter_type(self):
+        with open(source_file, 'r') as fin:
+            first_line = fin.readline().strip()
+            if first_line == "---":
+                return MdFile.YAML
+            elif first_line == "+++":
+                return MdFile.TOML
+            else:
+                return None
+
     def read_md_file(self) -> Tuple[Dict, str]:
-        if self.frontmatter_type == MdFile.YAML:
+        actual_frontmatter_type = self.get_frontmatter_type()
+        if self.frontmatter_type != actual_frontmatter_type:
+            logging.warning("Frontmatter type mismatch: field value %s vs actual %s. Using the latter, but not updating field value.", self.frontmatter_type, actual_frontmatter_type)
+        if actual_frontmatter_type == MdFile.YAML:
             return self._read_yml_md_file()
-        elif self.frontmatter_type == MdFile.TOML:
+        elif actual_frontmatter_type == MdFile.TOML:
             return self._read_toml_md_file()
 
 
@@ -304,7 +317,7 @@ class MdFile(object):
         md = regex.sub(pattern=pattern, repl=replacement, string=md)
         self.dump_to_file(metadata=yml, md=md, dry_run=dry_run)
 
-    def split_to_bits(self, source_script = sanscript.DEVANAGARI, indexed_title_pattern="%02d %s", dry_run=False):
+    def split_to_bits(self, source_script = sanscript.DEVANAGARI, indexed_title_pattern="%02d %s", target_frontmantter_type=TOML, dry_run=False):
         """
         
         Implementation notes: md parsers oft convert to html or json. Processing that output would be more complicated than what we need here.
@@ -331,7 +344,7 @@ class MdFile(object):
             file_path = os.path.join(out_dir, file_name)
             section_yml = {"title": title}
             section_md = "\n".join(reduce_section_depth(section_lines))
-            md_file = MdFile(file_path=file_path, frontmatter_type=self.frontmatter_type)
+            md_file = MdFile(file_path=file_path, frontmatter_type=target_frontmantter_type)
             md_file.dump_to_file(metadata= section_yml, md=section_md, dry_run=dry_run)
         
         remainder_file_path = os.path.join(out_dir, "_index.md")
@@ -339,7 +352,7 @@ class MdFile(object):
         logging.debug(metadata)
         if not metadata["title"].startswith("+"):
             metadata["title"] = "+" + metadata["title"] 
-        MdFile(file_path=remainder_file_path, frontmatter_type=self.frontmatter_type).dump_to_file(metadata=metadata, md=md, dry_run=dry_run)
+        MdFile(file_path=remainder_file_path, frontmatter_type=target_frontmantter_type).dump_to_file(metadata=metadata, md=md, dry_run=dry_run)
         if str(self.file_path) != str(remainder_file_path):
             logging.info("Removing %s as %s is different ", self.file_path, remainder_file_path)
             if not dry_run:
