@@ -16,7 +16,7 @@ logging.basicConfig(
 
 # advaita_shaaradaa.dump_texts(dest_dir="/home/vvasuki/sanskrit/raw_etexts/vedAntam/advaitam/advaita-shAradA")
 
-wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-index/", dry_run=False, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/manasataramgini")
+# wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-index/", dry_run=False, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/manasataramgini")
 
 # MdFile.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-markdown", source_scheme=sanscript.IAST)
 
@@ -33,10 +33,10 @@ wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-i
 # MdFile(file_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/polity/sick-india/orgs/rss/bunch_of_thoughts_golwalkar/05_Part_Four_-_Moulding_Men.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
 
 # MdFile(file_path="/home/vvasuki/sanskrit/raw_etexts/mixed/peterFreund/AyurvedaH/sharngadhara_samhita.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=sanscript.DEVANAGARI)
-# MdFile.split_all_to_bits(dir_path="/home/vvasuki/vvasuki-git/tipiTaka/content/01_mUlam/02_suttapiTaka/03_saMyutta-nikAyo/05_mahAvaggo", dry_run=False)
+# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/math/probability/probability", dry_run=False, source_script=None)
 
 
-# MdFile(file_path="/home/vvasuki/vvasuki-git/notes-hugo/content/artha/materials/cloth.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
+MdFile(file_path="/home/vvasuki/vvasuki-git/notes-hugo/content/math/probability/probabilistic_models/RV_interdependence/05_Modeling_stochastic_processes.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
 
 # md_helper.import_md_recursive(source_dir="/home/vvasuki/Downloads/peterFreund", file_extension="txt")
 # file_helper.copy_file_tree(source_dir="/home/vvasuki/Downloads/peterFreund", dest_dir="/home/vvasuki/sanskrit/raw_etexts/mixed/peterFreund", file_pattern="**/*.md")

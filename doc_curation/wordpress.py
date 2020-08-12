@@ -42,7 +42,7 @@ def get_post_html(url):
     if not entry_divs:
         return None
     post_html = entry_divs[0].encode_contents()
-    title = soup.find(attrs={'class':'entry-title'}).string.replace('\\xa0', ' ')
+    title = soup.find(attrs={'class':'entry-title'}).string.replace('\\xa0', ' ').replace("xa0", " ")
     return (title, post_html)
 
 

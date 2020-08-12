@@ -431,10 +431,6 @@ class MdFile(object):
                 if title != None:
                     md_file.set_title(title=title, dry_run=dry_run)
 
-    @classmethod
-    def split_all_to_bits(cls, dir_path, file_pattern="*.md", dry_run=False):
-        cls.apply_function(fn=MdFile.split_to_bits, dir_path=dir_path, file_pattern=file_pattern, dry_run=dry_run)
-
 
     
 def import_md_recursive(source_dir, file_extension, source_format=None, dry_run=False):
