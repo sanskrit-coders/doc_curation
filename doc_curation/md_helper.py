@@ -368,6 +368,13 @@ class MdFile(object):
         md = "\n".join(lines)
         self.dump_to_file(yml, md=md, dry_run=dry_run)
 
+    def fix_lazy_anusvaara(self, writing_scheme=sanscript.DEVANAGARI, ignore_padaanta=True, dry_run=False):
+        (yml, md) = self.read_md_file()
+        lines = md.split("\n")
+        lines = [sanscript.SCHEMES[writing_scheme].fix_lazy_anusvaara(data_in=line, ignore_padaanta=ignore_padaanta) for line in lines]
+        md = "\n".join(lines)
+        self.dump_to_file(yml, md=md, dry_run=dry_run)
+
     @classmethod
     def get_md_files_from_path(cls, dir_path, file_pattern, file_name_filter=None, frontmatter_type="yaml"):
         from pathlib import Path
