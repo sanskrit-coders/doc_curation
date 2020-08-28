@@ -36,10 +36,10 @@ logging.basicConfig(
 # MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/math/probability/probability", dry_run=False, source_script=None)
 
 
-# MdFile(file_path="/home/vvasuki/vvasuki-git/jyotiSham/content/history/tilak-orion.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
+MdFile(file_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/social-cultivation/women.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
 #  , indexed_title_pattern=None
 
 # md_helper.import_md_recursive(source_dir="/home/vvasuki/Downloads/peterFreund", file_extension="txt")
 # file_helper.copy_file_tree(source_dir="/home/vvasuki/Downloads/peterFreund", dest_dir="/home/vvasuki/sanskrit/raw_etexts/mixed/peterFreund", file_pattern="**/*.md")
 
-MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/mantraH/rudraH/padyam/gaNapatiH/dvAdasha-nAma-stotram.md",frontmatter_type=MdFile.TOML).fix_lazy_anusvaara(dry_run=False, ignore_padaanta=True)
+# MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/mantraH/rudraH/padyam/gaNapatiH/dvAdasha-nAma-stotram.md",frontmatter_type=MdFile.TOML).fix_lazy_anusvaara(dry_run=False, ignore_padaanta=True)
