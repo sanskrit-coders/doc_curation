@@ -5,7 +5,8 @@ import traceback
 
 from selenium.common.exceptions import NoSuchElementException
 
-from doc_curation import parankusha, text_data
+from doc_curation import text_data
+from doc_curation.scraping import parankusha
 
 
 def open_path(subunit_path, unit_data):

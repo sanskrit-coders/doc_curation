@@ -1,7 +1,8 @@
 import logging
 import os
 
-from doc_curation import parankusha, text_data
+from doc_curation.scraping import parankusha
+from doc_curation import text_data
 
 
 def get_ramayana_text(browser, text_id, base_dir):
