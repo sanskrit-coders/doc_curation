@@ -8,6 +8,7 @@ import logging
 def fix_line(line):
     line = line.replace("\r", "")
     line = line.replace(u"\uFEFF", " ")
+    line = line.replace(u"\u00A0", " ")
     return line
 
 

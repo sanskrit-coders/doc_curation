@@ -36,7 +36,7 @@ logging.basicConfig(
 # MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/math/probability/probability", dry_run=False, source_script=None)
 
 
-MdFile(file_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/social-cultivation/women.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
+MdFile(file_path="/home/vvasuki/vvasuki-git/notes-hugo/content/biology/organism/physiology/immune_system/cells/Granulocyte.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
 #  , indexed_title_pattern=None
 
 # md_helper.import_md_recursive(source_dir="/home/vvasuki/Downloads/peterFreund", file_extension="txt")

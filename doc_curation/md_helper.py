@@ -296,6 +296,7 @@ class MdFile(object):
             # logging.info(md)
 
     def dump_to_file(self, metadata, md, dry_run):
+        md = doc_curation.fix_line(md)
         if self.frontmatter_type == MdFile.YAML:
             self._dump_to_file_yamlmd(metadata, md, dry_run)
         elif self.frontmatter_type == MdFile.TOML:
