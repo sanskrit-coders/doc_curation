@@ -84,7 +84,7 @@ class MdFile(object):
     YAML = "yaml"
     TOML = "toml"
     
-    def __init__(self, file_path, frontmatter_type="yaml"):
+    def __init__(self, file_path, frontmatter_type="toml"):
         self.file_path = file_path
         self.frontmatter_type = frontmatter_type
 
@@ -196,6 +196,14 @@ class MdFile(object):
             title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target)
         self.set_title(dry_run=dry_run, title=title)
 
+    def prepend_file_index_to_title(self, dry_run):
+        if os.path.basename(self.file_path) == "_index.md":
+            return
+        else:
+            index = regex.sub("_.+", "", os.path.basename(self.file_path))
+        title = index + " " + self.get_title(omit_chapter_id=False)
+        self.set_title(dry_run=dry_run, title=title)
+
     def ensure_ordinal_in_title(self, transliteration_target, dry_run):
         title = self.get_title(omit_chapter_id=False)
         if regex.fullmatch("[+०-९0-9].+", title):
@@ -303,10 +311,12 @@ class MdFile(object):
             self._dump_to_file_tomlmd(metadata, md, dry_run)
 
     def set_title(self, title, dry_run):
-        yml, md = self.read_md_file()
-        yml["title"] = title
-        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-        self.dump_to_file(metadata=yml, md=md, dry_run=dry_run)
+        logging.info("Setting title of %s to %s", self.file_path, title)
+        if not dry_run:
+            yml, md = self.read_md_file()
+            yml["title"] = title
+            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+            self.dump_to_file(metadata=yml, md=md, dry_run=dry_run)
 
     def prepend_to_content(self, prefix_text, dry_run=True):
         (yml, md) = self.read_md_file()
@@ -409,6 +419,8 @@ class MdFile(object):
         # set([os.path.dirname(path) for path in Path(dir_path).glob("**/")])
         for dir in dirs:
             index_file = MdFile(file_path=os.path.join(dir, "_index.md"), frontmatter_type=frontmatter_type)
+            if not os.path.exists(index_file.file_path):
+                index_file.dump_to_file(metadata={}, md="", dry_run=dry_run)
             index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
 
 
