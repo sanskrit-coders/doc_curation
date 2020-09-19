@@ -97,7 +97,7 @@ def goel(base_dir):
     # dump_docs(index_url="http://voiceofdharma.org/books/hhrmi/", out_dir=base_dir+"goel_sitArAm/hindu_resistance_to_muslims", dry_run=False)
     # dump_docs(index_url="http://voiceofdharma.org/books/hsus/", out_dir=base_dir+"goel_sitArAm/hindu_society_under_seige", dry_run=False)
     # dump_docs(index_url="http://voiceofdharma.org/books/hhce/", out_dir=base_dir+"goel_sitArAm/hindu_christian_encounters", dry_run=False)
-    dump_docs(index_url="http://voiceofdharma.org/books/hibh/", out_dir=base_dir+"goel_sitArAm/How_I_Became_Hindu", dry_run=False)
+    # dump_docs(index_url="http://voiceofdharma.org/books/hibh/", out_dir=base_dir+"goel_sitArAm/How_I_Became_Hindu", dry_run=False)
     dump_docs(index_url="http://voiceofdharma.org/books/gagon/", out_dir=base_dir+"goel_sitArAm/nehruism_genesis", dry_run=False)
 
 
@@ -132,4 +132,4 @@ def rajaram(base_dir):
 if __name__ == '__main__':
     base_dir = ""
     # ram_swarup(base_dir=base_dir)
-    misc(base_dir=base_dir)
+    goel(base_dir=base_dir)

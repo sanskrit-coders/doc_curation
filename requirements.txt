@@ -1,4 +1,5 @@
 pikepdf
+pdf2image
 selenium
 urllib3
 regex
@@ -9,3 +10,6 @@ lxml
 pytest
 pypandoc
 setuptools
+bs4
+beautifulsoup4
+toml
