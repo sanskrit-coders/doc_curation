@@ -16,7 +16,7 @@ def dump_text(start_url, out_path, dry_run=False):
   
   def title_maker(soup, title_prefix):
     title = souper.title_from_element(soup=soup, title_css_selector="h1", title_prefix=title_prefix)
-    title = regex.sub(".+/", "", title)
+    title = regex.sub(" .+/", "", title)
     return title
   dumper = lambda url, outfile_path, title_prefix, dry_run: souper.dump_text_from_element(url=url, outfile_path=outfile_path, text_css_selector="div.mw-parser-output", title_maker=title_maker, title_prefix=title_prefix, html_fixer=html_fixer, dry_run=dry_run)
   souper.dump_series(start_url=start_url, out_path=out_path, dumper=dumper, next_url_getter=next_url_getter, dry_run=dry_run)
