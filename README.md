@@ -1,5 +1,6 @@
-![Build status](https://github.com/sanskrit-coders/doc_curation/workflows/Python%20package/badge.svg)
+^[![Build status](https://github.com/sanskrit-coders/doc_curation/workflows/Python%20package/badge.svg)](https://github.com/sanskrit-coders/doc_curation/actions)
 [![Documentation Status](https://readthedocs.org/projects/doc_curation/badge/?version=latest)](http://doc_curation.readthedocs.io/en/latest/?badge=latest)
+[![PyPI version](https://badge.fury.io/py/doc_curation.svg)](https://badge.fury.io/py/doc_curation)
 
 ## doc curation
 
