@@ -46,36 +46,33 @@ def content_from_element(soup, text_css_selector, url):
   return content
 
 
+def title_from_element(soup, title_css_selector=None, title_prefix=""):
+  if title_css_selector is not None:
+    title_elements = soup.select(title_css_selector)
+    if len(title_elements) > 0:
+      title = title_elements[0].text
+    else:
+      title = "UNKNOWN_TITLE"
+    title = (title_prefix + title).strip()
+  return title
+  
 
-def dump_text_from_element(url, outfile_path, text_css_selector, title_css_selector=None, title_prefix=None,
-                           fallback_title_maker=None, html_fixer=None, dry_run=False):
+
+def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, title_prefix="", html_fixer=None, dry_run=False):
   logging.info("Dumping: %s to %s", url, outfile_path)
   html = get_html(url=url)
+  unaltered_soup = BeautifulSoup(html, 'html.parser')
   soup = BeautifulSoup(html, 'html.parser')
 
-  def get_metadata():
-    metadata = {}
-    if title_css_selector is not None:
-      title_elements = soup.select(title_css_selector)
-      if len(title_elements) > 0:
-        metadata["title"] = title_elements[0].text
-    if "title" not in metadata:
-      if fallback_title_maker is not None:
-        metadata["title"] = fallback_title_maker()
-      else:
-        metadata["title"] = "UNKNOWN_TITLE"
-      metadata["title"] = (title_prefix + metadata["title"]).strip()
-
-    return metadata
-
-  metadata = get_metadata()
+  metadata = {"title": title_maker(soup, title_prefix)}
 
   if html_fixer is not None:
     html_fixer(soup)
 
+  # We definitely want to return the original html even if the file exists - we may need to navigate to the next element.
   if os.path.exists(outfile_path):
     logging.info("Skipping dumping: %s to %s", url, outfile_path)
-    return soup
+    return unaltered_soup
 
   content = content_from_element(soup=soup, text_css_selector=text_css_selector, url=url)
 
@@ -83,7 +80,7 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_css_selec
   md_file.import_content_with_pandoc(content=content, source_format="html", dry_run=dry_run, metadata=metadata)
 
   logging.info("Done: %s to %s", url, outfile_path)
-  return BeautifulSoup(html, 'html.parser')
+  return unaltered_soup
 
 
 def next_url_from_soup_css(soup, css, base_url):

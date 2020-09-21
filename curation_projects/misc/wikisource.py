@@ -4,7 +4,8 @@ from doc_curation.scraping.wikisource import serial
 
 if __name__ == '__main__':
     # logging.debug(get_item("http://sanskritabhyas.in/hi/Kridanta/View/%E0%A4%AD%E0%A5%82"))
-    serial.dump_text(start_url="https://sa.wikisource.org/s/1wlz", out_path="/home/vvasuki/sanskrit/raw_etexts/kalAH/saMskAraratnamAlA/01/", dry_run=False)
+    # serial.dump_text(start_url="https://sa.wikisource.org/s/1wlz", out_path="/home/vvasuki/sanskrit/raw_etexts/kalAH/saMskAraratnamAlA/01/", dry_run=False)
+    serial.dump_text(start_url="https://sa.wikisource.org/s/1y6k", out_path="/home/vvasuki/sanskrit/raw_etexts/kalAH/saMskAraratnamAlA/02/", dry_run=False)
     # wikisource.dump_text(url_base="अग्निपुराणम्/अध्यायः", num_parts=383, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANa/agni-purANam/")
     # wikisource.dump_text(url_base="गरुडपुराणम्/आचारकाण्डः/अध्यायः", num_parts=240, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANa/garuDa-purANam/AchAra-kANDaH/")
     # wikisource.dump_text(url_base="गरुडपुराणम्/प्रेतकाण्डः_(धर्मकाण्डः)/अध्यायः", num_parts=49, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANa/garuDa-purANam/dharma-kANDaH/")
