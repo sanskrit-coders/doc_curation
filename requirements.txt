@@ -1,5 +1,6 @@
 pikepdf
 pdf2image
+indic_transliteration
 selenium
 urllib3
 regex
