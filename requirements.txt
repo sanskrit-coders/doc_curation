@@ -1,5 +1,6 @@
 pikepdf
 pdf2image
+curation_utils
 indic_transliteration
 selenium
 urllib3
