@@ -1,6 +1,4 @@
-"""
-Wikisource scraping.
-"""
+
 import logging
 import os
 

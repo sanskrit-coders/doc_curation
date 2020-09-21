@@ -134,6 +134,8 @@ class MdFile(object):
         import pypandoc
         filters = None
         md = pypandoc.convert_text(source=content, to="gfm-raw_html", format=source_format, extra_args=pandoc_extra_args, filters=filters)
+        md = regex.sub("</?div[^>]*?>", "", md)
+        md = regex.sub("\n\n+", "\n\n", md)
         self.dump_to_file(metadata=metadata, md=md, dry_run=dry_run)
 
     def import_with_pandoc(self, source_file, source_format, dry_run, metadata={}, pandoc_extra_args=['--atx-headers']):

@@ -1,7 +1,10 @@
-from doc_curation import wikisource
+from doc_curation.scraping import wikisource
+from doc_curation.scraping.wikisource import serial
+
 
 if __name__ == '__main__':
     # logging.debug(get_item("http://sanskritabhyas.in/hi/Kridanta/View/%E0%A4%AD%E0%A5%82"))
+    serial.dump_text(start_url="https://sa.wikisource.org/s/1wlz", out_path="/home/vvasuki/sanskrit/raw_etexts/kalAH/saMskAraratnamAlA/01/", dry_run=False)
     # wikisource.dump_text(url_base="अग्निपुराणम्/अध्यायः", num_parts=383, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANa/agni-purANam/")
     # wikisource.dump_text(url_base="गरुडपुराणम्/आचारकाण्डः/अध्यायः", num_parts=240, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANa/garuDa-purANam/AchAra-kANDaH/")
     # wikisource.dump_text(url_base="गरुडपुराणम्/प्रेतकाण्डः_(धर्मकाण्डः)/अध्यायः", num_parts=49, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANa/garuDa-purANam/dharma-kANDaH/")
@@ -43,5 +46,5 @@ if __name__ == '__main__':
     # wikisource.dump_text(url_base="ऋग्वेदः_खिलसूक्तानि/अध्यायः", num_parts=5, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/saMhitA/khilAni/visvara/", url_id_padding="%d")
     # wikisource.dump_text(url_base="शुक्लयजुर्वेदः/अध्यायः", num_parts=40, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/mAdhyandina/visvara/", url_id_padding="%02d")
     # wikisource.dump_text(url_base="वेतालपञ्चविंशति", num_parts=25, dir_path="/home/vvasuki/sanskrit/raw_etexts/kAvyam/vetAla-panchavimshatikA/", url_id_padding="%02d", transliterate_id=False)
-    wikisource.dump_deep_text(url_text_id="कथासरित्सागरः", url_leaf_id_padding="%d", dir_path="/home/vvasuki/sanskrit/raw_etexts/kAvyam/kathAsaritsAgaraH/", unit_info_file="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/text_data/kAvyam/kathAsaritsAgaraH.json", dry_run=False)
+    # wikisource.dump_deep_text(url_text_id="कथासरित्सागरः", url_leaf_id_padding="%d", dir_path="/home/vvasuki/sanskrit/raw_etexts/kAvyam/kathAsaritsAgaraH/", unit_info_file="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/text_data/kAvyam/kathAsaritsAgaraH.json", dry_run=False)
 

@@ -1,0 +1,3 @@
+"""
+Wikisource scraping.
+"""
