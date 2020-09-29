@@ -15,4 +15,4 @@ setuptools
 bs4
 beautifulsoup4
 toml
-itertools
+more_itertools
