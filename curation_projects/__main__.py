@@ -20,10 +20,10 @@ logging.basicConfig(
 
 # MdFile.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-markdown", source_scheme=sanscript.IAST)
 
-
-MdFile.fix_index_files(dir_path="/home/vvasuki/sanskrit/raw_etexts/kalpaH/saMskAraratnamAlA/", dry_run=False, transliteration_target=None)
-
-MdFile.apply_function(dir_path="/home/vvasuki/sanskrit/raw_etexts/kalpaH/saMskAraratnamAlA/", fn=MdFile.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
+# 
+# MdFile.fix_index_files(dir_path="/home/vvasuki/sanskrit/raw_etexts/kalpaH/saMskAraratnamAlA/", dry_run=False, transliteration_target=None)
+# 
+# MdFile.apply_function(dir_path="/home/vvasuki/sanskrit/raw_etexts/kalpaH/saMskAraratnamAlA/", fn=MdFile.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
 
 # MdFile.apply_function(dir_path="/home/vvasuki/vvasuki-git/pALi/content", fn=MdFile.ensure_ordinal_in_title, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
 
@@ -34,8 +34,9 @@ MdFile.apply_function(dir_path="/home/vvasuki/sanskrit/raw_etexts/kalpaH/saMskAr
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
 # MdFile(file_path="",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
 
-# MdFile(file_path="/home/vvasuki/vvasuki-git/sanskrit/content/simple_standard/3_saralamAnakasaMskRtasya_kriyAnvayanam.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
-# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/math/probability/probability", dry_run=False, source_script=None)
+# MdFile(file_path="/home/vvasuki/sanskrit/raw_etexts/veda/misc/brAhmaNam/aitareya_brahmana.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
+# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="", dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
+MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/economics/state-level/growth.md", dry_run=False, source_script=None)
 
 
 # MdFile(file_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/gadyam/rAjagopAlAchAri/rAmAyaNa.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)

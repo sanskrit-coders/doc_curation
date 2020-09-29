@@ -90,11 +90,11 @@ def next_url_from_soup_css(soup, css, base_url):
   return None
 
 
-def dump_series(start_url, out_path, dumper, next_url_getter, dry_run=False):
+def dump_series(start_url, out_path, dumper, next_url_getter, index_format="%02d", dry_run=False):
   index = 1
   next_url = start_url
   while next_url:
-    soup = dumper(url=next_url, outfile_path=os.path.join(out_path, "%02d.md" % index), title_prefix="%02d" % index, dry_run=dry_run)
+    soup = dumper(url=next_url, outfile_path=os.path.join(out_path, index_format % index), title_prefix= index_format % index, dry_run=dry_run)
     next_url = next_url_getter(soup)
     index = index + 1
     # break # For testing

@@ -399,7 +399,11 @@ class MdFile(object):
     def apply_function(cls, fn, dir_path, file_pattern="**/*.md",  file_name_filter=None, frontmatter_type="yaml", *args,**kwargs):
         from pathlib import Path
         # logging.debug(list(Path(dir_path).glob(file_pattern)))
-        md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern, file_name_filter=file_name_filter, frontmatter_type=frontmatter_type)
+        if os.path.isfile(dir_path):
+            logging.warning("Got a file actually. processing it!")
+            md_files = [MdFile(file_path=dir_path)]
+        else:
+            md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern, file_name_filter=file_name_filter, frontmatter_type=frontmatter_type)
         for md_file in md_files:
             logging.info("Processing %s", md_file)
             fn(md_file, *args, **kwargs)
