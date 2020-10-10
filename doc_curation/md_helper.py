@@ -287,7 +287,7 @@ class MdFile(object):
         if yml == {}:
           yamlout = ""
         else:
-          yamlout = yaml.dump(yml, default_flow_style=False, indent=2, allow_unicode=True)
+          yamlout = yaml.dump(yml, default_flow_style=False, indent=2, allow_unicode=True, width=1000)
         dump = "---\n{yml}\n---\n{markdown}".format(yml=yamlout, markdown=md)
         out_file_obj.write(dump)
         # out_file_obj.write(yamldown.dump(yml, md)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5
@@ -424,8 +424,9 @@ class MdFile(object):
       md_files = MdFile.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern,
                                                file_name_filter=file_name_filter, frontmatter_type=frontmatter_type)
     start_file_reached = False
-    
-    for md_file in md_files:
+
+    from tqdm import tqdm
+    for md_file in tqdm(md_files):
       if start_file is not None and not start_file_reached:
           if str(md_file.file_path) != start_file:
             continue

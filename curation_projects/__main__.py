@@ -13,7 +13,10 @@ for handler in logging.root.handlers[:]:
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
-
+logging.getLogger('charsetgroupprober').setLevel(logging.WARNING)
+logging.getLogger("charsetgroupprober").propagate = False
+logging.getLogger('sbcharsetprober').setLevel(logging.WARNING)
+logging.getLogger("sbcharsetprober").propagate = False
 # advaita_shaaradaa.dump_texts(dest_dir="/home/vvasuki/sanskrit/raw_etexts/vedAntam/advaitam/advaita-shAradA")
 
 # wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-index/", dry_run=False, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/manasataramgini")
@@ -46,4 +49,4 @@ logging.basicConfig(
 # file_helper.copy_file_tree(source_dir="/home/vvasuki/Downloads/peterFreund", dest_dir="/home/vvasuki/sanskrit/raw_etexts/mixed/peterFreund", file_pattern="**/*.md")
 
 # MdFile(file_path="/home/vvasuki/sanskrit/raw_etexts/vedAntam/dvaitam/mAdhvam/TikA-tippaNi/chidgagana_tika.md",frontmatter_type=MdFile.TOML).fix_lazy_anusvaara(dry_run=False, ignore_padaanta=True, omit_yrl=True)
-MdFile.apply_function(fn=MdFile.fix_lazy_anusvaara, dir_path="/home/vvasuki/sanskrit/raw_etexts", start_file="/home/vvasuki/sanskrit/raw_etexts/vedAntam/dvaitam/mAdhvam/TikA-tippaNi/chidgagana_tika.md", dry_run=False, ignore_padaanta=True, omit_yrl=True)
+MdFile.apply_function(fn=MdFile.fix_lazy_anusvaara, dir_path="/home/vvasuki/sanskrit/raw_etexts", file_name_filter=None, start_file="/home/vvasuki/sanskrit/raw_etexts/vyAkaraNam/aShTAdhyAyI_central-repo/vAsu/pada-1.1/1.1.1.md", dry_run=False, ignore_padaanta=True, omit_yrl=True)
