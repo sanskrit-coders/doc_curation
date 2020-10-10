@@ -85,7 +85,7 @@ def split_and_ocr_on_drive(pdf_path,
 
   # Combine the ocr segments
   file_helper.concatenate_files(input_path_list=ocr_segments, output_path=final_ocr_path)
-  doc_curation.clear_bad_chars(file_path=final_ocr_path)
+  file_helper.clear_bad_chars_in_file(file_path=final_ocr_path)
 
 
 def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_page=None, small_pdf_pages=25):
