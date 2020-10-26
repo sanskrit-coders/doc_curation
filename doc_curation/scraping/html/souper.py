@@ -1,6 +1,10 @@
+import urllib
+
 import logging
 import os
-import urllib
+from pathlib import Path
+
+from curation_utils import file_helper
 
 from bs4 import BeautifulSoup
 
@@ -38,7 +42,7 @@ def tag_remover(soup, css_selector):
 def content_from_element(soup, text_css_selector, url):
   content_element = soup.select(text_css_selector)
   if len(content_element) == 0:
-    logging.warning("Could not get text form %s with soup", url)
+    logging.warning("Could not get text from %s for css selector: %s with soup", url, text_css_selector)
     with urllib.request.urlopen(url) as filehandle:
       content = filehandle.read().decode("utf8")
   else:
@@ -46,28 +50,30 @@ def content_from_element(soup, text_css_selector, url):
   return content
 
 
-def title_from_element(soup, title_css_selector=None, title_prefix=""):
+def title_from_element(soup, title_css_selector=None, title_prefix="", index=None):
   if title_css_selector is not None:
     title_elements = soup.select(title_css_selector)
     if len(title_elements) > 0:
-      title = title_elements[0].text
+      title = " ".join(title_element.text for title_element in title_elements)
     else:
       title = "UNKNOWN_TITLE"
+    if index is not None:
+      title_prefix = "%02d %s" % (index, title_prefix)
     title = (title_prefix + title).strip()
   return title
   
 
 
-def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, title_prefix="", html_fixer=None, dry_run=False):
+def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, title_prefix="", html_fixer=None, index=None, dry_run=False):
   logging.info("Dumping: %s to %s", url, outfile_path)
   html = get_html(url=url)
   unaltered_soup = BeautifulSoup(html, 'html.parser')
   soup = BeautifulSoup(html, 'html.parser')
 
-  metadata = {"title": title_maker(soup, title_prefix)}
-
   if html_fixer is not None:
     html_fixer(soup)
+
+  metadata = {"title": title_maker(soup, title_prefix, index)}
 
   # We definitely want to return the original html even if the file exists - we may need to navigate to the next element.
   if os.path.exists(outfile_path):
@@ -99,3 +105,12 @@ def dump_series(start_url, out_path, dumper, next_url_getter, index_format="%02d
     index = index + 1
     # break # For testing
   logging.info("Reached end of series")
+
+
+
+def markdownify_local_htmls(src_dir, dest_dir, dumper, dry_run=False):
+  file_paths = sorted(Path(src_dir).glob("**/*.htm*"))
+  for index, src_path in enumerate(file_paths):
+    dest_path = str(src_path).replace(".html", ".md").replace(".htm", ".md").replace(src_dir, dest_dir)
+    dest_path = file_helper.clean_file_path(dest_path)
+    _ = dumper(url="file://" + str(src_path), outfile_path=dest_path, index=index, dry_run=dry_run)

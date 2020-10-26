@@ -7,6 +7,7 @@ from doc_curation import md_helper, wordpress
 from doc_curation.md_helper import MdFile
 
 # Remove all handlers associated with the root logger object.
+from doc_curation.scraping.html import souper
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
@@ -35,11 +36,11 @@ logging.getLogger("sbcharsetprober").propagate = False
 # MdFile.apply_function(fn=MdFile.prepend_file_index_to_title, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/books/vivekAnanda", dry_run=False)
 
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
-# MdFile(file_path="",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None)
+MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="", frontmatter_type=MdFile.TOML, dry_run=False, source_script=None)
 
-# MdFile(file_path="/home/vvasuki/sanskrit/raw_etexts/veda/misc/brAhmaNam/aitareya_brahmana.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
+# MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/kalpaH/smRtiH/manuH/_index.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
 # MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="", dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
-# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/computing/computerArchitecture/cpu.md", dry_run=False, source_script=None, indexed_title_pattern=None)
+# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="", dry_run=False, source_script=None)
 
 
 # MdFile(file_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/gadyam/rAjagopAlAchAri/rAmAyaNa.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
@@ -49,4 +50,4 @@ logging.getLogger("sbcharsetprober").propagate = False
 # file_helper.copy_file_tree(source_dir="/home/vvasuki/Downloads/peterFreund", dest_dir="/home/vvasuki/sanskrit/raw_etexts/mixed/peterFreund", file_pattern="**/*.md")
 
 # MdFile(file_path="/home/vvasuki/sanskrit/raw_etexts/vedAntam/dvaitam/mAdhvam/TikA-tippaNi/chidgagana_tika.md",frontmatter_type=MdFile.TOML).fix_lazy_anusvaara(dry_run=False, ignore_padaanta=True, omit_yrl=True)
-MdFile.apply_function(fn=MdFile.fix_lazy_anusvaara, dir_path="/home/vvasuki/sanskrit/raw_etexts", file_name_filter=None, start_file="/home/vvasuki/sanskrit/raw_etexts/vyAkaraNam/aShTAdhyAyI_central-repo/vAsu/pada-1.1/1.1.1.md", dry_run=False, ignore_padaanta=True, omit_yrl=True)
+# MdFile.apply_function(fn=MdFile.fix_lazy_anusvaara, dir_path="/home/vvasuki/sanskrit/raw_etexts", file_name_filter=None, start_file="/home/vvasuki/sanskrit/raw_etexts/vyAkaraNam/aShTAdhyAyI_central-repo/vAsu/pada-1.1/1.1.1.md", dry_run=False, ignore_padaanta=True, omit_yrl=True)
