@@ -1,12 +1,13 @@
 import json
 import logging
 import os
+import traceback
 
 from indic_transliteration import sanscript
 from selenium.common.exceptions import NoSuchElementException
 
 from curation_utils import scraping, file_helper
-from doc_curation import md_helper
+from doc_curation import md_helper, text_data
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -82,13 +83,58 @@ def dump_text(browser, outdir):
     md_file.dump_to_file(metadata={"title": text_name}, md=text, dry_run=False)
 
 
-def get_texts(browser, outdir, start_nodes):
+def browse_nodes(browser, start_nodes):
     for node in start_nodes:
         if node.startswith("expand:"):
             expand_tree_by_text(browser=browser, element_text=node.replace("expand:", ""))
         else:
             click_link_by_text(browser=browser, element_text=node)
+
+
+def get_texts(browser, outdir, start_nodes):
+    browse_nodes(browser=browser, start_nodes=start_nodes)
     os.makedirs(name=outdir, exist_ok=True)
     dump_text(browser=browser, outdir=outdir)
     while click_link_by_text(browser=browser, element_text="Next"):
         dump_text(browser=browser, outdir=outdir)
+
+
+def get_structured_text(browser, start_nodes, base_dir, unit_info_file):
+    def open_path(subunit_path, unit_data):
+        logging.debug(list(zip(subunit_path, unit_data["unitNameListInSite"])))
+        for (subunit, unitNameInSite) in zip(subunit_path, unit_data["unitNameListInSite"]):
+            element_text = "%s%d" % (unitNameInSite, subunit)
+            click_link_by_text(browser=browser, element_text=element_text)
+
+    def close_path(subunit_path, unit_data):
+        logging.info(list(zip(reversed(subunit_path), reversed(unit_data["unitNameListInSite"]))))
+        for (subunit, unitNameInSite) in list(zip(reversed(subunit_path), reversed(unit_data["unitNameListInSite"]))):
+            element_text = "%s%d" % (unitNameInSite, subunit)
+            logging.info(element_text)
+            click_link_by_text(browser=browser, element_text=element_text)
+
+    browse_nodes(browser=browser, start_nodes=start_nodes)
+    os.makedirs(name=base_dir, exist_ok=True)
+    unit_data = text_data.get_subunit_data(unit_info_file, [])
+
+    for subunit_path in text_data.get_subunit_path_list(json_file=unit_info_file, unit_path_list=[]):
+        try:
+            open_path(subunit_path=subunit_path, unit_data=unit_data)
+        except NoSuchElementException as e:
+            close_path(subunit_path=subunit_path, unit_data=unit_data)
+            exit()
+            logging.warning("Skipping as Could not find element " + str(traceback.format_exc()))
+            continue
+        outfile_path = os.path.join(base_dir, "/".join(map(str, subunit_path)) + ".md")
+        if os.path.exists(outfile_path):
+            logging.info("Skipping " + outfile_path)
+        else:
+            text_spans = browser.find_element_by_id("divResults").find_elements_by_tag_name("span")
+            lines = ["\n", "\n"]
+            for span in text_spans:
+                lines.append(span.text + "  \n")
+            os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
+            with open(outfile_path, "w") as outfile:
+                outfile.writelines(lines)
+        # Close the kANDa - else the driver may pick sarga from this kANDa when it is to pick the sarga from the next kANDa?!
+        close_path(subunit_path=subunit_path, unit_data=unit_data)
