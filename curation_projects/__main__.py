@@ -25,9 +25,9 @@ logging.getLogger("sbcharsetprober").propagate = False
 # MdFile.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-markdown", source_scheme=sanscript.IAST)
 
 # 
-# MdFile.fix_index_files(dir_path="/home/vvasuki/sanskrit/raw_etexts/kalpaH/saMskAraratnamAlA/", dry_run=False, transliteration_target=None)
+# MdFile.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/jyotiSham/content/history/equinoctial_records.md", dry_run=False, transliteration_target=None)
 # 
-# MdFile.apply_function(dir_path="/home/vvasuki/sanskrit/raw_etexts/kalpaH/saMskAraratnamAlA/", fn=MdFile.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
+# MdFile.apply_function(dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/atharva/paippalAda/", fn=MdFile.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
 
 # MdFile.apply_function(dir_path="/home/vvasuki/vvasuki-git/pALi/content", fn=MdFile.ensure_ordinal_in_title, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
 
@@ -36,14 +36,14 @@ logging.getLogger("sbcharsetprober").propagate = False
 # MdFile.apply_function(fn=MdFile.prepend_file_index_to_title, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/books/vivekAnanda", dry_run=False)
 
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
-MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="", frontmatter_type=MdFile.TOML, dry_run=False, source_script=None)
+ 
+MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/bloodlines/vasiShThaH.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
 
-# MdFile(file_path="/home/vvasuki/vvasuki-git/saMskAra/content/kalpaH/smRtiH/manuH/_index.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
-# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="", dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
-# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="", dry_run=False, source_script=None)
+# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/atharva/paippalAda", dry_run=False, source_script=sanscript.DEVANAGARI)
+# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="", dry_run=False, source_script=None, indexed_title_pattern=None)
 
 
-# MdFile(file_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/gadyam/rAjagopAlAchAri/rAmAyaNa.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
+# MdFile(file_path="",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
 #  , indexed_title_pattern=None
 
 # md_helper.import_md_recursive(source_dir="/home/vvasuki/Downloads/peterFreund", file_extension="txt")

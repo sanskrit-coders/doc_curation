@@ -367,6 +367,8 @@ class MdFile(object):
       title_in_file_name = title
       if source_script is not None:
         title_in_file_name = sanscript.transliterate(title, source_script, sanscript.OPTITRANS)
+      if title_in_file_name == "":
+        raise ValueError(title_in_file_name)
       file_name = file_helper.clean_file_path("%s.md" % title_in_file_name)
       file_path = os.path.join(out_dir, file_name)
       section_yml = {"title": title}

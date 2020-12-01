@@ -48,8 +48,6 @@ def get_taittiriiya(browser):
 
 
 if __name__ == '__main__':
-    md_helper.MdFile.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/sangrahaH/taittirIyA/brAhmaNam/bhaTTa-bhAskara-bhAShyam")
-    exit()
     browser = parankusha.get_logged_in_browser(headless=False)
     get_taittiriiya(browser=browser)
     # get_rv()

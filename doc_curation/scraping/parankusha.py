@@ -138,3 +138,4 @@ def get_structured_text(browser, start_nodes, base_dir, unit_info_file):
                 outfile.writelines(lines)
         # Close the kANDa - else the driver may pick sarga from this kANDa when it is to pick the sarga from the next kANDa?!
         close_path(subunit_path=subunit_path, unit_data=unit_data)
+    md_helper.MdFile.fix_index_files(dir_path=base_dir)
