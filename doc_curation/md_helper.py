@@ -350,6 +350,7 @@ class MdFile(object):
     Implementation notes: md parsers oft convert to html or json. Processing that output would be more complicated than what we need here.
     :return: 
     """
+    # TODO: Fix links upon splitting.
     logging.debug("Processing file: %s", self.file_path)
     if os.path.basename(self.file_path) == "_index.md":
       out_dir = os.path.dirname(self.file_path)
