@@ -15,7 +15,7 @@ def get_from_archive(item_id):
 
 
 if __name__ == '__main__':
-    pdf.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/vedaH/mahAnArAyaNopaniShat_atharvaveda-taH.pdf", small_pdf_pages=10, start_page=1, detext=True)
+    pdf.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/meta-books/29_1993_14_Rediscovring_Munshi.pdf", small_pdf_pages=10, start_page=1, detext=True)
     # pdf.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/vyAkaraNam/prathamAvRtti/", small_pdf_pages=10)
     # pdf.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/vyAkaraNam/vAsu/", small_pdf_pages=10)
 

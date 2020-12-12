@@ -22,9 +22,15 @@ def transform():
       suukta_id = "%02d/%03d" % (int(rk["classification"]["mandala"]), int(rk["classification"]["sukta"]))
       suukta_md = suukta_id_to_md.get(suukta_id, "")
       bhaashya = regex.sub("<.+?>", "", rk["sayanaBhashya"])
-      heading_str = sanscript.transliterate("%02d" % int(rk["classification"]["rik"]), sanscript.IAST, sanscript.DEVANAGARI)
-      attribute_str = "## %s\n%s। %s। %s।" % (heading_str, rk["attribute"]["devata"], rk["attribute"]["rishi"], rk["attribute"]["chandas"])
-      rk_md = "%s\n\n%s\n\n%s\n\n%s" % (attribute_str, "  \n".join(rk["samhitaAux"]["lines"]), "  \n".join(rk["padapaatha"]["lines"]), bhaashya)
+      rk_number = sanscript.transliterate("%02d" % int(rk["classification"]["rik"]), sanscript.IAST, sanscript.DEVANAGARI)
+      attribute_str = "%s। %s। %s।" % (rk["attribute"]["devata"], rk["attribute"]["rishi"], rk["attribute"]["chandas"])
+      padapaatha_lines = rk["padapaatha"]["lines"]
+      if isinstance(padapaatha_lines, str):
+        padapaatha_lines = [padapaatha_lines]
+      samhita_lines = rk["samhitaAux"]["lines"]
+      if isinstance(samhita_lines, str):
+        samhita_lines = [samhita_lines]
+      rk_md = "%s\n\n%s %s॥\n\n%s\n\n%s" % (attribute_str, "  \n".join(samhita_lines), rk_number, "  \n".join(padapaatha_lines), bhaashya)
       suukta_md += "\n\n%s" % rk_md
       if bhaashya == "":
         logging.warning("No bhAShya for %s", rk["id"])
