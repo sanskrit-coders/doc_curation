@@ -37,7 +37,7 @@ logging.getLogger("sbcharsetprober").propagate = False
 
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
  
-MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/bloodlines/vasiShThaH.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
+MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/skills/clothing/extremities.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
 
 # MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/atharva/paippalAda", dry_run=False, source_script=sanscript.DEVANAGARI)
 # MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="", dry_run=False, source_script=None, indexed_title_pattern=None)
