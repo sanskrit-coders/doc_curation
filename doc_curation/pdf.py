@@ -98,6 +98,7 @@ def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_pag
       end_page = len(pdf.pages)
     pages = range(start_page, end_page + 1)
     page_sets = list_helper.divide_chunks(list_in=pages, n=small_pdf_pages)
+    dest_pdfs = []
     for page_set in page_sets:
       pages = [pdf.pages[i - 1] for i in page_set]
       dest_pdf_path = os.path.join(output_directory, "%s_%04d-%04d.pdf" % (pdf_name_stem, page_set[0], page_set[-1]))
@@ -109,6 +110,8 @@ def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_pag
         dest_pdf.save(filename_or_stream=dest_pdf_path)
       else:
         logging.warning("%s exists", dest_pdf_path)
+      dest_pdfs.append(dest_pdf_path)
+  return dest_pdfs
 
 
 # Adapted from https://github.com/theeko74/pdfc/blob/master/pdf_compressor.py
