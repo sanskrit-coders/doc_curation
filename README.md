@@ -29,17 +29,15 @@ key_file = '/home/key.json'
 pdf.split_and_ocr_on_drive(pdf_file, key_file)
 ```
 
-* Usage for the `google_vision_pdf.py` to OCR pdf to txt files.
+### Usage for the `google_vision_pdf.py` to OCR pdf to txt files.
+* Follow the instructions here: https://cloud.google.com/vision/docs/before-you-begin. 
+* Make sure to set the environment variable for `GOOGLE_APPLICATION_CREDENTIALS` to the path of json containing your service account key.
+* Example:
+```
+export GOOGLE_APPLICATION_CREDENTIALS="/home/user/Downloads/service-account-file.json"
+ ```
 
-- Follow the instructions here: https://cloud.google.com/vision/docs/before-you-begin. Make sure
-to set the environment variable for `GOOGLE_APPLICATION_CREDENTIALS` to the path
-of json containing your service account key.
-    - Example:
-    ```
-    export GOOGLE_APPLICATION_CREDENTIALS="/home/user/Downloads/service-account-file.json"
-    ```
-
-- Invoke the script passing in the input file. Eg:
+* Invoke the script passing in the input file. Eg:
 
 ```
 python3 google_vision_pdf.py --input-file <input.pdf>
