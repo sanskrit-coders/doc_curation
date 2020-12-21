@@ -360,11 +360,16 @@ class MdFile(object):
     lines = md.splitlines(keepends=False)
     (lines_till_section, remaining) = get_lines_till_section(lines)
     sections = split_to_sections(remaining)
+    if len(sections) == 0:
+      return 
     for section_index, (title, section_lines) in enumerate(sections):
+      if title == None:
+        title = ""
       if indexed_title_pattern is not None:
         title = indexed_title_pattern % (section_index + 1, title)
         if source_script is not None:
           title = sanscript.transliterate(title, sanscript.OPTITRANS, source_script)
+      title = title.strip()
       title_in_file_name = title
       if source_script is not None:
         title_in_file_name = sanscript.transliterate(title, source_script, sanscript.OPTITRANS)
