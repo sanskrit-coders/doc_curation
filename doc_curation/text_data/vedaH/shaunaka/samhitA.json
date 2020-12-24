@@ -38,12 +38,13 @@
     "length_ws": 12
   },
   "12": {
-    "length": 9,
+    "length": 5,
+    "length_titus": 9,
     "length_ws": 11
   },
   "13": {
-    "length": 62,
-    "length_ws": 9
+    "length_titus": 62,
+    "length": 9
   },
   "14": {
     "length": 2

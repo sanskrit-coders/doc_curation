@@ -6,6 +6,8 @@ from selenium.webdriver.chrome import options
 from selenium.webdriver.remote.remote_connection import LOGGER
 
 from doc_curation import text_data
+from doc_curation.md_helper import MdFile
+from indic_transliteration import sanscript
 
 LOGGER.setLevel(logging.WARNING)
 from urllib3.connectionpool import log as urllibLogger
@@ -22,7 +24,7 @@ browser.implicitly_wait(6)
 
 
 def dump_text(base_dir):
-    unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "veda/shaunaka/samhitA.json")
+    unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "vedaH/shaunaka/samhitA.json")
 
     for kaanda_index in text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[]):
         subunit_list = text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[kaanda_index])
@@ -39,13 +41,16 @@ def dump_text(base_dir):
             browser.get(url=url)
             text = browser.find_element_by_id("videotext").text
             text = text.replace("\n", "  \n")
-            os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
-            with open(outfile_path, "w") as outfile:
-                logging.debug(text)
-                outfile.write(text)
+            title_tags = browser.find_elements_by_css_selector("#videotext  strong")
+            title = "%03d" % subunit_index
+            if len(title_tags) > 0:
+                title = "%03d %s" % (subunit_index, title_tags[0].text)
+            title = sanscript.transliterate(title, sanscript.HK, sanscript.DEVANAGARI)
+            md_file = MdFile(file_path=outfile_path)
+            md_file.dump_to_file(metadata={"title": title}, md=text, dry_run=False)
 
 
 if __name__ == '__main__':
-    dump_text(base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shaunaka/samhitA/")
+    dump_text(base_dir="/home/vvasuki/sanskrit/raw_etexts/vedaH/atharva/shaunaka/saMhitA_VH")
     browser.close()
     pass
