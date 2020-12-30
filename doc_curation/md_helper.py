@@ -464,7 +464,7 @@ class MdFile(object):
       index_file = MdFile(file_path=os.path.join(dir, "_index.md"), frontmatter_type=frontmatter_type)
       if not os.path.exists(index_file.file_path):
         index_file.dump_to_file(metadata={}, md="", dry_run=dry_run)
-      index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
+        index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
 
   @classmethod
   def devanaagarify_titles(cls, md_files, dry_run=False):
