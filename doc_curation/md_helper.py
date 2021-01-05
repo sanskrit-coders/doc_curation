@@ -249,7 +249,7 @@ class MdFile(object):
     file_name = file_name + extension
     file_name = file_helper.clean_file_path(file_name)
     file_path = os.path.join(os.path.dirname(current_path), file_name)
-    if current_path != file_path:
+    if str(current_path) != file_path:
       logging.info("Renaming %s to %s", current_path, file_path)
       if not dry_run:
         os.rename(src=current_path, dst=file_path)

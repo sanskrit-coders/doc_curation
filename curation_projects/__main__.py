@@ -22,7 +22,7 @@ logging.getLogger("sbcharsetprober").propagate = False
 
 # wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-index/", dry_run=False, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/manasataramgini")
 # wordpress.fix_paths(dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/manasataramgini", dry_run=False)
-wordpress.fix_paths(dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/history/paganology/Aryan/indo-iranian/indo-aryan/persons/brAhma/sage-bloodlines/bhRguH/dvitIyajanmani_bhRguH/chyavanaH/ApnavAna/aurvaH/jamadagniH/MT_charitram/", dry_run=False)
+# wordpress.fix_paths(dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/history/paganology/Aryan/indo-iranian/indo-aryan/persons/brAhma/sage-bloodlines/bhRguH/dvitIyajanmani_bhRguH/chyavanaH/ApnavAna/aurvaH/jamadagniH/MT_charitram/", dry_run=False)
 
 # MdFile.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-markdown", source_scheme=sanscript.IAST)
 
@@ -36,14 +36,16 @@ wordpress.fix_paths(dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/histo
 
 # MdFile.set_titles_from_filenames(dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/history/history_of_the_indian_people", transliteration_target=None, dry_run=False)
 
+MdFile.set_filenames_from_titles(dir_path="/home/vvasuki/vvasuki-git/sanskrit/content/vyAkaraNam/whitney", transliteration_source=sanscript.DEVANAGARI, dry_run=False)
+
 # MdFile.apply_function(fn=MdFile.prepend_file_index_to_title, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/books/vivekAnanda", dry_run=False)
 
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
  
-# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/Rk/kauShItakam/shAnkhAyana-AraNyakam.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
+# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/kalpe_svamatam/social-cultivation/violence/animal-protection.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
 
 # MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/sAma/brAhmaNam/chandogya_brahmana", dry_run=False)
-# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/history/paganology/Aryan/indo-iranian/indo-aryan/persons/xatra/gAzi_downing/north.md", dry_run=False, source_script=None, indexed_title_pattern=None)
+# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/kalpe_svamatam/social-cultivation/violence/animal-sacrifice.md", dry_run=False, source_script=None, indexed_title_pattern=None)
 
 
 # MdFile(file_path="",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
