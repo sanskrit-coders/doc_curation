@@ -15,15 +15,12 @@
 # limitations under the License.
 # See: https://github.com/googleapis/python-vision/blob/master/samples/snippets/detect/detect.py
 
-import os
-import logging
-import io
-from pathlib import Path
-from pikepdf import Pdf
 import argparse
-from doc_curation import pdf as doc_curation_pdf
+import io
+
 from google.cloud import vision_v1
-from curation_utils import list_helper
+
+from doc_curation import pdf as doc_curation_pdf
 
 
 def sample_batch_annotate_files(file_path="path/to/your/document.pdf"):
@@ -52,12 +49,14 @@ def sample_batch_annotate_files(file_path="path/to/your/document.pdf"):
             file_out.write(u"{}".format(image_response.full_text_annotation.text))
     file_out.close()
 
+
 def main():
     parser = argparse.ArgumentParser(description="OCR a PDF using google vision")
     parser.add_argument("--input-file", help="input pdf file to be ocred", required=True,
                         type=str)
     args = parser.parse_args()
     sample_batch_annotate_files(args.input_file)
+
 
 if __name__ == '__main__':
     main()

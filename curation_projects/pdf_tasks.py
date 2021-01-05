@@ -1,5 +1,6 @@
 import logging
 
+import doc_curation.pdf.drive_ocr
 from doc_curation import pdf
 
 # Remove all handlers associated with the root logger object.
@@ -15,7 +16,7 @@ def get_from_archive(item_id):
 
 
 if __name__ == '__main__':
-    pdf.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/meta-books/29_1993_14_Rediscovring_Munshi.pdf", small_pdf_pages=10, start_page=1, detext=True)
+    doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/purANam/mahAbhAratam_gItA-press/mahabharata01ramauoft.pdf", small_pdf_pages=5, start_page=1, pdf_compression_power=2, detext=False)
     # pdf.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/vyAkaraNam/prathamAvRtti/", small_pdf_pages=10)
     # pdf.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/vyAkaraNam/vAsu/", small_pdf_pages=10)
 

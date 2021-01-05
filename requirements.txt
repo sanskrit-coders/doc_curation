@@ -1,6 +1,7 @@
 pikepdf
 pdf2image
 curation_utils
+google-cloud-vision
 indic_transliteration
 selenium
 urllib3

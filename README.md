@@ -26,7 +26,7 @@ A package for curating doc file collections. Prominent features:
 from doc_curation import pdf
 pdf_file = '/home/file.pdf'
 key_file = '/home/key.json'
-pdf.split_and_ocr_on_drive(pdf_file, key_file)
+doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_file, key_file)
 ```
 
 ### Usage for the `google_vision_pdf.py` to OCR pdf to txt files.
