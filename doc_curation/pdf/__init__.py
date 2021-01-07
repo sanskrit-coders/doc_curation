@@ -111,6 +111,11 @@ def detext_via_ps(input_file_path, output_file_path):
 
 def dump_images(input_file_path, output_path):
   from pdf2image import convert_from_path
+  image_segments = [str(pdf_segment) for pdf_segment in Path(_get_ocr_dir(input_file_path)).glob("*.jpg")]
+  if len(image_segments) > 0:
+    logging.info("%d images already exist! So not dumping afresh.", len(image_segments))
+    return 
+  logging.info("Splitting to images: %s to %s", input_file_path, output_path)
   convert_from_path(input_file_path, fmt="jpeg", output_folder=output_path, output_file=os.path.splitext(os.path.basename(input_file_path))[0])
 
 

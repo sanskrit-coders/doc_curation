@@ -82,12 +82,12 @@ def split_to_images_and_ocr(pdf_path,
   image_directory = _get_ocr_dir(pdf_path)
   os.makedirs(image_directory, exist_ok=True)
   pdf.dump_images(pdf_path, image_directory)
-  image_segments = [str(pdf_segment) for pdf_segment in Path(_get_ocr_dir(pdf_path)).glob("*.jpeg")]
+  image_segments = [str(pdf_segment) for pdf_segment in Path(_get_ocr_dir(pdf_path)).glob("*.jpg")]
   ocr_segments = sorted([img + ".txt" for img in image_segments])
   drive_client = drive.get_cached_client(google_key=google_key)
   for image_segment in sorted(image_segments):
     drive_client.ocr_file(local_file_path=str(image_segment))
-    os.remove(image_segment)
+    # os.remove(image_segment)
     time.sleep(1)
 
   # Combine the ocr segments
