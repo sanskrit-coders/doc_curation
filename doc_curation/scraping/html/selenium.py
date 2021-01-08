@@ -49,3 +49,16 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_css_selec
         md_file.set_title(title=title, dry_run=False)
         
     logging.info("Done: %s to %s", url, outfile_path)
+
+
+def click_link_by_text(browser, element_text):
+    try:
+        subunit_element = browser.find_element_by_link_text(element_text)
+        logging.info("Clicking: %s" % element_text)
+        # subunit_element.click()
+        # Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen 
+        browser.execute_script("arguments[0].click();", subunit_element)
+        return True
+    except NoSuchElementException:
+        logging.warning("Could not find %s", element_text)
+        return False
