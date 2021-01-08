@@ -25,11 +25,12 @@ def select_part(browser, veda, shaakhaa, text, division=None, chapter=None, para
     Select(browser.find_element_by_css_selector("select#para")).select_by_visible_text(para)
   if cluster is not None:
     Select(browser.find_element_by_css_selector("select#cluster")).select_by_visible_text(cluster)
-    browser.find_element_by_css_selector("browse-data1").click()
+
+  browser.find_element_by_css_selector("#browse-data1").click()
 
 
 def get_page_text(browser):
-  rows = browser.find_elements_by_css_selector("table#example tr")
+  rows = browser.find_elements_by_css_selector("table#example tbody tr")
   text_segments = [row.text.strip().replace("\n", "  \n") for row in rows]
   text = "\n\n".join(text_segments)
   text = replace_private_space_characters(text=text)
@@ -47,14 +48,15 @@ def replace_private_space_characters(text):
   return text
 
 def dump_text(browser, title, out_file_path):
-  url = browser.current_url
-  url_next = None
   text = ""
-  while url != url_next:
-    url = browser.current_url
+  previous_text = None
+  while True:
     text = text + get_page_text(browser=browser)
+    if text == previous_text:
+      break
+    time.sleep(2)
     selenium.click_link_by_text(browser=browser, element_text="Next")
-    url_next = browser.current_url
+    previous_text = text
 
   md_file = md_helper.MdFile(file_path=out_file_path)
   md_file.dump_to_file(metadata={"title": title}, md=text, dry_run=False)
