@@ -16,3 +16,4 @@ __pycache__/
 *.iml
 
 *local*
+.DS_Store
