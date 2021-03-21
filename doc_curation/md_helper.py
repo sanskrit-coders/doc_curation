@@ -456,13 +456,13 @@ class MdFile(object):
                        file_name_filter=file_name_filter)
 
   @classmethod
-  def fix_index_files(cls, dir_path, frontmatter_type=TOML, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
+  def fix_index_files(cls, dir_path, frontmatter_type=TOML, transliteration_target=sanscript.DEVANAGARI, overwrite=False, dry_run=False):
     # Get all non hidden directories.
     dirs = [x[0] for x in os.walk(dir_path) if "/." not in x[0]]
     # set([os.path.dirname(path) for path in Path(dir_path).glob("**/")])
     for dir in dirs:
       index_file = MdFile(file_path=os.path.join(dir, "_index.md"), frontmatter_type=frontmatter_type)
-      if not os.path.exists(index_file.file_path):
+      if not os.path.exists(index_file.file_path) or overwrite:
         index_file.dump_to_file(metadata={}, md="", dry_run=dry_run)
         index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
 

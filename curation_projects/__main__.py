@@ -27,8 +27,7 @@ logging.getLogger("sbcharsetprober").propagate = False
 # MdFile.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-markdown", source_scheme=sanscript.IAST)
 
 
-# 
-# MdFile.fix_index_files(dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/atharva", dry_run=False, transliteration_target=None)
+# MdFile.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/vedAH/content/taittirIyam/sUtram/ApastambaH/gRhyam/TIkA", overwrite=True, dry_run=False)
 # 
 # MdFile.apply_function(dir_path="/home/vvasuki/vvasuki-git/vedAH/content/sAma/kauthumam", fn=MdFile.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
 
@@ -42,10 +41,10 @@ logging.getLogger("sbcharsetprober").propagate = False
 
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
  
-MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/taittirIyam/saMhitA/7", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
+# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/taittirIyam/saMhitA/7", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
 
 # MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/sAma/brAhmaNam/chandogya_brahmana", dry_run=False)
-# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/kalpe_svamatam/social-cultivation/violence/animal-sacrifice.md", dry_run=False, source_script=None, indexed_title_pattern=None)
+# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/books/sAvarkar_VD/english/sAvarkar_and_his_times.md", dry_run=False, source_script=None)
 
 
 # MdFile(file_path="",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)

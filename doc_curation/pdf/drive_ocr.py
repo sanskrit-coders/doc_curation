@@ -14,7 +14,7 @@ def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf"):
   for file_path in file_paths:
     split_and_ocr_on_drive(pdf_path=str(file_path), small_pdf_pages=small_pdf_pages)
 
-
+ 
 def split_and_ocr_on_drive(pdf_path,
                            google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json',
                            small_pdf_pages=25, start_page=1, end_page=None, pdf_compression_power=0, detext=None):
