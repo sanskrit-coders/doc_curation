@@ -27,7 +27,7 @@ logging.getLogger("sbcharsetprober").propagate = False
 # MdFile.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-markdown", source_scheme=sanscript.IAST)
 
 
-# MdFile.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/vedAH/content/taittirIyam/sUtram/ApastambaH/gRhyam/TIkA", overwrite=True, dry_run=False)
+MdFile.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/vedAH/content/taittirIyam/sUtram/ApastambaH/gRhyam/TIkA", overwrite=True, dry_run=False)
 # 
 # MdFile.apply_function(dir_path="/home/vvasuki/vvasuki-git/vedAH/content/sAma/kauthumam", fn=MdFile.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
 
