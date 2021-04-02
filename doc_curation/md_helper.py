@@ -497,6 +497,31 @@ class MdFile(object):
           md_file.set_title(title=title, dry_run=dry_run)
 
 
+  @classmethod
+  def get_metadata_field_values(cls, md_files, field_name):
+    # logging.debug(adhyaaya_to_mp3_map)
+    logging.info("Getting metadata from %s field of %d files", field_name, len(md_files))
+    from curation_utils.google import sheets
+    for md_file in md_files:
+      # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
+      logging.debug(md_file.file_path)
+      (metadata, md) = md_file.read_md_file()
+      yield metadata[field_name]
+
+
+  @classmethod
+  def get_audio_file_urls(cls, md_files):
+    # logging.debug(adhyaaya_to_mp3_map)
+    logging.info("Getting audio file locations from %d files", len(md_files))
+    from curation_utils.google import sheets
+    for md_file in md_files:
+      # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
+      logging.debug(md_file.file_path)
+      (metadata, md) = md_file.read_md_file()
+      match = regex.match("<div class=\"audioEmbed\".+ src=\"([^\"]+)\"", md)
+      if match:
+        yield match.group(1)
+
 def import_md_recursive(source_dir, file_extension, source_format=None, dry_run=False):
   from pathlib import Path
   # logging.debug(list(Path(dir_path).glob(file_pattern)))
