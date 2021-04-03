@@ -13,10 +13,10 @@ logging.basicConfig(
 
 
 def set_titles_from_spreadsheet(dir_path, dry_run=False):
-    MdFile.fix_titles(
+    MdFile.fix_field_values(
         md_files=mahaabhaarata.get_adhyaaya_md_files(dir_path),
         spreadhsheet_id="1sNH1AWhhoa5VATqMdLbF652s7srTG0Raa6K-sCwDR-8",
-        worksheet_name="कुम्भकोणाध्यायाः", id_column="क्रमाङ्कम्", title_column="अन्तिमशीर्षिका", md_file_to_id=mahaabhaarata.get_adhyaaya_id, dry_run=dry_run
+        worksheet_name="कुम्भकोणाध्यायाः", id_column="क्रमाङ्कम्", value_column="अन्तिमशीर्षिका", md_file_to_id=mahaabhaarata.get_adhyaaya_id, dry_run=dry_run
     )
     MdFile.devanaagarify_titles(md_files=mahaabhaarata.get_adhyaaya_md_files(dir_path), dry_run=dry_run)
 

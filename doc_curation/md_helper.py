@@ -323,10 +323,15 @@ class MdFile(object):
                 out_file_obj.write(md)
 
   def set_title(self, title, dry_run):
-    logging.info("Setting title of %s to %s", self.file_path, title)
+    self.set_frontmatter_field_value(field_name="title", value=title, dry_run=dry_run)
+    
+  def set_frontmatter_field_value(self, field_name, value, dry_run):
+    yml, md = self.read_md_file()
+    if yml[field_name] == value:
+      return 
+    logging.info("Setting %s of %s to %s (was %s)", field_name, self.file_path, value, yml[field_name])
     if not dry_run:
-      yml, md = self.read_md_file()
-      yml["title"] = title
+      yml[field_name] = value
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
       self.dump_to_file(metadata=yml, md=md, dry_run=dry_run)
 
@@ -477,10 +482,10 @@ class MdFile(object):
       md_file.set_title(title=title_fixed, dry_run=dry_run)
 
   @classmethod
-  def fix_titles(cls, md_files,
-                 spreadhsheet_id, worksheet_name, id_column, title_column,
-                 md_file_to_id, google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json',
-                 dry_run=False):
+  def fix_field_values(cls, md_files,
+                       spreadhsheet_id, worksheet_name, id_column, value_column,
+                       md_file_to_id, md_frontmatter_field_name="title", google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json', post_process_fn=None,
+                       dry_run=False):
     # logging.debug(adhyaaya_to_mp3_map)
     logging.info("Fixing titles of %d files", len(md_files))
     from curation_utils.google import sheets
@@ -492,9 +497,11 @@ class MdFile(object):
       adhyaaya_id = md_file_to_id(md_file)
       if adhyaaya_id != None:
         logging.debug(adhyaaya_id)
-        title = doc_data.get_value(adhyaaya_id, column_name=title_column)
-        if title != None:
-          md_file.set_title(title=title, dry_run=dry_run)
+        value = doc_data.get_value(adhyaaya_id, column_name=value_column)
+        if post_process_fn is not None:
+          value = post_process_fn(value)
+        if value != None:
+          md_file.set_frontmatter_field_value(field_name=md_frontmatter_field_name, value=value, dry_run=dry_run)
 
 
   @classmethod

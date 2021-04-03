@@ -6,6 +6,8 @@ from curation_projects import raamaayana
 from doc_curation.md_helper import MdFile
 
 # Remove all handlers associated with the root logger object.
+from indic_transliteration import sanscript
+
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 logging.basicConfig(
@@ -39,15 +41,16 @@ def get_audio_file_data():
   logging.info("\n".join(urls))
 
 # get_audio_file_data()
-get_titles_english()
+# get_titles_english()
 # get_numbers()
 # MdFile.fix_index_files(dir_path=md_file_path, dry_run=False)
-# MdFile.fix_titles(
+# MdFile.fix_field_values(
 #     md_files=raamaayana.get_adhyaaya_md_files(md_file_path),
 #     spreadhsheet_id="1AkjjTATqaY5dVN10OqdNQSa8YBTjtK2_LBV0NoxIB7w",
-#     worksheet_name="शीर्षिकाः", id_column="id", title_column="अन्तिमशीर्षिका", md_file_to_id=raamaayana.get_adhyaaya_id, dry_run=False
+#     worksheet_name="शीर्षिकाः", id_column="id", value_column="Numbered English Titles", md_file_to_id=raamaayana.get_adhyaaya_id,
+#   post_process_fn=None, md_frontmatter_field_name="title_english", dry_run=False
 # )
-
+MdFile.set_filenames_from_titles(dir_path=md_file_path, transliteration_source=sanscript.DEVANAGARI, dry_run=True)
 
 
 # MdFile.devanaagarify_titles(md_files=raamaayana.get_adhyaaya_md_files(md_file_path), dry_run=False)
