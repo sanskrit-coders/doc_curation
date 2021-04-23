@@ -9,7 +9,7 @@ import regex
 from bs4 import BeautifulSoup
 
 from curation_utils import file_helper
-from doc_curation.md_helper import MdFile
+from doc_curation.md.file import MdFile
 
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)

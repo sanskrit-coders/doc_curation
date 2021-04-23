@@ -7,7 +7,7 @@ from curation_utils import dir_helper
 from indic_transliteration import sanscript
 
 from doc_curation import text_data
-from doc_curation.md_helper import MdFile
+from doc_curation.md.file import MdFile
 from doc_curation.scraping import html
 
 for handler in logging.root.handlers[:]:

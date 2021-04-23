@@ -3,14 +3,12 @@ import logging
 import os
 from pathlib import Path
 
-import regex
-from curation_utils import file_helper
-from indic_transliteration import sanscript
-
 from bs4 import BeautifulSoup
 
-from doc_curation import md_helper
-from doc_curation.md_helper import MdFile
+import doc_curation.md
+from curation_utils import file_helper
+from doc_curation.md.file import MdFile
+from indic_transliteration import sanscript
 
 
 def get_text(src_file):
@@ -23,7 +21,7 @@ def get_text(src_file):
             return ""
         texts = [content_element.text for content_element in content_elements]
         text = "\n\n".join(texts)
-        text = md_helper.markdownify_plain_text(text)
+        text = doc_curation.md.markdownify_plain_text(text)
         return text
 
 

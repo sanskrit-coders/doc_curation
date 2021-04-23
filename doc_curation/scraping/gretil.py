@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from indic_transliteration import sanscript
 
 from curation_utils import file_helper
-from doc_curation.md_helper import MdFile
+from doc_curation.md.file import MdFile
 
 
 def get_filename(source_html):

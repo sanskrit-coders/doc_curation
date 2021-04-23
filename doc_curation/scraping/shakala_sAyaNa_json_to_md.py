@@ -7,7 +7,7 @@ import os
 import regex
 from indic_transliteration import sanscript
 
-from doc_curation.md_helper import MdFile
+from doc_curation.md.file import MdFile
 
 
 dest_dir = "/home/vvasuki/vvasuki-git/saMskAra/content/sangrahaH/shAkalA/saMhitA/sAyaNa-bhAShyam/"

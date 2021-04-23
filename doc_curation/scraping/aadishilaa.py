@@ -2,16 +2,16 @@ import logging
 import os
 
 import regex
+from doc_curation.md.file import MdFile
 
+import doc_curation.md
 from curation_utils import scraping, file_helper
-from doc_curation import md_helper
-from doc_curation.md_helper import MdFile
 
 
 def get_text(url):
     soup = scraping.get_soup(url=url)
     text = soup.select_one("div.entry-content").text
-    text = md_helper.markdownify_plain_text(text)
+    text = doc_curation.md.markdownify_plain_text(text)
     title = regex.sub("[ -]*आदिशिला", "", soup.title.string).strip()
     return (title, text)
 

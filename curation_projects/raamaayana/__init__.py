@@ -1,6 +1,6 @@
 import os
 import regex
-from doc_curation.md_helper import MdFile
+from doc_curation.md.file import MdFile
 
 
 def get_adhyaaya_md_files(md_file_path):

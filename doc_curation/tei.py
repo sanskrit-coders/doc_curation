@@ -1,9 +1,5 @@
 import os
 
-import lxml.etree as ET
-
-from doc_curation import md_helper
-
 
 def dump_md(tei_path, md_path, xsl=os.path.join(os.path.dirname(__file__), "tei_xsl/markdown/tei-to-markdown-sarit.xsl")):
     import subprocess

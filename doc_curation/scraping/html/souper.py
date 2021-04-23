@@ -80,7 +80,7 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, ti
 
   content = content_from_element(soup=soup, text_css_selector=text_css_selector, url=url)
 
-  md_file = md_helper.MdFile(file_path=outfile_path)
+  md_file = MdFile(file_path=outfile_path)
   md_file.import_content_with_pandoc(content=content, source_format="html", dry_run=dry_run, metadata=metadata)
 
   logging.info("Done: %s to %s", url, outfile_path)

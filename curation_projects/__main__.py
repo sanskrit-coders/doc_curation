@@ -1,13 +1,8 @@
 import logging
 
-from indic_transliteration import sanscript
-
-from curation_utils import file_helper
-from doc_curation import md_helper, wordpress
-from doc_curation.md_helper import MdFile
+from doc_curation.md.file import MdFile
 
 # Remove all handlers associated with the root logger object.
-from doc_curation.scraping.html import souper
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)

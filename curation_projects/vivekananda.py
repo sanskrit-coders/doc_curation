@@ -36,7 +36,7 @@ def dump_doc(url, out_dir, index, dry_run=False):
         filehandle.close()
     else:
         content = body_element[0].decode_contents()
-    md_file = md_helper.MdFile(file_path=out_file_path)
+    md_file = MdFile(file_path=out_file_path)
     md_file.import_content_with_pandoc(content=content, source_format="html", dry_run=dry_run, metadata=metadata)
 
 

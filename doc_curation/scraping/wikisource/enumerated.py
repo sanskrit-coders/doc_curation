@@ -8,7 +8,7 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome import options
 from selenium.webdriver.remote.remote_connection import LOGGER
 
-from doc_curation import md_helper, text_data
+from doc_curation import text_data
 
 LOGGER.setLevel(logging.WARNING)
 from urllib3.connectionpool import log as urllibLogger
@@ -53,7 +53,7 @@ def dump_item(title, item_url, outfile_path, get_collapsible_content):
     os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
     with open(outfile_path, "w") as outfile:
         outfile.writelines(text.replace("\n", "  \n"))
-    md_file = md_helper.MdFile(file_path=outfile_path)
+    md_file = MdFile(file_path=outfile_path)
     md_file.set_title(title=title, dry_run=False)
 
 

@@ -5,6 +5,7 @@ import regex
 from selenium.webdriver.support.select import Select
 
 from doc_curation import md_helper
+from doc_curation.md.file import MdFile
 from doc_curation.scraping import vedanidhi, html
 from doc_curation.scraping.html import selenium
 from indic_transliteration import sanscript
@@ -72,7 +73,7 @@ def dump_text(browser, title, out_file_path, num_pages):
     selenium.click_link_by_text(browser=browser, element_text="Next")
     page_number = page_number + 1 
 
-  md_file = md_helper.MdFile(file_path=out_file_path)
+  md_file = MdFile(file_path=out_file_path)
   md_file.dump_to_file(metadata={"title": title}, md=text, dry_run=False)
 
 

@@ -2,7 +2,7 @@ import logging
 import os
 
 from curation_projects import mahaabhaarata
-from doc_curation.md_helper import MdFile
+from doc_curation.md.file import MdFile
 
 # Remove all handlers associated with the root logger object.
 for handler in logging.root.handlers[:]:

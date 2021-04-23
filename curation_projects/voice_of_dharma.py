@@ -7,7 +7,7 @@ import regex
 from doc_curation import md_helper
 from curation_utils import scraping, file_helper
 
-from doc_curation.md_helper import MdFile
+from doc_curation.md.file import MdFile
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -21,7 +21,7 @@ def fix_text(text):
 def dump_content(soup, out_file_path, metadata, dry_run):
     content_elements = soup.select("td[width=\"60%\"]") + soup.select("td[width=\"80%\"]") + soup.select("body")
     content = fix_text(content_elements[0].decode_contents(formatter="html"))
-    md_file = md_helper.MdFile(file_path=out_file_path)
+    md_file = MdFile(file_path=out_file_path)
     md_file.import_content_with_pandoc(content=content, source_format="html", dry_run=dry_run, metadata=metadata)
     if metadata == {}:
         md_file.set_title_from_filename(transliteration_target=None, dry_run=dry_run)

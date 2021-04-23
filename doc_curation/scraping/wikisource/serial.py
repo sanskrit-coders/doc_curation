@@ -2,7 +2,7 @@ import os
 
 import regex
 
-from doc_curation.md_helper import MdFile
+from doc_curation.md.file import MdFile
 from doc_curation.scraping.html import souper
 
 

@@ -38,7 +38,7 @@ def get_item(id, dir_path):
         for shloka_id in range(1, len(shlokas) + 1):
             outfile.write("<div class=\"audioEmbed\"  caption=\"सीतालक्ष्मी-वाचनम्\" src=\"https://sanskritdocuments.org/sites/completenarayaneeyam/SoundFiles/%03d/%03d_%02d.mp3\"></div>  \n" % (id, id, shloka_id))
             outfile.writelines(shlokas[shloka_id-1].replace("\n", "  \n") + "\n\n")
-    md_file = md_helper.MdFile(file_path=outfile_path)
+    md_file = MdFile(file_path=outfile_path)
     md_file.set_title(sanscript.transliterate("%03d" % id, sanscript.SLP1, sanscript.DEVANAGARI), dry_run=False)
 
 

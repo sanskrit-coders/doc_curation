@@ -3,6 +3,7 @@ import logging
 import os
 import traceback
 
+from doc_curation.md.file import MdFile
 from doc_curation.scraping.html.selenium import click_link_by_text
 from indic_transliteration import sanscript
 from selenium.common.exceptions import NoSuchElementException
@@ -67,7 +68,7 @@ def dump_text(browser, outdir):
     text_spans = browser.find_elements_by_css_selector("#gvResults tr[valign=\"top\"] td span")
     text_segments = [span.text.strip().replace("\n", "  \n") for span in text_spans]
     text = "\n\n".join(text_segments)
-    md_file = md_helper.MdFile(file_path=out_file_path)
+    md_file = MdFile(file_path=out_file_path)
     md_file.dump_to_file(metadata={"title": text_name}, md=text, dry_run=False)
 
 
@@ -126,4 +127,4 @@ def get_structured_text(browser, start_nodes, base_dir, unit_info_file):
                 outfile.writelines(lines)
         # Close the kANDa - else the driver may pick sarga from this kANDa when it is to pick the sarga from the next kANDa?!
         close_path(subunit_path=subunit_path, unit_data=unit_data)
-    md_helper.MdFile.fix_index_files(dir_path=base_dir)
+    MdFile.fix_index_files(dir_path=base_dir)

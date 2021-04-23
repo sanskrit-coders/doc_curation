@@ -7,7 +7,7 @@ from selenium.webdriver.chrome import options
 from selenium.webdriver.remote.remote_connection import LOGGER
 
 from doc_curation import text_data
-from doc_curation.md_helper import MdFile
+from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 
 LOGGER.setLevel(logging.WARNING)

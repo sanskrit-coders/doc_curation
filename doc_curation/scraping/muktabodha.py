@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup, Tag
 from indic_transliteration import sanscript
 
 from curation_utils import scraping, file_helper
-from doc_curation.md_helper import MdFile
+from doc_curation.md.file import MdFile
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)

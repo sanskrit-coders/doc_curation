@@ -45,7 +45,7 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_css_selec
             title = title_element.text.strip()
         except NoSuchElementException:
             title = "UNKNOWN_TITLE"
-        md_file = md_helper.MdFile(file_path=outfile_path)
+        md_file = MdFile(file_path=outfile_path)
         md_file.set_title(title=title, dry_run=False)
         
     logging.info("Done: %s to %s", url, outfile_path)

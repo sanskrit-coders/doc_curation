@@ -4,7 +4,7 @@ from pathlib import Path
 from doc_curation import tei
 import os
 
-from doc_curation.md_helper import MdFile
+from doc_curation.md.file import MdFile
 
 def dump_markdown(src_dir, dest_dir):
     file_paths = sorted(Path(src_dir).glob("*.xml"))

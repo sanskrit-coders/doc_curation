@@ -3,7 +3,7 @@ import logging
 import regex
 
 from curation_projects import raamaayana
-from doc_curation.md_helper import MdFile
+from doc_curation.md.file import MdFile
 
 # Remove all handlers associated with the root logger object.
 from indic_transliteration import sanscript
@@ -50,7 +50,7 @@ def get_audio_file_data():
 #     worksheet_name="शीर्षिकाः", id_column="id", value_column="Numbered English Titles", md_file_to_id=raamaayana.get_adhyaaya_id,
 #   post_process_fn=None, md_frontmatter_field_name="title_english", dry_run=False
 # )
-MdFile.set_filenames_from_titles(dir_path=md_file_path, transliteration_source=sanscript.DEVANAGARI, dry_run=True)
+MdFile.set_filenames_from_titles(dir_path=md_file_path, transliteration_source=sanscript.DEVANAGARI, dry_run=False)
 
 
 # MdFile.devanaagarify_titles(md_files=raamaayana.get_adhyaaya_md_files(md_file_path), dry_run=False)
