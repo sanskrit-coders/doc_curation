@@ -1,7 +1,7 @@
 import logging
 
 from doc_curation.md.file import MdFile
-
+from doc_curation.md import library
 # Remove all handlers associated with the root logger object.
 
 for handler in logging.root.handlers[:]:
@@ -39,8 +39,9 @@ logging.getLogger("sbcharsetprober").propagate = False
 # MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/taittirIyam/saMhitA/7", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
 
 # MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/sAma/brAhmaNam/chandogya_brahmana", dry_run=False)
-MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/purANam/sukthankar_critical_studies_in_mahAbhArata", dry_run=False, source_script=None)
+# MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/purANam/sukthankar_critical_studies_in_mahAbhArata", dry_run=False, source_script=None)
 
+library.make_full_text_md(source_dir="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/champUH/nItiH/panchatantram/")
 
 # MdFile(file_path="",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
 #  , indexed_title_pattern=None
