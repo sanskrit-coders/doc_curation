@@ -272,14 +272,14 @@ class MdFile(object):
     self.set_frontmatter_field_value(field_name="title", value=title, dry_run=dry_run)
     
   def set_frontmatter_field_value(self, field_name, value, dry_run):
-    yml, md = self.read_md_file()
-    if yml[field_name] == value:
+    metadata, md = self.read_md_file()
+    if field_name not in metadata or metadata[field_name] == value:
       return 
-    logging.info("Setting %s of %s to %s (was %s)", field_name, self.file_path, value, yml[field_name])
+    logging.info("Setting %s of %s to %s (was %s)", field_name, self.file_path, value, metadata[field_name])
     if not dry_run:
-      yml[field_name] = value
+      metadata[field_name] = value
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-      self.dump_to_file(metadata=yml, md=md, dry_run=dry_run)
+      self.dump_to_file(metadata=metadata, md=md, dry_run=dry_run)
 
   def prepend_to_content(self, prefix_text, dry_run=True):
     (yml, md) = self.read_md_file()
@@ -405,7 +405,7 @@ class MdFile(object):
     cls.apply_function(fn=MdFile.set_filename_from_title, dir_path=dir_path, file_pattern=file_pattern,
                        transliteration_source=transliteration_source, dry_run=dry_run,
                        file_name_filter=file_name_filter)
-
+    
   @classmethod
   def fix_index_files(cls, dir_path, frontmatter_type=TOML, transliteration_target=sanscript.DEVANAGARI, overwrite=False, dry_run=False):
     # Get all non hidden directories.
@@ -413,8 +413,10 @@ class MdFile(object):
     # set([os.path.dirname(path) for path in Path(dir_path).glob("**/")])
     for dir in dirs:
       index_file = MdFile(file_path=os.path.join(dir, "_index.md"), frontmatter_type=frontmatter_type)
-      if not os.path.exists(index_file.file_path) or overwrite:
+      if not os.path.exists(index_file.file_path):
         index_file.dump_to_file(metadata={}, md="", dry_run=dry_run)
+        index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
+      elif overwrite:
         index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
 
   @classmethod

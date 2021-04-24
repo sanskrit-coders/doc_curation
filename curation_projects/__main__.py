@@ -41,7 +41,8 @@ logging.getLogger("sbcharsetprober").propagate = False
 # MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/sAma/brAhmaNam/chandogya_brahmana", dry_run=False)
 # MdFile.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/purANam/sukthankar_critical_studies_in_mahAbhArata", dry_run=False, source_script=None)
 
-library.make_full_text_md(source_dir="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/champUH/nItiH/panchatantram/")
+MdFile.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/champUH/nItiH/hitopadeshaH/", overwrite=True, dry_run=False)
+library.make_full_text_md(source_dir="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/champUH/nItiH/hitopadeshaH")
 
 # MdFile(file_path="",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
 #  , indexed_title_pattern=None
