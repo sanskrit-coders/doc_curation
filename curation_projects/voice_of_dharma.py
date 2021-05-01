@@ -1,12 +1,9 @@
 import logging
 import os
-import urllib
 
 import regex
 
-from doc_curation import md_helper
-from curation_utils import scraping, file_helper
-
+from curation_utils import scraping
 from doc_curation.md.file import MdFile
 
 logging.basicConfig(

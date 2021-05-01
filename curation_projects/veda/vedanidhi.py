@@ -4,9 +4,8 @@ import time
 import regex
 from selenium.webdriver.support.select import Select
 
-from doc_curation import md_helper
 from doc_curation.md.file import MdFile
-from doc_curation.scraping import vedanidhi, html
+from doc_curation.scraping import vedanidhi
 from doc_curation.scraping.html import selenium
 from indic_transliteration import sanscript
 

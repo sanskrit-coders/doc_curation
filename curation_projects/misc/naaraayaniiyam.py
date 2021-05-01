@@ -1,12 +1,11 @@
 import logging
 import os
 
-from indic_transliteration import sanscript
 from selenium import webdriver
 from selenium.webdriver.chrome import options
 from selenium.webdriver.remote.remote_connection import LOGGER
 
-from doc_curation import md_helper
+from indic_transliteration import sanscript
 
 LOGGER.setLevel(logging.WARNING)
 from urllib3.connectionpool import log as urllibLogger

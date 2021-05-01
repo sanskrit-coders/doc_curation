@@ -5,11 +5,9 @@ from pathlib import Path
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
-from requests.utils import requote_uri
 
 from curation_utils import file_helper
 from curation_utils import scraping
-from doc_curation import md_helper
 
 logging.basicConfig(
   level=logging.DEBUG,

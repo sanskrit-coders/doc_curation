@@ -1,13 +1,8 @@
 import json
 import logging
 import os
-import traceback
 
-from indic_transliteration import sanscript
-from selenium.common.exceptions import NoSuchElementException
-
-from curation_utils import scraping, file_helper
-from doc_curation import md_helper, text_data
+from curation_utils import scraping
 
 logging.basicConfig(
     level=logging.DEBUG,

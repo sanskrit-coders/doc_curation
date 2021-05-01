@@ -9,7 +9,7 @@ from indic_transliteration import sanscript
 from selenium.common.exceptions import NoSuchElementException
 
 from curation_utils import scraping, file_helper
-from doc_curation import md_helper, text_data
+from doc_curation import text_data
 
 logging.basicConfig(
     level=logging.DEBUG,

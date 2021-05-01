@@ -4,9 +4,7 @@ import urllib
 
 import regex
 
-from doc_curation import md_helper
-from curation_utils import scraping, file_helper
-
+from curation_utils import scraping
 
 logging.basicConfig(
     level=logging.DEBUG,
