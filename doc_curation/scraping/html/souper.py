@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 
 from curation_utils import file_helper
 from curation_utils import scraping
+from doc_curation.md.file import MdFile
 
 logging.basicConfig(
   level=logging.DEBUG,

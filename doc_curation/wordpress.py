@@ -85,4 +85,4 @@ def fix_paths(dir_path, dry_run=False):
     if not dry_run:
       os.makedirs(name=os.path.dirname(dest_path), exist_ok=True)
       shutil.move(src=file_path, dst=dest_path)
-  MdFile.fix_index_files(dir_path=dir_path, dry_run=dry_run)
+  library.fix_index_files(dir_path=dir_path, dry_run=dry_run)

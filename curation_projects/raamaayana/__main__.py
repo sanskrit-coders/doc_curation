@@ -36,21 +36,21 @@ def get_numbers():
 
 
 def get_audio_file_data():
-  urls = list(MdFile.get_audio_file_urls(md_files=raamaayana.get_adhyaaya_md_files(md_file_path)))
+  urls = list(library.get_audio_file_urls(md_files=raamaayana.get_adhyaaya_md_files(md_file_path)))
   titles_from_urls = [regex.match(r".+\d\d\d-(.+?)(_0)?.mp3", url.replace("\n", "")).group(1).replace("_", " ") for url in urls]
   logging.info("\n".join(urls))
 
 # get_audio_file_data()
 # get_titles_english()
 # get_numbers()
-# MdFile.fix_index_files(dir_path=md_file_path, dry_run=False)
-# MdFile.fix_field_values(
+# library.fix_index_files(dir_path=md_file_path, dry_run=False)
+# library.fix_field_values(
 #     md_files=raamaayana.get_adhyaaya_md_files(md_file_path),
 #     spreadhsheet_id="1AkjjTATqaY5dVN10OqdNQSa8YBTjtK2_LBV0NoxIB7w",
 #     worksheet_name="शीर्षिकाः", id_column="id", value_column="Numbered English Titles", md_file_to_id=raamaayana.get_adhyaaya_id,
 #   post_process_fn=None, md_frontmatter_field_name="title_english", dry_run=False
 # )
-MdFile.set_filenames_from_titles(dir_path=md_file_path, transliteration_source=sanscript.DEVANAGARI, dry_run=False)
+library.set_filenames_from_titles(dir_path=md_file_path, transliteration_source=sanscript.DEVANAGARI, dry_run=False)
 
 
-# MdFile.devanaagarify_titles(md_files=raamaayana.get_adhyaaya_md_files(md_file_path), dry_run=False)
+# library.devanaagarify_titles(md_files=raamaayana.get_adhyaaya_md_files(md_file_path), dry_run=False)

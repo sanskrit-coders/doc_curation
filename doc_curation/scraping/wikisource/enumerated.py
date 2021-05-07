@@ -2,6 +2,7 @@
 import logging
 import os
 
+from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException

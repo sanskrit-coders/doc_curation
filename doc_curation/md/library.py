@@ -5,6 +5,7 @@ import regex
 
 from curation_utils import file_helper
 from doc_curation.md.file import MdFile
+from indic_transliteration import sanscript
 
 
 def import_md_recursive(source_dir, file_extension, source_format=None, dry_run=False):
@@ -80,3 +81,117 @@ def migrate_and_include(files, location_computer, new_url_computer, dry_run=Fals
     md = """<div class="js_include" url="%s"  newLevelForH1="1" includeTitle="true"> </div>""" % new_url_computer(str(f))
     logging.info("Inclusion in old file : %s", md)
     md_file.dump_to_file(metadata=metadata, md=md, dry_run=dry_run)
+
+
+def fix_index_files(dir_path, frontmatter_type=MdFile.TOML, transliteration_target=sanscript.DEVANAGARI, overwrite=False, dry_run=False):
+  logging.info("Fixing index files")
+  # Get all non hidden directories.
+  dirs = [x[0] for x in os.walk(dir_path) if "/." not in x[0]]
+  # set([os.path.dirname(path) for path in Path(dir_path).glob("**/")])
+  for dir in dirs:
+    index_file = MdFile(file_path=os.path.join(dir, "_index.md"), frontmatter_type=frontmatter_type)
+    if not os.path.exists(index_file.file_path):
+      index_file.dump_to_file(metadata={}, md="", dry_run=dry_run)
+      index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
+    elif overwrite:
+      index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
+
+
+def get_md_files_from_path(dir_path, file_pattern, file_name_filter=None, frontmatter_type="yaml"):
+  from pathlib import Path
+  # logging.debug(list(Path(dir_path).glob(file_pattern)))
+  md_file_paths = sorted(filter(file_name_filter, Path(dir_path).glob(file_pattern)))
+  return [MdFile(path, frontmatter_type=frontmatter_type) for path in md_file_paths]
+
+
+def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, frontmatter_type="yaml", start_file=None, *args,
+                   **kwargs):
+  # logging.debug(list(Path(dir_path).glob(file_pattern)))
+  if os.path.isfile(dir_path):
+    logging.warning("Got a file actually. processing it!")
+    md_files = [MdFile(file_path=dir_path)]
+  else:
+    md_files = get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern,
+                                             file_name_filter=file_name_filter, frontmatter_type=frontmatter_type)
+  start_file_reached = False
+
+  from tqdm import tqdm
+  for md_file in tqdm(md_files):
+    if start_file is not None and not start_file_reached:
+      if str(md_file.file_path) != start_file:
+        continue
+      else:
+        start_file_reached = True
+    logging.info("Processing %s", md_file)
+    fn(md_file, *args, **kwargs)
+
+
+def set_titles_from_filenames(dir_path, transliteration_target, file_pattern="**/*.md", dry_run=False):
+  apply_function(fn=MdFile.set_title_from_filename, dir_path=dir_path, file_pattern=file_pattern,
+                     transliteration_target=transliteration_target, dry_run=dry_run)
+
+
+def set_filenames_from_titles(dir_path, transliteration_source, file_pattern="**/*.md", file_name_filter=None,
+                              dry_run=False):
+  apply_function(fn=MdFile.set_filename_from_title, dir_path=dir_path, file_pattern=file_pattern,
+                     transliteration_source=transliteration_source, dry_run=dry_run,
+                     file_name_filter=file_name_filter)
+
+
+def devanaagarify_titles(md_files, dry_run=False):
+  logging.info("Fixing titles of %d files", len(md_files))
+  for md_file in md_files:
+    # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
+    logging.debug(md_file.file_path)
+    title_fixed = sanscript.transliterate(data=md_file.get_title(), _from=sanscript.OPTITRANS,
+                                          _to=sanscript.DEVANAGARI)
+    md_file.set_title(title=title_fixed, dry_run=dry_run)
+
+
+def fix_field_values(md_files,
+                     spreadhsheet_id, worksheet_name, id_column, value_column,
+                     md_file_to_id, md_frontmatter_field_name="title", google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json', post_process_fn=None,
+                     dry_run=False):
+  # logging.debug(adhyaaya_to_mp3_map)
+  logging.info("Fixing titles of %d files", len(md_files))
+  from curation_utils.google import sheets
+  doc_data = sheets.IndexSheet(spreadhsheet_id=spreadhsheet_id, worksheet_name=worksheet_name, google_key=google_key,
+                               id_column=id_column)
+  for md_file in md_files:
+    # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
+    logging.debug(md_file.file_path)
+    adhyaaya_id = md_file_to_id(md_file)
+    if adhyaaya_id != None:
+      logging.debug(adhyaaya_id)
+      value = doc_data.get_value(adhyaaya_id, column_name=value_column)
+      if post_process_fn is not None:
+        value = post_process_fn(value)
+      if value != None:
+        md_file.set_frontmatter_field_value(field_name=md_frontmatter_field_name, value=value, dry_run=dry_run)
+
+
+
+def get_metadata_field_values(md_files, field_name):
+  # logging.debug(adhyaaya_to_mp3_map)
+  logging.info("Getting metadata from %s field of %d files", field_name, len(md_files))
+  for md_file in md_files:
+    # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
+    logging.debug(md_file.file_path)
+    (metadata, md) = md_file.read_md_file()
+    yield metadata[field_name]
+
+
+
+def get_audio_file_urls(md_files):
+  # logging.debug(adhyaaya_to_mp3_map)
+  logging.info("Getting audio file locations from %d files", len(md_files))
+  for md_file in md_files:
+    # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
+    logging.debug(md_file.file_path)
+    (metadata, md) = md_file.read_md_file()
+    match = regex.match("<div class=\"audioEmbed\".+ src=\"([^\"]+)\"", md)
+    if match:
+      yield match.group(1)
+
+
+
