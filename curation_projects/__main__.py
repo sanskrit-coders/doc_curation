@@ -43,7 +43,7 @@ logging.getLogger("sbcharsetprober").propagate = False
 
 # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/biology/organism/health/disease/infection/viral/wuhan_epidemic/treatment.md", dry_run=False, source_script=None,  indexed_title_pattern=None)
 
-# MdFile.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/champUH/nItiH/hitopadeshaH/", overwrite=True, dry_run=False)
+# library.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/vedAH/content/atharva/shaunakam/rUDha-saMhitA", overwrite=False, dry_run=False)
 # library.make_full_text_md(source_dir="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/champUH/nItiH/hitopadeshaH")
 
 # MdFile(file_path="/home/vvasuki/vvasuki-git/notes-hugo/content/biology/organism/health/disease/contagion/vaccination.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
