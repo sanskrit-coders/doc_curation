@@ -58,10 +58,12 @@ def title_from_element(soup, title_css_selector=None, title_prefix=""):
       title = "UNKNOWN_TITLE"
     title = ("%s %s" % (title_prefix, title)).strip()
   return title
-  
 
 
-def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, title_prefix="", html_fixer=None, dry_run=False):
+def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, title_prefix="", html_fixer=None, md_fixer=None, dry_run=False):
+  if os.path.exists(outfile_path):
+    logging.info("skipping: %s - it exists already", outfile_path)
+    return
   logging.info("Dumping: %s to %s", url, outfile_path)
   html = get_html(url=url)
   unaltered_soup = BeautifulSoup(html, 'html.parser')
@@ -81,6 +83,11 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, ti
 
   md_file = MdFile(file_path=outfile_path)
   md_file.import_content_with_pandoc(content=content, source_format="html", dry_run=dry_run, metadata=metadata)
+  if md_fixer is not None:
+    [_, md] = md_file.read_md_file()
+    md = md_fixer(md)
+    md_file.replace_content(new_content=md, dry_run=dry_run)
+  
 
   logging.info("Done: %s to %s", url, outfile_path)
   return unaltered_soup

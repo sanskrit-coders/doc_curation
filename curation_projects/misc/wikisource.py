@@ -5,7 +5,12 @@ from indic_transliteration import sanscript
 if __name__ == '__main__':
     pass
     # logging.debug(get_item("http://sanskritabhyas.in/hi/Kridanta/View/%E0%A4%AD%E0%A5%82"))
-    serial.dump_text(start_url="https://sa.wikisource.org/wiki/Jyautisha_Vedangam/%E0%A4%AE%E0%A5%81%E0%A4%96%E0%A4%AA%E0%A5%83%E0%A4%B7%E0%A5%8D%E0%A4%A0%E0%A4%AE%E0%A5%8D", out_path="/home/vvasuki/vvasuki-git/jyotiSham/content/history/yAjuSha-jyotiSham_sudhAkara-bhAShya-sahitam/", next_url_css='[style="width:200%; text-align:right;font-size:0.9em;"] a', transliteration_source=sanscript.DEVANAGARI, base_url="http://sa.wikisource.org/", dry_run=False)
+
+    serial.dump_text(start_url="https://sa.wikisource.org/s/1r23", out_path="/home/vvasuki/sanskrit/raw_etexts/AyurvedaH/sUtram_yogAnanda-nAtha-bhAShya-sametam", transliteration_source=sanscript.DEVANAGARI, base_url="http://sa.wikisource.org/", dry_run=False)
+
+    # serial.dump_text(start_url="https://sa.wikisource.org/wiki/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%81%E0%A4%A4%E0%A4%AC%E0%A5%8B%E0%A4%A7%E0%A4%83_(%E0%A4%AA%E0%A4%B0%E0%A5%80%E0%A4%95%E0%A5%8D%E0%A4%B7%E0%A5%8B%E0%A4%AA%E0%A4%95%E0%A4%BE%E0%A4%B0%E0%A4%BF%E0%A4%A3%E0%A5%80%E0%A4%9F%E0%A5%80%E0%A4%95%E0%A4%BE%E0%A4%B8%E0%A4%B9%E0%A4%BF%E0%A4%A4%E0%A4%83)", out_path="/home/vvasuki/vvasuki-git/kAvya/content/shAstram/shrutabodhaH/", next_url_css='[style="width:200%; text-align:right;font-size:0.9em;"] a',  transliteration_source=sanscript.DEVANAGARI, base_url="http://sa.wikisource.org/", dry_run=False)
+
+
 
     # serial.dump_text(start_url="https://en.enumerated.org/wiki/Sanskrit_Grammar_(Whitney)", out_path="/home/vvasuki/vvasuki-git/sanskrit/content/vyAkaraNam/whitney", base_url="http://en.wikisource.org/", dry_run=False)
     # serial.dump_text(start_url="https://sa.wikisource.org/s/1wlz", out_path="/home/vvasuki/sanskrit/raw_etexts/kalpaH/saMskAraratnamAlA/01/", dry_run=False)

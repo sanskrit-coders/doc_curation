@@ -278,7 +278,7 @@ class MdFile(object):
     metadata, md = self.read_md_file()
     if field_name in metadata and metadata[field_name] == value:
       return 
-    logging.info("Setting %s of %s to %s (was %s)", field_name, self.file_path, value, metadata.get(field_name, default="None"))
+    logging.info("Setting %s of %s to %s (was %s)", field_name, self.file_path, value, metadata.get(field_name, "None"))
     if not dry_run:
       metadata[field_name] = value
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
