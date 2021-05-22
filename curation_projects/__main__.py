@@ -3,6 +3,7 @@ import logging
 from doc_curation.md.file import MdFile
 from doc_curation.md import library
 # Remove all handlers associated with the root logger object.
+from indic_transliteration import sanscript
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
@@ -36,10 +37,11 @@ logging.getLogger("sbcharsetprober").propagate = False
 
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
  
-# library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/taittirIyam/saMhitA/7", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
+# library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts_private/kAvyam/shAstram/ChandogatiH.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
 
 # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/sAma/brAhmaNam/chandogya_brahmana", dry_run=False)
-# library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/purANam/sukthankar_critical_studies_in_mahAbhArata", dry_run=False, source_script=None)
+
+library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/history/paganology/non-med-africa.md", dry_run=False, source_script=None,  indexed_title_pattern=None)
 
 # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/biology/organism/health/disease/infection/viral/wuhan_epidemic/treatment.md", dry_run=False, source_script=None,  indexed_title_pattern=None)
 

@@ -25,7 +25,7 @@ def _get_ocr_dir(pdf_path):
 
 
 def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_page=None, small_pdf_pages=25):
-  logging.info("Splitting %s into segments of %d", pdf_path)
+  logging.info("Splitting %s into segments of %d", pdf_path, small_pdf_pages)
   pdf_name_stem = Path(pdf_path).stem
   if output_directory == None:
     output_directory = _get_ocr_dir(pdf_path)
