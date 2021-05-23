@@ -27,7 +27,6 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install setuptools wheel twine
         pip install pikepdf
 
 #    - name: Lint with flake8
@@ -40,6 +39,7 @@ jobs:
     - name: Build package
       run: |
         python -m pip install .
+        pip install setuptools wheel twine
         python setup.py bdist_wheel
     - name: Build test
       run: |
