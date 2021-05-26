@@ -51,6 +51,13 @@ def split_to_sections(lines_in):
   return sections
 
 
+def get_section_lines(lines_in, section_title):
+  sections = split_to_sections(lines_in=lines_in)
+  for section in sections:
+    if section[0] == section_title:
+      return section[1]
+  return None
+
 def get_section_title(title_line):
   splits = title_line.split()
   if len(splits) == 1:
