@@ -9,7 +9,8 @@ import regex
 import toml
 import yamldown
 
-from doc_curation.md import get_lines_till_section, reduce_section_depth, split_to_sections
+from doc_curation.md import section
+from doc_curation.md.section import get_lines_till_section, reduce_section_depth, split_to_sections
 from indic_transliteration import sanscript
 
 # Remove all handlers associated with the root logger object.
@@ -34,23 +35,23 @@ class MdFile(object):
     return str(self.file_path)
 
   def _read_yml_md_file(self) -> Tuple[Dict, str]:
-    yml = {}
-    md = ""
+    metadata = {}
+    content = ""
     if os.path.exists(self.file_path):
       with codecs.open(self.file_path, "r", 'utf-8') as file:
         if file.readline().strip() == "---":
           file.seek(0)
-          (yml, md) = yamldown.load(file)
+          (metadata, content) = yamldown.load(file)
         else:
           file.seek(0)
-          md = file.read()
-        # logging.info((yml, md))
-        if yml is None: yml = {}
-    return (yml, md)
+          content = file.read()
+        # logging.info((metadata, content))
+        if metadata is None: metadata = {}
+    return (metadata, content)
 
   def _read_toml_md_file(self) -> Tuple[Dict, str]:
     metadata = {}
-    md = ""
+    content = ""
     if os.path.exists(self.file_path):
       with codecs.open(self.file_path, "r", 'utf-8') as file:
         first_line = file_helper.clear_bad_chars(file.readline()).strip()
@@ -60,25 +61,25 @@ class MdFile(object):
           lines = [file_helper.clear_bad_chars(line) for line in lines]
           toml_lines = itertools.takewhile(lambda x: x.strip() != "+++", lines[1:])
           metadata = toml.loads("".join(toml_lines))
-          md_lines = list(itertools.dropwhile(lambda x: x.strip() != "+++", lines[1:]))
-          md = "".join(md_lines[1:])
-          # logging.info((toml, md))
+          content_lines = list(itertools.dropwhile(lambda x: x.strip() != "+++", lines[1:]))
+          content = "".join(content_lines[1:])
+          # logging.info((toml, content))
           if metadata is None: metadata = {}
         else:
           logging.warning("No front-matter found.")
           file.seek(0)
-          md = file.read()
-    return (metadata, md)
+          content = file.read()
+    return (metadata, content)
 
   def import_content_with_pandoc(self, content, source_format, dry_run, metadata={},
                                  pandoc_extra_args=['--atx-headers']):
     import pypandoc
     filters = None
-    md = pypandoc.convert_text(source=content, to="gfm-raw_html", format=source_format, extra_args=pandoc_extra_args,
+    content = pypandoc.convert_text(source=content, to="gfm-raw_html", format=source_format, extra_args=pandoc_extra_args,
                                filters=filters)
-    md = regex.sub("</?div[^>]*?>", "", md)
-    md = regex.sub("\n\n+", "\n\n", md)
-    self.dump_to_file(metadata=metadata, md=md, dry_run=dry_run)
+    content = regex.sub("</?div[^>]*?>", "", content)
+    content = regex.sub("\n\n+", "\n\n", content)
+    self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
   def import_with_pandoc(self, source_file, source_format, dry_run, metadata={}, pandoc_extra_args=['--atx-headers']):
     if source_format == "rtf":
@@ -118,12 +119,12 @@ class MdFile(object):
     elif actual_frontmatter_type == None:
       self.frontmatter_type = MdFile.TOML
       with open(self.file_path, 'r') as fin:
-        md = fin.read()
-      return ({}, md)
+        content = fin.read()
+      return ({}, content)
 
   def get_title(self, omit_chapter_id=True):
-    (yml, md) = self.read_md_file()
-    title = yml.get("title", None)
+    (metadata, content) = self.read_md_file()
+    title = metadata.get("title", None)
     if omit_chapter_id and title is not None:
       title = regex.sub("^[+०-९]+ +", "", title)
     title = regex.sub("^[+]+", "", title)
@@ -216,9 +217,9 @@ class MdFile(object):
       self.set_title(title=new_title, dry_run=dry_run)
 
   def dump_mediawiki(self, outpath=None, dry_run=False):
-    (yml, md) = self.read_md_file()
+    (metadata, content) = self.read_md_file()
     import pypandoc
-    output = pypandoc.convert_text(md, 'mediawiki', format='md')
+    output = pypandoc.convert_text(content, 'mediawiki', format='md')
     if outpath is None:
       outpath = self.file_path.replace(".md", ".wiki")
     if not dry_run:
@@ -227,75 +228,75 @@ class MdFile(object):
     else:
       logging.info(output)
 
-  def _dump_to_file_yamlmd(self, yml, md, dry_run):
+  def _dump_to_file_yamlmd(self, metadata, content, dry_run):
     logging.info(self.file_path)
     if not dry_run:
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
       with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
         import yaml
-        if yml == {}:
+        if metadata == {}:
           yamlout = ""
         else:
-          yamlout = yaml.dump(yml, default_flow_style=False, indent=2, allow_unicode=True, width=1000)
-        dump = "---\n{yml}\n---\n{markdown}".format(yml=yamlout, markdown=md)
+          yamlout = yaml.dump(metadata, default_flow_style=False, indent=2, allow_unicode=True, width=1000)
+        dump = "---\n{metadata}\n---\n{markdown}".format(metadata=yamlout, markdown=content)
         out_file_obj.write(dump)
-        # out_file_obj.write(yamldown.dump(yml, md)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5
+        # out_file_obj.write(yamldown.dump(metadata, content)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5
     else:
-      logging.info(yml)
-      # logging.info(md)
+      logging.info(metadata)
+      # logging.info(content)
 
-  def _dump_to_file_tomlmd(self, metadata, md, dry_run):
+  def _dump_to_file_tomlmd(self, metadata, content, dry_run):
     logging.info(self.file_path)
     if not dry_run:
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
       with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
         import toml
         tomlout = toml.dumps(metadata)
-        dump = "+++\n{frontmatter}\n+++\n{markdown}".format(frontmatter=tomlout, markdown=md)
+        dump = "+++\n{frontmatter}\n+++\n{markdown}".format(frontmatter=tomlout, markdown=content)
         out_file_obj.write(dump)
-        # out_file_obj.write(yamldown.dump(yml, md)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5
+        # out_file_obj.write(yamldown.dump(metadata, content)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5
     else:
       logging.info(metadata)
-      # logging.info(md)
+      # logging.info(content)
 
-  def dump_to_file(self, metadata, md, dry_run):
-    md = file_helper.clear_bad_chars(md)
+  def dump_to_file(self, metadata, content, dry_run):
+    content = file_helper.clear_bad_chars(content)
     if len(metadata) > 0:
         if self.frontmatter_type == MdFile.YAML:
-          self._dump_to_file_yamlmd(metadata, md, dry_run)
+          self._dump_to_file_yamlmd(metadata, content, dry_run)
         elif self.frontmatter_type == MdFile.TOML:
-          self._dump_to_file_tomlmd(metadata, md, dry_run)
+          self._dump_to_file_tomlmd(metadata, content, dry_run)
     else:
         if not dry_run:
             os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
             with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
-                out_file_obj.write(md)
+                out_file_obj.write(content)
 
   def set_title(self, title, dry_run):
     self.set_frontmatter_field_value(field_name="title", value=title, dry_run=dry_run)
     
   def set_frontmatter_field_value(self, field_name, value, dry_run):
-    metadata, md = self.read_md_file()
+    metadata, content = self.read_md_file()
     if field_name in metadata and metadata[field_name] == value:
       return 
     logging.info("Setting %s of %s to %s (was %s)", field_name, self.file_path, value, metadata.get(field_name, "None"))
     if not dry_run:
       metadata[field_name] = value
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-      self.dump_to_file(metadata=metadata, md=md, dry_run=dry_run)
+      self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
   def prepend_to_content(self, prefix_text, dry_run=True):
-    (yml, md) = self.read_md_file()
-    self.dump_to_file(metadata=yml, md=prefix_text + md, dry_run=dry_run)
+    (metadata, content) = self.read_md_file()
+    self.dump_to_file(metadata=metadata, content=prefix_text + content, dry_run=dry_run)
 
   def replace_content(self, new_content, dry_run=True):
-    (yml, _) = self.read_md_file()
-    self.dump_to_file(metadata=yml, md=new_content, dry_run=dry_run)
+    (metadata, _) = self.read_md_file()
+    self.dump_to_file(metadata=metadata, content=new_content, dry_run=dry_run)
 
   def replace_in_content(self, pattern, replacement, dry_run=True):
-    (yml, md) = self.read_md_file()
-    md = regex.sub(pattern=pattern, repl=replacement, string=md)
-    self.dump_to_file(metadata=yml, md=md, dry_run=dry_run)
+    (metadata, content) = self.read_md_file()
+    content = regex.sub(pattern=pattern, repl=replacement, string=content)
+    self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
   def split_to_bits(self, source_script=sanscript.DEVANAGARI, indexed_title_pattern="%02d %s",
                     target_frontmantter_type=TOML, dry_run=False):
@@ -310,8 +311,8 @@ class MdFile(object):
       out_dir = os.path.dirname(self.file_path)
     else:
       out_dir = os.path.join(os.path.dirname(self.file_path), os.path.basename(self.file_path).replace(".md", ""))
-    (metadata, md) = self.read_md_file()
-    lines = md.splitlines(keepends=False)
+    (metadata, content) = self.read_md_file()
+    lines = content.splitlines(keepends=False)
     (lines_till_section, remaining) = get_lines_till_section(lines)
     sections = split_to_sections(remaining)
     if len(sections) == 0:
@@ -331,18 +332,18 @@ class MdFile(object):
         raise ValueError(title_in_file_name)
       file_name = file_helper.clean_file_path("%s.md" % title_in_file_name)
       file_path = os.path.join(out_dir, file_name)
-      section_yml = {"title": title}
+      section_metadata = {"title": title}
       section_md = "\n".join(reduce_section_depth(section_lines))
       md_file = MdFile(file_path=file_path, frontmatter_type=target_frontmantter_type)
-      md_file.dump_to_file(metadata=section_yml, md=section_md, dry_run=dry_run)
+      md_file.dump_to_file(metadata=section_metadata, content=section_md, dry_run=dry_run)
 
     remainder_file_path = os.path.join(out_dir, "_index.md")
-    md = "\n".join(lines_till_section)
+    content = "\n".join(lines_till_section)
     logging.debug(metadata)
     if not metadata["title"].startswith("+"):
       metadata["title"] = "+" + metadata["title"]
     MdFile(file_path=remainder_file_path, frontmatter_type=target_frontmantter_type).dump_to_file(metadata=metadata,
-                                                                                                  md=md,
+                                                                                                  content=content,
                                                                                                   dry_run=dry_run)
     if str(self.file_path) != str(remainder_file_path):
       logging.info("Removing %s as %s is different ", self.file_path, remainder_file_path)
@@ -350,21 +351,37 @@ class MdFile(object):
         os.remove(path=self.file_path)
 
   def transliterate_content(self, source_scheme, dest_scheme=sanscript.DEVANAGARI, dry_run=False):
-    (yml, md) = self.read_md_file()
-    lines = md.split("\n")
+    (metadata, content) = self.read_md_file()
+    lines = content.split("\n")
     lines = [sanscript.transliterate(data=line, _from=source_scheme, _to=dest_scheme, togglers={}) for line in lines]
-    md = "\n".join(lines)
-    self.dump_to_file(yml, md=md, dry_run=dry_run)
+    content = "\n".join(lines)
+    self.dump_to_file(metadata, content=content, dry_run=dry_run)
 
   def fix_lazy_anusvaara(self, writing_scheme=sanscript.DEVANAGARI, dry_run=False, *args,
                          **kwargs):
-    (yml, md) = self.read_md_file()
-    # if len(yml) > len(md) and not str(self.file_path).endswith("_index.md"):
+    (metadata, content) = self.read_md_file()
+    # if len(metadata) > len(content) and not str(self.file_path).endswith("_index.content"):
     #     raise ValueError("Something wrong with %s" % (self.file_path))
-    lines = md.split("\n")
+    lines = content.split("\n")
     lines = [sanscript.SCHEMES[writing_scheme].fix_lazy_anusvaara(data_in=line, *args,
                                                                   **kwargs) for
              line in lines]
-    md = "\n".join(lines)
-    self.dump_to_file(yml, md=md, dry_run=dry_run)
+    content = "\n".join(lines)
+    self.dump_to_file(metadata, content=content, dry_run=dry_run)
 
+  def add_init_words_to_section_titles(self, num_words=2, dry_run=False):
+    logging.debug("Processing file: %s", self.file_path)
+    (metadata, content) = self.read_md_file()
+    lines = content.splitlines(keepends=False)
+    (lines_till_section, remaining) = get_lines_till_section(lines)
+    sections = split_to_sections(remaining)
+    if len(sections) == 0:
+      return
+    sections_out = section.add_init_words_to_section_titles(sections=sections, num_words=num_words)
+
+    lines_out = list(lines_till_section)
+    for section_index, (title, section_lines) in enumerate(sections_out):
+      lines_out.append("\n## %s" % title)
+      lines_out.extend(section_lines)
+    
+    self.dump_to_file(metadata=metadata, content="\n".join(lines_out), dry_run=dry_run)

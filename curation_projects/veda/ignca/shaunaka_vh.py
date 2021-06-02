@@ -51,7 +51,7 @@ def dump_text(base_dir):
         title = "%03d %s" % (subunit_index, title_tags[0].text)
       title = sanscript.transliterate(title, sanscript.HK, sanscript.DEVANAGARI)
       md_file = MdFile(file_path=outfile_path)
-      md_file.dump_to_file(metadata={"title": title}, md=text, dry_run=False)
+      md_file.dump_to_file(metadata={"title": title}, content=text, dry_run=False)
 
   browser.close()
 
@@ -93,7 +93,7 @@ def separate_rks(dry_run=False):
       title_Rk = text_data.get_rk_title(rk_id=rk_id_str, rk_text=rk_md)
       dest_path_Rk = os.path.join(dest_dir_Rks, chapter_id, suukta_id_roman, sanscript.transliterate(rk_id_str, sanscript.DEVANAGARI, sanscript.IAST) + ".md")
       md_file_Rk = MdFile(file_path=dest_path_Rk)
-      md_file_Rk.dump_to_file(metadata={"title": title_Rk}, md=rk_md, dry_run=dry_run)
+      md_file_Rk.dump_to_file(metadata={"title": title_Rk}, content=rk_md, dry_run=dry_run)
       md_file_Rk.set_filename_from_title(transliteration_source=sanscript.DEVANAGARI, dry_run=dry_run)
       rk_map[rk_id_str] = md_file_Rk.file_path
 
@@ -113,7 +113,7 @@ def separate_rks(dry_run=False):
     %s
     """ % ("\n    ".join(meta_lines), suukta_md)
     md_file_suukta = MdFile(file_path=dest_path_suukta)
-    md_file_suukta.dump_to_file(metadata={"title": "%s %s" % (suukta_id, suukta_title)}, md=textwrap.dedent(suukta_md), dry_run=dry_run)
+    md_file_suukta.dump_to_file(metadata={"title": "%s %s" % (suukta_id, suukta_title)}, content=textwrap.dedent(suukta_md), dry_run=dry_run)
     md_file_suukta.set_filename_from_title(transliteration_source=sanscript.DEVANAGARI, dry_run=dry_run)
 
 

@@ -69,7 +69,7 @@ def dump_text(browser, outdir):
     text_segments = [span.text.strip().replace("\n", "  \n") for span in text_spans]
     text = "\n\n".join(text_segments)
     md_file = MdFile(file_path=out_file_path)
-    md_file.dump_to_file(metadata={"title": text_name}, md=text, dry_run=False)
+    md_file.dump_to_file(metadata={"title": text_name}, content=text, dry_run=False)
 
 
 def browse_nodes(browser, start_nodes):

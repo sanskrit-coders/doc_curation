@@ -94,7 +94,7 @@ def process_catalog_page_selenium(url, out_dir):
     file = MdFile(file_path=dest_file_path, frontmatter_type="toml")
     text = get_text(url=text_url)
     text = text.replace("\n", "  \n")
-    file.dump_to_file(metadata=metadata, md=text, dry_run=False)
+    file.dump_to_file(metadata=metadata, content=text, dry_run=False)
 
 
 def process_catalog_page_soup(url):

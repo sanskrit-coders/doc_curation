@@ -20,7 +20,7 @@ logging.getLogger("sbcharsetprober").propagate = False
 # wordpress.fix_paths(dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/manasataramgini", dry_run=False)
 # wordpress.fix_paths(dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/history/paganology/Aryan/indo-iranian/indo-aryan/persons/brAhma/sage-bloodlines/bhRguH/dvitIyajanmani_bhRguH/chyavanaH/ApnavAna/aurvaH/jamadagniH/MT_charitram/", dry_run=False)
 
-# library.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-markdown", source_scheme=sanscript.IAST)
+# library.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/ekAgnikANDam/haradatta-TIkA", source_scheme=sanscript.IAST)
 
 
 # MdFile.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/vedAH/content/taittirIyam/sUtram/ApastambaH/gRhyam/TIkA", overwrite=True, dry_run=False)
@@ -41,7 +41,7 @@ logging.getLogger("sbcharsetprober").propagate = False
 
 # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/sAma/brAhmaNam/chandogya_brahmana", dry_run=False)
 
-library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/biology/organism/health/disease/infection/viral/wuhan_epidemic/Infection/vaccination.md", dry_run=False, source_script=None,  indexed_title_pattern=None)
+# library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/ekAgnikANDam/haradatta-TIkA/", dry_run=False, source_script=None,  indexed_title_pattern=None)
 
 # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/biology/organism/health/disease/infection/viral/wuhan_epidemic/treatment.md", dry_run=False, source_script=None,  indexed_title_pattern=None)
 
@@ -55,4 +55,7 @@ library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-
 # file_helper.copy_file_tree(source_dir="/home/vvasuki/Downloads/peterFreund", dest_dir="/home/vvasuki/sanskrit/raw_etexts/mixed/peterFreund", file_pattern="**/*.md")
 
 # MdFile(file_path="/home/vvasuki/sanskrit/raw_etexts/vedAntam/dvaitam/mAdhvam/TikA-tippaNi/chidgagana_tika.md",frontmatter_type=MdFile.TOML).fix_lazy_anusvaara(dry_run=False, ignore_padaanta=True, omit_yrl=True)
+
 # library.apply_function(fn=MdFile.fix_lazy_anusvaara, dir_path="/home/vvasuki/sanskrit/raw_etexts", file_name_filter=None, start_file="/home/vvasuki/sanskrit/raw_etexts/vyAkaraNam/aShTAdhyAyI_central-repo/vAsu/pada-1.1/1.1.1.md", dry_run=False, ignore_padaanta=True, omit_yrl=True)
+
+library.apply_function(fn=MdFile.add_init_words_to_section_titles, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/haradatta-TIkA", dry_run=False, num_words=2)

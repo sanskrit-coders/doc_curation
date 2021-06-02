@@ -43,6 +43,6 @@ def dump_devanaagarii(source_html, dest_file):
         text = sanscript.transliterate(data=text, _from=sanscript.IAST, _to=sanscript.DEVANAGARI)
         text = "%s\n\n## पाठः\n%s" % (intro, text)
         out_file = MdFile(file_path=dest_file, frontmatter_type="toml")
-        out_file.dump_to_file(metadata=metadata, md=text, dry_run=False)
+        out_file.dump_to_file(metadata=metadata, content=text, dry_run=False)
 
 

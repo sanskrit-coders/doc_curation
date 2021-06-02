@@ -28,4 +28,4 @@ def dump_all_texts(dest_dir, overwrite=False):
             continue
         logging.info("Getting %s", link["href"])
         md_file = MdFile(file_path=dest_path, frontmatter_type=MdFile.TOML)
-        md_file.dump_to_file(metadata={"title": title}, md=text, dry_run=False)
+        md_file.dump_to_file(metadata={"title": title}, content=text, dry_run=False)

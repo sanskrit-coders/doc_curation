@@ -53,7 +53,7 @@ def dump_markdown(src_file, dest_file):
     text = get_text(src_file=src_file)
     metadata["title"] = sanscript.transliterate(data=metadata["itxtitle"], _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI)
     md_file = MdFile(file_path=dest_file, frontmatter_type=MdFile.TOML)
-    md_file.dump_to_file(metadata=metadata, md=text, dry_run=False)
+    md_file.dump_to_file(metadata=metadata, content=text, dry_run=False)
 
 
 def markdownify_all(src_dir, dest_dir):

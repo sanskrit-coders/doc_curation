@@ -6,6 +6,7 @@ import os
 
 import regex
 
+import doc_curation.md.section
 from doc_curation import md
 from doc_curation.md import library
 from indic_transliteration import sanscript
@@ -50,10 +51,10 @@ def transform(dry_run=False):
       rk_md = rk_map[rk_id]
       dest_path_Rk = os.path.join(dest_dir_Rks, suukta_id, sanscript.transliterate(rk_id, sanscript.DEVANAGARI, sanscript.IAST) + ".md")
       md_file_Rk = MdFile(file_path=dest_path_Rk)
-      rk_text = " ".join(md.get_section_lines(lines_in=rk_md.split("\n"), section_title="मन्त्रः"))
+      rk_text = " ".join(doc_curation.md.section.get_section_lines(lines_in=rk_md.split("\n"), section_title="मन्त्रः"))
       from doc_curation import text_data
       title_Rk = text_data.get_rk_title(rk_id=rk_id, rk_text=rk_text)
-      md_file_Rk.dump_to_file(metadata={"title": title_Rk}, md=rk_md, dry_run=dry_run)
+      md_file_Rk.dump_to_file(metadata={"title": title_Rk}, content=rk_md, dry_run=dry_run)
       md_file_Rk.set_filename_from_title(transliteration_source=sanscript.DEVANAGARI, dry_run=dry_run)
       dest_path_Rk = md_file_Rk.file_path
 
@@ -63,7 +64,7 @@ def transform(dry_run=False):
       """ % dest_path_Rk.replace("/home/vvasuki/vvasuki-git", "").replace("static/", "")
 
     import inspect
-    md_file_suukta.dump_to_file(metadata={"title": title}, md=inspect.cleandoc(suukta_md), dry_run=dry_run)
+    md_file_suukta.dump_to_file(metadata={"title": title}, content=inspect.cleandoc(suukta_md), dry_run=dry_run)
 
 
 

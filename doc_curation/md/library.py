@@ -63,7 +63,7 @@ def make_full_text_md(source_dir, dry_run=False):
   if num_md_files > 0:
     full_md_path = os.path.join(source_dir, "full.md")
     full_md = MdFile(file_path=full_md_path)
-    full_md.dump_to_file(md=md, metadata={"title": title}, dry_run=dry_run)
+    full_md.dump_to_file(content=md, metadata={"title": title}, dry_run=dry_run)
   else:
     logging.info("No md files found in %s. Skipping.", source_dir)
 
@@ -80,7 +80,7 @@ def migrate_and_include(files, location_computer, new_url_computer, dry_run=Fals
       os.rename(src=f, dst=new_path)
     md = """<div class="js_include" url="%s"  newLevelForH1="1" includeTitle="true"> </div>""" % new_url_computer(str(f))
     logging.info("Inclusion in old file : %s", md)
-    md_file.dump_to_file(metadata=metadata, md=md, dry_run=dry_run)
+    md_file.dump_to_file(metadata=metadata, content=md, dry_run=dry_run)
 
 
 def fix_index_files(dir_path, frontmatter_type=MdFile.TOML, transliteration_target=sanscript.DEVANAGARI, overwrite=False, dry_run=False):
@@ -91,7 +91,7 @@ def fix_index_files(dir_path, frontmatter_type=MdFile.TOML, transliteration_targ
   for dir in dirs:
     index_file = MdFile(file_path=os.path.join(dir, "_index.md"), frontmatter_type=frontmatter_type)
     if not os.path.exists(index_file.file_path):
-      index_file.dump_to_file(metadata={}, md="", dry_run=dry_run)
+      index_file.dump_to_file(metadata={}, content="", dry_run=dry_run)
       index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
     elif overwrite:
       index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
@@ -115,6 +115,7 @@ def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, 
                                              file_name_filter=file_name_filter, frontmatter_type=frontmatter_type)
   start_file_reached = False
 
+  logging.info("Processing %d files.", len(md_files))
   from tqdm import tqdm
   for md_file in tqdm(md_files):
     if start_file is not None and not start_file_reached:

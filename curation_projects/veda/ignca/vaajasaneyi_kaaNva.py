@@ -44,7 +44,7 @@ def dump_text(base_dir):
             title = "%02d" % kaanda_index
             title = sanscript.transliterate(title, sanscript.HK, sanscript.DEVANAGARI)
             md_file = MdFile(file_path=outfile_path)
-            md_file.dump_to_file(metadata={"title": title}, md=text, dry_run=False)
+            md_file.dump_to_file(metadata={"title": title}, content=text, dry_run=False)
         except NoSuchElementException:
             logging.warning("Page missing! %s ", url)
 

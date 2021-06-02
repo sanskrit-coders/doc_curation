@@ -73,7 +73,7 @@ def dump_text(browser, title, out_file_path, num_pages):
     page_number = page_number + 1 
 
   md_file = MdFile(file_path=out_file_path)
-  md_file.dump_to_file(metadata={"title": title}, md=text, dry_run=False)
+  md_file.dump_to_file(metadata={"title": title}, content=text, dry_run=False)
 
 
 if __name__ == '__main__':
