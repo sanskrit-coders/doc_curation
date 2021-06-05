@@ -106,14 +106,14 @@ def fix_index_files(dir_path, frontmatter_type=MdFile.TOML, transliteration_targ
       index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
 
 
-def get_md_files_from_path(dir_path, file_pattern, file_name_filter=None, frontmatter_type="yaml"):
+def get_md_files_from_path(dir_path, file_pattern, file_name_filter=None, frontmatter_type=None):
   from pathlib import Path
   # logging.debug(list(Path(dir_path).glob(file_pattern)))
   md_file_paths = sorted(filter(file_name_filter, Path(dir_path).glob(file_pattern)))
   return [MdFile(path, frontmatter_type=frontmatter_type) for path in md_file_paths]
 
 
-def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, frontmatter_type="yaml", start_file=None, *args,
+def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, frontmatter_type="toml", start_file=None, *args,
                    **kwargs):
   # logging.debug(list(Path(dir_path).glob(file_pattern)))
   if os.path.isfile(dir_path):
