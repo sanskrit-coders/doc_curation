@@ -298,7 +298,7 @@ class MdFile(object):
     content = regex.sub(pattern=pattern, repl=replacement, string=content)
     self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
-  def split_to_bits(self, source_script=sanscript.DEVANAGARI, indexed_title_pattern="%02d %s",
+  def split_to_bits(self, source_script=sanscript.DEVANAGARI, indexed_title_pattern="%02d %s", bits_dir_url=None,
                     target_frontmantter_type=TOML, dry_run=False):
     """
     
@@ -311,12 +311,14 @@ class MdFile(object):
       out_dir = os.path.dirname(self.file_path)
     else:
       out_dir = os.path.join(os.path.dirname(self.file_path), os.path.basename(self.file_path).replace(".md", ""))
+      
     (metadata, content) = self.read_md_file()
     lines = content.splitlines(keepends=False)
     (lines_till_section, remaining) = get_lines_till_section(lines)
     sections = split_to_sections(remaining)
     if len(sections) == 0:
-      return 
+      return
+    section_md_urls = []
     for section_index, (title, section_lines) in enumerate(sections):
       if title == None:
         title = ""
@@ -332,6 +334,8 @@ class MdFile(object):
         raise ValueError(title_in_file_name)
       file_name = file_helper.clean_file_path("%s.md" % title_in_file_name)
       file_path = os.path.join(out_dir, file_name)
+      if bits_dir_url is not None:
+        section_md_urls.append(os.path.join(bits_dir_url, file_name.replace(".md", "")))
       section_metadata = {"title": title}
       section_md = "\n".join(reduce_section_depth(section_lines))
       md_file = MdFile(file_path=file_path, frontmatter_type=target_frontmantter_type)
@@ -339,12 +343,13 @@ class MdFile(object):
 
     remainder_file_path = os.path.join(out_dir, "_index.md")
     content = "\n".join(lines_till_section)
+    if len(section_md_urls) > 0:
+      section_md_includes = ["""<div class="js_include" url="%s"  newLevelForH1="2" includeTitle="false"> </div>""" % url for url in section_md_urls]
+      content = content + "\n" + "\n".join(section_md_includes)
     logging.debug(metadata)
     if not metadata["title"].startswith("+"):
       metadata["title"] = "+" + metadata["title"]
-    MdFile(file_path=remainder_file_path, frontmatter_type=target_frontmantter_type).dump_to_file(metadata=metadata,
-                                                                                                  content=content,
-                                                                                                  dry_run=dry_run)
+    MdFile(file_path=remainder_file_path, frontmatter_type=target_frontmantter_type).dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
     if str(self.file_path) != str(remainder_file_path):
       logging.info("Removing %s as %s is different ", self.file_path, remainder_file_path)
       if not dry_run:

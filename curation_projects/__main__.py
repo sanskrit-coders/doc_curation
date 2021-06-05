@@ -37,7 +37,7 @@ logging.getLogger("sbcharsetprober").propagate = False
 
 # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
  
-# library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padyam/madhurA-vijayam.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
+# library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/haradatta-TIkA", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None, bits_dir_url="/vedAH/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/haradatta-TIkA")
 
 # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/sAma/brAhmaNam/chandogya_brahmana", dry_run=False)
 
@@ -45,7 +45,7 @@ logging.getLogger("sbcharsetprober").propagate = False
 
 # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/biology/organism/health/disease/infection/viral/wuhan_epidemic/treatment.md", dry_run=False, source_script=None,  indexed_title_pattern=None)
 
-# library.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/vedAH/content/atharva/shaunakam/rUDha-saMhitA", overwrite=False, dry_run=False)
+# library.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/vedAH/content/sAma/paravastu-saama/devaH", overwrite=False, dry_run=False)
 # library.make_full_text_md(source_dir="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/champUH/nItiH/hitopadeshaH")
 
 # MdFile(file_path="/home/vvasuki/vvasuki-git/notes-hugo/content/biology/organism/health/disease/contagion/vaccination.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
@@ -58,4 +58,6 @@ logging.getLogger("sbcharsetprober").propagate = False
 
 # library.apply_function(fn=MdFile.fix_lazy_anusvaara, dir_path="/home/vvasuki/sanskrit/raw_etexts", file_name_filter=None, start_file="/home/vvasuki/sanskrit/raw_etexts/vyAkaraNam/aShTAdhyAyI_central-repo/vAsu/pada-1.1/1.1.1.md", dry_run=False, ignore_padaanta=True, omit_yrl=True)
 
-library.apply_function(fn=MdFile.add_init_words_to_section_titles, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/haradatta-TIkA", dry_run=False, num_words=2)
+# library.apply_function(fn=MdFile.add_init_words_to_section_titles, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/haradatta-TIkA", dry_run=False, num_words=2)
+
+# library.defolderify(dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/haradatta-TIkA", dry_run=False)

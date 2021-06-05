@@ -78,7 +78,15 @@ def get_init_content_lines(lines_in):
       return []
     
 
-def add_init_words_to_section_titles(sections, num_words=2, depunctuate=True):
+def add_init_words_to_section_titles(sections, num_words=2, target_title_length=24, depunctuate=True):
+  """
+  
+  :param sections: [(title, section_lines)] list 
+  :param num_words: 
+  :param target_title_length:
+  :param depunctuate: 
+  :return: 
+  """
   sections_out = []
   for section_index, (title, section_lines) in enumerate(sections):
     if title == None:
@@ -92,6 +100,9 @@ def add_init_words_to_section_titles(sections, num_words=2, depunctuate=True):
         devanaaagari_scheme = sanscript.SCHEMES[sanscript.DEVANAGARI]
         init_words_str = devanaaagari_scheme.remove_svaras(in_string=init_words_str)
         init_words_str = devanaaagari_scheme.remove_punctuation(in_string=init_words_str)
+        init_words_str = devanaaagari_scheme.fix_lazy_anusvaara(data_in=init_words_str, omit_yrl=True)
+        while len(init_words_str) > target_title_length and len(init_words_str.split()) > 1:
+          init_words_str = " ".join(init_words_str.split()[:-1])
 
     title = "%s %s" % (title.strip(), init_words_str)
         
