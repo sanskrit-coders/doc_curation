@@ -39,7 +39,7 @@ logging.getLogger("sbcharsetprober").propagate = False
  
 # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/haradatta-TIkA", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None, bits_dir_url="/vedAH/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/haradatta-TIkA")
 
-# library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/raw_etexts/veda/sAma/brAhmaNam/chandogya_brahmana", dry_run=False)
+library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/haradatta-TIkA/", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
 
 # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/ekAgnikANDam/haradatta-TIkA/", dry_run=False, source_script=None,  indexed_title_pattern=None)
 
@@ -54,9 +54,7 @@ logging.getLogger("sbcharsetprober").propagate = False
 # md_helper.import_md_recursive(source_dir="/home/vvasuki/Downloads/peterFreund", file_extension="txt")
 # file_helper.copy_file_tree(source_dir="/home/vvasuki/Downloads/peterFreund", dest_dir="/home/vvasuki/sanskrit/raw_etexts/mixed/peterFreund", file_pattern="**/*.md")
 
-# MdFile(file_path="/home/vvasuki/sanskrit/raw_etexts/vedAntam/dvaitam/mAdhvam/TikA-tippaNi/chidgagana_tika.md",frontmatter_type=MdFile.TOML).fix_lazy_anusvaara(dry_run=False, ignore_padaanta=True, omit_yrl=True)
-
-library.apply_function(fn=MdFile.fix_lazy_anusvaara, dir_path="/home/vvasuki/vvasuki-git/kAvya/content/shAstram/alankAraH/alankAra-maNihAraH", dry_run=False, ignore_padaanta=True, omit_yrl=True)
+# library.apply_function(fn=MdFile.fix_lazy_anusvaara, dir_path="/home/vvasuki/vvasuki-git/kAvya/content/shAstram/alankAraH/alankAra-maNihAraH", dry_run=False, ignore_padaanta=True, omit_yrl=True)
 
 # library.apply_function(fn=MdFile.add_init_words_to_section_titles, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/haradatta-TIkA", dry_run=False, num_words=2)
 
