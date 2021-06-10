@@ -39,11 +39,11 @@ logging.getLogger("sbcharsetprober").propagate = False
  
 # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/haradatta-TIkA", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None, bits_dir_url="/vedAH/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/haradatta-TIkA")
 
-library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/haradatta-TIkA/", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, indexed_title_pattern=None)
+# library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit/mattUru-shrauta-book/content/1/prayogaH/chAturmAsyaprayogaH.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
 
 # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/ekAgnikANDam/haradatta-TIkA/", dry_run=False, source_script=None,  indexed_title_pattern=None)
 
-# library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/notes-hugo/content/biology/organism/health/disease/infection/viral/wuhan_epidemic/treatment.md", dry_run=False, source_script=None,  indexed_title_pattern=None)
+# library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/kalpe_svamatam/hinduism/dANDekaraH", dry_run=False, source_script=None,  indexed_title_pattern=None)
 
 # library.fix_index_files(dir_path="/home/vvasuki/vvasuki-git/vedAH/content/sAma/paravastu-saama/devaH", overwrite=False, dry_run=False)
 # library.make_full_text_md(source_dir="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/champUH/nItiH/hitopadeshaH")
