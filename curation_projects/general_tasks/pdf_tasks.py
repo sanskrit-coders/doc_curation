@@ -17,7 +17,7 @@ def get_from_archive(item_id):
 
 if __name__ == '__main__':
     pass
-    doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/kAvyam/gadyam/ala-2-khudaram.pdf", small_pdf_pages=10, start_page=1, detext=False)
+    # doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/history/Tolerance_Exclusivity_Inclusivity_and_Pe.pdf", small_pdf_pages=10, start_page=1, detext=False)
     # doc_curation.pdf.drive_ocr.split_to_images_and_ocr(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/purANam/mahAbhAratam_gItA-press/mahabharata01ramauoft.pdf")
     # doc_curation.pdf.drive_ocr.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/history/deshpaNDe-mAdhavaH", small_pdf_pages=10)
     # doc_curation.pdf.drive_ocr.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/vedaH/dANDekaraH", small_pdf_pages=10)
