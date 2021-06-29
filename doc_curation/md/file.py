@@ -324,12 +324,13 @@ class MdFile(object):
         title = ""
       if indexed_title_pattern is not None:
         title = indexed_title_pattern % (section_index + 1, title)
-        if source_script is not None:
-          title = sanscript.transliterate(title, sanscript.OPTITRANS, source_script)
       title = title.strip()
       title_in_file_name = title
       if source_script is not None:
-        title_in_file_name = sanscript.transliterate(title, source_script, sanscript.OPTITRANS)
+        title_in_file_name = title
+        if source_script == sanscript.IAST:
+          title_in_file_name = sanscript.SCHEMES[sanscript.IAST].mark_off_non_indic_in_line(title_in_file_name)
+        title_in_file_name = sanscript.transliterate(title_in_file_name, source_script, sanscript.OPTITRANS)
       if title_in_file_name == "":
         raise ValueError(title_in_file_name)
       file_name = file_helper.clean_file_path("%s.md" % title_in_file_name)

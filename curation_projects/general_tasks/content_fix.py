@@ -7,5 +7,5 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.fix_lazy_anusvaara, dir_path="/home/vvasuki/vvasuki-git/kAvya/content/shAstram/alankAraH/alankAra-maNihAraH", dry_run=False, ignore_padaanta=True, omit_yrl=True)
   # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
 
-  # library.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH/taittirIyam/ekAgnikANDam/haradatta-TIkA", source_scheme=sanscript.IAST)
+  library.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH/08", source_scheme=sanscript.IAST, file_name_filter=lambda x: str(x).endswith("Text.md"))
   
