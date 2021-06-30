@@ -30,8 +30,10 @@ def get_section(lines_in):
   lines_in_section = []
   remaining = []
   if len(lines) > 1:
-    lines_in_section = itertools.takewhile(lambda line: not line.startswith(header_prefix), lines[1:])
-    remaining = itertools.dropwhile(lambda line: not line.startswith(header_prefix), lines[1:])
+    # Below, we're careful to handle secions without titles - ie lines such as "##\n"
+    is_non_section_start = lambda line: not (line.strip() + " ").startswith(header_prefix)
+    lines_in_section = itertools.takewhile(is_non_section_start, lines[1:])
+    remaining = itertools.dropwhile(lambda line: is_non_section_start(line), lines[1:])
   return (title, peekable(lines_in_section), peekable(remaining))
 
 
@@ -104,7 +106,7 @@ def add_init_words_to_section_titles(sections, num_words=2, target_title_length=
         while len(init_words_str) > target_title_length and len(init_words_str.split()) > 1:
           init_words_str = " ".join(init_words_str.split()[:-1])
 
-    title = "%s %s" % (title.strip(), init_words_str)
+        title = "%s %s" % (title.strip(), init_words_str)
         
     sections_out.append((title, section_lines))
   return sections_out

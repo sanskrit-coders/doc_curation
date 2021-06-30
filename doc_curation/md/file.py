@@ -375,7 +375,7 @@ class MdFile(object):
     content = "\n".join(lines)
     self.dump_to_file(metadata, content=content, dry_run=dry_run)
 
-  def add_init_words_to_section_titles(self, num_words=2, dry_run=False):
+  def add_init_words_to_section_titles(self, num_words=2, title_post_processor=None, dry_run=False):
     logging.debug("Processing file: %s", self.file_path)
     (metadata, content) = self.read_md_file()
     lines = content.splitlines(keepends=False)
@@ -387,6 +387,8 @@ class MdFile(object):
 
     lines_out = list(lines_till_section)
     for section_index, (title, section_lines) in enumerate(sections_out):
+      if title_post_processor is not None:
+        title = title_post_processor(title)
       lines_out.append("\n## %s" % title)
       lines_out.extend(section_lines)
     

@@ -5,12 +5,13 @@ import os
 import doc_curation.md
 import doc_curation.md.section
 
-test_lines = []
-with codecs.open(os.path.join(os.path.dirname(__file__), "test.md"), "r", 'utf-8') as file_obj:
-    test_lines = list(file_obj.readlines())
+def get_lines(test_file_name):
+    with codecs.open(os.path.join(os.path.dirname(__file__), "data", test_file_name), "r", 'utf-8') as file_obj:
+        return list(file_obj.readlines())
 
 
 def test_get_lines_till_section():
+    test_lines = get_lines(test_file_name="test.md")
     (lines_till_section, remaining) = doc_curation.md.section.get_lines_till_section(test_lines)
     lines_till_section = list(lines_till_section)
     remaining = list(remaining)
@@ -20,12 +21,23 @@ def test_get_lines_till_section():
 
 
 def test_split_to_sections():
+    test_lines = get_lines(test_file_name="test.md")
     (lines_till_section, remaining) = doc_curation.md.section.get_lines_till_section(test_lines)
     sections = doc_curation.md.section.split_to_sections(remaining)
     for (title, section_lines) in sections:
         logging.info(title)
         logging.info(list(section_lines))
     assert len(sections) == 2
+
+
+def test_split_to_sections_no_title():
+    test_lines = get_lines(test_file_name="untitled_sections.md")
+    (lines_till_section, remaining) = doc_curation.md.section.get_lines_till_section(test_lines)
+    sections = doc_curation.md.section.split_to_sections(remaining)
+    for (title, section_lines) in sections:
+        logging.info(title)
+        logging.info(list(section_lines))
+    assert len(sections) == 32
 
 
 def test_get_section_title():
