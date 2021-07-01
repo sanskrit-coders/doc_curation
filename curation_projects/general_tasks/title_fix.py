@@ -16,4 +16,4 @@ if __name__ == '__main__':
 
   title_post_processor = None
   # title_post_processor = lambda x: regex.sub("^मन्त्रः +", "", x)
-  library.apply_function(fn=MdFile.add_init_words_to_section_titles, dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/brAhmaNam/sAyaNa-bhAShyam/2/5/8.md", dry_run=False, title_post_processor=title_post_processor, num_words=2)
+  library.apply_function(fn=MdFile.add_init_words_to_section_titles, dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/brAhmaNam/bhaTTa-bhAskara-bhAShyam/3/1/3.md", dry_run=False, title_post_processor=title_post_processor, num_words=2)

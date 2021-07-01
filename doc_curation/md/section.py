@@ -103,6 +103,7 @@ def add_init_words_to_section_titles(sections, num_words=2, target_title_length=
         init_words_str = devanaaagari_scheme.remove_svaras(in_string=init_words_str)
         init_words_str = devanaaagari_scheme.remove_punctuation(in_string=init_words_str)
         init_words_str = devanaaagari_scheme.fix_lazy_anusvaara(data_in=init_words_str, omit_yrl=True)
+        # TODO: Call get_approx_deduplicating_key ?
         while len(init_words_str) > target_title_length and len(init_words_str.split()) > 1:
           init_words_str = " ".join(init_words_str.split()[:-1])
 

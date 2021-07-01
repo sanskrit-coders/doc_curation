@@ -298,7 +298,7 @@ class MdFile(object):
     content = regex.sub(pattern=pattern, repl=replacement, string=content)
     self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
-  def split_to_bits(self, source_script=sanscript.DEVANAGARI, indexed_title_pattern="%02d %s", bits_dir_url=None,
+  def split_to_bits(self, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, indexed_title_pattern="%02d %s", bits_dir_url=None,
                     target_frontmantter_type=TOML, dry_run=False):
     """
     
@@ -328,7 +328,7 @@ class MdFile(object):
       title_in_file_name = title
       if source_script is not None:
         title_in_file_name = title
-        if source_script == sanscript.IAST:
+        if source_script == sanscript.IAST and mixed_languages_in_titles:
           title_in_file_name = sanscript.SCHEMES[sanscript.IAST].mark_off_non_indic_in_line(title_in_file_name)
         title_in_file_name = sanscript.transliterate(title_in_file_name, source_script, sanscript.OPTITRANS)
       if title_in_file_name == "":
@@ -342,7 +342,10 @@ class MdFile(object):
       md_file = MdFile(file_path=file_path, frontmatter_type=target_frontmantter_type)
       md_file.dump_to_file(metadata=section_metadata, content=section_md, dry_run=dry_run)
 
-    remainder_file_path = os.path.join(out_dir, "_index.md")
+    if bits_dir_url is not None:
+      remainder_file_path = self.file_path
+    else:
+      remainder_file_path = os.path.join(out_dir, "_index.md")
     content = "\n".join(lines_till_section)
     if len(section_md_urls) > 0:
       section_md_includes = ["""<div class="js_include" url="%s"  newLevelForH1="2" includeTitle="false"> </div>""" % url for url in section_md_urls]
@@ -353,7 +356,7 @@ class MdFile(object):
     MdFile(file_path=remainder_file_path, frontmatter_type=target_frontmantter_type).dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
     if str(self.file_path) != str(remainder_file_path):
       logging.info("Removing %s as %s is different ", self.file_path, remainder_file_path)
-      if not dry_run:
+      if not dry_run and remainder_file_path != self.file_path:
         os.remove(path=self.file_path)
 
   def transliterate_content(self, source_scheme, dest_scheme=sanscript.DEVANAGARI, dry_run=False):
