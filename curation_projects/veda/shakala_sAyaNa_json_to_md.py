@@ -3,6 +3,7 @@ import glob
 import json
 import logging
 import os
+import textwrap
 
 import regex
 
@@ -14,8 +15,27 @@ from indic_transliteration import sanscript
 from doc_curation.md.file import MdFile
 
 
-dest_dir_Rks = "/home/vvasuki/vvasuki-git/vedAH/static/Rk/shAkalam/saMhitA/sAyaNa-bhAShyam/"
-dest_dir_suuktas = "/home/vvasuki/vvasuki-git/vedAH/content/Rk/shAkalam/saMhitA/sAyaNa-bhAShyam/"
+static_dir_base = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/"
+content_dir_base = "/home/vvasuki/vishvAsa/vedAH/content/Rk/shAkalam/saMhitA/"
+
+
+def dump_content(metadata, content, suukta_id, rk_id, destination_dir, base_dir=static_dir_base, dry_run=False):
+  dest_path_Rk = os.path.join(base_dir, destination_dir, suukta_id, sanscript.transliterate(rk_id, sanscript.DEVANAGARI, sanscript.IAST) + ".md")
+  md_file = MdFile(file_path=dest_path_Rk)
+  import inspect
+  md_file.dump_to_file(metadata=metadata, content=inspect.cleandoc(content), dry_run=dry_run)
+  md_file.set_filename_from_title(transliteration_source=sanscript.DEVANAGARI, dry_run=dry_run)
+
+
+def get_include(include_type, suukta_id, file_name_optitrans, field_names=None, classes=None):
+  field_names_str = ""
+  if field_names is not None:
+    field_names_str = "fieldNames=\"%s\"" % (",".join(field_names))
+  classes_str = ""
+  if classes is not None:
+    classes_str = " ".join(classes)
+  extra_attributes = " ".join([field_names_str])
+  return """<div class="js_include %s" url="%s"  newLevelForH1="3" title="%s" newLevelForH1="3" %s> </div>"""  % (classes_str, os.path.join("/vedAH/Rk/shAkalam/saMhitA/", include_type, suukta_id, file_name_optitrans + ".md"), sanscript.transliterate(include_type, _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI), extra_attributes)
 
 
 def transform(dry_run=False):
@@ -28,46 +48,59 @@ def transform(dry_run=False):
       suukta_rk_map = suukta_id_to_rk_map.get(suukta_id, {})
       bhaashya = regex.sub("<.+?>", "", rk["sayanaBhashya"])
       rk_number = sanscript.transliterate("%02d" % int(rk["classification"]["rik"]), sanscript.IAST, sanscript.DEVANAGARI)
-      attribute_str = "%s। %s। %s।" % (rk["attribute"]["devata"], rk["attribute"]["rishi"], rk["attribute"]["chandas"])
+      anukramaNikA_map = {"devataa": rk["attribute"]["devata"], "RShiH": rk["attribute"]["rishi"], "ChandaH": rk["attribute"]["chandas"]}
       padapaatha_lines = rk["padapaatha"]["lines"]
       if isinstance(padapaatha_lines, str):
         padapaatha_lines = [padapaatha_lines]
       samhita_lines = rk["samhitaAux"]["lines"]
       if isinstance(samhita_lines, str):
         samhita_lines = [samhita_lines]
-      rk_md = "## अधिमन्त्रम्\n%s\n\n## मन्त्रः\n%s\n\n## पदपाठः\n%s\n\n## भाष्यम्\n%s" % (attribute_str, "  \n".join(samhita_lines), "  \n".join(padapaatha_lines), bhaashya)
-      suukta_rk_map[rk_number] = rk_md
+      suukta_rk_map[rk_number] = {"anukramaNikA": anukramaNikA_map, "mantraH": "  \n".join(samhita_lines), "padapAThaH": "  \n".join(padapaatha_lines), "bhAShyam": bhaashya}
       if bhaashya == "":
         logging.warning("No bhAShya for %s", rk["id"])
       suukta_id_to_rk_map[suukta_id] = suukta_rk_map
 
   for suukta_id in suukta_id_to_rk_map.keys():
-    dest_path_suukta = os.path.join(dest_dir_suuktas, suukta_id + ".md")
-    md_file_suukta = MdFile(file_path=dest_path_suukta)
-    title = sanscript.transliterate(suukta_id.split("/")[-1], sanscript.IAST, sanscript.DEVANAGARI)
-    rk_map = suukta_id_to_rk_map[suukta_id]
+    suukta_rk_map = suukta_id_to_rk_map[suukta_id]
     suukta_md = ""
-    for rk_id in sorted(rk_map.keys()):
-      rk_md = rk_map[rk_id]
-      dest_path_Rk = os.path.join(dest_dir_Rks, suukta_id, sanscript.transliterate(rk_id, sanscript.DEVANAGARI, sanscript.IAST) + ".md")
-      md_file_Rk = MdFile(file_path=dest_path_Rk)
-      rk_text = " ".join(doc_curation.md.section.get_section_lines(lines_in=rk_md.split("\n"), section_title="मन्त्रः"))
+    for rk_id in sorted(suukta_rk_map.keys()):
+      rk_map = suukta_rk_map[rk_id]
+      # md_file_Rk = MdFile(file_path=dest_path_Rk)
       from doc_curation import text_data
-      title_Rk = text_data.get_rk_title(rk_id=rk_id, rk_text=rk_text)
-      md_file_Rk.dump_to_file(metadata={"title": title_Rk}, content=rk_md, dry_run=dry_run)
-      md_file_Rk.set_filename_from_title(transliteration_source=sanscript.DEVANAGARI, dry_run=dry_run)
-      dest_path_Rk = md_file_Rk.file_path
-
-      suukta_md = suukta_md + """
+      title_Rk = text_data.get_rk_title(rk_id=rk_id, rk_text=rk_map["mantraH"])
+      title_only_metadata = {"title": title_Rk}
+      # dump_content(metadata=metadata, content=rk_map["mantraH"], suukta_id=suukta_id, rk_id=rk_id, destination_dir="mUlam", dry_run=dry_run)
+      # dump_content(metadata=metadata, content=rk_map["padapAThaH"], suukta_id=suukta_id, rk_id=rk_id, destination_dir="pada-pAThaH", dry_run=dry_run)
+      # rk_map["anukramaNikA"]["title"] = title_Rk
+      # dump_content(metadata=rk_map["anukramaNikA"], content="", suukta_id=suukta_id, rk_id=rk_id, destination_dir="anukramaNikA", dry_run=dry_run)
       
-      <div class="js_include" url="%s"  newLevelForH1="2" includeTitle="false"> </div> 
-      """ % dest_path_Rk.replace("/home/vvasuki/vvasuki-git", "").replace("static/", "")
+      title_optitrans = sanscript.transliterate(data=title_Rk, _from=sanscript.DEVANAGARI, _to=sanscript.OPTITRANS)
+      file_name_optitrans = title_optitrans.replace(" ", "_")
+      rk_details = textwrap.dedent("""
+      ## %s
+      %s
+      %s
+      %s
+      %s
+      %s
+      """) % (
+        title_Rk,
+        get_include("vishvAsa-prastutiH", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans),
+        get_include("mUlam", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, classes=["collapsed"]),
+        get_include("pada-pAThaH", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, classes=["collapsed"]),
+        get_include("anukramaNikA", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, field_names=["devataa", "RShiH", "ChandaH"], classes=["collapsed"]),
+        get_include("sAyaNa-bhAShyam", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, classes=["collapsed"]),
+      )
+      # dump_content(metadata=title_only_metadata, content=rk_details, suukta_id=suukta_id, rk_id=rk_id, base_dir=content_dir_base, destination_dir="sarva-prastutiH", dry_run=dry_run)
 
-    import inspect
-    md_file_suukta.dump_to_file(metadata={"title": title}, content=inspect.cleandoc(suukta_md), dry_run=dry_run)
+
+      suukta_md = suukta_md + rk_details
+    md_file_suukta = MdFile(file_path=os.path.join(content_dir_base, "sarva-prastutiH", suukta_id + ".md"))
+    title_suukta = sanscript.transliterate(suukta_id.split("/")[-1], sanscript.IAST, sanscript.DEVANAGARI)
+    md_file_suukta.dump_to_file(metadata={"title": title_suukta}, content=suukta_md, dry_run=dry_run)
 
 
 
 if __name__ == '__main__':
-    # transform(dry_run=False)
-    md.library.fix_index_files(dest_dir_suuktas)
+    transform(dry_run=False)
+    md.library.fix_index_files(content_dir_base)

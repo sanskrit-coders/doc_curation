@@ -396,3 +396,20 @@ class MdFile(object):
       lines_out.extend(section_lines)
     
     self.dump_to_file(metadata=metadata, content="\n".join(lines_out), dry_run=dry_run)
+
+  def drop_sections(self, title_condition, dry_run=False):
+    logging.debug("Processing file: %s", self.file_path)
+    (metadata, content) = self.read_md_file()
+    lines = content.splitlines(keepends=False)
+    (lines_till_section, remaining) = get_lines_till_section(lines)
+    sections = split_to_sections(remaining)
+    if len(sections) == 0:
+      return
+    sections = [section for section in sections if not title_condition(section[0])]
+
+    lines_out = list(lines_till_section)
+    for section_index, (title, section_lines) in enumerate(sections):
+      lines_out.append("\n## %s" % title)
+      lines_out.extend(section_lines)
+
+    self.dump_to_file(metadata=metadata, content="\n".join(lines_out), dry_run=dry_run)
