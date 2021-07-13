@@ -413,3 +413,30 @@ class MdFile(object):
       lines_out.extend(section_lines)
 
     self.dump_to_file(metadata=metadata, content="\n".join(lines_out), dry_run=dry_run)
+    
+  def make_paras(self, dry_run=False):
+    logging.debug("Processing file: %s", self.file_path)
+    (metadata, content) = self.read_md_file()
+    lines = content.splitlines(keepends=False)
+    lines_out = [""]
+    for line in lines:
+      line = line.rstrip()
+      previous_line = lines_out[-1]
+      if line == "":
+        lines_out.append(line)
+      elif regex.fullmatch("^[#>\-\+\*].+",  line):
+        if not regex.fullmatch("^[#>\-\*].+",  previous_line):
+          lines_out.append("")
+        lines_out.append(line)
+      else:
+        if regex.fullmatch(".+\.",  previous_line):
+          lines_out.append("")
+          lines_out.append(line)
+        else:
+          if not regex.fullmatch("^[#>\-\*].+[^.]",  previous_line) and previous_line.strip() != "":
+            lines_out[-1] = "%s %s" % (previous_line, line)
+            lines_out[-1] = lines_out[-1].strip()
+          else:
+            lines_out.append(line)
+    self.dump_to_file(metadata=metadata, content="\n".join(lines_out), dry_run=dry_run)
+    

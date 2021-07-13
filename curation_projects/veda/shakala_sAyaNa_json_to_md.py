@@ -27,7 +27,7 @@ def dump_content(metadata, content, suukta_id, rk_id, destination_dir, base_dir=
   md_file.set_filename_from_title(transliteration_source=sanscript.DEVANAGARI, dry_run=dry_run)
 
 
-def get_include(include_type, suukta_id, file_name_optitrans, field_names=None, classes=None):
+def get_include(include_type, suukta_id, file_name_optitrans, field_names=None, classes=None, title=None):
   field_names_str = ""
   if field_names is not None:
     field_names_str = "fieldNames=\"%s\"" % (",".join(field_names))
@@ -35,7 +35,9 @@ def get_include(include_type, suukta_id, file_name_optitrans, field_names=None, 
   if classes is not None:
     classes_str = " ".join(classes)
   extra_attributes = " ".join([field_names_str])
-  return """<div class="js_include %s" url="%s"  newLevelForH1="3" title="%s" newLevelForH1="3" %s> </div>"""  % (classes_str, os.path.join("/vedAH/Rk/shAkalam/saMhitA/", include_type, suukta_id, file_name_optitrans + ".md"), sanscript.transliterate(include_type, _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI), extra_attributes)
+  if title is None:
+    title =  sanscript.transliterate(include_type, _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI)
+  return """<div class="js_include %s" url="%s"  newLevelForH1="3" title="%s" newLevelForH1="3" %s> </div>"""  % (classes_str, os.path.join("/vedAH/Rk/shAkalam/saMhitA/", include_type, suukta_id, file_name_optitrans + ".md"), title, extra_attributes)
 
 
 def transform(dry_run=False):
@@ -62,7 +64,11 @@ def transform(dry_run=False):
 
   for suukta_id in suukta_id_to_rk_map.keys():
     suukta_rk_map = suukta_id_to_rk_map[suukta_id]
-    suukta_md = ""
+    suukta_md = textwrap.dedent("""
+    %s
+    %s
+    """ % ( get_include("jamison_brereton", suukta_id=suukta_id, file_name_optitrans="_index", title="Jamison & Brereton"),
+            get_include("jamison_brereton_notes", suukta_id=suukta_id, file_name_optitrans="_index", title="Jamison & Brereton Note", classes=["collapsed"])) )
     for rk_id in sorted(suukta_rk_map.keys()):
       rk_map = suukta_rk_map[rk_id]
       # md_file_Rk = MdFile(file_path=dest_path_Rk)
@@ -83,6 +89,8 @@ def transform(dry_run=False):
       %s
       %s
       %s
+      %s
+      %s
       """) % (
         title_Rk,
         get_include("vishvAsa-prastutiH", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans),
@@ -90,6 +98,8 @@ def transform(dry_run=False):
         get_include("pada-pAThaH", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, classes=["collapsed"]),
         get_include("anukramaNikA", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, field_names=["devataa", "RShiH", "ChandaH"], classes=["collapsed"]),
         get_include("sAyaNa-bhAShyam", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, classes=["collapsed"]),
+        get_include("jamison_brereton", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, classes=["collapsed"], title="Jamison & Brereton"),
+        get_include("jamison_brereton_notes", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, classes=["collapsed"], title="Jamison & Brereton Note"),
       )
       # dump_content(metadata=title_only_metadata, content=rk_details, suukta_id=suukta_id, rk_id=rk_id, base_dir=content_dir_base, destination_dir="sarva-prastutiH", dry_run=dry_run)
 
