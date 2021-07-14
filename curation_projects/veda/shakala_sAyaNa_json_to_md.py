@@ -91,10 +91,12 @@ def transform(dry_run=False):
       %s
       %s
       %s
+      %s
       """) % (
         title_Rk,
         get_include("vishvAsa-prastutiH", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans),
         get_include("mUlam", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, classes=["collapsed"]),
+        get_include("thomson_solcum", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, classes=["collapsed"], title="Thomson Solcum restoration"),
         get_include("pada-pAThaH", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, classes=["collapsed"]),
         get_include("anukramaNikA", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, field_names=["devataa", "RShiH", "ChandaH"], classes=["collapsed"]),
         get_include("sAyaNa-bhAShyam", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, classes=["collapsed"]),

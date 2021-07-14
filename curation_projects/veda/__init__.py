@@ -29,18 +29,20 @@ def fix_Rk_file_names(dest_path, ignore_missing=False, dry_run=True):
   for id in Rk_id_to_name_map.keys():
     Rk_number_str = id.split("/")[-1]
     sUkta_id = "/".join(id.split("/")[:-1])
-    file_path = os.path.join(dest_path, id + ".md")
+    file_path = os.path.join(dest_path, sUkta_id, "0" + Rk_number_str + ".md")
     file_path_new = os.path.join(dest_path, "/".join(id.split("/")[:-1]), Rk_id_to_name_map[id] + ".md")
-    if not os.path.exists(file_path):
-      if ignore_missing:
-        continue
-      else:
-        logging.fatal("Could not find %s at %s", id, file_path)
-        exit()
     if os.path.exists(file_path_new):
       logging.info("%s exists. Skipping", file_path_new)
+      if os.path.exists(file_path):
+        os.remove(file_path)
       # logging.fatal(file_path)
     else:
+      if not os.path.exists(file_path):
+        if ignore_missing:
+          continue
+        else:
+          logging.fatal("Could not find %s at %s", id, file_path)
+          exit()
       logging.info("Moving %s to %s", file_path, file_path_new)
       if not dry_run:
         os.rename(file_path, file_path_new)

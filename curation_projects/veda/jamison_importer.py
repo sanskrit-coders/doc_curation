@@ -7,6 +7,7 @@ from curation_projects import veda
 from doc_curation.md.file import MdFile
 
 path_notes = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/jamison_brereton_notes"
+thomson_solcum_dir = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/thomson_solcum"
 
 
 def separate_commentaries(dry_run=True):
@@ -41,9 +42,9 @@ def separate_commentaries(dry_run=True):
 
 
 if __name__ == '__main__':
-  # veda.fix_Rk_file_names(dest_path=dest_path, ignore_missing=True, dry_run=False)
+  veda.fix_Rk_file_names(dest_path=thomson_solcum_dir, ignore_missing=False, dry_run=False)
   # separate_commentaries(dry_run=False)
-  def include_generator(file_path):
-    return """<div class="js_include" url="%s"  newLevelForH1="3" newLevelForH1="2" includeTitle="true"> </div>"""  % (regex.sub(".+/vedAH/static/", "/vedAH/", file_path))
-  veda.include_multi_suukta_comments(dest_path=path_notes, include_generator=include_generator, dry_run=False)
+  # def include_generator(file_path):
+  #   return """<div class="js_include" url="%s"  newLevelForH1="3" newLevelForH1="2" includeTitle="true"> </div>"""  % (regex.sub(".+/vedAH/static/", "/vedAH/", file_path))
+  # veda.include_multi_suukta_comments(dest_path=path_notes, include_generator=include_generator, dry_run=False)
   pass
