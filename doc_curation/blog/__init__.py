@@ -44,7 +44,8 @@ def get_post_html(url):
     return None
   post_html = entry_divs[0].encode_contents()
   title = soup.find(attrs={'class': 'entry-title'}).string.replace('\\xa0', ' ').replace("xa0", " ")
-  return (title, post_html)
+  date = None
+  return (title, post_html, date)
 
 
 def scrape_post_markdown(url, dir_path, dry_run):
@@ -54,18 +55,22 @@ def scrape_post_markdown(url, dir_path, dry_run):
   if file_name.endswith(".html"):
     # https://koenraadelst.blogspot.com/2021/06/resume-spring-2021.html
     file_name = regex.sub("/(....)/(..)/(.+).html", r"\1/\2/\1-\2_\3.md", file_name)
-    pass
+    date = regex.sub("/(....)/(..)/.+", r"\1-\2-01", file_name)
   else:
     # remove slashes, replace with dashes when dealing with urls like https://manasataramgini.wordpress.com/2020/06/08/pandemic-days-the-fizz-is-out-of-the-bottle/
     file_name = regex.sub("/(....)/(..)/(..)/(.+)/", r"\1/\2/\1-\2-\3_\4.md", file_name)
-    file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, file_name))
+    date = regex.sub("/(....)/(..)/(..).+", r"\1-\2-\3", file_name)
+
+  file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, file_name))
 
   if os.path.exists(file_path):
     logging.warning("Skipping %s : exists", file_name)
     return
-  (title, post_html) = get_post_html(url=url)
+  (title, post_html, date_from_post) = get_post_html(url=url)
+  if date_from_post:
+    date = date_from_post
   logging.info("Dumping %s to %s with title %s.", url, file_path, title)
 
   md_file = MdFile(file_path=file_path, frontmatter_type=MdFile.TOML)
-  md_file.import_content_with_pandoc(metadata={"title": title}, content=post_html, source_format="html",
+  md_file.import_content_with_pandoc(metadata={"title": title, "date": date}, content=post_html, source_format="html",
                                      dry_run=dry_run)

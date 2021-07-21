@@ -9,9 +9,8 @@ if __name__ == '__main__':
   # 
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/vedAH/content/Rk/meta/jamison_brereton/intro/", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.IAST,  indexed_title_pattern=None) # 
   # 
-  # library.apply_function(fn=MdFile.set_title_from_filename, dir_path="/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/thomson_solcum", transliteration_target=None, dry_run=False)
 
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/thomson_solcum", dry_run=False, source_script=None,  indexed_title_pattern=None)
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/notes-hugo/content/places/environment/air.md", dry_run=False, source_script=None,  indexed_title_pattern=None)
   # 
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vvasuki-git/saMskAra/content/kalpe_svamatam/hinduism/dANDekaraH", dry_run=False, source_script=None,  indexed_title_pattern=None)
   # MdFile(file_path="/home/vvasuki/vvasuki-git/notes-hugo/content/biology/organism/health/disease/contagion/vaccination.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, indexed_title_pattern=None)
