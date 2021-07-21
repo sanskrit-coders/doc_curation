@@ -16,11 +16,22 @@ logging.basicConfig(
 
 
 def scrape_index(url, dir_path, dry_run=False):
-  (title, post_html) = get_post_html(url=url)
-  soup = BeautifulSoup(markup=post_html)
+  """
+  
+  Way to create an index easily - https://wordpress.com/support/archives-shortcode/ .
+  
+  :param url: 
+  :param dir_path: 
+  :param dry_run: 
+  :return: 
+  """
+  (title, post_html, date) = get_post_html(url=url)
+  soup = BeautifulSoup(post_html, 'lxml')
   post_anchors = soup.select("ul li a")
   for anchor in post_anchors:
-    scrape_post_markdown(url=anchor["href"], dir_path=dir_path, dry_run=dry_run)
+    post_url = anchor["href"]
+    if post_url != url:
+      scrape_post_markdown(url=post_url, dir_path=dir_path, dry_run=dry_run)
 
 
 def fix_paths(dir_path, dry_run=False):

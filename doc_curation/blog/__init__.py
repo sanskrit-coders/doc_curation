@@ -41,10 +41,20 @@ def get_post_html(url):
   if not entry_divs:
     entry_divs = soup.find_all('div', {'class': 'main'})
   if not entry_divs:
-    return None
+    return (None, None, None)
   post_html = entry_divs[0].encode_contents()
-  title = soup.find(attrs={'class': 'entry-title'}).string.replace('\\xa0', ' ').replace("xa0", " ")
+  
+  title_tag = soup.find(attrs={'class': 'entry-title'})
+  if title_tag is None:
+    title_tag = soup.find("h1")
+  title = title_tag.string.replace('\\xa0', ' ').replace("xa0", " ")
+
+  time_tag = soup.find(attrs={'class': ['entry-date', 'published']})
   date = None
+  if time_tag is not None:
+    date_parts = time_tag.text.strip().split("/")
+    date_parts.reverse()
+    date = "-".join(date_parts)
   return (title, post_html, date)
 
 
@@ -59,7 +69,8 @@ def scrape_post_markdown(url, dir_path, dry_run):
   else:
     # remove slashes, replace with dashes when dealing with urls like https://manasataramgini.wordpress.com/2020/06/08/pandemic-days-the-fizz-is-out-of-the-bottle/
     file_name = regex.sub("/(....)/(..)/(..)/(.+)/", r"\1/\2/\1-\2-\3_\4.md", file_name)
-    date = regex.sub("/(....)/(..)/(..).+", r"\1-\2-\3", file_name)
+    date = regex.sub(".+(\d\d\d\d)-(\d\d)-(\d\d).+", r"\1-\2-\3", file_name)
+    # For 'https://padmavajra.net/2021/07/19/one-of-the-few-versions-of-the-7-line-prayer-to-the-vajrayana-master-padmasambhava-i-saw-in-an-ia-language/' type urls
 
   file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, file_name))
 
