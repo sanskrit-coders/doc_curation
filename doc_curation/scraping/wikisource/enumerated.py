@@ -30,9 +30,12 @@ def get_item_url_suffix(id, id_base, url_id_padding="%d", transliterate_id=True)
     id = url_id_padding % id
     if transliterate_id:
         id = sanscript.transliterate(id, sanscript.SLP1, sanscript.DEVANAGARI)
-    dashaka_id = "%s_%s" % (id_base, id)
-    logging.info(dashaka_id)
-    return urllib.parse.quote(dashaka_id)
+    if id_base.endswith("/"):
+        full_id = "%s%s" % (id_base, id)
+    else:
+        full_id = "%s_%s" % (id_base, id)
+    logging.info(full_id)
+    return urllib.parse.quote(full_id)
 
 
 def dump_item(title, item_url, outfile_path, get_collapsible_content):
