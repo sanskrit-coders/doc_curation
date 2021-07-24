@@ -55,13 +55,12 @@ def split_and_ocr_on_drive(pdf_path,
     # compress_with_pdfimages(input_file_path=pdf_path, output_file_path=compressed_pdf_path)
     detext_via_jpg(input_file_path=pdf_path, output_file_path=compressed_pdf_path)
 
-  split_into_small_pdfs(pdf_path=compressed_pdf_path, small_pdf_pages=small_pdf_pages, start_page=start_page,
+  pdf_segments = split_into_small_pdfs(pdf_path=compressed_pdf_path, small_pdf_pages=small_pdf_pages, start_page=start_page,
                         end_page=end_page)
 
   # Do the OCR
   logging.info("Do the OCR")
   drive_client = drive.get_cached_client(google_key=google_key)
-  pdf_segments = [str(pdf_segment) for pdf_segment in Path(_get_ocr_dir(compressed_pdf_path)).glob("*.pdf")]
   ocr_segments = sorted([pdf_segment + ".txt" for pdf_segment in pdf_segments])
   for pdf_segment in sorted(pdf_segments):
     drive_client.ocr_file(local_file_path=str(pdf_segment))
