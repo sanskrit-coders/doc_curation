@@ -1,17 +1,16 @@
 import email
 import logging
 import os
-from urllib.parse import urlsplit
+import textwrap
 from urllib.request import urlopen
 from urllib.parse import urljoin
 import time
 import datetime
 
-
-import regex
 from bs4 import BeautifulSoup
 
 from curation_utils import file_helper
+from doc_curation.mail_stream import delete_last_month
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript, detect
 
@@ -48,13 +47,22 @@ def scrape_message(url, message_index, dest_dir, list_id, dry_run=False):
   date_string = soup.find("i").text
   message_time = time.mktime(email.utils.parsedate(date_string))
   date_string_cleaned = datetime.datetime.fromtimestamp(message_time).strftime('%Y-%m-%d')
-  post_html = "<p>[Archive link](%s)</p>\n%s" % (url,soup.find("pre").encode_contents())
+  post_md = soup.find("pre").text.replace("<i>", "").replace("</i>", "")
+  post_md = textwrap.dedent(post_md)
+  post_md = "[Archive link](%s)\n\n%s" % (url, post_md)
 
-  file_name = "%s__%s.md" % (message_index, get_storage_name(author))
-  dest_path = os.path.join(dest_dir, get_storage_name(text=subject), file_name)
+  subject_dir = os.path.join(dest_dir, get_storage_name(text=subject))
+  md_file = MdFile(file_path=os.path.join(subject_dir, "_index.md"))
+  if not os.path.exists(md_file.file_path):
+    md_file.dump_to_file(metadata={"title": subject[:30]}, content="", dry_run=dry_run)
+
+
+  file_name = "%02d__%s.md" % (message_index, get_storage_name(author))
+  title = "%02d %s"  % (message_index, author)
+  dest_path = os.path.join(subject_dir, file_name)
   md_file = MdFile(file_path=dest_path)
-  metadata = {"title": subject[:30], "date": date_string_cleaned, "upstream_url": url}
-  md_file.import_content_with_pandoc(metadata=metadata, content=post_html, source_format="html",
+  metadata = {"title": title, "date": date_string_cleaned, "upstream_url": url}
+  md_file.dump_to_file(metadata=metadata, content=post_md,
                                      dry_run=dry_run)
 
 
@@ -79,16 +87,7 @@ def scrape_messages_for_month(url, dest_dir_base, list_id, dry_run=False):
     scrape_message(url=post_url, message_index=message_index, dest_dir=dest_dir, list_id=list_id, dry_run=dry_run)
 
 
-def delete_last_month(dest_dir_base):
-  import glob
-  files = glob.glob(os.path.join(dest_dir_base, '**/*.md'), recursive=True)
-  files = [file for file in files if files != "_index.md"]
-  files = sorted(files, reverse=True)
-  if len(files) > 0:
-    os.rmdir(os.path.dirname(files[0]))
-
-
-def scrape_messages(url, dest_dir_base, list_id="[INDOLOGY] ", dry_run=False):
+def scrape_messages(url, dest_dir_base, list_id, dry_run=False):
   delete_last_month(dest_dir_base)
 
   page_html = urlopen(url)
