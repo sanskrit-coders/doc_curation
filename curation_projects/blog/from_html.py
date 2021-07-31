@@ -20,5 +20,6 @@ if __name__ == '__main__':
     pass
     # wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-index/", dry_run=False, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/manasataramgini")
     # wordpress.scrape_index(url="https://padmavajra.net/index-of-posts/", dry_run=False, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/padmavajra/")
-    wordpress.scrape_index(url="https://vriitrahan.wordpress.com/2021/07/21/archive/", dry_run=False, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/vriitrahan/")
+    # wordpress.scrape_index(url="https://vriitrahan.wordpress.com/2021/07/21/archive/", dry_run=False, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/vriitrahan/")
+    wordpress.scrape_index(url="https://aryaakasha.com/unfiltered-archive/", dry_run=False, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/aryaakasha/")
 
