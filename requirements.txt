@@ -17,3 +17,5 @@ bs4
 beautifulsoup4
 toml
 more_itertools
+joblib
+tqdm

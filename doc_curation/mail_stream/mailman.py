@@ -1,3 +1,9 @@
+"""
+Dumps emails to markdown files organized by year/month/subject. Example invocation at curation_projects/mail_stream_dumper.py in this repo.
+"""
+
+from joblib import Parallel, delayed
+from tqdm import tqdm
 import email
 import logging
 import os
@@ -10,10 +16,9 @@ import datetime
 from bs4 import BeautifulSoup
 
 from curation_utils import file_helper
+from curation_utils.file_helper import get_storage_name
 from doc_curation.mail_stream import delete_last_month
 from doc_curation.md.file import MdFile
-from indic_transliteration import sanscript, detect
-
 
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)
@@ -26,16 +31,6 @@ logging.basicConfig(
 
 
 months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-
-
-def get_storage_name(text):
-  text_optitrans = text
-  if detect.detect(text_optitrans) == 'IAST':
-    text_optitrans = sanscript.transliterate(text_optitrans, _from=sanscript.IAST, _to=sanscript.OPTITRANS)
-  elif detect.detect(text_optitrans) == 'Devanagari':
-    text_optitrans = sanscript.transliterate(text_optitrans, _from=sanscript.DEVANAGARI, _to=sanscript.OPTITRANS)
-  storage_name = file_helper.clean_file_path(text_optitrans)[:20]
-  return storage_name
 
 
 def scrape_message(url, message_index, dest_dir, list_id, dry_run=False):
@@ -87,14 +82,19 @@ def scrape_messages_for_month(url, dest_dir_base, list_id, dry_run=False):
     scrape_message(url=post_url, message_index=message_index, dest_dir=dest_dir, list_id=list_id, dry_run=dry_run)
 
 
-def scrape_messages(url, dest_dir_base, list_id, dry_run=False):
-  delete_last_month(dest_dir_base)
+def scrape_messages(url, dest_dir_base, list_id, jobs=None, dry_run=False):
+  # delete_last_month(dest_dir_base)
 
   page_html = urlopen(url)
   soup = BeautifulSoup(page_html.read(), 'lxml')
   tags = soup.select("a")
-  month_anchors = [tag for tag in tags if "Subject" in tag.text]
-  for anchor in month_anchors:
-    month_url = urljoin(url, anchor["href"])
-    scrape_messages_for_month(url=month_url, dest_dir_base=dest_dir_base, list_id=list_id, dry_run=dry_run)
+  month_anchors = [tag for tag in tags if "Thread" in tag.text]
+
+  # Number of parallel jobs, default to use all processors
+  job_count = -1 if jobs is None else jobs
+  backend = 'sequential' if job_count == 1 else 'multiprocessing'
+
+  r = Parallel(n_jobs=job_count, backend=backend)(
+    delayed(scrape_messages_for_month)(urljoin(url, anchor["href"]), dest_dir_base, list_id, dry_run)
+    for anchor in tqdm(month_anchors))
     
