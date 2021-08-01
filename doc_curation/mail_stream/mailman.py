@@ -43,9 +43,13 @@ def scrape_message(url, message_index, dest_dir, list_id, dry_run=False):
   date_string = soup.find("i").text
   message_time = time.mktime(email.utils.parsedate(date_string))
   date_string_cleaned = datetime.datetime.fromtimestamp(message_time).strftime('%Y-%m-%d')
-  post_md = soup.find("pre").text.replace("<i>", "").replace("</i>", "")
-  post_md = textwrap.dedent(post_md)
-  post_md = "[Archive link](%s)\n\n%s" % (url, post_md)
+  
+  post_content = "ERROR: NO CONTENT FOUND!!"
+  pre_tag = soup.find("pre")
+  if pre_tag:
+    post_content = pre_tag.text.replace("<i>", "").replace("</i>", "")
+    post_content = textwrap.dedent(post_content)
+  post_md = "[Archive link](%s)\n\n%s" % (url, post_content)
 
   subject_dir = os.path.join(dest_dir, get_storage_name(text=subject))
   md_file = MdFile(file_path=os.path.join(subject_dir, "_index.md"))
