@@ -34,6 +34,7 @@ months = ["January", "February", "March", "April", "May", "June", "July", "Augus
 
 
 def scrape_message(url, message_index, dest_dir, list_id, dry_run=False):
+  logging.info("Processing message %s", url)
   page_html = urlopen(url)
   soup = BeautifulSoup(page_html.read(), 'lxml')
 
@@ -62,7 +63,7 @@ def scrape_message(url, message_index, dest_dir, list_id, dry_run=False):
 
 
 def scrape_messages_for_month(url, dest_dir_base, list_id, dry_run=False):
-
+  logging.info("Processing %s", url)
   page_html = urlopen(url)
   soup = BeautifulSoup(page_html.read(), 'lxml')
   [month_str, year] = soup.find("h1").text.split()[:2]
@@ -75,19 +76,18 @@ def scrape_messages_for_month(url, dest_dir_base, list_id, dry_run=False):
     return
 
 
-  tags = soup.select("a")
-  post_anchors = [tag for tag in tags if list_id in tag.text]
-  for message_index, anchor in enumerate(post_anchors):
+  tags = soup.select("ul:nth-of-type(2) a[href]")
+  for message_index, anchor in enumerate(tags):
     post_url = urljoin(url, anchor["href"])
     scrape_message(url=post_url, message_index=message_index, dest_dir=dest_dir, list_id=list_id, dry_run=dry_run)
 
 
-def scrape_messages(url, dest_dir_base, list_id, jobs=None, dry_run=False):
+def scrape_months(url, dest_dir_base, list_id, jobs=None, dry_run=False):
   # delete_last_month(dest_dir_base)
 
   page_html = urlopen(url)
   soup = BeautifulSoup(page_html.read(), 'lxml')
-  tags = soup.select("a")
+  tags = soup.select("a[href]")
   month_anchors = [tag for tag in tags if "Thread" in tag.text]
 
   # Number of parallel jobs, default to use all processors
