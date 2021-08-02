@@ -1,5 +1,5 @@
 """
-Dumps emails to markdown files organized by year/month/subject. Example invocation at curation_projects/mail_stream_dumper.py in this repo.
+Dumps emails from mailman archive to markdown files organized by year/month/subject. ( Example output: https://github.com/hindu-comm/mail_stream_indology) Example invocation at curation_projects/mail_stream_dumper.py in this repo.
 """
 
 from joblib import Parallel, delayed
