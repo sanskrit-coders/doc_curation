@@ -3,9 +3,7 @@ import logging
 import os
 import shutil
 
-from bs4 import BeautifulSoup
-
-from doc_curation.blog import get_post_html, scrape_post_markdown
+from doc_curation.blog import scrape_index_from_anchors
 from doc_curation.md import library
 
 for handler in logging.root.handlers[:]:
@@ -25,13 +23,7 @@ def scrape_index(url, dir_path, dry_run=False):
   :param dry_run: 
   :return: 
   """
-  (title, post_html, date) = get_post_html(url=url)
-  soup = BeautifulSoup(post_html, 'lxml')
-  post_anchors = soup.select("ul li a")
-  for anchor in post_anchors:
-    post_url = anchor["href"]
-    if post_url != url:
-      scrape_post_markdown(url=post_url, dir_path=dir_path, dry_run=dry_run)
+  scrape_index_from_anchors(url=url, dir_path=dir_path, anchor_css="ul li a", dry_run=dry_run)
 
 
 def fix_paths(dir_path, dry_run=False):

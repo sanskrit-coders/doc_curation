@@ -1,5 +1,6 @@
 import logging
 
+from doc_curation import blog
 from doc_curation.blog import wordpress
 from doc_curation.md.file import MdFile
 from doc_curation.md import library
@@ -18,8 +19,9 @@ logging.getLogger("sbcharsetprober").propagate = False
 
 if __name__ == '__main__':
     pass
-    # wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-index/", dry_run=False, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/manasataramgini")
-    # wordpress.scrape_index(url="https://padmavajra.net/index-of-posts/", dry_run=False, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/padmavajra/")
-    # wordpress.scrape_index(url="https://vriitrahan.wordpress.com/2021/07/21/archive/", dry_run=False, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/vriitrahan/")
-    wordpress.scrape_index(url="https://aryaakasha.com/unfiltered-archive/", dry_run=False, dir_path="/home/vvasuki/sanskrit/raw_etexts_english/blogs/aryaakasha/")
-
+    wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-index/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/manasataramgini")
+    wordpress.scrape_index(url="https://padmavajra.net/index-of-posts/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/padmavajra/")
+    wordpress.scrape_index(url="https://vriitrahan.wordpress.com/2021/07/21/archive/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/vriitrahan/")
+    wordpress.scrape_index(url="https://aryaakasha.com/unfiltered-archive/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/aryaakasha/")
+    wordpress.scrape_index(url="https://www.chamuks.in/articles", dry_run=True, dir_path="/home/vvasuki/hindu-comm/weblogs/chamuks")
+    blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path="/home/vvasuki/hindu-comm/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)

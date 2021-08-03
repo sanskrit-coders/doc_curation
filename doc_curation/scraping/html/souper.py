@@ -28,6 +28,14 @@ def get_html(url):
   return content
 
 
+def get_tags_matching_css(soup, css_selector_list):
+  for css in css_selector_list:
+    tags = soup.select(css)
+    if len(tags) > 0:
+      return tags
+  return []
+
+
 def tag_replacer(soup, css_selector, tag_name):
   for element in soup.select(css_selector):
     element.name = tag_name

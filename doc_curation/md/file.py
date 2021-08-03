@@ -285,15 +285,15 @@ class MdFile(object):
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
       self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
-  def prepend_to_content(self, prefix_text, dry_run=True):
+  def prepend_to_content(self, prefix_text, dry_run):
     (metadata, content) = self.read_md_file()
     self.dump_to_file(metadata=metadata, content=prefix_text + content, dry_run=dry_run)
 
-  def replace_content(self, new_content, dry_run=True):
+  def replace_content(self, new_content, dry_run):
     (metadata, _) = self.read_md_file()
     self.dump_to_file(metadata=metadata, content=new_content, dry_run=dry_run)
 
-  def replace_in_content(self, pattern, replacement, dry_run=True):
+  def replace_in_content(self, pattern, replacement, dry_run):
     (metadata, content) = self.read_md_file()
     content = regex.sub(pattern=pattern, repl=replacement, string=content)
     self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)

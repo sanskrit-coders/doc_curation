@@ -1,14 +1,17 @@
+import datetime
 import logging
 import os
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urljoin
 from urllib.request import urlopen
+import dateutil.parser as parser
 
 import regex
 from bs4 import BeautifulSoup
 
 from curation_utils import file_helper
+from curation_utils.file_helper import get_storage_name
 from doc_curation.md.file import MdFile
-
+from doc_curation.scraping.html.souper import get_tags_matching_css
 
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)
@@ -20,68 +23,86 @@ logging.basicConfig(
 
 def get_post_html(url):
   '''get the text body of links'''
+  logging.info("Processing post at %s", url)
   page_html = urlopen(url)
   soup = BeautifulSoup(page_html.read(), 'lxml')
   non_content_tags = soup.select("#jp-post-flair")
   for tag in non_content_tags:
     tag.decompose()
 
-  # find the text content of the post
-  entry_divs = soup.find_all('div', {'class': 'entry-content'})
-  # some use entrybody instead
-  if not entry_divs:
-    entry_divs = soup.find_all('div', {'class': 'entrybody'})
-  # some use post-entry
-  if not entry_divs:
-    entry_divs = soup.find_all('div', {'class': 'post-entry'})
-  # some use post-entry
-  if not entry_divs:
-    entry_divs = soup.find_all('div', {'class': 'entry'})
-    # some use main
-  if not entry_divs:
-    entry_divs = soup.find_all('div', {'class': 'main'})
+  entry_css_list = ["div.entry-content", "div.entrybody", "div.post-entry", "div.entry", "div.main", "div.card-body"]
+  entry_divs = get_tags_matching_css(soup=soup, css_selector_list=entry_css_list)
+
   if not entry_divs:
     return (None, None, None)
-  post_html = entry_divs[0].encode_contents()
-  
-  title_tag = soup.find(attrs={'class': 'entry-title'})
-  if title_tag is None:
-    title_tag = soup.find("h1")
-  title = title_tag.string.replace('\\xa0', ' ').replace("xa0", " ")
 
-  time_tag = soup.find(attrs={'class': ['entry-date', 'published']})
+  post_html = entry_divs[0].encode_contents()
+
+  title_css_list = [".entry-title", ".card-header", "h1", "h2", "h3", "h4"]
+  title_tags = get_tags_matching_css(soup=soup, css_selector_list=title_css_list)
+  title = title_tags[0].text.replace('\xa0', ' ')
+
+  time_css_list = [".entry-date", ".published", "div.card-body>center"]
+  time_tags = get_tags_matching_css(soup=soup, css_selector_list=time_css_list)
   date = None
-  if time_tag is not None:
-    date_parts = time_tag.text.strip().split("/")
-    date_parts.reverse()
-    date = "-".join(date_parts)
+  if len(time_tags) > 0:
+    try:
+      date = parser.parse(time_tags[0].text, fuzzy=True)
+    except parser.ParserError:
+      date_str = regex.search("\d+[-/]\d+[-/]\d+", time_tags[0].text).group()
+      date = parser.parse(date_str, fuzzy=True)
   return (title, post_html, date)
 
 
-def scrape_post_markdown(url, dir_path, dry_run):
+def file_name_from_url(url):
   # construct file_name from the posts url
   parsed_url = urlsplit(url=url)
-  file_name = (parsed_url.path).strip()
-  if file_name.endswith(".html"):
-    # https://koenraadelst.blogspot.com/2021/06/resume-spring-2021.html
-    file_name = regex.sub("/(....)/(..)/(.+).html", r"\1/\2/\1-\2_\3.md", file_name)
-    date = regex.sub("/(....)/(..)/.+", r"\1-\2-01", file_name)
-  else:
-    # remove slashes, replace with dashes when dealing with urls like https://manasataramgini.wordpress.com/2020/06/08/pandemic-days-the-fizz-is-out-of-the-bottle/
-    file_name = regex.sub("/(....)/(..)/(..)/(.+)/", r"\1/\2/\1-\2-\3_\4.md", file_name)
-    date = regex.sub(".+(\d\d\d\d)-(\d\d)-(\d\d).+", r"\1-\2-\3", file_name)
-    # For 'https://padmavajra.net/2021/07/19/one-of-the-few-versions-of-the-7-line-prayer-to-the-vajrayana-master-padmasambhava-i-saw-in-an-ia-language/' type urls
+  path_parts = (parsed_url.path).strip().split("/")
+  path_parts = [part for part in path_parts if part != ""]
+  # remove slashes, replace with dashes when dealing with urls like https://manasataramgini.wordpress.com/2020/06/08/pandemic-days-the-fizz-is-out-of-the-bottle/
+  # https://koenraadelst.blogspot.com/2021/06/resume-spring-2021.html
+  return "%s.md" % path_parts[-1]
 
-  file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, file_name))
+
+def scrape_post_markdown(url, dir_path, dry_run):
+
+  (title, post_html, date_obj) = (None, None, None)
+  
+  
+  if regex.search("/(\d\d\d\d)/(\d\d)/", url):
+    file_name = file_name_from_url(url=url)
+    result = regex.search("(\d\d\d\d)/(\d\d)/(\d\d)?", url)
+    date_obj = parser.parse(result.group().replace("/", "-"), fuzzy=True)
+  else:
+    (title, post_html, date_obj) = get_post_html(url=url)
+    file_name = get_storage_name(text=title)
+
+  file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, datetime.datetime.strftime(date_obj, "%Y/%m/%Y-%m-%d_") + file_name))
 
   if os.path.exists(file_path):
     logging.warning("Skipping %s : exists", file_name)
     return
-  (title, post_html, date_from_post) = get_post_html(url=url)
-  if date_from_post:
-    date = date_from_post
+  
+  if post_html is None:
+    (title, post_html, date_obj) = get_post_html(url=url)
+
   logging.info("Dumping %s to %s with title %s.", url, file_path, title)
 
   md_file = MdFile(file_path=file_path, frontmatter_type=MdFile.TOML)
-  md_file.import_content_with_pandoc(metadata={"title": title, "date": date}, content=post_html, source_format="html",
+  md_file.import_content_with_pandoc(metadata={"title": title, "date": datetime.datetime.strftime(date_obj, "%Y-%m-%d"), "upstream_url": url}, content=post_html, source_format="html",
                                      dry_run=dry_run)
+  md_file.prepend_to_content("Source: [here](%s).\n\n" % url, dry_run=dry_run)
+
+
+def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, anchor_css="a[href]", urlpattern=None, dry_run=False):
+  (_, post_html, _) = get_post_html(url=url)
+  soup = BeautifulSoup(post_html, 'lxml')
+  post_anchors = soup.select(anchor_css)
+  if urlpattern is not None:
+    post_anchors = [anchor for anchor in post_anchors if regex.match(urlpattern, anchor["href"])]
+  for anchor in post_anchors:
+    post_url = urljoin(url, anchor["href"])
+    if post_url != url:
+      article_scraper(url=post_url, dir_path=dir_path, dry_run=dry_run)
+
+
