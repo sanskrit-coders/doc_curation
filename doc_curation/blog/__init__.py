@@ -50,7 +50,7 @@ def get_post_html(url):
       date = parser.parse(time_tags[0].text, fuzzy=True)
     except parser.ParserError:
       date_str = regex.search("\d+[-/]\d+[-/]\d+", time_tags[0].text).group()
-      date = parser.parse(date_str, fuzzy=True)
+      date = parser.parse(date_str, dayfirst=True, fuzzy=True)
   return (title, post_html, date)
 
 
@@ -64,7 +64,7 @@ def file_name_from_url(url):
   return "%s.md" % path_parts[-1]
 
 
-def scrape_post_markdown(url, dir_path, dry_run):
+def scrape_post_markdown(url, dir_path, dry_run=False):
 
   (title, post_html, date_obj) = (None, None, None)
   
@@ -75,7 +75,7 @@ def scrape_post_markdown(url, dir_path, dry_run):
     date_obj = parser.parse(result.group().replace("/", "-"), fuzzy=True)
   else:
     (title, post_html, date_obj) = get_post_html(url=url)
-    file_name = get_storage_name(text=title)
+    file_name = "%s.md" % get_storage_name(text=title)
 
   file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, datetime.datetime.strftime(date_obj, "%Y/%m/%Y-%m-%d_") + file_name))
 
