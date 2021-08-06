@@ -1,5 +1,7 @@
 import logging
 
+import regex
+
 from doc_curation.scraping.html import souper
 from indic_transliteration import sanscript
 
@@ -12,7 +14,10 @@ def dump_item(item_url, outfile_path, title_maker):
 
   def md_fixer(md):
     md = md.replace("।।", " ॥ ")
-    md = md.replace(".", " - ")
+    # md = md.replace(".", " - ")
+    md = md.replace(":", "ः")
+    md = md.replace("\n  \n", "\n\n")
+    md = regex.sub("\n{3, 13}", "\n\n", md)
     md = sanscript.transliterate(md, sanscript.IAST, sanscript.DEVANAGARI)
     return md
 

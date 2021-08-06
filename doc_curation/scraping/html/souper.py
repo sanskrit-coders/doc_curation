@@ -126,3 +126,7 @@ def markdownify_local_htmls(src_dir, dest_dir, dumper, dry_run=False):
     dest_path = str(src_path).replace(".html", ".md").replace(".htm", ".md").replace(src_dir, dest_dir)
     dest_path = file_helper.clean_file_path(dest_path)
     _ = dumper(url="file://" + str(src_path), outfile_path=dest_path, title_prefix="%02d" % index, dry_run=dry_run)
+
+
+def get_md_paragraph(tags):
+  return "  \n".join([x.strip() for x in tags if isinstance(x, str) and x.strip() != ""])

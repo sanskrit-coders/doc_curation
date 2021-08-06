@@ -1,22 +1,22 @@
 import os
 import regex
 from doc_curation.md.file import MdFile
+from doc_curation.md import library
 
 
 def get_adhyaaya_md_files(md_file_path):
-    md_files = library.get_md_files_from_path(dir_path=md_file_path, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
+    md_files = library.get_md_files_from_path(dir_path=md_file_path, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("/\\d\\d\\d_", os.path.basename(x))) > 0)
     return md_files
 
 
-def get_kaanda_adhyaaya(md_file):
-    kaanda = regex.findall("/\\d_", str(md_file.file_path))[0].replace("/", "").replace("_", "")
-    adhyaaya = regex.findall("\\d\\d\\d", str(md_file.file_path))[0]
-    return (kaanda, adhyaaya)
-
-
-def get_adhyaaya_id(md_file):
-    (kaanda, adhyaaya) = get_kaanda_adhyaaya(md_file)
-    return "%s-%s" % (kaanda, adhyaaya)
+def get_adhyaaya_id(p):
+    p = str(p)
+    kaanda_index_match = regex.search("/(\d)", p)
+    sarga_index_match = regex.search("(\d\d\d)", p)
+    if kaanda_index_match is not None and sarga_index_match is not None:
+        sarga_id = "%s-%s" % (kaanda_index_match.group(1), sarga_index_match.group(1))
+        return sarga_id
+    return None
 
 
 def get_adhyaaya_to_source_file_map():
@@ -30,3 +30,7 @@ def get_adhyaaya_to_source_file_map():
     return final_map
 
 
+def get_doc_data():
+    from curation_utils.google import sheets
+    doc_data = sheets.IndexSheet(spreadhsheet_id="1AkjjTATqaY5dVN10OqdNQSa8YBTjtK2_LBV0NoxIB7w", worksheet_name="गोरक्षपुरपाठः", id_column="id", google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json')
+    return doc_data

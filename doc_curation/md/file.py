@@ -9,7 +9,7 @@ import regex
 import toml
 import yamldown
 
-from doc_curation.md import section
+from doc_curation.md import section, get_md_with_pandoc
 from doc_curation.md.section import get_lines_till_section, reduce_section_depth, split_to_sections
 from indic_transliteration import sanscript
 
@@ -29,6 +29,8 @@ class MdFile(object):
 
   def __init__(self, file_path, frontmatter_type="toml"):
     self.file_path = file_path
+    if frontmatter_type is None:
+      frontmatter_type = "toml"
     self.frontmatter_type = frontmatter_type
 
   def __str__(self):
@@ -73,12 +75,7 @@ class MdFile(object):
 
   def import_content_with_pandoc(self, content, source_format, dry_run, metadata={},
                                  pandoc_extra_args=['--atx-headers']):
-    import pypandoc
-    filters = None
-    content = pypandoc.convert_text(source=content, to="gfm-raw_html", format=source_format, extra_args=pandoc_extra_args,
-                               filters=filters)
-    content = regex.sub("</?div[^>]*?>", "", content)
-    content = regex.sub("\n\n+", "\n\n", content)
+    content = get_md_with_pandoc(content_in=content, source_format=source_format, pandoc_extra_args=pandoc_extra_args)
     self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
   def import_with_pandoc(self, source_file, source_format, dry_run, metadata={}, pandoc_extra_args=['--atx-headers']):

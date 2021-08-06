@@ -33,8 +33,7 @@ if __name__ == '__main__':
     for md_file in raamaayana.get_adhyaaya_md_files(md_file_path ="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/rAmAyaNa/Andhra/"):
         # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
         logging.debug(md_file.file_path)
-        (kaanda, adhyaaya) = raamaayana.get_kaanda_adhyaaya(md_file)
-        adhyaaya_id = "%s-%s" % (kaanda, adhyaaya)
+        adhyaaya_id = raamaayana.get_adhyaaya_id(md_file.file_path)
         logging.debug(adhyaaya_id)
         (yml, _) = md_file._read_yml_md_file()
         # logging.debug(adhyaaya_to_mp3_map[adhyaaya_id])

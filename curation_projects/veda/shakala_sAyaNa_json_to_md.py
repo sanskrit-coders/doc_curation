@@ -28,16 +28,9 @@ def dump_content(metadata, content, suukta_id, rk_id, destination_dir, base_dir=
 
 
 def get_include(include_type, suukta_id, file_name_optitrans, field_names=None, classes=None, title=None):
-  field_names_str = ""
-  if field_names is not None:
-    field_names_str = "fieldNames=\"%s\"" % (",".join(field_names))
-  classes_str = ""
-  if classes is not None:
-    classes_str = " ".join(classes)
-  extra_attributes = " ".join([field_names_str])
   if title is None:
     title =  sanscript.transliterate(include_type, _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI)
-  return """<div class="js_include %s" url="%s"  newLevelForH1="3" title="%s" newLevelForH1="3" %s> </div>"""  % (classes_str, os.path.join("/vedAH/Rk/shAkalam/saMhitA/", include_type, suukta_id, file_name_optitrans + ".md"), title, extra_attributes)
+  return library.get_include(field_names=field_names, classes=classes, title=title, url=os.path.join("/vedAH/Rk/shAkalam/saMhitA/", include_type, suukta_id, file_name_optitrans + ".md"))
 
 
 def transform(dry_run=False):

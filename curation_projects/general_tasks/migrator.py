@@ -4,6 +4,7 @@ import regex
 import glob
 from curation_utils import file_helper
 
+
 def update_blog_files():
   latest_file_paths = glob.glob("/home/vvasuki/hindu-comm/weblogs/manasataramgini/**/*.md", recursive=True)
   paths_in = glob.glob("/home/vvasuki/vishvAsa/**/MT*/**/*.md", recursive=True)

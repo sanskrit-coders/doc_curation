@@ -106,7 +106,7 @@ def fix_index_files(dir_path, frontmatter_type=MdFile.TOML, transliteration_targ
       index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
 
 
-def get_md_files_from_path(dir_path, file_pattern, file_name_filter=None, frontmatter_type=None):
+def get_md_files_from_path(dir_path, file_pattern, file_name_filter="yaml", frontmatter_type=None):
   from pathlib import Path
   # logging.debug(list(Path(dir_path).glob(file_pattern)))
   md_file_paths = sorted(filter(file_name_filter, Path(dir_path).glob(file_pattern)))
@@ -221,3 +221,13 @@ def defolderify(dir_path, dry_run=False):
         md_file.set_title(title=title, dry_run=False)
         os.rmdir(parent)
 
+
+def get_include(url, field_names=None, classes=None, title=None):
+  field_names_str = ""
+  if field_names is not None:
+    field_names_str = "fieldNames=\"%s\"" % (",".join(field_names))
+  classes_str = ""
+  if classes is not None:
+    classes_str = " ".join(classes)
+  extra_attributes = " ".join([field_names_str])
+  return """<div class="js_include %s" url="%s"  newLevelForH1="3" title="%s" newLevelForH1="3" %s> </div>"""  % (classes_str,url, title, extra_attributes)
