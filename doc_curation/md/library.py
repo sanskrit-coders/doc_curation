@@ -222,7 +222,7 @@ def defolderify(dir_path, dry_run=False):
         os.rmdir(parent)
 
 
-def get_include(url, field_names=None, classes=None, title=None):
+def get_include(url, field_names=None, classes=None, title=None, h1_level=2):
   field_names_str = ""
   if field_names is not None:
     field_names_str = "fieldNames=\"%s\"" % (",".join(field_names))
@@ -230,4 +230,4 @@ def get_include(url, field_names=None, classes=None, title=None):
   if classes is not None:
     classes_str = " ".join(classes)
   extra_attributes = " ".join([field_names_str])
-  return """<div class="js_include %s" url="%s"  newLevelForH1="3" title="%s" newLevelForH1="3" %s> </div>"""  % (classes_str,url, title, extra_attributes)
+  return """<div class="js_include %s" url="%s"  newLevelForH1="%d" title="%s" newLevelForH1="3" %s> </div>"""  % (classes_str,url, h1_level, title, extra_attributes)

@@ -5,7 +5,7 @@ from doc_curation.md import library
 
 
 def get_adhyaaya_md_files(md_file_path):
-    md_files = library.get_md_files_from_path(dir_path=md_file_path, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("/\\d\\d\\d_", os.path.basename(x))) > 0)
+    md_files = library.get_md_files_from_path(dir_path=md_file_path, file_pattern="**/*.md", file_name_filter=lambda x: regex.match("^\\d\\d\\d_", os.path.basename(x)) is not None)
     return md_files
 
 
@@ -30,7 +30,7 @@ def get_adhyaaya_to_source_file_map():
     return final_map
 
 
-def get_doc_data():
+def get_doc_data(worksheet_name="गोरक्षपुरपाठः"):
     from curation_utils.google import sheets
-    doc_data = sheets.IndexSheet(spreadhsheet_id="1AkjjTATqaY5dVN10OqdNQSa8YBTjtK2_LBV0NoxIB7w", worksheet_name="गोरक्षपुरपाठः", id_column="id", google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json')
+    doc_data = sheets.IndexSheet(spreadhsheet_id="1AkjjTATqaY5dVN10OqdNQSa8YBTjtK2_LBV0NoxIB7w", worksheet_name=worksheet_name, id_column="id", google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json')
     return doc_data

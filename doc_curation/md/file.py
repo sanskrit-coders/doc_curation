@@ -295,6 +295,14 @@ class MdFile(object):
     content = regex.sub(pattern=pattern, repl=replacement, string=content)
     self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
+  def replace_in_content_lines(self, pattern, replacement, dry_run):
+    (metadata, content) = self.read_md_file()
+    new_content = ""
+    for line in content.split("\n"):
+      line = regex.sub(pattern=pattern, repl=replacement, string=line)
+      new_content += "\n%s" % line
+    self.dump_to_file(metadata=metadata, content=new_content, dry_run=dry_run)
+
   def split_to_bits(self, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, indexed_title_pattern="%02d %s", bits_dir_url=None,
                     target_frontmantter_type=TOML, dry_run=False):
     """
