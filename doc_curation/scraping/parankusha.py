@@ -106,7 +106,7 @@ def get_structured_text(browser, start_nodes, base_dir, unit_info_file):
     os.makedirs(name=base_dir, exist_ok=True)
     unit_data = text_data.get_subunit_data(unit_info_file, [])
 
-    for subunit_path in text_data.get_subunit_path_list(json_file=unit_info_file, unit_path_list=[]):
+    for subunit_path in text_data.get_subunit_path_list(file_path=unit_info_file, unit_path_list=[]):
         try:
             open_path(subunit_path=subunit_path, unit_data=unit_data)
         except NoSuchElementException as e:

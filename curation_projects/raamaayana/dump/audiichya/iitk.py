@@ -62,10 +62,10 @@ def dump_sarga(url, out_path, sarga_id, dry_run=False):
 
 
 def dump_all_sargas(base_dir):
-    for kaanda_index in text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[]):
+    for kaanda_index in text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
         if kaanda_index >= 6:
             continue
-        sarga_list = text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[kaanda_index])
+        sarga_list = text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index])
         for sarga_index in sarga_list:
             logging.info("Kanda %d Sarga %d", kaanda_index, sarga_index)
             out_path = os.path.join(base_dir, "%d" % kaanda_index, "%03d.md" % sarga_index)
@@ -74,10 +74,10 @@ def dump_all_sargas(base_dir):
 
 
 def dump_all_sargas(base_dir):
-    for kaanda_index in text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[]):
+    for kaanda_index in text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
         if kaanda_index >= 6:
             continue
-        sarga_list = text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[kaanda_index])
+        sarga_list = text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index])
         for sarga_index in sarga_list:
             logging.info("Kanda %d Sarga %d", kaanda_index, sarga_index)
             out_path = os.path.join(base_dir, "%d" % kaanda_index, "%03d.md" % sarga_index)
@@ -86,10 +86,10 @@ def dump_all_sargas(base_dir):
 
 
 def dump_commentary(base_dir, commentary_id):
-    for kaanda_index in text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[]):
+    for kaanda_index in text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
         if kaanda_index >= 6:
             continue
-        sarga_list = text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[kaanda_index])
+        sarga_list = text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index])
         for sarga_index in sarga_list:
             logging.info("Kanda %d Sarga %d", kaanda_index, sarga_index)
             out_path = os.path.join(base_dir, "%d" % kaanda_index, "%03d.md" % sarga_index)

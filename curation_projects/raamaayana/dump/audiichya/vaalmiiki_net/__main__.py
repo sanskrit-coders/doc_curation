@@ -58,7 +58,7 @@ def dump_kaanda(kaanda, kaanda_index, output_directory_base):
     kaanda_id1 = None
     kaanda_id2 = None
     unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "raamaayana_andhra.json")
-    sarga_list = text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[kaanda_index])
+    sarga_list = text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index])
     kaanda_id2_chapter_index = None
     chapter_title_xpath = '//div[@class="chpt"]/text()'
     if kaanda == "bAla":

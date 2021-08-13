@@ -27,7 +27,7 @@ browser.implicitly_wait(6)
 def dump_text(base_dir):
     unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "vedaH/vAjasaneyi/samhitA.json")
 
-    for kaanda_index in text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[]):
+    for kaanda_index in text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
         logging.info("adhyAya %d", kaanda_index)
 
         outfile_path = os.path.join(base_dir, "%02d.md" % (kaanda_index))

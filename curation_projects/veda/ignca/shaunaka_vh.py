@@ -29,8 +29,8 @@ def dump_text(base_dir):
   browser.implicitly_wait(6)
   unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "vedaH/shaunaka/samhitA.json")
 
-  for kaanda_index in text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[]):
-    subunit_list = text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[kaanda_index])
+  for kaanda_index in text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
+    subunit_list = text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index])
     for subunit_index in subunit_list:
       logging.info("kaanDa %d adhyaaya %d", kaanda_index, subunit_index)
 

@@ -22,8 +22,8 @@ def dump_text(base_dir, do_transliteration=False):
     unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "shatapatha.json")
 
     titus_url = "http://titus.uni-frankfurt.de/texte/etcs/ind/aind/ved/yvw/sbm/sbm.htm"
-    for kaanda_index in text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[]):
-        sarga_list = text_data.get_subunit_list(json_file=unit_info_file, unit_path_list=[kaanda_index])
+    for kaanda_index in text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
+        sarga_list = text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index])
         for sarga_index in sarga_list:
             logging.info("kaanDa %d adhyaaya %d", kaanda_index, sarga_index)
 

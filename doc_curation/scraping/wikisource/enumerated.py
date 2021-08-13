@@ -81,7 +81,7 @@ def get_wiki_path(subunit_path, unit_data, url_id_padding="%2d"):
 
 def dump_deep_text(url_text_id, url_leaf_id_padding, dir_path, unit_info_file, get_collapsible_content=False, dry_run=False):
     unit_data = text_data.get_subunit_data(unit_info_file, [])
-    for subunit_path in text_data.get_subunit_path_list(json_file=unit_info_file, unit_path_list=[]):
+    for subunit_path in text_data.get_subunit_path_list(file_path=unit_info_file, unit_path_list=[]):
         relative_dir_path = "/".join(["%02d" % x for x in subunit_path[:-1]])
         outfile_path = os.path.join(dir_path, relative_dir_path, "%03d.md" % subunit_path[-1])
         import urllib

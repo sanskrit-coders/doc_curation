@@ -91,7 +91,8 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
   md_file = MdFile(file_path=file_path, frontmatter_type=MdFile.TOML)
   md_file.import_content_with_pandoc(metadata={"title": title, "date": datetime.datetime.strftime(date_obj, "%Y-%m-%d"), "upstream_url": url}, content=post_html, source_format="html",
                                      dry_run=dry_run)
-  md_file.prepend_to_content("Source: [here](%s).\n\n" % url, dry_run=dry_run)
+  if not dry_run:
+    md_file.prepend_to_content("Source: [here](%s).\n\n" % url, dry_run=dry_run)
 
 
 def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, anchor_css="a[href]", urlpattern=None, dry_run=False):
