@@ -231,3 +231,19 @@ def get_include(url, field_names=None, classes=None, title=None, h1_level=2):
     classes_str = " ".join(classes)
   extra_attributes = " ".join([field_names_str])
   return """<div class="js_include %s" url="%s"  newLevelForH1="%d" title="%s" newLevelForH1="3" %s> </div>"""  % (classes_str,url, h1_level, title, extra_attributes)
+
+
+def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True):
+  init_words = text.split()[0:num_words]
+  title = None
+  if len(init_words) > 0:
+    title = " ".join(init_words)
+    if depunctuate:
+      devanaaagari_scheme = sanscript.SCHEMES[sanscript.DEVANAGARI]
+      title = devanaaagari_scheme.remove_svaras(in_string=title)
+      title = devanaaagari_scheme.remove_punctuation(in_string=title)
+      title = devanaaagari_scheme.fix_lazy_anusvaara(data_in=title, omit_yrl=True)
+      # TODO: Call get_approx_deduplicating_key ?
+      while len(title) > target_title_length and len(title.split()) > 1:
+        title = " ".join(title.split()[:-1])
+  return title

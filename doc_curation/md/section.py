@@ -91,23 +91,13 @@ def add_init_words_to_section_titles(sections, num_words=2, target_title_length=
   """
   sections_out = []
   for section_index, (title, section_lines) in enumerate(sections):
-    if title == None:
+    if title is None:
       title = ""
     section_lines = list(section_lines)
     init_lines = get_init_content_lines(lines_in=section_lines)
-    init_words = " ".join(init_lines).split()[0:num_words]
-    if len(init_words) > 0:
-      init_words_str = " ".join(init_words)
-      if depunctuate:
-        devanaaagari_scheme = sanscript.SCHEMES[sanscript.DEVANAGARI]
-        init_words_str = devanaaagari_scheme.remove_svaras(in_string=init_words_str)
-        init_words_str = devanaaagari_scheme.remove_punctuation(in_string=init_words_str)
-        init_words_str = devanaaagari_scheme.fix_lazy_anusvaara(data_in=init_words_str, omit_yrl=True)
-        # TODO: Call get_approx_deduplicating_key ?
-        while len(init_words_str) > target_title_length and len(init_words_str.split()) > 1:
-          init_words_str = " ".join(init_words_str.split()[:-1])
-
-        title = "%s %s" % (title.strip(), init_words_str)
+    extra_title = title_from_text(text=" ".join(init_lines), num_words=num_words, target_title_length=target_title_length, depunctuate=depunctuate)
+    if extra_title is not None:
+      title = "%s %s" % (title.strip(), extra_title)
         
     sections_out.append((title, section_lines))
   return sections_out

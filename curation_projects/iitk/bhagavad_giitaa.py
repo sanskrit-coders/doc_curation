@@ -1,3 +1,6 @@
+from urllib.request import urlopen
+
+from bs4 import BeautifulSoup
 
 from doc_curation.md import library
 import regex
@@ -37,12 +40,22 @@ title_to_folder_path = {
 def dump_shloka_details(url, base_dir):
   chapter_id = regex.match("field_chapter_value=(\d+)", url).group(1)
   shloka_id = regex.match("field_nsutra_value=(\d+)", url).group(1)
-  out_path = "%02d/%02d.md" % (chapter_id, shloka_id)
   
   page_html = urlopen(url)
   soup = BeautifulSoup(page_html.read(), 'lxml')
   part_divs = soup.select(".views-field")
 
+  content_tag = part_div[0].select("font[size='3px']")
+  shloka = souper.get_md_paragraph(content_tag.contents)
+  metadata={title: title_from_text(text=shloka)}
+  out_path = "%02d/%02d_%s.md" % (chapter_id, shloka_id, get_storage_name(text=title))
+  dest_path = os.path.join(base_dir, "mUlam", out_path)
+  
+  md_file = MdFile(file_path=dest_path)
+  md_file.dump_to_file(metadata=metadata, content=shloka, dry_run=False)
+  
+  for part_div in part_divs[1:]:
+    pass
 
 
 if __name__ == '__main__':
