@@ -176,9 +176,9 @@ class MdFile(object):
     title = "%s %s" % (index, title)
     self.set_title(title=title, dry_run=dry_run)
 
-  def set_filename_from_title(self, transliteration_source, dry_run):
+  def set_filename_from_title(self, transliteration_source, dry_run, skip_dirs=True):
     # logging.debug(self.file_path)
-    if str(self.file_path).endswith("_index.md"):
+    if skip_dirs and str(self.file_path).endswith("_index.md"):
       logging.info("Special file %s. Skipping." % self.file_path)
       return 
     title = self.get_title(omit_chapter_id=False)

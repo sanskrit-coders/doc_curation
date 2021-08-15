@@ -4,7 +4,7 @@ from urllib.request import urlopen
 
 from bs4 import BeautifulSoup
 
-from curation_projects.iitk.bhagavadgiitA import folder_path_from_title
+from curation_projects.iitk.bhagavadgiitaa import folder_path_from_title
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html import souper
 from curation_utils.file_helper import get_storage_name

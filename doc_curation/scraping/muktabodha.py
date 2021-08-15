@@ -41,6 +41,7 @@ def get_text(url):
     logging.info("Processing %s", url)
     soup = scraping.get_soup(url=url)
     content = soup.select("pre")[0].text
+    content = regex.sub("MUKTABODHA INDOLOGICAL.+", "", content)
     content = sanscript.transliterate(data=content, _from=sanscript.IAST, _to=sanscript.DEVANAGARI)
     return content
 
@@ -89,10 +90,12 @@ def process_catalog_page_selenium(url, out_dir):
     dest_file_path = get_file_path(out_dir=out_dir, title_iast=metadata["title_iast"], author_iast=metadata.get("author_iast", ""), catalog_number=metadata.get("Catalog number", ""))
     if os.path.exists(dest_file_path):
         logging.warning("Skipping %s - already exists.", dest_file_path)
+        return 
 
     text_url = text_links[0].get_attribute("href")
     file = MdFile(file_path=dest_file_path, frontmatter_type="toml")
     text = get_text(url=text_url)
+    text = sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(data_in=text, omit_sam=False, omit_yrl=True, ignore_padaanta=True)
     text = text.replace("\n", "  \n")
     file.dump_to_file(metadata=metadata, content=text, dry_run=False)
 

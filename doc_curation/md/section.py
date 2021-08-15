@@ -22,15 +22,25 @@ def reduce_section_depth(lines_in):
 
 
 def get_section(lines_in):
+  """
+  
+  :param lines_in: 
+  :return: (title, lines_in_section, reamining)
+  """
   lines = list(lines_in)
   if not lines[0].startswith("#"):
-    return lines_in
+    header_prefix = "#"
+    # Below, we're careful to handle sections without titles - ie lines such as "##\n"
+    is_non_section_start = lambda line: not (line.strip() + " ").startswith(header_prefix)
+    lines_in_section = itertools.takewhile(is_non_section_start, lines[1:])
+    remaining = itertools.dropwhile(lambda line: is_non_section_start(line), lines[1:])
+    return (None, peekable(lines_in_section), peekable(remaining))
   header_prefix = lines[0].split()[0] + " "
   title = get_section_title(lines[0])
   lines_in_section = []
   remaining = []
   if len(lines) > 1:
-    # Below, we're careful to handle secions without titles - ie lines such as "##\n"
+    # Below, we're careful to handle sections without titles - ie lines such as "##\n"
     is_non_section_start = lambda line: not (line.strip() + " ").startswith(header_prefix)
     lines_in_section = itertools.takewhile(is_non_section_start, lines[1:])
     remaining = itertools.dropwhile(lambda line: is_non_section_start(line), lines[1:])
