@@ -22,6 +22,17 @@ def set_content(dry_run=False):
     suukta_id = path_parts.group(1)
     rk_file_names = sorted([x for x in os.listdir(os.path.join(dest_dir_Rks, suukta_id)) if x != "_index.md"])
     content = ""
+
+    file_path = os.path.join(dest_dir_static, "info_vh", suukta_id + ".md")
+    if os.path.exists(file_path):
+      url = regex.sub(".+?/vedAH/", "/vedAH/", file_path).replace("/static/", "/")
+      content += "%s\n" % library.get_include(field_names=None, classes=None, title="अनुक्रमणी (VH)", url=url)
+
+    file_path = os.path.join(dest_dir_static, "griffith", suukta_id + "/_index.md")
+    if os.path.exists(file_path):
+      url = regex.sub(".+?/vedAH/", "/vedAH/", file_path).replace("/static/", "/")
+      content += "%s\n" % library.get_include(field_names=None, classes=None, title="Griffith", url=url)
+
     for rk_file_name in rk_file_names:
       file_path = os.path.join(dest_dir_static, "vishvAsa-prastutiH", suukta_id, rk_file_name)
       url = regex.sub(".+?/vedAH/", "/vedAH/", file_path).replace("/static/", "/")

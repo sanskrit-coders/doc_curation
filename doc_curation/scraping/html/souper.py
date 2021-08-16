@@ -2,6 +2,7 @@ import logging
 import os
 import urllib
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
@@ -46,12 +47,19 @@ def tag_remover(soup, css_selector):
     element.decompose()
 
 
-def content_from_element(soup, text_css_selector, url):
+def get_content_from_element(url, text_css_selector, soup=None):
+  html = get_html(url=url)
+  if soup is None:
+    soup = BeautifulSoup(html, 'html.parser')
   content_element = soup.select(text_css_selector)
   if len(content_element) == 0:
     logging.warning("Could not get text from %s for css selector: %s with soup", url, text_css_selector)
-    with urllib.request.urlopen(url) as filehandle:
-      content = filehandle.read().decode("utf8")
+    try:
+      with urllib.request.urlopen(url) as filehandle:
+        content = filehandle.read().decode("utf8")
+    except HTTPError:
+      logging.warning("404 on %s", url)
+      content = None
   else:
     content = content_element[0].decode_contents()
   return content
@@ -87,7 +95,7 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, ti
     logging.info("Skipping dumping: %s to %s", url, outfile_path)
     return unaltered_soup
 
-  content = content_from_element(soup=soup, text_css_selector=text_css_selector, url=url)
+  content = get_content_from_element(soup=soup, text_css_selector=text_css_selector, url=url)
 
   md_file = MdFile(file_path=outfile_path)
   md_file.import_content_with_pandoc(content=content, source_format="html", dry_run=dry_run, metadata=metadata)
