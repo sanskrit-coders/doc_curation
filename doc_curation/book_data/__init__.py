@@ -47,11 +47,3 @@ def get_subunit_path_list(file_path, unit_path_list):
       for subsubunit_path in subsubunit_path_list:
         subunit_path_list.append([subunit] + subsubunit_path)
   return subunit_path_list
-
-
-def get_rk_title(rk_text, rk_id):
-  import regex
-  rk_text = regex.sub("[॒॑।॥]", "", rk_text)
-  Rk_words = rk_text.split()
-  title_Rk = "%s %s" % (rk_id, " ".join(Rk_words[0:2]))
-  return title_Rk.strip()

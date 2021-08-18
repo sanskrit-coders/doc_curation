@@ -4,7 +4,7 @@ import textwrap
 from indic_transliteration import sanscript
 
 from curation_projects.veda.Rk import json_lib
-from doc_curation import md
+from doc_curation import md, text_utils
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
 
@@ -28,8 +28,7 @@ def dump(dry_run):
     for rk_id in sorted(suukta_rk_map.keys()):
       rk_map = suukta_rk_map[rk_id]
       # md_file_Rk = MdFile(file_path=dest_path_Rk)
-      from doc_curation import text_data
-      title_Rk = text_data.get_rk_title(rk_id=rk_id, rk_text=rk_map["mantraH"])
+      title_Rk = text_utils.title_from_text(title_id=rk_id, text=rk_map["mantraH"], target_title_length=None)
       title_Rk += " - " + rk_map["ChandaH"]
       # dump_content(metadata=metadata, content=rk_map["mantraH"], suukta_id=suukta_id, rk_id=rk_id, destination_dir="mUlam", dry_run=dry_run)
       # dump_content(metadata=metadata, content=rk_map["padapAThaH"], suukta_id=suukta_id, rk_id=rk_id, destination_dir="pada-pAThaH", dry_run=dry_run)

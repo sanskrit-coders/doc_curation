@@ -2,6 +2,7 @@ import logging
 import os
 from urllib.request import urlopen
 
+import doc_curation.text_utils
 from bs4 import BeautifulSoup
 
 from curation_projects.iitk.bhagavadgiitaa import folder_path_from_title
@@ -26,7 +27,7 @@ def dump_shloka_details(url, base_dir, chapter_title):
 
   content_tag = part_divs[0].select("font[size='3px']")[0]
   shloka = souper.get_md_paragraph(content_tag.contents)
-  title = "%02d %s" % (shloka_id, library.title_from_text(text=regex.sub("^\S+\s+उवाच", "", shloka.strip())))
+  title = "%02d %s" % (shloka_id, doc_curation.text_utils.title_from_text(text=regex.sub("^\S+\s+उवाच", "", shloka.strip())))
   metadata={"title": title}
   out_path = "%02d_%s/%s.md" % (chapter_id, get_storage_name(text=chapter_title), get_storage_name(text=title))
   dest_path = os.path.join(base_dir, "mUlam", out_path)

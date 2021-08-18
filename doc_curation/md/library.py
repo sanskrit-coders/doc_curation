@@ -3,10 +3,10 @@ import logging
 import os
 
 import regex
+from indic_transliteration import sanscript
 
 from curation_utils import file_helper
 from doc_curation.md.file import MdFile
-from indic_transliteration import sanscript
 
 
 def import_md_recursive(source_dir, file_extension, source_format=None, dry_run=False):
@@ -27,7 +27,7 @@ def import_md_recursive(source_dir, file_extension, source_format=None, dry_run=
 
 
 def make_full_text_md(source_dir, dry_run=False):
-  from pathlib import Path
+  """Create a text - by include-directives - which includes all md files within the directory."""
   # logging.debug(list(Path(dir_path).glob(file_pattern)))
   content = ""
   title = "पूर्णपाठः"
@@ -70,6 +70,7 @@ def make_full_text_md(source_dir, dry_run=False):
 
 
 def migrate_and_include(files, location_computer, new_url_computer, dry_run=False):
+  """Migrate contents of a given file to a new location and include it in the original file"""
   logging.info("Processing %d files", len(files))
   migrate(files=files, location_computer=location_computer)
   for f in files:
@@ -81,6 +82,7 @@ def migrate_and_include(files, location_computer, new_url_computer, dry_run=Fals
 
 
 def migrate(files, location_computer, dry_run=False):
+  """Migrate a bunch of files to a new location (dynamically computed by location_computer function.)"""
   logging.info("Processing %d files", len(files))
   for f in files:
     new_path = location_computer(str(f))
@@ -204,7 +206,7 @@ def get_audio_file_urls(md_files):
       yield match.group(1)
 
 
-def defolderify(dir_path, dry_run=False):
+def defolderify_single_md_dirs(dir_path, dry_run=False):
   files = glob.glob(dir_path + "/**/_index.md")
   for file in files:
     parent = os.path.dirname(file)
@@ -233,17 +235,3 @@ def get_include(url, field_names=None, classes=None, title=None, h1_level=2):
   return """<div class="js_include %s" url="%s"  newLevelForH1="%d" title="%s" %s> </div>"""  % (classes_str,url, h1_level, title, extra_attributes)
 
 
-def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True):
-  init_words = text.split()[0:num_words]
-  title = None
-  if len(init_words) > 0:
-    title = " ".join(init_words)
-    if depunctuate:
-      devanaaagari_scheme = sanscript.SCHEMES[sanscript.DEVANAGARI]
-      title = devanaaagari_scheme.remove_svaras(in_string=title)
-      title = devanaaagari_scheme.remove_punctuation(in_string=title)
-      title = devanaaagari_scheme.fix_lazy_anusvaara(data_in=title, omit_yrl=True)
-      # TODO: Call get_approx_deduplicating_key ?
-      while len(title) > target_title_length and len(title.split()) > 1:
-        title = " ".join(title.split()[:-1])
-  return title
