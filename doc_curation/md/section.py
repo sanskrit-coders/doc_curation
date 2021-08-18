@@ -1,8 +1,10 @@
 import itertools
+import logging
 
 import regex
 from more_itertools import peekable
 
+from doc_curation.text_utils import title_from_text
 from indic_transliteration import sanscript
 
 
@@ -88,26 +90,46 @@ def get_init_content_lines(lines_in):
       return get_init_content_lines(lines_in=sections[0][1])
     else:
       return []
-    
 
-def add_init_words_to_section_titles(sections, num_words=2, target_title_length=24, depunctuate=True):
-  """
-  
-  :param sections: [(title, section_lines)] list 
-  :param num_words: 
-  :param target_title_length:
-  :param depunctuate: 
-  :return: 
-  """
+
+def drop_sections(content, title_condition):
+  lines = content.splitlines(keepends=False)
+  (lines_till_section, remaining) = get_lines_till_section(lines)
+  sections = split_to_sections(remaining)
+  if len(sections) == 0:
+    return
+  sections = [section for section in sections if not title_condition(section[0])]
+
+  lines_out = list(lines_till_section)
+  for section_index, (title, section_lines) in enumerate(sections):
+    lines_out.append("\n## %s" % title)
+    lines_out.extend(section_lines)
+  return "\n".join(lines_out)
+
+
+def add_init_words_to_section_titles(content, num_words=2, title_post_processor=None):
+  lines = content.splitlines(keepends=False)
+  (lines_till_section, remaining) = get_lines_till_section(lines)
+  sections = split_to_sections(remaining)
+  if len(sections) == 0:
+    return
+
   sections_out = []
   for section_index, (title, section_lines) in enumerate(sections):
     if title is None:
       title = ""
     section_lines = list(section_lines)
     init_lines = get_init_content_lines(lines_in=section_lines)
-    extra_title = title_from_text(text=" ".join(init_lines), num_words=num_words, target_title_length=target_title_length, depunctuate=depunctuate)
+    extra_title = title_from_text(text=" ".join(init_lines), num_words=num_words, target_title_length=None)
     if extra_title is not None:
       title = "%s %s" % (title.strip(), extra_title)
-        
+
     sections_out.append((title, section_lines))
-  return sections_out
+
+  lines_out = list(lines_till_section)
+  for section_index, (title, section_lines) in enumerate(sections_out):
+    if title_post_processor is not None:
+      title = title_post_processor(title)
+    lines_out.append("\n## %s" % title)
+    lines_out.extend(section_lines)
+  return "\n".join(lines_out)

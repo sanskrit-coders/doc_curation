@@ -283,10 +283,6 @@ class MdFile(object):
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
       self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
-  def prepend_to_content(self, prefix_text, dry_run):
-    (metadata, content) = self.read_md_file()
-    self.dump_to_file(metadata=metadata, content=prefix_text + content, dry_run=dry_run)
-
   def replace_content(self, new_content, dry_run):
     (metadata, _) = self.read_md_file()
     self.dump_to_file(metadata=metadata, content=new_content, dry_run=dry_run)
@@ -306,7 +302,7 @@ class MdFile(object):
 
   def split_to_bits(self, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, indexed_title_pattern="%02d %s", bits_dir_url=None,
                     target_frontmantter_type=TOML, dry_run=False):
-    """
+    """Splits this md file into separate files - one for each section.
     
     Implementation notes: md parsers oft convert to html or json. Processing that output would be more complicated than what we need here.
     :return: 
@@ -365,104 +361,8 @@ class MdFile(object):
       if not dry_run and remainder_file_path != self.file_path:
         os.remove(path=self.file_path)
 
-  def transliterate_content(self, source_scheme, dest_scheme=sanscript.DEVANAGARI, dry_run=False):
-    (metadata, content) = self.read_md_file()
-    lines = content.split("\n")
-    lines = [sanscript.transliterate(data=line, _from=source_scheme, _to=dest_scheme, togglers={}) for line in lines]
-    content = "\n".join(lines)
-    self.dump_to_file(metadata, content=content, dry_run=dry_run)
-
-  def fix_lazy_anusvaara(self, writing_scheme=sanscript.DEVANAGARI, dry_run=False, *args,
-                         **kwargs):
-    (metadata, content) = self.read_md_file()
-    # if len(metadata) > len(content) and not str(self.file_path).endswith("_index.content"):
-    #     raise ValueError("Something wrong with %s" % (self.file_path))
-    lines = content.split("\n")
-    lines = [sanscript.SCHEMES[writing_scheme].fix_lazy_anusvaara(data_in=line, *args,
-                                                                  **kwargs) for
-             line in lines]
-    content = "\n".join(lines)
-    self.dump_to_file(metadata, content=content, dry_run=dry_run)
-
-  def add_init_words_to_section_titles(self, num_words=2, title_post_processor=None, dry_run=False):
-    logging.debug("Processing file: %s", self.file_path)
-    (metadata, content) = self.read_md_file()
-    lines = content.splitlines(keepends=False)
-    (lines_till_section, remaining) = get_lines_till_section(lines)
-    sections = split_to_sections(remaining)
-    if len(sections) == 0:
-      return
-    sections_out = section.add_init_words_to_section_titles(sections=sections, num_words=num_words)
-
-    lines_out = list(lines_till_section)
-    for section_index, (title, section_lines) in enumerate(sections_out):
-      if title_post_processor is not None:
-        title = title_post_processor(title)
-      lines_out.append("\n## %s" % title)
-      lines_out.extend(section_lines)
-    
-    self.dump_to_file(metadata=metadata, content="\n".join(lines_out), dry_run=dry_run)
-
-  def drop_sections(self, title_condition, dry_run=False):
-    logging.debug("Processing file: %s", self.file_path)
-    (metadata, content) = self.read_md_file()
-    lines = content.splitlines(keepends=False)
-    (lines_till_section, remaining) = get_lines_till_section(lines)
-    sections = split_to_sections(remaining)
-    if len(sections) == 0:
-      return
-    sections = [section for section in sections if not title_condition(section[0])]
-
-    lines_out = list(lines_till_section)
-    for section_index, (title, section_lines) in enumerate(sections):
-      lines_out.append("\n## %s" % title)
-      lines_out.extend(section_lines)
-
-    self.dump_to_file(metadata=metadata, content="\n".join(lines_out), dry_run=dry_run)
-    
-  def make_paras(self, dry_run=False):
-    logging.debug("Processing file: %s", self.file_path)
-    (metadata, content) = self.read_md_file()
-    lines = content.splitlines(keepends=False)
-    lines_out = [""]
-    for line in lines:
-      line = line.rstrip()
-      previous_line = lines_out[-1]
-      if line == "":
-        lines_out.append(line)
-      elif regex.fullmatch("^[#>\-\+\*].+",  line):
-        if not regex.fullmatch("^[#>\-\*].+",  previous_line):
-          lines_out.append("")
-        lines_out.append(line)
-      else:
-        if regex.fullmatch(".+\.",  previous_line):
-          lines_out.append("")
-          lines_out.append(line)
-        else:
-          if not regex.fullmatch("^[#>\-\*].+[^.]",  previous_line) and previous_line.strip() != "":
-            lines_out[-1] = "%s %s" % (previous_line, line)
-            lines_out[-1] = lines_out[-1].strip()
-          else:
-            lines_out.append(line)
-    self.dump_to_file(metadata=metadata, content="\n".join(lines_out), dry_run=dry_run)
-
-  def migrate_and_include_shlokas(self, include_path_maker, include_maker, shloka_pattern="\n[^#\s<][\s\S]+?॥\s*[०-९\d\.]+\s*॥.*?", title_before_include=None, shloka_id_maker=None, dry_run=False):
+  def transform_content(self, content_transformer, dry_run=False):
     [_, content] = self.read_md_file()
-    # For some regexes to work prefectly.
-    content = "\n" + content 
-    matches = regex.findall(shloka_pattern, content)
-    for index, shloka_text in enumerate(matches):
-      if shloka_pattern is not None:
-        shloka_id = shloka_id_maker(shloka_text)
-      else:
-        shloka_id = "%03d" % (index + 1)
-      title = text_utils.title_from_text(text=shloka_text, num_words=2, target_title_length=None, depunctuate=True, title_id=shloka_id)
-      shloka_path = include_path_maker(title)
-      md_file = MdFile(file_path=shloka_path)
-      md_file.dump_to_file(metadata={"title": title}, content=shloka_text, dry_run=dry_run)
-      include_text = include_maker(shloka_path)
-      if title_before_include is not None:
-        title_line = title_before_include % title
-        include_text = "%s\n%s" % (title_line, include_text)
-      content = content.replace(shloka_text.strip(), "%s\n" % include_text)
-    self.replace_content(new_content=content, dry_run=dry_run)
+    content = content_transformer(content, dry_run=dry_run)
+    self.replace_content(new_content=content)
+
