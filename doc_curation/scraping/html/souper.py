@@ -76,6 +76,17 @@ def title_from_element(soup, title_css_selector=None, title_prefix=""):
   return title
 
 
+def find_matching_tags(tags, filter):
+  return [tag for tag in tags if filter(tag)]
+
+
+def find_matching_tag(tags, filter):
+  tags = find_matching_tags(tags=tags, filter=filter)
+  if len(tags) > 0:
+    return tags[0]
+  return None
+
+
 def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, title_prefix="", html_fixer=None, md_fixer=None, dry_run=False):
   if os.path.exists(outfile_path):
     logging.info("skipping: %s - it exists already", outfile_path)
@@ -138,3 +149,8 @@ def markdownify_local_htmls(src_dir, dest_dir, dumper, dry_run=False):
 
 def get_md_paragraph(tags):
   return "  \n".join([x.strip() for x in tags if isinstance(x, str) and x.strip() != ""])
+
+def get_md_paragraphs_with_pandoc(tags, para_joiner="\n\n"):
+  from doc_curation.md import get_md_with_pandoc
+  return para_joiner.join([get_md_with_pandoc(content_in=str(x), source_format="html") for x in tags])
+

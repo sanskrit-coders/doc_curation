@@ -230,7 +230,7 @@ def get_include(url, field_names=None, classes=None, title=None, h1_level=2):
   if classes is not None:
     classes_str = " ".join(classes)
   extra_attributes = " ".join([field_names_str])
-  return """<div class="js_include %s" url="%s"  newLevelForH1="%d" title="%s" newLevelForH1="3" %s> </div>"""  % (classes_str,url, h1_level, title, extra_attributes)
+  return """<div class="js_include %s" url="%s"  newLevelForH1="%d" title="%s" %s> </div>"""  % (classes_str,url, h1_level, title, extra_attributes)
 
 
 def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True):
