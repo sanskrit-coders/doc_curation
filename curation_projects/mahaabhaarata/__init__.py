@@ -4,7 +4,7 @@ from doc_curation.md.file import MdFile
 
 
 def get_adhyaaya_md_files(md_file_path):
-    md_files = MdFile.get_md_files_from_path(dir_path=md_file_path, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
+    md_files = library.get_md_files_from_path(dir_path=md_file_path, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
     return md_files
 
 

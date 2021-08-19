@@ -27,3 +27,21 @@ def make_paras(content):
           lines_out.append(line)
   return "\n".join(lines_out)
 
+
+def transform_footnote_marks(content, transformer):
+  content = regex.sub("\[\^(.+?)\]", transformer, content)
+  return content
+
+
+def define_footnotes_near_use(content):
+  # For correct regex matching.
+  content = "\n%s\n\n" % content
+  definition_pattern = "\n(\[\^.+?\]):[\s\S]+?\n(?=[\n\[])"
+  definitions = regex.finditer(definition_pattern, content)
+  content = regex.sub(definition_pattern, "", content)
+  for definition in definitions:
+    content = regex.sub("%s.+\n\n" % regex.escape(definition.group(1)), "\g<0>%s\n" % definition.group(0), content)
+  # Undo initial additions
+  content = regex.sub("^\n", "", content)
+  content = regex.sub("\n\n$", "", content)
+  return content

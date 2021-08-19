@@ -287,19 +287,6 @@ class MdFile(object):
     (metadata, _) = self.read_md_file()
     self.dump_to_file(metadata=metadata, content=new_content, dry_run=dry_run)
 
-  def replace_in_content(self, pattern, replacement, dry_run):
-    (metadata, content) = self.read_md_file()
-    content = regex.sub(pattern=pattern, repl=replacement, string=content)
-    self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
-
-  def replace_in_content_lines(self, pattern, replacement, dry_run):
-    (metadata, content) = self.read_md_file()
-    new_content = ""
-    for line in content.split("\n"):
-      line = regex.sub(pattern=pattern, repl=replacement, string=line)
-      new_content += "\n%s" % line
-    self.dump_to_file(metadata=metadata, content=new_content, dry_run=dry_run)
-
   def split_to_bits(self, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, indexed_title_pattern="%02d %s", bits_dir_url=None,
                     target_frontmantter_type=TOML, dry_run=False):
     """Splits this md file into separate files - one for each section.
@@ -363,6 +350,14 @@ class MdFile(object):
 
   def transform_content(self, content_transformer, dry_run=False):
     [_, content] = self.read_md_file()
-    content = content_transformer(content, dry_run=dry_run)
-    self.replace_content(new_content=content)
+    content = content_transformer(content)
+    self.replace_content(new_content=content, dry_run=dry_run)
 
+  def append_content_from_mds(self, source_mds, dry_run=False):
+    (_, dest_content) = self.read_md_file()
+    new_content = dest_content
+    for source_md in source_mds:
+      (metadata, source_content) = source_md.read_md_file()
+      new_content += "\n\n## %s\n%s" % (metadata["title"], source_content)
+    if new_content != dest_content:
+      self.replace_content(new_content=new_content, dry_run=dry_run)

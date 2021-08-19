@@ -26,5 +26,6 @@ def migrate_and_include_shlokas(content, include_path_maker, include_maker, shlo
   return content
 
 
-def transform_include_lines(content, transformer, dry_run=False):
-  pass
+def transform_include_lines(content, transformer):
+  content = regex.sub("<div.+js_include.+url=['\"](.+?)['\"][\s\S]+?</div>", transformer, content)
+  return content

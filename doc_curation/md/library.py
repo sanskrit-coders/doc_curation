@@ -108,7 +108,7 @@ def fix_index_files(dir_path, frontmatter_type=MdFile.TOML, transliteration_targ
       index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
 
 
-def get_md_files_from_path(dir_path, file_pattern, file_name_filter="yaml", frontmatter_type=None):
+def get_md_files_from_path(dir_path, file_pattern, file_name_filter=lambda x: True, frontmatter_type=None):
   from pathlib import Path
   # logging.debug(list(Path(dir_path).glob(file_pattern)))
   md_file_paths = sorted(filter(file_name_filter, Path(dir_path).glob(file_pattern)))
@@ -224,6 +224,16 @@ def defolderify_single_md_dirs(dir_path, dry_run=False):
         os.rmdir(parent)
 
 
+def combine_files_in_dir(source_fname_list, dest_mds, dry_run=False):
+  for dest_md in dest_mds:
+    dir_path = os.path.dirname(dest_md.file_path)
+    source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in source_fname_list if x in os.listdir(dir_path)]
+    dest_md.append_content_from_mds(source_mds=source_mds, dry_run=dry_run)
+    if not dry_run:
+      for source_md in source_mds:
+        os.remove(source_md.file_path)
+
+
 def get_include(url, field_names=None, classes=None, title=None, h1_level=2):
   field_names_str = ""
   if field_names is not None:
@@ -232,6 +242,8 @@ def get_include(url, field_names=None, classes=None, title=None, h1_level=2):
   if classes is not None:
     classes_str = " ".join(classes)
   extra_attributes = " ".join([field_names_str])
+  if title is not None:
+    extra_attributes = "%s %s" % ("title=\"%s\"" % title, extra_attributes)
   return """<div class="js_include %s" url="%s"  newLevelForH1="%d" title="%s" %s> </div>"""  % (classes_str,url, h1_level, title, extra_attributes)
 
 
