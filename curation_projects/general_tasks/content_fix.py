@@ -3,7 +3,8 @@ import os
 import regex
 
 from curation_utils import file_helper
-from doc_curation.md import library, include_helper, content_helper
+from doc_curation.md import library, content_processor
+from doc_curation.md.content_processor import include_helper
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 
@@ -22,7 +23,7 @@ def migrate_and_include_shlokas():
     return os.path.join(dest_dir, "%s.md" % file_helper.get_storage_name(text=title))
 
   def content_transformer(content, dest_dir, dry_run):
-    return include_helper.migrate_and_include_shlokas(content=content, shloka_id_maker=shloka_id_maker, include_maker=include_maker, include_path_maker=lambda x: include_path_maker(title=x, dest_dir=dest_dir, title_before_include="### %s", dry_run=dry_run))
+    return include_helper.migrate_and_include_texts(content=content, text_id_maker=shloka_id_maker, include_maker=include_maker, include_path_maker=lambda x: include_path_maker(title=x, dest_dir=dest_dir, title_before_include="### %s", dry_run=dry_run))
 
   library.apply_function(fn=MdFile.transform_content, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/12.md", content_transformer=lambda x: content_transformer(x, dest_dir="/home/vvasuki/vishvAsa/kalpAntaram/static/smRtiH/manuH/vishvAsa_prastutiH/12/"), dry_run=False)
   
@@ -35,7 +36,7 @@ def add_init_words_to_includes():
   
 
 def fix_footnotes():
-  library.apply_function(fn=MdFile.transform_content, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH/", content_transformer=content_helper.define_footnotes_near_use, dry_run=False)
+  library.apply_function(fn=MdFile.transform_content, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH/", content_transformer=content_processor.define_footnotes_near_use, dry_run=False)
 
 
 if __name__ == '__main__':
