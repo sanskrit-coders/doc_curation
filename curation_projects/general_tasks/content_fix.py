@@ -11,17 +11,9 @@ from indic_transliteration import sanscript
 
 
 def migrate_and_include_shlokas():
-  def include_maker(shloka_path):
-    url = shloka_path.replace("/home/vvasuki/vishvAsa/", "/").replace("/static/", "/")
-    return library.get_include(url=url, h1_level=4)
 
-  def include_path_maker(title, dest_dir):
-    return os.path.join(dest_dir, "%s.md" % file_helper.get_storage_name(text=title))
-
-  def content_transformer(content, dest_dir, dry_run):
-    return include_helper.migrate_and_include_texts(content=content, title_maker=lambda text, index: metadata_helper.shloka_title_maker(text=text), include_maker=include_maker, include_path_maker=lambda x: include_path_maker(title=x, dest_dir=dest_dir, title_before_include="### %s", dry_run=dry_run))
-
-  library.apply_function(fn=MdFile.transform_content, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/12.md", content_transformer=lambda x, y: content_transformer(x, dest_dir="/home/vvasuki/vishvAsa/kalpAntaram/static/smRtiH/manuH/vishvAsa_prastutiH/12/"), dry_run=False)
+  library.apply_function(fn=include_helper.migrate_and_include_texts, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/12.md",
+                         title_maker=lambda text, index: metadata_helper.shloka_title_maker(text=text), title_before_include="### %s", dry_run=False)
   
 
 def migrate_and_include_sections():
