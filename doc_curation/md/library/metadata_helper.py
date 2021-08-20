@@ -4,6 +4,7 @@ import os
 import regex
 
 from curation_utils.file_helper import get_storage_name
+from doc_curation.md import content_processor
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import apply_function
 from indic_transliteration import sanscript
@@ -43,7 +44,7 @@ def fix_title_numbering(dir_path, dry_run):
       md_file.set_title(title=new_title, dry_run=dry_run)
 
 
-def set_filenames_from_title(md_files, transliteration_source, dry_run, skip_dirs=True):
+def set_filenames_from_title(md_files, transliteration_source=sanscript.DEVANAGARI, dry_run=False, skip_dirs=True):
   for md_file in md_files:
     # logging.debug(md_file.file_path)
     if skip_dirs and str(md_file.file_path).endswith("_index.md"):
@@ -80,11 +81,25 @@ def set_titles_from_filenames(md_files, transliteration_target=sanscript.DEVANAG
     md_file.set_title(dry_run=dry_run, title=title)
 
 
-def set_filenames_from_titles(dir_path, transliteration_source, file_pattern="**/*.md", file_name_filter=None,
-                              dry_run=False):
-  apply_function(fn=MdFile.set_filename_from_title, dir_path=dir_path, file_pattern=file_pattern,
-                 transliteration_source=transliteration_source, dry_run=dry_run,
-                 file_name_filter=file_name_filter)
+def prepend_file_indexes_to_title(md_files, dry_run):
+  for md_file in md_files:
+    if os.path.basename(md_file.file_path) == "_index.md":
+      return
+    else:
+      index = regex.sub("_.+", "", os.path.basename(md_file.file_path))
+    title = index + " " + md_file.get_title(omit_chapter_id=False)
+    md_file.set_title(dry_run=dry_run, title=title)
+
+
+def add_init_words_to_titles(md_files, num_words=2, target_title_length=None, dry_run=False):
+  logging.info("Fixing titles of %d files", len(md_files))
+  for md_file in md_files:
+    (metadata, content) = md_file.read_md_file()
+    title = metadata["title"]
+    extra_title = content_processor.title_from_text(text=content, num_words=num_words, target_title_length=target_title_length)
+    if extra_title is not None:
+      title = "%s %s" % (title.strip(), extra_title)
+    md_file.set_title(title=title, dry_run=dry_run)
 
 
 def devanaagarify_titles(md_files, dry_run=False):

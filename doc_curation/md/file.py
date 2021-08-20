@@ -127,34 +127,6 @@ class MdFile(object):
     title = regex.sub("^[+]+", "", title)
     return title
 
-  def get_upaakhyaana(self, omit_id=True):
-    upaakhyaana_optitrans = os.path.basename(os.path.dirname(self.file_path))
-    upaakhyaana = sanscript.transliterate(data=upaakhyaana_optitrans, _from=sanscript.OPTITRANS,
-                                          _to=sanscript.DEVANAGARI)
-    if omit_id:
-      upaakhyaana = regex.sub("^[+०-९]+-+", "", upaakhyaana)
-    return upaakhyaana
-
-  def set_title_from_filename(self, transliteration_target, dry_run):
-    logging.info(self.file_path)
-    if os.path.basename(self.file_path) == "_index.md":
-      dir_name = os.path.basename(os.path.dirname(self.file_path)).replace(".md", "")
-      title_optitrans = "+" + dir_name
-    else:
-      title_optitrans = os.path.basename(self.file_path).replace(".md", "")
-    title = title_optitrans.replace("_", " ")
-    if transliteration_target is not None:
-      title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target)
-    self.set_title(dry_run=dry_run, title=title)
-
-  def prepend_file_index_to_title(self, dry_run):
-    if os.path.basename(self.file_path) == "_index.md":
-      return
-    else:
-      index = regex.sub("_.+", "", os.path.basename(self.file_path))
-    title = index + " " + self.get_title(omit_chapter_id=False)
-    self.set_title(dry_run=dry_run, title=title)
-
   def dump_mediawiki(self, outpath=None, dry_run=False):
     (metadata, content) = self.read_md_file()
     import pypandoc
