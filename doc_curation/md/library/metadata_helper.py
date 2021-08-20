@@ -145,5 +145,12 @@ def get_metadata_field_values(md_files, field_name):
     yield metadata[field_name]
 
 
+def shloka_title_maker(text, index):
+  id_in_text = sanscript.transliterate(regex.search("॥\s*([०-९\d\.]+)\s*॥", text).group(1), sanscript.DEVANAGARI, sanscript.OPTITRANS)
+  id_in_text = regex.search("\.?\s*(\d+)\s*$", id_in_text).group(1)
+  title_id = "%03d" % int(id_in_text)
+  title = content_processor.title_from_text(text=text, num_words=2, target_title_length=None, depunctuate=True,
+                                            title_id=title_id)
+  return title
 
 

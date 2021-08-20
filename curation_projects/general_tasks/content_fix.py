@@ -6,6 +6,7 @@ from curation_utils import file_helper
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import include_helper
 from doc_curation.md.file import MdFile
+from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
 
@@ -14,16 +15,11 @@ def migrate_and_include_shlokas():
     url = shloka_path.replace("/home/vvasuki/vishvAsa/", "/").replace("/static/", "/")
     return library.get_include(url=url, h1_level=4)
 
-  def shloka_id_maker(shloka_text):
-    id_in_text = sanscript.transliterate(regex.search("॥\s*([०-९\d\.]+)\s*॥", shloka_text).group(1), sanscript.DEVANAGARI, sanscript.OPTITRANS)
-    id_in_text = regex.search("\.?\s*(\d+)\s*$", id_in_text).group(1)
-    return "%03d" % int(id_in_text)
-
   def include_path_maker(title, dest_dir):
     return os.path.join(dest_dir, "%s.md" % file_helper.get_storage_name(text=title))
 
   def content_transformer(content, dest_dir, dry_run):
-    return include_helper.migrate_and_include_texts(content=content, text_id_maker=shloka_id_maker, include_maker=include_maker, include_path_maker=lambda x: include_path_maker(title=x, dest_dir=dest_dir, title_before_include="### %s", dry_run=dry_run))
+    return include_helper.migrate_and_include_texts(content=content, title_maker=lambda text, index: metadata_helper.shloka_title_maker(text=text), include_maker=include_maker, include_path_maker=lambda x: include_path_maker(title=x, dest_dir=dest_dir, title_before_include="### %s", dry_run=dry_run))
 
   library.apply_function(fn=MdFile.transform_content, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/12.md", content_transformer=lambda x: content_transformer(x, dest_dir="/home/vvasuki/vishvAsa/kalpAntaram/static/smRtiH/manuH/vishvAsa_prastutiH/12/"), dry_run=False)
   
