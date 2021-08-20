@@ -138,62 +138,6 @@ def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, 
     fn(md_file, *args, **kwargs)
 
 
-def set_titles_from_filenames(dir_path, transliteration_target, file_pattern="**/*.md", dry_run=False):
-  apply_function(fn=MdFile.set_title_from_filename, dir_path=dir_path, file_pattern=file_pattern,
-                     transliteration_target=transliteration_target, dry_run=dry_run)
-
-
-def set_filenames_from_titles(dir_path, transliteration_source, file_pattern="**/*.md", file_name_filter=None,
-                              dry_run=False):
-  apply_function(fn=MdFile.set_filename_from_title, dir_path=dir_path, file_pattern=file_pattern,
-                     transliteration_source=transliteration_source, dry_run=dry_run,
-                     file_name_filter=file_name_filter)
-
-
-def devanaagarify_titles(md_files, dry_run=False):
-  logging.info("Fixing titles of %d files", len(md_files))
-  for md_file in md_files:
-    # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
-    logging.debug(md_file.file_path)
-    title_fixed = sanscript.transliterate(data=md_file.get_title(), _from=sanscript.OPTITRANS,
-                                          _to=sanscript.DEVANAGARI)
-    md_file.set_title(title=title_fixed, dry_run=dry_run)
-
-
-def fix_field_values(md_files,
-                     spreadhsheet_id, worksheet_name, id_column, value_column,
-                     md_file_to_id, md_frontmatter_field_name="title", google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json', post_process_fn=None,
-                     dry_run=False):
-  # logging.debug(adhyaaya_to_mp3_map)
-  logging.info("Fixing titles of %d files", len(md_files))
-  from curation_utils.google import sheets
-  doc_data = sheets.IndexSheet(spreadhsheet_id=spreadhsheet_id, worksheet_name=worksheet_name, google_key=google_key,
-                               id_column=id_column)
-  for md_file in md_files:
-    # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
-    logging.debug(md_file.file_path)
-    adhyaaya_id = md_file_to_id(md_file)
-    if adhyaaya_id != None:
-      logging.debug(adhyaaya_id)
-      value = doc_data.get_value(adhyaaya_id, column_name=value_column)
-      if post_process_fn is not None:
-        value = post_process_fn(value)
-      if value != None:
-        md_file.set_frontmatter_field_value(field_name=md_frontmatter_field_name, value=value, dry_run=dry_run)
-
-
-
-def get_metadata_field_values(md_files, field_name):
-  # logging.debug(adhyaaya_to_mp3_map)
-  logging.info("Getting metadata from %s field of %d files", field_name, len(md_files))
-  for md_file in md_files:
-    # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
-    logging.debug(md_file.file_path)
-    (metadata, md) = md_file.read_md_file()
-    yield metadata[field_name]
-
-
-
 def get_audio_file_urls(md_files):
   # logging.debug(adhyaaya_to_mp3_map)
   logging.info("Getting audio file locations from %d files", len(md_files))

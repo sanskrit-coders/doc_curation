@@ -4,7 +4,7 @@ import logging
 import regex
 from more_itertools import peekable
 
-from doc_curation.text_utils import title_from_text
+from doc_curation.md import content_processor
 from indic_transliteration import sanscript
 
 
@@ -120,7 +120,7 @@ def add_init_words_to_section_titles(content, num_words=2, title_post_processor=
       title = ""
     section_lines = list(section_lines)
     init_lines = get_init_content_lines(lines_in=section_lines)
-    extra_title = title_from_text(text=" ".join(init_lines), num_words=num_words, target_title_length=None)
+    extra_title = content_processor.title_from_text(text=" ".join(init_lines), num_words=num_words, target_title_length=None)
     if extra_title is not None:
       title = "%s %s" % (title.strip(), extra_title)
 

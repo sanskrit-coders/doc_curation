@@ -45,3 +45,24 @@ def define_footnotes_near_use(content):
   content = regex.sub("^\n", "", content)
   content = regex.sub("\n\n$", "", content)
   return content
+
+
+def remove_non_content_text(content):
+  # For correct regex matching.
+  content = "\n%s\n\n" % content
+  definition_pattern = "\n(\[\^.+?\]):[\s\S]+?\n(?=[\n\[])"
+  content = regex.sub(definition_pattern, "", content)
+  content = regex.sub("\n#.+?\n", "\n", content)
+  content = regex.sub("\n> +", "\n", content)
+  content = regex.sub("\+\+\+\([\s\S]+\)\+\+\+", "", content)
+  # Undo initial additions
+  content = regex.sub("^\n", "", content)
+  content = regex.sub("\n\n$", "", content)
+  return content
+
+
+def title_from_text(text):
+  text = remove_non_content_text(content=text)
+  from doc_curation import text_utils
+  title = text_utils.title_from_text(text=text)
+  return title

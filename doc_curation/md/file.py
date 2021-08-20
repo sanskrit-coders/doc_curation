@@ -9,9 +9,8 @@ import regex
 import toml
 import yamldown
 
-from doc_curation import text_utils
-from doc_curation.md import section, get_md_with_pandoc
-from doc_curation.md.section import get_lines_till_section, reduce_section_depth, split_to_sections
+from doc_curation.md import get_md_with_pandoc
+from doc_curation.md.content_processor.section_helper import get_lines_till_section, reduce_section_depth, split_to_sections
 from indic_transliteration import sanscript
 
 # Remove all handlers associated with the root logger object.
@@ -155,64 +154,6 @@ class MdFile(object):
       index = regex.sub("_.+", "", os.path.basename(self.file_path))
     title = index + " " + self.get_title(omit_chapter_id=False)
     self.set_title(dry_run=dry_run, title=title)
-
-  def ensure_ordinal_in_title(self, transliteration_target, dry_run):
-    title = self.get_title(omit_chapter_id=False)
-    if regex.fullmatch("[+०-९0-9].+", title):
-      return
-    if os.path.basename(self.file_path) == "_index.md":
-      if str(self.file_path).endswith("content/_index.md"):
-        return
-      files = os.listdir(os.path.dirname(os.path.dirname(self.file_path)))
-    else:
-      files = os.listdir(os.path.dirname(self.file_path))
-    if "_index.md" in files:
-      files.remove("_index.md")
-    files.sort()
-    index = files.index(os.path.basename(self.file_path))
-    format = "%%0%dd" % (len(str(len(files))))
-    index = format % index
-    if transliteration_target:
-      index = sanscript.transliterate(index, sanscript.OPTITRANS, transliteration_target)
-    title = "%s %s" % (index, title)
-    self.set_title(title=title, dry_run=dry_run)
-
-  def set_filename_from_title(self, transliteration_source, dry_run, skip_dirs=True):
-    # logging.debug(self.file_path)
-    if skip_dirs and str(self.file_path).endswith("_index.md"):
-      logging.info("Special file %s. Skipping." % self.file_path)
-      return 
-    title = self.get_title(omit_chapter_id=False)
-    if transliteration_source is not None:
-      title = sanscript.transliterate(data=title, _from=transliteration_source, _to=sanscript.OPTITRANS)
-    if os.path.basename(self.file_path) == "_index.md":
-      current_path = os.path.dirname(self.file_path)
-      extension = ""
-    else:
-      current_path = self.file_path
-      extension = ".md"
-    file_name = title.strip()
-    file_name = regex.sub("[ _.]+", "_", file_name)
-    file_name = regex.sub("-+", "-", file_name)
-    file_name = file_name + extension
-    file_name = file_helper.clean_file_path(file_name)
-    file_path = os.path.join(os.path.dirname(current_path), file_name)
-    if str(current_path) != file_path:
-      logging.info("Renaming %s to %s", current_path, file_path)
-      if not dry_run:
-        os.rename(src=current_path, dst=file_path)
-    self.file_path = file_path
-
-  def fix_title_numbering(self, dry_run):
-    title = self.get_title()
-    if title is None:
-      return
-
-    import regex
-    new_title = regex.sub("(^[०-९][^०-९])", "०\\1", title)
-    if title != new_title:
-      logging.info("Changing '%s' to '%s'", title, new_title)
-      self.set_title(title=new_title, dry_run=dry_run)
 
   def dump_mediawiki(self, outpath=None, dry_run=False):
     (metadata, content) = self.read_md_file()

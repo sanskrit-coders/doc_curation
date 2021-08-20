@@ -1,6 +1,6 @@
 import regex
 
-from doc_curation import text_utils
+from doc_curation.md import content_processor
 
 
 def migrate_and_include_shlokas(content, include_path_maker, include_maker, shloka_pattern="\n[^#\s<][\s\S]+?॥\s*[०-९\d\.]+\s*॥.*?", title_before_include=None, shloka_id_maker=None, dry_run=False):
@@ -12,7 +12,7 @@ def migrate_and_include_shlokas(content, include_path_maker, include_maker, shlo
       shloka_id = shloka_id_maker(shloka_text)
     else:
       shloka_id = "%03d" % (index + 1)
-    title = text_utils.title_from_text(text=shloka_text, num_words=2, target_title_length=None, depunctuate=True,
+    title = content_processor.title_from_text(text=shloka_text, num_words=2, target_title_length=None, depunctuate=True,
                                        title_id=shloka_id)
     shloka_path = include_path_maker(title)
     from doc_curation.md.file import MdFile

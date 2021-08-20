@@ -2,7 +2,6 @@ from indic_transliteration import sanscript
 import regex
 
 def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True, title_id=None):
-  text = regex.sub("\+\+\+\(.+?\)\+\+\+", "", text)
   init_words = text.split()[0:num_words]
   title = None
   if len(init_words) > 0:

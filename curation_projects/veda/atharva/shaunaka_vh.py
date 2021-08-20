@@ -1,13 +1,8 @@
 import logging
 import os
-import glob
-import itertools
 
-import regex
-from more_itertools import peekable
 from doc_curation import text_data
 from doc_curation.md.file import MdFile
-from doc_curation.md import library, section
 from indic_transliteration import sanscript
 from selenium import webdriver
 from selenium.webdriver.chrome import options
