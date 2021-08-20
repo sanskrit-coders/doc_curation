@@ -262,8 +262,8 @@ class MdFile(object):
         os.remove(path=self.file_path)
 
   def transform_content(self, content_transformer, dry_run=False):
-    [_, content] = self.read_md_file()
-    content = content_transformer(content)
+    [metadata, content] = self.read_md_file()
+    content = content_transformer(content, metadata)
     self.replace_content(new_content=content, dry_run=dry_run)
 
   def append_content_from_mds(self, source_mds, dry_run=False):

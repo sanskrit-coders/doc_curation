@@ -44,72 +44,65 @@ def fix_title_numbering(dir_path, dry_run):
       md_file.set_title(title=new_title, dry_run=dry_run)
 
 
-def set_filenames_from_title(md_files, transliteration_source=sanscript.DEVANAGARI, dry_run=False, skip_dirs=True):
-  for md_file in md_files:
-    # logging.debug(md_file.file_path)
-    if skip_dirs and str(md_file.file_path).endswith("_index.md"):
-      logging.info("Special file %s. Skipping." % md_file.file_path)
-      return
-    title = md_file.get_title(omit_chapter_id=False)
-    if transliteration_source is not None:
-      title = sanscript.transliterate(data=title, _from=transliteration_source, _to=sanscript.OPTITRANS)
-    if os.path.basename(md_file.file_path) == "_index.md":
-      current_path = os.path.dirname(md_file.file_path)
-      extension = ""
-    else:
-      current_path = md_file.file_path
-      extension = ".md"
-    file_name = get_storage_name(text=title) + extension
-    file_path = os.path.join(os.path.dirname(current_path), file_name)
-    if str(current_path) != file_path:
-      logging.info("Renaming %s to %s", current_path, file_path)
-      if not dry_run:
-        os.rename(src=current_path, dst=file_path)
+def set_filename_from_title(md_file, transliteration_source=sanscript.DEVANAGARI, dry_run=False, skip_dirs=True):
+  # logging.debug(md_file.file_path)
+  if skip_dirs and str(md_file.file_path).endswith("_index.md"):
+    logging.info("Special file %s. Skipping." % md_file.file_path)
+    return
+  title = md_file.get_title(omit_chapter_id=False)
+  if transliteration_source is not None:
+    title = sanscript.transliterate(data=title, _from=transliteration_source, _to=sanscript.OPTITRANS)
+  if os.path.basename(md_file.file_path) == "_index.md":
+    current_path = os.path.dirname(md_file.file_path)
+    extension = ""
+  else:
+    current_path = md_file.file_path
+    extension = ".md"
+  file_name = get_storage_name(text=title) + extension
+  file_path = os.path.join(os.path.dirname(current_path), file_name)
+  if str(current_path) != file_path:
+    logging.info("Renaming %s to %s", current_path, file_path)
+    if not dry_run:
+      os.rename(src=current_path, dst=file_path)
 
 
-def set_titles_from_filenames(md_files, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
-  for md_file in md_files:
-    # logging.debug(md_file.file_path)
-    if os.path.basename(md_file.file_path) == "_index.md":
-      dir_name = os.path.basename(os.path.dirname(md_file.file_path)).replace(".md", "")
-      title_optitrans = "+" + dir_name
-    else:
-      title_optitrans = os.path.basename(md_file.file_path).replace(".md", "")
-    title = title_optitrans.replace("_", " ")
-    if transliteration_target is not None:
-      title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target)
-    md_file.set_title(dry_run=dry_run, title=title)
+def set_title_from_filenames(md_file, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
+  # logging.debug(md_file.file_path)
+  if os.path.basename(md_file.file_path) == "_index.md":
+    dir_name = os.path.basename(os.path.dirname(md_file.file_path)).replace(".md", "")
+    title_optitrans = "+" + dir_name
+  else:
+    title_optitrans = os.path.basename(md_file.file_path).replace(".md", "")
+  title = title_optitrans.replace("_", " ")
+  if transliteration_target is not None:
+    title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target)
+  md_file.set_title(dry_run=dry_run, title=title)
 
 
-def prepend_file_indexes_to_title(md_files, dry_run):
-  for md_file in md_files:
-    if os.path.basename(md_file.file_path) == "_index.md":
-      return
-    else:
-      index = regex.sub("_.+", "", os.path.basename(md_file.file_path))
-    title = index + " " + md_file.get_title(omit_chapter_id=False)
-    md_file.set_title(dry_run=dry_run, title=title)
+def prepend_file_indexes_to_title(md_file, dry_run):
+  if os.path.basename(md_file.file_path) == "_index.md":
+    return
+  else:
+    index = regex.sub("_.+", "", os.path.basename(md_file.file_path))
+  title = index + " " + md_file.get_title(omit_chapter_id=False)
+  md_file.set_title(dry_run=dry_run, title=title)
 
 
-def add_init_words_to_titles(md_files, num_words=2, target_title_length=None, dry_run=False):
-  logging.info("Fixing titles of %d files", len(md_files))
-  for md_file in md_files:
-    (metadata, content) = md_file.read_md_file()
-    title = metadata["title"]
-    extra_title = content_processor.title_from_text(text=content, num_words=num_words, target_title_length=target_title_length)
-    if extra_title is not None:
-      title = "%s %s" % (title.strip(), extra_title)
-    md_file.set_title(title=title, dry_run=dry_run)
+def add_init_words_to_titles(md_file, num_words=2, target_title_length=None, dry_run=False):
+  (metadata, content) = md_file.read_md_file()
+  title = metadata["title"]
+  extra_title = content_processor.title_from_text(text=content, num_words=num_words, target_title_length=target_title_length)
+  if extra_title is not None:
+    title = "%s %s" % (title.strip(), extra_title)
+  md_file.set_title(title=title, dry_run=dry_run)
 
 
-def devanaagarify_titles(md_files, dry_run=False):
-  logging.info("Fixing titles of %d files", len(md_files))
-  for md_file in md_files:
-    # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
-    logging.debug(md_file.file_path)
-    title_fixed = sanscript.transliterate(data=md_file.get_title(), _from=sanscript.OPTITRANS,
-                                          _to=sanscript.DEVANAGARI)
-    md_file.set_title(title=title_fixed, dry_run=dry_run)
+def devanaagarify_title(md_file, dry_run=False):
+  # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
+  logging.debug(md_file.file_path)
+  title_fixed = sanscript.transliterate(data=md_file.get_title(), _from=sanscript.OPTITRANS,
+                                        _to=sanscript.DEVANAGARI)
+  md_file.set_title(title=title_fixed, dry_run=dry_run)
 
 
 def fix_field_values(md_files,
@@ -145,7 +138,7 @@ def get_metadata_field_values(md_files, field_name):
     yield metadata[field_name]
 
 
-def shloka_title_maker(text, index):
+def shloka_title_maker(text):
   id_in_text = sanscript.transliterate(regex.search("॥\s*([०-९\d\.]+)\s*॥", text).group(1), sanscript.DEVANAGARI, sanscript.OPTITRANS)
   id_in_text = regex.search("\.?\s*(\d+)\s*$", id_in_text).group(1)
   title_id = "%03d" % int(id_in_text)
