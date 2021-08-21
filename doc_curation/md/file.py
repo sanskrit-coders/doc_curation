@@ -271,6 +271,7 @@ class MdFile(object):
     new_content = dest_content
     for source_md in source_mds:
       (metadata, source_content) = source_md.read_md_file()
+      source_content = regex.sub("(?=^|\n)#", "##", source_content)
       new_content += "\n\n## %s\n%s" % (metadata["title"], source_content)
     if new_content != dest_content:
       self.replace_content(new_content=new_content, dry_run=dry_run)

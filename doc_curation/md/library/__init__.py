@@ -168,14 +168,22 @@ def defolderify_single_md_dirs(dir_path, dry_run=False):
         os.rmdir(parent)
 
 
-def combine_files_in_dir(source_fname_list, dest_mds, dry_run=False):
-  for dest_md in dest_mds:
-    dir_path = os.path.dirname(dest_md.file_path)
-    source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in source_fname_list if x in os.listdir(dir_path)]
-    dest_md.append_content_from_mds(source_mds=source_mds, dry_run=dry_run)
-    if not dry_run:
-      for source_md in source_mds:
-        os.remove(source_md.file_path)
+def combine_select_files_in_dir(md_file, source_fname_list, dry_run=False):
+  dir_path = os.path.dirname(md_file.file_path)
+  source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in source_fname_list if x in os.listdir(dir_path)]
+  md_file.append_content_from_mds(source_mds=source_mds, dry_run=dry_run)
+  if not dry_run:
+    for source_md in source_mds:
+      os.remove(source_md.file_path)
+
+
+def combine_files_in_dir(md_file, dry_run=False):
+  dir_path = os.path.dirname(md_file.file_path)
+  source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in sorted(os.listdir(dir_path)) if x != os.path.basename(md_file.file_path) ]
+  md_file.append_content_from_mds(source_mds=source_mds, dry_run=dry_run)
+  if not dry_run:
+    for source_md in source_mds:
+      os.remove(source_md.file_path)
 
 
 def get_include(url, field_names=None, classes=None, title=None, h1_level=2):
@@ -188,6 +196,6 @@ def get_include(url, field_names=None, classes=None, title=None, h1_level=2):
   extra_attributes = " ".join([field_names_str])
   if title is not None:
     extra_attributes = "%s %s" % ("title=\"%s\"" % title, extra_attributes)
-  return """<div class="js_include %s" url="%s"  newLevelForH1="%d" title="%s" %s> </div>"""  % (classes_str,url, h1_level, title, extra_attributes)
+  return """<div class="js_include %s" url="%s"  newLevelForH1="%d" %s> </div>"""  % (classes_str,url, h1_level, extra_attributes)
 
 

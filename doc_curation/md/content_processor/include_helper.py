@@ -10,8 +10,8 @@ PATTERN_SHLOKA = "\n[^#\s<][\s\S]+?॥\s*[०-९\d\.]+\s*॥.*?"
 
 
 def static_include_path_maker(title, original_path, path_replacements={"content": "static", ".md": ""}):
-  include_path = original_path
-  for key, value in path_replacements:
+  include_path = str(original_path)
+  for key, value in path_replacements.items():
     include_path = include_path.replace(key, value)
   if include_path.endswith(".md"):
     return include_path
@@ -19,35 +19,35 @@ def static_include_path_maker(title, original_path, path_replacements={"content"
     return os.path.join(include_path, "%s.md" % file_helper.get_storage_name(text=title))
 
 
-def vishvAsa_include_maker(shloka_path):
+def vishvAsa_include_maker(shloka_path, h1_level=4, classes=None, title=None, ):
   url = shloka_path.replace("/home/vvasuki/vishvAsa/", "/").replace("/static/", "/")
   from doc_curation.md import library
-  return library.get_include(url=url, h1_level=4)
+  return library.get_include(url=url, h1_level=h1_level, classes=classes, title=title)
 
 
-def migrate_and_include_texts(md_file, text_pattern, include_maker=vishvAsa_include_maker, include_path_maker=static_include_path_maker, title_before_include_str_fmt=None, title_maker=None, dry_run=False):
+def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa_include_maker, migrated_text_processor=None, destination_path_maker=static_include_path_maker, title_maker=None, dry_run=False):
   [metadata, content] = md_file.read_md_file()
   # For some regexes to work prefectly.
   content = "\n" + content
-  matches = regex.findall(text_pattern, content)
+  matches = []
+  for text_pattern in text_patterns:
+    matches.extend(regex.findall(text_pattern, content))
   if title_maker is None:
     def title_maker(text, index, file_title):
       title = content_processor.title_from_text(text=text, num_words=2, target_title_length=None, depunctuate=True,
                                                 title_id=index)
       return title
-  for index, text in enumerate(matches):
-    title = title_maker(text=text, index=index, file_title=metadata["title"])
-    text_path = include_path_maker(title, md_file.file_path)
+  for index, text_matched in enumerate(matches):
+    text = text_matched
+    if migrated_text_processor is not None:
+      text = migrated_text_processor(text)
+    title = title_maker(text=text_matched, index=index, file_title=metadata["title"])
+    text_path = destination_path_maker(title, md_file.file_path)
     from doc_curation.md.file import MdFile
-    md_file = MdFile(file_path=text_path)
-    md_file.dump_to_file(metadata={"title": title}, content=text, dry_run=dry_run)
-    include_text = include_maker(text_path)
-    if title_before_include_str_fmt is not None:
-      title_line = title_before_include_str_fmt
-      if "%s" in title_line:
-        title_line = title_line % title
-      include_text = "%s\n%s" % (title_line, include_text)
-    content = content.replace(text.strip(), "%s\n" % include_text)
+    md_file_dest = MdFile(file_path=text_path)
+    md_file_dest.dump_to_file(metadata={"title": title}, content=text, dry_run=dry_run)
+    include_text = replacement_maker(text_path)
+    content = content.replace(text_matched.strip(), "%s\n" % include_text)
   md_file.replace_content(new_content=content, dry_run=dry_run)
 
 
