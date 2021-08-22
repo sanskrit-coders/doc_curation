@@ -186,16 +186,22 @@ def combine_files_in_dir(md_file, dry_run=False):
       os.remove(source_md.file_path)
 
 
-def get_include(url, field_names=None, classes=None, title=None, h1_level=2):
+def get_include(url, field_names=None, classes=None, title=None, h1_level=2, extra_attributes=""):
   field_names_str = ""
   if field_names is not None:
     field_names_str = "fieldNames=\"%s\"" % (",".join(field_names))
   classes_str = ""
   if classes is not None:
     classes_str = " ".join(classes)
-  extra_attributes = " ".join([field_names_str])
-  if title is not None:
-    extra_attributes = "%s %s" % ("title=\"%s\"" % title, extra_attributes)
+  extra_attributes =  "%s %s" % (extra_attributes, " ".join([field_names_str]))
+  if title == "FILE_TITLE":
+    title_str = 'includeTitle="true"'
+  elif title is not None:
+    title_str = "title=\"%s\"" % title
+  else:
+    title_str = None
+  if title_str is not None:
+    extra_attributes = "%s %s" % (title_str, extra_attributes)
   return """<div class="js_include %s" url="%s"  newLevelForH1="%d" %s> </div>"""  % (classes_str,url, h1_level, extra_attributes)
 
 

@@ -54,7 +54,7 @@ def remove_non_content_text(content):
   content = regex.sub(definition_pattern, "", content)
   content = regex.sub("\n#.+?\n", "\n", content)
   content = regex.sub("\n> +", "\n", content)
-  content = regex.sub("\+\+\+\([\s\S]+\)\+\+\+", "", content)
+  content = regex.sub("\+\+\+\([\s\S]+?\)\+\+\+", "", content)
   # Undo initial additions
   content = regex.sub("^\n", "", content)
   content = regex.sub("\n\n$", "", content)

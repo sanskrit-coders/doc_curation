@@ -10,17 +10,23 @@ from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
 
-def migrate_and_include_shlokas():
-
-  library.apply_function(fn=include_helper.migrate_and_replace_texts, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/12.md",
-                         title_maker=lambda text, index: metadata_helper.shloka_title_maker(text=text), title_before_include="### %s", dry_run=False)
+def get_canonical_verse_number(verse_num, chapter_id):
+  verse_maps = {
+    "08": {248: 250, 250: 248 }
+  }
+  verse_map = verse_maps.get(chapter_id, {})
+  verse_num = verse_map.get(verse_num, verse_num)
+  if chapter_id == "03" and verse_num >= 57:
+    verse_num += 10
+  return verse_num
 
 
 def migrate_and_include_commentary(chapter_id):
   text_processor = lambda x: regex.sub("^.+?\n", "", x)
   def title_maker(text_matched, index, file_title):
     id_in_text = regex.match("\.([०-९]+)", text_matched).group(1)
-    title_id = "%03d" % int(id_in_text)
+    verse_num = get_canonical_verse_number(verse_num=int(id_in_text), chapter_id=chapter_id)
+    title_id = "%03d" % verse_num
     return title_id
 
   def replacement_maker(text_matched, dest_path):

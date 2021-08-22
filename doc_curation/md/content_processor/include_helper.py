@@ -6,7 +6,7 @@ from curation_utils import file_helper
 from doc_curation.md import content_processor
 
 
-PATTERN_SHLOKA = "\n[^#\s<][\s\S]+?॥\s*[०-९\d\.]+\s*॥.*?"
+PATTERN_SHLOKA = "\n[^#\s<>\[\(][\s\S]+?॥\s*[०-९\d\.]+\s*॥.*?(?=\n|$)"
 
 
 def static_include_path_maker(title, original_path, path_replacements={"content": "static", ".md": ""}, use_preexisting_file_with_prefix=True):
@@ -30,20 +30,21 @@ def vishvAsa_include_maker(shloka_path, h1_level=4, classes=None, title=None, ):
   return library.get_include(url=url, h1_level=h1_level, classes=classes, title=title)
 
 
-def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa_include_maker, migrated_text_processor=None, destination_path_maker=static_include_path_maker, title_maker=None, dry_run=False):
+def init_word_title_maker(text_matched, index, file_title):
+  title = content_processor.title_from_text(text=text_matched, num_words=2, target_title_length=None,
+                                            title_id=index)
+  return title
+
+
+def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa_include_maker, migrated_text_processor=None, destination_path_maker=static_include_path_maker, title_maker=init_word_title_maker, dry_run=False):
   [metadata, content] = md_file.read_md_file()
   # For some regexes to work prefectly.
   content = "\n" + content
   matches = []
   for text_pattern in text_patterns:
     matches.extend(regex.findall(text_pattern, content))
-  if title_maker is None:
-    def title_maker(text, index, file_title):
-      title = content_processor.title_from_text(text=text, num_words=2, target_title_length=None, depunctuate=True,
-                                                title_id=index)
-      return title
   for index, text_matched in enumerate(matches):
-    text = text_matched
+    text = text_matched.strip()
     if migrated_text_processor is not None:
       text = migrated_text_processor(text)
     title = title_maker(text_matched=text_matched, index=index, file_title=metadata["title"])

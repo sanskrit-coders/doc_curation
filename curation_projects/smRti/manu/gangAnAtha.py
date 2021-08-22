@@ -6,14 +6,17 @@ from urllib.request import urlopen
 import regex
 from bs4 import BeautifulSoup
 
+from curation_projects.smRti.manu import medhaatithi
 from doc_curation.md import get_md_with_pandoc
 from doc_curation.md.file import MdFile
 
 
-def get_md_file(soup, dest_dir):
+def get_md_file(soup, dest_dir, chapter_id):
   title_text = soup.select_one("h1").text.strip()
   verse_id = regex.search("[.-](\d+?)(?= |$)", title_text).group(1)
-  verse_id = "%03d" % int(verse_id)
+  verse_num = medhaatithi.get_canonical_verse_number(verse_num=int(verse_id), chapter_id=chapter_id)
+  verse_id = "%03d" % verse_num
+  dest_dir = os.path.join(dest_dir, chapter_id)
   similar_files = [x for x in os.listdir(dest_dir) if x.startswith(verse_id)]
   md_file = MdFile(file_path=os.path.join(dest_dir, similar_files[0]))
   return md_file
@@ -42,7 +45,7 @@ def dump_notes(soup, h2_prefix, md_file):
   md_file.replace_content(new_content=content, dry_run=False)
 
 
-def dump_chapter(index_url, dest_dir):
+def dump_chapter(index_url, dest_dir, chapter_id):
   page_html = urlopen(index_url)
   soup = BeautifulSoup(page_html.read(), 'lxml')
   tags = soup.select("a")
@@ -52,7 +55,7 @@ def dump_chapter(index_url, dest_dir):
     logging.info("URL: %s", url)
     page_html = urlopen(url)
     tag_soup = BeautifulSoup(page_html.read(), 'lxml')
-    md_file = get_md_file(soup=tag_soup, dest_dir=dest_dir)
+    md_file = get_md_file(soup=tag_soup, dest_dir=dest_dir, chapter_id=chapter_id)
     # dump_translations(soup=tag_soup, md_file=md_file)
     md_file.file_path = md_file.file_path.replace("mUlAnuvAdaH", "bhAShyAnuvAdaH")
     dump_notes(soup=tag_soup, md_file=md_file, h2_prefix="Medh")
@@ -63,4 +66,4 @@ def dump_chapter(index_url, dest_dir):
 
 
 if __name__ == '__main__':
-  dump_chapter(index_url="https://www.wisdomlib.org/hinduism/book/manusmriti-with-the-commentary-of-medhatithi/d/doc202173.html", dest_dir="/home/vvasuki/vishvAsa/kalpAntaram/static/smRtiH/manuH/gangAnatha-mUlAnuvAdaH/12")
+  dump_chapter(index_url="https://www.wisdomlib.org/hinduism/book/manusmriti-with-the-commentary-of-medhatithi/d/doc202173.html", dest_dir="/home/vvasuki/vishvAsa/kalpAntaram/static/smRtiH/manuH/gangAnatha-mUlAnuvAdaH/", chapter_id="08")
