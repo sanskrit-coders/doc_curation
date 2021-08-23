@@ -4,15 +4,18 @@ from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import include_helper
 
 
-def title_maker(text_matched, index, file_title):
-  long_id_match = regex.search("\.([०-९]+)\.([०-९]+)", text_matched)
+def get_title_id(text_matched):
+  long_id_match = regex.search("\.([०-९]+)\.([०-९]+)\s+॥", text_matched)
   if long_id_match is not None:
     id_in_text = long_id_match.group(1)
     title_id = "%03d-%s" % (int(id_in_text), long_id_match.group(2))
   else:
     id_in_text = regex.search("\.([०-९]+)", text_matched).group(1)
     title_id = "%03d" % int(id_in_text)
+  return title_id
 
+def title_maker(text_matched, index, file_title):
+  title_id = get_title_id(text_matched=text_matched)
   title = content_processor.title_from_text(text=text_matched, num_words=2, target_title_length=None,
                                             title_id=title_id)
   return title

@@ -16,6 +16,8 @@ def get_canonical_verse_id(soup, chapter_id):
   title_text = soup.select_one("h1").text.strip()
   if "5.122" in title_text and "(a)" in title_text:
     return "123"
+  if "7.86b" in title_text:
+    return "087-1"
   verse_id = regex.search("[.-](\d+?)(?= |$)", title_text).group(1)
   verse_num = int(verse_id)
   verse_maps = {
@@ -38,7 +40,7 @@ def get_md_file(soup, dest_dir, chapter_id):
     chapter_id += "_praveshaH"
   dest_dir = os.path.join(dest_dir, chapter_id)
   reference_dir = "/home/vvasuki/vishvAsa/kalpAntaram/static/smRtiH/manuH/vishvAsa_prastutiH/%s" % chapter_id
-  similar_files = [x for x in os.listdir(reference_dir) if x.startswith(verse_id)]
+  similar_files = [x for x in os.listdir(reference_dir) if x.startswith(verse_id + "_")]
   md_file = MdFile(file_path=os.path.join(dest_dir, similar_files[0]))
   if not os.path.exists(md_file.file_path):
     os.makedirs(os.path.dirname(md_file.file_path), exist_ok=True)
