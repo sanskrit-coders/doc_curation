@@ -38,7 +38,7 @@ def make_full_text_md(source_dir, dry_run=False):
   index_md_path = os.path.join(source_dir, "_index.md")
   if os.path.exists(index_md_path):
     index_md = MdFile(file_path=index_md_path)
-    (index_yml, _) = index_md.read_md_file()
+    (index_yml, _) = index_md.read()
     title = "%s (%s)" % (index_yml["title"], title)
     content = "%s\n%s" % (content, """<div class="js_include" url="%s"  newLevelForH1="1" includeTitle="false"> </div>""" % (rel_url).strip())
     num_md_files = num_md_files + 1
@@ -75,7 +75,7 @@ def migrate_and_include(files, location_computer, new_url_computer, dry_run=Fals
   migrate(files=files, location_computer=location_computer)
   for f in files:
     md_file = MdFile(file_path=f)
-    (metadata, _) = md_file.read_md_file()
+    (metadata, _) = md_file.read()
     md = """<div class="js_include" url="%s"  newLevelForH1="1" includeTitle="true"> </div>""" % new_url_computer(str(f))
     logging.info("Inclusion in old file : %s", md)
     md_file.dump_to_file(metadata=metadata, content=md, dry_run=dry_run)
@@ -88,7 +88,7 @@ def migrate(files, location_computer, dry_run=False):
     new_path = location_computer(str(f))
     logging.info("Moving %s to %s", str(f), new_path)
     md_file = MdFile(file_path=f)
-    (metadata, _) = md_file.read_md_file()
+    (metadata, _) = md_file.read()
     if not dry_run:
       os.makedirs(os.path.dirname(new_path), exist_ok=True)
       os.rename(src=f, dst=new_path)
@@ -144,7 +144,7 @@ def get_audio_file_urls(md_files):
   for md_file in md_files:
     # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
     logging.debug(md_file.file_path)
-    (metadata, md) = md_file.read_md_file()
+    (metadata, md) = md_file.read()
     match = regex.match("<div class=\"audioEmbed\".+ src=\"([^\"]+)\"", md)
     if match:
       yield match.group(1)
@@ -160,7 +160,7 @@ def defolderify_single_md_dirs(dir_path, dry_run=False):
       if not dry_run:
         os.rename(src=file, dst=dest_file_path)
         md_file = MdFile(file_path=dest_file_path)
-        (metadata, _) = md_file.read_md_file()
+        (metadata, _) = md_file.read()
         title = metadata["title"]
         if title.startswith("+"):
           title = title[1:]

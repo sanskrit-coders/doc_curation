@@ -24,7 +24,7 @@ def separate_commentaries(dry_run=True):
       logging.info("Missing: %s Check: %s" % (id + ".md", prior_Rk_file))
       prior_Rk_file_path = os.path.join(dest_path, prior_Rk_file)
       prior_md_file = MdFile(file_path=prior_Rk_file_path)
-      [metadata, content] = prior_md_file.read_md_file()
+      [metadata, content] = prior_md_file.read()
       translation_parts = regex.split(pattern="\d+\. ", string=content)
       if prior_Rk_file.endswith("_index.md"):
         translation_parts = content.split(" 1. ")

@@ -53,7 +53,7 @@ def make_content_files(base_dir):
       if os.path.exists(included_file_path):
         content += "%s\n" % library.get_include(field_names=None, classes=classes, title=title, url=url, h1_level=h1_level)
     
-    md_file.replace_content(new_content=content, dry_run=False)
+    md_file.replace_content_metadata(new_content=content, dry_run=False)
 
 if __name__ == '__main__':
   base_dir = "/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva/sarva-prastutiH"

@@ -26,4 +26,4 @@ def reformat_audio_tag():
         audio_tag = next(iter(regex.findall("<div class.*div>", current_content.replace("\n", " "))), '')
         (_, target_content) = adhyaaya_to_source_file_map[adhyaaya_id]._read_yml_md_file()
         # logging.debug(adhyaaya_to_source_file_map[adhyaaya_id])
-        md_file.replace_content("%s\n\n%s" % (audio_tag, target_content), dry_run=False)
+        md_file.replace_content_metadata("%s\n\n%s" % (audio_tag, target_content), dry_run=False)

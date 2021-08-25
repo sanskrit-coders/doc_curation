@@ -111,9 +111,9 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, ti
   md_file = MdFile(file_path=outfile_path)
   md_file.import_content_with_pandoc(content=content, source_format="html", dry_run=dry_run, metadata=metadata)
   if md_fixer is not None:
-    [_, md] = md_file.read_md_file()
+    [_, md] = md_file.read()
     md = md_fixer(md)
-    md_file.replace_content(new_content=md, dry_run=dry_run)
+    md_file.replace_content_metadata(new_content=md, dry_run=dry_run)
   
 
   logging.info("Done: %s to %s", url, outfile_path)

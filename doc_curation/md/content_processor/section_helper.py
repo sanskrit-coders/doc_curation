@@ -93,7 +93,7 @@ def get_init_content_lines(lines_in):
 
 
 def drop_sections(md_file, title_condition):
-  [metadata, content] = md_file.read_md_file()
+  [metadata, content] = md_file.read()
   lines = content.splitlines(keepends=False)
   (lines_till_section, remaining) = get_lines_till_section(lines)
   sections = split_to_sections(remaining)
@@ -106,11 +106,11 @@ def drop_sections(md_file, title_condition):
     lines_out.append("\n## %s" % title)
     lines_out.extend(section_lines)
   return "\n".join(lines_out)
-  md_file.replace_content(new_content=content, dry_run=dry_run)
+  md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
 def add_init_words_to_section_titles(md_file, num_words=2, title_post_processor=None, dry_run=False):
-  [metadata, content] = md_file.read_md_file()
+  [metadata, content] = md_file.read()
   lines = content.splitlines(keepends=False)
   (lines_till_section, remaining) = get_lines_till_section(lines)
   sections = split_to_sections(remaining)

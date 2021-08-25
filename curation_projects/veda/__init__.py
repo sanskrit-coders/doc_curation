@@ -62,7 +62,7 @@ def include_multi_file_comments(multi_file_comment_path_pattern, file_range_rege
       logging.info("Will include %s in %s", multi_file_comment_path, target_file)
       md_file = MdFile(file_path=target_file)
       if os.path.exists(target_file):
-        (metadata, content) = md_file.read_md_file()
+        (metadata, content) = md_file.read()
       else:
         if target_file.endswith("_index.md"):
           title = "+" + file_id_str

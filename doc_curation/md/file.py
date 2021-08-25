@@ -102,7 +102,7 @@ class MdFile(object):
       else:
         return None
 
-  def read_md_file(self) -> Tuple[Dict, str]:
+  def read(self) -> Tuple[Dict, str]:
     file_helper.clear_bad_chars_in_file(file_path=self.file_path, dry_run=False)
     actual_frontmatter_type = self.get_frontmatter_type()
     if self.frontmatter_type != actual_frontmatter_type:
@@ -120,7 +120,7 @@ class MdFile(object):
       return ({}, content)
 
   def get_title(self, omit_chapter_id=True):
-    (metadata, content) = self.read_md_file()
+    (metadata, content) = self.read()
     title = metadata.get("title", None)
     if omit_chapter_id and title is not None:
       title = regex.sub("^[+०-९]+ +", "", title)
@@ -128,7 +128,7 @@ class MdFile(object):
     return title
 
   def dump_mediawiki(self, outpath=None, dry_run=False):
-    (metadata, content) = self.read_md_file()
+    (metadata, content) = self.read()
     import pypandoc
     output = pypandoc.convert_text(content, 'mediawiki', format='md')
     if outpath is None:
@@ -187,7 +187,7 @@ class MdFile(object):
     self.set_frontmatter_field_value(field_name="title", value=title, dry_run=dry_run)
     
   def set_frontmatter_field_value(self, field_name, value, dry_run):
-    metadata, content = self.read_md_file()
+    metadata, content = self.read()
     if field_name in metadata and metadata[field_name] == value:
       return 
     logging.info("Setting %s of %s to %s (was %s)", field_name, self.file_path, value, metadata.get(field_name, "None"))
@@ -196,9 +196,13 @@ class MdFile(object):
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
       self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
-  def replace_content(self, new_content, dry_run):
-    (metadata, _) = self.read_md_file()
-    self.dump_to_file(metadata=metadata, content=new_content, dry_run=dry_run)
+  def replace_content_metadata(self, new_content=None, new_metadata=None, dry_run=False):
+    (metadata, content) = self.read()
+    if new_metadata is None:
+      new_metadata = metadata
+    if new_content is None:
+      new_content = content
+    self.dump_to_file(metadata=new_metadata, content=new_content, dry_run=dry_run)
 
   def split_to_bits(self, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, indexed_title_pattern="%02d %s", bits_dir_url=None,
                     target_frontmantter_type=TOML, dry_run=False):
@@ -214,7 +218,7 @@ class MdFile(object):
     else:
       out_dir = os.path.join(os.path.dirname(self.file_path), os.path.basename(self.file_path).replace(".md", ""))
       
-    (metadata, content) = self.read_md_file()
+    (metadata, content) = self.read()
     lines = content.splitlines(keepends=False)
     (lines_till_section, remaining) = get_lines_till_section(lines)
     sections = split_to_sections(remaining)
@@ -261,17 +265,20 @@ class MdFile(object):
       if not dry_run and remainder_file_path != self.file_path:
         os.remove(path=self.file_path)
 
-  def transform_content(self, content_transformer, dry_run=False):
-    [metadata, content] = self.read_md_file()
-    content = content_transformer(content, metadata)
-    self.replace_content(new_content=content, dry_run=dry_run)
+  def transform(self, content_transformer=None, metadata_transformer=None, dry_run=False):
+    [metadata, content] = self.read()
+    if content_transformer is not None:
+      content = content_transformer(content, metadata)
+    if metadata_transformer is not None:
+      metadata = metadata_transformer(content, metadata)
+    self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
   def append_content_from_mds(self, source_mds, dry_run=False):
-    (_, dest_content) = self.read_md_file()
+    (_, dest_content) = self.read()
     new_content = dest_content
     for source_md in source_mds:
-      (metadata, source_content) = source_md.read_md_file()
+      (metadata, source_content) = source_md.read()
       source_content = regex.sub("(?=^|\n)#", "##", source_content)
       new_content += "\n\n## %s\n%s" % (metadata["title"], source_content)
     if new_content != dest_content:
-      self.replace_content(new_content=new_content, dry_run=dry_run)
+      self.replace_content_metadata(new_content=new_content, dry_run=dry_run)

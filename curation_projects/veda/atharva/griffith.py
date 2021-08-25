@@ -22,7 +22,7 @@ def dump(dest_dir):
       logging.warning("Could not find: %s", commentary_id)
       continue
     commentary = translations.loc[commentary_id, "Comment"]
-    md_file.replace_content(new_content=str(commentary), dry_run=False)
+    md_file.replace_content_metadata(new_content=str(commentary), dry_run=False)
     # logging.debug("Commentary for %s: %s", commentary_id, commentary)
 
 def dump_suukta_info(dest_dir):
@@ -36,7 +36,7 @@ def dump_suukta_info(dest_dir):
       logging.warning("Could not find: %s", id)
       continue
     commentary = translations.loc[id, "Comment"]
-    md_file.replace_content(new_content=str(commentary), dry_run=False)
+    md_file.replace_content_metadata(new_content=str(commentary), dry_run=False)
     # logging.debug("Commentary for %s: %s", commentary_id, commentary)
 
 

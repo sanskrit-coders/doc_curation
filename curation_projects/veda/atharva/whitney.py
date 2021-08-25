@@ -111,7 +111,7 @@ def dump_Rk_info(dest_dir):
         dest_file = os.path.join(dest_dir, suukta_subpath, dest_files[0])
         # logging.debug("%d: %s", rk_num, dest_file)
         md_file = MdFile(file_path=dest_file)
-        md_file.replace_content(new_content=content, dry_run=False)
+        md_file.replace_content_metadata(new_content=content, dry_run=False)
 
 
 def dump_kaanda_info(dest_dir):

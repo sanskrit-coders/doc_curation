@@ -30,9 +30,9 @@ def fix_title_names(base_dir, base_dir_ref, dry_run=False):
       os.makedirs(os.path.dirname(dest_path), exist_ok=True)
       shutil.move(p, dest_path)
       ref_md_file = MdFile(file_path=ref_md_path)
-      [metadata, _] = ref_md_file.read_md_file()
+      [metadata, _] = ref_md_file.read()
       md_file = MdFile(file_path=dest_path)
-      [_, content] = md_file.read_md_file()
+      [_, content] = md_file.read()
       md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
 

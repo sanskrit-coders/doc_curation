@@ -2,6 +2,8 @@ import logging
 
 import regex
 
+from indic_transliteration import sanscript
+
 
 def make_paras(content):
   lines = content.splitlines(keepends=False)
@@ -40,7 +42,7 @@ def define_footnotes_near_use(content):
   definitions = regex.finditer(definition_pattern, content)
   content = regex.sub(definition_pattern, "", content)
   for definition in definitions:
-    content = regex.sub("%s.+\n\n" % regex.escape(definition.group(1)), "\g<0>%s\n" % definition.group(0), content)
+    content = regex.sub("%s[\s\S]+?\n\n" % regex.escape(definition.group(1)), "\g<0>%s\n" % definition.group(0), content)
   # Undo initial additions
   content = regex.sub("^\n", "", content)
   content = regex.sub("\n\n$", "", content)

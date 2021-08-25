@@ -32,14 +32,14 @@ def set_book_content(dry_run=False):
       content += "%s\n" % library.get_include(field_names=None, classes=None, title="अनुक्रमणी (Whitney)", url=url,
                                               h1_level=2)
 
-    md_file.replace_content(new_content=content, dry_run=dry_run)
+    md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
   library.fix_index_files(dir_path=dest_dir_suuktas)
 
 
 def set_suukta_content(dry_run=False):
   md_files = library.get_md_files_from_path(dir_path=dest_dir_suuktas, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
   for md_file in md_files:
-    [metadata, _] = md_file.read_md_file()
+    [metadata, _] = md_file.read()
     path_parts = regex.match(".+(\d\d/\d\d\d.*)\.md", str(md_file.file_path))
     if path_parts is None:
       continue
@@ -50,7 +50,7 @@ def set_suukta_content(dry_run=False):
     for rk_file_name in rk_file_names:
       content += get_rk_content(rk_file_name, suukta_id)
 
-    md_file.replace_content(new_content=content, dry_run=dry_run)
+    md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
   library.fix_index_files(dir_path=dest_dir_suuktas)
 
 
@@ -85,7 +85,7 @@ def get_rk_content(rk_file_name, suukta_id):
   content = ""
   file_path = os.path.join(dest_dir_static, "vishvAsa-prastutiH", suukta_id, rk_file_name)
   md_file_rk = MdFile(file_path=file_path)
-  (metadata, _) = md_file_rk.read_md_file()
+  (metadata, _) = md_file_rk.read()
   content += "## %s\n" % metadata["title"]
   url = regex.sub(".+?/vedAH/", "/vedAH/", file_path).replace("/static/", "/")
   content += "%s\n" % library.get_include(field_names=None, classes=None, title="विश्वास-प्रस्तुतिः", url=url,
@@ -109,7 +109,7 @@ def get_rk_content(rk_file_name, suukta_id):
 def set_suukta_info_to_match(dest_dir, dry_run=False):
   md_files = library.get_md_files_from_path(dir_path=dest_dir_suukta_info, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
   for md_file in md_files:
-    [metadata, content] = md_file.read_md_file()
+    [metadata, content] = md_file.read()
     path_parts = regex.match(".+(\d\d/\d\d\d)", str(md_file.file_path))
     if path_parts is None:
       continue

@@ -89,7 +89,7 @@ def prepend_file_indexes_to_title(md_file, dry_run):
 
 
 def add_init_words_to_titles(md_file, num_words=2, target_title_length=None, dry_run=False):
-  (metadata, content) = md_file.read_md_file()
+  (metadata, content) = md_file.read()
   title = metadata["title"]
   extra_title = content_processor.title_from_text(text=content, num_words=num_words, target_title_length=target_title_length)
   if extra_title is not None:
@@ -134,7 +134,7 @@ def get_metadata_field_values(md_files, field_name):
   for md_file in md_files:
     # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
     logging.debug(md_file.file_path)
-    (metadata, md) = md_file.read_md_file()
+    (metadata, md) = md_file.read()
     yield metadata[field_name]
 
 

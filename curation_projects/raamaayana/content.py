@@ -26,7 +26,7 @@ def update():
         file_path = str(md_file.file_path)
         adhyaaya_id = raamaayana.get_adhyaaya_id(file_path)
         target_content = ""
-        (metadata, current_content) = md_file.read_md_file()
+        (metadata, current_content) = md_file.read()
         # match = regex.search("<div class[^>]*div>", current_content)
         audio_url = doc_data.get_value(id=adhyaaya_id, column_name="Audio url")
         if adhyaaya_id >= "6":
@@ -68,4 +68,4 @@ def update():
                 classes = None
             target_content += "%s\n" % library.get_include(field_names=None, classes=classes, title="द्राविडपाठः", url=url)
         # logging.debug(adhyaaya_to_source_file_map[adhyaaya_id])
-        md_file.replace_content(target_content, dry_run=False)
+        md_file.replace_content_metadata(target_content, dry_run=False)

@@ -8,13 +8,13 @@ from indic_transliteration import sanscript
 
 def old_include_remover(match):
   url = match.group(1)
-  if "vishvAsa" not in url:
+  if "includeTitle" not in match.group(0):
     return ""
   else:
     return match.group(0)
 
 
-def make_alt_include(url, file_path, target_dir, h1_level, source_dir="vishvAsa-prastutiH", classes=["collapsed"], title=None):
+def make_alt_include(url, file_path, target_dir, h1_level, source_dir="vishvAsa_prastutiH", classes=["collapsed"], title=None):
   alt_file_path = file_path.replace(source_dir, target_dir)
   alt_url = url.replace(source_dir, target_dir)
   if title is None:
@@ -32,7 +32,8 @@ def include_fixer(match):
   h1_level = int(h1_level) + 1
   include_lines = [main_include]
   commentaries = ["gangAnatha-mUlAnuvAdaH", "medhAtithiH", "gangAnatha-bhAShyAnuvAdaH", "gangAnatha-TippanyaH", "gangAnatha-tulya-vAkyAni", "buhler"]
-  include_lines.extend([make_alt_include(url=url, file_path=file_path, h1_level=h1_level, target_dir=x) for x in commentaries if x is not None])
+  include_lines.extend([make_alt_include(url=url, file_path=file_path, h1_level=h1_level, target_dir=x) for x in commentaries])
+  include_lines = [x for x in include_lines if x is not None]
   return "\n".join(include_lines)
 
 
@@ -42,7 +43,7 @@ def fix_includes():
   for md_file in md_files:
     include_helper.transform_include_lines(md_file=md_file, transformer=old_include_remover)
     include_helper.transform_include_lines(md_file=md_file, transformer=include_fixer)
-
+    md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
 
 def get_title_id(text_matched):
   long_id_match = regex.search("\.([०-९]+)\.([०-९]+)\s+॥", text_matched)

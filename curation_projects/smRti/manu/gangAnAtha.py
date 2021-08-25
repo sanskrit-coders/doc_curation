@@ -52,7 +52,7 @@ def dump_translations(soup, md_file):
   tags = soup.select('blockquote p')
   translations = [x.text for x in tags[3:]]
   content = "\n\n".join(translations)
-  md_file.replace_content(new_content=content, dry_run=False)
+  md_file.replace_content_metadata(new_content=content, dry_run=False)
 
 
 def dump_notes(soup, h2_prefix, md_file):
@@ -72,7 +72,7 @@ def dump_notes(soup, h2_prefix, md_file):
   print("\n", end ="")
   content_html = "\n".join(p_tags)
   content = get_md_with_pandoc(content_in=content_html, source_format="html")
-  md_file.replace_content(new_content=content, dry_run=False)
+  md_file.replace_content_metadata(new_content=content, dry_run=False)
 
 
 def dump_chapter(dest_dir, chapter_id):

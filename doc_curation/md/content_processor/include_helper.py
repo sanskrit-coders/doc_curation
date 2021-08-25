@@ -37,7 +37,7 @@ def init_word_title_maker(text_matched, index, file_title):
 
 
 def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa_include_maker, migrated_text_processor=None, destination_path_maker=static_include_path_maker, title_maker=init_word_title_maker, dry_run=False):
-  [metadata, content] = md_file.read_md_file()
+  [metadata, content] = md_file.read()
   # For some regexes to work prefectly.
   content = "\n" + content
   matches = []
@@ -52,15 +52,15 @@ def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa
     from doc_curation.md.file import MdFile
     md_file_dest = MdFile(file_path=text_path)
     if os.path.exists(md_file_dest.file_path):
-      md_file_dest.replace_content(new_content=text, dry_run=dry_run)
+      md_file_dest.replace_content_metadata(new_content=text, dry_run=dry_run)
     else:
       md_file_dest.dump_to_file(metadata={"title": title}, content=text, dry_run=dry_run)
     include_text = replacement_maker(text_matched, text_path)
     content = content.replace(text_matched.strip(), "%s\n" % include_text)
-  md_file.replace_content(new_content=content, dry_run=dry_run)
+  md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
 def transform_include_lines(md_file, transformer, dry_run=False):
-  [metadata, content] = md_file.read_md_file()
+  [metadata, content] = md_file.read()
   content = regex.sub("<div.+js_include.+url=['\"](.+?)['\"][\s\S]+?</div>", transformer, content)
-  md_file.replace_content(new_content=content, dry_run=dry_run)
+  md_file.replace_content_metadata(new_content=content, dry_run=dry_run)

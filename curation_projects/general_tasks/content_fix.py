@@ -26,11 +26,20 @@ def add_init_words_to_includes():
   def transformer(match):
     footnote_text = match.group(1)
     return "[%s]" % sanscript.transliterate(footnote_text, sanscript.OPTITRANS, sanscript.DEVANAGARI)
-  library.apply_function(fn=MdFile.transform_content, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/04.md", content_transformer=lambda x, y: include_helper.transform_include_lines(x, transformer=transformer), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/04.md", content_transformer=lambda x, y: include_helper.transform_include_lines(x, transformer=transformer), dry_run=False)
   
 
 def fix_footnotes():
-  library.apply_function(fn=MdFile.transform_content, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH/", content_transformer=content_processor.define_footnotes_near_use, dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/hinduism/articles/muller-max/india_what_it_can_teach_us", content_transformer=lambda c, m: content_processor.define_footnotes_near_use(c), dry_run=False)
+
+
+def devanaagarify():
+  library.apply_function(
+    fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/dharma-ratnaH/dAyabhAgaH/", file_pattern="**/[0-9][0-9].md", 
+    content_transformer=lambda c, m: sanscript.transliterate(c, sanscript.IAST, sanscript.DEVANAGARI),
+    metadata_transformer=lambda c, m: {"title":
+                                         sanscript.transliterate(m["title"], sanscript.IAST, sanscript.DEVANAGARI)},
+  dry_run=False)
 
 
 if __name__ == '__main__':
@@ -46,5 +55,5 @@ if __name__ == '__main__':
   # library.apply_function(fn=library.combine_files_in_dir, dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH", file_pattern="**/_index.md", dry_run=False)
   # library.defolderify_single_md_dirs(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH", dry_run=False)
   # md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH", file_pattern="**/_index.md")  
-  # migrate_and_include_sections()
-  migrate_and_include_commentary()
+  # devanaagarify()
+  fix_footnotes()
