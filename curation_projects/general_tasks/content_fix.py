@@ -30,7 +30,7 @@ def add_init_words_to_includes():
   
 
 def fix_footnotes():
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/hinduism/articles/muller-max/india_what_it_can_teach_us", content_transformer=lambda c, m: content_processor.define_footnotes_near_use(c), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/rivals/academia/articles/witzel-dossier.md", content_transformer=lambda c, m: content_processor.define_footnotes_near_use(c), dry_run=False)
 
 
 def devanaagarify():

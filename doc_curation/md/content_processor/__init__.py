@@ -68,3 +68,10 @@ def title_from_text(text, num_words=2, target_title_length=50, title_id=None):
   from doc_curation import text_utils
   title = text_utils.title_from_text(text=text, num_words=num_words, target_title_length=target_title_length, title_id=title_id)
   return title
+
+
+def get_comparison_text(text):
+  text = sanscript.SCHEMES[sanscript.DEVANAGARI].remove_numerals(in_string=text)
+  text = title_from_text(text=text, num_words=40, target_title_length=1000, title_id=None)
+  return text.strip()
+  

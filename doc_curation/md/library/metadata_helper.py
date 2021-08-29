@@ -66,7 +66,7 @@ def set_filename_from_title(md_file, transliteration_source=sanscript.DEVANAGARI
       os.rename(src=current_path, dst=file_path)
 
 
-def set_title_from_filenames(md_file, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
+def set_title_from_filename(md_file, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
   # logging.debug(md_file.file_path)
   if os.path.basename(md_file.file_path) == "_index.md":
     dir_name = os.path.basename(os.path.dirname(md_file.file_path)).replace(".md", "")
