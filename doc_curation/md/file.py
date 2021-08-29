@@ -28,7 +28,7 @@ class MdFile(object):
   TOML = "toml"
 
   def __init__(self, file_path, frontmatter_type="toml"):
-    self.file_path = file_path
+    self.file_path = str(file_path)
     if frontmatter_type is None:
       frontmatter_type = "toml"
     self.frontmatter_type = frontmatter_type

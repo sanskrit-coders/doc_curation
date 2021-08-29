@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 
 import regex
 
@@ -88,7 +89,7 @@ def prepend_file_indexes_to_title(md_file, dry_run):
   md_file.set_title(dry_run=dry_run, title=title)
 
 
-def add_init_words_to_titles(md_file, num_words=2, target_title_length=None, dry_run=False):
+def add_init_words_to_title(md_file, num_words=2, target_title_length=None, dry_run=False):
   (metadata, content) = md_file.read()
   title = metadata["title"]
   extra_title = content_processor.title_from_text(text=content, num_words=num_words, target_title_length=target_title_length)
@@ -147,3 +148,17 @@ def shloka_title_maker(text):
   return title
 
 
+def copy_metadata_and_filename(dest_dir, ref_dir, dry_run=False):
+  from doc_curation.md import library
+  sub_path_to_reference = library.get_sub_path_to_reference_map(ref_dir=ref_dir)
+  dest_md_files = library.get_md_files_from_path(dir_path=dest_dir)
+  for md_file in dest_md_files:
+    sub_path_id = library.get_sub_path_id(file_path=md_file.file_path, src_dir=dest_dir)
+    if sub_path_id is None:
+      continue
+    ref_md = sub_path_to_reference[sub_path_id]
+    sub_file_path_ref = str(ref_md.file_path).replace(ref_dir, "")
+    (ref_metadata, _) = ref_md.read()
+    md_file.replace_content_metadata(new_metadata=ref_metadata, dry_run=dry_run)
+    target_path = os.path.abspath(dest_dir + sub_file_path_ref)
+    shutil.move(md_file.file_path, target_path)

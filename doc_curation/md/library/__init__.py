@@ -108,7 +108,7 @@ def fix_index_files(dir_path, frontmatter_type=MdFile.TOML, transliteration_targ
       index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
 
 
-def get_md_files_from_path(dir_path, file_pattern, file_name_filter=lambda x: True, frontmatter_type=None):
+def get_md_files_from_path(dir_path, file_pattern="**/*.md", file_name_filter=lambda x: True, frontmatter_type=None):
   from pathlib import Path
   # logging.debug(list(Path(dir_path).glob(file_pattern)))
   md_file_paths = sorted(filter(file_name_filter, Path(dir_path).glob(file_pattern)))
@@ -205,3 +205,22 @@ def get_include(url, field_names=None, classes=None, title=None, h1_level=2, ext
   return """<div class="js_include %s" url="%s"  newLevelForH1="%d" %s> </div>"""  % (classes_str,url, h1_level, extra_attributes)
 
 
+def get_sub_path_to_reference_map(ref_dir):
+  ref_md_files = get_md_files_from_path(dir_path=ref_dir)
+  sub_path_to_reference = {}
+  for md_file in ref_md_files:
+    sub_path_id = get_sub_path_id(sub_path=str(md_file.file_path).replace(ref_dir, ""))
+    if sub_path_id is not None:
+      sub_path_to_reference[sub_path_id] = md_file
+  return sub_path_to_reference
+
+
+def get_sub_path_id(sub_path, basename_id_pattern="(.+?)[_\.]"):
+  basename = os.path.basename(sub_path)
+  if basename == "_index.md":
+    return sub_path
+  base_id_match = regex.search(basename_id_pattern, basename)
+  if base_id_match is None:
+    return None
+  else:
+    return os.path.join(os.path.dirname(sub_path), base_id_match.group(1))
