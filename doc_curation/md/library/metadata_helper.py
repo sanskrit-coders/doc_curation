@@ -89,10 +89,10 @@ def prepend_file_indexes_to_title(md_file, dry_run):
   md_file.set_title(dry_run=dry_run, title=title)
 
 
-def add_init_words_to_title(md_file, num_words=2, target_title_length=None, dry_run=False):
+def add_init_words_to_title(md_file, num_words=2, target_title_length=None,script=sanscript.DEVANAGARI, dry_run=False):
   (metadata, content) = md_file.read()
   title = metadata["title"]
-  extra_title = content_processor.title_from_text(text=content, num_words=num_words, target_title_length=target_title_length)
+  extra_title = content_processor.title_from_text(text=content, num_words=num_words, target_title_length=target_title_length, script=script)
   if extra_title is not None:
     title = "%s %s" % (title.strip(), extra_title)
   md_file.set_title(title=title, dry_run=dry_run)
@@ -103,6 +103,13 @@ def devanaagarify_title(md_file, dry_run=False):
   logging.debug(md_file.file_path)
   title_fixed = sanscript.transliterate(data=md_file.get_title(), _from=sanscript.OPTITRANS,
                                         _to=sanscript.DEVANAGARI)
+  md_file.set_title(title=title_fixed, dry_run=dry_run)
+
+
+
+def remove_post_numeric_title_text(md_file, dry_run=False):
+  logging.debug(md_file.file_path)
+  title_fixed = regex.sub("([\d०-९೦-೯-]+ ).+", "\\1", md_file.get_title())
   md_file.set_title(title=title_fixed, dry_run=dry_run)
 
 
@@ -153,7 +160,7 @@ def copy_metadata_and_filename(dest_dir, ref_dir, dry_run=False):
   sub_path_to_reference = library.get_sub_path_to_reference_map(ref_dir=ref_dir)
   dest_md_files = library.get_md_files_from_path(dir_path=dest_dir)
   for md_file in dest_md_files:
-    sub_path_id = library.get_sub_path_id(file_path=md_file.file_path, src_dir=dest_dir)
+    sub_path_id = library.get_sub_path_id(sub_path=md_file.file_path.replace(dest_dir, ""))
     if sub_path_id is None:
       continue
     ref_md = sub_path_to_reference[sub_path_id]

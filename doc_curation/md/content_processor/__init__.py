@@ -63,10 +63,10 @@ def remove_non_content_text(content):
   return content
 
 
-def title_from_text(text, num_words=2, target_title_length=50, title_id=None):
+def title_from_text(text, num_words=2, target_title_length=50, title_id=None, script=sanscript.DEVANAGARI):
   text = remove_non_content_text(content=text)
   from doc_curation import text_utils
-  title = text_utils.title_from_text(text=text, num_words=num_words, target_title_length=target_title_length, title_id=title_id)
+  title = text_utils.title_from_text(text=text, num_words=num_words, target_title_length=target_title_length, title_id=title_id, script=script)
   return title
 
 

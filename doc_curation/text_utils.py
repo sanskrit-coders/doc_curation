@@ -1,12 +1,12 @@
 from indic_transliteration import sanscript
 import regex
 
-def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True, title_id=None):
+def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True, title_id=None, script=sanscript.DEVANAGARI):
   if depunctuate:
     devanaaagari_scheme = sanscript.SCHEMES[sanscript.DEVANAGARI]
     text = devanaaagari_scheme.remove_svaras(in_string=text)
     text = devanaaagari_scheme.remove_punctuation(in_string=text)
-    text = devanaaagari_scheme.fix_lazy_anusvaara(data_in=text, omit_yrl=True)
+  text = sanscript.SCHEMES[script].fix_lazy_anusvaara(data_in=text, omit_yrl=True)
   init_words = text.split()[0:num_words]
   title = None
   if len(init_words) > 0:

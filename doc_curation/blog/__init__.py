@@ -2,7 +2,7 @@ import datetime
 import logging
 import os
 from urllib.parse import urlsplit, urljoin
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 import dateutil.parser as parser
 
 import regex
@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 
 from curation_utils import file_helper
 from curation_utils.file_helper import get_storage_name
+from doc_curation.md import get_md_with_pandoc
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html.souper import get_tags_matching_css
 
@@ -24,7 +25,10 @@ logging.basicConfig(
 def get_post_html(url):
   '''get the text body of links'''
   logging.info("Processing post at %s", url)
-  page_html = urlopen(url)
+  raw_request = Request(url)
+  raw_request.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0')
+  raw_request.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8')
+  page_html = urlopen(raw_request)
   soup = BeautifulSoup(page_html.read(), 'lxml')
   non_content_tags = soup.select("#jp-post-flair")
   for tag in non_content_tags:
@@ -88,11 +92,11 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
 
   logging.info("Dumping %s to %s with title %s.", url, file_path, title)
 
+  metadata = {"title": title, "date": datetime.datetime.strftime(date_obj, "%Y-%m-%d"), "upstream_url": url}
   md_file = MdFile(file_path=file_path, frontmatter_type=MdFile.TOML)
-  md_file.import_content_with_pandoc(metadata={"title": title, "date": datetime.datetime.strftime(date_obj, "%Y-%m-%d"), "upstream_url": url}, content=post_html, source_format="html",
-                                     dry_run=dry_run)
-  if not dry_run:
-    md_file.prepend_to_content("Source: [here](%s).\n\n" % url, dry_run=dry_run)
+  content = get_md_with_pandoc(content_in=post_html, source_format="html")
+  content = "Source: [here](%s).\n\n%s" % (url, content)
+  md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
 
 def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, anchor_css="a[href]", urlpattern=None, dry_run=False):
