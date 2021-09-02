@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 
 from curation_utils import file_helper
 from curation_utils.file_helper import get_storage_name
+from doc_curation import text_utils
 from doc_curation.md import get_md_with_pandoc
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html.souper import get_tags_matching_css
@@ -68,6 +69,12 @@ def file_name_from_url(url):
   return "%s.md" % path_parts[-1]
 
 
+def fix_special_markup(content):
+  # V![\_4](https://s0.wp.com/latex.php?latex=_4&bg=ffffff&fg=333333&s=0&c=20201002)
+  content = regex.sub("\!\[\\(_\d)\]\(.+?\)", "\\1", content)
+  return content
+
+
 def scrape_post_markdown(url, dir_path, dry_run=False):
 
   (title, post_html, date_obj) = (None, None, None)
@@ -87,15 +94,19 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
     logging.warning("Skipping %s : exists", file_name)
     return
   
+  # post_html could've been computed in order to determine target file name.
   if post_html is None:
     (title, post_html, date_obj) = get_post_html(url=url)
 
-  logging.info("Dumping %s to %s with title %s.", url, file_path, title)
+  short_title = text_utils.title_from_text(text=title, num_words=5)
+  full_title = text_utils.title_from_text(text=title, num_words=50, target_title_length=200)
+  logging.info("Dumping %s to %s with title %s.", url, file_path, short_title)
 
-  metadata = {"title": title, "date": datetime.datetime.strftime(date_obj, "%Y-%m-%d"), "upstream_url": url}
+  metadata = {"title": short_title, "full_title": full_title, "date": datetime.datetime.strftime(date_obj, "%Y-%m-%d"), "upstream_url": url}
   md_file = MdFile(file_path=file_path, frontmatter_type=MdFile.TOML)
   content = get_md_with_pandoc(content_in=post_html, source_format="html")
-  content = "Source: [here](%s).\n\n%s" % (url, content)
+  content = fix_special_markup(content=content)
+  content = "Source: [here](%s).\n\n%s\n\n%s" % (url, title, content)
   md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
 
