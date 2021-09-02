@@ -205,11 +205,13 @@ def get_include(url, field_names=None, classes=None, title=None, h1_level=2, ext
   return """<div class="js_include %s" url="%s"  newLevelForH1="%d" %s> </div>"""  % (classes_str,url, h1_level, extra_attributes)
 
 
-def get_sub_path_to_reference_map(ref_dir):
+def get_sub_path_to_reference_map(ref_dir, sub_path_id_maker=None):
   ref_md_files = get_md_files_from_path(dir_path=ref_dir)
   sub_path_to_reference = {}
+  if sub_path_id_maker is None:
+    sub_path_id_maker = lambda x: get_sub_path_id(sub_path=str(x).replace(ref_dir, ""))
   for md_file in ref_md_files:
-    sub_path_id = get_sub_path_id(sub_path=str(md_file.file_path).replace(ref_dir, ""))
+    sub_path_id = sub_path_id_maker(md_file.file_path)
     if sub_path_id is not None:
       sub_path_to_reference[sub_path_id] = md_file
   return sub_path_to_reference

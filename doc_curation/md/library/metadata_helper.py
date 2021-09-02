@@ -155,17 +155,20 @@ def shloka_title_maker(text):
   return title
 
 
-def copy_metadata_and_filename(dest_dir, ref_dir, dry_run=False):
+def copy_metadata_and_filename(dest_dir, ref_dir, sub_path_id_maker=None, dry_run=False):
   from doc_curation.md import library
-  sub_path_to_reference = library.get_sub_path_to_reference_map(ref_dir=ref_dir)
+  sub_path_to_reference = library.get_sub_path_to_reference_map(ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
   dest_md_files = library.get_md_files_from_path(dir_path=dest_dir)
+  if sub_path_id_maker is None:
+    sub_path_id_maker = lambda x: library.get_sub_path_id(sub_path=str(x).replace(dest_dir, ""))
   for md_file in dest_md_files:
-    sub_path_id = library.get_sub_path_id(sub_path=md_file.file_path.replace(dest_dir, ""))
+    sub_path_id = sub_path_id_maker(md_file.file_path)
     if sub_path_id is None:
       continue
     ref_md = sub_path_to_reference[sub_path_id]
     sub_file_path_ref = str(ref_md.file_path).replace(ref_dir, "")
     (ref_metadata, _) = ref_md.read()
     md_file.replace_content_metadata(new_metadata=ref_metadata, dry_run=dry_run)
-    target_path = os.path.abspath(dest_dir + sub_file_path_ref)
+    target_path = os.path.abspath("%s/%s" % (dest_dir, sub_file_path_ref))
+    os.makedirs(os.path.dirname(target_path), exist_ok=True)
     shutil.move(md_file.file_path, target_path)
