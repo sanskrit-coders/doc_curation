@@ -34,11 +34,18 @@ def fix_footnotes():
 
 
 def devanaagarify():
+  def content_transformer(c, m): 
+    c = content_processor.devanaagarify(text=c)
+    c = regex.sub("\n\*\*(\s+)", "\n\\1**", c)
+    c = regex.sub("\n[\t	 ]+", "\n> ", c)
+    for x in range(1, 20):
+      c = regex.sub("\n(>.+)\n\n+>", "\n\\1  \n>", c)
+    return c
+  
   library.apply_function(
-    fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/dharma-ratnaH/dAyabhAgaH/", file_pattern="**/[0-9][0-9].md", 
-    content_transformer=lambda c, m: sanscript.transliterate(c, sanscript.IAST, sanscript.DEVANAGARI),
-    metadata_transformer=lambda c, m: {"title":
-                                         sanscript.transliterate(m["title"], sanscript.IAST, sanscript.DEVANAGARI)},
+    fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/yAjJNavalkyaH/mitAxarA/mUlam/raw.md", 
+    content_transformer=content_transformer,
+    metadata_transformer=None,
   dry_run=False)
 
 
@@ -55,5 +62,5 @@ if __name__ == '__main__':
   # library.apply_function(fn=library.combine_files_in_dir, dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH", file_pattern="**/_index.md", dry_run=False)
   # library.defolderify_single_md_dirs(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH", dry_run=False)
   # md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH", file_pattern="**/_index.md")  
-  # devanaagarify()
-  fix_footnotes()
+  devanaagarify()
+  # fix_footnotes()

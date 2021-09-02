@@ -74,4 +74,10 @@ def get_comparison_text(text):
   text = sanscript.SCHEMES[sanscript.DEVANAGARI].remove_numerals(in_string=text)
   text = title_from_text(text=text, num_words=40, target_title_length=1000, title_id=None)
   return text.strip()
-  
+
+
+def devanaagarify(text, source_scheme=sanscript.IAST):
+  c = sanscript.transliterate(text, sanscript.IAST, sanscript.DEVANAGARI)
+  c = sanscript.SCHEMES[sanscript.DEVANAGARI].dot_for_numeric_ids(c)
+  c = c.replace(":", "-")
+  return c
