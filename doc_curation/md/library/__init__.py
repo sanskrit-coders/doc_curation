@@ -7,6 +7,7 @@ from indic_transliteration import sanscript
 
 from curation_utils import file_helper
 from doc_curation.md.file import MdFile
+from doc_curation.md.library import metadata_helper
 
 
 def import_md_recursive(source_dir, file_extension, source_format=None, dry_run=False):
@@ -103,9 +104,9 @@ def fix_index_files(dir_path, frontmatter_type=MdFile.TOML, transliteration_targ
     index_file = MdFile(file_path=os.path.join(dir, "_index.md"), frontmatter_type=frontmatter_type)
     if not os.path.exists(index_file.file_path):
       index_file.dump_to_file(metadata={}, content="", dry_run=dry_run)
-      index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
+      metadata_helper.set_title_from_filename(index_file, transliteration_target=transliteration_target, dry_run=dry_run)
     elif overwrite:
-      index_file.set_title_from_filename(transliteration_target=transliteration_target, dry_run=dry_run)
+      metadata_helper.set_title_from_filename(index_file, transliteration_target=transliteration_target, dry_run=dry_run)
 
 
 def get_md_files_from_path(dir_path, file_pattern="**/*.md", file_name_filter=lambda x: True, frontmatter_type=None):

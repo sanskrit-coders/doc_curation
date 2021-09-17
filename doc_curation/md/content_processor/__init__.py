@@ -81,3 +81,10 @@ def devanaagarify(text, source_scheme=sanscript.IAST):
   c = sanscript.SCHEMES[sanscript.DEVANAGARI].dot_for_numeric_ids(c)
   c = c.replace(":", "-")
   return c
+
+
+def numerify_shloka_numbering(text, encoding="कखगघङचछजझञ"):
+  def transformer(match):
+    return "॥%s.%d॥" % (match.group(1), encoding.index(match.group(2)) + 1)
+  c = regex.sub("॥ *(\d+)[ (]*([%s])[ )]*॥" % encoding, transformer, text)
+  return c

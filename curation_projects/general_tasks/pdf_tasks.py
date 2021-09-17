@@ -18,7 +18,7 @@ def get_from_archive(item_id):
 if __name__ == '__main__':
     pass
     # doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/kalpaH/shUdra-kamalAkaraH_sAnuvAdaH.pdf", small_pdf_pages=1, start_page=1, detext=True)
-    doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/jyotiSham/RNI/RNI_Agastya_IJHS_2014.pdf", small_pdf_pages=10, start_page=1, detext=False)
+    doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/vyAkaraNam/madhav-deshpande-a-sanskrit-primer.pdf", small_pdf_pages=10, start_page=1, detext=True)
     # for i in range(1,4):
     #     doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/history/New-History-Of-The-Marathas-Vol%d.pdf" % i,  small_pdf_pages=10, start_page=1, detext=False)
     # doc_curation.pdf.drive_ocr.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/history/deshpaNDe-mAdhavaH", small_pdf_pages=10)

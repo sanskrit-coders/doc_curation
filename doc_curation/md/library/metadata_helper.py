@@ -7,22 +7,21 @@ import regex
 from curation_utils.file_helper import get_storage_name
 from doc_curation.md import content_processor
 from doc_curation.md.file import MdFile
-from doc_curation.md.library import apply_function
 from indic_transliteration import sanscript
 
 
-def ensure_ordinal_in_title(dir_path, transliteration_target, dry_run):
-  files = [x for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
+def ensure_ordinal_in_title(dir_path, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
+  files = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
   files.sort()
   for index, file in enumerate(files):
-    md_file = os.path.join(dir_path, file)
+    md_file = MdFile(file_path=os.path.join(dir_path, file))
     title = md_file.get_title(omit_chapter_id=False)
-    if regex.fullmatch("[+०-९0-9].+", title):
-      return
+    title = regex.sub("(^[\d०-९೦-೯ ]+ )", "", title)
+    # if regex.fullmatch("[+०-९0-9].+", title):
+    #   return
 
-    index = files.index(os.path.basename(md_file.file_path))
     format = "%%0%dd" % (len(str(len(files))))
-    index = format % index
+    index = format % (index + 1)
     if transliteration_target:
       index = sanscript.transliterate(index, sanscript.OPTITRANS, transliteration_target)
     title = "%s %s" % (index, title)

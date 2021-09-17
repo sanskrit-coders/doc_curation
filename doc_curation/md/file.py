@@ -231,6 +231,8 @@ class MdFile(object):
       if indexed_title_pattern is not None:
         title = indexed_title_pattern % (section_index + 1, title)
       title = title.strip()
+      from doc_curation import text_utils
+      short_title = text_utils.title_from_text(text=title, num_words=6, target_title_length=24)
       title_in_file_name = title
       if source_script is not None:
         title_in_file_name = title
@@ -245,6 +247,9 @@ class MdFile(object):
         section_md_urls.append(os.path.join(bits_dir_url, file_name.replace(".md", "")))
       section_metadata = {"title": title}
       section_md = "\n".join(reduce_section_depth(section_lines))
+      if short_title != title:
+        section_metadata["short_title"] = short_title
+        section_md = "%s\n\n%s" % (title, section_md)
       md_file = MdFile(file_path=file_path, frontmatter_type=target_frontmantter_type)
       md_file.dump_to_file(metadata=section_metadata, content=section_md, dry_run=dry_run)
 
