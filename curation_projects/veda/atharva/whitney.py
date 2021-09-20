@@ -12,8 +12,8 @@ from doc_curation.md import library, get_md_with_pandoc
 import roman_numerals
 
 from doc_curation.md.file import MdFile
-from doc_curation.scraping.html import souper
-from doc_curation.scraping.html.souper import get_html, get_md_paragraphs_with_pandoc, get_md_paragraph
+from doc_curation.scraping.html_scraper import souper
+from doc_curation.scraping.html_scraper.souper import get_html, get_md_paragraphs_with_pandoc, get_md_paragraph
 
 whitney_dir_base = "/home/vvasuki/vishvAsa/vedAH/static/atharva/shaunakam/rUDha-saMhitA/whitney"
 

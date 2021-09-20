@@ -15,7 +15,7 @@ from doc_curation import text_data
 
 # Remove all handlers associated with the root logger object.
 from doc_curation.scraping import iitk
-from doc_curation.scraping.html import souper
+from doc_curation.scraping.html_scraper import souper
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)

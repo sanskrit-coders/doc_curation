@@ -1,4 +1,4 @@
-from doc_curation.scraping.html import souper
+from doc_curation.scraping.html_scraper import souper
 
 
 def html_fixer(soup):

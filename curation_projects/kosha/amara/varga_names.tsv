@@ -1,0 +1,25 @@
+id	sa_name	en_name
+1.01	स्वर्गवर्गः	heaven
+1.02	व्योमवर्गः	sky
+1.03	दिग्वर्गः	direction
+1.04	कालवर्गः	time
+1.05	धीवर्गः	cognition
+1.06	शब्दादिवर्गः	sound
+1.07	नाट्यवर्गः	drama
+1.08	पातालभोगिवर्गः	nether world
+1.09	नरकवर्गः	hell
+"1.10"	वारिवर्गः	water
+2.01	भूमिवर्गः	earth
+2.02	पुरवर्गः	towns or cities
+2.03	शैलवर्गः	mountains
+2.04	वनौषधिवर्गः	forests and medicines
+2.05	सिंहादिवर्गः	lions and other animals
+2.06	मनुष्यवर्गः	mankind
+2.07	ब्रह्मवर्गः	priest tribe
+2.08	क्षत्रियवर्गः	military tribe
+2.09	वैश्यवर्गः	business tribe
+"2.10"	शूद्रवर्गः	mixed classes
+3.01	विशेष्यनिघ्नवर्गः	adjective
+3.02	सङ्कीर्णवर्गः	miscellaneous
+3.03	नानार्थवर्गः	polysemous
+3.04	अव्ययवर्गः	indeclinables
