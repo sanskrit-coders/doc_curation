@@ -17,7 +17,7 @@ def static_include_path_maker(title, original_path, path_replacements={"content"
     return include_path
   else:
     dest_basename = file_helper.get_storage_name(text=title)
-    if use_preexisting_file_with_prefix:
+    if use_preexisting_file_with_prefix and os.path.exists(include_path):
       similar_files = [x for x in os.listdir(include_path) if x.startswith(dest_basename)]
       if len(similar_files) > 0:
         dest_basename = similar_files[0].replace(".md", "")
@@ -49,12 +49,13 @@ def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa
       text = migrated_text_processor(text)
     title = title_maker(text_matched=text_matched, index=index, file_title=metadata["title"])
     text_path = destination_path_maker(title, md_file.file_path)
-    from doc_curation.md.file import MdFile
-    md_file_dest = MdFile(file_path=text_path)
-    if os.path.exists(md_file_dest.file_path):
-      md_file_dest.replace_content_metadata(new_content=text, dry_run=dry_run)
-    else:
-      md_file_dest.dump_to_file(metadata={"title": title}, content=text, dry_run=dry_run)
+    if text_path is not None:
+      from doc_curation.md.file import MdFile
+      md_file_dest = MdFile(file_path=text_path)
+      if os.path.exists(md_file_dest.file_path):
+        md_file_dest.replace_content_metadata(new_content=text, dry_run=dry_run)
+      else:
+        md_file_dest.dump_to_file(metadata={"title": title}, content=text, dry_run=dry_run)
     include_text = replacement_maker(text_matched, text_path)
     content = content.replace(text_matched.strip(), "%s\n" % include_text)
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)

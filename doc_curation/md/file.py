@@ -272,10 +272,12 @@ class MdFile(object):
 
   def transform(self, content_transformer=None, metadata_transformer=None, dry_run=False):
     [metadata, content] = self.read()
+    metadata["_file_path"] = self.file_path
     if content_transformer is not None:
       content = content_transformer(content, metadata)
     if metadata_transformer is not None:
       metadata = metadata_transformer(content, metadata)
+    del metadata["_file_path"]
     self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
   def append_content_from_mds(self, source_mds, dry_run=False):
