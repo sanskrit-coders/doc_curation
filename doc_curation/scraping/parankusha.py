@@ -4,7 +4,7 @@ import os
 import traceback
 
 from doc_curation.md.file import MdFile
-from doc_curation.scraping.html.selenium import click_link_by_text
+from doc_curation.scraping.html_scraper.selenium import click_link_by_text
 from indic_transliteration import sanscript
 from selenium.common.exceptions import NoSuchElementException
 

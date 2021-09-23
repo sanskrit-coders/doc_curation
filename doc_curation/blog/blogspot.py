@@ -13,7 +13,8 @@ logging.basicConfig(
 
 
 def scrape_index(url, dir_path, dry_run=False):
-  (title, post_html, date) = get_post_html(url=url)
+  ( post_html, soup) = get_post_html(url=url)
+  date, title = get_post_metadata(soup)
   soup = BeautifulSoup(markup=post_html)
   post_anchors = soup.select(".BlogArchive ul li a")
   raise NotImplementedError

@@ -13,7 +13,9 @@ from curation_utils.file_helper import get_storage_name
 from doc_curation import text_utils
 from doc_curation.md import get_md_with_pandoc
 from doc_curation.md.file import MdFile
-from doc_curation.scraping.html.souper import get_tags_matching_css
+from doc_curation.scraping.html_scraper.souper import get_tags_matching_css
+from curation_utils import scraping
+
 
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)
@@ -26,11 +28,7 @@ logging.basicConfig(
 def get_post_html(url):
   '''get the text body of links'''
   logging.info("Processing post at %s", url)
-  raw_request = Request(url)
-  raw_request.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0')
-  raw_request.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8')
-  page_html = urlopen(raw_request)
-  soup = BeautifulSoup(page_html.read(), 'lxml')
+  soup = scraping.get_soup(url)
   non_content_tags = soup.select("#jp-post-flair")
   for tag in non_content_tags:
     tag.decompose()
@@ -43,20 +41,27 @@ def get_post_html(url):
 
   post_html = entry_divs[0].encode_contents()
 
+  return (post_html, soup)
+
+
+def get_post_metadata(soup):
   title_css_list = [".entry-title", ".card-header", "h1", "h2", "h3", "h4"]
   title_tags = get_tags_matching_css(soup=soup, css_selector_list=title_css_list)
   title = title_tags[0].text.replace('\xa0', ' ')
-
   time_css_list = [".entry-date", ".published", "div.card-body>center"]
   time_tags = get_tags_matching_css(soup=soup, css_selector_list=time_css_list)
   date = None
   if len(time_tags) > 0:
     try:
-      date = parser.parse(time_tags[0].text, fuzzy=True)
+      time_tag = time_tags[0]
+      date_string = time_tag.get("datetime", None)
+      if date_string is None:
+        date_string = time_tag.text
+      date = parser.parse(date_string, fuzzy=True)
     except parser.ParserError:
       date_str = regex.search("\d+[-/]\d+[-/]\d+", time_tags[0].text).group()
       date = parser.parse(date_str, dayfirst=True, fuzzy=True)
-  return (title, post_html, date)
+  return date, title
 
 
 def file_name_from_url(url):
@@ -71,7 +76,7 @@ def file_name_from_url(url):
 
 def fix_special_markup(content):
   # V![\_4](https://s0.wp.com/latex.php?latex=_4&bg=ffffff&fg=333333&s=0&c=20201002)
-  content = regex.sub("\!\[\\(_\d)\]\(.+?\)", "\\1", content)
+  content = regex.sub(r"!\[\\(_\d)\]\(.+?\)", r"\1", content)
   return content
 
 
@@ -85,7 +90,8 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
     result = regex.search("(\d\d\d\d)/(\d\d)/(\d\d)?", url)
     date_obj = parser.parse(result.group().replace("/", "-"), fuzzy=True)
   else:
-    (title, post_html, date_obj) = get_post_html(url=url)
+    ( post_html, soup) = get_post_html(url=url)
+    date, title = get_post_metadata(soup)
     file_name = "%s.md" % get_storage_name(text=title)
 
   file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, datetime.datetime.strftime(date_obj, "%Y/%m/%Y-%m-%d_") + file_name))
@@ -96,7 +102,8 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
   
   # post_html could've been computed in order to determine target file name.
   if post_html is None:
-    (title, post_html, date_obj) = get_post_html(url=url)
+    ( post_html, soup) = get_post_html(url=url)
+    date, title = get_post_metadata(soup)
 
   short_title = text_utils.title_from_text(text=title, num_words=5)
   full_title = text_utils.title_from_text(text=title, num_words=50, target_title_length=200)
@@ -111,7 +118,7 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
 
 
 def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, anchor_css="a[href]", urlpattern=None, dry_run=False):
-  (_, post_html, _) = get_post_html(url=url)
+  ( post_html, soup) = get_post_html(url=url)
   soup = BeautifulSoup(post_html, 'lxml')
   post_anchors = soup.select(anchor_css)
   if urlpattern is not None:
@@ -120,5 +127,3 @@ def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdow
     post_url = urljoin(url, anchor["href"])
     if post_url != url:
       article_scraper(url=post_url, dir_path=dir_path, dry_run=dry_run)
-
-
