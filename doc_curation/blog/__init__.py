@@ -33,7 +33,7 @@ def get_post_html(url):
   for tag in non_content_tags:
     tag.decompose()
 
-  entry_css_list = ["div.entry-content", "div.entrybody", "div.post-entry", "div.entry", "div.main", "div.card-body"]
+  entry_css_list = ["div.entry-content", "div.entrybody", "div.post-entry", "div.available-content", "div.entry", "div.main", "div.card-body"]
   entry_divs = get_tags_matching_css(soup=soup, css_selector_list=entry_css_list)
 
   if not entry_divs:
@@ -48,7 +48,7 @@ def get_post_metadata(soup):
   title_css_list = [".entry-title", ".card-header", "h1", "h2", "h3", "h4"]
   title_tags = get_tags_matching_css(soup=soup, css_selector_list=title_css_list)
   title = title_tags[0].text.replace('\xa0', ' ')
-  time_css_list = [".entry-date", ".published", "div.card-body>center"]
+  time_css_list = [".entry-date", ".published", "div.card-body>center", "time"]
   time_tags = get_tags_matching_css(soup=soup, css_selector_list=time_css_list)
   date = None
   if len(time_tags) > 0:
@@ -91,7 +91,7 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
     date_obj = parser.parse(result.group().replace("/", "-"), fuzzy=True)
   else:
     ( post_html, soup) = get_post_html(url=url)
-    date, title = get_post_metadata(soup)
+    date_obj, title = get_post_metadata(soup)
     file_name = "%s.md" % get_storage_name(text=title)
 
   file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, datetime.datetime.strftime(date_obj, "%Y/%m/%Y-%m-%d_") + file_name))
@@ -103,7 +103,7 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
   # post_html could've been computed in order to determine target file name.
   if post_html is None:
     ( post_html, soup) = get_post_html(url=url)
-    date, title = get_post_metadata(soup)
+    date_obj, title = get_post_metadata(soup)
 
   short_title = text_utils.title_from_text(text=title, num_words=5)
   full_title = text_utils.title_from_text(text=title, num_words=50, target_title_length=200)
