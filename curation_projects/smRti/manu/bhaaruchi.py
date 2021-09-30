@@ -13,8 +13,18 @@ def get_canonical_verse_number(verse_num, chapter_id):
   verse_map = verse_maps.get(chapter_id, {})
   verse_num = verse_map.get(verse_num, verse_num)
   if chapter_id == "08":
+    if verse_num > 100 and verse_num < 129:
+      verse_num = verse_num - 1 # पशुवत् क्षौद्रघृतयोर्, अधर्मदण्डनं लिके
+    elif verse_num > 132 and verse_num <= 383:
+      verse_num = verse_num + 1 # जालान्तरगते
+    elif verse_num > 383:
+      verse_num = verse_num + 2
     pass
   if chapter_id == "11":
+    if verse_num > 5 and verse_num <= 226:
+      verse_num = verse_num + 1 # धनानि तु यथाशक्ति
+    if verse_num > 226:
+      verse_num = verse_num + 2 # यथा यथा मनस् तस्य 
     pass
   return verse_num
 
