@@ -18,7 +18,7 @@ logging.basicConfig(
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
-browser = scraping.get_selenium_browser(headless=False)
+browser = scraping.get_selenium_chrome(headless=False)
 
 
 def scrape_thread(url, dest_dir, dry_run=False):

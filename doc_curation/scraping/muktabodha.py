@@ -15,7 +15,7 @@ logging.basicConfig(
 
 
 creds = "muktabodha:indology123"
-browser = scraping.get_selenium_browser(headless=True)
+browser = scraping.get_selenium_chrome(headless=True)
 
 
 def get_title(title_iast_in):

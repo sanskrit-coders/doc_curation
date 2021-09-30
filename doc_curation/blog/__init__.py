@@ -25,10 +25,13 @@ logging.basicConfig(
 
 
 
-def get_post_html(url):
+def get_post_html(url, browser=None):
   '''get the text body of links'''
   logging.info("Processing post at %s", url)
-  soup = scraping.get_soup(url)
+  if browser is None:
+    soup = scraping.get_soup(url)
+  else:
+    soup = scraping.scroll_and_get_soup(url=url, browser=browser)
   non_content_tags = soup.select("#jp-post-flair")
   for tag in non_content_tags:
     tag.decompose()
@@ -37,7 +40,7 @@ def get_post_html(url):
   entry_divs = get_tags_matching_css(soup=soup, css_selector_list=entry_css_list)
 
   if not entry_divs:
-    return (None, None, None)
+    return (None, None)
 
   post_html = entry_divs[0].encode_contents()
 
@@ -117,13 +120,16 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
   md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
 
-def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, anchor_css="a[href]", urlpattern=None, dry_run=False):
-  ( post_html, soup) = get_post_html(url=url)
+def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, browser=None, anchor_css="a[href]", anchor_filter=lambda x: True, urlpattern=None, dry_run=False):
+  ( post_html, soup) = get_post_html(url=url, browser=browser)
   soup = BeautifulSoup(post_html, 'lxml')
   post_anchors = soup.select(anchor_css)
   if urlpattern is not None:
     post_anchors = [anchor for anchor in post_anchors if regex.match(urlpattern, anchor["href"])]
   for anchor in post_anchors:
     post_url = urljoin(url, anchor["href"])
+    if not anchor_filter(anchor):
+      logging.info('Skipping %s', anchor["href"])
+      continue
     if post_url != url:
       article_scraper(url=post_url, dir_path=dir_path, dry_run=dry_run)

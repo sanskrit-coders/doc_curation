@@ -33,7 +33,7 @@ def fix_footnotes():
   library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/rivals/academia/articles/witzel-dossier.md", content_transformer=lambda c, m: content_processor.define_footnotes_near_use(c), dry_run=False)
 
 
-def devanaagarify():
+def devanaagarify(dir_path):
   def content_transformer(c, m): 
     c = content_processor.devanaagarify(text=c)
     c = regex.sub("\n\*\*(\s+)", "\n\\1**", c)
@@ -43,17 +43,17 @@ def devanaagarify():
     return c
   
   library.apply_function(
-    fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/yAjJNavalkyaH/mitAxarA/mUlam/raw.md", 
+    fn=MdFile.transform, dir_path=dir_path, 
     content_transformer=content_transformer,
     metadata_transformer=None,
   dry_run=False)
 
 
 if __name__ == '__main__':
+  devanaagarify(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/bhAruchiH")
   pass
   # library.apply_function(fn=MdFile.fix_lazy_anusvaara, dir_path="/home/vvasuki/sanskrit/raw_etexts/kalpaH/shUdra-kamalAkaraH_sAnuvAdaH_ocr.md", dry_run=False, ignore_padaanta=True, omit_yrl=True)
   # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
-  # library.apply_function(fn=MdFile.transliterate_content, dir_path="/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/thomson_solcum", source_scheme=sanscript.IAST)
   # library.apply_function(fn=MdFile.replace_in_content_lines, dir_path="/home/vvasuki/vishvAsa/purANam/static/rAmAyaNam/audIchya-pAThaH/vishvAsa-prastutiH", pattern="^[a-zA-Z-].+", replacement="", dry_run=False)
   # library.apply_function(fn=MdFile.drop_sections, dir_path="/home/vvasuki/vishvAsa/purANam/static/rAmAyaNam/audIchya-pAThaH/vishvAsa-prastutiH", title_condition=lambda x: x != "मूलम्")
   # library.apply_function(fn=MdFile.make_paras, dir_path="/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/jamison_brereton_notes")
@@ -66,4 +66,4 @@ if __name__ == '__main__':
   # devanaagarify()
   # fix_footnotes()
 
-  library.shift_contents(dir_path="/home/vvasuki/vishvAsa/purANam/static/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva/saMskRtam/abhinava-guptaH/mUlam/02_sAnkhya-yogaH_sarva-", start_index=49, offset=1)
+  # library.shift_contents(dir_path="/home/vvasuki/vishvAsa/purANam/static/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva/saMskRtam/abhinava-guptaH/mUlam/02_sAnkhya-yogaH_sarva-", start_index=49, offset=1)

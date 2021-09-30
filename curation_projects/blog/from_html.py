@@ -1,7 +1,7 @@
 import logging
 
 from doc_curation import blog
-from doc_curation.blog import wordpress
+from doc_curation.blog import wordpress, substack
 from doc_curation.md.file import MdFile
 from doc_curation.md import library
 # Remove all handlers associated with the root logger object.
@@ -25,6 +25,9 @@ if __name__ == '__main__':
     # wordpress.scrape_index(url="https://aryaakasha.com/unfiltered-archive/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/aryaakasha/")
     # wordpress.scrape_index(url="https://cestlaviepriya.wordpress.com/index/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/cestlaviepriya")
     # wordpress.scrape_index(url="https://agnimaan.wordpress.com/index-of-all-posts/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/agnimaan")
-    blog.scrape_index_from_anchors(url="https://indianhistory.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/indianhistory", anchor_css="a.post-preview-title", dry_run=False)
+    # blog.scrape_index_from_anchors(url="https://indianhistory.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/indianhistory", anchor_css="a.post-preview-title", dry_run=False)
+    # substack.scrape_free_articles_from_index_anchors(url="https://indianhistory.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/indianhistory", dry_run=False)
+    substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/razib", dry_run=False)
 
-# blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path="/home/vvasuki/hindu-comm/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)
+
+    # blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path="/home/vvasuki/hindu-comm/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)
