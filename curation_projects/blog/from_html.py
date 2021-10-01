@@ -27,7 +27,8 @@ if __name__ == '__main__':
     # wordpress.scrape_index(url="https://agnimaan.wordpress.com/index-of-all-posts/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/agnimaan")
     # blog.scrape_index_from_anchors(url="https://indianhistory.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/indianhistory", anchor_css="a.post-preview-title", dry_run=False)
     # substack.scrape_free_articles_from_index_anchors(url="https://indianhistory.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/indianhistory", dry_run=False)
-    substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/razib", dry_run=False)
+    # substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/razib", dry_run=False)
+    substack.scrape_free_articles_from_index_anchors(url="https://hindoohistory.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/hindoohistory", dry_run=False)
 
 
     # blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path="/home/vvasuki/hindu-comm/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)

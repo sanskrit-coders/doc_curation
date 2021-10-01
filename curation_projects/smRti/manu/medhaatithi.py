@@ -17,7 +17,7 @@ def get_canonical_verse_number(verse_num, chapter_id):
   if chapter_id == "05":
     if verse_num >= 61 and verse_num <= 121:
       verse_num += 1
-    elif chapter_id == "05" and verse_num >= 122:
+    elif verse_num >= 122:
       verse_num += 2
   return verse_num
 
