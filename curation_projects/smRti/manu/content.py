@@ -8,11 +8,14 @@ from indic_transliteration import sanscript
 
 
 def fix_includes():
-  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH", file_pattern="[0-9][0-9]*.md")
+  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/sarva-prastutiH", file_pattern="[0-9][0-9]*.md")
+  md_files = [f for f in md_files if os.path.basename(f.file_path) > "05.md" ]
+  def include_fixer(match):
+    return include_helper.alt_include_adder(match=match, source_dir="vishvAsa-prastutiH", alt_dirs=["gangAnatha-mUlAnuvAdaH", "medhAtithiH", "gangAnatha-bhAShyAnuvAdaH", "gangAnatha-TippanyaH", "gangAnatha-tulya-vAkyAni", "kullUkaH", "bhAruchiH", "buhler"])
 
   for md_file in md_files:
     include_helper.transform_include_lines(md_file=md_file, transformer=include_helper.old_include_remover)
-    include_helper.transform_include_lines(md_file=md_file, transformer=include_helper.include_fixer)
+    include_helper.transform_include_lines(md_file=md_file, transformer=include_fixer)
     md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
 
 def get_title_id(text_matched):
