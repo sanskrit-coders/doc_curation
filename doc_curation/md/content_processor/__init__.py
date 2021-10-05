@@ -88,3 +88,9 @@ def numerify_shloka_numbering(text, encoding="कखगघङचछजझञ"):
     return "॥%s.%d॥" % (match.group(1), encoding.index(match.group(2)) + 1)
   c = regex.sub("॥ *(\d+)[ (]*([%s])[ )]*॥" % encoding, transformer, text)
   return c
+
+
+def fix_google_ocr(text):
+  text = text.replace("^-+", "")
+  text = text.replace("\n", "\n\n")
+  return text

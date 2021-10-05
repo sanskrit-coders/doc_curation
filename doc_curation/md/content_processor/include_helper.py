@@ -24,8 +24,8 @@ def static_include_path_maker(title, original_path, path_replacements={"content"
     return os.path.join(include_path, "%s.md" % dest_basename)
 
 
-def vishvAsa_include_maker(shloka_path, h1_level=4, classes=None, title=None, ):
-  url = shloka_path.replace("/home/vvasuki/vishvAsa/", "/").replace("/static/", "/")
+def vishvAsa_include_maker(file_path, h1_level=4, classes=None, title=None, ):
+  url = file_path.replace("/home/vvasuki/vishvAsa/", "/").replace("/static/", "/")
   from doc_curation.md import library
   return library.get_include(url=url, h1_level=h1_level, classes=classes, title=title)
 

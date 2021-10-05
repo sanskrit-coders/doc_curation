@@ -66,16 +66,20 @@ def set_filename_from_title(md_file, transliteration_source=sanscript.DEVANAGARI
       os.rename(src=current_path, dst=file_path)
 
 
-def set_title_from_filename(md_file, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
-  # logging.debug(md_file.file_path)
-  if os.path.basename(md_file.file_path) == "_index.md":
-    dir_name = os.path.basename(os.path.dirname(md_file.file_path)).replace(".md", "")
+def get_title_from_filename(file_path, transliteration_target):
+  if os.path.basename(file_path) == "_index.md":
+    dir_name = os.path.basename(os.path.dirname(file_path)).replace(".md", "")
     title_optitrans = "+" + dir_name
   else:
-    title_optitrans = os.path.basename(md_file.file_path).replace(".md", "")
+    title_optitrans = os.path.basename(file_path).replace(".md", "")
   title = title_optitrans.replace("_", " ")
   if transliteration_target is not None:
-    title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target)
+    title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target, maybe_use_dravidian_variant=True)
+  return title
+
+def set_title_from_filename(md_file, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
+  # logging.debug(md_file.file_path)
+  title = get_title_from_filename(file_path=md_file.file_path, transliteration_target=transliteration_target)
   md_file.set_title(dry_run=dry_run, title=title)
 
 
@@ -169,5 +173,8 @@ def copy_metadata_and_filename(dest_dir, ref_dir, sub_path_id_maker=None, dry_ru
     (ref_metadata, _) = ref_md.read()
     md_file.replace_content_metadata(new_metadata=ref_metadata, dry_run=dry_run)
     target_path = os.path.abspath("%s/%s" % (dest_dir, sub_file_path_ref))
-    os.makedirs(os.path.dirname(target_path), exist_ok=True)
-    shutil.move(md_file.file_path, target_path)
+    if dry_run:
+      logging.info("Moving %s to %s", md_file.file_path, target_path)
+    else:
+      os.makedirs(os.path.dirname(target_path), exist_ok=True)
+      shutil.move(md_file.file_path, target_path)

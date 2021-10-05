@@ -218,15 +218,17 @@ def get_sub_path_to_reference_map(ref_dir, sub_path_id_maker=None):
   return sub_path_to_reference
 
 
-def get_sub_path_id(sub_path, basename_id_pattern="(.+?)[_\.]"):
-  basename = os.path.basename(sub_path)
-  if basename == "_index.md":
-    return sub_path
-  base_id_match = regex.search(basename_id_pattern, basename)
-  if base_id_match is None:
-    return None
-  else:
-    return os.path.join(os.path.dirname(sub_path), base_id_match.group(1))
+def get_sub_path_id(sub_path, basename_id_pattern="(.+?)(?=[_\.]|$)"):
+  id_parts = []
+  for name in sub_path.split("/"):
+    if name == "":
+      continue
+    elif name == "_index.md":
+      id_parts.append(name)
+    else:
+      base_id_match = regex.search(basename_id_pattern, name)
+      id_parts.append(base_id_match.group(1))
+  return "/".join(id_parts)
 
 
 
@@ -256,4 +258,32 @@ def shift_contents(dir_path, offset, start_index=None, end_index=None, dry_run=F
         md_file = index_to_md_file[index]
         md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
+
+def make_per_src_folder_content_files(dest_path, main_source_path, aux_source_list, source_script=sanscript.DEVANAGARI, h1_level=3, dry_run=False):
+  md_files = get_md_files_from_path(dir_path=main_source_path, file_pattern="**/*.md")
+  dest_file_path_to_source_paths = {}
+  for md_file in md_files:
+    dest_file_path = os.path.dirname(md_file.file_path).replace(main_source_path, dest_path) + ".md"
+    main_source_paths = dest_file_path_to_source_paths.get(dest_file_path, [])
+    main_source_paths.append(md_file.file_path)
+    dest_file_path_to_source_paths[dest_file_path] = main_source_paths
   
+  main_source_dir = os.path.basename(main_source_path)
+  from doc_curation.md.content_processor import include_helper
+  from doc_curation.md.library import metadata_helper
+  for dest_file_path, main_source_paths in dest_file_path_to_source_paths.items():
+    md_file = MdFile(file_path=dest_file_path)
+    content = ""
+    for main_source_path in main_source_paths:
+      include_line = include_helper.vishvAsa_include_maker(file_path=main_source_path, h1_level=h1_level, classes=None, title="FILE_TITLE",)
+      content = "%s\n\n%s" % (content, include_line)
+      
+      for aux_source in aux_source_list:
+        aux_path = os.path.abspath(main_source_path.replace(main_source_dir, aux_source))
+        if os.path.exists(aux_path):
+          title = sanscript.transliterate(aux_source, _from=sanscript.OPTITRANS, _to=source_script, maybe_use_dravidian_variant=True)
+          include_line = include_helper.vishvAsa_include_maker(file_path=aux_path, h1_level=h1_level+1, classes=["collapsed"], title=title,)
+          content = "%s\n%s" % (content, include_line)
+
+      md_file.dump_to_file(metadata={"title": metadata_helper.get_title_from_filename(file_path=md_file.file_path, transliteration_target=source_script)}, content=content, dry_run=dry_run)
+  fix_index_files(dir_path=dest_path, transliteration_target=source_script, dry_run=dry_run)
