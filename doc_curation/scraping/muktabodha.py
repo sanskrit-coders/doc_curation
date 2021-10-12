@@ -48,6 +48,8 @@ def get_text(url):
   content = soup.select("pre")[0].text
   content = regex.sub("\nMUKTABODHA INDOLOGICAL.+", "", content)
   content = content.replace("||", "॥").replace("|", "।")
+  content = regex.sub("॥[॥।]+", "…", content)
+  content = regex.sub("\n- *\n", "-  \n", content)
   return content
 
 

@@ -10,7 +10,11 @@ from doc_curation.pdf import compress_with_gs, detext_via_jpg, split_into_small_
 
 
 def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf"):
-  file_paths = sorted(Path(dir_path).glob(file_pattern))
+  if os.path.isfile(dir_path):
+    logging.warning("Got a file actually. processing it!")
+    file_paths = [dir_path]
+  else:
+    file_paths = sorted(Path(dir_path).glob(file_pattern))
   for file_path in file_paths:
     split_and_ocr_on_drive(pdf_path=str(file_path), small_pdf_pages=small_pdf_pages)
 

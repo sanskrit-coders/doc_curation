@@ -230,7 +230,10 @@ class MdFile(object):
         title = ""
       if indexed_title_pattern is not None:
         title = indexed_title_pattern % (section_index + 1, title)
+        ## Transliterate the number
+        title = sanscript.transliterate(title, sanscript.OPTITRANS, source_script, suspend_on= set('<'), suspend_off = set('>'))
       title = title.strip()
+
       from doc_curation import text_utils
       short_title = text_utils.title_from_text(text=title, num_words=6, target_title_length=24)
       title_in_file_name = title
@@ -238,7 +241,7 @@ class MdFile(object):
         title_in_file_name = title
         if source_script == sanscript.IAST and mixed_languages_in_titles:
           title_in_file_name = sanscript.SCHEMES[sanscript.IAST].mark_off_non_indic_in_line(title_in_file_name)
-        title_in_file_name = sanscript.transliterate(title_in_file_name, source_script, sanscript.OPTITRANS)
+        title_in_file_name = sanscript.transliterate(title_in_file_name, source_script, sanscript.OPTITRANS, suspend_on= set('<'), suspend_off = set('>'), maybe_use_dravidian_variant=True)
       if title_in_file_name == "":
         raise ValueError(title_in_file_name)
       file_name = file_helper.clean_file_path("%s.md" % title_in_file_name)
