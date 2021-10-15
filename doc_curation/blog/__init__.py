@@ -1,7 +1,8 @@
 import datetime
 import logging
 import os
-from urllib.parse import urlsplit, urljoin
+import urllib
+from urllib.parse import urlsplit, urljoin, unquote
 from urllib.request import urlopen, Request
 import dateutil.parser as parser
 
@@ -15,7 +16,8 @@ from doc_curation.md import get_md_with_pandoc
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper.souper import get_tags_matching_css
 from curation_utils import scraping
-
+from indic_transliteration import sanscript
+from indic_transliteration.detect import detect
 
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)
@@ -40,7 +42,7 @@ def get_post_html(url, browser=None):
   entry_divs = get_tags_matching_css(soup=soup, css_selector_list=entry_css_list)
 
   if not entry_divs:
-    return (None, None)
+    return (None, soup)
 
   post_html = entry_divs[0].encode_contents()
 
@@ -51,7 +53,7 @@ def get_post_metadata(soup):
   title_css_list = [".entry-title", ".card-header", "h1", "h2", "h3", "h4"]
   title_tags = get_tags_matching_css(soup=soup, css_selector_list=title_css_list)
   title = title_tags[0].text.replace('\xa0', ' ')
-  time_css_list = [".entry-date", ".published", "div.card-body>center", "time"]
+  time_css_list = [".entry-date", ".post-date", ".published", "div.card-body>center", "time"]
   time_tags = get_tags_matching_css(soup=soup, css_selector_list=time_css_list)
   date = None
   if len(time_tags) > 0:
@@ -74,7 +76,8 @@ def file_name_from_url(url):
   path_parts = [part for part in path_parts if part != ""]
   # remove slashes, replace with dashes when dealing with urls like https://manasataramgini.wordpress.com/2020/06/08/pandemic-days-the-fizz-is-out-of-the-bottle/
   # https://koenraadelst.blogspot.com/2021/06/resume-spring-2021.html
-  return "%s.md" % path_parts[-1]
+  post_id = unquote(path_parts[-1])
+  return "%s.md" % file_helper.get_storage_name(post_id)
 
 
 def fix_special_markup(content):
@@ -106,7 +109,9 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
   # post_html could've been computed in order to determine target file name.
   if post_html is None:
     ( post_html, soup) = get_post_html(url=url)
-    date_obj, title = get_post_metadata(soup)
+    date_obj_alt, title = get_post_metadata(soup)
+    if date_obj_alt is not None:
+      date_obj = date_obj_alt
 
   short_title = text_utils.title_from_text(text=title, num_words=5)
   full_title = text_utils.title_from_text(text=title, num_words=50, target_title_length=200)
@@ -122,8 +127,13 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
 
 def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, browser=None, anchor_css="a[href]", anchor_filter=lambda x: True, urlpattern=None, dry_run=False):
   ( post_html, soup) = get_post_html(url=url, browser=browser)
-  soup = BeautifulSoup(post_html, 'lxml')
-  post_anchors = soup.select(anchor_css)
+  if anchor_css is not None:
+    soup = BeautifulSoup(post_html, 'lxml')
+    post_anchors = soup.select(anchor_css)
+  else:
+    css_list = [".entry-title a", "h1.title a", "h3 a"]
+    post_anchors = get_tags_matching_css(soup=soup, css_selector_list=css_list)
+
   if urlpattern is not None:
     post_anchors = [anchor for anchor in post_anchors if regex.match(urlpattern, anchor["href"])]
   for anchor in post_anchors:
@@ -133,3 +143,7 @@ def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdow
       continue
     if post_url != url:
       article_scraper(url=post_url, dir_path=dir_path, dry_run=dry_run)
+
+  prev_page_anchor = soup.select_one(".nav-previous a")
+  if prev_page_anchor is not None:
+    scrape_index_from_anchors(url=prev_page_anchor["href"], dir_path=dir_path, article_scraper=article_scraper, browser=browser, anchor_css=anchor_css, anchor_filter=anchor_filter, urlpattern=urlpattern, dry_run=dry_run)
