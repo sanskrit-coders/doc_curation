@@ -36,7 +36,7 @@ def get_post_html(url, browser=None):
   for tag in non_content_tags:
     tag.decompose()
 
-  entry_css_list = ["div.entry-content", "div.entrybody", "div.post-entry", "div.available-content", "div.entry", "div.main", "div.card-body"]
+  entry_css_list = ["div.entry-content", "div.entrybody", "div.post-entry", "div.post", "div.available-content", "div.entry", "div.main", "div.card-body"]
   entry_divs = get_tags_matching_css(soup=soup, css_selector_list=entry_css_list)
 
   if not entry_divs:
