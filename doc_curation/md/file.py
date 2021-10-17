@@ -204,7 +204,7 @@ class MdFile(object):
       new_content = content
     self.dump_to_file(metadata=new_metadata, content=new_content, dry_run=dry_run)
 
-  def split_to_bits(self, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, indexed_title_pattern="%02d %s", bits_dir_url=None,
+  def split_to_bits(self, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, title_index_pattern="%02d", bits_dir_url=None,
                     target_frontmantter_type=TOML, dry_run=False):
     """Splits this md file into separate files - one for each section.
     
@@ -228,10 +228,11 @@ class MdFile(object):
     for section_index, (title, section_lines) in enumerate(sections):
       if title == None:
         title = ""
-      if indexed_title_pattern is not None:
-        title = indexed_title_pattern % (section_index + 1, title)
+      if title_index_pattern is not None:
+        title_index = title_index_pattern % (section_index + 1)
         ## Transliterate the number
-        title = sanscript.transliterate(title, sanscript.OPTITRANS, source_script, suspend_on= set('<'), suspend_off = set('>'))
+        title_index = sanscript.transliterate(title_index, sanscript.OPTITRANS, source_script)
+        title = "%s %s" % (title_index, title)
       title = title.strip()
 
       from doc_curation import text_utils
