@@ -136,4 +136,4 @@ def add_init_words_to_section_titles(md_file, num_words=2, title_post_processor=
     lines_out.append("\n## %s" % title)
     lines_out.extend(section_lines)
   content = "\n".join(lines_out)
-  md_file.replace(new_content=content, dry_run=dry_run)
+  md_file.replace_content_metadata(new_content=content, dry_run=dry_run)

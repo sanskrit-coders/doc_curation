@@ -101,11 +101,11 @@ def add_init_words_to_title(md_file, num_words=2, target_title_length=None,scrip
   md_file.set_title(title=title, dry_run=dry_run)
 
 
-def devanaagarify_title(md_file, dry_run=False):
+def transliterate_title(md_file, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
   # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
   logging.debug(md_file.file_path)
   title_fixed = sanscript.transliterate(data=md_file.get_title(), _from=sanscript.OPTITRANS,
-                                        _to=sanscript.DEVANAGARI)
+                                        _to=transliteration_target)
   md_file.set_title(title=title_fixed, dry_run=dry_run)
 
 
@@ -153,8 +153,7 @@ def shloka_title_maker(text):
   id_in_text = sanscript.transliterate(regex.search("॥\s*([०-९\d\.]+)\s*॥", text).group(1), sanscript.DEVANAGARI, sanscript.OPTITRANS)
   id_in_text = regex.search("\.?\s*(\d+)\s*$", id_in_text).group(1)
   title_id = "%03d" % int(id_in_text)
-  title = content_processor.title_from_text(text=text, num_words=2, target_title_length=None, depunctuate=True,
-                                            title_id=title_id)
+  title = content_processor.title_from_text(text=text, num_words=2, target_title_length=None, depunctuate=True, title_id=title_id)
   return title
 
 

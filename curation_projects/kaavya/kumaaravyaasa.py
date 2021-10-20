@@ -59,6 +59,8 @@ def make_sandhi_files(dest_path):
 def fix_metadata_and_filename(dry_run=False):
   for aux_source in aux_source_list:
     metadata_helper.copy_metadata_and_filename(ref_dir=main_source_path, dest_dir=main_source_path.replace(os.path.basename(main_source_path), aux_source), dry_run=dry_run)
+  
+
 
 if __name__ == '__main__':
   # for parva_num in range(1,11):

@@ -4,7 +4,7 @@ import regex
 
 from curation_utils import file_helper
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper
+from doc_curation.md.content_processor import include_helper, section_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
@@ -60,6 +60,11 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA", content_transformer=lambda x, y: content_processor.numerify_shloka_numbering(x))
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/kANe", content_transformer=lambda x, y: content_processor.fix_google_ocr(x))
+
+  title_post_processor = None
+  # title_post_processor = lambda x: regex.sub("^मन्त्रः +", "", x)
+  # title_post_processor = lambda x: regex.sub("[०-९]", "", x)
+  library.apply_function(fn=section_helper.add_init_words_to_section_titles, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/hinduism/branches/sAnkhyam/kArikA/pAThabhedAH/pAThaH.md", dry_run=False, title_post_processor=title_post_processor, num_words=2)
 
 
   # migrate_and_include_shlokas()

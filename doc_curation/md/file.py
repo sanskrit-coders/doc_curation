@@ -119,12 +119,21 @@ class MdFile(object):
         content = fin.read()
       return ({}, content)
 
-  def get_title(self, omit_chapter_id=True):
+  def get_title(self, omit_chapter_id=True, ref_dir_for_ancestral_title=None):
     (metadata, content) = self.read()
     title = metadata.get("title", None)
+    if ref_dir_for_ancestral_title is not None:
+      from doc_curation.md import library
+      parent_md = library.get_parent_md(md_file=self)
+      if parent_md is not None:
+        parent_dir = os.path.dirname(parent_md.file_path)
+        if parent_dir != ref_dir_for_ancestral_title:
+          parent_title = parent_md.get_title(omit_chapter_id=omit_chapter_id, ref_dir_for_ancestral_title=ref_dir_for_ancestral_title)
+          title = "%s/ %s" % (parent_title, title)
+          title = regex.sub("(?:^| )\+", "", title)
+        
     if omit_chapter_id and title is not None:
       title = regex.sub("^[+०-९]+ +", "", title)
-    title = regex.sub("^[+]+", "", title)
     return title
 
   def dump_mediawiki(self, outpath=None, dry_run=False):
@@ -205,7 +214,7 @@ class MdFile(object):
     self.dump_to_file(metadata=new_metadata, content=new_content, dry_run=dry_run)
 
   def split_to_bits(self, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, title_index_pattern="%02d", bits_dir_url=None,
-                    target_frontmantter_type=TOML, dry_run=False):
+                    target_frontmantter_type=TOML, add_short_title=False, dry_run=False):
     """Splits this md file into separate files - one for each section.
     
     Implementation notes: md parsers oft convert to html or json. Processing that output would be more complicated than what we need here.
@@ -248,7 +257,7 @@ class MdFile(object):
         section_md_urls.append(os.path.join(bits_dir_url, file_name.replace(".md", "")))
       section_metadata = {"title": title}
       section_md = "\n".join(reduce_section_depth(section_lines))
-      if short_title != title:
+      if short_title != title and add_short_title:
         section_metadata["short_title"] = short_title
         section_md = "%s\n\n%s" % (title, section_md)
       md_file = MdFile(file_path=file_path, frontmatter_type=target_frontmantter_type)

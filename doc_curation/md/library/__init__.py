@@ -1,6 +1,7 @@
 import glob
 import logging
 import os
+from functools import lru_cache
 
 import regex
 from indic_transliteration import sanscript
@@ -206,6 +207,7 @@ def get_include(url, field_names=None, classes=None, title=None, h1_level=2, ext
   return """<div class="js_include %s" url="%s"  newLevelForH1="%d" %s> </div>"""  % (classes_str,url, h1_level, extra_attributes)
 
 
+@lru_cache(maxsize=2)
 def get_sub_path_to_reference_map(ref_dir, sub_path_id_maker=None):
   ref_md_files = get_md_files_from_path(dir_path=ref_dir)
   sub_path_to_reference = {}
@@ -287,3 +289,15 @@ def make_per_src_folder_content_files(dest_path, main_source_path, aux_source_li
 
       md_file.dump_to_file(metadata={"title": metadata_helper.get_title_from_filename(file_path=md_file.file_path, transliteration_target=source_script)}, content=content, dry_run=dry_run)
   fix_index_files(dir_path=dest_path, transliteration_target=source_script, dry_run=dry_run)
+
+
+def get_parent_md(md_file):
+  if os.path.basename(md_file.file_path) == "_index.md":
+    parent_dir = os.path.dirname(os.path.dirname(md_file.file_path))
+  else:
+    parent_dir = os.path.dirname(md_file.file_path)
+  file_path = os.path.join(parent_dir, "_index.md")
+  if os.path.exists(file_path):
+    return MdFile(file_path=file_path)
+  else:
+    return None
