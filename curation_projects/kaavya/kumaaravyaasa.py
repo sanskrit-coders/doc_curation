@@ -8,7 +8,7 @@ from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
-aux_source_list = ["gamaka-pariShat/gadya", "gamaka-pariShat/padArtha", "gamaka-pariShat/pAThAntara", "gamaka-pariShat/TippanI", "mUla"]
+aux_source_list = ["vAchana", "gamaka-pariShat/gadya", "gamaka-pariShat/padArtha", "gamaka-pariShat/pAThAntara", "gamaka-pariShat/TippanI", "mUla"]
 main_source_path = "/home/vvasuki/vishvAsa/kannaDa/static/padya/kumAra-vyAsa-bhArata/vishvAsa-prastuti"
 
 parva_to_data_id_map={"01_Adi": "01_Adi", "02_sabhA": "03", "03_araNya": "06", "04_virATa": "07", "05_udyOga": "10", "06_bhIShma": "08", "07_drONa": "02", "08_karNa": "09", "09_shalya": "05", "10_gadA": "04"}
@@ -61,12 +61,36 @@ def fix_metadata_and_filename(dry_run=False):
     metadata_helper.copy_metadata_and_filename(ref_dir=main_source_path, dest_dir=main_source_path.replace(os.path.basename(main_source_path), aux_source), dry_run=dry_run)
   
 
+def make_audio_mds():
+  mp3_path = "/home/vvasuki/Music/kumAra-vyAsa-bhArata_gaNaka-pariShat/mp3"
+  sub_path_to_reference = library.get_sub_path_to_reference_map(ref_dir=main_source_path)
+  target_dir = os.path.join(os.path.dirname(main_source_path), "vAchana")
+
+  def id_maker(x):
+    id = os.path.basename(x).replace(".mp3", "")
+    id = id.replace("__", "/")
+    id = library.get_sub_path_id(sub_path=id)
+    return id
+
+  import glob
+  mp3_files = glob.glob(os.path.join(mp3_path, "*.mp3"))
+  for mp3_file in mp3_files:
+    id = id_maker(str(mp3_file))
+    md_file_ref = sub_path_to_reference[id]
+    (metadata, _) = md_file_ref.read()
+    md_file = MdFile(file_path=md_file_ref.file_path.replace(main_source_path, target_dir))
+    
+    mp3_line = """<div class="audioEmbed"  src="https://archive.org/download/kumAra-vyAsa-bhArata_kaGaPa_with_metadata/%s" caption="ಗ-ಪ"></div>""" % os.path.basename(str(mp3_file))
+    content = """%s""" % mp3_line
+    md_file.dump_to_file(metadata=metadata, content=content, dry_run=False)
+
 
 if __name__ == '__main__':
   # for parva_num in range(1,11):
   # for parva_num in [2]:
   #   dump_parva(parva_num=parva_num)
   make_sandhi_files(dest_path="/home/vvasuki/vishvAsa/kannaDa/content/padya/kumAra-vyAsa-bhArata")
+  # make_audio_mds()
   # for x in aux_source_list + ["vishvAsa-prastuti"]:
   #   file_helper.rename_files(name_map=parva_id_to_title_map, path_prefix=os.path.join(os.path.dirname(main_source_path), x), dry_run=False)
   # fix_metadata_and_filename(dry_run=True)

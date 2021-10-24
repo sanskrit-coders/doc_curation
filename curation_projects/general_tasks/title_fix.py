@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
   ##### General
   # library.apply_function(fn=MdFile.prepend_file_index_to_title, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/books/vivekAnanda", dry_run=False)
-
+  library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/rivals/abe-disease/yahUdonmAdaH.md", skip_dirs=False, dry_run=False)
   
   # md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/TIkA", file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d_\\d\\d", os.path.basename(x))) > 0)
   # library.metadata_helper.add_init_words_to_title(md_files=md_files, target_title_length=30, dry_run=False)
@@ -25,4 +25,4 @@ if __name__ == '__main__':
 
 
   ## KANNADA
-  library.apply_function(dir_path="/home/vvasuki/vishvAsa/kannaDa/static/padya/kumAra-vyAsa-bhArata/vishvAsa-prastuti", fn=metadata_helper.transliterate_title, transliteration_target=sanscript.KANNADA, dry_run=False)
+  # library.apply_function(dir_path="/home/vvasuki/vishvAsa/kannaDa/static/padya/kumAra-vyAsa-bhArata/vishvAsa-prastuti", fn=metadata_helper.transliterate_title, transliteration_target=sanscript.KANNADA, dry_run=False)

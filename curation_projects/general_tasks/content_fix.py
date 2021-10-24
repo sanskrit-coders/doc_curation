@@ -69,8 +69,6 @@ if __name__ == '__main__':
 
   # migrate_and_include_shlokas()
   # add_init_words_to_includes()
-  # library.apply_function(fn=library.combine_files_in_dir, dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH", file_pattern="**/_index.md", dry_run=False)
-  # library.defolderify_single_md_dirs(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH", dry_run=False)
   # md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH", file_pattern="**/_index.md")  
   # devanaagarify()
   # fix_footnotes()
