@@ -4,7 +4,7 @@
         xmlns:tei="http://www.tei-c.org/ns/1.0"
         xpath-default-namespace="http://www.tei-c.org/ns/1.0">
 
-    <xsl:import href="../../../doc_curation/tei_xsl/markdown/tei-to-markdown.xsl"/>
+    <xsl:import href="../../../../doc_curation/tei_xsl/markdown/tei-to-markdown.xsl"/>
     <xsl:template match="note/p">
         <xsl:text>+++(</xsl:text>
         <xsl:apply-templates/>
