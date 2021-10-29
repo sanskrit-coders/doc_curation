@@ -9,14 +9,15 @@ from doc_curation import pdf
 from doc_curation.pdf import compress_with_gs, detext_via_jpg, split_into_small_pdfs, _get_ocr_dir
 
 
-def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf"):
+def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf", detext=False):
   if os.path.isfile(dir_path):
     logging.warning("Got a file actually. processing it!")
     file_paths = [dir_path]
   else:
     file_paths = sorted(Path(dir_path).glob(file_pattern))
+  file_paths = [f for f in file_paths if not (str(f).endswith("_detexted.pdf") or str(f).endswith("_tiny.pdf"))]
   for file_path in file_paths:
-    split_and_ocr_on_drive(pdf_path=str(file_path), small_pdf_pages=small_pdf_pages)
+    split_and_ocr_on_drive(pdf_path=str(file_path), small_pdf_pages=small_pdf_pages, detext=detext)
 
  
 def split_and_ocr_on_drive(pdf_path,
@@ -45,35 +46,49 @@ def split_and_ocr_on_drive(pdf_path,
   if os.path.exists(final_ocr_path):
     logging.warning("Skipping %s: %s exists", pdf_path, final_ocr_path)
     return
-  compressed_pdf_path = pdf_path.replace(".pdf", "_tiny.pdf")
-  if pdf_compression_power == 0:
-    compressed_pdf_path = pdf_path
-  else:
-    if not os.path.exists(compressed_pdf_path):
-      logging.info("Compressing with power %d" % pdf_compression_power)
-      compress_with_gs(input_file_path=pdf_path, output_file_path=compressed_pdf_path, power=pdf_compression_power)
 
-  if detext:
-    logging.info("Detexting")
-    compressed_pdf_path = pdf_path.replace(".pdf", "_detexted.pdf")
-    # compress_with_pdfimages(input_file_path=pdf_path, output_file_path=compressed_pdf_path)
-    detext_via_jpg(input_file_path=pdf_path, output_file_path=compressed_pdf_path)
+  altered_pdf_path = _prepare_pdf(detext, pdf_compression_power, pdf_path)
 
-  pdf_segments = split_into_small_pdfs(pdf_path=compressed_pdf_path, small_pdf_pages=small_pdf_pages, start_page=start_page,
+  pdf_segments = split_into_small_pdfs(pdf_path=altered_pdf_path, small_pdf_pages=small_pdf_pages, start_page=start_page,
                         end_page=end_page)
 
   # Do the OCR
-  logging.info("Do the OCR")
-  drive_client = drive.get_cached_client(google_key=google_key)
-  ocr_segments = sorted([pdf_segment + ".txt" for pdf_segment in pdf_segments])
-  for pdf_segment in sorted(pdf_segments):
-    drive_client.ocr_file(local_file_path=str(pdf_segment))
-    os.remove(pdf_segment)
-    time.sleep(1)
+  ocr_segments = _ocr_pdf_segments(google_key, pdf_segments)
 
   # Combine the ocr segments
   file_helper.concatenate_files(input_path_list=ocr_segments, output_path=final_ocr_path)
   file_helper.clear_bad_chars_in_file(file_path=final_ocr_path)
+
+
+def _prepare_pdf(detext, pdf_compression_power, pdf_path):
+  altered_pdf_path = pdf_path.replace(".pdf", "_tiny.pdf")
+  if pdf_compression_power == 0:
+    altered_pdf_path = pdf_path
+  else:
+    if not os.path.exists(altered_pdf_path):
+      logging.info("Compressing with power %d" % pdf_compression_power)
+      compress_with_gs(input_file_path=pdf_path, output_file_path=altered_pdf_path, power=pdf_compression_power)
+  if detext:
+    logging.info("Detexting")
+    altered_pdf_path = pdf_path.replace(".pdf", "_detexted.pdf")
+    if not os.path.exists(altered_pdf_path):
+      # compress_with_pdfimages(input_file_path=pdf_path, output_file_path=compressed_pdf_path)
+      detext_via_jpg(input_file_path=pdf_path, output_file_path=altered_pdf_path)
+  return altered_pdf_path
+
+
+def _ocr_pdf_segments(google_key, pdf_segments):
+  logging.info("Do the OCR")
+  drive_client = drive.get_cached_client(google_key=google_key)
+  ocr_segments = sorted([pdf_segment + ".txt" for pdf_segment in pdf_segments])
+  for pdf_segment in sorted(pdf_segments):
+    if os.path.exists(pdf_segment + ".txt"):
+      logging.info("Skipping %s", str(pdf_segment))
+    else:
+      drive_client.ocr_file(local_file_path=str(pdf_segment))
+      time.sleep(1)
+    os.remove(pdf_segment)
+  return ocr_segments
 
 
 def split_to_images_and_ocr(pdf_path,
