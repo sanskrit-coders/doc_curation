@@ -13,11 +13,11 @@ if __name__ == '__main__':
   ## DEVANAGARI
   # library.apply_function(dir_path="/home/vvasuki/vvasuki-git/pALi/content", fn=MdFile.ensure_ordinal_in_title, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
   # library.apply_function(dir_path="/home/vvasuki/vishvAsa/AgamaH/content/hinduism/branches/brAhma/yoga-vAsiShTha-shAstram/Ananda-bodhendra-TIkA", fn=metadata_helper.set_filename_from_title, transliteration_source=sanscript.DEVANAGARI, dry_run=False)
-  # library.apply_function(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/saMhitA/mUlam", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
+  library.apply_function(dir_path="/home/vvasuki/vishvAsa/purANam/content/shiva-purANam/2_rudra-saMhitA/4_kumAra-khaNDaH", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
 
   ##### General
   # library.apply_function(fn=MdFile.prepend_file_index_to_title, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/books/vivekAnanda", dry_run=False)
-  library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/rivals/abe-disease/yahUdonmAdaH.md", skip_dirs=False, dry_run=False)
+  # library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/rivals/abe-disease/yahUdonmAdaH.md", skip_dirs=False, dry_run=False)
   
   # md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/TIkA", file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d_\\d\\d", os.path.basename(x))) > 0)
   # library.metadata_helper.add_init_words_to_title(md_files=md_files, target_title_length=30, dry_run=False)

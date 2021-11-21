@@ -12,12 +12,12 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/shAstram/granthaH/saMskRta-nATakagaLu/4_xINakAla.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.KANNADA) # 
 
   # देवनागरी
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/branches/brAhma/shAnakara-darshanam/sachchidAnandendraH/mUlAvidyA-nirAsaH/0.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None) # 
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/branches/shaivaH/trikam/somAnanda-shivadRShTiH.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None) # 
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/branches/brAhma/brahma-sUtrANi/shankaraH/", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI) # 
 
   # IAST
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/rangapriya-on-festivals/03_ChAturmAsya.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.IAST) # 
-  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/kANe/v1p2/", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.IAST,  title_index_pattern=None) # 
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/kANe/v1p2/", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.IAST,  title_index_pattern=None) # 
 
   # None Script
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/rivals/abe-disease/yahUdonmAdaH.md", dry_run=False, source_script=None,  title_index_pattern=None)

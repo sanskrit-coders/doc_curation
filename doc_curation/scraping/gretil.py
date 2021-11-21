@@ -13,7 +13,7 @@ from doc_curation.md.file import MdFile
 
 def get_filename(source_html):
     logging.info("Getting file name for %s", source_html)
-    with codecs.open(source_html, "r", 'utf-8') as file_in:
+    with codecs.open(source_html, "r", 'utf-8', errors='ignore') as file_in:
         contents = file_in.read()
         soup = BeautifulSoup(contents, 'lxml')
         title = soup.title.string
@@ -24,12 +24,12 @@ def get_filename(source_html):
         return file_helper.clean_file_path(filename.strip())
 
 
-def dump_devanaagarii(source_html, dest_file):
-    if os.path.exists(dest_file):
+def dump_devanaagarii(source_html, dest_file, overwrite=False):
+    if os.path.exists(dest_file) and not overwrite:
         logging.warning("Skipping %s as it exists", dest_file)
         return 
     logging.info("Processing %s to %s", source_html, dest_file)
-    with codecs.open(source_html, "r", 'utf-8') as file_in:
+    with codecs.open(source_html, "r", 'utf-8', errors='ignore') as file_in:
         contents = file_in.read()
         soup = BeautifulSoup(contents, 'lxml')
         metadata = {}
@@ -41,6 +41,7 @@ def dump_devanaagarii(source_html, dest_file):
         text = "  \n".join(list(iast_lines)[1:])
         text = regex.sub("(  \n){3,}", "\n\n", text)
         text = sanscript.transliterate(data=text, _from=sanscript.IAST, _to=sanscript.DEVANAGARI)
+        text = sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(text, omit_sam=False, omit_yrl=True, ignore_padaanta=True)
         text = "%s\n\n## पाठः\n%s" % (intro, text)
         out_file = MdFile(file_path=dest_file, frontmatter_type="toml")
         out_file.dump_to_file(metadata=metadata, content=text, dry_run=False)
