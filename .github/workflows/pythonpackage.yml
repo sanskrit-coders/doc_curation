@@ -19,6 +19,8 @@ jobs:
 #         python-version: [3.5, 3.6, 3.7, 3.8]
 
     steps:
+    - name: Inject slug/short variables
+      uses: rlespinasse/github-slug-action@v3.x
     - uses: actions/checkout@v2
 #    - name: Install ubuntu deps
 #      run: |
