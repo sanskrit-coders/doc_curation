@@ -62,9 +62,9 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/kANe", content_transformer=lambda x, y: content_processor.fix_google_ocr(x))
 
   title_post_processor = None
-  title_post_processor = lambda x: regex.sub("^मन्त्रः +", "", x)
+  # title_post_processor = lambda x: regex.sub("^मन्त्रः +", "", x)
   # title_post_processor = lambda x: regex.sub("[०-९]", "", x)
-  library.apply_function(fn=section_helper.add_init_words_to_section_titles, dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/brAhmaNam/bhaTTa-bhAskara-bhAShyam/1/4/8.md", dry_run=False, title_post_processor=title_post_processor, num_words=2)
+  # library.apply_function(fn=section_helper.add_init_words_to_section_titles, dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/brAhmaNam/bhaTTa-bhAskara-bhAShyam/1/4/8.md", dry_run=False, title_post_processor=title_post_processor, num_words=2)
 
 
   # migrate_and_include_shlokas()
