@@ -24,4 +24,4 @@ if __name__ == '__main__':
     #     doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/history/New-History-Of-The-Marathas-Vol%d.pdf" % i,  small_pdf_pages=10, start_page=1, detext=False)
     # doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="", small_pdf_pages=10, detext=False)
     # doc_curation.pdf.drive_ocr.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/kalpaH/AgamaH/pratyabhijJNA-hRdayam", small_pdf_pages=10, detext=False)
-    doc_curation.pdf.drive_ocr.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/kalpaH/strI-dharma-paddhatiH.pdf", small_pdf_pages=10, detext=False)
+    doc_curation.pdf.drive_ocr.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/kAvyam/shAstram/alankAra-tattva_MA-hegDe.pdf", small_pdf_pages=10, detext=False)
