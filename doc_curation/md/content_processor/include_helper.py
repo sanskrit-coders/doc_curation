@@ -6,7 +6,7 @@ from curation_utils import file_helper
 from doc_curation.md import content_processor, library
 from indic_transliteration import sanscript
 
-PATTERN_SHLOKA = "\n[^#\s<>\[\(][\s\S]+?॥\s*[०-९\d\.]+\s*॥.*?(?=\n|$)"
+PATTERN_SHLOKA = r"\n[^#\s<>\[\(][\s\S]+?॥\s*[०-९\d\.]+\s*॥.*?(?=\n|$)"
 
 
 def static_include_path_maker(title, original_path, path_replacements={"content": "static", ".md": ""}, use_preexisting_file_with_prefix=True):
@@ -63,7 +63,7 @@ def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa
 
 def transform_include_lines(md_file, transformer, dry_run=False):
   [_, content] = md_file.read()
-  content = regex.sub("<div.+js_include.+url=['\"](.+?)['\"][\s\S]+?</div>", transformer, content)
+  content = regex.sub(r"<div.+js_include.+url=['\"](.+?)['\"][\s\S]+?</div>", transformer, content)
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
@@ -101,7 +101,7 @@ def alt_include_adder(match, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/
   url = match.group(1)
   file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir)
   main_include = match.group(0)
-  h1_level = regex.search("newLevelForH1=['\"](\d)['\"]", main_include).group(1)
+  h1_level = regex.search(r"newLevelForH1=['\"](\d)['\"]", main_include).group(1)
   h1_level = int(h1_level) + 1
   include_lines = [main_include]
   include_lines.extend([make_alt_include(url=url, file_path=file_path, h1_level=h1_level, target_dir=x) for x in alt_dirs])
@@ -110,7 +110,7 @@ def alt_include_adder(match, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/
 
 
 def file_path_from_url(url, hugo_base_dir):
-  file_path = regex.sub("(/.+?)(/.+)", "%s\\1/static\\2" % hugo_base_dir, url)
+  file_path = regex.sub(r"(/.+?)(/.+)", "%s\\1/static\\2" % hugo_base_dir, url)
   return file_path
 
 

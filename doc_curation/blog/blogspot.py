@@ -2,7 +2,7 @@ import logging
 
 from bs4 import BeautifulSoup
 
-from doc_curation.blog import get_post_html, scrape_post_markdown
+from doc_curation.blog import get_post_html, scrape_post_markdown, get_post_metadata
 
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)

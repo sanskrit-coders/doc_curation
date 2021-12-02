@@ -4,11 +4,11 @@ import os
 from functools import lru_cache
 
 import regex
-from indic_transliteration import sanscript
 
 from curation_utils import file_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
+from indic_transliteration import sanscript
 
 
 def import_md_recursive(source_dir, file_extension, source_format=None, dry_run=False):
@@ -220,7 +220,7 @@ def get_sub_path_to_reference_map(ref_dir, sub_path_id_maker=None):
   return sub_path_to_reference
 
 
-def get_sub_path_id(sub_path, basename_id_pattern="(.+?)(?=[_\.]|$)"):
+def get_sub_path_id(sub_path, basename_id_pattern=r"(.+?)(?=[_\.]|$)"):
   id_parts = []
   for name in sub_path.split("/"):
     if name == "":

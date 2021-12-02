@@ -16,6 +16,7 @@ def dump_md(tei_path, md_path,
   subprocess.call(["saxon", "-o:" + md_path, "-s:" + tei_path, xsl])
 
 
+# noinspection PyUnresolvedReferences
 def dump_md_via_lib(tei_path, md_path,
                     xsl=os.path.join(os.path.dirname(__file__), "tei_xsl/markdown/tei-to-markdown-sarit.xsl")):
   # To install the below:
