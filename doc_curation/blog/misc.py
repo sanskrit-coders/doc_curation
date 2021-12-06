@@ -13,13 +13,3 @@ logging.getLogger('sbcharsetprober').setLevel(logging.WARNING)
 logging.getLogger("sbcharsetprober").propagate = False
 
 
-def free_article_filter(anchor):
-  lock_tags = anchor.parent.select(".audience-lock")
-  if len(lock_tags) == 0:
-    return True
-  return False
-
-
-def scrape_free_articles_from_index_anchors(url, dir_path, dry_run=False):
-  browser = scraping.get_selenium_chrome(headless=True)
-  blog.scrape_index_from_anchors(url=url, dir_path=dir_path, anchor_css="a.post-preview-title", anchor_filter=free_article_filter, browser=browser, dry_run=dry_run)

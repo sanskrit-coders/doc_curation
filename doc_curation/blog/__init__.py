@@ -34,7 +34,7 @@ def get_post_html(url, browser=None):
     soup = scraping.get_soup(url)
   else:
     soup = scraping.scroll_and_get_soup(url=url, browser=browser)
-  non_content_tags = soup.select("#jp-post-flair")
+  non_content_tags = soup.select("#jp-post-flair") + soup.select("svg") + soup.select("style") + soup.select("script")
   for tag in non_content_tags:
     tag.decompose()
 
@@ -44,7 +44,7 @@ def get_post_html(url, browser=None):
   if not entry_divs:
     return (None, soup)
 
-  post_html = entry_divs[0].encode_contents()
+  post_html = "\n\n".join(str(div.encode_contents()) for div in entry_divs)
 
   return (post_html, soup)
 
@@ -128,7 +128,6 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
 def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, browser=None, anchor_css="a[href]", anchor_filter=lambda x: True, urlpattern=None, dry_run=False):
   ( post_html, soup) = get_post_html(url=url, browser=browser)
   if anchor_css is not None:
-    soup = BeautifulSoup(post_html, 'lxml')
     post_anchors = soup.select(anchor_css)
   else:
     css_list = [".entry-title a", "h1.title a", "h3 a"]
