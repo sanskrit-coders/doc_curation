@@ -2,6 +2,7 @@ import glob
 import logging
 import os
 from functools import lru_cache
+from pathlib import Path
 
 import regex
 
@@ -110,22 +111,24 @@ def fix_index_files(dir_path, frontmatter_type=MdFile.TOML, transliteration_targ
       metadata_helper.set_title_from_filename(index_file, transliteration_target=transliteration_target, dry_run=dry_run)
 
 
-def get_md_files_from_path(dir_path, file_pattern="**/*.md", file_name_filter=lambda x: True, frontmatter_type=None):
+def get_md_files_from_path(dir_path, file_pattern="**/*.md", file_name_filter=lambda x: True):
   from pathlib import Path
   # logging.debug(list(Path(dir_path).glob(file_pattern)))
   md_file_paths = sorted(filter(file_name_filter, Path(dir_path).glob(file_pattern)))
-  return [MdFile(path, frontmatter_type=frontmatter_type) for path in md_file_paths]
+  md_file_paths = [f for f in md_file_paths if os.path.isfile(f)]
+  return [MdFile(path) for path in md_file_paths]
 
 
-def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, frontmatter_type="toml", start_file=None, *args,
+def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, frontmatter_type="toml", start_file=None, silent_iteration=False, *args,
                    **kwargs):
-  # logging.debug(list(Path(dir_path).glob(file_pattern)))
+  if not silent_iteration:
+    logging.debug(list(Path(dir_path).glob(file_pattern)))
   if os.path.isfile(dir_path):
     logging.warning("Got a file actually. processing it!")
     md_files = [MdFile(file_path=dir_path)]
   else:
     md_files = get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern,
-                                             file_name_filter=file_name_filter, frontmatter_type=frontmatter_type)
+                                             file_name_filter=file_name_filter)
   start_file_reached = False
 
   logging.info("Processing %d files.", len(md_files))
@@ -136,8 +139,9 @@ def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, 
         continue
       else:
         start_file_reached = True
-    logging.info("Processing %s", md_file)
-    fn(md_file, *args, **kwargs)
+    if md_file.get_title() is not None:
+      # logging.info("Processing %s", md_file)
+      fn(md_file, *args, **kwargs)
 
 
 def get_audio_file_urls(md_files):

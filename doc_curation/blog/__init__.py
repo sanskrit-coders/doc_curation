@@ -27,7 +27,7 @@ logging.basicConfig(
 
 
 
-def get_post_html(url, browser=None):
+def get_post_html(url, entry_css_list=None, browser=None):
   '''get the text body of links'''
   logging.info("Processing post at %s", url)
   if browser is None:
@@ -38,13 +38,14 @@ def get_post_html(url, browser=None):
   for tag in non_content_tags:
     tag.decompose()
 
-  entry_css_list = ["div.entry-content", "div.entrybody", "div.post-entry", "div.post", "div.available-content", "div.entry", "div.main", "div.card-body"]
+  if entry_css_list is None:
+    entry_css_list = ["div.entry-content", "div.entrybody", "div.post-entry", "div.post", "div.available-content", "div.entry", "div.main", "div.card-body"]
   entry_divs = get_tags_matching_css(soup=soup, css_selector_list=entry_css_list)
 
   if not entry_divs:
     return (None, soup)
 
-  post_html = "\n\n".join(str(div.encode_contents()) for div in entry_divs)
+  post_html = "\n\n".join(div.encode_contents().decode("utf-8") for div in entry_divs)
 
   return (post_html, soup)
 
@@ -86,7 +87,7 @@ def fix_special_markup(content):
   return content
 
 
-def scrape_post_markdown(url, dir_path, dry_run=False):
+def scrape_post_markdown(url, dir_path, dry_run=False, entry_css_list=None):
 
   (title, post_html, date_obj) = (None, None, None)
   
@@ -96,7 +97,7 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
     result = regex.search("(\d\d\d\d)/(\d\d)/(\d\d)?", url)
     date_obj = parser.parse(result.group().replace("/", "-"), fuzzy=True)
   else:
-    ( post_html, soup) = get_post_html(url=url)
+    ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list)
     date_obj, title = get_post_metadata(soup)
     file_name = "%s.md" % get_storage_name(text=title)
 
@@ -108,7 +109,7 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
   
   # post_html could've been computed in order to determine target file name.
   if post_html is None:
-    ( post_html, soup) = get_post_html(url=url)
+    ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list)
     date_obj_alt, title = get_post_metadata(soup)
     if date_obj_alt is not None:
       date_obj = date_obj_alt
@@ -125,9 +126,11 @@ def scrape_post_markdown(url, dir_path, dry_run=False):
   md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
 
-def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, browser=None, anchor_css="a[href]", anchor_filter=lambda x: True, urlpattern=None, dry_run=False):
-  ( post_html, soup) = get_post_html(url=url, browser=browser)
+def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, browser=None, entry_css_list=None, anchor_css="a[href]", anchor_filter=lambda x: True, urlpattern=None, dry_run=False):
+  ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list, browser=browser)
   if anchor_css is not None:
+    if post_html is not None:
+      soup = BeautifulSoup(post_html, 'lxml')
     post_anchors = soup.select(anchor_css)
   else:
     css_list = [".entry-title a", "h1.title a", "h3 a"]

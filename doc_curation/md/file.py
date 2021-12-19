@@ -27,10 +27,8 @@ class MdFile(object):
   YAML = "yaml"
   TOML = "toml"
 
-  def __init__(self, file_path, frontmatter_type="toml"):
+  def __init__(self, file_path, frontmatter_type=None):
     self.file_path = str(file_path)
-    if frontmatter_type is None:
-      frontmatter_type = "toml"
     self.frontmatter_type = frontmatter_type
 
   def __str__(self):
@@ -43,7 +41,11 @@ class MdFile(object):
       with codecs.open(self.file_path, "r", 'utf-8') as file:
         if file.readline().strip() == "---":
           file.seek(0)
-          (metadata, content) = yamldown.load(file)
+          from yaml.composer import ComposerError
+          try:
+            (metadata, content) = yamldown.load(file)
+          except ComposerError:
+            logging.fatal(self.file_path)
         else:
           file.seek(0)
           content = file.read()
@@ -95,9 +97,9 @@ class MdFile(object):
   def get_frontmatter_type(self):
     with open(self.file_path, 'r') as fin:
       first_line = fin.readline().strip()
-      if first_line == "---":
+      if first_line.strip() == "---":
         return MdFile.YAML
-      elif first_line == "+++":
+      elif first_line.strip() == "+++":
         return MdFile.TOML
       else:
         return None
@@ -105,7 +107,9 @@ class MdFile(object):
   def read(self) -> Tuple[Dict, str]:
     file_helper.clear_bad_chars_in_file(file_path=self.file_path, dry_run=False)
     actual_frontmatter_type = self.get_frontmatter_type()
-    if self.frontmatter_type != actual_frontmatter_type:
+    if self.frontmatter_type is None:
+      self.frontmatter_type = actual_frontmatter_type
+    elif self.frontmatter_type != actual_frontmatter_type:
       logging.warning(
         "Frontmatter type mismatch: field value %s vs actual %s. Using the latter, but not updating field value.",
         self.frontmatter_type, actual_frontmatter_type)
@@ -166,7 +170,7 @@ class MdFile(object):
       # logging.info(content)
 
   def _dump_to_file_tomlmd(self, metadata, content, dry_run):
-    logging.info(self.file_path)
+    # logging.info(self.file_path)
     if not dry_run:
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
       with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
@@ -180,8 +184,11 @@ class MdFile(object):
       # logging.info(content)
 
   def dump_to_file(self, metadata, content, dry_run):
+    logging.info("Writing %s", self.file_path)
     content = file_helper.clear_bad_chars(content)
     if len(metadata) > 0:
+        if self.frontmatter_type is None:
+          self.frontmatter_type = MdFile.TOML # Default
         if self.frontmatter_type == MdFile.YAML:
           self._dump_to_file_yamlmd(metadata, content, dry_run)
         elif self.frontmatter_type == MdFile.TOML:
@@ -283,12 +290,16 @@ class MdFile(object):
   def transform(self, content_transformer=None, metadata_transformer=None, dry_run=False):
     [metadata, content] = self.read()
     metadata["_file_path"] = self.file_path
+    update_needed = False
     if content_transformer is not None:
-      content = content_transformer(content, metadata)
+      content_new = content_transformer(content, metadata)
+      update_needed |= content != content_new
     if metadata_transformer is not None:
-      metadata = metadata_transformer(content, metadata)
+      metadata_new = metadata_transformer(content, metadata)
+      update_needed |= metadata != metadata_new
     del metadata["_file_path"]
-    self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
+    if update_needed:
+      self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
   def append_content_from_mds(self, source_mds, dry_run=False):
     (_, dest_content) = self.read()

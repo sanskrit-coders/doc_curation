@@ -83,6 +83,14 @@ def devanaagarify(text, source_scheme=sanscript.IAST):
   return c
 
 
+def fix_bad_anunaasikas(text):
+  # Beware of निम्न नृम्ण etc..
+  replacements = {r"म्([च-ञ])": r"ञ्$1", r"म्([क-ङ])": r"ङ्$1", r"म्([ट-ढ])": r"ण्$1", r"म्([त-ध])": r"न्$1"}
+  for pattern, replacement in replacements.items():
+    c = regex.sub(pattern, replacement, text)
+  return c
+
+
 def numerify_shloka_numbering(text, encoding="कखगघङचछजझञ"):
   def transformer(match):
     return "॥%s.%d॥" % (match.group(1), encoding.index(match.group(2)) + 1)
