@@ -16,6 +16,7 @@ setuptools
 bs4
 beautifulsoup4
 toml
+yamldown_unicode
 more_itertools
 joblib
 tqdm

@@ -44,8 +44,8 @@ class MdFile(object):
           from yaml.composer import ComposerError
           try:
             (metadata, content) = yamldown.load(file)
-          except ComposerError:
-            logging.fatal(self.file_path)
+          except Exception as e:
+            logging.fatal("Error in %s: %s" % (self.file_path, str(e)))
         else:
           file.seek(0)
           content = file.read()
@@ -64,7 +64,11 @@ class MdFile(object):
           lines = file.readlines()
           lines = [file_helper.clear_bad_chars(line) for line in lines]
           toml_lines = itertools.takewhile(lambda x: x.strip() != "+++", lines[1:])
-          metadata = toml.loads("".join(toml_lines))
+          from toml import TomlDecodeError
+          try:
+            metadata = toml.loads("".join(toml_lines))
+          except TomlDecodeError as e:
+            logging.fatal("Error in %s: %s" % (self.file_path, str(e)))
           content_lines = list(itertools.dropwhile(lambda x: x.strip() != "+++", lines[1:]))
           content = "".join(content_lines[1:])
           # logging.info((toml, content))
@@ -293,10 +297,12 @@ class MdFile(object):
     update_needed = False
     if content_transformer is not None:
       content_new = content_transformer(content, metadata)
-      update_needed |= content != content_new
+      update_needed |= content.strip() != content_new.strip()
+      content = content_new
     if metadata_transformer is not None:
       metadata_new = metadata_transformer(content, metadata)
       update_needed |= metadata != metadata_new
+      metadata = metadata_new
     del metadata["_file_path"]
     if update_needed:
       self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
