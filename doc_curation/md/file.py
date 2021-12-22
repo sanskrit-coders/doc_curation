@@ -250,8 +250,9 @@ class MdFile(object):
         title = ""
       if title_index_pattern is not None:
         title_index = title_index_pattern % (section_index + 1)
-        ## Transliterate the number
-        title_index = sanscript.transliterate(title_index, sanscript.OPTITRANS, source_script)
+        if source_script is not None:
+          ## Transliterate the number
+          title_index = sanscript.transliterate(title_index, sanscript.OPTITRANS, source_script)
         title = "%s %s" % (title_index, title)
       title = title.strip()
 
