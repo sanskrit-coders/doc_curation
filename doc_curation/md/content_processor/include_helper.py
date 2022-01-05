@@ -1,3 +1,4 @@
+import logging
 import os
 
 import regex
@@ -37,6 +38,7 @@ def init_word_title_maker(text_matched, index, file_title):
 
 
 def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa_include_maker, migrated_text_processor=None, destination_path_maker=static_include_path_maker, title_maker=init_word_title_maker, dry_run=False):
+  logging.info("Processing %s", md_file.file_path)
   [metadata, content] = md_file.read()
   # For some regexes to work prefectly.
   content = "\n" + content
@@ -57,7 +59,7 @@ def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa
       else:
         md_file_dest.dump_to_file(metadata={"title": title}, content=text, dry_run=dry_run)
     include_text = replacement_maker(text_matched, text_path)
-    content = content.replace(text_matched.strip(), "%s\n" % include_text)
+    content = content.replace(text_matched.strip(), "%s\n" % include_text, 1)
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
