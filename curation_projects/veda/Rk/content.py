@@ -25,6 +25,7 @@ def dump(dry_run):
     get_include("jamison_brereton", suukta_id=suukta_id, file_name_optitrans="_index.md", title="Jamison & Brereton", h1_level=2),
     get_include("jamison_brereton_notes", suukta_id=suukta_id, file_name_optitrans="_index.md",
                 title="Jamison & Brereton Note", classes=["collapsed"], h1_level=3)))
+
     for rk_id in sorted(suukta_rk_map.keys()):
       rk_map = suukta_rk_map[rk_id]
       # md_file_Rk = MdFile(file_path=dest_path_Rk)

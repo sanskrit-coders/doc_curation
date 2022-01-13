@@ -233,6 +233,8 @@ def get_sub_path_id(sub_path, basename_id_pattern=r"(.+?)(?=[_\.]|$)"):
       id_parts.append(name)
     else:
       base_id_match = regex.search(basename_id_pattern, name)
+      if base_id_match is None:
+        logging.fatal("No match in %s", sub_path)
       id_parts.append(base_id_match.group(1))
   return "/".join(id_parts)
 
