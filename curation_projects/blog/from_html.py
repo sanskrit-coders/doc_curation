@@ -37,8 +37,8 @@ if __name__ == '__main__':
     ## TODO: 
     # https://gairikshita.wordpress.com/
     # https://jigyaasaa.wordpress.com/ - dropdown.
-    # https://vajrin.wordpress.com/ - multi page scroll
-    # 
+    # https://vajrin.wordpress.com/ - multi page scrollhttps://t.co/0bIGUYvlY7
+    # https://twitter.com/manassarov/status/1480293685535326211/photo/2
     # substack.scrape_free_articles_from_index_anchors(url="https://indianhistory.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/indianhistory", dry_run=False)
     # substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/razib", dry_run=False)
     # substack.scrape_free_articles_from_index_anchors(url="https://hindoohistory.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/hindoohistory", dry_run=False)

@@ -1,5 +1,6 @@
 pikepdf
 pdf2image
+img2pdf
 curation_utils
 google-cloud-vision
 indic_transliteration
