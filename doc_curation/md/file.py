@@ -139,7 +139,10 @@ class MdFile(object):
           parent_title = parent_md.get_title(omit_chapter_id=omit_chapter_id, ref_dir_for_ancestral_title=ref_dir_for_ancestral_title)
           title = "%s/ %s" % (parent_title, title)
           title = regex.sub("(?:^| )\+", "", title)
-        
+    
+    if title.startswith("+"):
+      title = title[1:]
+    
     if omit_chapter_id and title is not None:
       title = regex.sub("^[+०-९]+ +", "", title)
     return title

@@ -5,6 +5,7 @@ import regex
 
 from curation_utils import file_helper
 from doc_curation.md import content_processor, library
+from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 
 PATTERN_SHLOKA = r"\n[^#\s<>\[\(][\s\S]+?॥\s*[०-९\d\.]+\s*॥.*?(?=\n|$)"
@@ -94,7 +95,12 @@ def alt_include_adder(match, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/
     alt_file_path = file_path.replace(source_dir, target_dir)
     alt_url = url.replace(source_dir, target_dir)
     if title is None:
-      title = sanscript.transliterate(target_dir, sanscript.OPTITRANS, sanscript.DEVANAGARI)
+      index_file_path = regex.sub("%s/.+" % target_dir, "%s/_index.md" % target_dir, alt_file_path)
+      if os.path.exists(index_file_path):
+        md_file = MdFile(file_path=index_file_path)
+        title = md_file.get_title()
+      else:
+        title = sanscript.transliterate(target_dir, sanscript.OPTITRANS, sanscript.DEVANAGARI)
     if os.path.exists(alt_file_path):
       return library.get_include(url=alt_url, h1_level=h1_level, classes=classes, title=title)
     return None
