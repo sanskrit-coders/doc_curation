@@ -157,21 +157,29 @@ def get_audio_file_urls(md_files):
 
 
 def defolderify_single_md_dirs(dir_path, dry_run=False):
-  files = glob.glob(dir_path + "/**/_index.md")
-  for file in files:
-    parent = os.path.dirname(file)
-    if len(os.listdir(parent)) == 1:
-      dest_file_path = parent + ".md"
-      logging.info("Moving %s to %s", str(file), dest_file_path)
-      if not dry_run:
-        os.rename(src=file, dst=dest_file_path)
-        md_file = MdFile(file_path=dest_file_path)
-        (metadata, _) = md_file.read()
-        title = metadata["title"]
-        if title.startswith("+"):
-          title = title[1:]
-        md_file.set_title(title=title, dry_run=False)
-        os.rmdir(parent)
+  while dir_path.endswith("/"):
+    dir_path = dir_path[:-1]
+  contents = os.listdir(dir_path)
+  for possible_subdir in contents:
+    subpath = os.path.join(dir_path, possible_subdir)
+    if os.path.isdir(subpath):
+      defolderify_single_md_dirs(dir_path=subpath, dry_run=dry_run)
+  if len(contents) != 1:
+    return
+  if not contents[0] == "_index.md":
+    return 
+  index_file_path = os.path.join(dir_path, contents[0])
+  dest_file_path = dir_path + ".md"
+  logging.info("Moving %s to %s", str(index_file_path), dest_file_path)
+  if not dry_run:
+    os.rename(src=index_file_path, dst=dest_file_path)
+    md_file = MdFile(file_path=dest_file_path)
+    (metadata, _) = md_file.read()
+    title = metadata["title"]
+    if title.startswith("+"):
+      title = title[1:]
+    md_file.set_title(title=title, dry_run=False)
+    os.rmdir(dir_path)
 
 
 def combine_select_files_in_dir(md_file, source_fname_list, dry_run=False):
@@ -185,7 +193,7 @@ def combine_select_files_in_dir(md_file, source_fname_list, dry_run=False):
 
 def combine_files_in_dir(md_file, dry_run=False):
   dir_path = os.path.dirname(md_file.file_path)
-  source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in sorted(os.listdir(dir_path)) if x != os.path.basename(md_file.file_path) ]
+  source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in sorted(os.listdir(dir_path)) if os.path.isfile(os.path.join(dir_path, x)) and x.endswith(".md") and x != os.path.basename(md_file.file_path) ]
   md_file.append_content_from_mds(source_mds=source_mds, dry_run=dry_run)
   if not dry_run:
     for source_md in source_mds:
