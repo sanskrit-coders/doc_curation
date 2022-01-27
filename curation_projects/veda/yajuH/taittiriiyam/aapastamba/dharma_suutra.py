@@ -2,10 +2,13 @@ import functools
 import os
 
 import regex
+from bs4 import BeautifulSoup
 
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import include_helper
 from doc_curation.md.file import MdFile
+from doc_curation.scraping.html_scraper import souper
+from doc_curation.scraping.wisdom_lib import para_translation
 from indic_transliteration import sanscript
 import functools
 import logging
@@ -23,11 +26,15 @@ def get_suutra_id_to_md():
     suutra_id_to_md[suutra_id] = md_file
   return suutra_id_to_md
 
+
 def fix_includes():
-  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH", file_pattern="[0-9][0-9]*.md")
+  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/sarva-prastutiH", file_pattern="**/[0-9][0-9]*.md")
+
+
+  def include_fixer(match):
+    return include_helper.alt_include_adder(match=match, source_dir="vishvAsa-prastutiH", alt_dirs=["haradatta-TIkA", "shankarAchArya-vivaraNam"])
 
   for md_file in md_files:
-    include_helper.transform_include_lines(md_file=md_file, transformer=old_include_remover)
     include_helper.transform_include_lines(md_file=md_file, transformer=include_fixer)
     md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
 
@@ -78,7 +85,17 @@ def migrate_and_include_shlokas():
   library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[PATTERN_SUTRA], dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH", replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)
 
 
+def buhler_dest_path_maker(url, base_dir):
+  html = souper.get_html(url=url)
+  soup = BeautifulSoup(html, 'html.parser')
+  title = souper.title_from_element(soup, title_css_selector="h1")
+  title = title.replace(" I,", "1,").replace(" II,", "2,")
+  subpath = regex.sub("\D+", " ", title).strip().replace(" ", "/") + ".md"
+  return os.path.join(base_dir, subpath)
+
+
 if __name__ == '__main__':
   # migrate_and_include_shlokas()
   # fix_includes()
-  replace_suutraid_with_includes()
+  para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/apastamba-dharma-sutra/d/doc116233.html", base_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/buhler/", dest_path_maker=buhler_dest_path_maker)
+  # replace_suutraid_with_includes()

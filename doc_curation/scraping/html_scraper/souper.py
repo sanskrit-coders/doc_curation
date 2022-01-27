@@ -88,6 +88,8 @@ def find_matching_tag(tags, filter):
 
 
 def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, title_prefix="", html_fixer=None, md_fixer=None, dry_run=False):
+  if callable(outfile_path):
+    outfile_path = outfile_path(url)
   if os.path.exists(outfile_path):
     logging.info("skipping: %s - it exists already", outfile_path)
     return

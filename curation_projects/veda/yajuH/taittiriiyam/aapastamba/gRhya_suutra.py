@@ -1,10 +1,13 @@
 import os
 
 import regex
+from bs4 import BeautifulSoup
 
 from doc_curation.md import library
 from doc_curation.md.content_processor import include_helper
 from doc_curation.md.library import metadata_helper
+from doc_curation.scraping.html_scraper import souper
+from doc_curation.scraping.wisdom_lib import para_translation
 
 ref_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/vishvAsa-prastutiH"
 
@@ -27,8 +30,18 @@ def fix_includes():
     md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
 
 
+def oldenberg_dest_path_maker(url, base_dir):
+  html = souper.get_html(url=url)
+  soup = BeautifulSoup(html, 'html.parser')
+  title = souper.title_from_element(soup, title_css_selector="h1")
+  title = title.replace(" I,", "1,").replace(" II,", "2,")
+  subpath = regex.sub("\D+", " ", title).strip().replace(" ", "_")
+  subpath = "_".join(["%02d" % int(x) for x in subpath.split("_")])
+  return os.path.join(base_dir, subpath + ".md")
+
 
 if __name__ == '__main__':
   # fix_filenames()
-  fix_includes()
+  # fix_includes()
+  para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/apastamba-grihya-sutra/d/doc116791.html", base_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg_with_fn/", dest_path_maker=oldenberg_dest_path_maker)
   pass
