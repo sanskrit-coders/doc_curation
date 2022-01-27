@@ -3,9 +3,13 @@ import os
 
 import regex
 from bs4 import BeautifulSoup, NavigableString, Tag
+from doc_curation.md import library, content_processor
+
 from doc_curation.md.file import MdFile
+from doc_curation.md.library import metadata_helper
 
 from doc_curation.scraping.html_scraper import souper
+from indic_transliteration import sanscript
 
 
 def get_content(soup):
@@ -13,7 +17,10 @@ def get_content(soup):
   para_elements = soup.select("#scontent > p")
   content_out = ""
   for para in para_elements:
-    para_title = regex.search("(^\d\S*)\. ", para.text)
+    # Example sanskrit sUtra text in https://www.wisdomlib.org/hinduism/book/khadira-grihya-sutra/d/doc116673.html 
+    if len(regex.findall("\d+\. ", para.text.strip())) > 2:
+      continue
+    para_title = regex.search("(^\d[^ \[.]*)", para.text.strip())
     if para_title is not None:
       para_title = para_title.group(1)
       if para_title.isnumeric():
@@ -66,4 +73,10 @@ def dump_serially(start_url, base_dir, dest_path_maker, dry_run=False):
     next_url = next_url_getter(soup)
     # break # For testing
   logging.info("Reached end of series")
+
+
+def split(base_dir):
+  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=content_processor.define_footnotes_near_use, dry_run=False)
+  library.apply_function(dir_path=base_dir, fn=metadata_helper.set_title_from_filename, transliteration_target=None, dry_run=False)
+  library.apply_function(fn=MdFile.split_to_bits, dir_path=base_dir, dry_run=False, source_script=None, title_index_pattern=None)
 

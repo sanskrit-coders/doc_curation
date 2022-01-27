@@ -140,6 +140,8 @@ class MdFile(object):
           title = "%s/ %s" % (parent_title, title)
           title = regex.sub("(?:^| )\+", "", title)
     
+    if title is None:
+      logging.fatal("%s has None title", self.file_path)
     if title.startswith("+"):
       title = title[1:]
     

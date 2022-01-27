@@ -248,13 +248,14 @@ def get_sub_path_id(sub_path, basename_id_pattern=r"(.+?)(?=[_\.]|$)"):
 
 
 
-def shift_contents(dir_path, offset, start_index=None, end_index=None, dry_run=False):
+def shift_contents(dir_path, new_content_offset, start_index=None, end_index=None, dry_run=False):
   files = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
   files.sort()
   index_to_content_original = {}
   index_to_md_file = {}
   for index, file_path in enumerate(files):
-    index = int(os.path.basename(file_path).split("_")[0])
+    base_name = os.path.basename(file_path)
+    index = int(base_name.replace(".md", "").split("_")[0])
     md_file = MdFile(file_path=file_path)
     index_to_md_file[index] = md_file
     (_, content) = md_file.read()
@@ -268,7 +269,7 @@ def shift_contents(dir_path, offset, start_index=None, end_index=None, dry_run=F
     end_index = max_index
   for index, content in index_to_content_original.items():
     if start_index <= index and end_index >= index:
-      offset_index = index + offset
+      offset_index = index + new_content_offset
       if offset_index in index_to_content_original.keys():
         content = index_to_content_original[offset_index]
         md_file = index_to_md_file[index]

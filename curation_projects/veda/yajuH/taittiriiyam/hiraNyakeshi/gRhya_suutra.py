@@ -9,7 +9,7 @@ from doc_curation.md.library import metadata_helper
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 
-ref_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/vishvAsa-prastutiH"
+ref_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/hiraNyakeshI/gRhyam/vishvAsa-prastutiH"
 
 
 def fix_filenames():
@@ -22,11 +22,11 @@ def fix_filenames():
       return library.get_sub_path_id(sub_path=regex.sub(".+/", "", str(x)), basename_id_pattern=r"(\d\du?_\d\d)")
     else:
       return "%s_%s" % (os.path.basename(os.path.dirname(x)), base_name.replace(".md", ""))
-  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg_with_fn", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
+  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/hiraNyakeshI/gRhyam/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
 
 
 def fix_includes():
-  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-TIkAH", file_pattern="[0-9][0-9]*.md")
+  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/hiraNyakeshI/gRhyam/sUtra-TIkAH", file_pattern="[0-9][0-9]*.md")
   md_files = [f for f in md_files if os.path.basename(f.file_path) ]
   
   def include_fixer(match):
@@ -43,13 +43,14 @@ def oldenberg_dest_path_maker(url, base_dir):
   soup = BeautifulSoup(html, 'html.parser')
   title = souper.title_from_element(soup, title_css_selector="h1")
   title = title.replace(" I,", "1,").replace(" II,", "2,")
-  subpath = regex.sub("\D+", " ", title).strip().replace(" ", "_")
-  subpath = "_".join(["%02d" % int(x) for x in subpath.split("_")])
+  subpath_parts = regex.sub("\D+", " ", title).strip().replace(" ", "_").split("_")
+  subpath_parts = ["%02d" % int(x) for x in subpath_parts]
+  subpath = "%s/%s" % (subpath_parts[0], subpath_parts[-1]) 
   return os.path.join(base_dir, subpath + ".md")
 
 def fix_oldenberg():
   # Off by 1 in 4 as well. Then:
-  base_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg_with_fn/11"
+  base_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/hiraNyakeshI/gRhyam/oldenberg/11"
   # Merge 11, 12
   # library.shift_contents(base_dir, start_index=12, new_content_offset=1)
   library.shift_contents(base_dir, start_index=23, new_content_offset=1)
@@ -60,8 +61,8 @@ def fix_oldenberg():
 
 if __name__ == '__main__':
   # fix_includes()
-  para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/apastamba-grihya-sutra/d/doc116791.html", base_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg_with_fn/", dest_path_maker=oldenberg_dest_path_maker)
-  # para_translation.split(base_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg_with_fn/")
+  # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/hiranyakesi-grihya-sutra/d/doc116737.html", base_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/hiraNyakeshI/gRhyam/oldenberg/", dest_path_maker=oldenberg_dest_path_maker)
+  para_translation.split(base_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/hiraNyakeshI/gRhyam/oldenberg/")
   # fix_oldenberg()
-  fix_filenames()
+  # fix_filenames()
   pass

@@ -35,7 +35,7 @@ def transform_footnote_marks(content, transformer):
   return content
 
 
-def define_footnotes_near_use(content):
+def define_footnotes_near_use(content, *args, **kwargs):
   # For correct regex matching.
   content = "\n%s\n\n" % content
   definition_pattern = r"\n(\[\^.+?\]):[\s\S]+?\n(?=[\n\[])"

@@ -15,7 +15,7 @@ from indic_transliteration import sanscript
 import functools
 import logging
 
-ref_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH"
+ref_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/baudhAyanaH/dharma-sUtram/vishvAsa-prastutiH"
 
 @functools.lru_cache
 def get_suutra_id_to_md():
@@ -32,7 +32,7 @@ def get_suutra_id_to_md():
 
 
 def fix_includes():
-  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/sarva-prastutiH", file_pattern="**/[0-9][0-9]*.md")
+  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/baudhAyanaH/dharma-sUtram/sarva-prastutiH", file_pattern="**/[0-9][0-9]*.md")
 
 
   def include_fixer(match):
@@ -64,7 +64,7 @@ def suutra_include_maker(suutra_id_dev, text_path, *args, **kwargs):
 
 
 def replace_suutraid_with_includes():
-  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/viShaya-vibhAgaH")
+  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/baudhAyanaH/dharma-sUtram/viShaya-vibhAgaH")
   for md_file in md_files:
     include_helper.migrate_and_replace_texts(md_file=md_file, text_patterns=[r"(?<=[^०-९]|^)[०-९]+(?=[^०-९]|$)"], replacement_maker=suutra_include_maker, migrated_text_processor=None, destination_path_maker=lambda *args, **kwargs: None, title_maker=lambda *args, **kwargs: None, dry_run=False)
 
@@ -88,16 +88,23 @@ def migrate_and_include_shlokas():
     return include_helper.vishvAsa_include_maker(dest_path, h1_level=3, title="FILE_TITLE")
 
   PATTERN_SUTRA = "\n[^#\s<>\[\(][\s\S]+? \s*[०-९\d\.]+\s*?(?=\n|$)"
-  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[PATTERN_SUTRA], dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH", replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)
+  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[PATTERN_SUTRA], dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/baudhAyanaH/dharma-sUtram/vishvAsa-prastutiH", replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)
 
 
 def buhler_dest_path_maker(url, base_dir):
   html = souper.get_html(url=url)
   soup = BeautifulSoup(html, 'html.parser')
   title = souper.title_from_element(soup, title_css_selector="h1")
-  title = title.replace(" I,", "1,").replace(" II,", "2,")
-  subpath = regex.sub("\D+", " ", title).strip().replace(" ", "/") + ".md"
-  return os.path.join(base_dir, subpath)
+  def deromanize(match):
+    import roman
+    return str(roman.fromRoman(match.group(1)))
+  title = regex.sub("([IVX]+),", deromanize, title)
+  subpath_parts = regex.sub("\D+", " ", title).strip().replace(" ", "_").split("_")
+  subpath_parts = ["%02d" % int(x) for x in subpath_parts]
+  subpath = "%s/%s" % (subpath_parts[0], subpath_parts[-1])
+  return os.path.join(base_dir, subpath + ".md")
+
+
 
 
 def fix_buhler():
@@ -108,11 +115,11 @@ def fix_buhler():
 
 if __name__ == '__main__':
   # migrate_and_include_shlokas()
-  fix_includes()
-  base_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/buhler/"
-  # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/apastamba-dharma-sutra/d/doc116233.html", base_dir=base_dir, dest_path_maker=buhler_dest_path_maker)
+  # fix_includes()
+  base_dir = ref_dir.replace("vishvAsa-prastutiH", "buhler")
+  # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/baudhayana-dharmasutra/d/doc116395.html", base_dir=base_dir, dest_path_maker=buhler_dest_path_maker)
   # dir_helper.remove_empty_directories(base_dir)
-  # para_translation.split(base_dir=base_dir)
+  para_translation.split(base_dir=base_dir)
   # fix_buhler()
   # metadata_helper.copy_metadata_and_filename(dest_dir=ref_dir.replace("vishvAsa-prastutiH", "buhler"), ref_dir=ref_dir, sub_path_id_maker=None)
 

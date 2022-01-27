@@ -167,6 +167,9 @@ def copy_metadata_and_filename(dest_dir, ref_dir, sub_path_id_maker=None, dry_ru
     sub_path_id = sub_path_id_maker(md_file.file_path)
     if sub_path_id is None:
       continue
+    if sub_path_id not in sub_path_to_reference and sub_path_id.endswith("_index.md"):
+      logging.warning("Could not find %s in ref_dir. Skipping", sub_path_id)
+      continue
     ref_md = sub_path_to_reference[sub_path_id]
     sub_file_path_ref = str(ref_md.file_path).replace(ref_dir, "")
     (ref_metadata, _) = ref_md.read()
