@@ -25,5 +25,5 @@ if __name__ == '__main__':
     # doc_curation.pdf.drive_ocr.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/kAvyam/stotram/shrIvaiShNavAH/4kDivyaPrabandham", small_pdf_pages=10, detext=True)
     # doc_curation.pdf.drive_ocr.split_and_ocr_all(
     #     dir_path="/home/vvasuki/Documents/books/granthasangrahaH/nyAyaH/", small_pdf_pages=10, detext=False)
-    # doc_curation.pdf.drive_ocr.split_and_ocr_all(
-    #     dir_path="/home/vvasuki/Documents/books/granthasangrahaH/vedaH/aitareya-brAhmaNam", small_pdf_pages=10, detext=False)
+    doc_curation.pdf.drive_ocr.split_and_ocr_all(
+        dir_path="/home/vvasuki/Documents/books/granthasangrahaH/vedaH/aitareya-brAhmaNam", small_pdf_pages=10, detext=False)

@@ -10,7 +10,7 @@ from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 
 
-def ensure_ordinal_in_title(dir_path, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
+def ensure_ordinal_in_title(dir_path, transliteration_target=sanscript.DEVANAGARI, first_file_index=1, dry_run=False):
   files = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
   files.sort()
   for index, file in enumerate(files):
@@ -21,14 +21,15 @@ def ensure_ordinal_in_title(dir_path, transliteration_target=sanscript.DEVANAGAR
     #   return
 
     format = "%%0%dd" % (len(str(len(files))))
-    index = format % (index + 1)
+    index = format % (index + first_file_index)
     if transliteration_target:
       index = sanscript.transliterate(index, sanscript.OPTITRANS, transliteration_target)
     title = "%s %s" % (index, title)
     md_file.set_title(title=title, dry_run=dry_run)
+    set_filename_from_title(md_file=md_file, transliteration_source=transliteration_target, dry_run=dry_run)
 
 
-def fix_title_numbering(dir_path, dry_run):
+def pad_title_numbering(dir_path, dry_run):
   files = [x for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
   files.sort()
   for index, file in enumerate(files):

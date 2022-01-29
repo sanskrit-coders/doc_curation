@@ -137,3 +137,9 @@ def add_init_words_to_section_titles(md_file, num_words=2, title_post_processor=
     lines_out.extend(section_lines)
   content = "\n".join(lines_out)
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
+
+
+def create_sections_from_terminal_digits(md_file, digit_pattern="([०-९]+)", section_mark="##", dry_run=False):
+  def replacement_maker(match):
+    return "\n%s %s\n%s\n\n" %  (section_mark, match.group(1), match.group().strip())
+  content_processor.replace_texts(md_file=md_file, patterns=[r"\n[\s\S]+?%s *\n" % (digit_pattern)], replacement_maker=replacement_maker, dry_run=dry_run)

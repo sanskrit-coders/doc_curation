@@ -39,6 +39,17 @@ def init_word_title_maker(text_matched, index, file_title):
 
 
 def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa_include_maker, migrated_text_processor=None, destination_path_maker=static_include_path_maker, title_maker=init_word_title_maker, dry_run=False):
+  """
+  
+  :param md_file: 
+  :param text_patterns: 
+  :param replacement_maker: 
+  :param migrated_text_processor: 
+  :param destination_path_maker: To not have migration, pass: lambda x, y: None 
+  :param title_maker: 
+  :param dry_run: 
+  :return: 
+  """
   logging.info("Processing %s", md_file.file_path)
   [metadata, content] = md_file.read()
   # For some regexes to work prefectly.
