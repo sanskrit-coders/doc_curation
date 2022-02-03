@@ -45,13 +45,13 @@ export GOOGLE_APPLICATION_CREDENTIALS="/home/user/Downloads/service-account-file
 python3 google_vision_pdf.py --input-file <input.pdf>
 ```
 
-# For contributors
+## For contributors
 
-## Contact
+### Contact
 
 Have a problem or question? Please head to [github](https://github.com/sanskrit-coders/doc_curation).
 
-## Packaging
+### Packaging
 
 * ~/.pypirc should have your pypi login credentials.
 ```
@@ -59,10 +59,10 @@ python setup.py bdist_wheel
 twine upload dist/* --skip-existing
 ```
 
-## Build documentation
+### Build documentation
 - sphinx html docs can be generated with `cd docs; make html`
 
-## Testing
+#### Testing
 Run `pytest` in the root directory.
 
 ## Auxiliary tools
