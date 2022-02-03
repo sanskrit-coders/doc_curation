@@ -21,12 +21,14 @@ A package for curating doc file collections. Prominent features:
 * [Web](https://pypi.python.org/pypi/doc_curation).
 
 ## Usage:
-* Enable Google Driver API and download service account key file having Google Driver API access.
+- Enable Google Driver API and download service account key file having Google Driver API access.
+  - A json key which can be obtained from https://console.cloud.google.com/iam-admin/serviceaccounts (create a project, generate a key via "Actions" column.). PS: Google drive takes some time (few hours?) before you can use it for the first time in a project - till then you will get an error.
+
 ```python
 from doc_curation import pdf
 pdf_file = '/home/file.pdf'
 key_file = '/home/key.json'
-doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_file, key_file)
+pdf.drive_ocr.split_and_ocr_on_drive(pdf_file, key_file)
 ```
 
 ### Usage for the `google_vision_pdf.py` to OCR pdf to txt files.

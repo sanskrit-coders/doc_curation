@@ -26,4 +26,4 @@ if __name__ == '__main__':
     # doc_curation.pdf.drive_ocr.split_and_ocr_all(
     #     dir_path="/home/vvasuki/Documents/books/granthasangrahaH/nyAyaH/", small_pdf_pages=10, detext=False)
     doc_curation.pdf.drive_ocr.split_and_ocr_all(
-        dir_path="/home/vvasuki/Documents/books/granthasangrahaH/vedaH/aitareya-brAhmaNam", small_pdf_pages=10, detext=False)
+        dir_path="/home/vvasuki/Documents/books/granthasangrahaH/vedaH/apastamba-shrautra-sutra_ganesh-umakanth-thite", small_pdf_pages=10, detext=False)
