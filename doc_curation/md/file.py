@@ -265,7 +265,7 @@ class MdFile(object):
       short_title = text_utils.title_from_text(text=title, num_words=6, target_title_length=24)
       title_in_file_name = title
       if source_script is not None:
-        title_in_file_name = file_helper.get_storage_name(text=title, maybe_use_dravidian_variant=True, mixed_languages_in_titles=mixed_languages_in_titles)
+        title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script, maybe_use_dravidian_variant=True, mixed_languages_in_titles=mixed_languages_in_titles)
       if title_in_file_name == "":
         raise ValueError(title_in_file_name)
       file_name = file_helper.clean_file_path("%s.md" % title_in_file_name)

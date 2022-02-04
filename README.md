@@ -20,9 +20,9 @@ A package for curating doc file collections. Prominent features:
 * For latest code `pip install git+https://github.com/sanskrit-coders/doc_curation/@master -U`
 * [Web](https://pypi.python.org/pypi/doc_curation).
 
-## Usage:
-- Enable Google Driver API and download service account key file having Google Driver API access.
-  - A json key which can be obtained from https://console.cloud.google.com/iam-admin/serviceaccounts (create a project, generate a key via "Actions" column.). PS: Google drive takes some time (few hours?) before you can use it for the first time in a project - till then you will get an error.
+## Usage
+### Google Drive API wrapper
+- Enable Google Drive API and download service account key file having Google Driver API access. (See details in split_and_ocr_on_drive function documentation (eg. [github source](https://github.com/sanskrit-coders/doc_curation/blob/master/doc_curation/pdf/drive_ocr.py#L23)).)
 
 ```python
 from doc_curation import pdf
@@ -32,14 +32,14 @@ pdf.drive_ocr.split_and_ocr_on_drive(pdf_file, key_file)
 ```
 
 ### Usage for the `google_vision_pdf.py` to OCR pdf to txt files.
-* Follow the instructions here: https://cloud.google.com/vision/docs/before-you-begin. 
-* Make sure to set the environment variable for `GOOGLE_APPLICATION_CREDENTIALS` to the path of json containing your service account key.
-* Example:
+- Follow the instructions here: https://cloud.google.com/vision/docs/before-you-begin. 
+- Make sure to set the environment variable for `GOOGLE_APPLICATION_CREDENTIALS` to the path of json containing your service account key.
+- Example:
 ```
 export GOOGLE_APPLICATION_CREDENTIALS="/home/user/Downloads/service-account-file.json"
  ```
 
-* Invoke the script passing in the input file. Eg:
+- Invoke the script passing in the input file. Eg:
 
 ```
 python3 google_vision_pdf.py --input-file <input.pdf>

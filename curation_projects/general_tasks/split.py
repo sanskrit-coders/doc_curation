@@ -16,11 +16,11 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/sarva-prastutiH/04.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI) # 
 
   # IAST
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/rangapriya-on-festivals/03_ChAturmAsya.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.IAST) # 
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/notes-hugo/content/places/travel.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.IAST,  title_index_pattern=None) # 
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/shrautam/thITe-gaNeshaH/v1.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.IAST) # 
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/shrautam/thITe-gaNeshaH/v2.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.IAST, mixed_languages_in_titles=False, title_index_pattern=None) # 
 
   ## None Script
-  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/sanskrit-coders/sanskrit-coders.github.io/content/dictionaries/offline.md", dry_run=False, source_script=None,  title_index_pattern=None)
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/shrautam/thITe-gaNeshaH", dry_run=False, source_script=None,  title_index_pattern=None)
   # 
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/xetram/xetram.github.io/content/dyugangotri/building.md", dry_run=False, source_script=None,  title_index_pattern=None)
   # MdFile(file_path="/home/vvasuki/vvasuki-git/notes-hugo/content/biology/organism/health/disease/contagion/vaccination.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, title_index_pattern=None)
