@@ -23,6 +23,7 @@ def get_md_with_pandoc(content_in, source_format="html", pandoc_extra_args=['--a
   content = pypandoc.convert_text(source=content_in, to="gfm-raw_html", format=source_format,
                                      extra_args=pandoc_extra_args,
                                      filters=filters)
-  content = regex.sub("</?div[^>]*?>", "", content)
-  content = regex.sub("\n\n+", "\n\n", content)
+  content = regex.sub(r"</?div[^>]*?>", "", content)
+  content = regex.sub(r"\n\n+", "\n\n", content)
+  content = regex.sub(r"(\S)\n(\S)", r"\1 \2", content)
   return content

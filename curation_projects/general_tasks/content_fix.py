@@ -67,8 +67,9 @@ if __name__ == '__main__':
 
   # library.apply_function(fn=section_helper.create_sections_from_terminal_digits, dir_path="/home/vvasuki/vishvAsa/vedAH/content/Rk/shAkalam/aitareya-brAhmaNam/", dry_run=False)
 
-  library.apply_function(fn=details_helper.interleave_from_file, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/madhurA-vijayam/sarva-prastutiH/4.md", source_file=lambda x: x.replace("sarva-prastutiH", "AnglAnuvAdaH"), detail_title="tiruvenkaTAchAri (Eng)", dry_run=False)
+  # library.apply_function(fn=details_helper.interleave_from_file, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/madhurA-vijayam/sarva-prastutiH/4.md", source_file=lambda x: x.replace("sarva-prastutiH", "AnglAnuvAdaH"), detail_title="tiruvenkaTAchAri (Eng)", dry_run=False)
 
+  # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/shrautam/mUlam.md")
   # library.apply_function(fn=MdFile.drop_sections, dir_path="/home/vvasuki/vishvAsa/purANam/static/rAmAyaNam/audIchya-pAThaH/vishvAsa-prastutiH", title_condition=lambda x: x != "मूलम्")
   # library.apply_function(fn=MdFile.make_paras, dir_path="/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/jamison_brereton_notes")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA", content_transformer=lambda x, y: content_processor.numerify_shloka_numbering(x))

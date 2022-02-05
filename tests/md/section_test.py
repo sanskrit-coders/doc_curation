@@ -24,9 +24,9 @@ def test_split_to_sections():
     test_lines = get_lines(test_file_name="test.md")
     (lines_till_section, remaining) = doc_curation.md.content_processor.section_helper.get_lines_till_section(test_lines)
     sections = doc_curation.md.content_processor.section_helper.split_to_sections(remaining)
-    for (title, section_lines) in sections:
-        logging.info(title)
-        logging.info(list(section_lines))
+    for section in sections:
+        logging.info(section.title)
+        logging.info(list(section.lines))
     assert len(sections) == 2
 
 
@@ -34,9 +34,9 @@ def test_split_to_sections_no_title():
     test_lines = get_lines(test_file_name="untitled_sections.md")
     (lines_till_section, remaining) = doc_curation.md.content_processor.section_helper.get_lines_till_section(test_lines)
     sections = doc_curation.md.content_processor.section_helper.split_to_sections(remaining)
-    for (title, section_lines) in sections:
-        logging.info(title)
-        logging.info(list(section_lines))
+    for section in sections:
+        logging.info(section.title)
+        logging.info(list(section.lines))
     assert len(sections) == 32
 
 

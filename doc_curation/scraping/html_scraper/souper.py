@@ -152,6 +152,7 @@ def markdownify_local_htmls(src_dir, dest_dir, dumper, dry_run=False):
 def get_md_paragraph(tags):
   return "  \n".join([x.strip() for x in tags if isinstance(x, str) and x.strip() != ""])
 
+
 def get_md_paragraphs_with_pandoc(tags, para_joiner="\n\n"):
   from doc_curation.md import get_md_with_pandoc
   return para_joiner.join([get_md_with_pandoc(content_in=str(x), source_format="html") for x in tags])

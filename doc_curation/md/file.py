@@ -250,7 +250,8 @@ class MdFile(object):
     if len(sections) == 0:
       return
     section_md_urls = []
-    for section_index, (title, section_lines) in enumerate(sections):
+    for section_index, section in enumerate(sections):
+      title = section.title
       if title == None:
         title = ""
       if title_index_pattern is not None:
@@ -273,7 +274,8 @@ class MdFile(object):
       if bits_dir_url is not None:
         section_md_urls.append(os.path.join(bits_dir_url, file_name.replace(".md", "")))
       section_metadata = {"title": title}
-      section_md = "\n".join(reduce_section_depth(section_lines))
+      hashes_to_reduce = section.header_prefix.strip()[:-1]
+      section_md = "\n".join(reduce_section_depth(section.lines, hashes_to_reduce=hashes_to_reduce))
       if short_title != title and add_short_title:
         section_metadata["short_title"] = short_title
         section_md = "%s\n\n%s" % (title, section_md)
