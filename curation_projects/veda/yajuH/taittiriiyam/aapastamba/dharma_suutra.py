@@ -74,6 +74,7 @@ def get_title_id(text_matched):
   title_id = "%02d" % int(sanscript.transliterate(id_in_text, sanscript.DEVANAGARI, sanscript.IAST))
   return title_id
 
+
 def title_maker(text_matched, index, file_title):
   title_id = get_title_id(text_matched=text_matched)
   text_without_id = regex.sub(" *([०-९]+) *$", "", text_matched)

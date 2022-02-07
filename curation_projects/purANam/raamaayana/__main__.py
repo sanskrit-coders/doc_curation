@@ -48,7 +48,7 @@ def get_numbers():
 #     worksheet_name="गोरक्षपुरपाठः", id_column="id", value_column="साङ्क-शीर्षिका", md_file_to_id=raamaayana.get_adhyaaya_id,
 #   post_process_fn=lambda x: sanscript.transliterate(x, sanscript.OPTITRANS, sanscript.DEVANAGARI), md_frontmatter_field_name="title", dry_run=False
 # )
-# library.set_filenames_from_titles(dir_path=md_file_path, transliteration_source=sanscript.DEVANAGARI, file_name_filter=lambda x: regex.match("^\\d\\d\\d_", os.path.basename(x)) is not None, dry_run=False)
+# library.set_filenames_from_titles(dir_path=md_file_path, source_script=sanscript.DEVANAGARI, file_name_filter=lambda x: regex.match("^\\d\\d\\d_", os.path.basename(x)) is not None, dry_run=False)
 
 
 # library.devanaagarify_titles(md_files=raamaayana.get_adhyaaya_md_files(md_file_path), dry_run=False)

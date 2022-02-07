@@ -7,6 +7,7 @@ import regex
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import get_include
+from indic_transliteration import sanscript
 
 dest_dir_suuktas = "/home/vvasuki/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH"
 dest_dir_static = dest_dir_suuktas.replace("/content/", "/static/").replace("sarva-prastutiH", "")
@@ -116,7 +117,7 @@ def set_suukta_info_to_match(dest_dir, dry_run=False):
     suukta_id = path_parts.group(1)
     dest_md_file = MdFile(file_path=os.path.join(dest_dir, "%s/_index.md" % suukta_id))
     dest_md_file.dump_to_file(metadata=metadata, content="", dry_run=dry_run)
-    dest_md_file.set_filename_from_title(transliteration_source=sanscript.DEVANAGARI, dry_run=dry_run, skip_dirs=False)
+    dest_md_file.set_filename_from_title(source_script=sanscript.DEVANAGARI, dry_run=dry_run, skip_dirs=False)
 
 
 def rename_suukta_files(dest_dir, dry_run=False):

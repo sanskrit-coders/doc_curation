@@ -3,6 +3,7 @@ import os
 import shutil
 
 import regex
+from curation_utils import file_helper
 
 from curation_utils.file_helper import get_storage_name
 from doc_curation.md import content_processor
@@ -26,7 +27,7 @@ def ensure_ordinal_in_title(dir_path, transliteration_target=sanscript.DEVANAGAR
       index = sanscript.transliterate(index, sanscript.OPTITRANS, transliteration_target)
     title = "%s %s" % (index, title)
     md_file.set_title(title=title, dry_run=dry_run)
-    set_filename_from_title(md_file=md_file, transliteration_source=transliteration_target, dry_run=dry_run)
+    set_filename_from_title(md_file=md_file, source_script=transliteration_target, dry_run=dry_run)
 
 
 def pad_title_numbering(dir_path, dry_run):
@@ -45,21 +46,22 @@ def pad_title_numbering(dir_path, dry_run):
       md_file.set_title(title=new_title, dry_run=dry_run)
 
 
-def set_filename_from_title(md_file, transliteration_source=sanscript.DEVANAGARI, dry_run=False, skip_dirs=True):
+def set_filename_from_title(md_file, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, dry_run=False, skip_dirs=True):
   # logging.debug(md_file.file_path)
   if skip_dirs and str(md_file.file_path).endswith("_index.md"):
     logging.info("Special file %s. Skipping." % md_file.file_path)
     return
   title = md_file.get_title(omit_chapter_id=False)
-  if transliteration_source is not None:
-    title = sanscript.transliterate(data=title, _from=transliteration_source, _to=sanscript.OPTITRANS)
+  if source_script is not None:
+    title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script, maybe_use_dravidian_variant=True, mixed_languages_in_titles=mixed_languages_in_titles)
+
   if os.path.basename(md_file.file_path) == "_index.md":
     current_path = os.path.dirname(md_file.file_path)
     extension = ""
   else:
     current_path = md_file.file_path
     extension = ".md"
-  file_name = get_storage_name(text=title) + extension
+  file_name = file_helper.clean_file_path("%s.%s" % (title_in_file_name, extension))
   file_path = os.path.join(os.path.dirname(current_path), file_name)
   if str(current_path) != file_path:
     logging.info("Renaming %s to %s", current_path, file_path)

@@ -9,7 +9,7 @@ def fix_muula():
   
   library.apply_function(fn=metadata_helper.remove_post_numeric_title_text, dir_path="/home/vvasuki/vishvAsa/kannaDa/static/padya/DVG/kagga/mUla", dry_run=False)
   library.apply_function(fn=metadata_helper.add_init_words_to_title, dir_path="/home/vvasuki/vishvAsa/kannaDa/static/padya/DVG/kagga/mUla", target_title_length=30, num_words=2, script=sanscript.KANNADA, dry_run=False)
-  library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path="/home/vvasuki/vishvAsa/kannaDa/static/padya/DVG/kagga/mUla", transliteration_source=sanscript.KANNADA, dry_run=False)
+  library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path="/home/vvasuki/vishvAsa/kannaDa/static/padya/DVG/kagga/mUla", source_script=sanscript.KANNADA, dry_run=False)
 
 
 def fix_content():
