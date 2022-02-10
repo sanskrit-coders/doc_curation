@@ -3,6 +3,7 @@ import os
 
 import regex
 
+import curation_projects.veda.Rk
 from curation_projects import veda
 from doc_curation.md.file import MdFile
 
@@ -10,8 +11,8 @@ path_notes = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/jamison_br
 thomson_solcum_dir = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/thomson_solcum"
 
 
-def separate_commentaries(dry_run=True):
-  Rk_id_to_name_map = veda.get_Rk_id_to_name_map_from_muulam()
+def separate_commentaries(dest_path, dry_run=True):
+  Rk_id_to_name_map = curation_projects.veda.Rk.get_Rk_id_to_name_map_from_muulam()
   for id in Rk_id_to_name_map.keys():
     Rk_number_str = id.split("/")[-1]
     sUkta_id = "/".join(id.split("/")[:-1])
@@ -42,7 +43,7 @@ def separate_commentaries(dry_run=True):
 
 
 if __name__ == '__main__':
-  veda.fix_Rk_file_names(dest_path=thomson_solcum_dir, ignore_missing=False, dry_run=False)
+  curation_projects.veda.Rk.fix_Rk_file_names(dest_path=thomson_solcum_dir, ignore_missing=False, dry_run=False)
   # separate_commentaries(dry_run=False)
   # def include_generator(file_path):
   #   return """<div class="js_include" url="%s"  newLevelForH1="3" newLevelForH1="2" includeTitle="true"> </div>"""  % (regex.sub(".+/vedAH/static/", "/vedAH/", file_path))

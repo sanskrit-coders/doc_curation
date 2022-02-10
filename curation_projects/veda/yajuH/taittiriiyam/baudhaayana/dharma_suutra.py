@@ -109,7 +109,7 @@ def buhler_dest_path_maker(url, base_dir):
 
 def fix_buhler():
   base_dir = ref_dir.replace("vishvAsa-prastutiH", "buhler")
-  library.shift_contents(os.path.join(base_dir, "2/06/13/"), start_index=3, new_content_offset=1)
+  library.shift_contents(os.path.join(base_dir, "2/06/13/"), start_index=3, substitute_content_offset=1)
   os.remove(os.path.join(base_dir, "2/06/13/13.md"))
 
 

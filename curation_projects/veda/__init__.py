@@ -1,9 +1,10 @@
-import glob
 import logging
-import os
 import regex
 
-from doc_curation.md.file import MdFile
+from doc_curation.md import content_processor, library
+from doc_curation.md.content_processor import include_helper
+
+from indic_transliteration import sanscript
 
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)
@@ -12,85 +13,23 @@ logging.basicConfig(
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
-def get_Rk_id_to_name_map_from_muulam():
-  Rk_paths = glob.glob("/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/mUlam/*/*/*.md", recursive=True)
-  Rk_paths = sorted(Rk_paths)
-  Rk_id_to_name_map = {}
-  for Rk_path in Rk_paths:
-    Rk_name = os.path.basename(Rk_path).replace(".md", "")
-    Rk_id_numerical = "/".join(Rk_path.split("/")[-3:-1]) + "/" + Rk_name.split("_")[0]
-    Rk_id_to_name_map[Rk_id_numerical] = Rk_name
-  return Rk_id_to_name_map
+def migrate_and_include_sUtras(dir_path):
+  def get_title_id(text_matched):
+    id_in_text = regex.search("([०-९]+) *$", text_matched).group(1)
+    title_id = "%02d" % int(sanscript.transliterate(id_in_text, sanscript.DEVANAGARI, sanscript.IAST))
+    return title_id
 
+  def title_maker(text_matched, index, file_title):
+    title_id = get_title_id(text_matched=text_matched)
+    text_without_id = regex.sub(" *([०-९]+) *$", "", text_matched)
+    title = content_processor.title_from_text(text=text_without_id, num_words=3, target_title_length=None,
+                                              title_id=title_id)
+    return title
 
+  def replacement_maker(text_matched, dest_path):
+    return include_helper.vishvAsa_include_maker(dest_path, h1_level=3, title="FILE_TITLE")
 
-def fix_Rk_file_names(dest_path, ignore_missing=False, dry_run=True):
-  Rk_id_to_name_map = get_Rk_id_to_name_map_from_muulam()
-  for id in Rk_id_to_name_map.keys():
-    Rk_number_str = id.split("/")[-1]
-    sUkta_id = "/".join(id.split("/")[:-1])
-    file_path = os.path.join(dest_path, sUkta_id, "0" + Rk_number_str + ".md")
-    file_path_new = os.path.join(dest_path, "/".join(id.split("/")[:-1]), Rk_id_to_name_map[id] + ".md")
-    if os.path.exists(file_path_new):
-      logging.info("%s exists. Skipping", file_path_new)
-      if os.path.exists(file_path):
-        os.remove(file_path)
-      # logging.fatal(file_path)
-    else:
-      if not os.path.exists(file_path):
-        if ignore_missing:
-          continue
-        else:
-          logging.fatal("Could not find %s at %s", id, file_path)
-          exit()
-      logging.info("Moving %s to %s", file_path, file_path_new)
-      if not dry_run:
-        os.rename(file_path, file_path_new)
-
-
-def include_multi_file_comments(multi_file_comment_path_pattern, file_range_regex, target_file_computer, include_generator, dry_run=True):
-  multi_file_comment_paths = glob.glob(multi_file_comment_path_pattern, recursive=True)
-  for multi_file_comment_path in multi_file_comment_paths:
-    multi_file_basename = os.path.basename(multi_file_comment_path)
-    match = regex.match(file_range_regex, multi_file_basename)
-    file_start = int(match.group(1))
-    file_end = int(match.group(2))
-    file_id_format = "%%0%dd" % len(match.group(1))
-    for file_id in range(file_start, file_end + 1):
-      file_id_str = file_id_format % file_id
-      target_file = target_file_computer(multi_file_comment_path, file_id_str)
-      logging.info("Will include %s in %s", multi_file_comment_path, target_file)
-      md_file = MdFile(file_path=target_file)
-      if os.path.exists(target_file):
-        (metadata, content) = md_file.read()
-      else:
-        if target_file.endswith("_index.md"):
-          title = "+" + file_id_str
-        else:
-          title = file_id_str
-        (metadata, content) = ({"title": title}, "")
-      content = "%s\n\n%s" % (content, include_generator(multi_file_comment_path))
-      md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
-
-
-def include_multi_Rk_comments(dest_path, include_generator, dry_run=True):
-  def Rk_target_file_computer(multi_file_comment_path, file_id_str):
-    multi_file_basename = os.path.basename(multi_file_comment_path)
-    target_file = os.path.join(os.path.dirname(multi_file_comment_path), "%s.md" % file_id_str)
-    dir_files = os.listdir(os.path.dirname(multi_file_comment_path))
-    dir_files = [file for file in dir_files if file.startswith(file_id_str) and file != multi_file_basename and "-" not in file]
-    if len(dir_files) == 1:
-      target_file = os.path.join(os.path.dirname(multi_file_comment_path), dir_files[0])
-    return target_file
-  
-  include_multi_file_comments(multi_file_comment_path_pattern="%s/*/*/[0-9][0-9]-[0-9][0-9]*.md" % dest_path, target_file_computer=Rk_target_file_computer, file_range_regex=r"^(\d\d)-(\d\d).+", include_generator=include_generator, dry_run=dry_run)
-
-
-
-
-def include_multi_suukta_comments(dest_path, include_generator, dry_run=True):
-  def suukta_target_file_computer(multi_file_comment_path, file_id_str):
-    target_file = os.path.join(os.path.dirname(multi_file_comment_path), "%s/_index.md" % file_id_str)
-    return target_file
-
-  include_multi_file_comments(multi_file_comment_path_pattern="%s/*/[0-9][0-9][0-9]-[0-9][0-9][0-9]*.md" % dest_path, target_file_computer=suukta_target_file_computer, file_range_regex=r"^(\d+)-(\d+).+", include_generator=include_generator, dry_run=dry_run)
+  PATTERN_SUTRA = "\n[\s\S]+?\s*[०-९\d]+\s*?(?=\n|$)"
+  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[PATTERN_SUTRA],
+                         dir_path=dir_path,
+                         replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)

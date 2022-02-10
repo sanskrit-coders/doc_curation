@@ -16,4 +16,5 @@ if __name__ == '__main__':
   # for subdir in ["02", "03", "04"]:
   #   metadata_helper.ensure_ordinal_in_title(dir_path=os.path.join(out_path, subdir), transliteration_target=sanscript.IAST)
   # library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path=out_path, source_script=sanscript.IAST, dry_run=False)
+  metadata_helper.copy_metadata_and_filename(ref_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/shrautam/mUlam", dest_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/shrautam/muller")
   pass

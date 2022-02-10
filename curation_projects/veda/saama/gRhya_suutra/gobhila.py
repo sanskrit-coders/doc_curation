@@ -57,7 +57,7 @@ def fix_oldenberg():
   base_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/gobhila/gRhyam/oldenberg/11"
   # Merge 11, 12
   # library.shift_contents(base_dir, start_index=12, new_content_offset=1)
-  library.shift_contents(base_dir, start_index=23, new_content_offset=1)
+  library.shift_contents(base_dir, start_index=23, substitute_content_offset=1)
   os.remove(os.path.join(base_dir, "25.md"))
   os.remove(os.path.join(base_dir, "26.md"))
   
