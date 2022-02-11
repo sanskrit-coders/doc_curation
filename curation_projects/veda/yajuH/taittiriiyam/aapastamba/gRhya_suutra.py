@@ -10,7 +10,7 @@ from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 
 ref_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/vishvAsa-prastutiH"
-
+oldenberg_dir = ref_dir.replace("vishvAsa-prastutiH", "oldenberg")
 
 def fix_filenames():
   def sub_path_id_maker(x):
@@ -22,7 +22,7 @@ def fix_filenames():
       return library.get_sub_path_id(sub_path=regex.sub(".+/", "", str(x)), basename_id_pattern=r"(\d\du?_\d\d)")
     else:
       return "%s_%s" % (os.path.basename(os.path.dirname(x)), base_name.replace(".md", ""))
-  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg_with_fn", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
+  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
 
 
 def fix_includes():
@@ -49,19 +49,22 @@ def oldenberg_dest_path_maker(url, base_dir):
 
 def fix_oldenberg():
   # Off by 1 in 4 as well. Then:
-  base_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg_with_fn/11"
+  # base_dir = os.path.join(oldenberg_dir, "11")
   # Merge 11, 12
   # library.shift_contents(base_dir, start_index=12, new_content_offset=1)
-  library.shift_contents(base_dir, start_index=23, substitute_content_offset=1)
-  os.remove(os.path.join(base_dir, "25.md"))
-  os.remove(os.path.join(base_dir, "26.md"))
-  
+  # library.shift_contents(base_dir, start_index=23, substitute_content_offset=1)
+  # os.remove(os.path.join(base_dir, "25.md"))
+  # os.remove(os.path.join(base_dir, "26.md"))
+
+  # library.shift_contents(os.path.join(oldenberg_dir, "03_vaivAhikaviShayAH"), start_index=5, substitute_content_offset=-1, index_position=1)
+  # library.shift_contents(os.path.join(oldenberg_dir, "04_vivAhaprakaraNam/tmp"), start_index=2, substitute_content_offset=1, index_position=1)
+  library.shift_contents(os.path.join(oldenberg_dir, "04_vivAhaprakaraNam/tmp"), start_index=11, substitute_content_offset=-2, index_position=1)
 
 
 if __name__ == '__main__':
-  # fix_includes()
-  para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/apastamba-grihya-sutra/d/doc116791.html", base_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg_with_fn/", dest_path_maker=oldenberg_dest_path_maker)
-  # para_translation.split(base_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg_with_fn/")
+  fix_includes()
+  # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/apastamba-grihya-sutra/d/doc116791.html", base_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg/", dest_path_maker=oldenberg_dest_path_maker)
+  # para_translation.split(base_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg/")
   # fix_oldenberg()
-  fix_filenames()
+  # fix_filenames()
   pass

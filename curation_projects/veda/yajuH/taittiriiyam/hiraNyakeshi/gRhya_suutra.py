@@ -32,19 +32,6 @@ def fix_filenames():
   metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/hiraNyakeshI/gRhyam/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
 
 
-def fix_includes():
-  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/hiraNyakeshI/gRhyam/sUtra-TIkAH", file_pattern="[0-9][0-9]*.md")
-  md_files = [f for f in md_files if os.path.basename(f.file_path) ]
-  
-  def include_fixer(match):
-    return include_helper.alt_include_adder(match=match, source_dir="vishvAsa-prastutiH", alt_dirs=["haradattaH", "sudarshanaH", "oldenberg"])
-
-  for md_file in md_files:
-    include_helper.transform_include_lines(md_file=md_file, transformer=include_helper.old_include_remover)
-    include_helper.transform_include_lines(md_file=md_file, transformer=include_fixer)
-    md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
-
-
 def oldenberg_dest_path_maker(url, base_dir):
   html = souper.get_html(url=url)
   soup = BeautifulSoup(html, 'html.parser')
@@ -64,17 +51,23 @@ def oldenberg_fix():
   
   # Merge and fix 1/29/02-04
 
-  base_dir = os.path.join(oldenberg_dir, "2/06")
-  library.shift_contents(base_dir, start_index=11, substitute_content_offset=1)
-  for index in range(20, 21):
-    os.remove(os.path.join(base_dir, "%02d.md" % index))
+  # base_dir = os.path.join(oldenberg_dir, "2/06")
+  # library.shift_contents(base_dir, start_index=11, substitute_content_offset=1)
+  # for index in range(20, 21):
+  #   os.remove(os.path.join(base_dir, "%02d.md" % index))
+
+  # Next fix some sUtra files missing (ie combined) in oldenberg but present in mUla.
+  base_dir = os.path.join(oldenberg_dir, "1/26")
+  # library.shift_contents(base_dir, start_index=8, substitute_content_offset=-2)
+  library.shift_contents(base_dir, start_index=14, substitute_content_offset=-2)
+
   pass
 
 def oldenberg_dump():
   # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/hiranyakesi-grihya-sutra/d/doc116737.html", base_dir=os.path.join(static_dir_base, "oldenberg"), dest_path_maker=oldenberg_dest_path_maker)
   # para_translation.split(base_dir=os.path.join(static_dir_base, "oldenberg"))
-  # oldenberg_fix()
-  metadata_helper.copy_metadata_and_filename(dest_dir=os.path.join(static_dir_base, "oldenberg"), ref_dir=ref_dir)
+  oldenberg_fix()
+  # metadata_helper.copy_metadata_and_filename(dest_dir=os.path.join(static_dir_base, "oldenberg"), ref_dir=ref_dir)
   # fix_filenames()
   pass
 
@@ -87,8 +80,13 @@ def prep_muula():
   pass
 
 
+def fix_includes():
+  include_helper.include_core_with_commentaries(dir_path=os.path.join(content_dir_base,"sarva-prastutiH"), file_pattern="**/[0-9][0-9]*.md", alt_dirs=["oldenberg", "mUlam"], source_dir="vishvAsa-prastutiH")
+
+
 if __name__ == '__main__':
   # fix_includes()
-  oldenberg_dump()
+  # oldenberg_dump()
   # prep_muula()
+  fix_includes()
   pass

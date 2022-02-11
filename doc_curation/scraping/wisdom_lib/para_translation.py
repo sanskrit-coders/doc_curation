@@ -41,6 +41,7 @@ def get_content(soup):
     footnote_id = tag.find('p', {'class': 'nr'}).text.replace("[", "[^")
     definition = tag.findChild("div").text.strip()  
     content_out += "\n\n%s %s" % (footnote_id, definition)
+  content_out = content_out.replace("", " - ")
   return content_out
 
 

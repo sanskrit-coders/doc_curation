@@ -60,7 +60,7 @@ def set_filename_from_title(md_file, source_script=sanscript.DEVANAGARI, mixed_l
     extension = ""
   else:
     current_path = md_file.file_path
-    extension = ".md"
+    extension = "md"
   file_name = file_helper.clean_file_path("%s.%s" % (title_in_file_name, extension))
   file_path = os.path.join(os.path.dirname(current_path), file_name)
   if str(current_path) != file_path:
@@ -95,9 +95,11 @@ def prepend_file_indexes_to_title(md_file, dry_run):
   md_file.set_title(dry_run=dry_run, title=title)
 
 
-def add_init_words_to_title(md_file, num_words=2, target_title_length=None,script=sanscript.DEVANAGARI, dry_run=False):
+def add_init_words_to_title(md_file, num_words=2, target_title_length=None,script=sanscript.DEVANAGARI, replace_non_index_text=True, dry_run=False):
   (metadata, content) = md_file.read()
   title = metadata["title"]
+  if replace_non_index_text:
+    title = regex.sub("(?<=^[0-9०-९೦-೯]+) +.+", "", title)
   extra_title = content_processor.title_from_text(text=content, num_words=num_words, target_title_length=target_title_length, script=script)
   if extra_title is not None:
     title = "%s %s" % (title.strip(), extra_title)

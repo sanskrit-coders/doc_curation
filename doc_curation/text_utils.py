@@ -15,7 +15,7 @@ def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True,
     text = devanaaagari_scheme.remove_svaras(in_string=text)
     text = devanaaagari_scheme.remove_punctuation(in_string=text)
   text = remove_parenthized_text(text)
-  text = sanscript.SCHEMES[script].fix_lazy_anusvaara(data_in=text, omit_yrl=True)
+  text = sanscript.SCHEMES[script].fix_lazy_anusvaara(data_in=text, omit_yrl=True, ignore_padaanta=True)
   init_words = text.split()[0:num_words]
   title = None
   if len(init_words) > 0:
@@ -24,6 +24,7 @@ def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True,
       # TODO: Call get_approx_deduplicating_key ?
       while len(title) > target_title_length and len(title.split()) > 1:
         title = " ".join(title.split()[:-1])
+  title = sanscript.SCHEMES[script].replace_terminal_anusvaara(data_in=title)
   if title_id is not None:
     title = "%s %s" % (title_id, title)
   return title

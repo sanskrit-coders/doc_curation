@@ -16,6 +16,7 @@ import functools
 import logging
 
 ref_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH"
+buhler_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/buhler/"
 
 @functools.lru_cache
 def get_suutra_id_to_md():
@@ -102,19 +103,21 @@ def buhler_dest_path_maker(url, base_dir):
 
 
 def fix_buhler():
-  base_dir = ref_dir.replace("vishvAsa-prastutiH", "buhler")
-  library.shift_contents(os.path.join(base_dir, "2/06/13/"), start_index=3, substitute_content_offset=1)
-  os.remove(os.path.join(base_dir, "2/06/13/13.md"))
 
+  # library.shift_contents(os.path.join(base_dir, "2/06/13/"), start_index=3, substitute_content_offset=1)
+  # os.remove(os.path.join(base_dir, "2/06/13/13.md"))
+
+  # library.shift_contents(os.path.join(buhler_dir, "2/05/10/"), start_index=4, substitute_content_offset=-1)
+  library.shift_contents(os.path.join(buhler_dir, "1/02/08/"), start_index=24, substitute_content_offset=-1)
+  # os.remove(os.path.join(base_dir, "2/06/13/13.md"))
 
 if __name__ == '__main__':
   # migrate_and_include_shlokas()
+  # fix_buhler()
   fix_includes()
-  base_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/buhler/"
   # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/apastamba-dharma-sutra/d/doc116233.html", base_dir=base_dir, dest_path_maker=buhler_dest_path_maker)
   # dir_helper.remove_empty_directories(base_dir)
   # para_translation.split(base_dir=base_dir)
-  # fix_buhler()
   # metadata_helper.copy_metadata_and_filename(dest_dir=ref_dir.replace("vishvAsa-prastutiH", "buhler"), ref_dir=ref_dir, sub_path_id_maker=None)
-
-# replace_suutraid_with_includes()
+  pass
+  # replace_suutraid_with_includes()

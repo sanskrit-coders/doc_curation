@@ -104,6 +104,8 @@ def alt_include_adder(match, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/
   """
   def make_alt_include(url, file_path, target_dir, h1_level, source_dir=source_dir, classes=["collapsed"], title=None):
     alt_file_path = file_path.replace(source_dir, target_dir)
+    if source_dir not in url:
+      logging.fatal("%s %s - no %s found", url, file_path, source_dir)
     alt_url = url.replace(source_dir, target_dir)
     if title is None:
       index_file_path = regex.sub("%s/.+" % target_dir, "%s/_index.md" % target_dir, alt_file_path)
@@ -148,3 +150,15 @@ def include_basename_fixer(match, ref_dir):
   new_url = os.path.abspath(base_url + new_sub_path)
   return match.group(0).replace(url, new_url)
 
+
+def include_core_with_commentaries(dir_path, file_pattern, alt_dirs, source_dir="vishvAsa-prastutiH"):
+  md_files = library.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
+  md_files = [f for f in md_files if os.path.basename(f.file_path) ]
+
+  def include_fixer(match):
+    return alt_include_adder(match=match, source_dir=source_dir, alt_dirs=alt_dirs)
+
+  for md_file in md_files:
+    transform_include_lines(md_file=md_file, transformer=old_include_remover)
+    transform_include_lines(md_file=md_file, transformer=include_fixer)
+    md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
