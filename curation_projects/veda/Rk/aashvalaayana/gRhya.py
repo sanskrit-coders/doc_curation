@@ -41,6 +41,95 @@ def oldenberg_dest_path_maker(url, base_dir):
   subpath = "/".join(["%02d" % int(x) for x in subpath.split("_")])
   return os.path.join(base_dir, subpath + ".md")
 
+def oldenberg_fix():
+  # base_dir = os.path.join(oldenberg_dir, "4/09")
+  # library.shift_contents(base_dir, start_index=14, substitute_content_offset=1)
+  # library.shift_contents(base_dir, start_index=16, substitute_content_offset=1)
+  # library.shift_contents(base_dir, start_index=28, substitute_content_offset=-1)
+  # library.shift_contents(base_dir, start_index=29, substitute_content_offset=-1)
+  # library.shift_contents(base_dir, start_index=30, substitute_content_offset=-1)
+
+  # base_dir = os.path.join(oldenberg_dir, "3/09")
+  # library.shift_contents(base_dir, start_index=3, substitute_content_offset=-1)
+
+  # base_dir = os.path.join(oldenberg_dir, "3/06")
+  # library.shift_contents(base_dir, start_index=3, substitute_content_offset=-1)
+
+  # base_dir = os.path.join(oldenberg_dir, "1/09")
+  # library.shift_contents(base_dir, start_index=6, substitute_content_offset=-1)
+
+  # base_dir = os.path.join(oldenberg_dir, "1/08")
+  # library.shift_contents(base_dir, start_index=12, substitute_content_offset=-1)
+
+  # base_dir = os.path.join(oldenberg_dir, "1/02")
+  # library.shift_contents(base_dir, start_index=10, substitute_content_offset=-1)
+
+  # base_dir = os.path.join(oldenberg_dir, "1/15")
+  # library.shift_contents(base_dir, start_index=6, substitute_content_offset=-1)
+  # library.shift_contents(base_dir, start_index=10, substitute_content_offset=-1)
+
+  # base_dir = os.path.join(oldenberg_dir, "4/05")
+  # library.shift_contents(base_dir, start_index=3, substitute_content_offset=1)
+  # library.shift_contents(base_dir, start_index=5, substitute_content_offset=1)
+  # library.remove_file_by_index(base_dir, [9, 10])
+
+  # base_dir = os.path.join(oldenberg_dir, "4/03")
+  # library.shift_contents(base_dir, start_index=14, substitute_content_offset=1)
+  # library.remove_file_by_index(base_dir, [27])
+
+  # base_dir = os.path.join(oldenberg_dir, "4/01")
+  # library.shift_contents(base_dir, start_index=8, substitute_content_offset=1)
+
+  # base_dir = os.path.join(oldenberg_dir, "3/08")
+  # library.shift_contents(base_dir, start_index=12, substitute_content_offset=16-12)
+  # library.shift_contents(base_dir, start_index=14, substitute_content_offset=1)
+  # library.remove_file_by_index(base_dir, range(17, 22))
+
+  # base_dir = os.path.join(oldenberg_dir, "2/07")
+  # library.shift_contents(base_dir, start_index=6, substitute_content_offset=1)
+  # library.remove_file_by_index(base_dir, [12])
+
+  # base_dir = os.path.join(oldenberg_dir, "2/03")
+  # library.shift_contents(base_dir, start_index=6, substitute_content_offset=1)
+  # library.remove_file_by_index(base_dir, [13])
+
+  # base_dir = os.path.join(oldenberg_dir, "1/10")
+  # library.shift_contents(base_dir, start_index=18, substitute_content_offset=1)
+  # for index in range(27, 28):
+  #   os.remove(os.path.join(base_dir, "%02d.md" % index))
+
+  # Some fixing in 1/12 too.
+
+  # base_dir = os.path.join(oldenberg_dir, "1/17")
+  # library.shift_contents(base_dir, start_index=13, substitute_content_offset=1)
+  # os.remove(os.path.join(base_dir, "%02d.md" % 19))
+
+  # base_dir = os.path.join(oldenberg_dir, "1/20")
+  # library.shift_contents(base_dir, start_index=6, substitute_content_offset=1)
+  # os.remove(os.path.join(base_dir, "%02d.md" % 11))
+  
+  # base_dir = os.path.join(oldenberg_dir, "1/22")
+  # library.shift_contents(base_dir, start_index=5, substitute_content_offset=-1)
+  # library.shift_contents(base_dir, start_index=8, substitute_content_offset=1)
+  # library.shift_contents(base_dir, start_index=9, substitute_content_offset=1)
+  # library.shift_contents(base_dir, start_index=10, substitute_content_offset=1)
+  # library.shift_contents(base_dir, start_index=24, substitute_content_offset=1)
+  # os.remove(os.path.join(base_dir, "%02d.md" % 11))
+
+  # base_dir = os.path.join(oldenberg_dir, "1/23")
+  # library.shift_contents(base_dir, start_index=6, substitute_content_offset=1)
+  # library.shift_contents(base_dir, start_index=10, substitute_content_offset=5)
+  # library.shift_contents(base_dir, start_index=19, substitute_content_offset=15-19)
+
+  # base_dir = os.path.join(oldenberg_dir, "1/24")
+  # library.shift_contents(base_dir, start_index=10, substitute_content_offset=2)
+  # library.shift_contents(base_dir, start_index=13, substitute_content_offset=-1)
+  # library.shift_contents(base_dir, start_index=16, substitute_content_offset=19-16)
+  # library.shift_contents(base_dir, start_index=17, substitute_content_offset=19-17)
+  # library.shift_contents(base_dir, start_index=20, substitute_content_offset=1)
+
+  pass
+
 
 def oldenberg_dump():
   # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/asvalayana-grihya-sutra/d/doc116555.html", base_dir=oldenberg_dir, dest_path_maker=oldenberg_dest_path_maker)
@@ -48,12 +137,14 @@ def oldenberg_dump():
   # library.apply_function(fn=section_helper.autonumber, dir_path=os.path.join(oldenberg_dir, "04/08.md"), dest_script=sanscript.IAST)
   # para_translation.split(base_dir=oldenberg_dir)
   # library.apply_function(fn=metadata_helper.add_init_words_to_title, dir_path=os.path.join(ref_dir, "1/06"), target_title_length=30, num_words=2, dry_run=False)
-  library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path=os.path.join(ref_dir, "1/06"), dry_run=False)
+  # library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path=os.path.join(ref_dir, "1/06"), dry_run=False)
+  oldenberg_fix()
   # metadata_helper.copy_metadata_and_filename(dest_dir=os.path.join(static_dir_base, "oldenberg"), ref_dir=ref_dir)
   pass
 
 
 if __name__ == '__main__':
   # prep_muula()
-  oldenberg_dump()
+  # oldenberg_dump()
+  fix_includes()
   pass

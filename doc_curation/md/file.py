@@ -192,8 +192,9 @@ class MdFile(object):
       logging.info(metadata)
       # logging.info(content)
 
-  def dump_to_file(self, metadata, content, dry_run):
-    logging.info("Writing %s", self.file_path)
+  def dump_to_file(self, metadata, content, dry_run, silent=False):
+    if not silent:
+      logging.info("Writing %s", self.file_path)
     content = file_helper.clear_bad_chars(content)
     if len(metadata) > 0:
         if self.frontmatter_type is None:

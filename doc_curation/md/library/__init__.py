@@ -246,18 +246,25 @@ def get_sub_path_id(sub_path, basename_id_pattern=r"(.+?)(?=[_\.]|$)"):
       id_parts.append(base_id_match.group(1))
   return "/".join(id_parts)
 
-
-
-def shift_contents(dir_path, substitute_content_offset, start_index=None, end_index=None, index_position=0, dry_run=False):
+def get_index_to_md(dir_path, index_position=0):
   files = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
   files.sort()
-  index_to_content_original = {}
   index_to_md_file = {}
   for index, file_path in enumerate(files):
     base_name = os.path.basename(file_path)
     index = int(base_name.replace(".md", "").split("_")[index_position])
     md_file = MdFile(file_path=file_path)
     index_to_md_file[index] = md_file
+  return index_to_md_file
+
+
+def shift_contents(dir_path, substitute_content_offset, start_index=None, end_index=None, index_position=0, dry_run=False):
+  files = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
+  files.sort()
+  index_to_content_original = {}
+  index_to_md_file = get_index_to_md(dir_path=dir_path, index_position=index_position)
+
+  for index, md_file in index_to_md_file.items():
     (_, content) = md_file.read()
     index_to_content_original[index] = content
 
@@ -274,6 +281,13 @@ def shift_contents(dir_path, substitute_content_offset, start_index=None, end_in
         content = index_to_content_original[offset_index]
         md_file = index_to_md_file[index]
         md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
+
+
+def remove_file_by_index(dir_path, indices, index_position=0):
+  index_to_md_file = get_index_to_md(dir_path=dir_path, index_position=index_position)
+  for index, md_file in index_to_md_file.items():
+    if index in indices:
+      os.remove(md_file.file_path)
 
 
 def make_per_src_folder_content_files(dest_path, main_source_path, aux_source_list, source_script=sanscript.DEVANAGARI, h1_level=3, dry_run=False):
@@ -316,3 +330,4 @@ def get_parent_md(md_file):
     return MdFile(file_path=file_path)
   else:
     return None
+

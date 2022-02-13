@@ -3,6 +3,8 @@ import os
 
 import regex
 from bs4 import BeautifulSoup, NavigableString, Tag
+from doc_curation.scraping import wisdom_lib
+
 from doc_curation.md import library, content_processor
 
 from doc_curation.md.file import MdFile
@@ -36,11 +38,8 @@ def get_content(soup):
         content_out += " %s " % footnote_text
     content_out += "\n\n"
 
-  footnote_elements = soup.select("section.footnotes div.f")
-  for tag in footnote_elements:
-    footnote_id = tag.find('p', {'class': 'nr'}).text.replace("[", "[^")
-    definition = tag.findChild("div").text.strip()  
-    content_out += "\n\n%s %s" % (footnote_id, definition)
+  content_out += wisdom_lib.footnote_extractor(soup=soup)
+  content_out = content_processor.define_footnotes_near_use(content=content_out)
   content_out = content_out.replace("", " - ")
   return content_out
 

@@ -6,9 +6,11 @@ from urllib.error import HTTPError
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
+from doc_curation import md
 
 from curation_utils import file_helper
 from curation_utils import scraping
+from doc_curation.md import content_processor
 from doc_curation.md.file import MdFile
 
 logging.basicConfig(
@@ -87,12 +89,13 @@ def find_matching_tag(tags, filter):
   return None
 
 
-def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, title_prefix="", html_fixer=None, md_fixer=None, dry_run=False):
+def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, title_prefix="", html_fixer=None, footnote_definier=None, md_fixer=None, overwrite=False, dry_run=False):
   if callable(outfile_path):
     outfile_path = outfile_path(url)
-  if os.path.exists(outfile_path):
+  if os.path.exists(outfile_path) and not overwrite:
     logging.info("skipping: %s - it exists already", outfile_path)
-    return
+    # We definitely want to return the original html even if the file exists - we may need to navigate to the next element.
+    return scraping.get_soup(url)
   logging.info("Dumping: %s to %s", url, outfile_path)
   html = get_html(url=url)
   unaltered_soup = BeautifulSoup(html, 'html.parser')
@@ -103,20 +106,22 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, ti
 
   metadata = {"title": title_maker(soup, title_prefix)}
 
-  # We definitely want to return the original html even if the file exists - we may need to navigate to the next element.
-  if os.path.exists(outfile_path):
-    logging.info("Skipping dumping: %s to %s", url, outfile_path)
-    return unaltered_soup
-
   content = get_content_from_element(soup=soup, text_css_selector=text_css_selector, url=url)
 
   md_file = MdFile(file_path=outfile_path)
-  md_file.import_content_with_pandoc(content=content, source_format="html", dry_run=dry_run, metadata=metadata)
+  content = md.get_md_with_pandoc(content_in=content, source_format="html")
+
+
   if md_fixer is not None:
-    [_, md] = md_file.read()
-    md = md_fixer(md)
-    md_file.replace_content_metadata(new_content=md, dry_run=dry_run)
-  
+    # md_fixer may fix footnote markers as well. So it should be called earlier.
+    content = md_fixer(content)
+
+  if footnote_definier is not None:
+    footnote_md = footnote_definier(unaltered_soup)
+    content = "%s\n\n%s" % (content, footnote_md)
+    content = content_processor.define_footnotes_near_use(content=content)
+
+  md_file.dump_to_file(content=content, metadata=metadata, dry_run=dry_run)
 
   logging.info("Done: %s to %s", url, outfile_path)
   return unaltered_soup
@@ -129,11 +134,14 @@ def next_url_from_soup_css(soup, css, base_url):
   return None
 
 
-def dump_series(start_url, out_path, dumper, next_url_getter, index_format="%02d", dry_run=False):
+def dump_series(start_url, out_path, dumper, next_url_getter, end_url=None, index_format="%02d", dry_run=False):
   index = 1
   next_url = start_url
   while next_url:
     soup = dumper(url=next_url, outfile_path=os.path.join(out_path, index_format % index + ".md"), title_prefix= index_format % index, dry_run=dry_run)
+    assert soup is not None, "Dumper returning None soup"
+    if next_url == end_url:
+      break
     next_url = next_url_getter(soup)
     index = index + 1
     # break # For testing

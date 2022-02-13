@@ -1,12 +1,14 @@
 import glob
 import logging
 import os
+from functools import lru_cache
 
 import regex
 
 from doc_curation.md.file import MdFile
 
 
+@lru_cache
 def get_Rk_id_to_name_map_from_muulam():
   Rk_paths = glob.glob("/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/mUlam/*/*/*.md", recursive=True)
   Rk_paths = sorted(Rk_paths)
