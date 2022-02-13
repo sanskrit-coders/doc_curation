@@ -11,7 +11,10 @@ def get_suukta_id_to_rk_map():
       rk = json.load(fp)
       suukta_id = "%02d/%03d" % (int(rk["classification"]["mandala"]), int(rk["classification"]["sukta"]))
       suukta_rk_map = suukta_id_to_rk_map.get(suukta_id, {})
-      suukta_rk_map["%02d" % int(rk["classification"]["rik"])] = {"mantraH": "\n".join(rk["samhita"]["lines"]), "ChandaH": rk["attribute"]["chandas"]}
+      mantra = "\n".join(rk["samhita"]["lines"])
+      if isinstance(rk["samhita"]["lines"], str):
+        mantra = rk["samhita"]["lines"]
+      suukta_rk_map["%02d" % int(rk["classification"]["rik"])] = {"mantraH": mantra, "ChandaH": rk["attribute"]["chandas"]}
       suukta_id_to_rk_map[suukta_id] = suukta_rk_map
 
   return suukta_id_to_rk_map
