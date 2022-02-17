@@ -6,4 +6,4 @@ def test_remove_parenthized_text():
 
 
 def test_title_from_text():
-  assert text_utils.title_from_text("[^1]पुरुषार्थ[^2]ज्ञानमि[^3]दं गुह्यं परमर्षिणा समाख्यातम् ।") == "पुरुषार्थज्ञानमिदङ्"
+  assert text_utils.title_from_text("[^1]पुरुषार्थ[^2]ज्ञानमि[^3]दं गुह्यं परमर्षिणा समाख्यातम् ।") == "पुरुषार्थज्ञानमिदम्"

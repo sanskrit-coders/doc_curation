@@ -18,7 +18,7 @@ class Quote(object):
     self.meter = meter
   
   def get_key(self):
-    return file_helper.get_storage_name(text=self.text)
+    return file_helper.get_storage_name(text=self.text.toLowerCase(), max_length=10)
 
 
 class Subhaashita(Quote):
@@ -27,4 +27,4 @@ class Subhaashita(Quote):
 
   def get_key(self):
     approx_key = deduplication.get_approx_deduplicating_key(text=self.text)
-    return file_helper.get_storage_name(text=approx_key)
+    return file_helper.get_storage_name(text=approx_key, max_length=10)

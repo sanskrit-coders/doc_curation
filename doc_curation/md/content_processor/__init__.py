@@ -44,8 +44,8 @@ def define_footnotes_near_use(content, *args, **kwargs):
   for definition in definitions:
     content = regex.sub(r"%s[\s\S]+?\n\n" % regex.escape(definition.group(1)), r"\g<0>%s\n" % definition.group(0), content)
   # Undo initial additions
-  content = regex.sub("^\n", "", content)
-  content = regex.sub("\n\n$", "", content)
+  content = regex.sub(r"^\n", "", content)
+  content = regex.sub(r"\n\n$", "", content)
   return content
 
 
@@ -54,12 +54,12 @@ def remove_non_content_text(content):
   content = "\n%s\n\n" % content
   definition_pattern = r"\n(\[\^.+?\]):[\s\S]+?\n(?=[\n\[])"
   content = regex.sub(definition_pattern, "", content)
-  content = regex.sub("\n#.+?\n", "\n", content)
-  content = regex.sub("\n> +", "\n", content)
-  content = regex.sub("\+\+\+\([\s\S]+?\)\+\+\+", "", content)
+  content = regex.sub(r"\n#.+?\n", "\n", content)
+  content = regex.sub(r"\n> +", "\n", content)
+  content = regex.sub(r"\+\+\+\([\s\S]+?\)\+\+\+", "", content)
   # Undo initial additions
-  content = regex.sub("^\n", "", content)
-  content = regex.sub("\n\n$", "", content)
+  content = regex.sub(r"^\n", "", content)
+  content = regex.sub(r"\n\n$", "", content)
   return content
 
 
@@ -128,7 +128,7 @@ def replace_texts(md_file, patterns, replacement_maker, dry_run=False):
 def numerify_shloka_numbering(text, encoding="कखगघङचछजझञ"):
   def transformer(match):
     return "॥%s.%d॥" % (match.group(1), encoding.index(match.group(2)) + 1)
-  c = regex.sub("॥ *(\d+)[ (]*([%s])[ )]*॥" % encoding, transformer, text)
+  c = regex.sub(r"॥ *(\d+)[ (]*([%s])[ )]*॥" % encoding, transformer, text)
   return c
 
 

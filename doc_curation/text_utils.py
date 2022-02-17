@@ -3,9 +3,9 @@ import regex
 
 
 def remove_parenthized_text(text):
-  text = regex.sub("\[[^\]]+?\]", "", text)
-  text = regex.sub("\+\+\+\([^)]+?\)\+\+\+", "", text)
-  text = regex.sub("\([^)]+?\)", "", text)
+  text = regex.sub(r"\[[^\]]+?\]", "", text)
+  text = regex.sub(r"\+\+\+\([^)]+?\)\+\+\+", "", text)
+  text = regex.sub(r"\([^)]+?\)", "", text)
   return text
 
 
