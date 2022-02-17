@@ -55,7 +55,7 @@ def fix_audio_tags():
 
 
 if __name__ == '__main__':
-  # devanaagarify(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/bhAruchiH")
+  devanaagarify(dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/gretil_devanAgarI/5_poetry/4_narr/visnusarma_panchatantra.md")
   # fix_audio_tags()
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: "documentation-theme" not in str(x))
