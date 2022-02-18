@@ -1,4 +1,0 @@
-
-
-def dump(quotes):
-  pass
