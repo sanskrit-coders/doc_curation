@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from copy import copy
 
 from doc_curation import subhaashita
 from doc_curation.md.file import MdFile
@@ -32,9 +33,11 @@ def add(quotes, base_path, dry_run=False):
         file_path = os.path.join(dir_path, key + ".md")
         continue
       else:
-        metadata_new = collection_helper.update_with_lists_as_sets(metadata_old, metadata)
-        metadata = metadata_new
+        metadata = collection_helper.update_with_lists_as_sets(metadata_old, metadata)
+        commentaries = quote.commentaries
+        quote.commentaries = copy(quote_old.commentaries)
+        quote.commentaries.update(commentaries)
+        (_, md) = quote.to_metadata_md()
         break
-        # TODO : Continue this.
     md_file = MdFile(file_path=file_path)
     md_file.dump_to_file(metadata=metadata, content=md, dry_run=dry_run)

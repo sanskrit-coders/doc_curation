@@ -11,11 +11,6 @@ from doc_curation import text_utils
 from indic_transliteration import deduplication, sanscript
 
 
-class Rating(JsonObject):
-  def __init__(self, name, value):
-    self.name = name
-    self.value = value
-
 
 class Commentary(JsonObject):
   def __init__(self, name, content):
@@ -64,21 +59,19 @@ class Quote(JsonObject):
     metadata = self.to_json_map()
     core_text = metadata.pop("text")
     metadata["title"] = self.make_title()
-    md = textwrap.dedent("""
-    <details><summary>Text</summary>
-    
-    %s
-    </details>
-    """) % (core_text)
-    commentaries = metadata.pop('commentaries', [])
-    for commentary in commentaries:
-      md += "\n%s" % commentary.to_details_tag()
+    commentaries = metadata.pop('commentaries', {})
+    commentaries["Text"] = core_text
+    commentary_order = ["विश्वास-प्रस्तुतिः", "MT"]
+    commentaries_sorted = [Commentary(name=name, commentary=commentary) for name, commentary in commentaries.items() if name in commentary_order]
+    commentaries_sorted.append([Commentary(name=name, commentary=commentary) for name, commentary in commentaries.items() if name not in commentary_order])
+    detail_elements = [commentary.to_details_tag() for commentary in commentaries_sorted]
+    md = "\n\n".join(detail_elements)
     return (metadata, md)
 
   @classmethod
   def from_metadata_md(cls, metadata, md):
     soup = BeautifulSoup(md, features="lxml")
-    commentaries = []
+    commentaries = {}
     text = None
     for detail in soup.find("body").findChildren("details", recursive=False):
       summary = detail.find("summary")
@@ -86,7 +79,7 @@ class Quote(JsonObject):
       if summary.text.strip() == "Text":
         text = detail.text.strip()
       else:
-        commentaries.append(Commentary(name=summary.text, content=detail.text.strip()))
+        commentaries[summary.text] = detail.text.strip()
     metadata.pop("title", None)
     obj = common.JsonObject.make_from_dict(input_dict=metadata)
     obj.commentaries = commentaries
