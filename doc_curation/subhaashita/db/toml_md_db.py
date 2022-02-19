@@ -4,6 +4,7 @@ import sys
 
 from doc_curation import subhaashita
 from doc_curation.md.file import MdFile
+from sanskrit_data import collection_helper
 
 
 def add(quotes, base_path, dry_run=False):
@@ -31,8 +32,7 @@ def add(quotes, base_path, dry_run=False):
         file_path = os.path.join(dir_path, key + ".md")
         continue
       else:
-        metadata_new = metadata_old.copy()
-        metadata_new.update(metadata)
+        metadata_new = collection_helper.update_with_lists_as_sets(metadata_old, metadata)
         metadata = metadata_new
         break
         # TODO : Continue this.
