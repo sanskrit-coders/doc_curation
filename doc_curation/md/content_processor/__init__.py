@@ -49,14 +49,23 @@ def define_footnotes_near_use(content, *args, **kwargs):
   return content
 
 
-def remove_non_content_text(content):
+def remove_non_content_text(content, remove_parenthized_text=True):
   # For correct regex matching.
   content = "\n%s\n\n" % content
-  definition_pattern = r"\n(\[\^.+?\]):[\s\S]+?\n(?=[\n\[])"
-  content = regex.sub(definition_pattern, "", content)
+  from doc_curation.md.content_processor import patterns
+  # remove footnote definitions
+  content = regex.sub(patterns.FOOTNOTE_DEFINITION, "", content)
+  # Remove footnote markers
+  content = regex.sub(r"\[\^.+?\]", "", content)
+  # Remove section titles
   content = regex.sub(r"\n#.+?\n", "\n", content)
+  # Remove quote markers
   content = regex.sub(r"\n> +", "\n", content)
-  content = regex.sub(r"\+\+\+\([\s\S]+?\)\+\+\+", "", content)
+  # Remove js comments
+  content = regex.sub(patterns.JS_COMMENTS, "", content)
+  if remove_parenthized_text:
+    # Remove paranthesized text
+    content = regex.sub(r"\(.+?\)", "", content)
   # Undo initial additions
   content = regex.sub(r"^\n", "", content)
   content = regex.sub(r"\n\n$", "", content)

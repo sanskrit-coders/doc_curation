@@ -8,7 +8,6 @@ from doc_curation.md import content_processor, library
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 
-PATTERN_SHLOKA = r"\n[^#\s<>\[\(][\s\S]+?॥\s*[०-९\d\.]+\s*॥.*?(?=\n|$)"
 
 
 def static_include_path_maker(title, original_path, path_replacements={"content": "static", ".md": ""}, use_preexisting_file_with_prefix=True):

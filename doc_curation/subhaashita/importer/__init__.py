@@ -1,3 +1,4 @@
+import os
 import sys
 
 import pandas
@@ -14,7 +15,7 @@ def import_from_mss_tsv():
   for mss_id in quote_df.index:
     text = str(quote_df.loc[mss_id].quote)
     text = regex.sub(r"। *", "।  \n", text)
-    quote = Subhaashita(text=text, secondary_sources=[mss_id], script=sanscript.DEVANAGARI)
+    quote = Subhaashita(variants=[text], secondary_sources=[mss_id], script=sanscript.DEVANAGARI)
     quotes.append(quote)
   return quotes
 

@@ -131,13 +131,15 @@ class MdFile(object):
     (metadata, content) = self.read()
     title = metadata.get("title", None)
     if ref_dir_for_ancestral_title is not None:
+      while ref_dir_for_ancestral_title.endswith("/"):
+        ref_dir_for_ancestral_title = ref_dir_for_ancestral_title[:-1]
       from doc_curation.md import library
       parent_md = library.get_parent_md(md_file=self)
       if parent_md is not None:
         parent_dir = os.path.dirname(parent_md.file_path)
         if parent_dir != ref_dir_for_ancestral_title:
           parent_title = parent_md.get_title(omit_chapter_id=omit_chapter_id, ref_dir_for_ancestral_title=ref_dir_for_ancestral_title)
-          title = "%s/ %s" % (parent_title, title)
+          title = "%s// %s" % (parent_title, title)
           title = regex.sub("(?:^| )\+", "", title)
     
     if title is None:

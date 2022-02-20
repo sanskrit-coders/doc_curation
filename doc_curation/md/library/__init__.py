@@ -133,6 +133,7 @@ def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, 
 
   logging.info("Processing %d files.", len(md_files))
   from tqdm import tqdm
+  results_map = {}
   for md_file in tqdm(md_files):
     if start_file is not None and not start_file_reached:
       if str(md_file.file_path) != start_file:
@@ -141,7 +142,9 @@ def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, 
         start_file_reached = True
     if md_file.get_title() is not None:
       # logging.info("Processing %s", md_file)
-      fn(md_file, *args, **kwargs)
+      result = fn(md_file, *args, **kwargs)
+      results_map[md_file.file_path] = result
+  return results_map
 
 
 def get_audio_file_urls(md_files):
