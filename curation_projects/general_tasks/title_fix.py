@@ -12,8 +12,8 @@ if __name__ == '__main__':
 
   ## DEVANAGARI
   # library.apply_function(dir_path="/home/vvasuki/vvasuki-git/pALi/content", fn=MdFile.ensure_ordinal_in_title, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
-  # library.apply_function(dir_path="/home/vvasuki/vishvAsa/AgamaH/content/hinduism/branches/brAhma/yoga-vAsiShTha-shAstram/Ananda-bodhendra-TIkA", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
-  library.apply_function(dir_path="/home/vvasuki/vishvAsa/vedAH/content/Rk/shAkalam/aitareya-brAhmaNam/", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
+  library.apply_function(dir_path="/home/vvasuki/vishvAsa/kAvyam/content/laxyam/padyam/subhAShitam/subhAShita-ratna-bhANDAgAram/02_sAmAnyaprakaraNam_p1", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
+  # library.apply_function(dir_path="/home/vvasuki/vishvAsa/vedAH/content/Rk/shAkalam/aitareya-brAhmaNam/", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
 
   ##### General
   # library.apply_function(fn=MdFile.prepend_file_index_to_title, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/books/vivekAnanda", dry_run=False)

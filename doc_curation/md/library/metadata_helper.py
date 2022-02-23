@@ -60,8 +60,8 @@ def set_filename_from_title(md_file, source_script=sanscript.DEVANAGARI, mixed_l
     extension = ""
   else:
     current_path = md_file.file_path
-    extension = "md"
-  file_name = file_helper.clean_file_path("%s.%s" % (title_in_file_name, extension))
+    extension = ".md"
+  file_name = file_helper.clean_file_path("%s%s" % (title_in_file_name, extension))
   file_path = os.path.join(os.path.dirname(current_path), file_name)
   if str(current_path) != file_path:
     logging.info("Renaming %s to %s", current_path, file_path)

@@ -25,7 +25,7 @@ def add(quotes, base_path, dry_run=False):
       quote_old = subhaashita.Quote.from_metadata_md(metadata=metadata_old, md=md_old)
       quote_keys = quote.get_variant_keys()
       quote_old_keys = quote_old.get_variant_keys()
-      distance = editdistance.eval(quote_keys[0], quote_old_keys[0]) / float(max(len(quote_keys[0]), len(quote_old_keys[0]))) 
+      distance = min([editdistance.eval(quote_keys[0], quote_old_key) / float(max(len(quote_keys[0]), len(quote_old_key))) for quote_old_key in quote_old_keys]) 
       if distance > 0.1:
         logging.warning("Quote key clash %0.2f detected: (%s vs %s)\n(%s vs %s)", distance, quote_keys[0], quote_old_keys[0], quote.get_text(), quote_old.get_text())
         key = quote.get_key(max_length=len(key) + 5)
@@ -33,7 +33,7 @@ def add(quotes, base_path, dry_run=False):
           key_parts = key.split("_")
           index = 1 if len(key_parts) == 1 else int(key_parts[1]) + 1
           key = "%s_%d" % (key, index)
-          logging.warning("Quote key clash - forced to enumerate: %s (%s vs %s)", key, quote.commentaries[CommentaryKey.TEXT], quote_old.commentaries[CommentaryKey.TEXT])
+          logging.warning("Quote key clash - forced to enumerate: %s (%s vs %s)", key, quote.get_text(), quote_old.get_text())
           # sys.exit()
         file_path = os.path.join(dir_path, key + ".md")
         continue
@@ -44,9 +44,9 @@ def add(quotes, base_path, dry_run=False):
         quote.commentaries = copy(quote_old.commentaries)
         quote.commentaries.update(commentaries)
         old_variants = quote_old.get_variants()
+        quote.set_variants(old_variants)
         if quote_keys[0] not in quote_old_keys:
           old_variants.append(quote_text)
-          quote.set_variants(old_variants)
         (_, md) = quote.to_metadata_md()
         break
     md_file = MdFile(file_path=file_path)

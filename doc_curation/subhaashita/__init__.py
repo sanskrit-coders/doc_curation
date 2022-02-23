@@ -3,6 +3,7 @@ import sys
 import textwrap
 
 import methodtools
+import regex
 from bs4 import BeautifulSoup
 from curation_utils import file_helper
 from sanskrit_data.schema import common
@@ -41,7 +42,7 @@ class CommentaryKey(object):
 
 class Quote(JsonObject):
 
-  def __init__(self, variants, topics=None, sources=None, secondary_sources=None, commentaries=None, types=None, ratings=None, ornaments=None, sentiments=None, meter=None):
+  def __init__(self, variants, topics=None, sources=None, secondary_sources=None, commentaries=None, types=None, ratings=None, ornaments=None, sentiments=None, meters=None):
     self.topics = topics
     self.sources = sources
     self.secondary_sources = secondary_sources
@@ -51,7 +52,7 @@ class Quote(JsonObject):
     self.ratings = ratings
     self.ornaments = ornaments
     self.sentiments = sentiments
-    self.meter = meter
+    self.meters = meters
     self._script = None
   
   def __repr__(self):
@@ -59,7 +60,8 @@ class Quote(JsonObject):
 
   @methodtools.lru_cache()
   def get_variants(self):
-    return self.commentaries[CommentaryKey.TEXT].split(CommentaryKey.VARIANT_JOINER)
+    VARIANT_JOINER_PATTERN = "\n____+ *\n"
+    return regex.split(VARIANT_JOINER_PATTERN, self.commentaries[CommentaryKey.TEXT])
 
   def get_variant_keys(self):
     return [file_helper.get_storage_name(text=x, max_length=None, source_script=self._script) for x in self.get_variants()]
@@ -105,8 +107,8 @@ class Quote(JsonObject):
 
 
 class Subhaashita(Quote):
-  def __init__(self, variants, topics=None, sources=None, secondary_sources=None, commentaries=None, types=None, ratings=None, ornaments=None, sentiments=None, meter=None, script=sanscript.DEVANAGARI):
-    super(Subhaashita, self).__init__(variants=variants, topics=topics, sources=sources, secondary_sources=secondary_sources, commentaries=commentaries, types=types, ratings=ratings, ornaments=ornaments, sentiments=sentiments, meter=meter)
+  def __init__(self, variants, topics=None, sources=None, secondary_sources=None, commentaries=None, types=None, ratings=None, ornaments=None, sentiments=None, meters=None, script=sanscript.DEVANAGARI):
+    super(Subhaashita, self).__init__(variants=variants, topics=topics, sources=sources, secondary_sources=secondary_sources, commentaries=commentaries, types=types, ratings=ratings, ornaments=ornaments, sentiments=sentiments, meters=meters)
     self._script=script
 
   def get_key(self, max_length=MAX_KEY_LENGTH):
