@@ -10,6 +10,9 @@ def remove_parenthized_text(text):
 
 
 def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True, title_id=None, script=sanscript.DEVANAGARI):
+  from indic_transliteration import detect
+  if script is None:
+    script = detect.detect(text=text)
   if depunctuate:
     devanaaagari_scheme = sanscript.SCHEMES[sanscript.DEVANAGARI]
     text = devanaaagari_scheme.remove_svaras(in_string=text)
