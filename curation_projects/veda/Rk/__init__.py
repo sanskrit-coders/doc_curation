@@ -8,6 +8,9 @@ import regex
 from doc_curation.md.file import MdFile
 
 
+comment_dirs = ["vishvAsa-prastutiH", "mUlam", "pada-pAThaH", "anukramaNikA", "sAyaNa-bhAShyam",  "jamison_brereton", "griffith"]
+
+
 @lru_cache
 def get_Rk_id_to_name_map_from_muulam():
   Rk_paths = glob.glob("/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/mUlam/*/*/*.md", recursive=True)

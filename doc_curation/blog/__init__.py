@@ -70,7 +70,7 @@ def get_post_metadata(soup):
   return date, title
 
 
-def file_name_from_url(url):
+def file_name_from_url(url, max_title_length=None):
   # construct file_name from the posts url
   parsed_url = urlsplit(url=url)
   path_parts = (parsed_url.path).strip().split("/")
@@ -78,7 +78,7 @@ def file_name_from_url(url):
   # remove slashes, replace with dashes when dealing with urls like https://manasataramgini.wordpress.com/2020/06/08/pandemic-days-the-fizz-is-out-of-the-bottle/
   # https://koenraadelst.blogspot.com/2021/06/resume-spring-2021.html
   post_id = unquote(path_parts[-1])
-  return "%s.md" % file_helper.get_storage_name(post_id)
+  return "%s.md" % file_helper.get_storage_name(post_id, max_length=max_title_length)
 
 
 def fix_special_markup(content):
@@ -87,19 +87,19 @@ def fix_special_markup(content):
   return content
 
 
-def scrape_post_markdown(url, dir_path, dry_run=False, entry_css_list=None):
+def scrape_post_markdown(url, dir_path, max_title_length=300, dry_run=False, entry_css_list=None):
 
   (title, post_html, date_obj) = (None, None, None)
   
   
   if regex.search("/(\d\d\d\d)/(\d\d)/", url):
-    file_name = file_name_from_url(url=url)
+    file_name = file_name_from_url(url=url, max_title_length=max_title_length)
     result = regex.search("(\d\d\d\d)/(\d\d)/(\d\d)?", url)
     date_obj = parser.parse(result.group().replace("/", "-"), fuzzy=True)
   else:
     ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list)
     date_obj, title = get_post_metadata(soup)
-    file_name = "%s.md" % get_storage_name(text=title)
+    file_name = "%s.md" % get_storage_name(text=title, max_length=max_title_length)
 
   file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, datetime.datetime.strftime(date_obj, "%Y/%m/%Y-%m-%d_") + file_name))
 

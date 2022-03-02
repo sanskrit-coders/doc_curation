@@ -130,6 +130,7 @@ class MdFile(object):
   def get_title(self, omit_chapter_id=True, ref_dir_for_ancestral_title=None):
     (metadata, content) = self.read()
     title = metadata.get("title", None)
+    title = str(title) # Might be mistakenly numeric!
     if ref_dir_for_ancestral_title is not None:
       while ref_dir_for_ancestral_title.endswith("/"):
         ref_dir_for_ancestral_title = ref_dir_for_ancestral_title[:-1]

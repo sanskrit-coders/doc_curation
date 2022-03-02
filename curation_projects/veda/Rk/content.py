@@ -7,8 +7,8 @@ from doc_curation.md import library
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 
-static_dir_base = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/"
-content_dir_base = "/home/vvasuki/vishvAsa/vedAH/content/Rk/shAkalam/saMhitA/"
+static_dir_base = "/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/"
+content_dir_base = "/home/vvasuki/vishvAsa/vedAH_Rk/content/shAkalam/saMhitA/"
 
 
 def dump(dry_run, start_id=None):
@@ -81,7 +81,7 @@ def get_include(include_type, suukta_id, file_name_optitrans, h1_level, field_na
   if not os.path.exists(file_path):
     return ""
   return library.get_include(field_names=field_names, classes=classes, title=title,
-                             url=os.path.join("/vedAH/Rk/shAkalam/saMhitA/", include_type, suukta_id,
+                             url=os.path.join("/vedAH_Rk/shAkalam/saMhitA/", include_type, suukta_id,
                                               file_name_optitrans), h1_level=h1_level)
 
 

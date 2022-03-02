@@ -1,6 +1,7 @@
 import glob
 import logging
 import os
+import shutil
 from functools import lru_cache
 from pathlib import Path
 
@@ -280,10 +281,27 @@ def shift_contents(dir_path, substitute_content_offset, start_index=None, end_in
   for index, content in index_to_content_original.items():
     if start_index <= index and end_index >= index:
       offset_index = index + substitute_content_offset
+      logging.info("Shifting %d to %d", offset_index, index)
       if offset_index in index_to_content_original.keys():
         content = index_to_content_original[offset_index]
         md_file = index_to_md_file[index]
         md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
+
+
+def shift_indices(dir_path, new_index_offset, start_index=None, end_index=None, index_position=0, dry_run=False):
+  files = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
+  files.sort()
+  index_to_md_file = get_index_to_md(dir_path=dir_path, index_position=index_position)
+  for index, md_file in index_to_md_file.items():
+    if start_index <= index and end_index >= index:
+      new_index = index + new_index_offset
+      name_parts = os.path.basename(md_file.file_path).split("_")
+      index_pattern = "%%0%dd" % len(name_parts[index_position])
+      name_parts[index_position] = index_pattern % new_index
+      new_file_path = os.path.join(os.path.dirname(md_file.file_path), "_".join(name_parts))
+      logging.info("Shifting %d to %d, %s to %s", index, new_index, md_file.file_path, new_file_path)
+      if not dry_run:
+        shutil.move(md_file.file_path, new_file_path)
 
 
 def remove_file_by_index(dir_path, indices, index_position=0):

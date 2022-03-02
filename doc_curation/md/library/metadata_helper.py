@@ -69,7 +69,7 @@ def set_filename_from_title(md_file, source_script=sanscript.DEVANAGARI, mixed_l
       os.rename(src=current_path, dst=file_path)
 
 
-def get_title_from_filename(file_path, transliteration_target):
+def get_title_from_filename(file_path, transliteration_target, maybe_use_dravidian_variant=None):
   if os.path.basename(file_path) == "_index.md":
     dir_name = os.path.basename(os.path.dirname(file_path)).replace(".md", "")
     title_optitrans = "+" + dir_name
@@ -77,12 +77,12 @@ def get_title_from_filename(file_path, transliteration_target):
     title_optitrans = os.path.basename(file_path).replace(".md", "")
   title = title_optitrans.replace("_", " ")
   if transliteration_target is not None:
-    title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target, maybe_use_dravidian_variant=True)
+    title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target, maybe_use_dravidian_variant=maybe_use_dravidian_variant)
   return title
 
-def set_title_from_filename(md_file, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
+def set_title_from_filename(md_file, transliteration_target=sanscript.DEVANAGARI, dry_run=False, maybe_use_dravidian_variant=None):
   # logging.debug(md_file.file_path)
-  title = get_title_from_filename(file_path=md_file.file_path, transliteration_target=transliteration_target)
+  title = get_title_from_filename(file_path=md_file.file_path, transliteration_target=transliteration_target, maybe_use_dravidian_variant=maybe_use_dravidian_variant)
   md_file.set_title(dry_run=dry_run, title=title)
 
 

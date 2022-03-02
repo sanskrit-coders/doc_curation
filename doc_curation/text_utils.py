@@ -27,7 +27,7 @@ def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True,
       # TODO: Call get_approx_deduplicating_key ?
       while len(title) > target_title_length and len(title.split()) > 1:
         title = " ".join(title.split()[:-1])
-  title = sanscript.SCHEMES[script].replace_terminal_anusvaara(data_in=title)
+    title = sanscript.SCHEMES[script].replace_terminal_anusvaara(data_in=title)
   if title_id is not None:
     title = "%s %s" % (title_id, title)
   return title
