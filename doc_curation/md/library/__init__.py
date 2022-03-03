@@ -120,7 +120,7 @@ def get_md_files_from_path(dir_path, file_pattern="**/*.md", file_name_filter=la
   return [MdFile(path) for path in md_file_paths]
 
 
-def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, frontmatter_type="toml", start_file=None, silent_iteration=False, *args,
+def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, frontmatter_type="toml", start_file=None, silent_iteration=True, *args,
                    **kwargs):
   if not silent_iteration:
     logging.debug(list(Path(dir_path).glob(file_pattern)))
