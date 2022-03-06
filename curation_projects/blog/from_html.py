@@ -17,6 +17,7 @@ logging.getLogger("charsetgroupprober").propagate = False
 logging.getLogger('sbcharsetprober').setLevel(logging.WARNING)
 logging.getLogger("sbcharsetprober").propagate = False
 
+
 if __name__ == '__main__':
     pass
     wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-index/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/manasataramgini")

@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 from curation_utils import file_helper
 from curation_utils.file_helper import get_storage_name
 from doc_curation import text_utils
-from doc_curation.md import get_md_with_pandoc
+from doc_curation.md import get_md_with_pandoc, library
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper.souper import get_tags_matching_css
 from curation_utils import scraping
@@ -87,7 +87,7 @@ def fix_special_markup(content):
   return content
 
 
-def scrape_post_markdown(url, dir_path, max_title_length=300, dry_run=False, entry_css_list=None):
+def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entry_css_list=None):
 
   (title, post_html, date_obj) = (None, None, None)
   
@@ -127,6 +127,9 @@ def scrape_post_markdown(url, dir_path, max_title_length=300, dry_run=False, ent
 
 
 def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, browser=None, entry_css_list=None, anchor_css="a[href]", anchor_filter=lambda x: True, urlpattern=None, dry_run=False):
+  # standardize lengths of preexisting files to avoid duplication.
+  from doc_curation.md.library import metadata_helper
+  library.apply_function(fn=metadata_helper.truncate_file_name, max_length=50 + len("2020-02-10_"), dry_run=dry_run, dir_path=dir_path)
   ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list, browser=browser)
   if anchor_css is not None:
     if post_html is not None:

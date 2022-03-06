@@ -13,6 +13,7 @@ logging.basicConfig(
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
+
 def migrate_and_include_sUtras(dir_path):
   def get_title_id(text_matched):
     id_in_text = regex.search("([०-९]+) *$", text_matched).group(1)

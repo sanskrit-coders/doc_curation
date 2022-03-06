@@ -9,7 +9,7 @@ from doc_curation.md.library import metadata_helper
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 
-ref_dir = "/home/vvasuki/vishvAsa/vedAH/static/Rk/sUtram/vasiShTha-dharma-sUtram/vishvAsa-prastutiH"
+ref_dir = "/home/vvasuki/vishvAsa/vedAH_Rk/static/sUtram/vasiShTha-dharma-sUtram/vishvAsa-prastutiH"
 
 
 def fix_filenames():

@@ -145,3 +145,27 @@ def fix_google_ocr(text):
   text = text.replace("^-+", "")
   text = text.replace("\n", "\n\n")
   return text
+
+
+def make_lines_end_with_pattern(content, full_line_pattern):
+  lines = content.split("\n")
+  lines_out = []
+  last_line_complete = True
+  for line in lines:
+    line = line.rstrip()
+    if line == "":
+      if last_line_complete:
+        lines_out.append(line)
+        continue
+      else:
+        continue
+    if line.startswith("#") or regex.match(" *<", line):
+      last_line_complete = True
+      current_line_complete = True
+    current_line_complete = regex.fullmatch(full_line_pattern, line)
+    if not last_line_complete:
+      lines_out[-1] = f"{lines_out[-1]} {line}"
+    else:
+      lines_out.append(line)
+    last_line_complete = current_line_complete
+  return "  \n".join(lines_out)

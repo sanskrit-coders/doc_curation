@@ -46,14 +46,14 @@ def pad_title_numbering(dir_path, dry_run):
       md_file.set_title(title=new_title, dry_run=dry_run)
 
 
-def set_filename_from_title(md_file, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, dry_run=False, skip_dirs=True):
+def set_filename_from_title(md_file, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, max_title_length=50, dry_run=False, skip_dirs=True):
   # logging.debug(md_file.file_path)
   if skip_dirs and str(md_file.file_path).endswith("_index.md"):
     logging.info("Special file %s. Skipping." % md_file.file_path)
     return
   title = md_file.get_title(omit_chapter_id=False)
   if source_script is not None:
-    title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script, maybe_use_dravidian_variant=True, mixed_languages_in_titles=mixed_languages_in_titles)
+    title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script, maybe_use_dravidian_variant=True, mixed_languages_in_titles=mixed_languages_in_titles, max_length=max_title_length)
 
   if os.path.basename(md_file.file_path) == "_index.md":
     current_path = os.path.dirname(md_file.file_path)
@@ -69,6 +69,17 @@ def set_filename_from_title(md_file, source_script=sanscript.DEVANAGARI, mixed_l
       os.rename(src=current_path, dst=file_path)
 
 
+def truncate_file_name(md_file, max_length=50, dry_run=False):
+  basename = os.path.basename(md_file.file_path).replace(".md", "")
+  basename = basename[:max_length] + ".md"
+  new_path = os.path.join(os.path.dirname(md_file.file_path), basename)
+  if md_file.file_path != new_path:
+    logging.info("Renaming %s to %s", md_file.file_path, new_path)
+    if not dry_run:
+      os.rename(src=md_file.file_path, dst=new_path)
+      md_file.file_path = new_path
+
+
 def get_title_from_filename(file_path, transliteration_target, maybe_use_dravidian_variant=None):
   if os.path.basename(file_path) == "_index.md":
     dir_name = os.path.basename(os.path.dirname(file_path)).replace(".md", "")
@@ -78,6 +89,8 @@ def get_title_from_filename(file_path, transliteration_target, maybe_use_dravidi
   title = title_optitrans.replace("_", " ")
   if transliteration_target is not None:
     title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target, maybe_use_dravidian_variant=maybe_use_dravidian_variant)
+  else:
+    title = title.capitalize()
   return title
 
 def set_title_from_filename(md_file, transliteration_target=sanscript.DEVANAGARI, dry_run=False, maybe_use_dravidian_variant=None):

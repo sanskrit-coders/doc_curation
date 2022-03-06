@@ -1,6 +1,7 @@
 import os
 import shutil
 
+from curation_projects.veda import Rk
 from doc_curation.md import library
 from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
@@ -17,4 +18,6 @@ def fix_purusha_suukta():
 
 
 if __name__ == '__main__':
-  fix_purusha_suukta()
+  # fix_purusha_suukta()
+  Rk.fix_Rk_file_names(os.path.join(Rk.SAMHITA_DIR_STATIC, "geldner"), dry_run=False, ignore_missing=True)
+  

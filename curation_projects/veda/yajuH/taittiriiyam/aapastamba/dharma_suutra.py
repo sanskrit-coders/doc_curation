@@ -15,8 +15,8 @@ from indic_transliteration import sanscript
 import functools
 import logging
 
-ref_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH"
-buhler_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/buhler/"
+ref_dir = "/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH"
+buhler_dir = "/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/dharma-sUtram/buhler/"
 
 @functools.lru_cache
 def get_suutra_id_to_md():
@@ -33,7 +33,7 @@ def get_suutra_id_to_md():
 
 
 def fix_includes():
-  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/sarva-prastutiH", file_pattern="**/[0-9][0-9]*.md")
+  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/sarva-prastutiH", file_pattern="**/[0-9][0-9]*.md")
 
 
   def include_fixer(match):
@@ -65,7 +65,7 @@ def suutra_include_maker(suutra_id_dev, text_path, *args, **kwargs):
 
 
 def replace_suutraid_with_includes():
-  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/viShaya-vibhAgaH")
+  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/viShaya-vibhAgaH")
   for md_file in md_files:
     include_helper.migrate_and_replace_texts(md_file=md_file, text_patterns=[r"(?<=[^०-९]|^)[०-९]+(?=[^०-९]|$)"], replacement_maker=suutra_include_maker, migrated_text_processor=None, destination_path_maker=lambda *args, **kwargs: None, title_maker=lambda *args, **kwargs: None, dry_run=False)
 
@@ -76,21 +76,13 @@ def get_title_id(text_matched):
   return title_id
 
 
-def title_maker(text_matched, index, file_title):
-  title_id = get_title_id(text_matched=text_matched)
-  text_without_id = regex.sub(" *([०-९]+) *$", "", text_matched)
-  title = content_processor.title_from_text(text=text_without_id, num_words=3, target_title_length=None,
-                                            title_id=title_id)
-  return title
-
-
 def migrate_and_include_shlokas():
 
   def replacement_maker(text_matched, dest_path):
     return include_helper.vishvAsa_include_maker(dest_path, h1_level=3, title="FILE_TITLE")
 
   PATTERN_SUTRA = "\n[^#\s<>\[\(][\s\S]+? \s*[०-९\d\.]+\s*?(?=\n|$)"
-  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[PATTERN_SUTRA], dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH", replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)
+  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[PATTERN_SUTRA], dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH", replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)
 
 
 def buhler_dest_path_maker(url, base_dir):

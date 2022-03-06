@@ -17,7 +17,7 @@ logging.basicConfig(
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
-griffith_dir_base = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/griffith"
+griffith_dir_base = "/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/griffith"
 
 
 

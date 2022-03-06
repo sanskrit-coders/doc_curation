@@ -43,17 +43,3 @@ def scrape_monthly_indexes(url, dir_path, init_year_month_str=None, dry_run=Fals
   month_urls = get_month_urls(url, init_year_month_str=init_year_month_str)
   for month_url in month_urls:
     scrape_index_from_anchors(url=month_url, dir_path=dir_path, anchor_css=None, dry_run=dry_run)
-
-
-def fix_paths(dir_path, dry_run=False):
-  files = glob.glob(os.path.join(dir_path, '**/2*.md'), recursive=True)
-  for file_path in files:
-    base_name = os.path.basename(file_path)
-    year_str = base_name.split("-")[0]
-    month_str = base_name.split("-")[1]
-    dest_path = os.path.join(dir_path, year_str, month_str, base_name)
-    logging.info("Move %s to %s", file_path, dest_path)
-    if not dry_run:
-      os.makedirs(name=os.path.dirname(dest_path), exist_ok=True)
-      shutil.move(src=file_path, dst=dest_path)
-  library.fix_index_files(dir_path=dir_path, dry_run=dry_run)

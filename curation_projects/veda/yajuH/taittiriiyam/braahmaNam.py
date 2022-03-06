@@ -11,4 +11,4 @@ def migrate_and_include_mantras(dir_path):
 
 
 if __name__ == '__main__':
-  migrate_and_include_mantras(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/brAhmaNam/bhaTTa-bhAskara-bhAShyam/1/4/8.md")
+  migrate_and_include_mantras(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/brAhmaNam/bhaTTa-bhAskara-bhAShyam/1/4/8.md")

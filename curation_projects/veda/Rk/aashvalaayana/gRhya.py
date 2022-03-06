@@ -10,11 +10,12 @@ from doc_curation.md import library
 
 from doc_curation.md.content_processor import include_helper, section_helper
 from doc_curation.md.library import metadata_helper
+from doc_curation.scraping import sacred_texts
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 from indic_transliteration import sanscript
 
-static_dir_base = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/sUtram/AshvalAyanaH/gRhyam/"
+static_dir_base = "/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/sUtram/AshvalAyanaH/gRhyam/"
 content_dir_base = static_dir_base.replace("static/", "content/")
 ref_dir = os.path.join(static_dir_base, "vishvAsa-prastutiH")
 oldenberg_dir = os.path.join(static_dir_base, "oldenberg")
@@ -146,5 +147,7 @@ def oldenberg_dump():
 if __name__ == '__main__':
   # prep_muula()
   # oldenberg_dump()
-  fix_includes()
+  # fix_includes()
+  sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe29/sbe29099.htm", outfile_path=os.path.join(content_dir_base, "meta", "oldenberg.md"))
+
   pass

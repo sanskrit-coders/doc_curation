@@ -50,13 +50,19 @@ def dump(dry_run, start_id=None):
                                          classes=["collapsed"], h1_level=3)
       rk_details += "\n%s" % get_include("thomson_solcum", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
                                          classes=["collapsed"], title="Thomson Solcum restoration", h1_level=4)
+      rk_details += "\n%s" % get_include("vedaweb_annotation", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
+                                         classes=["collapsed"], title="Vedaweb annotation", h1_level=4)
       rk_details += "\n%s" % get_include("pada-pAThaH", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
                                          classes=["collapsed"], h1_level=4)
+      rk_details += "\n%s" % get_include("hellwig_grammar", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
+                                         classes=["collapsed"], title="Hellwig Grammar", h1_level=4)
       rk_details += "\n%s" % get_include("anukramaNikA", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
                                          field_names=["devataa", "RShiH", "ChandaH"], classes=["collapsed"], h1_level=4)
       rk_details += "\n%s" % get_include("sAyaNa-bhAShyam", suukta_id=suukta_id,
                                          file_name_optitrans=file_name_optitrans,
                                          classes=["collapsed"], h1_level=3)
+      rk_details += "\n%s" % get_include("wilson", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
+                                         classes=["collapsed"], title="Wilson", h1_level=3)
       rk_details += "\n%s" % get_include("jamison_brereton", suukta_id=suukta_id,
                                          file_name_optitrans=file_name_optitrans,
                                          classes=["collapsed"], title="Jamison & Brereton", h1_level=3)
@@ -65,6 +71,16 @@ def dump(dry_run, start_id=None):
                                          classes=["collapsed"], title="Jamison & Brereton Note", h1_level=4)
       rk_details += "\n%s" % get_include("griffith", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
                                          classes=["collapsed"], title="RTH Griffith", h1_level=3)
+      rk_details += "\n%s" % get_include("oldenberg", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
+                                         classes=["collapsed"], title="Oldenberg", h1_level=3)
+      rk_details += "\n%s" % get_include("macdonell", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
+                                         classes=["collapsed"], title="Macdonell", h1_level=3)
+      rk_details += "\n%s" % get_include("geldner", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
+                                         classes=["collapsed"], title="Geldner (De)", h1_level=3)
+      rk_details += "\n%s" % get_include("grassmann", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
+                                         classes=["collapsed"], title="Grassmann (De)", h1_level=3)
+      rk_details += "\n%s" % get_include("elizarenkova", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
+                                         classes=["collapsed"], title="Elizarenkova (Ru)", h1_level=3)
 
       # dump_content(metadata=title_only_metadata, content=rk_details, suukta_id=suukta_id, rk_id=rk_id, base_dir=content_dir_base, destination_dir="sarva-prastutiH", dry_run=dry_run)
 

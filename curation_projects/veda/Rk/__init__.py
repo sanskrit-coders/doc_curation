@@ -8,12 +8,13 @@ import regex
 from doc_curation.md.file import MdFile
 
 
-comment_dirs = ["vishvAsa-prastutiH", "mUlam", "pada-pAThaH", "anukramaNikA", "sAyaNa-bhAShyam",  "jamison_brereton", "griffith"]
+SAMHITA_DIR_STATIC = "/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/"
+comment_dirs = ["vishvAsa-prastutiH", "mUlam", "pada-pAThaH", "anukramaNikA", "sAyaNa-bhAShyam",  "jamison_brereton", "griffith", "wilson", "hellwig_grammar"]
 
 
 @lru_cache
 def get_Rk_id_to_name_map_from_muulam():
-  Rk_paths = glob.glob("/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/mUlam/*/*/*.md", recursive=True)
+  Rk_paths = glob.glob(os.path.join(SAMHITA_DIR_STATIC, "mUlam/*/*/*.md"), recursive=True)
   Rk_paths = sorted(Rk_paths)
   Rk_id_to_name_map = {}
   for Rk_path in Rk_paths:
@@ -25,10 +26,14 @@ def get_Rk_id_to_name_map_from_muulam():
 
 def fix_Rk_file_names(dest_path, ignore_missing=False, dry_run=True):
   Rk_id_to_name_map = get_Rk_id_to_name_map_from_muulam()
+  fix_dir_names(dest_path)
   for id in Rk_id_to_name_map.keys():
-    Rk_number_str = id.split("/")[-1]
-    sUkta_id = "/".join(id.split("/")[:-1])
-    file_path = os.path.join(dest_path, sUkta_id, "0" + Rk_number_str + ".md")
+    id_parts = id.split("/")
+    Rk_number_str = id_parts[-1].split("_")[0]
+    suukta_number_str = id_parts[-2].split("_")[0]
+    mandala_number_str = id_parts[-3].split("_")[0]
+    sUkta_id = "/".join([mandala_number_str, suukta_number_str])
+    file_path = os.path.join(dest_path, sUkta_id, Rk_number_str + ".md")
     file_path_new = os.path.join(dest_path, "/".join(id.split("/")[:-1]), Rk_id_to_name_map[id] + ".md")
     if os.path.exists(file_path_new):
       logging.info("%s exists. Skipping", file_path_new)
@@ -37,7 +42,7 @@ def fix_Rk_file_names(dest_path, ignore_missing=False, dry_run=True):
       # logging.fatal(file_path)
     else:
       if not os.path.exists(file_path):
-        if ignore_missing:
+        if ignore_missing or ("geldner" in dest_path and sUkta_id in ["01/070"]):
           continue
         else:
           logging.fatal("Could not find %s at %s", id, file_path)
@@ -45,6 +50,23 @@ def fix_Rk_file_names(dest_path, ignore_missing=False, dry_run=True):
       logging.info("Moving %s to %s", file_path, file_path_new)
       if not dry_run:
         os.rename(file_path, file_path_new)
+
+
+def fix_dir_names(dir_path, dry_run=False):
+  def fix_dir_paths(dir_paths):
+    for old_path in dir_paths:
+      old_path = os.path.normpath(old_path)
+      basename = os.path.basename(old_path)
+      new_path = os.path.join(os.path.dirname(old_path), basename.split("_")[0])
+      if new_path != old_path:
+        logging.info("Moving %s to %s", old_path, new_path)
+        if not dry_run:
+          os.rename(old_path, new_path)
+  
+  dir_paths = glob.glob(f'{dir_path}/*/', recursive=False)
+  fix_dir_paths(dir_paths=dir_paths)
+  dir_paths = glob.glob(f'{dir_path}/*/*/', recursive=False)
+  fix_dir_paths(dir_paths=dir_paths)
 
 
 def include_multi_file_comments(multi_file_comment_path_pattern, file_range_regex, target_file_computer, include_generator, dry_run=True):

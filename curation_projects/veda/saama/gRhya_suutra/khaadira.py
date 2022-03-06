@@ -1,15 +1,34 @@
 import os
+import shutil
 
 import regex
 from bs4 import BeautifulSoup
 
-from doc_curation.md import library
-from doc_curation.md.content_processor import include_helper
+import doc_curation.scraping.sacred_texts
+from curation_projects import veda
+from doc_curation.md import library, content_processor
+from doc_curation.md.content_processor import include_helper, section_helper
+from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from doc_curation.scraping.html_scraper import souper
-from doc_curation.scraping.wisdom_lib import para_translation
+from doc_curation.scraping.sacred_texts import para_translation
+from indic_transliteration import sanscript
 
-ref_dir = "/home/vvasuki/vishvAsa/vedAH/static/sAma/rANAyanIyam/sUtram/khaadira/gRhyam/vishvAsa-prastutiH"
+content_dir_base = "/home/vvasuki/vishvAsa/vedAH/content/sAma/kauthumam/sUtram/drAhyAyaNaH/khAdira-gRhyam"
+static_dir_base = content_dir_base.replace("content", "static")
+ref_dir = os.path.join(static_dir_base, "mUlam")
+
+
+def dump_muulam():
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path=os.path.join(os.path.dirname(content_dir_base), "khAdira-gRhyam.md"), frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None) # 
+  # library.apply_function(fn=section_helper.autonumber, dir_path=os.path.join(content_dir_base, "mUlam"))
+  
+  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m: content_processor.make_lines_end_with_pattern(c, ".+[०-९]+"), dir_path=os.path.join(content_dir_base, "mUlam"))
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path=os.path.join(content_dir_base, "mUlam"), frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None)
+  # veda.migrate_and_include_sUtras(dir_path=os.path.join(content_dir_base, "mUlam"))
+  # shutil.move(os.path.join(content_dir_base, "mUlam"), os.path.join(content_dir_base, "sarva-prastutiH"))
+  # shutil.copytree(os.path.join(static_dir_base, "mUlam"), os.path.join(static_dir_base, "vishvAsa-prastutiH"))
+  library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m: c.replace("mUlam", "vishvAsa-prastutiH"), dir_path=os.path.join(content_dir_base, "sarva-prastutiH"))
 
 
 def fix_filenames():
@@ -26,7 +45,7 @@ def fix_filenames():
 
 
 def fix_includes():
-  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/khaadira/gRhyam/sUtra-TIkAH", file_pattern="[0-9][0-9]*.md")
+  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/sAma/kauthumam/sUtram/drAhyAyaNaH/khAdira-gRhyam/sarva-prastutiH/", file_pattern="**/[0-9][0-9]*.md")
   md_files = [f for f in md_files if os.path.basename(f.file_path) ]
   
   def include_fixer(match):
@@ -39,36 +58,29 @@ def fix_includes():
 
 
 def oldenberg_dest_path_maker(url, base_dir):
-  html = souper.get_html(url=url)
-  soup = BeautifulSoup(html, 'html.parser')
-  title = souper.title_from_element(soup, title_css_selector="h1")
-  def deromanize(match):
-    import roman
-    return str(roman.fromRoman(match.group(1)))
-  title = regex.sub("([IVX]+),", deromanize, title)
-  subpath_parts = regex.sub("\D+", " ", title).strip().replace(" ", "_").split("_")
-  subpath_parts = ["%02d" % int(x) for x in subpath_parts]
-  subpath = "%s/%s" % (subpath_parts[0], subpath_parts[-1])
+  page_number = int(url.split("/")[-1].replace(".htm", "").replace("sbe", ""))
+  base_page_number = 29207 + 1
+  subpath_parts = [(page_number-base_page_number)/5 + 1, ((page_number-base_page_number) % 5)  + 1]
+  subpath = "%d/%d" % (int(subpath_parts[0]), int(subpath_parts[-1]))
   return os.path.join(base_dir, subpath + ".md")
+
+def dump_oldenberg():
+  base_dir = ref_dir.replace("mUlam", "oldenberg")
+  doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe29/sbe29207.htm", outfile_path=os.path.join(content_dir_base, "meta", "oldenberg.md"))
+
+  doc_curation.scraping.sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbe29/sbe29208.htm", base_dir=base_dir, dest_path_maker=oldenberg_dest_path_maker)
+  para_translation.split(base_dir=base_dir)
+  # metadata_helper.copy_metadata_and_filename(dest_dir=ref_dir.replace("mUlam", "oldenberg"), ref_dir=ref_dir)
 
 
 def fix_oldenberg():
-  # Off by 1 in 4 as well. Then:
-  base_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/khaadira/gRhyam/oldenberg/11"
-  # Merge 11, 12
-  # library.shift_contents(base_dir, start_index=12, new_content_offset=1)
-  library.shift_contents(base_dir, start_index=23, substitute_content_offset=1)
-  os.remove(os.path.join(base_dir, "25.md"))
-  os.remove(os.path.join(base_dir, "26.md"))
-  
+  pass
 
 
 if __name__ == '__main__':
-  # fix_includes()
-  # TODO: khAdira gRhya sUtra is quite off. https://www.sacred-texts.com/hin/sbe29/sbe29208.htm shows sanskrit text in a different font, whereas https://www.wisdomlib.org/hinduism/book/khadira-grihya-sutra/d/doc116673.html etc. confusing interleaves the original with the translation in a way that makes it hard to distinguish.
-  base_dir = ref_dir.replace("vishvAsa-prastutiH", "oldenberg")
-  para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/khadira-grihya-sutra/d/doc116669.html", base_dir=base_dir, dest_path_maker=oldenberg_dest_path_maker)
-  para_translation.split(base_dir=base_dir)
+  # dump_muulam()
+  dump_oldenberg()
   # fix_oldenberg()
+  # fix_includes()
   # fix_filenames()
   pass

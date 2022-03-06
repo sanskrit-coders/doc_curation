@@ -9,11 +9,12 @@ from doc_curation.md.file import MdFile
 from doc_curation.md import library
 from doc_curation.md.content_processor import include_helper, section_helper
 from doc_curation.md.library import metadata_helper
+from doc_curation.scraping import sacred_texts
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 from indic_transliteration import sanscript
 
-static_dir_base = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/hiraNyakeshI/gRhyam/"
+static_dir_base = "/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/hiraNyakeshI/gRhyam/"
 content_dir_base = static_dir_base.replace("static/", "content/")
 ref_dir = os.path.join(static_dir_base, "vishvAsa-prastutiH")
 oldenberg_dir = os.path.join(static_dir_base, "oldenberg")
@@ -29,7 +30,7 @@ def fix_filenames():
       return library.get_sub_path_id(sub_path=regex.sub(".+/", "", str(x)), basename_id_pattern=r"(\d\du?_\d\d)")
     else:
       return "%s_%s" % (os.path.basename(os.path.dirname(x)), base_name.replace(".md", ""))
-  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/hiraNyakeshI/gRhyam/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
+  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/hiraNyakeshI/gRhyam/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
 
 
 def oldenberg_dest_path_maker(url, base_dir):
@@ -88,5 +89,7 @@ if __name__ == '__main__':
   # fix_includes()
   # oldenberg_dump()
   # prep_muula()
-  fix_includes()
+  # fix_includes()
+  sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe30/sbe30043.htm", outfile_path=os.path.join(content_dir_base, "meta", "oldenberg.md"))
+
   pass

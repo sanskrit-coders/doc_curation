@@ -7,8 +7,8 @@ import curation_projects.veda.Rk
 from curation_projects import veda
 from doc_curation.md.file import MdFile
 
-path_notes = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/jamison_brereton_notes"
-thomson_solcum_dir = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/thomson_solcum"
+path_notes = "/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/jamison_brereton_notes"
+thomson_solcum_dir = "/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/thomson_solcum"
 
 
 def separate_commentaries(dest_path, dry_run=True):

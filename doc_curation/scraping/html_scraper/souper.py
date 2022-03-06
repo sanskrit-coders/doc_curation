@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import urljoin
 
+import regex
 from bs4 import BeautifulSoup
 from doc_curation import md
 
@@ -47,6 +48,11 @@ def tag_replacer(soup, css_selector, tag_name):
 def tag_remover(soup, css_selector):
   for element in soup.select(css_selector):
     element.decompose()
+
+
+def tag_appender(soup, css_selector, tag_name):
+  for element in soup.select(css_selector):
+    element.insert_after(soup.new_tag(tag_name))
 
 
 def get_content_from_element(url, text_css_selector, soup=None):
@@ -127,11 +133,14 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, ti
   return unaltered_soup
 
 
-def next_url_from_soup_css(soup, css, base_url):
-  next_links = soup.select(css)
-  if len(next_links) > 0:
-    return urljoin(base_url, next_links[0]["href"])
+def anchor_url_from_soup_css(soup, css, base_url, pattern=None):
+  links = soup.select(css)
+  if pattern is not None:
+    links = [link for link in links if regex.match(pattern, link.text)]
+  if len(links) > 0:
+    return urljoin(base_url, links[0]["href"])
   return None
+
 
 
 def dump_series(start_url, out_path, dumper, next_url_getter, end_url=None, index_format="%02d", dry_run=False):
@@ -159,6 +168,24 @@ def markdownify_local_htmls(src_dir, dest_dir, dumper, dry_run=False):
 
 def get_md_paragraph(tags):
   return "  \n".join([x.strip() for x in tags if isinstance(x, str) and x.strip() != ""])
+
+
+def insert_divs_between_tags(soup, css):
+  border_elements = soup.select(css)
+  for index, border in enumerate(border_elements):
+    if index == len(border_elements) - 1:
+      continue
+    next_border = border_elements[index + 1]
+    mid_nodes = []
+    next_node = border.nextSibling
+    while next_node and next_node != next_border:
+      mid_nodes.append(next_node)
+      next_node = next_node.nextSibling
+    container_div = soup.new_tag("div", attrs={"class": "fake_partition_div"})
+    border.insert_after(container_div)
+    for mid_node in mid_nodes:
+      mid_node.extract()
+      container_div.append(mid_node)
 
 
 def get_md_paragraphs_with_pandoc(tags, para_joiner="\n\n"):

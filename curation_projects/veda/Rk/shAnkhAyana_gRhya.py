@@ -3,10 +3,13 @@ import os
 import regex
 from bs4 import BeautifulSoup
 
+from doc_curation.scraping import sacred_texts
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 
-ref_dir = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAnkhAyanam/sUtram/shAnkhAyanaH/gRhyam/vishvAsa-prastutiH/"
+static_dir_base = "/home/vvasuki/vishvAsa/vedAH_Rk/static/shAnkhAyanam/sUtram/shAnkhAyanaH/gRhyam"
+content_dir_base = static_dir_base.replace("static/", "content/")
+ref_dir = os.path.join(static_dir_base, "vishvAsa-prastutiH")
 
 
 
@@ -21,6 +24,7 @@ def oldenberg_dest_path_maker(url, base_dir):
 
 
 if __name__ == '__main__':
-  para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/sankhayana-grihya-sutra/d/doc116455.html", base_dir=ref_dir.replace("vishvAsa-prastutiH", "oldenberg"), dest_path_maker=oldenberg_dest_path_maker)
-  para_translation.split(base_dir=ref_dir.replace("vishvAsa-prastutiH", "oldenberg"))
+  # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/sankhayana-grihya-sutra/d/doc116455.html", base_dir=ref_dir.replace("vishvAsa-prastutiH", "oldenberg"), dest_path_maker=oldenberg_dest_path_maker)
+  # para_translation.split(base_dir=ref_dir.replace("vishvAsa-prastutiH", "oldenberg"))
+  sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe29/sbe29002.htm", outfile_path=os.path.join(content_dir_base, "meta", "oldenberg.md"))
   pass

@@ -62,7 +62,7 @@ def dump(url, outfile_path, dry_run=False):
 
 
 def dump_serially(start_url, base_dir, dest_path_maker, dry_run=False):
-  next_url_getter = lambda soup: souper.next_url_from_soup_css(soup=soup, css="div.order-3 a", base_url="https://www.wisdomlib.org/")
+  next_url_getter = lambda soup: souper.anchor_url_from_soup_css(soup=soup, css="div.order-3 a", base_url="https://www.wisdomlib.org/")
 
   next_url = start_url
   while next_url:
