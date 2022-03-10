@@ -174,8 +174,9 @@ def insert_divs_between_tags(soup, css):
   border_elements = soup.select(css)
   for index, border in enumerate(border_elements):
     if index == len(border_elements) - 1:
-      continue
-    next_border = border_elements[index + 1]
+      next_border = None
+    else:
+      next_border = border_elements[index + 1]
     mid_nodes = []
     next_node = border.nextSibling
     while next_node and next_node != next_border:

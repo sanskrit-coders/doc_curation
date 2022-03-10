@@ -66,6 +66,9 @@ def remove_non_content_text(content, remove_parenthized_text=True):
   if remove_parenthized_text:
     # Remove paranthesized text
     content = regex.sub(r"\(.+?\)", "", content)
+  # Remove final digits
+  content = regex.sub(r"[\d०-९]+\s*$", "", content)
+
   # Undo initial additions
   content = regex.sub(r"^\n", "", content)
   content = regex.sub(r"\n\n$", "", content)

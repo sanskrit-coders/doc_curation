@@ -225,13 +225,13 @@ class MdFile(object):
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
       self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
-  def replace_content_metadata(self, new_content=None, new_metadata=None, dry_run=False):
+  def replace_content_metadata(self, new_content=None, new_metadata=None, dry_run=False, silent=False):
     (metadata, content) = self.read()
     if new_metadata is None:
       new_metadata = metadata
     if new_content is None:
       new_content = content
-    self.dump_to_file(metadata=new_metadata, content=new_content, dry_run=dry_run)
+    self.dump_to_file(metadata=new_metadata, content=new_content, dry_run=dry_run, silent=silent)
 
   def split_to_bits(self, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, title_index_pattern="%02d", bits_dir_url=None,
                     target_frontmantter_type=TOML, add_short_title=False, dry_run=False):

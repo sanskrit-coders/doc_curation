@@ -11,7 +11,7 @@ from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 
 
-def ensure_ordinal_in_title(dir_path, transliteration_target=sanscript.DEVANAGARI, first_file_index=1, dry_run=False):
+def ensure_ordinal_in_title(dir_path, transliteration_target=sanscript.DEVANAGARI, first_file_index=1, dry_run=False, recursive=False, format=None):
   files = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
   files.sort()
   for index, file in enumerate(files):
@@ -21,13 +21,19 @@ def ensure_ordinal_in_title(dir_path, transliteration_target=sanscript.DEVANAGAR
     # if regex.fullmatch("[+०-९0-9].+", title):
     #   return
 
-    format = "%%0%dd" % (len(str(len(files))))
+    if format is None:
+      format = "%%0%dd" % (len(str(len(files))))
     index = format % (index + first_file_index)
     if transliteration_target:
       index = sanscript.transliterate(index, sanscript.OPTITRANS, transliteration_target)
     title = "%s %s" % (index, title)
     md_file.set_title(title=title, dry_run=dry_run)
     set_filename_from_title(md_file=md_file, source_script=transliteration_target, dry_run=dry_run)
+
+  if recursive:
+    dirs = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if os.path.isdir(os.path.join(dir_path, x))]
+    for dir in dirs:
+      ensure_ordinal_in_title(dir_path=dir, transliteration_target=transliteration_target, dry_run=dry_run, recursive=True, first_file_index=first_file_index, format=format)
 
 
 def pad_title_numbering(dir_path, dry_run):
@@ -108,7 +114,7 @@ def prepend_file_indexes_to_title(md_file, dry_run):
   md_file.set_title(dry_run=dry_run, title=title)
 
 
-def add_init_words_to_title(md_file, num_words=2, target_title_length=None,script=sanscript.DEVANAGARI, replace_non_index_text=True, dry_run=False):
+def add_init_words_to_title(md_file, num_words=3, target_title_length=50,script=sanscript.DEVANAGARI, replace_non_index_text=True, dry_run=False):
   (metadata, content) = md_file.read()
   title = metadata["title"]
   if replace_non_index_text:
@@ -175,7 +181,7 @@ def shloka_title_maker(text):
   return title
 
 
-def copy_metadata_and_filename(dest_dir, ref_dir, sub_path_id_maker=None, dry_run=False):
+def copy_metadata_and_filename(dest_dir, ref_dir, insert_missign_ref_files=False, sub_path_id_maker=None, dry_run=False):
   from doc_curation.md import library
   sub_path_to_reference = library.get_sub_path_to_reference_map(ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
   dest_md_files = library.get_md_files_from_path(dir_path=dest_dir)
@@ -185,13 +191,20 @@ def copy_metadata_and_filename(dest_dir, ref_dir, sub_path_id_maker=None, dry_ru
     sub_path_id = sub_path_id_maker(md_file.file_path)
     if sub_path_id is None:
       continue
-    if sub_path_id not in sub_path_to_reference and sub_path_id.endswith("_index.md"):
-      logging.warning("Could not find %s in ref_dir. Skipping", sub_path_id)
-      continue
+    if sub_path_id not in sub_path_to_reference:
+      if sub_path_id.endswith("_index.md"):
+        pass
+        # logging.warning("Could not find %s in ref_dir. Skipping", sub_path_id)
+        continue
+      if insert_missign_ref_files:
+        target_path = os.path.join(ref_dir, sub_path_id + ".md")
+        logging.warning(fr"Inserting missing ref: {sub_path_id}. Fix and rerun.")
+        shutil.copy(md_file.file_path, target_path)
+        continue
     ref_md = sub_path_to_reference[sub_path_id]
     sub_file_path_ref = str(ref_md.file_path).replace(ref_dir, "")
     (ref_metadata, _) = ref_md.read()
-    md_file.replace_content_metadata(new_metadata=ref_metadata, dry_run=dry_run)
+    md_file.replace_content_metadata(new_metadata=ref_metadata, dry_run=dry_run, silent=True)
     target_path = os.path.abspath("%s/%s" % (dest_dir, sub_file_path_ref))
     if dry_run:
       logging.info("Moving %s to %s", md_file.file_path, target_path)

@@ -10,9 +10,7 @@ from doc_curation.md.library import metadata_helper
 from doc_curation.scraping.html_scraper import souper
 
 
-def footnote_extractor(soup):
-  
-  footnote_div = soup.select("div.fake_partition_div")[-1]
+def footnote_extractor(footnote_div):
   footnote_elements = footnote_div.findChildren('p',recursive=False)
   content_out = ""
   for tag in footnote_elements:
@@ -32,6 +30,7 @@ def decode_italicized_text(text):
   replacements = {"n": "ṇ", "t": "ṭ", "d": "ḍ", "m": "ṁ", "h": "ḥ", "ri": "r̥", "k": "c", "g": "j", "s": "ś"} # sh not intalicized is ṣ
   for x, y in replacements.items():
     text = text.replace(x, y)
+    text = text.replace(x.capitalize(), y.capitalize())
   return text
 
 
@@ -51,16 +50,21 @@ def get_text(tag):
   return content_out
 
 
-def get_main_content_tag(soup):
-  footnote_tags = [x for x in soup.select("*") if x.text.startswith("Footnote")]
-  if len(footnote_tags) > 0:
-    return soup.select("div.fake_partition_div")[-2]
-  else:
-    return soup.select("div.fake_partition_div")[-1]
+def get_content_divs(soup):
+  partitions = soup.select("div.fake_partition_div")
+  main_content_tag = None
+  footnote_content_tag = None
+  for partition in partitions:
+    footnote_tags = [x for x in partition.select("*") if x.text.startswith("Footnote")]
+    if len(footnote_tags) > 0:
+      footnote_content_tag = partition
+      break
+    else:
+      main_content_tag = partition
+  return (main_content_tag, footnote_content_tag)
 
 
-def get_main_content(soup):
-  main_content_tag = get_main_content_tag(soup=soup)
+def get_main_content(main_content_tag):
   content_out = ""
   for child in main_content_tag.children:
     content_out += get_text(tag=child)
@@ -81,12 +85,12 @@ def get_content(soup, main_content_extractor=get_main_content):
   souper.tag_remover(soup=soup, css_selector="font[size='-2']")
   souper.tag_remover(soup=soup, css_selector="font[color='GREEN']")
 
-  content_out = main_content_extractor(soup)
+  (main_div, footnote_div) = get_content_divs(soup=soup)
+  content_out = main_content_extractor(main_div)
 
-  content_out += footnote_extractor(soup=soup)
+  content_out += footnote_extractor(footnote_div)
   content_out = content_processor.define_footnotes_near_use(content=content_out)
-  content_out = content_out.replace("", " - ").replace(" ", " ")
-  replacements = {"â": "ā", "î": "ī", "û": "ū", }
+  replacements = {"â": "ā", "î": "ī", "û": "ū", "": "\\`", "": " - ", " ": " "}
   for x, y in replacements.items():
     content_out = content_out.replace(x, y)
     content_out = content_out.replace(x.capitalize(), y.capitalize())

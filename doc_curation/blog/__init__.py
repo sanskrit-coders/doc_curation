@@ -51,7 +51,7 @@ def get_post_html(url, entry_css_list=None, browser=None):
 
 
 def get_post_metadata(soup):
-  title_css_list = [".entry-title", ".card-header", "h1", "h2", "h3", "h4"]
+  title_css_list = [".post-title", ".entry-title", ".card-header", "h1", "h2", "h3", "h4"]
   title_tags = get_tags_matching_css(soup=soup, css_selector_list=title_css_list)
   title = title_tags[0].text.replace('\xa0', ' ')
   time_css_list = [".entry-date", ".post-date", ".published", "div.card-body>center", "time"]

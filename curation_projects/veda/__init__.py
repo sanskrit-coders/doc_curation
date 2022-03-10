@@ -23,7 +23,7 @@ def migrate_and_include_sUtras(dir_path):
   def title_maker(text_matched, index, file_title):
     title_id = get_title_id(text_matched=text_matched)
     text_without_id = regex.sub(" *([०-९]+) *$", "", text_matched)
-    title = content_processor.title_from_text(text=text_without_id, num_words=3, target_title_length=None,
+    title = content_processor.title_from_text(text=text_without_id, num_words=3, target_title_length=50,
                                               title_id=title_id)
     return title
 

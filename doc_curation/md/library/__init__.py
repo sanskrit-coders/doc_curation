@@ -288,7 +288,7 @@ def shift_contents(dir_path, substitute_content_offset, start_index=None, end_in
         md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
-def shift_indices(dir_path, new_index_offset, start_index=None, end_index=None, index_position=0, dry_run=False):
+def shift_indices(dir_path, new_index_offset, start_index=1, end_index=9999, index_position=0, dry_run=False):
   files = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
   files.sort()
   index_to_md_file = get_index_to_md(dir_path=dir_path, index_position=index_position)

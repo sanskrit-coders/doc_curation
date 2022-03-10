@@ -9,8 +9,7 @@ from doc_curation.md.library import metadata_helper
 from doc_curation.scraping import sacred_texts
 
 
-def get_main_content(soup):
-  main_content_tag = sacred_texts.get_main_content_tag(soup=soup)
+def get_main_content(main_content_tag):
   para_elements = main_content_tag.select("p", recursive=False)
   content_out = ""
   for para in para_elements:

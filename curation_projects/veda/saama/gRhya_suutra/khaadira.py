@@ -64,23 +64,66 @@ def oldenberg_dest_path_maker(url, base_dir):
   subpath = "%d/%d" % (int(subpath_parts[0]), int(subpath_parts[-1]))
   return os.path.join(base_dir, subpath + ".md")
 
+
 def dump_oldenberg():
   base_dir = ref_dir.replace("mUlam", "oldenberg")
-  doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe29/sbe29207.htm", outfile_path=os.path.join(content_dir_base, "meta", "oldenberg.md"))
-
-  doc_curation.scraping.sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbe29/sbe29208.htm", base_dir=base_dir, dest_path_maker=oldenberg_dest_path_maker)
+  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe29/sbe29207.htm", outfile_path=os.path.join(content_dir_base, "meta", "oldenberg.md"))
+  # 
+  # doc_curation.scraping.sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbe29/sbe29208.htm", base_dir=base_dir, dest_path_maker=oldenberg_dest_path_maker)
   para_translation.split(base_dir=base_dir)
-  # metadata_helper.copy_metadata_and_filename(dest_dir=ref_dir.replace("mUlam", "oldenberg"), ref_dir=ref_dir)
+  metadata_helper.copy_metadata_and_filename(dest_dir=ref_dir.replace("mUlam", "oldenberg"), ref_dir=ref_dir)
 
 
 def fix_oldenberg():
+  base_dir = ref_dir.replace("mUlam", "oldenberg")
+  
+  work_dir = os.path.join(base_dir, "1/2")
+  # library.shift_contents(work_dir, start_index=19, substitute_content_offset=1)
+  # library.remove_file_by_index(work_dir, [25])
+
+  work_dir = os.path.join(base_dir, "3/1")
+  # library.shift_contents(work_dir, start_index=3, substitute_content_offset=1)
+  # library.shift_contents(work_dir, start_index=11, substitute_content_offset=1)
+  # library.shift_contents(work_dir, start_index=41, substitute_content_offset=1)
+
+  work_dir = os.path.join(base_dir, "3/2")
+  # library.shift_contents(work_dir, start_index=10, substitute_content_offset=1)
+  # library.shift_contents(work_dir, start_index=14, substitute_content_offset=1)
+
+  work_dir = os.path.join(base_dir, "3/3")
+  # library.shift_contents(work_dir, start_index=23, substitute_content_offset=1)
+
+  work_dir = os.path.join(base_dir, "3/4")
+  # library.shift_contents(work_dir, start_index=17, substitute_content_offset=-1)
+
+  work_dir = os.path.join(base_dir, "3/5")
+  # library.shift_contents(work_dir, start_index=16, substitute_content_offset=1)
+  # library.shift_contents(work_dir, start_index=28, substitute_content_offset=1)
+
+  # work_dir = os.path.join(base_dir, "4/1")
+  # library.shift_contents(work_dir, start_index=13, substitute_content_offset=1)
+
+  work_dir = os.path.join(base_dir, "4/2")
+  # library.shift_contents(work_dir, start_index=13, substitute_content_offset=1)
   pass
+
+
+def fix_includes():
+  md_files = library.get_md_files_from_path(dir_path=os.path.join(content_dir_base, "sarva-prastutiH"), file_pattern="**/[0-9]*.md")
+
+  def include_fixer(match):
+    return include_helper.alt_include_adder(match=match, source_dir="vishvAsa-prastutiH", alt_dirs=["oldenberg"])
+
+  for md_file in md_files:
+    include_helper.transform_include_lines(md_file=md_file, transformer=include_helper.old_include_remover)
+    include_helper.transform_include_lines(md_file=md_file, transformer=include_fixer)
+    md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
 
 
 if __name__ == '__main__':
   # dump_muulam()
-  dump_oldenberg()
+  # dump_oldenberg()
   # fix_oldenberg()
-  # fix_includes()
+  fix_includes()
   # fix_filenames()
   pass
