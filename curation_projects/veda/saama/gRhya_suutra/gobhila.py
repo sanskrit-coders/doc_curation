@@ -4,6 +4,7 @@ import shutil
 import regex
 from bs4 import BeautifulSoup
 
+import curation_projects.veda.suutra
 from curation_projects import veda
 from doc_curation.md import library
 from doc_curation.md.content_processor import include_helper
@@ -13,6 +14,7 @@ from doc_curation.scraping import sacred_texts
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 from doc_curation.scraping.sacred_texts import para_translation as para_translation_st, dump_meta_article
+from indic_transliteration import sanscript
 
 content_dir_base = "/home/vvasuki/vishvAsa/vedAH/content/sAma/kauthumam/sUtram/gobhila-gRhyam/"
 static_dir_base = content_dir_base.replace("content", "static")
@@ -58,13 +60,22 @@ def oldenberg_dest_path_maker(url, base_dir):
 
 
 def migrate_and_include_sUtras():
-  veda.migrate_and_include_sUtras(dir_path=os.path.join(content_dir_base, "mUlam/"))
+  curation_projects.veda.suutra.migrate_and_include_sUtras(dir_path=os.path.join(content_dir_base, "mUlam/"))
+
+
+def dump_vishvaasa_sUtras():
+  source_dir = os.path.join(content_dir_base, "vishvAsa-prastutiH")
+  static_dir = os.path.join(static_dir_base, "vishvAsa-prastutiH")
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path=source_dir, dry_run=False, source_script=sanscript.DEVANAGARI, title_index_pattern=None)
+  # curation_projects.veda.suutra.migrate_and_include_sUtras(dir_path=source_dir)
+  metadata_helper.copy_metadata_and_filename(dest_dir=static_dir, ref_dir=ref_dir)
 
 
 if __name__ == '__main__':
   # fix_includes()
   # fix_oldenberg()
-  dump_oldenberg()
+  # dump_oldenberg()
+  dump_vishvaasa_sUtras()
   # fix_filenames()
   # migrate_and_include_sUtras()
   pass

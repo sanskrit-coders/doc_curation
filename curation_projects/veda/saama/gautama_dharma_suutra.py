@@ -9,7 +9,10 @@ from doc_curation.md.library import metadata_helper
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 
-ref_dir = "/home/vvasuki/vishvAsa/vedAH/static/sAma/sUtram/gautama-dharma-sUtram/vishvAsa-prastutiH"
+
+static_dir_base = "/home/vvasuki/vishvAsa/vedAH/static/sAma/sUtram/gautama-dharma-sUtram"
+content_dir_base = static_dir_base.replace("static/", "content/")
+ref_dir = os.path.join(static_dir_base, "mUlam")
 
 
 def fix_filenames():
@@ -61,12 +64,14 @@ def fix_buhler():
   os.remove(os.path.join(base_dir, "26.md"))
   
 
-
-if __name__ == '__main__':
-  # fix_includes()
+def dump_buhler():
   base_dir = ref_dir.replace("vishvAsa-prastutiH", "buhler")
   para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/gautama-dharmas%C5%ABtra/d/doc116301.html", base_dir=base_dir, dest_path_maker=english_dest_path_maker)
   para_translation.split(base_dir=base_dir)
+
+
+if __name__ == '__main__':
+  # fix_includes()
   # fix_oldenberg()
   # fix_filenames()
   pass

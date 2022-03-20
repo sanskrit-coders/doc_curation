@@ -26,6 +26,9 @@ def static_include_path_maker(title, original_path, path_replacements={"content"
 
 
 def vishvAsa_include_maker(file_path, h1_level=4, classes=None, title=None, ):
+  if not os.path.exists(file_path):
+    logging.info(f"Does not exist - {file_path} . Skipping")
+    return 
   url = file_path.replace("/home/vvasuki/vishvAsa/", "/").replace("/static/", "/")
   from doc_curation.md import library
   return library.get_include(url=url, h1_level=h1_level, classes=classes, title=title)
@@ -93,6 +96,23 @@ def old_include_remover(match):
     return match.group(0)
 
 
+def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=["collapsed"], title=None):
+  alt_file_path = file_path.replace(source_dir, target_dir)
+  if source_dir not in url:
+    logging.fatal("%s %s - no %s found", url, file_path, source_dir)
+  alt_url = url.replace(source_dir, target_dir)
+  if title is None:
+    index_file_path = regex.sub("%s/.+" % target_dir, "%s/_index.md" % target_dir, alt_file_path)
+    if os.path.exists(index_file_path):
+      md_file = MdFile(file_path=index_file_path)
+      title = md_file.get_title()
+    else:
+      title = sanscript.transliterate(target_dir, sanscript.OPTITRANS, sanscript.DEVANAGARI)
+  if os.path.exists(alt_file_path):
+    return library.get_include(url=alt_url, h1_level=h1_level, classes=classes, title=title)
+  return None
+
+
 def alt_include_adder(match, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/vishvAsa"):
   """To be used with transform_include_lines.
   
@@ -101,30 +121,13 @@ def alt_include_adder(match, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/
   :param alt_dirs: Eg: ["commentary-1", "commentary-2"]
   :return: 
   """
-  def make_alt_include(url, file_path, target_dir, h1_level, source_dir=source_dir, classes=["collapsed"], title=None):
-    alt_file_path = file_path.replace(source_dir, target_dir)
-    if source_dir not in url:
-      logging.fatal("%s %s - no %s found", url, file_path, source_dir)
-    alt_url = url.replace(source_dir, target_dir)
-    if title is None:
-      index_file_path = regex.sub("%s/.+" % target_dir, "%s/_index.md" % target_dir, alt_file_path)
-      if os.path.exists(index_file_path):
-        md_file = MdFile(file_path=index_file_path)
-        title = md_file.get_title()
-      else:
-        title = sanscript.transliterate(target_dir, sanscript.OPTITRANS, sanscript.DEVANAGARI)
-    if os.path.exists(alt_file_path):
-      return library.get_include(url=alt_url, h1_level=h1_level, classes=classes, title=title)
-    return None
-
-
   url = match.group(1)
   file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir)
   main_include = match.group(0)
   h1_level = regex.search(r"newLevelForH1=['\"](\d)['\"]", main_include).group(1)
   h1_level = int(h1_level) + 1
   include_lines = [main_include]
-  include_lines.extend([make_alt_include(url=url, file_path=file_path, h1_level=h1_level, target_dir=x) for x in alt_dirs])
+  include_lines.extend([make_alt_include(url=url, source_dir=source_dir, file_path=file_path, h1_level=h1_level, target_dir=x) for x in alt_dirs])
   include_lines = [x for x in include_lines if x is not None]
   return "\n".join(include_lines)
 
@@ -150,7 +153,7 @@ def include_basename_fixer(match, ref_dir):
   return match.group(0).replace(url, new_url)
 
 
-def include_core_with_commentaries(dir_path, file_pattern, alt_dirs, source_dir="vishvAsa-prastutiH"):
+def include_core_with_commentaries(dir_path, alt_dirs, file_pattern="**/*.md", source_dir="vishvAsa-prastutiH"):
   md_files = library.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
   md_files = [f for f in md_files if os.path.basename(f.file_path) ]
 

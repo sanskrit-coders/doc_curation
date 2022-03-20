@@ -7,6 +7,7 @@ import regex
 from bs4 import BeautifulSoup
 
 from curation_projects import veda
+from curation_projects.veda import suutra
 from doc_curation import text_utils
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import section_helper, include_helper
@@ -38,27 +39,15 @@ def oldenberg_dest_path_maker(url, base_dir):
 
 def dump_oldenberg():
   # sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe29/sbe29002.htm", outfile_path=os.path.join(content_dir_base, "meta", "oldenberg.md"))
+  
   # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/sankhayana-grihya-sutra/d/doc116455.html", base_dir=ref_dir.replace("vishvAsa-prastutiH", "oldenberg"), dest_path_maker=oldenberg_dest_path_maker)
   # para_translation.split(base_dir=ref_dir.replace("vishvAsa-prastutiH", "oldenberg"))
+
+  # from doc_curation.scraping.sacred_texts import para_translation as para_translation_st
+  # sacred_texts.dump(url="https://www.sacred-texts.com/hin/sbe29/sbe29093.htm", outfile_path=os.path.join(static_dir_base, "oldenberg/6", "01.md"), main_content_extractor=para_translation_st.get_main_content)
+  # para_translation_st.split(base_dir=ref_dir.replace("mUlam", "oldenberg"))
+
   metadata_helper.copy_metadata_and_filename(dest_dir=ref_dir.replace("mUlam", "oldenberg"), ref_dir=ref_dir, insert_missign_ref_files=True)
-
-
-def set_content():
-  shutil.copytree(os.path.join(static_dir_base, "mUlam"), os.path.join(static_dir_base, "vishvAsa-prastutiH"), dirs_exist_ok=True)
-  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m: c.replace("mUlam", "vishvAsa-prastutiH"), dir_path=os.path.join(content_dir_base, "sarva-prastutiH"))
-  md_file_paths = sorted(filter(lambda x: not str(x).endswith("_index.md"), Path(ref_dir).glob("**/*.md")))
-  md_file_paths = [str(x) for x in md_file_paths]
-  def get_content_path(static_path):
-    content_path = static_path.replace("static", "content")
-    return regex.sub(r"mUlam/(\d/\d\d)/.+", r"sarva-prastutiH/\1.md", content_path)
-  content_include_list = itertools.groupby(md_file_paths, get_content_path)
-  
-  for content_includes in content_include_list:
-    md_file = MdFile(file_path=content_includes[0])
-    include_lines = [f"{include_helper.vishvAsa_include_maker(x.replace('mUlam', 'vishvAsa-prastutiH'), h1_level=2, title='FILE_TITLE')}\n{include_helper.vishvAsa_include_maker(x.replace('mUlam', 'oldenberg'), h1_level=2, title='Oldenberg')}" for x in content_includes[1]]
-    content = "\n\n".join(include_lines)
-    title = metadata_helper.get_title_from_filename(md_file.file_path, transliteration_target=sanscript.DEVANAGARI)
-    md_file.dump_to_file(metadata={"title": title}, content=content, dry_run=False)
 
 
 def dump_muulam():
@@ -73,12 +62,16 @@ def dump_muulam():
 
   # 
   # metadata_helper.ensure_ordinal_in_title(dir_path=ref_dir, recursive=True, format="%02d")
-  # library.apply_function(fn=metadata_helper.add_init_words_to_title, num_words=3, dir_path=ref_dir)
-  # library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path=ref_dir)
+  library.apply_function(fn=metadata_helper.add_init_words_to_title, num_words=3, dir_path=ref_dir)
+  library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path=ref_dir)
   # 
 
 
   pass
+
+def set_content():
+  suutra.set_basic_content(static_dir_base=static_dir_base)
+  include_helper.include_core_with_commentaries(dir_path=os.path.join(content_dir_base, "sarva-prastutiH"), alt_dirs=["oldenberg"])
 
 
 if __name__ == '__main__':

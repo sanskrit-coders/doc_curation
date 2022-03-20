@@ -2,6 +2,8 @@ import os
 
 import regex
 from bs4 import BeautifulSoup
+
+import curation_projects.veda.suutra
 from curation_projects import veda
 
 from doc_curation.md.file import MdFile
@@ -25,7 +27,7 @@ def prep_muula():
   # library.apply_function(fn=section_helper.autonumber, dir_path=os.path.join(content_dir_base, "mUlam.md"))
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=os.path.join(content_dir_base, "mUlam.md"), frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None)
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=os.path.join(content_dir_base, "mUlam/"), frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None)
-  veda.migrate_and_include_sUtras(dir_path=os.path.join(content_dir_base, "mUlam/"))
+  curation_projects.veda.suutra.migrate_and_include_sUtras(dir_path=os.path.join(content_dir_base, "mUlam/"))
   pass
 
 
