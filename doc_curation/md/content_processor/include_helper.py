@@ -86,7 +86,7 @@ def transform_include_lines(md_file, transformer, dry_run=False):
 
 
 def transform_includes_with_soup(content, transformer, *args, **kwargs):
-  soup = BeautifulSoup(f"<body>{content}</body>", features="lxml-xml")
+  soup = BeautifulSoup(f"<body>{content}</body>", features="html.parser")
   includes = soup.select("div.js_include")
   for inc in includes:
     transformer(inc, *args, **kwargs)
@@ -100,7 +100,7 @@ def old_include_remover(inc):
   :param inc: 
   :return: 
   """
-  if not "includeTitle" in inc.attrs:
+  if not "includetitle" in inc:
     return inc.decompose()
 
 
@@ -118,7 +118,8 @@ def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=[
       title = sanscript.transliterate(target_dir, sanscript.OPTITRANS, sanscript.DEVANAGARI)
   if os.path.exists(alt_file_path):
     html = library.get_include(url=alt_url, h1_level=h1_level, classes=classes, title=title)
-    return BeautifulSoup(html, 'lxml-xml')
+    html = f"<body>{html}</body>"
+    return BeautifulSoup(html, 'html.parser').select_one("div")
   return None
 
 
@@ -132,21 +133,25 @@ def prefill_include(inc, h1_level_offset=0, hugo_base_dir="/home/vvasuki/vishvAs
   :param alt_dirs: Eg: ["commentary-1", "commentary-2"]
   :return: 
   """
-  inc.attrs["unfilled"] = ""
+  inc["unfilled"] = None
   souper.empty_tag(inc)
 
-  url = inc.attrs["url"]
+  url = inc["url"]
   file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir)
+  if file_path is None:
+    return 
   md_file = MdFile(file_path=file_path)
   (metadata, content) = md_file.read()
-  h1_level = h1_level_offset + int(inc.attrs["newLevelForH1"])
+  h1_level = h1_level_offset + int(inc["newlevelforh1"])
   content = regex.sub("^#", f"{'#' * h1_level}", content)
   content = regex.sub("\n#", f"\n{'#' * h1_level}", content)
   # TODO: Handle images, spreadsheets, relative urls in includes
   content = transform_includes_with_soup(content=content, h1_level_offset=h1_level, transformer=prefill_include)
 
-  title = inc.attrs.get("title", metadata["title"]) + "...{Loading}..."
-  details = BeautifulSoup(f"<details><summary><h{h1_level}>{title}</h{h1_level}></summary>\n\n{content}</details>", 'lxml-xml')
+  title = inc.get("title", metadata["title"]) + " ...{Loading}..."
+  details = BeautifulSoup(f"<body><details><summary><h{h1_level}>{title}</h{h1_level}></summary>\n\n{content}</details></body>", 'html.parser').select_one("details")
+  if "collapsed" not in inc["class"]:
+    details["open"] = None
   inc.append("\n")
   inc.append(details)
   inc.append("\n")
@@ -160,9 +165,9 @@ def alt_include_adder(inc, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/vi
   :param alt_dirs: Eg: ["commentary-1", "commentary-2"]
   :return: 
   """
-  url = inc.attrs["url"]
+  url = inc["url"]
   file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir)
-  h1_level = inc.attrs["newLevelForH1"]
+  h1_level = inc["newlevelforh1"]
   h1_level = int(h1_level) + 1
   for x in alt_dirs:
     new_include = make_alt_include(url=url, source_dir=source_dir, file_path=file_path, h1_level=h1_level, target_dir=x)
@@ -183,12 +188,12 @@ def include_basename_fixer(inc, ref_dir):
   :return: 
   """
   sub_path_to_reference = library.get_sub_path_to_reference_map(ref_dir=ref_dir)
-  url = inc.attrs["url"]
+  url = inc["url"]
   sub_path_id = library.get_sub_path_id(regex.sub(".+?/%s(/.+)" % os.path.basename(ref_dir), "\\1", url))
   base_url = regex.sub("(.+?/%s)/.+" % os.path.basename(ref_dir), "\\1", url)
   new_sub_path = regex.sub(".+?/%s(/.+)" % os.path.basename(ref_dir), "\\1", str(sub_path_to_reference[sub_path_id].file_path))
   new_url = os.path.abspath(base_url + new_sub_path)
-  inc.attrs["url"] = new_url
+  inc["url"] = new_url
 
 
 def include_core_with_commentaries(dir_path, alt_dirs, file_pattern="**/*.md", source_dir="vishvAsa-prastutiH"):
