@@ -2,10 +2,12 @@ import logging
 import os
 
 import regex
+from bs4 import BeautifulSoup
 
 from curation_utils import file_helper
 from doc_curation.md import content_processor, library
 from doc_curation.md.file import MdFile
+from doc_curation.scraping.html_scraper import souper
 from indic_transliteration import sanscript
 
 
@@ -83,17 +85,23 @@ def transform_include_lines(md_file, transformer, dry_run=False):
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
-def old_include_remover(match):
+def transform_includes_with_soup(content, transformer, *args, **kwargs):
+  soup = BeautifulSoup(f"<body>{content}</body>", features="lxml-xml")
+  includes = soup.select("div.js_include")
+  for inc in includes:
+    transformer(inc, *args, **kwargs)
+  new_content = "".join([str(x) for x in soup.select_one("body").contents])
+  return new_content
+
+
+def old_include_remover(inc):
   """To be used with transform_include_lines.
   
-  :param match: 
+  :param inc: 
   :return: 
   """
-  url = match.group(1)
-  if "includeTitle" not in match.group(0):
-    return ""
-  else:
-    return match.group(0)
+  if not "includeTitle" in inc.attrs:
+    return inc.decompose()
 
 
 def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=["collapsed"], title=None):
@@ -109,11 +117,14 @@ def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=[
     else:
       title = sanscript.transliterate(target_dir, sanscript.OPTITRANS, sanscript.DEVANAGARI)
   if os.path.exists(alt_file_path):
-    return library.get_include(url=alt_url, h1_level=h1_level, classes=classes, title=title)
+    html = library.get_include(url=alt_url, h1_level=h1_level, classes=classes, title=title)
+    return BeautifulSoup(html, 'lxml-xml')
   return None
 
 
-def alt_include_adder(match, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/vishvAsa"):
+
+
+def prefill_include(inc, h1_level_offset=0, hugo_base_dir="/home/vvasuki/vishvAsa"):
   """To be used with transform_include_lines.
   
   :param match: 
@@ -121,23 +132,50 @@ def alt_include_adder(match, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/
   :param alt_dirs: Eg: ["commentary-1", "commentary-2"]
   :return: 
   """
-  url = match.group(1)
+  inc.attrs["unfilled"] = ""
+  souper.empty_tag(inc)
+
+  url = inc.attrs["url"]
   file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir)
-  main_include = match.group(0)
-  h1_level = regex.search(r"newLevelForH1=['\"](\d)['\"]", main_include).group(1)
+  md_file = MdFile(file_path=file_path)
+  (metadata, content) = md_file.read()
+  h1_level = h1_level_offset + int(inc.attrs["newLevelForH1"])
+  content = regex.sub("^#", f"{'#' * h1_level}", content)
+  content = regex.sub("\n#", f"\n{'#' * h1_level}", content)
+  # TODO: Handle images, spreadsheets, relative urls in includes
+  content = transform_includes_with_soup(content=content, h1_level_offset=h1_level, transformer=prefill_include)
+
+  title = inc.attrs.get("title", metadata["title"]) + "...{Loading}..."
+  details = BeautifulSoup(f"<details><summary><h{h1_level}>{title}</h{h1_level}></summary>\n\n{content}</details>", 'lxml-xml')
+  inc.append("\n")
+  inc.append(details)
+  inc.append("\n")
+
+
+def alt_include_adder(inc, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/vishvAsa"):
+  """To be used with transform_include_lines.
+  
+  :param match: 
+  :param source_dir: Eg. "vishvAsa-prastutiH"
+  :param alt_dirs: Eg: ["commentary-1", "commentary-2"]
+  :return: 
+  """
+  url = inc.attrs["url"]
+  file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir)
+  h1_level = inc.attrs["newLevelForH1"]
   h1_level = int(h1_level) + 1
-  include_lines = [main_include]
-  include_lines.extend([make_alt_include(url=url, source_dir=source_dir, file_path=file_path, h1_level=h1_level, target_dir=x) for x in alt_dirs])
-  include_lines = [x for x in include_lines if x is not None]
-  return "\n".join(include_lines)
+  for x in alt_dirs:
+    new_include = make_alt_include(url=url, source_dir=source_dir, file_path=file_path, h1_level=h1_level, target_dir=x)
+    inc.insert_after(new_include)
 
 
 def file_path_from_url(url, hugo_base_dir):
-  file_path = regex.sub(r"(/.+?)(/.+)", "%s\\1/static\\2" % hugo_base_dir, url)
-  return file_path
+  if url.endswith(".md"):
+    file_path = regex.sub(r"(/.+?)(/.+)", "%s\\1/static\\2" % hugo_base_dir, url)
+    return file_path
 
 
-def include_basename_fixer(match, ref_dir):
+def include_basename_fixer(inc, ref_dir):
   """To be used with transform_include_lines.
   
   :param match: 
@@ -145,22 +183,23 @@ def include_basename_fixer(match, ref_dir):
   :return: 
   """
   sub_path_to_reference = library.get_sub_path_to_reference_map(ref_dir=ref_dir)
-  url = match.group(1)
+  url = inc.attrs["url"]
   sub_path_id = library.get_sub_path_id(regex.sub(".+?/%s(/.+)" % os.path.basename(ref_dir), "\\1", url))
   base_url = regex.sub("(.+?/%s)/.+" % os.path.basename(ref_dir), "\\1", url)
   new_sub_path = regex.sub(".+?/%s(/.+)" % os.path.basename(ref_dir), "\\1", str(sub_path_to_reference[sub_path_id].file_path))
   new_url = os.path.abspath(base_url + new_sub_path)
-  return match.group(0).replace(url, new_url)
+  inc.attrs["url"] = new_url
 
 
 def include_core_with_commentaries(dir_path, alt_dirs, file_pattern="**/*.md", source_dir="vishvAsa-prastutiH"):
   md_files = library.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
   md_files = [f for f in md_files if os.path.basename(f.file_path) ]
 
-  def include_fixer(match):
-    return alt_include_adder(match=match, source_dir=source_dir, alt_dirs=alt_dirs)
+  def include_fixer(inc):
+    return alt_include_adder(inc=inc, source_dir=source_dir, alt_dirs=alt_dirs)
 
   for md_file in md_files:
     transform_include_lines(md_file=md_file, transformer=old_include_remover)
     transform_include_lines(md_file=md_file, transformer=include_fixer)
     md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
+

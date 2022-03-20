@@ -6,7 +6,7 @@ from urllib.error import HTTPError
 from urllib.parse import urljoin
 
 import regex
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from doc_curation import md
 
 from curation_utils import file_helper
@@ -93,6 +93,14 @@ def find_matching_tag(tags, filter):
   if len(tags) > 0:
     return tags[0]
   return None
+
+
+def empty_tag(tag):
+  for a in list(tag.children):
+    if isinstance(a, Tag):
+      a.decompose()
+    else:
+      a.extract()
 
 
 def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, title_prefix="", html_fixer=None, footnote_definier=None, md_fixer=None, overwrite=False, dry_run=False):
