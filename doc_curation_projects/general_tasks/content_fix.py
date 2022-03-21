@@ -53,10 +53,26 @@ def fix_audio_tags():
   library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/content/tamiL/4k-divya-prabandha/02_tiruppAvai/_index.md", content_transformer=lambda x, y: content_processor.set_audio_caption_from_filename(x, prefix="vibhA"), dry_run=False, silent_iteration=True)
 
 
+def prefill_vishvAsa_includes():
+  import doc_curation_projects
+  dirs = doc_curation_projects.vishvAsa_projects
+  
+  include_helper.prefill_includes(dir_path="/home/vvasuki/vishvAsa/vedAH_Rk/content/shAkalam/saMhitA/vishvAsa-prastutiH")
+  
+  for dir in []:
+    dir_path = os.path.join("/home/vvasuki/vishvAsa/", dir)
+    # include_helper.prefill_includes(dir_path=os.path.join(dir_path, "static"))
+    include_helper.prefill_includes(dir_path=os.path.join(dir_path, "content"))
+
+
+
+
 
 if __name__ == '__main__':
   # devanaagarify(dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/gretil_devanAgarI/5_poetry/4_narr/visnusarma_panchatantra.md")
   # fix_audio_tags()
+
+  prefill_vishvAsa_includes()
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: "documentation-theme" not in str(x))
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/sanskrit/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: False not in [y not in str(x) for y in ["sarit", "gitasupersite", "wellcome", "dhaval", "wikisource", "vishvAsa"]])

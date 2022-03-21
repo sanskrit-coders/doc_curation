@@ -85,12 +85,31 @@ def transform_include_lines(md_file, transformer, dry_run=False):
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
-def transform_includes_with_soup(content, transformer, *args, **kwargs):
+def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs):
+  # Stray usage of < can fool the soup parser. Hence the below.
+  if "js_include" not in content:
+    return content
+  if "&lt" in content or regex.search("<(?! *[/dsiahf])", content) is not None:
+    logging.warning(f"Not confident about content in {metadata['_file_path']} - returning")
+    return content
+
   soup = BeautifulSoup(f"<body>{content}</body>", features="html.parser")
   includes = soup.select("div.js_include")
+  # logging.debug(f"Processing {metadata['_file_path']}")
   for inc in includes:
-    transformer(inc, *args, **kwargs)
+    top_level_include = True
+    parents = list(inc.parents)
+    if len(parents) == 0:
+      # Decomposed include?
+      continue
+    for parent in parents:
+      if "js_include" in parent.get("class", []):
+        top_level_include = False
+        break
+    if top_level_include:
+      transformer(inc, metadata["_file_path"], *args, **kwargs)
   new_content = "".join([str(x) for x in soup.select_one("body").contents])
+  new_content = new_content.replace("&amp;", "&")
   return new_content
 
 
@@ -125,7 +144,7 @@ def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=[
 
 
 
-def prefill_include(inc, h1_level_offset=0, hugo_base_dir="/home/vvasuki/vishvAsa"):
+def prefill_include(inc, file_path, h1_level_offset=0, hugo_base_dir="/home/vvasuki/vishvAsa"):
   """To be used with transform_include_lines.
   
   :param match: 
@@ -137,19 +156,20 @@ def prefill_include(inc, h1_level_offset=0, hugo_base_dir="/home/vvasuki/vishvAs
   souper.empty_tag(inc)
 
   url = inc["url"]
-  file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir)
+  file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir, current_file_path=file_path)
   if file_path is None:
     return 
   md_file = MdFile(file_path=file_path)
   (metadata, content) = md_file.read()
+  metadata["_file_path"] = file_path
   h1_level = h1_level_offset + int(inc["newlevelforh1"])
   content = regex.sub("^#", f"{'#' * h1_level}", content)
   content = regex.sub("\n#", f"\n{'#' * h1_level}", content)
   # TODO: Handle images, spreadsheets, relative urls in includes
-  content = transform_includes_with_soup(content=content, h1_level_offset=h1_level, transformer=prefill_include)
+  content = transform_includes_with_soup(content=content, metadata=metadata, h1_level_offset=h1_level, transformer=prefill_include)
 
   title = inc.get("title", metadata["title"]) + " ...{Loading}..."
-  details = BeautifulSoup(f"<body><details><summary><h{h1_level}>{title}</h{h1_level}></summary>\n\n{content}</details></body>", 'html.parser').select_one("details")
+  details = BeautifulSoup(f"<body><details><summary><h{h1_level}>{title}</h{h1_level}></summary>\n\n{content}\n</details></body>", 'html.parser').select_one("details")
   if "collapsed" not in inc["class"]:
     details["open"] = None
   inc.append("\n")
@@ -157,7 +177,12 @@ def prefill_include(inc, h1_level_offset=0, hugo_base_dir="/home/vvasuki/vishvAs
   inc.append("\n")
 
 
-def alt_include_adder(inc, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/vishvAsa"):
+def prefill_includes(dir_path):
+  logging.info(f"Prefilling includes in {dir_path}")
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: transform_includes_with_soup(x, y,transformer=prefill_include))
+
+
+def alt_include_adder(inc, current_file_path, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/vishvAsa"):
   """To be used with transform_include_lines.
   
   :param match: 
@@ -166,7 +191,7 @@ def alt_include_adder(inc, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/vi
   :return: 
   """
   url = inc["url"]
-  file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir)
+  file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir, current_file_path=current_file_path)
   h1_level = inc["newlevelforh1"]
   h1_level = int(h1_level) + 1
   for x in alt_dirs:
@@ -174,10 +199,28 @@ def alt_include_adder(inc, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/vi
     inc.insert_after(new_include)
 
 
-def file_path_from_url(url, hugo_base_dir):
-  if url.endswith(".md"):
-    file_path = regex.sub(r"(/.+?)(/.+)", "%s\\1/static\\2" % hugo_base_dir, url)
-    return file_path
+def file_path_from_url(url, hugo_base_dir, current_file_path):
+  if url.startswith("http"):
+    return
+  file_path = None
+  if url.startswith("/"):
+    if url.endswith(".md"):
+      file_path = regex.sub(r"(/.+?)(/.+)", f"{hugo_base_dir}\\1/static\\2", url)
+    else:
+      file_path = regex.sub(r"(/.+?)(/.+)/?", f"{hugo_base_dir}\\1/content\\2.md", url).replace("/.md", ".md")
+      file_path = regex.sub("//+", "/", file_path)
+      if not os.path.exists(file_path):
+        file_path = regex.sub(r"(/.+?)(/.+)/?", f"{hugo_base_dir}\\1/content\\2/_index.md", url)
+  else:
+    # relative path
+    # TODO: Handle this
+    logging.warning(f"Skipping relative path {url} in {current_file_path}")
+    pass
+  if file_path is not None:
+    file_path = regex.sub("//+", "/", file_path)
+    if os.path.exists(file_path):
+      return file_path
+  logging.warning(f"Could not find: {file_path} in {current_file_path}")
 
 
 def include_basename_fixer(inc, ref_dir):

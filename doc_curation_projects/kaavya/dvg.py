@@ -20,7 +20,7 @@ def fix_muula():
 
 def fix_content():
   # include_helper.transform_include_lines(md_file=MdFile(file_path=os.path.join(content_dir_base, "0.md"), transformer=lambda x: include_helper.include_basename_fixer(x, ref_dir=ref_dir))
-  library.apply_function(fn=MdFile.transform, dir_path=os.path.join(content_dir_base, "0.md"), content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, transformer=include_helper.prefill_include))
+  library.apply_function(fn=MdFile.transform, dir_path=os.path.join(content_dir_base, "0.md"), content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_helper.prefill_include))
 
 
 if __name__ == '__main__':
