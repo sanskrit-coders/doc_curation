@@ -1,3 +1,4 @@
+import itertools
 import os
 
 import regex
@@ -57,11 +58,13 @@ def prefill_vishvAsa_includes():
   import doc_curation_projects
   dirs = doc_curation_projects.vishvAsa_projects
   
-  include_helper.prefill_includes(dir_path="/home/vvasuki/vishvAsa/vedAH_Rk/content/shAkalam/saMhitA/vishvAsa-prastutiH")
+  include_helper.prefill_includes(dir_path="/home/vvasuki/vishvAsa/kannaDa/content/padya/kumAra-vyAsa-bhArata/04_virATa/02.md")
   
-  for dir in []:
+  import itertools
+  dirs = list(itertools.dropwhile(lambda x: x != "bhAShAntaram", dirs))
+  for dir in dirs:
     dir_path = os.path.join("/home/vvasuki/vishvAsa/", dir)
-    # include_helper.prefill_includes(dir_path=os.path.join(dir_path, "static"))
+    include_helper.prefill_includes(dir_path=os.path.join(dir_path, "static"))
     include_helper.prefill_includes(dir_path=os.path.join(dir_path, "content"))
 
 

@@ -2,7 +2,7 @@ import logging
 import os
 
 import regex
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 
 from curation_utils import file_helper
 from doc_curation.md import content_processor, library
@@ -89,8 +89,9 @@ def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs
   # Stray usage of < can fool the soup parser. Hence the below.
   if "js_include" not in content:
     return content
-  if "&lt" in content or regex.search("<(?! *[/dsiahf])", content) is not None:
-    logging.warning(f"Not confident about content in {metadata['_file_path']} - returning")
+  strange_lt_sign = regex.search("<(?! *[/dsiahfu])", content)
+  if strange_lt_sign is not None:
+    logging.warning(f"Not confident about content in {metadata['_file_path']} at {strange_lt_sign.start()}, before {content[strange_lt_sign.start():strange_lt_sign.start()+16]} - returning")
     return content
 
   soup = BeautifulSoup(f"<body>{content}</body>", features="html.parser")
@@ -108,7 +109,11 @@ def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs
         break
     if top_level_include:
       transformer(inc, metadata["_file_path"], *args, **kwargs)
-  new_content = "".join([str(x) for x in soup.select_one("body").contents])
+  new_content = ""
+  for x in soup.select_one("body").contents:
+    if isinstance(x, NavigableString) and "<" in x:
+      x = str(x).replace("<", "&lt;")
+    new_content = new_content + str(x)
   new_content = new_content.replace("&amp;", "&")
   return new_content
 
@@ -144,7 +149,7 @@ def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=[
 
 
 
-def prefill_include(inc, file_path, h1_level_offset=0, hugo_base_dir="/home/vvasuki/vishvAsa"):
+def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="/home/vvasuki/vishvAsa"):
   """To be used with transform_include_lines.
   
   :param match: 
@@ -156,19 +161,26 @@ def prefill_include(inc, file_path, h1_level_offset=0, hugo_base_dir="/home/vvas
   souper.empty_tag(inc)
 
   url = inc["url"]
-  file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir, current_file_path=file_path)
+  file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
   if file_path is None:
     return 
   md_file = MdFile(file_path=file_path)
   (metadata, content) = md_file.read()
   metadata["_file_path"] = file_path
-  h1_level = h1_level_offset + int(inc["newlevelforh1"])
+  h1_level = h1_level_offset + int(inc.get("newlevelforh1", 2))
+  if "newlevelforh1" not in inc.attrs:
+    logging.warning(f"No newlevelforh1 for {file_path} in {container_file_path}")
   content = regex.sub("^#", f"{'#' * h1_level}", content)
   content = regex.sub("\n#", f"\n{'#' * h1_level}", content)
   # TODO: Handle images, spreadsheets, relative urls in includes
+  if file_path == container_file_path:
+    logging.fatal(f"Circular include in {container_file_path}")
+    return 
   content = transform_includes_with_soup(content=content, metadata=metadata, h1_level_offset=h1_level, transformer=prefill_include)
 
-  title = inc.get("title", metadata["title"]) + " ...{Loading}..."
+  title = inc.get("title", metadata.get("title", "UNKNOWN_TITLE")) + " ...{Loading}..."
+  if "UNKNOWN_TITLE" in title:
+    logging.warning(f"Could not get title for {file_path} in {container_file_path}")
   details = BeautifulSoup(f"<body><details><summary><h{h1_level}>{title}</h{h1_level}></summary>\n\n{content}\n</details></body>", 'html.parser').select_one("details")
   if "collapsed" not in inc["class"]:
     details["open"] = None
@@ -220,7 +232,7 @@ def file_path_from_url(url, hugo_base_dir, current_file_path):
     file_path = regex.sub("//+", "/", file_path)
     if os.path.exists(file_path):
       return file_path
-  logging.warning(f"Could not find: {file_path} in {current_file_path}")
+    logging.warning(f"Could not find: {file_path} in {current_file_path}")
 
 
 def include_basename_fixer(inc, ref_dir):

@@ -41,9 +41,13 @@ class MdFile(object):
       with codecs.open(self.file_path, "r", 'utf-8') as file:
         if file.readline().strip() == "---":
           file.seek(0)
+          full_content = file.read()
+          full_content = regex.sub("^--- *\n", "---\n", full_content)
+          full_content = regex.sub("\n--- *\n", "---\n", full_content)
           from yaml.composer import ComposerError
           try:
-            (metadata, content) = yamldown.load(file)
+            import io
+            (metadata, content) = yamldown.load(io.StringIO(full_content))
           except Exception as e:
             logging.fatal("Error in %s: %s" % (self.file_path, str(e)))
         else:
@@ -129,6 +133,8 @@ class MdFile(object):
 
   def get_title(self, omit_chapter_id=True, ref_dir_for_ancestral_title=None):
     (metadata, content) = self.read()
+    if not isinstance(metadata, dict):
+      logging.fatal(f"Crazy metadata - {self.file_path}")
     title = metadata.get("title", None)
     title = str(title) # Might be mistakenly numeric!
     if ref_dir_for_ancestral_title is not None:
