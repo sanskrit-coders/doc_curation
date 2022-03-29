@@ -77,6 +77,21 @@ def _prepare_pdf(detext, pdf_compression_power, pdf_path):
   return altered_pdf_path
 
 
+def ocr_all(dir_path, file_name_filter=None, google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json'):
+  logging.info("Do the OCR")
+  drive_client = drive.get_cached_client(google_key=google_key)
+  for f in os.listdir(dir_path):
+    if f.endswith(".txt"):
+      continue
+    if file_name_filter is None or file_name_filter(f):
+      local_file_path = str(os.path.join(dir_path, f))
+      if os.path.exists(local_file_path + ".txt"):
+        logging.info("Skipping %s", str(local_file_path))
+      else:
+        drive_client.ocr_file(local_file_path=local_file_path)
+        time.sleep(1)
+
+
 def _ocr_pdf_segments(google_key, pdf_segments):
   logging.info("Do the OCR")
   drive_client = drive.get_cached_client(google_key=google_key)

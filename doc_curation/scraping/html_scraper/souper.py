@@ -1,3 +1,4 @@
+import codecs
 import logging
 import os
 import urllib
@@ -6,10 +7,10 @@ from urllib.error import HTTPError
 from urllib.parse import urljoin
 
 import regex
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, Tag, Comment
 from doc_curation import md
 
-from curation_utils import file_helper
+from curation_utils import file_helper, scraping
 from curation_utils import scraping
 from doc_curation.md import content_processor
 from doc_curation.md.file import MdFile
@@ -82,6 +83,12 @@ def title_from_element(soup, title_css_selector=None, title_prefix=""):
       title = "UNKNOWN_TITLE"
     title = ("%s %s" % (title_prefix, title)).strip()
   return title
+
+
+def strip_comments(soup):
+  comments = soup.find_all(string=lambda text: isinstance(text, Comment))
+  for comment in comments:
+    comment.extract()
 
 
 def find_matching_tags(tags, filter):
@@ -201,3 +208,30 @@ def get_md_paragraphs_with_pandoc(tags, para_joiner="\n\n"):
   from doc_curation.md import get_md_with_pandoc
   return para_joiner.join([get_md_with_pandoc(content_in=str(x), source_format="html") for x in tags])
 
+
+def gather_urls(soup, css, base_url=None, link_filter=None):
+  links = soup.select(css)
+  if link_filter is not None:
+    links = [l for l in links if link_filter(l)]
+  urls = [l["href"] for l in links]
+  if base_url is not None:
+    urls = [urljoin(base_url, url) for url in urls]
+  return urls
+
+
+def get_indexed_urls(start_url, next_url_getter, url_gatherer, url_file_path=None, overwrite=False):
+  if os.path.exists(url_file_path) and not overwrite:
+    logging.info("Using cached urls.")
+    with codecs.open(url_file_path, "r") as f:
+      return [x.strip() for x in f.readlines()]
+  urls = []
+  url = start_url
+  while url is not None:
+    soup = scraping.get_soup(url)
+    urls.extend(url_gatherer(soup, url))
+    url = next_url_getter(soup, url)
+  if url_file_path is not None:
+    os.makedirs(os.path.dirname(url_file_path), exist_ok=True)
+    with codecs.open(url_file_path, "w") as f:
+      f.write("\n".join(urls))
+  return urls

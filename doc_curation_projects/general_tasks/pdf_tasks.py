@@ -16,6 +16,7 @@ def get_from_archive(item_id):
 
 if __name__ == '__main__':
     pass
+    doc_curation.pdf.drive_ocr.ocr_all(dir_path="/home/vvasuki/sanskrit/samskrtam.ru/backup/sanskrit-lexicon/KEWA/src/img")
     # doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/kalpaH/shUdra-kamalAkaraH_sAnuvAdaH.pdf", small_pdf_pages=1, start_page=1, detext=True)
     # doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/AgamaH/Abhinavagupta-An-Historical-and-Philosophical-Study-K-C-Pandey.pdf", small_pdf_pages=10, start_page=1, detext=False)
     # doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/vedAntam/vedAnta_kalpataruH_parimalA.pdf", small_pdf_pages=5, start_page=1, detext=False, pdf_compression_power=3)
@@ -25,5 +26,5 @@ if __name__ == '__main__':
     # doc_curation.pdf.drive_ocr.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/kAvyam/stotram/shrIvaiShNavAH/4kDivyaPrabandham", small_pdf_pages=10, detext=True)
     # doc_curation.pdf.drive_ocr.split_and_ocr_all(
     #     dir_path="/home/vvasuki/Documents/books/granthasangrahaH/nyAyaH/", small_pdf_pages=10, detext=False)
-    doc_curation.pdf.drive_ocr.split_and_ocr_all(
-        dir_path="/home/vvasuki/Documents/books/granthasangrahaH/koshaH/upasargArthachandrikA", small_pdf_pages=10, detext=False)
+    # doc_curation.pdf.drive_ocr.split_and_ocr_all(
+    #     dir_path="/home/vvasuki/Documents/books/granthasangrahaH/koshaH/nighaNTu-niruktau.pdf", small_pdf_pages=10, detext=False)

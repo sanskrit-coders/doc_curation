@@ -21,7 +21,7 @@ logging.getLogger("sbcharsetprober").propagate = False
 if __name__ == '__main__':
     pass
     # wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-index/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/manasataramgini")
-    # wordpress.scrape_index(url="https://padmavajra.net/index-of-posts/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/padmavajra/")
+    wordpress.scrape_index(url="https://padmavajra.net/index-of-posts/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/padmavajra/")
     # wordpress.scrape_index(url="https://vriitrahan.wordpress.com/2021/07/21/archive/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/vriitrahan/")
     # wordpress.scrape_index(url="https://aryaakasha.com/unfiltered-archive/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/aryaakasha/")
     # wordpress.scrape_index(url="https://cestlaviepriya.wordpress.com/index/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/cestlaviepriya")
@@ -41,11 +41,11 @@ if __name__ == '__main__':
     # https://vajrin.wordpress.com/ - multi page scrollhttps://t.co/0bIGUYvlY7
     # https://twitter.com/manassarov/status/1480293685535326211/photo/2
 
-    substack.scrape_free_articles_from_index_anchors(url="https://indianhistory.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/indianhistory", dry_run=False)
-    substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/razib", dry_run=False)
-    substack.scrape_free_articles_from_index_anchors(url="https://hindoohistory.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/hindoohistory", dry_run=False)
-    substack.scrape_free_articles_from_index_anchors(url="https://nemets.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/nemets", dry_run=False)
-    substack.scrape_free_articles_from_index_anchors(url="https://rasajournal.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/rasajournal", dry_run=False)
+    # substack.scrape_free_articles_from_index_anchors(url="https://indianhistory.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/indianhistory", dry_run=False)
+    # substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/razib", dry_run=False)
+    # substack.scrape_free_articles_from_index_anchors(url="https://hindoohistory.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/hindoohistory", dry_run=False)
+    # substack.scrape_free_articles_from_index_anchors(url="https://nemets.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/nemets", dry_run=False)
+    # substack.scrape_free_articles_from_index_anchors(url="https://rasajournal.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/rasajournal", dry_run=False)
 
 
     # blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path="/home/vvasuki/hindu-comm/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)
