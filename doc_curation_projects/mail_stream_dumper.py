@@ -1,8 +1,27 @@
-from doc_curation.mail_stream import mailman
+from doc_curation.mail_stream import mailman, google_groups
+import regex, os
+from doc_curation import md
+from doc_curation.md.file import MdFile
+from curation_utils import scraping, file_helper
+
+
+def dump_sadaasvaada(messages, subject, dest_dir, url, dry_run=False):
+  subject = regex.sub("Sadāsvāda[ -]*", "", subject)
+  title = messages[0].date.strftime('%Y-%m-%d') + "__" + subject
+  file_name = os.path.join(dest_dir, file_helper.get_storage_name(title))
+  md_file = MdFile(file_path=os.path.join(dest_dir, file_name + ".md"))
+  content = ""
+  for index, message in enumerate(messages):
+    content = f"{content}\n\n{message.content}"
+  md_file.dump_to_file(content=message.content, metadata={"title": title}, dry_run=dry_run)
 
 
 
 if __name__ == '__main__':
   pass
   # mailman.scrape_months(url="https://list.indology.info/pipermail/indology/", list_id="[INDOLOGY] ", dest_dir_base="/home/vvasuki/hindu-comm/mail_stream_indology/", dry_run=False)
-  mailman.scrape_months(url="https://lists.advaita-vedanta.org/archives/advaita-l/", list_id="[Advaita-l] ", dest_dir_base="/home/vvasuki/hindu-comm/mail_stream_advaita-l/", dry_run=False)
+  # mailman.scrape_months(url="https://lists.advaita-vedanta.org/archives/advaita-l/", list_id="[Advaita-l] ", dest_dir_base="/home/vvasuki/hindu-comm/mail_stream_advaita-l/", dry_run=False)
+  # google_groups.scrape_threads(url="https://groups.google.com/g/hindu-vidya", dest_dir="/home/vvasuki/hindu-comm/hindu-vidya", dry_run=False)
+  # google_groups.scrape_threads(url="https://groups.google.com/g/sadaswada", dest_dir="/home/vvasuki/vishvAsa/kAvyam/content/laxaNam/sadAsvAdaH/", dumper=dump_sadaasvaada, dry_run=False)
+  google_groups.scrape_threads(url="https://groups.google.com/g/bvparishat", dest_dir="/home/vvasuki/hindu-comm/bvparishat", dry_run=False, start_url="yzWE_UnjY90")
+  # google_groups.get_thread_messages_selenium(url="https://groups.google.com/g/bvparishat/c/eHLaHN4heY4")

@@ -20,8 +20,8 @@ logging.getLogger("sbcharsetprober").propagate = False
 
 if __name__ == '__main__':
     pass
-    # wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-index/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/manasataramgini")
-    wordpress.scrape_index(url="https://padmavajra.net/index-of-posts/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/padmavajra/")
+    wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-index/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/manasataramgini")
+    # wordpress.scrape_index(url="https://padmavajra.net/index-of-posts/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/padmavajra/")
     # wordpress.scrape_index(url="https://vriitrahan.wordpress.com/2021/07/21/archive/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/vriitrahan/")
     # wordpress.scrape_index(url="https://aryaakasha.com/unfiltered-archive/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/aryaakasha/")
     # wordpress.scrape_index(url="https://cestlaviepriya.wordpress.com/index/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/cestlaviepriya")
