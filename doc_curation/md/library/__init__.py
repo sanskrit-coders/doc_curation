@@ -352,3 +352,21 @@ def get_parent_md(md_file):
   else:
     return None
 
+
+def dump_word_cloud(src_path, dest_path):
+  from collections import Counter
+  from doc_curation.md.content_processor import patterns
+  from wordcloud import WordCloud
+  wc = WordCloud()
+  counts_map = apply_function(fn=patterns.get_word_count, dir_path=src_path, wc=wc)
+  counts = Counter()
+  for file_path, file_counts in counts_map.items():
+    counts.update(file_counts)
+  wc.generate_from_frequencies(counts)
+  if not dest_path.startswith("/"):
+    dest_path = os.path.join(src_path, dest_path)
+  os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+  wc.to_file(dest_path)
+  return counts
+
+

@@ -334,3 +334,4 @@ class MdFile(object):
       new_content += "\n\n## %s\n%s" % (metadata["title"], source_content)
     if new_content != dest_content:
       self.replace_content_metadata(new_content=new_content, dry_run=dry_run)
+

@@ -4,6 +4,7 @@ img2pdf
 curation_utils
 google-cloud-vision
 indic_transliteration
+wordcloud
 selenium
 urllib3
 regex

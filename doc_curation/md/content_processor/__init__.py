@@ -172,3 +172,4 @@ def make_lines_end_with_pattern(content, full_line_pattern):
       lines_out.append(line)
     last_line_complete = current_line_complete
   return "  \n".join(lines_out)
+

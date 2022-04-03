@@ -25,7 +25,7 @@ logging.basicConfig(
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
-base_browser = scraping.get_selenium_chrome(headless=True)
+base_browser = scraping.get_selenium_chrome(headless=False)
 thread_browser = scraping.get_selenium_firefox(headless=False)
 
 Message = namedtuple(typename="Message", field_names=["author", "date", "content"])
@@ -58,7 +58,7 @@ def get_thread_messages_selenium(url, browser=thread_browser):
   messages = []
   for index, section in enumerate(section_tags):
     section_html = section.get_attribute('innerHTML')
-    soup = BeautifulSoup(section_html, features="lxml")
+    soup = BeautifulSoup(section_html, features="html.parser")
     dt = get_date(soup=soup)
 
     author_tag = soup.select_one("h3")
@@ -71,8 +71,14 @@ def get_thread_messages_selenium(url, browser=thread_browser):
     else:
       author = author_tag.text
     message_tag = soup.select_one("div[role='region']")
-
-    content = md.get_md_with_pandoc(content_in=str(message_tag), source_format="html")
+    message_html = None
+    try:
+      message_html = str(message_tag)
+      content = md.get_md_with_pandoc(content_in=message_html, source_format="html")
+    except RecursionError:
+      #   https://bugs.launchpad.net/beautifulsoup/+bug/1967610
+      logging.warning(f"Infinite recursion : {url}")
+      content = message_tag.text
     date_str = "UNKNOWN_DATE"
     if dt is not None:
       date_str = dt.strftime('%Y-%m-%d, %H:%M:%S')
@@ -110,7 +116,7 @@ def scrape_threads(url, dest_dir, start_url=None, dumper=dump_messages_to_files,
   thread_count = 0
   page_count = 0
   while(True):
-    logging.info(f"Processing page -{page_count}")
+    logging.info(f"Processing page -{page_count}. {thread_count} threads done.")
     thread_tags = browser.find_elements_by_css_selector('[role="row"]')
     page_count = page_count + 1
     for thread_tag in thread_tags:
@@ -130,9 +136,11 @@ def scrape_threads(url, dest_dir, start_url=None, dumper=dump_messages_to_files,
       dumper(messages=messages, subject=subject, dest_dir=dest_dir, url=thread_url, dry_run=dry_run)
     next_url_tag = browser.find_element_by_css_selector('[aria-label="Next page"]')
     if next_url_tag.get_attribute("aria-disabled") is not None:
+      # TODO: The above is not working properly.
       break
     else:
       # next_url_tag.click()
+      logging.info(f"Moving to page {page_count}.")
       browser.execute_script("arguments[0].click();", next_url_tag)
 
 
