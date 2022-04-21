@@ -10,5 +10,20 @@
         <xsl:apply-templates/>
         <xsl:text>)+++</xsl:text>
     </xsl:template>
+    <xsl:template match="fn[@marker]">
+        <xsl:text>[</xsl:text>
+        <xsl:value-of select="fn/@marker" />
+        <xsl:text>]</xsl:text>
+    </xsl:template>
+    <xsl:template match="fn[@n]">
+        <xsl:text>[</xsl:text>
+        <xsl:value-of select="fn/@n" />
+        <xsl:text>]: </xsl:text>
+    </xsl:template>
+    <xsl:template match="pb[@n]">
+        <xsl:text>{</xsl:text>
+        <xsl:value-of select="fn/@n" />
+        <xsl:text>}</xsl:text>
+    </xsl:template>
 
 </xsl:stylesheet>

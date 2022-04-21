@@ -80,7 +80,8 @@ def misc(base_dir):
     # dump_docs(index_url="http://www.voiceofdharma.org/books/mla/", out_dir=base_dir+"misc/muslim_attack_punjab", dry_run=False)
     # dump_docs(index_url="http://www.voiceofdharma.org/books/ir/", out_dir=base_dir+"misc/aurobindo_India_rebirth", dry_run=False)
     # library.set_titles_from_filenames(dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/books/misc/aurobindo_India_rebirth", transliteration_target=None, dry_run=False)
-    dump_docs(index_url="http://voiceofdharma.org/books/tfc/", out_dir=base_dir+"misc/gautier_ferengi_columns", dry_run=False)
+    # dump_docs(index_url="http://voiceofdharma.org/books/tfc/", out_dir=base_dir+"misc/gautier_ferengi_columns", dry_run=False)
+    dump_docs(index_url="http://voiceofdharma.org/books/rig/", out_dir="/home/vvasuki/vishvAsa/notes-hugo/content/history/homo/sapiens/Aryan/satem/indo-iranian/indo-aryan/meta-invasion/articles/taligeri-shrIkAnt/Rgveda", dry_run=False)
 
 
 def goel(base_dir):
@@ -129,4 +130,5 @@ def rajaram(base_dir):
 if __name__ == '__main__':
     base_dir = ""
     # ram_swarup(base_dir=base_dir)
-    goel(base_dir=base_dir)
+    # goel(base_dir=base_dir)
+    misc(base_dir=base_dir)

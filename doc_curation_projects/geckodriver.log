@@ -30779,3 +30779,14 @@ console.warn: SearchSettings: "get: No settings file exists, new profile?" (new 
 1649000078959	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
 1649000083790	Marionette	INFO	Stopped listening on port 40559
 JavaScript error: chrome://remote/content/marionette/cert.js, line 55: NS_ERROR_NOT_AVAILABLE: Component returned failure code: 0x80040111 (NS_ERROR_NOT_AVAILABLE) [nsICertOverrideService.setDisableAllSecurityChecksAndLetAttackersInterceptMyData]
+1649210899045	geckodriver	INFO	Listening on 127.0.0.1:51971
+1649210900042	mozrunner::runner	INFO	Running command: "/usr/bin/firefox" "--marionette" "-no-remote" "-profile" "/tmp/rust_mozprofilezCdZbc"
+1649210901144	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new NotFoundError("Could not open the file at /tmp/rust_mozprofilezCdZbc/search.json.mozlz4", (void 0)))
+1649210902191	Marionette	INFO	Listening on port 33635
+1649210902265	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+1649210905523	Marionette	INFO	Stopped listening on port 33635
+JavaScript error: chrome://remote/content/marionette/cert.js, line 55: NS_ERROR_NOT_AVAILABLE: Component returned failure code: 0x80040111 (NS_ERROR_NOT_AVAILABLE) [nsICertOverrideService.setDisableAllSecurityChecksAndLetAttackersInterceptMyData]
+
+###!!! [Parent][PImageBridgeParent] Error: RunMessage(msgname=PImageBridge::Msg_WillClose) Channel closing: too late to send/recv, messages will be lost
+

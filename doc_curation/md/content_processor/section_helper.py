@@ -180,4 +180,4 @@ def autonumber(md_file, dest_script=sanscript.DEVANAGARI, recursive=True, dry_ru
 def create_sections_from_terminal_digits(md_file, digit_pattern="([०-९]+)", section_mark="##", dry_run=False):
   def replacement_maker(match):
     return "\n%s %s\n%s\n\n" %  (section_mark, match.group(1), match.group().strip())
-  content_processor.replace_texts(md_file=md_file, patterns=[r"\n[\s\S]+?%s *\n" % (digit_pattern)], replacement_maker=replacement_maker, dry_run=dry_run)
+  content_processor.replace_texts(md_file=md_file, patterns=[r"\n[\s\S]+?%s *\n" % (digit_pattern)], replacement=replacement_maker, dry_run=dry_run)

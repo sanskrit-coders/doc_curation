@@ -30,8 +30,8 @@ def add_init_words_to_includes():
   library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/04.md", content_transformer=lambda x, y: include_helper.transform_include_lines(x, transformer=transformer), dry_run=False)
   
 
-def fix_footnotes():
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/rivals/academia/articles/witzel-dossier.md", content_transformer=lambda c, m: content_processor.define_footnotes_near_use(c), dry_run=False)
+def fix_footnotes(dir_path):
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: content_processor.define_footnotes_near_use(c), dry_run=False)
 
 
 def devanaagarify(dir_path):
@@ -75,20 +75,20 @@ if __name__ == '__main__':
   # devanaagarify(dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/gretil_devanAgarI/5_poetry/4_narr/visnusarma_panchatantra.md")
   # fix_audio_tags()
 
-  prefill_vishvAsa_includes()
+  # prefill_vishvAsa_includes()
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: "documentation-theme" not in str(x))
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/sanskrit/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: False not in [y not in str(x) for y in ["sarit", "gitasupersite", "wellcome", "dhaval", "wikisource", "vishvAsa"]])
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/sAyaNa-bhAShyam/", content_transformer=lambda x, y: sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(x, ignore_padaanta=True, omit_yrl=True), dry_run=False)
   # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
-  # library.apply_function(fn=MdFile.replace_in_content_lines, dir_path="/home/vvasuki/vishvAsa/purANam/static/rAmAyaNam/audIchya-pAThaH/vishvAsa-prastutiH", pattern="\n+भावार्थ[:-]*([\s\S]+?)([\n ]*|$)", replacement="", dry_run=False)
+  library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/hiraNyakeshI/paddhatiH/saMskAraratnamAlA", patterns=[r"(?<=\n) (?=\S)"], replacement="", dry_run=False)
 
   # library.apply_function(fn=section_helper.create_sections_from_terminal_digits, dir_path="/home/vvasuki/vishvAsa/vedAH/content/Rk/shAkalam/aitareya-brAhmaNam/", dry_run=False)
 
   # library.apply_function(fn=details_helper.interleave_from_file, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/madhurA-vijayam/sarva-prastutiH/4.md", source_file=lambda x: x.replace("sarva-prastutiH", "AnglAnuvAdaH"), detail_title="tiruvenkaTAchAri (Eng)", dry_run=False)
 
-  # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/vishvAsa/vedAH/static/sAma/kauthumam/sUtram/gobhila-gRhyam/mUlam")
+  # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/laxaNam/articles/bhoja-shRngAra-prakAshaH/_index.md")
   # library.apply_function(fn=MdFile.drop_sections, dir_path="/home/vvasuki/vishvAsa/purANam/static/rAmAyaNam/audIchya-pAThaH/vishvAsa-prastutiH", title_condition=lambda x: x != "मूलम्")
   # library.apply_function(fn=MdFile.make_paras, dir_path="/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/jamison_brereton_notes")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA", content_transformer=lambda x, y: content_processor.numerify_shloka_numbering(x))
@@ -105,6 +105,6 @@ if __name__ == '__main__':
   # add_init_words_to_includes()
   # md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH", file_pattern="**/_index.md")  
   # devanaagarify()
-  # fix_footnotes()
+  # fix_footnotes(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/hiraNyakeshI/paddhatiH/saMskAraratnamAlA")
 
   # library.shift_contents(dir_path="/home/vvasuki/vishvAsa/purANam/static/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva/saMskRtam/abhinava-guptaH/mUlam/02_sAnkhya-yogaH_sarva-", start_index=49, offset=1)

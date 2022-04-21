@@ -5,7 +5,11 @@ FOOTNOTE_DEFINITION = r"\n(\[\^.+?\]):[\s\S]+?(?=[\n\[])"
 
 JS_COMMENTS = r"\+\+\+\([\s\S]+?\)\+\+\+"
 
-DEVANAGARI_NON_DIGITS = r"[\u0900-॥॰-\u0954]"
+DEVANAGARI = r"[\u0900-ॿ]"
+DEVANAGARI_NON_DIGITS = r"[\u0900-॥॰-ॿ]"
+DEVANAGARI_NON_DIGITS_NON_DANDA = r"[\u0900-ॣ॰-ॿ]"
+DEVANAGARI_OR_LATIN_WORD = r"[\u0900-\u097F\w]+"
+
 
 def get_word_count(md_file, wc=None):
   if wc is None:

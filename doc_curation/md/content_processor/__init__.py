@@ -123,17 +123,11 @@ def set_audio_caption_from_filename(text, prefix):
   return c
 
 
-def replace_texts(md_file, patterns, replacement_maker, dry_run=False):
+def replace_texts(md_file, patterns, replacement, dry_run=False):
   logging.info("Processing %s", md_file.file_path)
   [metadata, content] = md_file.read()
-  # For some regexes to work prefectly.
-  content = "\n" + content
-  matches = []
   for text_pattern in patterns:
-    matches.extend(regex.finditer(text_pattern, content))
-  for index, match in enumerate(matches):
-    replacement = replacement_maker(match)
-    content = content.replace(match.group().strip(), "%s\n" % replacement, 1)
+    content = regex.sub(text_pattern, replacement, content)
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
