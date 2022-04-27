@@ -22,9 +22,9 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/shrautam/mUlam.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.IAST, mixed_languages_in_titles=False, title_index_pattern=None) # 
 
   ## None Script
-  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/jyotiSham/content/history/articles/Hamlets_Mill__Santillana_Dechend/", dry_run=False, source_script=None)
-  # 
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/notes-hugo/content/history/homo/sapiens/Aryan/kentum/mediterranian/articles/julian_by_vidal", dry_run=False, source_script=None,  title_index_pattern=None)
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/notes-hugo/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/articles/india-persianate-age/", dry_run=False, source_script=None)
+
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/notes-hugo/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/articles/india-persianate-age/", dry_run=False, source_script=None,  title_index_pattern=None)
   # MdFile(file_path="/home/vvasuki/vvasuki-git/notes-hugo/content/biology/organism/health/disease/contagion/vaccination.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, title_index_pattern=None)
   #  , title_index_pattern=None
   

@@ -26,6 +26,7 @@ def dump_google_groups():
   from doc_curation.mail_stream import mailman, google_groups
   pass
   # google_groups.scrape_threads(url="https://groups.google.com/g/hindu-vidya", dest_dir="/home/vvasuki/hindu-comm/hindu-vidya", dry_run=False)
+  google_groups.scrape_threads(url="https://groups.google.com/g/advaitin", dest_dir="/home/vvasuki/hindu-comm/advaitin", dry_run=False)
   # google_groups.scrape_threads(url="https://groups.google.com/g/sadaswada", dest_dir="/home/vvasuki/vishvAsa/kAvyam/content/AsvAdaH/sadAsvAdaH", dumper=dump_sadaasvaada, dry_run=False)
   # google_groups.scrape_threads(url="https://groups.google.com/g/bvparishat", dest_dir="/home/vvasuki/hindu-comm/bvparishat", dry_run=False, start_url="ry4713TxiuQ")
   # google_groups.scrape_threads(url="https://groups.google.com/g/samskrita", dest_dir="/home/vvasuki/hindu-comm/samskrita", dry_run=False, start_url="qVDwKqFADvg")
@@ -43,5 +44,6 @@ def word_clouds():
 
 if __name__ == '__main__':
   # word_clouds()
-  scrape_groups()
+  # scrape_groups()
+  dump_google_groups()
   pass
