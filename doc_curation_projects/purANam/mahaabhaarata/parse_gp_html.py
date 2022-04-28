@@ -1,28 +1,31 @@
 
 
 detail_map = {
+  "सूचना (हिन्दी)": ["class_106", "class_151", "class_2", "class_236", "class_239", "class_249", "class_281", "class_282", "class_284", "class_285", "class_292", "class_307", "class_316", "class_341", "class_342", "class_347", "class_349", "class_364", "class_385", "class_389", "class_4", "class_40", "class_46", "class_5", "class_53", "class_73", "class_85", "class_93", "class_96"] + ["class_194", "class_195", "class_3", "class_322", "class_343"] + ["class_25", "class_289", "class_299", "class_303"] + ["class_115", "class_124", "class_288", "class_298", "class_302", "class_304", "class_378", "class_47"] + ["class_142", "class_274"] + ["class_181", "class_218"] + ["class_190", "class_312"] + ["class_263", "class_271"] + ["class_293", "class_374"],
+  "भागसूचना": ["class_241", "class_280", "class_48"] + ["class_49", "class_50", "class_52"],
   "विषय (हिन्दी)": ["class_53", "class_52", "class_85", "class_93", "class_96"],
-  "मूलम् (वचनम्)": ["class_59", "class_69", "class_86", "class_97"],
-  "मूलम्": ["class_54", "class_57", "class_66", "class_67", "class_77"],
-  "मूलम् (समाप्तिः)": ["class_70", "class_72", "class_73", "class_78", "class_79", "class_87"],
+  "मूलम् (वचनम्)": ["class_102", "class_113", "class_160", "class_221", "class_309", "class_384", "class_59", "class_69", "class_71", "class_86", "class_88", "class_97"],
+  "मूलम्": ["class_182", "class_183", "class_24", "class_258", "class_33", "class_54", "class_57", "class_66", "class_67", ] + ["class_14", "class_15", "class_18", "class_220", "class_246", "class_294", "class_295", "class_329", "class_386", "class_77", "class_81"],
+  "मूलम् (समाप्तिः)": ["class_141", "class_159", "class_161", "class_383", "class_387", "class_70", "class_87"] + ["class_72", "class_73", "class_78", "class_79", "class_40"],
   "अनुवाद (हिन्दी)": ["class_55", "class_68", "class_88"],
   "अनुवाद (समाप्ति)": ["class_71"],
-  "सूचना (हिन्दी)": ["class_2", "class_3", "class_4", "class_5", "class_4",],
   "प्रकाशनसूचना": ["class_13", "class_14", "class_15", "class_16", "class_17", "class_18", "class_19", "class_20"],
-  "नमस्कारः": ["class_1", "class_8", "class_21"],
+  "नमस्कारः": ["class_1", "class_8", "class_21", "class_28"],
   "": []
 }
 
 format_map = {
-  "##": ["class_49"], "###": ["class_50", "class_23"], 
-  "####": ["class_52", "class_92", "class_95"],
-  "footnote_marker": ["class_56"],
-  "footnote_definition_marker": ["class_36", "class_80"],
-  "footnote_definition": ["class_76", "class_81", "class_82", "class_83", "class_91"],
+  "##": ["class_51"], "###": ["class_50", "class_23", "class_22"], 
+  "####": ["class_100", "class_105", "class_180", "class_240", "class_254", "class_291", "class_390", "class_45", "class_52", "class_92", "class_95"],
+  "citation_marker": ["class_122", "class_184"],
+  "footnote_marker": ["class_56", "class_108", "class_266", "class_360"],
+  "footnote_definition_marker": ["class_36", "class_80", "class_134"],
+  "footnote_definition": ["class_109", "class_150", "class_290", "class_76", "class_78", "class_91"] + ["class_81", "class_82", "class_83",],
   "footnote_quote": ["class_84", "class_99"],
   "image": ["class_58", "class_61", "class_63", "class_64", "class_65", "class_74", "class_89"],
-  "caption": ["class_62"],
+  "caption": ["class_62"] + ["class_155", "class_287"],
   "telling_hindi": ["class_60"],
+  "hr": ["class_388", "class_75", "class_90"]
 }
 
 
