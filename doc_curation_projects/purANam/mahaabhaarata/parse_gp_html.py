@@ -1,3 +1,13 @@
+import codecs
+import os
+
+from bs4 import BeautifulSoup
+import regex
+
+from curation_utils.file_helper import get_storage_name
+from indic_transliteration import sanscript
+
+epub_dir = "/home/vvasuki/sanskrit/raw_etexts/purANam/mahAbhAratam/gp/epub_no_img/"
 
 
 detail_map = {
@@ -29,5 +39,48 @@ format_map = {
 }
 
 
+def romanize(text):
+  return sanscript.transliterate(text, _from=sanscript.DEVANAGARI, _to=sanscript.OPTITRANS)
+
+
+def dump_content(source_path, dest_path, title_full):
+  pass
+
+
+def dump_nav_point(nav_point, base_path):
+  parts = nav_point.find_all(name="navPoint", recursive=False)
+  content_links = nav_point.find_all(name="content", recursive=False)
+  title_in = nav_point.select_one("navLabel>text").text
+  index_str = regex.match("[\d०-९]", title_in)
+  if index_str is not None:
+    index = int(romanize(index_str))
+    if title_in.endswith("पर्व"):
+      padded_index = "%02" % index
+    else:
+      padded_index = "%03" % index
+    title = f"{padded_index} " + regex.sub(f"{index_str}[- .]+", "", title_in)
+  else:
+    title = title_in
+  if len(content_links) == 0:
+    for index_alt, part in parts.enumerate():
+        dump_nav_point(nav_point=part, base_path=os.path.join(base_path, get_storage_name(title)))
+  else:
+    content_src = content_links[0].src
+    if padded_index:
+      dest_path = os.path.join(base_path, padded_index + ".md")
+    else:
+      dest_path=os.path.join(base_path, get_storage_name(title) + ".md")
+    dump_content(source_path=os.path.join(epub_dir, content_src), dest_path=dest_path, title_full=title)
+
+
+
+def dump_all(toc_xml, base_path):
+  with codecs.open(toc_xml) as toc_file:
+    contents = toc_file.read()
+    soup = BeautifulSoup(contents,'xml')
+    dump_nav_point(soup.select_one("navMap"), base_path=base_path)
+  pass
+
+
 if __name__ == '__main__':
-  dump_all()
+  dump_all(toc_xml=os.path.join(epub_dir, "toc.ncx"), base_path="/home/vvasuki/vishvAsa/purANam/static/mahAbhAratam/goraxapura-pAThaH")

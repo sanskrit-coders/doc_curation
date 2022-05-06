@@ -42,7 +42,7 @@ def define_footnotes_near_use(content, *args, **kwargs):
   definitions = regex.finditer(definition_pattern, content)
   content = regex.sub(definition_pattern, "", content)
   for definition in definitions:
-    content = regex.sub(r"%s[\s\S]+?\n\n" % regex.escape(definition.group(1)), r"\g<0>%s\n" % definition.group(0), content)
+    content = regex.sub(r"(%s[\s\S]+?\n)(\n|</details)" % regex.escape(definition.group(1)), r"\g<1>%s\n\g<2>" % definition.group(0), content)
   # Undo initial additions
   content = regex.sub(r"^\n", "", content)
   content = regex.sub(r"\n\n$", "", content)
