@@ -4,8 +4,18 @@ import os
 from bs4 import BeautifulSoup
 import regex
 
+from curation_utils import scraping
 from curation_utils.file_helper import get_storage_name
+from doc_curation.scraping.html_scraper import souper
 from indic_transliteration import sanscript
+import logging
+
+# Remove all handlers associated with the root logger object.
+for handler in logging.root.handlers[:]:
+  logging.root.removeHandler(handler)
+logging.basicConfig(
+  level=logging.DEBUG,
+  format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 epub_dir = "/home/vvasuki/sanskrit/raw_etexts/purANam/mahAbhAratam/gp/epub_no_img/"
 
@@ -44,28 +54,38 @@ def romanize(text):
 
 
 def dump_content(source_path, dest_path, title_full):
+  logging.info(f"Dumping {source_path} to {dest_path}. {title_full}")
+  soup = scraping.get_soup(source_path)
   pass
 
 
-def dump_nav_point(nav_point, base_path):
+def dump_nav_point(nav_point, base_path, index_in=None):
   parts = nav_point.find_all(name="navPoint", recursive=False)
   content_links = nav_point.find_all(name="content", recursive=False)
   title_in = nav_point.select_one("navLabel>text").text
-  index_str = regex.match("[\d०-९]", title_in)
+  index_str = regex.match("[\d०-९]+", title_in)
+  padded_index = None
   if index_str is not None:
-    index = int(romanize(index_str))
+    index = int(romanize(index_str.group(0)))
     if title_in.endswith("पर्व"):
-      padded_index = "%02" % index
+      padded_index = "%02d" % index
     else:
-      padded_index = "%03" % index
-    title = f"{padded_index} " + regex.sub(f"{index_str}[- .]+", "", title_in)
+      padded_index = "%03d" % index
+    title = f"{padded_index} " + regex.sub(f"{index_str.group(0)}[- .]+", "", title_in)
   else:
-    title = title_in
-  if len(content_links) == 0:
-    for index_alt, part in parts.enumerate():
-        dump_nav_point(nav_point=part, base_path=os.path.join(base_path, get_storage_name(title)))
-  else:
-    content_src = content_links[0].src
+    if index_in is not None:
+      title = "%02d %s" % (index_in, title_in)
+    else:
+      title = title_in
+  for index_alt, part in enumerate(parts):
+    # if padded_index is None:
+    #   title = "%02d %s" % (index_alt + 1, title)
+    if regex.match("Mahabharata_Bhag", os.path.basename(base_path)):
+      base_path = os.path.dirname(base_path)
+    
+    dump_nav_point(nav_point=part, base_path=os.path.join(base_path, get_storage_name(title)), index_in=index_alt+1)
+  if len(content_links) != 0 and not title.endswith("पर्व"):
+    content_src = content_links[0]["src"]
     if padded_index:
       dest_path = os.path.join(base_path, padded_index + ".md")
     else:
@@ -78,7 +98,8 @@ def dump_all(toc_xml, base_path):
   with codecs.open(toc_xml) as toc_file:
     contents = toc_file.read()
     soup = BeautifulSoup(contents,'xml')
-    dump_nav_point(soup.select_one("navMap"), base_path=base_path)
+    for x in soup.select("navMap>navPoint"):
+      dump_nav_point(x, base_path=base_path)
   pass
 
 
