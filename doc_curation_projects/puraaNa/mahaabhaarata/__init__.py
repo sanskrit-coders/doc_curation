@@ -1,5 +1,7 @@
 import os
 import regex
+
+from doc_curation.md import library
 from doc_curation.md.file import MdFile
 
 

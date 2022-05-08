@@ -8,7 +8,7 @@ from indic_transliteration import sanscript
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
-from curation_projects.raamaayana.dump import aandhra
+from doc_curation_projects.raamaayana.dump import aandhra
 from doc_curation.md import get_md_with_pandoc
 from doc_curation.md.file import MdFile
 from doc_curation import text_data

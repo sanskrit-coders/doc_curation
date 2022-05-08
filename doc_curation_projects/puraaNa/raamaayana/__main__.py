@@ -2,8 +2,8 @@ import logging
 
 import regex
 
-from curation_projects import raamaayana
-from curation_projects.raamaayana import  content
+from doc_curation_projects import raamaayana
+from doc_curation_projects.raamaayana import  content
 from doc_curation.md.file import MdFile
 from doc_curation.md import library
 

@@ -5,7 +5,7 @@ import regex
 from bs4 import BeautifulSoup
 
 import doc_curation.scraping.sacred_texts
-from curation_projects import veda
+from doc_curation_projects import veda
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import include_helper, section_helper
 from doc_curation.md.file import MdFile

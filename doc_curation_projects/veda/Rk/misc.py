@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from curation_projects.veda import Rk
+from doc_curation_projects.veda import Rk
 from doc_curation.md import library
 from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript

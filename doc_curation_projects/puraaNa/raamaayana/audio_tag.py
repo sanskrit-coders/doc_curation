@@ -4,7 +4,7 @@ from pathlib import Path
 
 import regex
 
-from curation_projects import raamaayana
+from doc_curation_projects import raamaayana
 
 # Remove all handlers associated with the root logger object.
 for handler in logging.root.handlers[:]:

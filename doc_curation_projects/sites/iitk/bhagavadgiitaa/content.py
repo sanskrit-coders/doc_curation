@@ -4,7 +4,7 @@ import os
 import regex
 
 from doc_curation.md import library
-from curation_projects.iitk import bhagavadgiitaa
+from doc_curation_projects.iitk import bhagavadgiitaa
 from indic_transliteration import sanscript
 
 

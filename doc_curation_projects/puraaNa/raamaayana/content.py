@@ -1,7 +1,7 @@
 import regex
 import textwrap
 from doc_curation.md import library
-from curation_projects import raamaayana
+from doc_curation_projects import raamaayana
 import logging
 import os
 

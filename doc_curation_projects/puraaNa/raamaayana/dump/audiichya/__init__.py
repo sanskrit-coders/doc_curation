@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 
-from curation_projects.raamaayana import get_adhyaaya_id
+from doc_curation_projects.raamaayana import get_adhyaaya_id
 
 from doc_curation.md.file import MdFile
 

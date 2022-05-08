@@ -2,7 +2,7 @@ import os
 
 import regex
 from bs4 import BeautifulSoup
-from curation_projects import veda
+from doc_curation_projects import veda
 
 from doc_curation.md.file import MdFile
 

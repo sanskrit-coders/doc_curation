@@ -9,7 +9,7 @@ from doc_curation.scraping.wikisource import enumerated
 
 from doc_curation.md.file import MdFile
 
-from curation_projects.veda import Rk
+from doc_curation_projects.veda import Rk
 from indic_transliteration import sanscript
 
 

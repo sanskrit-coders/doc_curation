@@ -5,7 +5,7 @@ from itertools import dropwhile, takewhile
 import regex
 from bs4 import BeautifulSoup
 
-from curation_projects.veda import Rk
+from doc_curation_projects.veda import Rk
 from curation_utils import scraping
 from doc_curation import md
 from doc_curation.md.file import MdFile

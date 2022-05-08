@@ -4,8 +4,8 @@ import shutil
 import regex
 from bs4 import BeautifulSoup
 
-import curation_projects.veda.suutra
-from curation_projects import veda
+import doc_curation_projects.veda.suutra
+from doc_curation_projects import veda
 from doc_curation.md import library
 from doc_curation.md.content_processor import include_helper
 from doc_curation.md.file import MdFile
@@ -60,14 +60,14 @@ def oldenberg_dest_path_maker(url, base_dir):
 
 
 def migrate_and_include_sUtras():
-  curation_projects.veda.suutra.migrate_and_include_sUtras(dir_path=os.path.join(content_dir_base, "mUlam/"))
+  doc_curation_projects.veda.suutra.migrate_and_include_sUtras(dir_path=os.path.join(content_dir_base, "mUlam/"))
 
 
 def dump_vishvaasa_sUtras():
   source_dir = os.path.join(content_dir_base, "vishvAsa-prastutiH")
   static_dir = os.path.join(static_dir_base, "vishvAsa-prastutiH")
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=source_dir, dry_run=False, source_script=sanscript.DEVANAGARI, title_index_pattern=None)
-  # curation_projects.veda.suutra.migrate_and_include_sUtras(dir_path=source_dir)
+  # doc_curation_projects.veda.suutra.migrate_and_include_sUtras(dir_path=source_dir)
   metadata_helper.copy_metadata_and_filename(dest_dir=static_dir, ref_dir=ref_dir)
 
 

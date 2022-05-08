@@ -36,6 +36,6 @@ def dump_varga(sa_name, kaanda_id, dest_dir, en_name=None):
 
 
 if __name__ == '__main__':
-  from curation_projects.kosha import amara
+  from doc_curation_projects.kosha import amara
   for id, row in amara.varga_names.iterrows():
     dump_varga(sa_name=row["sa_name"], kaanda_id=id, dest_dir="/home/vvasuki/vishvAsa/sanskrit/content/koshaH/amarakoshaH", en_name=row["en_name"])

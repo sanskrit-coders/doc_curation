@@ -4,7 +4,7 @@ import os
 import regex
 from ordered_set import OrderedSet
 
-from curation_projects.veda import Rk
+from doc_curation_projects.veda import Rk
 from curation_utils import scraping
 from doc_curation.md.file import MdFile
 

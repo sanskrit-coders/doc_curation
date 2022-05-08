@@ -1,6 +1,6 @@
 import regex
 
-from curation_projects import mahaabhaarata
+from doc_curation_projects.puraaNa import mahaabhaarata
 import logging
 
 # Remove all handlers associated with the root logger object.

@@ -1,7 +1,7 @@
 import os
 import textwrap
 
-from curation_projects.veda.Rk import json_lib
+from doc_curation_projects.veda.Rk import json_lib
 from doc_curation import text_utils
 from doc_curation.md import library
 from doc_curation.md.file import MdFile

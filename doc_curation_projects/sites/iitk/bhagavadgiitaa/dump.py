@@ -5,7 +5,7 @@ from urllib.request import urlopen
 import doc_curation.text_utils
 from bs4 import BeautifulSoup
 
-from curation_projects.iitk.bhagavadgiitaa import folder_path_from_title
+from doc_curation_projects.iitk.bhagavadgiitaa import folder_path_from_title
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper import souper
 from curation_utils.file_helper import get_storage_name

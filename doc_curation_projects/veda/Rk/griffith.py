@@ -4,7 +4,7 @@ from pathlib import Path
 
 import regex
 
-from curation_projects.veda.Rk import json_lib
+from doc_curation_projects.veda.Rk import json_lib
 from doc_curation.md.file import MdFile
 from doc_curation.scraping import html
 from doc_curation.scraping.html_scraper import souper

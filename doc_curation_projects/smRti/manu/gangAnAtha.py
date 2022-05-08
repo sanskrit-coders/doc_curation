@@ -7,7 +7,7 @@ from urllib.request import urlopen
 import regex
 from bs4 import BeautifulSoup
 
-from curation_projects.smRti.manu import medhaatithi
+from doc_curation_projects.smRti.manu import medhaatithi
 from doc_curation.md import get_md_with_pandoc
 from doc_curation.md.file import MdFile
 
