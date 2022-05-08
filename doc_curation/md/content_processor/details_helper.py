@@ -8,6 +8,28 @@ from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 
 
+
+class Detail(object):
+  def __init__(self, type, content, attributes_str=None):
+    self.type = type
+    self.content = content
+    self.attributes_str = attributes_str
+
+
+  def to_html(self):
+    if self.type is None:
+      title = "Misc Detail"
+      logging.warning(f"Unknown detail type for: {self.content}")
+    else:
+      title = self.type
+    if self.attributes_str is None:
+      if self.type in ["विश्वास-प्रस्तुतिः", "मूलम् (वचनम्)"]:
+        self.attributes_str = "open"
+      else:
+        self.attributes_str = ""
+    return f"<details {self.attributes_str}><summary>{title}</summary>\n\n{self.content.strip()}\n</details>"
+
+
 def interleave_from_file(md_file, source_file, dest_pattern="[^\d०-९೦-೯]([\d०-९೦-೯]+) *॥.*(?=\n|$)", source_pattern="(?<=\n|^)([\d०-९೦-೯]+).+\n", detail_title="English", dry_run=False):
   (_, dest_content) = md_file.read()
   if callable(source_file):
@@ -49,4 +71,6 @@ def interleave_from_file(md_file, source_file, dest_pattern="[^\d०-९೦-೯]
     source_content = source_content.replace(source_match_map[index].group(), "")
   md_file.replace_content_metadata(new_content=dest_content, dry_run=dry_run)
   source_md.replace_content_metadata(new_content=source_content, dry_run=dry_run)
+
+
 

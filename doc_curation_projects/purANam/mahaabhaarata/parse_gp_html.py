@@ -1,11 +1,16 @@
 import codecs
 import os
+from copy import copy
 
 from bs4 import BeautifulSoup
 import regex
 
 from curation_utils import scraping
 from curation_utils.file_helper import get_storage_name
+from doc_curation.md import library
+from doc_curation.md.content_processor.details_helper import Detail
+from doc_curation.md.file import MdFile
+from doc_curation.md.library import metadata_helper
 from doc_curation.scraping.html_scraper import souper
 from indic_transliteration import sanscript
 import logging
@@ -51,63 +56,94 @@ def css_selector_list(classes):
   return ["." + x for x in classes]
 
 
-def make_detail(title, text):
-  if detail_type in ["विश्वास-प्रस्तुतिः", "मूलम् (वचनम्)"]:
-    attributes_str = "open"
-  else:
-    attributes_str = ""
-  return f"<details {attributes_str}><summary>{title}</summary>\n\n{text}</details>"
-
-
 def romanize(text):
   return sanscript.transliterate(text, _from=sanscript.DEVANAGARI, _to=sanscript.OPTITRANS)
 
-def dump_content(source_path, dest_path, title_full):
-  logging.info(f"Dumping {source_path} to {dest_path}. {title_full}")
-  soup = scraping.get_soup(source_path)
-  
+
+def get_detail_type(div_class):
+  for detail_type, detail_classes in detail_map.items():
+    if div_class in detail_classes:
+      return detail_type
+  return None
+
+
+def fix_tags(soup):
   ## First, fix some text
   tags = souper.get_tags_matching_css(soup=soup, css_selector_list=css_selector_list(format_map["citation_marker"]))
   for tag in tags:
-    tag.text = f"[[{tag.text}]]"
+    tag.string.replace_with(f"[[{tag.text}]]")
 
   tags = souper.get_tags_matching_css(soup=soup, css_selector_list=css_selector_list(format_map["footnote_marker"]))
   for tag in tags:
-    tag.text = f"[^{tag.text}]"
+    tag.string.replace_with(f"[^{tag.text}]")
 
   tags = souper.get_tags_matching_css(soup=soup, css_selector_list=css_selector_list(format_map["footnote_definition_marker"]))
   for tag in tags:
-    tag.text = f"[^{tag.text}]:"
+    tag.string.replace_with(f"[^{tag.text}]:")
 
   tags = souper.get_tags_matching_css(soup=soup, css_selector_list=css_selector_list(format_map["footnote_quote"]))
   for tag in tags:
-    tag.text = f"'''{tag.text}'''"
+    tag.string.replace_with(f"'''{tag.text}'''")
+
 
   tags = souper.get_tags_matching_css(soup=soup, css_selector_list=css_selector_list(format_map["telling_hindi"]))
   for tag in tags:
-    tag.text = f"_{tag.text}_ "
+    tag.string.replace_with(f"_{tag.text}_ ")
 
-  ## Parse the divs
+
+def content_from_details(details):
   content = ""
-  current_detail_type = None
-  current_detail_content = ""
+  for detail in details:
+    if detail.type == "FOOTNOTE_DEFINITION":
+      content += "\n" + detail.content + "\n"
+    else:
+      if detail.type == "मूलम्":
+        detail_vishvaasa = copy(detail)
+        detail_vishvaasa.type = "विश्वास-प्रस्तुतिः"
+        content += "\n" + detail_vishvaasa.to_html() + "\n"
+      content += "\n" + detail.to_html() + "\n"
+  return content
+
+
+def parse_body_divs(soup):
+  details = []
   divs = soup.select("body>div")
   for div in divs:
     if div.text == "":
       continue
-    if div["class"] in format_map["footnote_definition"]:
-      content += "\n" + tag.text.replace("]:. ", "]:") + "\n"
+    div_class = div["class"][0]
+    if div_class in format_map["footnote_definition"]:
+      details.append(Detail(type="FOOTNOTE_DEFINITION", content=div.text.replace("]:. ", "]:")))
       continue
-    for detail_type, detail_classes in detail_map.items():
-      if div["class"] in detail_classes:
-        if current_detail_type != detail_type and current_detail_type is not None:
-          content += "\n" + make_detail(title=current_detail_type, text=current_detail_content)
+    detail_type = get_detail_type(div_class=div_class)
+    if len(details) > 0 and details[-1].type == detail_type:
+      details[-1].content = f"{details[-1].content.strip()}  \n{div.text.strip()}\n"
+    else:
+      details.append(Detail(type=detail_type, content=div.text.strip()))
+  return details
 
+
+def dump_content(source_path, dest_path, title_full, dry_run=False):
+  logging.info(f"Dumping {source_path} to {dest_path}. {title_full}")
+  soup = scraping.get_soup(source_path)
+  
+  fix_tags(soup=soup)
+
+  details = parse_body_divs(soup=soup)
+
+  content = content_from_details(details=details)
+  
   content = content.replace("⁠", "").replace(" ", "").replace("।।", "॥")
-  pass
+  
+  md_file = MdFile(file_path=dest_path)
+  
+  md_file.dump_to_file(metadata={"title_full": title_full}, content=content, dry_run=dry_run)
+  metadata_helper.set_title_from_filename(md_file=md_file, dry_run=dry_run)
 
 
-def dump_nav_point(nav_point, base_path, index_in=None):
+
+
+def dump_nav_point(nav_point, base_path, index_in=None, dry_run=False):
   parts = nav_point.find_all(name="navPoint", recursive=False)
   content_links = nav_point.find_all(name="content", recursive=False)
   title_in = nav_point.select_one("navLabel>text").text
@@ -138,16 +174,18 @@ def dump_nav_point(nav_point, base_path, index_in=None):
       dest_path = os.path.join(base_path, padded_index + ".md")
     else:
       dest_path=os.path.join(base_path, get_storage_name(title) + ".md")
-    dump_content(source_path=os.path.join(epub_dir, content_src), dest_path=dest_path, title_full=title)
+    dump_content(source_path=os.path.join(epub_dir, content_src), dest_path=dest_path, title_full=title, dry_run=dry_run)
 
 
 
-def dump_all(toc_xml, base_path):
-  soup = scraping.get_soup(contents, 'xml')
-  for x in soup.select("navMap>navPoint"):
-    dump_nav_point(x, base_path=base_path)
+def dump_all(toc_xml, base_path, dry_run=False):
+  # soup = scraping.get_soup(toc_xml, 'xml')
+  # for x in soup.select("navMap>navPoint"):
+  #   dump_nav_point(x, base_path=base_path, dry_run=dry_run)
+  library.fix_index_files(dir_path=base_path)
+  library.fix_index_files(dir_path="/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/meta/gItA-mudraNAlayAvRttiH")
   pass
 
 
 if __name__ == '__main__':
-  dump_all(toc_xml=os.path.join(epub_dir, "toc.ncx"), base_path="/home/vvasuki/vishvAsa/purANam/static/mahAbhAratam/goraxapura-pAThaH")
+  dump_all(toc_xml=os.path.join(epub_dir, "toc.ncx"), base_path="/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH")
