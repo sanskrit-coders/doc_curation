@@ -5,6 +5,9 @@ from doc_curation.md import library
 from doc_curation.md.file import MdFile
 
 
+PATH_GP = "/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH"
+PATH_KUMBH = "/home/vvasuki/sanskrit/raw_etexts/purANa/mahAbhArata/kumbhakonam"
+
 def get_adhyaaya_md_files(md_file_path):
     md_files = library.get_md_files_from_path(dir_path=md_file_path, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
     return md_files
@@ -21,8 +24,8 @@ def get_adhyaaya_id(md_file):
     return "%03d-%03d" % (int(parva), int(adhyaaya))
 
 
-def get_adhyaaya_to_source_file_map():
-    md_files = get_adhyaaya_md_files(md_file_path="/home/vvasuki/sanskrit/raw_etexts/purANa/mahAbhArata/kumbhakonam")
+def get_adhyaaya_to_source_file_map(md_path=PATH_GP):
+    md_files = get_adhyaaya_md_files(md_file_path=md_path)
     final_map = {}
     for md_file in md_files:
         parva = regex.findall("/\\d\\d/", str(md_file.file_path))[0].replace("/", "")

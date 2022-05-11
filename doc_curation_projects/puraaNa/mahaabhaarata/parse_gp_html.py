@@ -12,6 +12,7 @@ from doc_curation.md.content_processor.details_helper import Detail
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from doc_curation.scraping.html_scraper import souper
+from doc_curation_projects.puraaNa import mahaabhaarata
 from indic_transliteration import sanscript
 import logging
 
@@ -207,4 +208,4 @@ def dump_all(base_path, dry_run=False):
 
 
 if __name__ == '__main__':
-  dump_all(base_path="/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH")
+  dump_all(base_path=mahaabhaarata.PATH_GP)
