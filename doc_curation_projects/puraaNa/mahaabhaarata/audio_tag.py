@@ -29,7 +29,7 @@ def set_audio_tag():
   adhyaaya_to_source_file_map = mahaabhaarata.get_adhyaaya_to_source_file_map()
   adhyaaya_to_mp3_map = mahaabhaarata.get_adhyaaya_to_mp3_map()
   # logging.debug(adhyaaya_to_mp3_map)
-  dest_md_files = mahaabhaarata.get_adhyaaya_md_files(
+  dest_md_files = mahaabhaarata .get_adhyaaya_md_files(
     md_file_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata")
   logging.debug(dest_md_files)
   for md_file in dest_md_files:
