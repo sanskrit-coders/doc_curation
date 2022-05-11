@@ -1,4 +1,4 @@
-import codecs
+import codecs, collections
 import os
 from copy import copy
 
@@ -30,7 +30,7 @@ detail_map = {
   "भागसूचना": ["class_241", "class_280", "class_48"] + ["class_49", "class_50", "class_52"] + ["class_51"] + ["class_50", "class_23", "class_22"] + ["class_100", "class_105", "class_180", "class_240", "class_254", "class_291", "class_390", "class_45", "class_52", "class_92", "class_95"],
   "विषय (हिन्दी)": ["class_53", "class_52", "class_85", "class_93", "class_96"],
   "मूलम् (वचनम्)": ["class_102", "class_113", "class_160", "class_221", "class_309", "class_384", "class_59", "class_69", "class_71", "class_86", "class_88", "class_97"],
-  "मूलम्": ["class_182", "class_183", "class_24", "class_258", "class_33", "class_54", "class_57", "class_66", "class_67", ] + ["class_14", "class_15", "class_18", "class_220", "class_246", "class_294", "class_295", "class_329", "class_386", "class_77", "class_81"],
+  "मूलम्": ["class_182", "class_183", "class_24", "class_258", "class_33", "class_54", "class_57", "class_66", "class_67", ] + ["class_14", "class_15", "class_18", "class_220", "class_246", "class_294", "class_295", "class_329", "class_386", "class_77", "class_81"] + ["class_244"],
   "मूलम् (समाप्तिः)": ["class_141", "class_159", "class_161", "class_383", "class_387", "class_70", "class_87"] + ["class_72", "class_73", "class_78", "class_79", "class_40"],
   "अनुवाद (हिन्दी)": ["class_55", "class_68", "class_88"],
   "अनुवाद (समाप्ति)": ["class_71"],
@@ -83,7 +83,10 @@ def fix_tags(soup):
 
   tags = souper.get_tags_matching_css(soup=soup, css_selector_list=css_selector_list(format_map["footnote_quote"]))
   for tag in tags:
-    tag.string.replace_with(f"'''{tag.text}'''")
+    if tag.string is None:
+      logging.warning(f"Check {tag}")
+    else:
+      tag.string.replace_with(f"'''{tag.text}'''")
 
 
   tags = souper.get_tags_matching_css(soup=soup, css_selector_list=css_selector_list(format_map["telling_hindi"]))
@@ -115,6 +118,8 @@ def parse_body_divs(soup):
     if div_class in format_map["footnote_definition"]:
       details.append(Detail(type="FOOTNOTE_DEFINITION", content=div.text.replace("]:. ", "]:")))
       continue
+    if div_class in format_map["caption"]:
+      continue
     detail_type = get_detail_type(div_class=div_class)
     if len(details) > 0 and details[-1].type == detail_type:
       details[-1].content = f"{details[-1].content.strip()}  \n{div.text.strip()}\n"
@@ -123,8 +128,7 @@ def parse_body_divs(soup):
   return details
 
 
-def dump_content(source_path, dest_path, title_full, dry_run=False):
-  logging.info(f"Dumping {source_path} to {dest_path}. {title_full}")
+def get_content(source_path):
   soup = scraping.get_soup(source_path)
   
   fix_tags(soup=soup)
@@ -135,15 +139,12 @@ def dump_content(source_path, dest_path, title_full, dry_run=False):
   
   content = content.replace("⁠", "").replace(" ", "").replace("।।", "॥")
   
-  md_file = MdFile(file_path=dest_path)
-  
-  md_file.dump_to_file(metadata={"title_full": title_full}, content=content, dry_run=dry_run)
-  metadata_helper.set_title_from_filename(md_file=md_file, dry_run=dry_run)
+  return content
 
 
 
 
-def dump_nav_point(nav_point, base_path, index_in=None, dry_run=False):
+def dump_nav_point(nav_point, toc_to_opf_contents, base_path, index_in=None, dry_run=False):
   parts = nav_point.find_all(name="navPoint", recursive=False)
   content_links = nav_point.find_all(name="content", recursive=False)
   title_in = nav_point.select_one("navLabel>text").text
@@ -167,25 +168,43 @@ def dump_nav_point(nav_point, base_path, index_in=None, dry_run=False):
     if regex.match("Mahabharata_Bhag", os.path.basename(base_path)):
       base_path = os.path.dirname(base_path)
     
-    dump_nav_point(nav_point=part, base_path=os.path.join(base_path, get_storage_name(title)), index_in=index_alt+1)
+    dump_nav_point(nav_point=part, toc_to_opf_contents=toc_to_opf_contents, base_path=os.path.join(base_path, get_storage_name(title)), index_in=index_alt+1)
   if len(content_links) != 0 and not title.endswith("पर्व"):
-    content_src = content_links[0]["src"]
+    content_src = scraping.clean_url(content_links[0]["src"])
     if padded_index:
       dest_path = os.path.join(base_path, padded_index + ".md")
     else:
       dest_path=os.path.join(base_path, get_storage_name(title) + ".md")
-    dump_content(source_path=os.path.join(epub_dir, content_src), dest_path=dest_path, title_full=title, dry_run=dry_run)
+    logging.info(f"Dumping {content_src} to {dest_path}. {title}")
+    content = get_content(source_path=os.path.join(epub_dir, content_src))
+    for additional_content_src in toc_to_opf_contents[content_src]:
+      logging.info(f"Additional {additional_content_src}")
+      content += "\n\n" + get_content(source_path=os.path.join(epub_dir, additional_content_src))
+    md_file = MdFile(file_path=dest_path)
+    md_file.dump_to_file(metadata={"title_full": title}, content=content, dry_run=dry_run)
+    metadata_helper.set_title_from_filename(md_file=md_file, dry_run=dry_run)
 
 
 
-def dump_all(toc_xml, base_path, dry_run=False):
-  # soup = scraping.get_soup(toc_xml, 'xml')
-  # for x in soup.select("navMap>navPoint"):
-  #   dump_nav_point(x, base_path=base_path, dry_run=dry_run)
-  library.fix_index_files(dir_path=base_path)
-  library.fix_index_files(dir_path="/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/meta/gItA-mudraNAlayAvRttiH")
+def dump_all(base_path, dry_run=False):
+  soup_toc = scraping.get_soup(os.path.join(epub_dir, "toc.ncx"), 'xml')
+  toc_content_srcs = [scraping.clean_url(x["src"]) for x in soup_toc.select("content")]
+  soup_opf = scraping.get_soup(os.path.join(epub_dir, "content.opf"), 'xml')
+  opf_content_srcs = [scraping.clean_url(x["href"]) for x in soup_opf.select("item") if "xhtml" in x["media-type"]]
+  toc_to_opf_contents = collections.defaultdict(list)
+  current_toc_src = ""
+  for src in opf_content_srcs:
+    if src in toc_content_srcs:
+      current_toc_src = src
+    else:
+      toc_to_opf_contents[current_toc_src].append(src)
+
+  for x in soup_toc.select("navMap>navPoint"):
+    dump_nav_point(nav_point=x, toc_to_opf_contents=toc_to_opf_contents, base_path=base_path, dry_run=dry_run)
+  # library.fix_index_files(dir_path=base_path)
+  # library.fix_index_files(dir_path="/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/meta/gItA-mudraNAlayAvRttiH")
   pass
 
 
 if __name__ == '__main__':
-  dump_all(toc_xml=os.path.join(epub_dir, "toc.ncx"), base_path="/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH")
+  dump_all(base_path="/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH")

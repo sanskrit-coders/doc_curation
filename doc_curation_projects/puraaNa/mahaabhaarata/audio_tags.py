@@ -3,6 +3,7 @@ import regex
 from doc_curation_projects.puraaNa import mahaabhaarata
 import logging
 
+
 # Remove all handlers associated with the root logger object.
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
@@ -11,7 +12,7 @@ logging.basicConfig(
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
-def reformat_audio_tag():
+def set_audio_tag():
     adhyaaya_to_source_file_map = mahaabhaarata.get_adhyaaya_to_source_file_map()
     # logging.debug(adhyaaya_to_mp3_map)
     dest_md_files = mahaabhaarata.get_adhyaaya_md_files(md_file_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata")
@@ -26,4 +27,4 @@ def reformat_audio_tag():
         audio_tag = next(iter(regex.findall("<div class.*div>", current_content.replace("\n", " "))), '')
         (_, target_content) = adhyaaya_to_source_file_map[adhyaaya_id]._read_yml_md_file()
         # logging.debug(adhyaaya_to_source_file_map[adhyaaya_id])
-        md_file.replace_content_metadata("%s\n\n%s" % (audio_tag, target_content), dry_run=False)
+        md_file.replace_content_metadata(new_content="%s\n\n%s" % (audio_tag, target_content), dry_run=False)
