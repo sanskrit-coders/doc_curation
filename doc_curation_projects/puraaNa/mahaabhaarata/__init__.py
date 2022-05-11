@@ -28,13 +28,16 @@ def get_adhyaaya_to_source_file_map(md_path=PATH_GP):
     md_files = get_adhyaaya_md_files(md_file_path=md_path)
     final_map = {}
     for md_file in md_files:
-        parva = regex.findall("/\\d\\d/", str(md_file.file_path))[0].replace("/", "")
+        parva = regex.findall("\\d\\d\\D", str(md_file.file_path))[0][0:2]
         adhyaaya = regex.findall("\\d\\d\\d", str(md_file.file_path))[0]
         adhyaaya_id = "%s-%s" % (parva, adhyaaya)
         final_map[adhyaaya_id] = md_file
     return final_map
 
 
-
+def get_doc_data(worksheet_name="कार्यावली"):
+    from curation_utils.google import sheets
+    doc_data = sheets.IndexSheet(spreadhsheet_id="1sNH1AWhhoa5VATqMdLbF652s7srTG0Raa6K-sCwDR-8", worksheet_name=worksheet_name, id_column="पर्व-अध्यायः", google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json')
+    return doc_data
 
 

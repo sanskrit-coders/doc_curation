@@ -15,31 +15,33 @@ logging.basicConfig(
 
 
 def get_adhyaaya_to_mp3_map():
-  with open(os.path.join(mahaabhaarata.PATH_GP, "meta", "mahAbhArata-mUla-paThanam-GP.txt")) as f:
-    mp3_paths = f.readlines().sort()
+  with open(os.path.join(os.path.dirname(mahaabhaarata.PATH_GP), "meta", "mahAbhArata-mUla-paThanam-GP.txt")) as f:
+    mp3_paths = f.readlines()
+    mp3_paths.sort()
   adhyaaya_to_mp3_map = collections.defaultdict(list)
+  doc_data = mahaabhaarata.get_doc_data()
   for mp3_path in mp3_paths:
-    adhyaaya_id = mp3_path[0:7]
+    adhyaaya_id = mp3_path[1:7]
+    reader = doc_data.get_value(id=adhyaaya_id, column_name="पठिता")
     web_mp3_path = f"https://archive.org/download/mahAbhArata-mUla-paThanam-GP/{mp3_path.strip()}"
-    adhyaaya_to_mp3_map[adhyaaya_id].append(web_mp3_path)
+    audio_tag = f"<div class=\"audioEmbed\"  caption=\"{reader}\" src=\"{web_mp3_path}\"></div>"
+    adhyaaya_to_mp3_map[adhyaaya_id].append(audio_tag)
   return adhyaaya_to_mp3_map
 
 
-def set_audio_tag():
+def set_audio_tags():
   adhyaaya_to_source_file_map = mahaabhaarata.get_adhyaaya_to_source_file_map()
-  adhyaaya_to_mp3_map = mahaabhaarata.get_adhyaaya_to_mp3_map()
+  adhyaaya_to_mp3_map = get_adhyaaya_to_mp3_map()
   # logging.debug(adhyaaya_to_mp3_map)
-  dest_md_files = mahaabhaarata .get_adhyaaya_md_files(
-    md_file_path="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/padya/purANa/mahAbhArata")
-  logging.debug(dest_md_files)
-  for md_file in dest_md_files:
+  for adhyaaya_id, audio_tags in adhyaaya_to_mp3_map.items():
     # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
-    logging.debug(md_file.file_path)
-    (parva, adhyaaya) = mahaabhaarata.get_parva_adhyaaya(md_file)
-    adhyaaya_id = "%s-%s" % (parva, adhyaaya)
-    logging.debug(adhyaaya_id)
-    (yml, current_content) = md_file._read_yml_md_file()
-    audio_tag = next(iter(regex.findall("<div class.*div>", current_content.replace("\n", " "))), '')
-    (_, target_content) = adhyaaya_to_source_file_map[adhyaaya_id]._read_yml_md_file()
-    # logging.debug(adhyaaya_to_source_file_map[adhyaaya_id])
-    md_file.replace_content_metadata(new_content="%s\n\n%s" % (audio_tag, target_content), dry_run=False)
+    md_file = adhyaaya_to_source_file_map[adhyaaya_id]
+    audio_tag_str = '\n'.join(audio_tags)
+    audio_detail = f"<details open><summary>श्रावणम् (द्युगङ्गा)</summary>\n\n{audio_tag_str}\n</details>"
+    (_, content) = md_file.read()
+    content = f"{audio_detail}\n\n{content}"
+    md_file.replace_content_metadata(new_content=content, dry_run=False)
+
+
+if __name__ == '__main__':
+  set_audio_tags()
