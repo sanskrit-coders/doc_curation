@@ -145,7 +145,7 @@ def get_content(source_path):
 
 
 
-def dump_nav_point(nav_point, toc_to_opf_contents, base_path, index_in=None, dry_run=False):
+def dump_nav_point(nav_point, toc_to_opf_contents, base_path, urls=None, index_in=None, dry_run=False):
   parts = nav_point.find_all(name="navPoint", recursive=False)
   content_links = nav_point.find_all(name="content", recursive=False)
   title_in = nav_point.select_one("navLabel>text").text
@@ -169,9 +169,11 @@ def dump_nav_point(nav_point, toc_to_opf_contents, base_path, index_in=None, dry
     if regex.match("Mahabharata_Bhag", os.path.basename(base_path)):
       base_path = os.path.dirname(base_path)
     
-    dump_nav_point(nav_point=part, toc_to_opf_contents=toc_to_opf_contents, base_path=os.path.join(base_path, get_storage_name(title)), index_in=index_alt+1)
+    dump_nav_point(nav_point=part, toc_to_opf_contents=toc_to_opf_contents, base_path=os.path.join(base_path, get_storage_name(title)), urls=urls, index_in=index_alt+1)
   if len(content_links) != 0 and not title.endswith("पर्व"):
     content_src = scraping.clean_url(content_links[0]["src"])
+    if urls is not None and content_src not in urls:
+      return 
     if padded_index:
       dest_path = os.path.join(base_path, padded_index + ".md")
     else:
@@ -187,7 +189,7 @@ def dump_nav_point(nav_point, toc_to_opf_contents, base_path, index_in=None, dry
 
 
 
-def dump_all(base_path, dry_run=False):
+def dump_all(base_path, urls=None, dry_run=False):
   soup_toc = scraping.get_soup(os.path.join(epub_dir, "toc.ncx"), 'xml')
   toc_content_srcs = [scraping.clean_url(x["src"]) for x in soup_toc.select("content")]
   soup_opf = scraping.get_soup(os.path.join(epub_dir, "content.opf"), 'xml')
@@ -201,11 +203,30 @@ def dump_all(base_path, dry_run=False):
       toc_to_opf_contents[current_toc_src].append(src)
 
   for x in soup_toc.select("navMap>navPoint"):
-    dump_nav_point(nav_point=x, toc_to_opf_contents=toc_to_opf_contents, base_path=base_path, dry_run=dry_run)
+    dump_nav_point(nav_point=x, toc_to_opf_contents=toc_to_opf_contents, base_path=base_path, urls=urls, dry_run=dry_run)
   # library.fix_index_files(dir_path=base_path)
   # library.fix_index_files(dir_path="/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/meta/gItA-mudraNAlayAvRttiH")
   pass
 
 
+def check_toc():
+  soup_toc = scraping.get_soup(os.path.join(epub_dir, "toc.ncx"), 'xml')
+  previous_parva = None
+  for text in soup_toc.select("text"):
+    parva_match = regex.match("[०-९]+", text.string)
+    if parva_match is None:
+      continue
+    parva = int(sanscript.transliterate(parva_match.group(0), _from=sanscript.DEVANAGARI, _to=sanscript.OPTITRANS))
+    if parva == 1:
+      previous_parva = parva
+      continue
+    if parva != previous_parva + 1:
+      logging.warning(f"Check {text.string} Previous Parva: {previous_parva}")
+    previous_parva = parva
+
+
 if __name__ == '__main__':
-  dump_all(base_path=mahaabhaarata.PATH_GP)
+  pass
+  missing_navpoints = ["2/OEBPS/part0385_u2.xhtml", "2/OEBPS/part0393_u3.xhtml", "2/OEBPS/part0395_u2.xhtml", "2/OEBPS/part0404_u3.xhtml", "6/OEBPS/part0102.xhtml", "6/OEBPS/part0110_u1.xhtml"]
+  dump_all(base_path=mahaabhaarata.PATH_GP, urls=missing_navpoints)
+  # check_toc()
