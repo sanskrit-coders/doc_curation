@@ -13,7 +13,7 @@ from curation_utils.file_helper import get_storage_name
 from doc_curation.md import library
 import regex
 
-from doc_curation.text_data import get_subunit_data
+from doc_curation.book_data import get_subunit_data
 
 
 def dump_shloka_details(url, base_dir, chapter_title):
@@ -64,7 +64,7 @@ def dump_shloka_details(url, base_dir, chapter_title):
 
 
 def dump_chapter(chapter_id, base_dir):
-  chapter_data = get_subunit_data(file_path="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/text_data/mahaabhaaratam/bhagavadgItA.toml", unit_path_list=["%02d" % chapter_id])
+  chapter_data = get_subunit_data(file_path="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/book_data/mahaabhaaratam/bhagavadgItA.toml", unit_path_list=["%02d" % chapter_id])
   for shloka_id in range(1, chapter_data["length"]+1):
     url = "https://www.gitasupersite.iitk.ac.in/srimad?language=dv&field_chapter_value=%d&field_nsutra_value=%d&htrskd=1&httyn=1&htshg=1&scsh=1&hcchi=1&hcrskd=1&scang=1&scram=1&scanand=1&scjaya=1&scmad=1&scval=1&scms=1&scsri=1&scvv=1&scpur=1&scneel=1&scdhan=1&ecsiva=1&etsiva=1&etpurohit=1&etgb=1&setgb=1&etssa=1&etassa=1&etradi=1&etadi=1&choose=1" % (chapter_id, shloka_id)
     dump_shloka_details(url=url, base_dir=base_dir, chapter_title=chapter_data["alt_title"])

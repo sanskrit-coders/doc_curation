@@ -7,7 +7,7 @@ import regex
 from bs4 import BeautifulSoup
 
 from curation_utils import file_helper
-from doc_curation import text_data
+from doc_curation import book_data
 from doc_curation.md import library, get_md_with_pandoc
 import roman_numerals
 
@@ -68,9 +68,9 @@ def get_Rk_comment(tags):
 
 
 def dump_Rk_info(dest_dir):
-  unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "vedaH/shaunaka/samhitA.json")
-  for kaanda_index in text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
-    subunit_list = text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index], length_fields=["length_whitney", "length"])
+  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/shaunaka/samhitA.json")
+  for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
+    subunit_list = book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index], length_fields=["length_whitney", "length"])
     for subunit_index in subunit_list:
       kaanda_id = "%02d" % kaanda_index
       suukta_id = "%03d" % subunit_index
@@ -115,8 +115,8 @@ def dump_Rk_info(dest_dir):
 
 
 def dump_kaanda_info(dest_dir):
-  unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "vedaH/shaunaka/samhitA.json")
-  for kaanda_index in text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
+  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/shaunaka/samhitA.json")
+  for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
     kaanda_str = roman_numerals.roman_to_ascii(roman_numerals.convert_to_numeral(kaanda_index))
     url =  "https://en.wikisource.org/wiki/Atharva-Veda_Samhita/Book_%s" % (kaanda_str)
     logging.info("%s, kaanDa %d", url, kaanda_index)
@@ -134,10 +134,10 @@ def dump_kaanda_info(dest_dir):
 
 
 def dump_suukta_info(dest_dir):
-  unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "vedaH/shaunaka/samhitA.json")
+  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/shaunaka/samhitA.json")
   missing_anukramaNI = ["02/021", "02/022", "02/023",]
-  for kaanda_index in text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
-    subunit_list = text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index], length_fields=["length_whitney", "length"])
+  for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
+    subunit_list = book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index], length_fields=["length_whitney", "length"])
     for subunit_index in subunit_list:
       suukta_subpath = "%02d/%03d" % (kaanda_index, subunit_index)
       if suukta_subpath <= "02/020" or suukta_subpath >= "20":
@@ -163,10 +163,10 @@ def dump_suukta_info(dest_dir):
 
 
 def dump_anukramaNii(dest_dir):
-  unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "vedaH/shaunaka/samhitA.json")
+  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/shaunaka/samhitA.json")
   missing_anukramaNI = ["02/020.md", "02/021.md", "02/022.md", "02/023.md",]
-  for kaanda_index in text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
-    subunit_list = text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index], length_fields=["length_whitney", "length"])
+  for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
+    subunit_list = book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index], length_fields=["length_whitney", "length"])
     for subunit_index in subunit_list:
       suukta_subpath = "%02d/%03d.md" % (kaanda_index, subunit_index)
       if suukta_subpath <= "16/000.md" or suukta_subpath >= "20":

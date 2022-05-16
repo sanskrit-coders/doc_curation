@@ -11,15 +11,15 @@
 import logging
 import os
 
-from doc_curation import titus, text_data
+from doc_curation import titus, book_data
 
 browser = titus.browser
 
 def dump_text(base_dir, do_transliteration=False):
-    unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "vedaH/vAjasaneyi/samhitA.json")
+    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/vAjasaneyi/samhitA.json")
 
     titus_url = "http://titus.uni-frankfurt.de/texte/etcd/ind/aind/ved/yvw/vs/vs.htm"
-    for kaanda_index in text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
+    for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
         logging.info("kaanDa %d", kaanda_index)
 
         outfile_path = os.path.join(base_dir, "%02d.md" % (kaanda_index))

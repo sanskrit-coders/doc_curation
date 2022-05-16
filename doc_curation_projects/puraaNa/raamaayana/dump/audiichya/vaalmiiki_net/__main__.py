@@ -8,7 +8,7 @@ import yamldown
 from lxml import html
 import requests
 
-from doc_curation import text_data
+from doc_curation import book_data
 
 # Remove all handlers associated with the root logger object.
 for handler in logging.root.handlers[:]:
@@ -57,8 +57,8 @@ def dump_sarga(title, shloka_items, output_path):
 def dump_kaanda(kaanda, kaanda_index, output_directory_base):
     kaanda_id1 = None
     kaanda_id2 = None
-    unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "raamaayana_andhra.json")
-    sarga_list = text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index])
+    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "raamaayana_andhra.json")
+    sarga_list = book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index])
     kaanda_id2_chapter_index = None
     chapter_title_xpath = '//div[@class="chpt"]/text()'
     if kaanda == "bAla":

@@ -6,7 +6,7 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome import options
 from selenium.webdriver.remote.remote_connection import LOGGER
 
-from doc_curation import text_data
+from doc_curation import book_data
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 
@@ -25,9 +25,9 @@ browser.implicitly_wait(6)
 
 
 def dump_text(base_dir):
-    unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "vedaH/vAjasaneyi/samhitA.json")
+    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/vAjasaneyi/samhitA.json")
 
-    for kaanda_index in text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
+    for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
         logging.info("adhyAya %d", kaanda_index)
 
         outfile_path = os.path.join(base_dir, "%02d.md" % (kaanda_index))

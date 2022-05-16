@@ -2,24 +2,24 @@ import logging
 import os
 
 from doc_curation.scraping import parankusha
-from doc_curation import text_data
+from doc_curation import book_data
 
 
 def get_ramayana_text(browser, text_id, base_dir):
     browser.find_element_by_link_text(text_id).click()
     # browser.implicitly_wait(2)
-    unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "raamaayana/andhra.json")
+    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "raamaayana/andhra.json")
     if text_id == "रामायणम्-नव्यपाठः":
-        unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "raamaayana/baroda.json")
+        unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "raamaayana/baroda.json")
     else:
-        unit_info_file = os.path.join(os.path.dirname(text_data.__file__), "raamaayana/kumbhakonam.json")
+        unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "raamaayana/kumbhakonam.json")
 
-    for kaanda_index in text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
+    for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
         kaanda_element = browser.find_element_by_link_text("Kanda-%d" % kaanda_index)
         # kaanda_element.click()
         # Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen 
         browser.execute_script("arguments[0].click();", kaanda_element)
-        sarga_list = text_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index])
+        sarga_list = book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index])
 
         for sarga_index in sarga_list:
             logging.info("Kanda %d Sarga %d", kaanda_index, sarga_index)

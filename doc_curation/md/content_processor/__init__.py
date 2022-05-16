@@ -88,10 +88,19 @@ def get_comparison_text(text):
   return text.strip()
 
 
-def devanaagarify(text, source_scheme=sanscript.IAST):
-  c = sanscript.transliterate(text, sanscript.IAST, sanscript.DEVANAGARI)
-  c = sanscript.SCHEMES[sanscript.DEVANAGARI].dot_for_numeric_ids(c)
-  c = c.replace(":", "-")
+def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVANAGARI, aksharamukha_pre_options=[], aksharamukha_post_options=[]):
+  if source_script.lower() == "tamil":
+    source_script = source_script.capitalize()
+    dest_script = dest_script.capitalize()
+    aksharamukha_pre_options = ["TamilTranscribe"]
+  if len(aksharamukha_pre_options) + len(aksharamukha_post_options) > 0:
+    import aksharamukha
+    c = aksharamukha.transliterate.process(src=source_script, tgt=dest_script, txt=text, nativize = True, pre_options = aksharamukha_pre_options, post_options = aksharamukha_post_options)
+  else:
+    c = sanscript.transliterate(text, source_script, dest_script)
+    c = sanscript.SCHEMES[dest_script].dot_for_numeric_ids(c)
+  if dest_script == sanscript.DEVANAGARI:
+    c = c.replace(":", "-")
   return c
 
 

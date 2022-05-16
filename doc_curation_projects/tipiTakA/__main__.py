@@ -8,7 +8,7 @@ from curation_utils import dir_helper
 from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
-from doc_curation import text_data
+from doc_curation import book_data
 from doc_curation.md.file import MdFile
 from doc_curation.scraping import html
 

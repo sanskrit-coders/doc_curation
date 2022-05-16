@@ -36,7 +36,7 @@ def fix_footnotes(dir_path):
 
 def devanaagarify(dir_path):
   def content_transformer(c, m): 
-    c = content_processor.devanaagarify(text=c)
+    c = content_processor.transliterate(text=c)
     c = regex.sub("\n\*\*(\s+)", "\n\\1**", c)
     c = regex.sub("\n[\t	 ]+", "\n> ", c)
     for x in range(1, 20):
