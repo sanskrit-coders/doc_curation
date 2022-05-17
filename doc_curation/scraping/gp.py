@@ -3,16 +3,22 @@ import logging
 import os
 import time
 
+import regex
 from bs4 import BeautifulSoup
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, \
   ElementNotInteractableException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.wait import WebDriverWait
+from tqdm import tqdm
 
 from curation_utils import scraping
 browser = scraping.get_selenium_chrome(headless=False)
 
+
+def generator():
+  while True:
+    yield
 
 def get_book_browser(url):
   browser.get(url=url)
@@ -20,7 +26,7 @@ def get_book_browser(url):
   next_element = browser.find_element_by_link_text("पुस्तक पढ़ें")
   browser.execute_script("arguments[0].click();", next_element)
   logging.info("Rewinding")
-  while True:
+  for _ in tqdm(generator()):
     prev_arrow = browser.find_element_by_css_selector("#prev")
     if "hidden" in prev_arrow.get_attribute("style"):
       break
@@ -44,14 +50,17 @@ def get_page_content(browser):
 
 def dump_book(url, dest_html_path, final_url_check=None):
   if not dest_html_path.endswith(".html"):
-    dest_html_path = os.path.join(dest_html_path, os.path.basename(url + ".html"))
+    basename = os.path.basename(url)
+    basename = regex.sub("-%28.+", "", basename)
+    dest_html_path = os.path.join(dest_html_path, basename + ".html")
   logging.info(f"Dumping {url} to {dest_html_path}")
   browser = get_book_browser(url=url)
   os.makedirs(os.path.dirname(dest_html_path), exist_ok=True)
+  logging.info("Flipping pages")
   with codecs.open(dest_html_path, "w") as dest_file:
     part_content_old = ""
     url_old = ""
-    while True:
+    for _ in tqdm(generator()):
       part_content = get_page_content(browser=browser)
       # time.sleep(2)
       url = browser.current_url
