@@ -32,8 +32,14 @@ def get_month_urls(url, init_year_month_str=None):
   ( post_html, soup) = blog.get_post_html(url=url)
   month_anchors = soup.select(".widget_archive a")
   if len(month_anchors) == 0:
-    month_anchors = soup.find_all(text="Archives")[0].parent.parent.select("a")
-  urls = sorted([anchor["href"] for anchor in month_anchors])
+    archives_elements = soup.find_all(text="Archives")
+    if len(archives_elements) != 0:
+      month_anchors = archives_elements[0].parent.parent.select("a")
+      urls = sorted([anchor["href"] for anchor in month_anchors])
+    else:
+      archives_element = soup.select_one("[name='archive-dropdown']")
+      urls = sorted([option["value"] for option in archives_element.select("option") if option["value"] != ""])
+      # TODO : Fix this.
   if init_year_month_str is not None:
     urls = itertools.dropwhile(lambda x: init_year_month_str not in x, urls)
   return urls
