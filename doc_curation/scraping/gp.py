@@ -19,12 +19,15 @@ def get_book_browser(url):
   time.sleep(6)
   next_element = browser.find_element_by_link_text("पुस्तक पढ़ें")
   browser.execute_script("arguments[0].click();", next_element)
+  logging.info("Rewinding")
   while True:
     prev_arrow = browser.find_element_by_css_selector("#prev")
+    if "hidden" in prev_arrow.get_attribute("style"):
+      break
     try:
       browser.execute_script("arguments[0].click();", prev_arrow)
     except ElementNotInteractableException:
-      break
+      break 
   return browser
 
 def get_page_content(browser):
@@ -60,7 +63,9 @@ def dump_book(url, dest_html_path, final_url_check=None):
       url_old = url
       part_content_old = part_content
       next_arrow = browser.find_element_by_css_selector("#next")
+      if "hidden" in next_arrow.get_attribute("style"):
+        break
       try:
-        next_arrow.click()
+        browser.execute_script("arguments[0].click();", next_arrow)
       except ElementNotInteractableException:
         break
