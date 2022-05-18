@@ -13,7 +13,6 @@ from selenium.webdriver.support.wait import WebDriverWait
 from tqdm import tqdm
 
 from curation_utils import scraping
-browser = scraping.get_selenium_chrome(headless=False)
 
 
 def generator():
@@ -21,6 +20,7 @@ def generator():
     yield
 
 def get_book_browser(url):
+  browser = scraping.get_selenium_chrome(headless=False)
   browser.get(url=url)
   time.sleep(6)
   next_element = browser.find_element_by_link_text("पुस्तक पढ़ें")
