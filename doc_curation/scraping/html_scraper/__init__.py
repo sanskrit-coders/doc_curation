@@ -18,6 +18,7 @@ def get_class_counts(html, css_selector):
       classes = tag.attrs["class"]
       for c in classes:
         class_count[c] = class_count.get(c, 0) + 1
+  logging.info(f"Total classes: {len(class_count)}. Total tags: {len(tags)}")
   for cls in sorted(class_count, key=class_count.get, reverse=True):
     logging.info(f"{cls} - {class_count[cls]}")
   return class_count

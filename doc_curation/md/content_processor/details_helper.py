@@ -3,10 +3,11 @@ import os
 import textwrap
 
 import regex
+from bs4 import NavigableString
 
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
-
+from doc_curation.md import content_processor
 
 
 class Detail(object):
@@ -73,4 +74,23 @@ def interleave_from_file(md_file, source_file, dest_pattern="[^\d०-९೦-೯]
   source_md.replace_content_metadata(new_content=source_content, dry_run=dry_run)
 
 
+def transform_details_with_soup(content, metadata, transformer, *args, **kwargs):
+  # Stray usage of < can fool the soup parser. Hence the below.
+  if "details" not in content:
+    return content
+  soup = content_processor._soup_from_content(content=content, metadata=metadata)
+  if soup is None:
+    return content
+  details = soup.select("details")
+  for detail in details:
+    transformer(detail, *args, **kwargs)
+    detail.insert_after("\n")
+  return content_processor._make_content_from_soup(soup=soup)
 
+
+def vishvAsa_sanskrit_transformer(detail_tag):
+  if detail_tag.select_one("summary").text != "विश्वास-प्रस्तुतिः":
+    return
+  for x in detail_tag.contents:
+    if isinstance(x, NavigableString):
+      x.replace_with(content_processor.rehyphenate_sanskrit_line_endings(x))

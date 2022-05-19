@@ -1,4 +1,5 @@
 import logging
+from bs4 import BeautifulSoup, NavigableString
 
 import regex
 
@@ -175,4 +176,41 @@ def make_lines_end_with_pattern(content, full_line_pattern):
       lines_out.append(line)
     last_line_complete = current_line_complete
   return "  \n".join(lines_out)
+
+
+def rehyphenate_sanskrit_line_endings(content, script=sanscript.DEVANAGARI):
+  text = sanscript.transliterate(content, _from=script, _to=sanscript.DEVANAGARI)
+  dev_scheme = sanscript.SCHEMES[sanscript.DEVANAGARI]
+  def nn_replacer(match):
+    letters = dev_scheme.split_vyanjanas_and_svaras(match.group(2))
+    return "न्" + letters[0] + match.group(1) + dev_scheme.join_strings(letters[1:])
+  text = regex.sub("-( *\n *)न्(न.)", nn_replacer, text)
+  text = regex.sub("-( *\n *)स्(?=[तथस])", r"स्\1", text)
+  text = regex.sub("-( *\n *)श्(?=[चछश])", r"श्\1", text)
+  text = regex.sub("-( *\n *)ष्(?=[टठष])", r"ष्\1", text)
+  text = regex.sub("(?<=[ि-ौ])-( *\n *)र्(?=[गघङजझञदधनडढणबभमयलवह])", r"र्\1", text)
+  def generic_replacer(match):
+    letters = dev_scheme.split_vyanjanas_and_svaras(match.group(2))
+    return letters[0] + match.group(1) + dev_scheme.join_strings(letters[1:])
+  text = regex.sub("-( *\n *)(म.)", generic_replacer, text)
+  text = regex.sub("-( *\n *)(र[ि-ौ]?)", generic_replacer, text)
+  return sanscript.transliterate(text, _from=sanscript.DEVANAGARI, _to=script)
+
+
+def _make_content_from_soup(soup):
+  new_content = ""
+  for x in soup.select_one("body").contents:
+    if isinstance(x, NavigableString) and "<" in x:
+      x = str(x).replace("<", "&lt;")
+    new_content = new_content + str(x)
+  new_content = new_content.replace("&amp;", "&").replace("open=\"\"", "open")
+  return new_content
+
+def _soup_from_content(content, metadata):
+  strange_lt_sign = regex.search("<(?! *[/dsiahfu])", content)
+  if strange_lt_sign is not None:
+    logging.warning(f"Not confident about content in {metadata['_file_path']} at {strange_lt_sign.start()}, before {content[strange_lt_sign.start():strange_lt_sign.start()+16]} - returning")
+    return None
+  soup = BeautifulSoup(f"<body>{content}</body>", features="html.parser")
+  return soup
 

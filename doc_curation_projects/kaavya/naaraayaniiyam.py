@@ -1,10 +1,15 @@
 import logging
 import os
 
+import regex
 from selenium import webdriver
 from selenium.webdriver.chrome import options
 from selenium.webdriver.remote.remote_connection import LOGGER
 
+from curation_utils import scraping
+from doc_curation.md import library
+from doc_curation.md.content_processor import details_helper
+from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 
 LOGGER.setLevel(logging.WARNING)
@@ -41,7 +46,19 @@ def get_item(id, dir_path):
     md_file.set_title(sanscript.transliterate("%03d" % id, sanscript.SLP1, sanscript.DEVANAGARI), dry_run=False)
 
 
+def insert_translation(content, *args):
+  def replacement_maker(match):
+    text = match.group(0)
+    soup = scraping.get_soup(url=f"https://sanskritdocuments.org/sites/completenarayaneeyam/GistHtm/{match.group(2)}gist.htm")
+    detail = details_helper.Detail(type="English (Padmini)", content=soup.select_one("body").text).to_html()
+    text += f"\n\n{detail}\n\n"
+    return text
+  content = regex.sub("(\<div[\s\S]+?)(\d\d\d_\d\d)([\s\S]+?)(?=<div|$)", replacement_maker, content)
+  return content
+
+
 if __name__ == '__main__':
-    # logging.debug(get_item("http://sanskritabhyas.in/hi/Kridanta/View/%E0%A4%AD%E0%A5%82"))
-    for id in range(1, 101):
-        get_item(id=id, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANa/nArAyaNIyam/" )
+  pass
+  # for id in range(1, 101):
+  #     get_item(id=id, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANa/nArAyaNIyam/" )
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/laxyam/padyam/purANam/nArAyaNIyam", content_transformer=insert_translation, dry_run=False)

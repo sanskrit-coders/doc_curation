@@ -408,5 +408,4 @@ if __name__ == '__main__':
   # dump_bangla()
   # dump_marathi()
   # dump_english()
-  html_scraper.get_class_counts(html="/home/vvasuki/vishvAsa/purANam/static/rAmAyaNam/goraxapura-pAThaH/source.html", css_selector="p")
   pass

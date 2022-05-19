@@ -89,12 +89,11 @@ def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs
   # Stray usage of < can fool the soup parser. Hence the below.
   if "js_include" not in content:
     return content
-  strange_lt_sign = regex.search("<(?! *[/dsiahfu])", content)
-  if strange_lt_sign is not None:
-    logging.warning(f"Not confident about content in {metadata['_file_path']} at {strange_lt_sign.start()}, before {content[strange_lt_sign.start():strange_lt_sign.start()+16]} - returning")
+  if "details" not in content:
     return content
-
-  soup = BeautifulSoup(f"<body>{content}</body>", features="html.parser")
+  soup = content_processor._soup_from_content(content=content, metadata=metadata)
+  if soup is None:
+    return content
   includes = soup.select("div.js_include")
   # logging.debug(f"Processing {metadata['_file_path']}")
   for inc in includes:
@@ -109,13 +108,7 @@ def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs
         break
     if top_level_include:
       transformer(inc, metadata["_file_path"], *args, **kwargs)
-  new_content = ""
-  for x in soup.select_one("body").contents:
-    if isinstance(x, NavigableString) and "<" in x:
-      x = str(x).replace("<", "&lt;")
-    new_content = new_content + str(x)
-  new_content = new_content.replace("&amp;", "&")
-  return new_content
+  return content_processor._make_content_from_soup(soup=soup)
 
 
 def old_include_remover(inc):
