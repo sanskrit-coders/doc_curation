@@ -4,6 +4,7 @@ import logging
 from bs4 import BeautifulSoup
 
 from curation_utils import scraping
+from doc_curation.md.content_processor.details_helper import Detail
 
 
 def get_class_counts(html, css_selector):
@@ -23,3 +24,26 @@ def get_class_counts(html, css_selector):
     logging.info(f"{cls} - {class_count[cls]}")
   return class_count
 
+
+
+
+def get_detail_type(tag_classes, detail_map):
+  div_class = tag_classes[0]
+  for detail_type, detail_classes in detail_map.items():
+    if div_class in detail_classes:
+      return detail_type
+  return None
+
+
+def soup_to_details(soup, css_selector, get_detail_type):
+  details = []
+  tags = soup.select(css_selector)
+  for tag in tags:
+    if tag.text == "":
+      continue
+    detail_type = get_detail_type(tag_classes=tag["class"])
+    if len(details) > 0 and details[-1].type == detail_type:
+      details[-1].content = f"{details[-1].content.strip()}  \n{tag.text.strip()}\n"
+    else:
+      details.append(Detail(type=detail_type, content=tag.text.strip()))
+  return details

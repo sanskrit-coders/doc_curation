@@ -3,7 +3,7 @@ import logging
 import regex
 
 from doc_curation_projects import raamaayana
-from doc_curation_projects.raamaayana import  content
+from doc_curation_projects.puraaNa.raamaayana import  content
 from doc_curation.md.file import MdFile
 from doc_curation.md import library
 

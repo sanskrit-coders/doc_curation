@@ -1,17 +1,14 @@
-import codecs, collections
+import collections
 import os
 from copy import copy
 
-from bs4 import BeautifulSoup
 import regex
 
 from curation_utils import scraping
 from curation_utils.file_helper import get_storage_name
-from doc_curation.md import library
-from doc_curation.md.content_processor.details_helper import Detail
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
-from doc_curation.scraping.html_scraper import souper
+from doc_curation.scraping.html_scraper import souper, soup_to_details, get_detail_type
 from doc_curation_projects.puraaNa import mahaabhaarata
 from indic_transliteration import sanscript
 import logging
@@ -61,13 +58,6 @@ def romanize(text):
   return sanscript.transliterate(text, _from=sanscript.DEVANAGARI, _to=sanscript.OPTITRANS)
 
 
-def get_detail_type(div_class):
-  for detail_type, detail_classes in detail_map.items():
-    if div_class in detail_classes:
-      return detail_type
-  return None
-
-
 def fix_tags(soup):
   ## First, fix some text
   tags = souper.get_tags_matching_css(soup=soup, css_selector_list=css_selector_list(format_map["citation_marker"]))
@@ -98,8 +88,10 @@ def fix_tags(soup):
 def content_from_details(details):
   content = ""
   for detail in details:
-    if detail.type == "FOOTNOTE_DEFINITION":
-      content += "\n" + detail.content + "\n"
+    if detail.type == "footnote_definition":
+      content += "\n" + detail.content.replace("]:. ", "]:") + "\n"
+    elif detail.type == "caption":
+      continue
     else:
       if detail.type == "मूलम्":
         detail_vishvaasa = copy(detail)
@@ -109,40 +101,18 @@ def content_from_details(details):
   return content
 
 
-def parse_body_divs(soup):
-  details = []
-  divs = soup.select("body>div")
-  for div in divs:
-    if div.text == "":
-      continue
-    div_class = div["class"][0]
-    if div_class in format_map["footnote_definition"]:
-      details.append(Detail(type="FOOTNOTE_DEFINITION", content=div.text.replace("]:. ", "]:")))
-      continue
-    if div_class in format_map["caption"]:
-      continue
-    detail_type = get_detail_type(div_class=div_class)
-    if len(details) > 0 and details[-1].type == detail_type:
-      details[-1].content = f"{details[-1].content.strip()}  \n{div.text.strip()}\n"
-    else:
-      details.append(Detail(type=detail_type, content=div.text.strip()))
-  return details
-
-
 def get_content(source_path):
   soup = scraping.get_soup(source_path)
   
   fix_tags(soup=soup)
 
-  details = parse_body_divs(soup=soup)
+  details = soup_to_details(soup=soup, css_selector="body>div", get_detail_type=lambda tag_classes: get_detail_type(tag_classes=tag_classes, detail_map=dict(detail_map, **format_map)))
 
   content = content_from_details(details=details)
   
   content = content.replace("⁠", "").replace(" ", "").replace("।।", "॥")
   
   return content
-
-
 
 
 def dump_nav_point(nav_point, toc_to_opf_contents, base_path, urls=None, index_in=None, dry_run=False):

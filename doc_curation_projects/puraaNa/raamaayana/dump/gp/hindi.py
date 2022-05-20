@@ -9,7 +9,6 @@ detail_map = {
   "अनुवाद (हिन्दी)": ["TXT", "TXT-Right"],
   "मूलम् (समाप्तिः)": ["para-style-override-5"],
   "अनुवाद (समाप्ति)": ["Chapter-End-Text"],
-  "प्रकाशनसूचना": [""],
   "पादटिप्पनी": ["Footnotes", "Footnotes-Bold", "Footnotes-Right-1"],
 }
 

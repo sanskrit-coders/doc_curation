@@ -2,21 +2,18 @@ import logging
 import os
 import textwrap
 from urllib.request import urlopen
-from indic_transliteration import sanscript
-
 
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
-from doc_curation_projects.raamaayana.dump import aandhra
+from doc_curation import book_data
 from doc_curation.md import get_md_with_pandoc
 from doc_curation.md.file import MdFile
-from doc_curation import book_data
-
-# Remove all handlers associated with the root logger object.
 from doc_curation.scraping import iitk
 from doc_curation.scraping.html_scraper import souper
+from indic_transliteration import sanscript
 
+# Remove all handlers associated with the root logger object.
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 logging.basicConfig(
