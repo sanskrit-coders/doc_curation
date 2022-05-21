@@ -11,24 +11,24 @@ from doc_curation.md import content_processor
 
 
 class Detail(object):
-  def __init__(self, type, content, attributes_str=None):
+  def __init__(self, type, content):
     self.type = type
     self.content = content
-    self.attributes_str = attributes_str
 
-
-  def to_html(self):
+  def to_html(self, attributes_str=None):
     if self.type is None:
       title = "Misc Detail"
       logging.warning(f"Unknown detail type for: {self.content}")
     else:
       title = self.type
-    if self.attributes_str is None:
+    if attributes_str is None:
       if self.type in ["विश्वास-प्रस्तुतिः", "मूलम् (वचनम्)"]:
-        self.attributes_str = "open"
+        attributes_str = "open"
       else:
-        self.attributes_str = ""
-    return f"<details {self.attributes_str}><summary>{title}</summary>\n\n{self.content.strip()}\n</details>"
+        attributes_str = ""
+    if attributes_str.strip() != "":
+      attributes_str = " " + attributes_str
+    return f"<details{attributes_str}><summary>{title}</summary>\n\n{self.content.strip()}\n</details>"
 
 
 def interleave_from_file(md_file, source_file, dest_pattern="[^\d०-९೦-೯]([\d०-९೦-೯]+) *॥.*(?=\n|$)", source_pattern="(?<=\n|^)([\d०-९೦-೯]+).+\n", detail_title="English", dry_run=False):

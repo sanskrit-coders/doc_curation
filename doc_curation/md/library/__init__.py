@@ -250,13 +250,17 @@ def get_sub_path_id(sub_path, basename_id_pattern=r"(.+?)(?=[_\.]|$)"):
       id_parts.append(base_id_match.group(1))
   return "/".join(id_parts)
 
+
 def get_index_to_md(dir_path, index_position=0):
   files = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
   files.sort()
   index_to_md_file = {}
   for index, file_path in enumerate(files):
     base_name = os.path.basename(file_path)
-    index = int(base_name.replace(".md", "").split("_")[index_position])
+    try:
+      index = int(base_name.replace(".md", "").split("_")[index_position])
+    except ValueError:
+      logging.warning(f"Skipping file with irregular index- {file_path}")
     md_file = MdFile(file_path=file_path)
     index_to_md_file[index] = md_file
   return index_to_md_file

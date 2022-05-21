@@ -1,7 +1,7 @@
 import regex
 import textwrap
 from doc_curation.md import library
-from doc_curation_projects import raamaayana
+from doc_curation_projects.puraaNa import raamaayana
 import logging
 import os
 
@@ -15,7 +15,7 @@ logging.basicConfig(
 
 def update():
     # logging.debug(adhyaaya_to_mp3_map)
-    base_dir = "/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/"
+    base_dir = "/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH"
     dest_md_files = raamaayana.get_adhyaaya_md_files(md_file_path=base_dir)
     doc_data = raamaayana.get_doc_data()
     doc_data_drAviDam = raamaayana.get_doc_data(worksheet_name="द्राविडपाठः")

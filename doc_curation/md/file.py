@@ -15,6 +15,7 @@ from indic_transliteration import sanscript
 
 # Remove all handlers associated with the root logger object.
 from curation_utils import file_helper
+import regex
 
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)
@@ -22,6 +23,7 @@ logging.basicConfig(
   level=logging.DEBUG,
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
+CHUNK_SIZE = 2000
 
 class MdFile(object):
   YAML = "yaml"
@@ -166,7 +168,9 @@ class MdFile(object):
       outpath = self.file_path.replace(".md", ".wiki")
     if not dry_run:
       with codecs.open(outpath, "w", 'utf-8') as out_file_obj:
-        out_file_obj.write(output)
+        chunks = [dump[i:i+CHUNK_SIZE] for i in range(0, len(dump), CHUNK_SIZE)]
+        for chunk in chunks:
+          out_file_obj.write(chunk)
     else:
       logging.info(output)
 
@@ -181,7 +185,9 @@ class MdFile(object):
         else:
           yamlout = yaml.dump(metadata, default_flow_style=False, indent=2, allow_unicode=True, width=1000)
         dump = "---\n{metadata}\n---\n{markdown}".format(metadata=yamlout, markdown=content)
-        out_file_obj.write(dump)
+        chunks = [dump[i:i+CHUNK_SIZE] for i in range(0, len(dump), CHUNK_SIZE)]
+        for chunk in chunks:
+          out_file_obj.write(chunk)
         # out_file_obj.write(yamldown.dump(metadata, content)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5
     else:
       logging.info(metadata)
@@ -195,8 +201,9 @@ class MdFile(object):
         import toml
         tomlout = toml.dumps(metadata)
         dump = "+++\n{frontmatter}\n+++\n{markdown}".format(frontmatter=tomlout, markdown=content)
-        out_file_obj.write(dump)
-        # out_file_obj.write(yamldown.dump(metadata, content)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5
+        chunks = [dump[i:i+CHUNK_SIZE] for i in range(0, len(dump), CHUNK_SIZE)]
+        for chunk in chunks:
+          out_file_obj.write(chunk)
     else:
       logging.info(metadata)
       # logging.info(content)
@@ -216,7 +223,9 @@ class MdFile(object):
         if not dry_run:
             os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
             with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
-                out_file_obj.write(content)
+              chunks = [content[i:i+CHUNK_SIZE] for i in range(0, len(content), CHUNK_SIZE)]
+              for chunk in chunks:
+                out_file_obj.write(chunk)
 
   def set_title(self, title, dry_run):
     self.set_frontmatter_field_value(field_name="title", value=title, dry_run=dry_run)
