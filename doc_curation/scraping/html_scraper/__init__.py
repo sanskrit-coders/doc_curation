@@ -43,6 +43,8 @@ def soup_to_details(soup, css_selector, get_detail_type):
     if tag.text == "":
       continue
     detail_type = get_detail_type(tag_classes=tag["class"])
+    if detail_type is None:
+      logging.warning(f"Detail type confusion - {str(tag)}")
     if len(details) > 0 and details[-1].type == detail_type:
       details[-1].content = f"{details[-1].content.strip()}  \n{tag.text.strip()}\n"
     else:
