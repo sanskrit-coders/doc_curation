@@ -12,8 +12,8 @@ from doc_curation_projects.puraaNa import raamaayana
 from doc_curation_projects.puraaNa.raamaayana import dump
 from indic_transliteration import sanscript
 
-source_file = "/home/vvasuki/sanskrit/raw_etexts/purANam/bhAgavata-purANam/goraxapura-pAThaH/raw/hindI.html"
-dest_file = "/home/vvasuki/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/hindy-anuvAdaH.md"
+source_file = "/home/vvasuki/sanskrit/raw_etexts/purANam/viShNu-purANam/goraxapura-pAThaH/raw/source.html"
+dest_file = "/home/vvasuki/vishvAsa/purANam/content/viShNu-purANam/goraxapura-pAThaH/hindy-anuvAdaH.md"
 dest_path = dest_file.replace(".md", "")
 
 detail_map = OrderedDict([
@@ -21,17 +21,17 @@ detail_map = OrderedDict([
   ("भागसूचना", ["Sub-Head-2"]),
   ("विषय (हिन्दी)", ["Numbers"]),
   ("मूलम् (वचनम्)", ["Uwach"]),
-  ("मूलम्", ["Shlok-Color-2", "SHLOK-Black", "Gadya", "mantra", "Tavmev-Mata--pita", "TitlePage-Shlok", "Basic-Paragraph"]),
+  ("मूलम्", ["Shlok-Color-2", "SHLOK-Black", "Gadya", "mantra", "Title-Page---Tvamev-mata", "TitlePage-Shlok", "Basic-Paragraph"]),
   ("अनुवाद (हिन्दी)", ["TXT", "TXT-Right"]),
-  ("मूलम् (समाप्तिः)", ["para-style-override-5"]),
-  ("अनुवाद (समाप्ति)", ["Chapter-End-Text"]),
+  ("मूलम् (समाप्तिः)", ["para-style-override-2", "Chapter-End-Text"]),
+  ("अनुवाद (समाप्ति)", []),
   ("पादटिप्पनी", ["Footnotes", "Footnotes-Bold", "Footnotes-bold", "Footnotes-Right-1", "Footnotes-Right"]),
 ])
 
 format_map = {
   "\n## %s\n\n": ["Heading"],
   "\n### %s\n\n": ["Nayash", "Sub-Heading"],
-  "\n#### %s\n\n": ["Numbers", "Sub-Head-2"],
+  "\n#### %s\n\n": ["Numbers", "Sub-Head-2", "Sub-Heading-2"],
   "\n###### %s\n\n": ["Shlok-Number"],
   "SKIP": ["Page-Break"]
 }
@@ -53,14 +53,5 @@ if __name__ == '__main__':
   # dump_all()
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=os.path.dirname(dest_file), frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=dest_path, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
-  # library.shift_indices(dir_path=os.path.join(dest_path, "02_dvitIyaH_skandhaH"), start_index=3, new_index_offset=-1)
-  # library.shift_indices(dir_path=os.path.join(dest_path, "05_panchamaH_skandhaH"), start_index=9, new_index_offset=1)
-  
-  # content_fix.devanaagarify(dir_path="/home/vvasuki/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/hindy-anuvAdaH/05_panchamaH_skandhaH/09_oMbhattaneya_adhyAya.md", source_script=sanscript.KANNADA)
-  # content_fix.devanaagarify(dir_path="/home/vvasuki/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/hindy-anuvAdaH/05_panchamaH_skandhaH/23_ippattamUraneya_adhyAya.md", source_script=sanscript.KANNADA)
-  # content_fix.devanaagarify(dir_path="/home/vvasuki/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/hindy-anuvAdaH/05_panchamaH_skandhaH/25_ippattaidaneya_adhyAya.md", source_script=sanscript.KANNADA)
-  library.apply_function(dir_path=dest_path, fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
-
-  # library.shift_indices(dir_path=os.path.join(dest_path, "10b_dashamaH_skandhaH_uttarArdhaH"), start_index=1, new_index_offset=49)
-  # library.fix_index_files(dir_path=dest_path, dry_run=False)
+  library.fix_index_files(dir_path=dest_path, dry_run=False)
   pass

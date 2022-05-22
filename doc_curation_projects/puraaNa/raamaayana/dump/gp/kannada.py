@@ -58,5 +58,10 @@ if __name__ == '__main__':
   # library.shift_indices(dir_path=os.path.join(dest_path, "6_yuddha_kANDa"), start_index=47, new_index_offset=1)
   # dump.update_from_spreadsheet_data(doc_data=raamaayana.get_doc_data(), base_dir=dest_path, dry_run=False)
   # dump.fix_metadata_and_paths(base_dir_ref="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH", base_dir=dest_path, sarga_identifier=lambda x: os.path.basename(x), dry_run=False)
+  # library.apply_function(
+  #   fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/kannaDAnuvAda",
+  #   content_transformer=None,
+  #   metadata_transformer=lambda c, m: metadata_helper.add_value_to_field(m, "unicode_script", "kannada"),
+  #   dry_run=False)
   library.fix_index_files(dir_path=dest_path, dry_run=False)
   pass

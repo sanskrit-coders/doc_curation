@@ -94,6 +94,7 @@ def get_title_from_filename(file_path, transliteration_target, maybe_use_dravidi
     title_optitrans = os.path.basename(file_path).replace(".md", "")
   title = title_optitrans.replace("_", " ")
   if transliteration_target is not None:
+    title = title.replace("-dhyAyaH", ".adhyAyaH")
     title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target, maybe_use_dravidian_variant=maybe_use_dravidian_variant)
   else:
     title = title.capitalize()

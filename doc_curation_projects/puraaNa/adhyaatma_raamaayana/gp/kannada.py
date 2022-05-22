@@ -5,6 +5,7 @@ from copy import copy
 from curation_utils import scraping
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
+from doc_curation.md.library import metadata_helper
 from doc_curation.scraping import html_scraper
 from doc_curation_projects.puraaNa import raamaayana
 from doc_curation_projects.puraaNa.raamaayana import dump
@@ -51,5 +52,10 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=os.path.join(dest_path, "0"), frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.KANNADA)
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=dest_path, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.KANNADA)
   # dump.fix_metadata_and_paths(base_dir_ref="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH", base_dir=dest_path, sarga_identifier=lambda x: os.path.basename(x), dry_run=False)
-  library.fix_index_files(dir_path=dest_path, dry_run=False)
+  library.apply_function(
+    fn=MdFile.transform, dir_path=dest_path,
+    content_transformer=None,
+    metadata_transformer=lambda c, m: metadata_helper.add_value_to_field(m, "unicode_script", "kannada"),
+    dry_run=False)
+  # library.fix_index_files(dir_path=dest_path, dry_run=False)
   pass

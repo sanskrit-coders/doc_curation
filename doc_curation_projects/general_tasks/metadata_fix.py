@@ -28,10 +28,10 @@ def title_fix():
   pass
 
 if __name__ == '__main__':
-  library.apply_function(
-    fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/kannaDAnuvAda",
-    content_transformer=None,
-    metadata_transformer=lambda c, m: metadata_helper.add_value_to_field(m, "unicode_script", "kannada"),
-    dry_run=False)
+  # library.apply_function(
+  #   fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/kannaDAnuvAda",
+  #   content_transformer=None,
+  #   metadata_transformer=lambda c, m: metadata_helper.add_value_to_field(m, "unicode_script", "kannada"),
+  #   dry_run=False)
   pass
 
