@@ -46,7 +46,7 @@ def get_page_content(browser):
     soup = BeautifulSoup(content, features="html.parser")
     content_div = soup.select_one("body>div")
     if content_div is not None:
-      return content_div.decode_contents()
+      return content_div.decode_contents().replace("ॺ", "्य")
 
 def dump_book(url, dest_html_path, final_url_check=None):
   if not dest_html_path.endswith(".html"):
