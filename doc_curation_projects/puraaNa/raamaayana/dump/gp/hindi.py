@@ -50,6 +50,8 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=os.path.dirname(dest_file), frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
   # library.shift_indices(dir_path=os.path.join(dest_path, "7_uttarakANDam"), start_index=62, new_index_offset=-2)
   # library.shift_indices(dir_path=os.path.join(dest_path, "3_araNyakANDam"), start_index=58, new_index_offset=-1)
+  # library.shift_indices(dir_path=os.path.join(dest_path, "5_sundarakANDam"), start_index=44, new_index_offset=1)
   # dump.update_from_spreadsheet_data(doc_data=raamaayana.get_doc_data(), base_dir=dest_path, dry_run=False)
-  # dump.fix_metadata_and_paths(base_dir_ref="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/audIchya-pAThaH", base_dir=dest_path, sarga_identifier=lambda x: os.path.basename(x), dry_run=False)
+  # dump.fix_metadata_and_paths(base_dir_ref="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/kannaDAnuvAda", base_dir=dest_path, sarga_identifier=lambda x: os.path.basename(x), dry_run=False)
+  # library.fix_index_files(dir_path=dest_path, dry_run=False)
   pass

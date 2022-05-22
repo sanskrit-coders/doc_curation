@@ -327,7 +327,7 @@ class MdFile(object):
       update_needed |= content.strip() != content_new.strip()
       content = content_new
     if metadata_transformer is not None:
-      metadata_new = metadata_transformer(content, metadata)
+      metadata_new = metadata_transformer(content, metadata.copy())
       update_needed |= metadata != metadata_new
       metadata = metadata_new
     del metadata["_file_path"]

@@ -34,9 +34,10 @@ def fix_footnotes(dir_path):
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: content_processor.define_footnotes_near_use(c), dry_run=False)
 
 
-def devanaagarify(dir_path):
+def devanaagarify(dir_path, source_script):
   def content_transformer(c, m): 
-    c = content_processor.transliterate(text=c)
+    c = content_processor.transliterate(text=c, source_script=source_script)
+    c = sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(c, omit_sam=True, omit_yrl=True, ignore_padaanta=True)
     c = regex.sub("\n\*\*(\s+)", "\n\\1**", c)
     c = regex.sub("\n[\t	 ]+", "\n> ", c)
     for x in range(1, 20):
@@ -72,7 +73,7 @@ def prefill_vishvAsa_includes():
 
 
 if __name__ == '__main__':
-  # devanaagarify(dir_path="/home/vvasuki/sanskrit/raw_etexts/mixed/gretil_devanAgarI/5_poetry/4_narr/visnusarma_panchatantra.md")
+  # devanaagarify(dir_path="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH/5_sundarakANDam/06-vana-nAshaH/044_rAvaNena_jambumAliprexaNam.md", source_script=sanscript.KANNADA)
   # fix_audio_tags()
 
   # prefill_vishvAsa_includes()
@@ -109,4 +110,4 @@ if __name__ == '__main__':
 
   # library.shift_contents(dir_path="/home/vvasuki/vishvAsa/purANam/static/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva/saMskRtam/abhinava-guptaH/mUlam/02_sAnkhya-yogaH_sarva-", start_index=49, offset=1)
 
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH/01_Adiparva/01_anukramaNikAparva/001_anukramaNikAparva.md", content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.vishvAsa_sanskrit_transformer))
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH/01_Adiparva/01_anukramaNikAparva/001_anukramaNikAparva.md", content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.vishvAsa_sanskrit_transformer))

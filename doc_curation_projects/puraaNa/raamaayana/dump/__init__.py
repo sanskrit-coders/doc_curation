@@ -25,7 +25,7 @@ def get_sarga_id_to_path(base_dir_ref, sarga_identifier=get_adhyaaya_id):
 def fix_metadata_and_paths(base_dir, base_dir_ref, sarga_identifier=get_adhyaaya_id, dry_run=False):
 
   paths = sorted(glob.glob(base_dir + "/**/*.md", recursive=True))
-  paths = [path for path in paths if os.path.basename(path) != "_index.md"]
+  paths = [path for path in paths if os.path.basename(path) != "_index.md" and "0/" not in path]
   sarga_id_to_path = get_sarga_id_to_path(base_dir_ref=base_dir_ref, sarga_identifier=sarga_identifier)
   for p in paths:
     sarga_id = sarga_identifier(p)
@@ -56,9 +56,10 @@ def update_from_spreadsheet_data(doc_data, base_dir, dry_run=False):
       logging.info(f"Skipping {file_path}")
       continue
     metadata["title"] = sanscript.transliterate(data=metadata["title"], _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI)
-    audio_url = doc_data.get_value(id=adhyaaya_id, column_name="Audio url")
-    audio_tag = '<div class="audioEmbed"  caption="श्रीराम-हरिसीताराममूर्ति-घनपाठिभ्यां वचनम्" src="%s"></div>' % (audio_url)
-    audio_detail = Detail(type="वाचनम्", content=audio_tag)
-    content = f"{audio_detail.to_html(attributes_str='open')}\n\n{content}"
+    if "<summary>वाचनम्</summary>" not in content:
+      audio_url = doc_data.get_value(id=adhyaaya_id, column_name="Audio url")
+      audio_tag = '<div class="audioEmbed"  caption="श्रीराम-हरिसीताराममूर्ति-घनपाठिभ्यां वचनम्" src="%s"></div>' % (audio_url)
+      audio_detail = Detail(type="वाचनम्", content=audio_tag)
+      content = f"{audio_detail.to_html(attributes_str='open')}\n\n{content}"
     md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
     metadata_helper.set_filename_from_title(md_file=md_file, dry_run=dry_run)

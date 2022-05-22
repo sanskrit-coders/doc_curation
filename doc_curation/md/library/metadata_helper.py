@@ -164,7 +164,6 @@ def fix_field_values(md_files,
 
 
 def get_metadata_field_values(md_files, field_name):
-  # logging.debug(adhyaaya_to_mp3_map)
   logging.info("Getting metadata from %s field of %d files", field_name, len(md_files))
   for md_file in md_files:
     # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
@@ -211,3 +210,8 @@ def copy_metadata_and_filename(dest_dir, ref_dir, insert_missign_ref_files=False
     else:
       os.makedirs(os.path.dirname(target_path), exist_ok=True)
       shutil.move(md_file.file_path, target_path)
+
+
+def add_value_to_field(metadata, field, value): 
+  metadata[field] = value
+  return metadata
