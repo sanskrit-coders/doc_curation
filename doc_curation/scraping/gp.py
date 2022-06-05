@@ -20,6 +20,7 @@ def generator():
     yield
 
 def get_book_browser(url):
+  # NOTE to V: Login with FB
   browser = scraping.get_selenium_chrome(headless=False)
   browser.get(url=url)
   time.sleep(6)

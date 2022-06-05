@@ -60,7 +60,7 @@ def content_from_details(details, format_map):
     elif detail.type in format_map:
       content += detail.type % detail.content
     else:
-      if detail.type == "मूलम्":
+      if detail.type is not None and detail.type.startswith("मूल"):
         detail_vishvaasa = copy(detail)
         detail_vishvaasa.type = "विश्वास-प्रस्तुतिः"
         content += "\n" + detail_vishvaasa.to_html() + "\n"

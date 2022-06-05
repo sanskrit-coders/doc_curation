@@ -3,8 +3,10 @@ import os
 from doc_curation.scraping import gp, html_scraper
 
 
+# NOTE - Use with firefox.
+
 def dump_tulasi():
-  base_dir = "/home/vvasuki/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/tulasIdAsa"
+  base_dir = "/home/vvasuki/indic-texts/raw_etexts_misc/quasi-hindi/tulasIdAsa/gp_raw/"
   # gp.dump_book(url="https://gitaseva.org/books/vinay-patrika", dest_html_path=os.path.join(base_dir, "vinaya-patrikA.html"), final_url_check=lambda x: "toc_marker-27" in x)
   # gp.dump_book(url="https://gitaseva.org/books/srikrishan-gitavali", dest_html_path=os.path.join(base_dir, "srikrishan-gitavali.html"), final_url_check=lambda x: "toc_marker-14" in x)
   # gp.dump_book(url="https://gitaseva.org/books/ramagya-prashan", dest_html_path=os.path.join(base_dir, "ramagya-prashan.html"), final_url_check=lambda x: "toc_marker-4" in x)
@@ -12,9 +14,10 @@ def dump_tulasi():
   # gp.dump_book(url="https://gitaseva.org/books/janki-mangal", dest_html_path=os.path.join(base_dir, "janki-mangal.html"))
   # gp.dump_book(url="https://gitaseva.org/books/hanuman-bahuk", dest_html_path=os.path.join(base_dir, "hanuman-bahuk.html"))
   # gp.dump_book(url="https://gitaseva.org/books/kavitavali", dest_html_path=os.path.join(base_dir, "kavitavali.html"))
-  gp.dump_book(url="https://gitaseva.org/books/shri-ramchritmanas-satik", dest_html_path=base_dir)
-  # TODO: The below did not work.
-  # gp.dump_book(url="https://gitaseva.org/books/vairagya-sandipini", dest_html_path=os.path.join(base_dir, "vairagya-sandipini.html"))
+  # gp.dump_book(url="https://gitaseva.org/books/shri-ramchritmanas-satik", dest_html_path=base_dir)
+  # gp.dump_book(url="https://gitaseva.org/books/dohavali", dest_html_path=os.path.join(base_dir, "dohavali.html"))
+  # gp.dump_book(url="https://gitaseva.org/books/barve-ramayan", dest_html_path=os.path.join(base_dir, "barve-ramayan.html"))
+  gp.dump_book(url="https://gitaseva.org/books/varagya-sandipni", dest_html_path=os.path.join(base_dir, "vairagya-sandipini.html"))
 
 def dump_suradas():
   # for (let x of document.querySelectorAll(".ebooks> a")) console.log("gp.dump_book(url=\"" + x.href + "\", dest_html_path=base_dir)")
@@ -399,7 +402,7 @@ def dump_pUjA():
 
 
 if __name__ == '__main__':
-  # dump_tulasi()
+  dump_tulasi()
   # dump_suradas()
   # dump_pUjA()
   # dump_kannada()
