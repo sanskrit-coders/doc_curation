@@ -106,7 +106,7 @@ if __name__ == '__main__':
   # add_init_words_to_includes()
   # md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH", file_pattern="**/_index.md")  
   # devanaagarify()
-  # fix_footnotes(dir_path="/home/vvasuki/vishvAsa/kAvyam/content/laxyam/padyam/vIra-kathAH/madhurA-vijayam/raw")
+  fix_footnotes(dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/articles/self-possessed/1_Orthodoxies_Madness_and_Method/1_Academic_and_Brahmanical_Orthodoxies/01_Sanskritic_Culture_and_the_Culture_of_Possession.md")
 
   # library.shift_contents(dir_path="/home/vvasuki/vishvAsa/purANam/static/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva/saMskRtam/rAmAnujaH/mUlam/13_xetra-xetrajna-yogaH", start_index=2, substitute_content_offset=-1)
 
