@@ -45,7 +45,7 @@ class MdFile(object):
           file.seek(0)
           full_content = file.read()
           full_content = regex.sub("^--- *\n", "---\n", full_content)
-          full_content = regex.sub("\n--- *\n", "---\n", full_content)
+          full_content = regex.sub("\n--- *\n", "\n---\n", full_content)
           from yaml.composer import ComposerError
           try:
             import io
