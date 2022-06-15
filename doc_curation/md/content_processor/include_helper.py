@@ -110,13 +110,13 @@ def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs
   return content_processor._make_content_from_soup(soup=soup)
 
 
-def old_include_remover(inc):
+def old_include_remover(inc, *args, **kwargs):
   """To be used with transform_include_lines.
   
   :param inc: 
   :return: 
   """
-  if not "includetitle" in inc:
+  if not "includetitle" in inc.attrs:
     return inc.decompose()
 
 

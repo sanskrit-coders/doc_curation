@@ -28,7 +28,7 @@ def combine_files_in_dir(md_file, dry_run=False):
       os.remove(source_md.file_path)
 
 
-def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=None, dry_run=False):
+def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=None, mode="overwrite", dravidian_titles=False, dry_run=False):
   final_content_map = defaultdict(lambda : "")
   final_metadata_map = defaultdict(lambda: {})
   ready_content = None
@@ -42,11 +42,13 @@ def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=
       md_file = MdFile(file_path=index_md_path)
       (metadata, content) = md_file.read()
       title = metadata["title"]
+      if title.startswith("+"):
+        title = title[1:]
     elif source_path_to_title is not None and source_path in source_path_to_title:
       title = source_path_to_title[source_path]
     else:
       title = os.path.basename(source_path)
-      title = sanscript.transliterate(title, _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI, maybe_use_dravidian_variant=True)
+      title = sanscript.transliterate(title, _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI, maybe_use_dravidian_variant=dravidian_titles)
     
     md_files = get_md_files_from_path(dir_path=source_path)
     for md_file in tqdm(md_files):
@@ -68,9 +70,14 @@ def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=
       
   for subpath in tqdm(sorted(final_metadata_map.keys())):
     # logging.info(f"Dumping {source_path}")
+    md_file = MdFile(file_path=os.path.join(dest_path, subpath))
     metadata = final_metadata_map[subpath]
     content = final_content_map[subpath]
-    md_file = MdFile(file_path=os.path.join(dest_path, subpath))
+    if os.path.exists(md_file.file_path):
+      (metadata_init, content_init) = md_file.read()
+      if mode == "prepend":
+        metadata.update(metadata_init)
+        content = f"{content}\n\n{content_init}"
     md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
 

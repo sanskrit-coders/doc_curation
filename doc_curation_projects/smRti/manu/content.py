@@ -4,20 +4,22 @@ import regex
 
 import doc_curation.md.library.arrangement
 from doc_curation.md import library, content_processor
+from doc_curation.md.file import MdFile
 from doc_curation.md.content_processor import include_helper
 from indic_transliteration import sanscript
 
+dest_dir = "/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/sarva-prastutiH"
 
 def fix_includes():
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/sarva-prastutiH", file_pattern="[0-9][0-9]*.md")
-  md_files = [f for f in md_files if os.path.basename(f.file_path) > "05.md" ]
-  def include_fixer(match):
-    return include_helper.alt_include_adder(match=match, source_dir="vishvAsa-prastutiH", alt_dirs=["gangAnatha-mUlAnuvAdaH", "medhAtithiH", "gangAnatha-bhAShyAnuvAdaH", "gangAnatha-TippanyaH", "gangAnatha-tulya-vAkyAni", "kullUkaH", "bhAruchiH", "buhler"])
+  md_files = library.arrangement.get_md_files_from_path(dir_path=dest_dir, file_pattern="[0-9][0-9]*.md")
+  # md_files = [f for f in md_files if os.path.basename(f.file_path) > "05.md" ]
+  def include_fixer(inc, current_file_path, *args):
+    return include_helper.alt_include_adder(inc=inc, current_file_path=current_file_path, source_dir="vishvAsa-prastutiH", alt_dirs=["sarvASh_TIkAH"])
 
-  for md_file in md_files:
-    include_helper.transform_include_lines(md_file=md_file, transformer=include_helper.old_include_remover)
-    include_helper.transform_include_lines(md_file=md_file, transformer=include_fixer)
-    md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_helper.old_include_remover))
+  # library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_fixer))
+  # library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
+
 
 def get_title_id(text_matched):
   long_id_match = regex.search("\.([०-९]+)\.([०-९]+)\s+॥", text_matched)
@@ -50,3 +52,4 @@ def migrate_and_include_shlokas(chapter_id):
 if __name__ == '__main__':
   # migrate_and_include_shlokas(chapter_id=7)
   fix_includes()
+  # include_helper.prefill_includes(dir_path=dest_dir)
