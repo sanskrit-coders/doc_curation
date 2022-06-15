@@ -66,8 +66,9 @@ def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=
           final_metadata[key] = value
     ready_content = None
       
-  for subpath, metadata in tqdm(sorted(final_metadata_map.items())):
+  for subpath in tqdm(sorted(final_metadata_map.keys())):
     # logging.info(f"Dumping {source_path}")
+    metadata = final_metadata_map[subpath]
     content = final_content_map[subpath]
     md_file = MdFile(file_path=os.path.join(dest_path, subpath))
     md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)

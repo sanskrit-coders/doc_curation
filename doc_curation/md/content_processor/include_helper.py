@@ -90,8 +90,6 @@ def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs
   # Stray usage of < can fool the soup parser. Hence the below.
   if "js_include" not in content:
     return content
-  if "details" not in content:
-    return content
   soup = content_processor._soup_from_content(content=content, metadata=metadata)
   if soup is None:
     return content

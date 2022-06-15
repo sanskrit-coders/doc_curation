@@ -2,6 +2,7 @@ import os
 import textwrap
 
 import doc_curation.md.content_processor.include_helper
+from doc_curation.md.content_processor import include_helper
 from doc_curation_projects.veda.Rk import json_lib
 from doc_curation import text_utils
 from doc_curation.md import library
@@ -20,16 +21,8 @@ def dump(dry_run, start_id=None):
     suukta_rk_map = suukta_id_to_rk_map[suukta_id]
     suukta_md = textwrap.dedent("""
     %s
-    %s
-    %s
     """ % (
-      get_include("jamison_brereton", suukta_id=suukta_id, file_name_optitrans="_index.md", title="Jamison & Brereton",
-                  h1_level=2),
-      get_include("jamison_brereton_notes", suukta_id=suukta_id, file_name_optitrans="_index.md",
-                  title="Jamison & Brereton Note", classes=["collapsed"], h1_level=3),
-      get_include("sAyaNa-bhAShyam", suukta_id=suukta_id, file_name_optitrans="_index.md", title="सायणः", classes=["collapsed"],
-                  h1_level=2),
-    ))
+      get_include("sarvASh_TIkAH", suukta_id=suukta_id, file_name_optitrans="_index.md",                   h1_level=2)))
 
     for rk_id in sorted(suukta_rk_map.keys()):
       rk_map = suukta_rk_map[rk_id]
@@ -49,39 +42,8 @@ def dump(dry_run, start_id=None):
                                          file_name_optitrans=file_name_optitrans, h1_level=3)
       rk_details += "\n%s" % get_include("mUlam", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
                                          classes=["collapsed"], h1_level=3)
-      rk_details += "\n%s" % get_include("thomson_solcum", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], title="Thomson Solcum restoration", h1_level=4)
-      rk_details += "\n%s" % get_include("vedaweb_annotation", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], title="Vedaweb annotation", h1_level=4)
-      rk_details += "\n%s" % get_include("pada-pAThaH", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], h1_level=4)
-      rk_details += "\n%s" % get_include("hellwig_grammar", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], title="Hellwig Grammar", h1_level=4)
-      rk_details += "\n%s" % get_include("anukramaNikA", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
-                                         field_names=["devataa", "RShiH", "ChandaH"], classes=["collapsed"], h1_level=4)
-      rk_details += "\n%s" % get_include("sAyaNa-bhAShyam", suukta_id=suukta_id,
-                                         file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], h1_level=3)
-      rk_details += "\n%s" % get_include("wilson", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], title="Wilson", h1_level=3)
-      rk_details += "\n%s" % get_include("jamison_brereton", suukta_id=suukta_id,
-                                         file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], title="Jamison & Brereton", h1_level=3)
-      rk_details += "\n%s" % get_include("jamison_brereton_notes", suukta_id=suukta_id,
-                                         file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], title="Jamison & Brereton Note", h1_level=4)
-      rk_details += "\n%s" % get_include("griffith", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], title="RTH Griffith", h1_level=3)
-      rk_details += "\n%s" % get_include("oldenberg", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], title="Oldenberg", h1_level=3)
-      rk_details += "\n%s" % get_include("macdonell", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], title="Macdonell", h1_level=3)
-      rk_details += "\n%s" % get_include("geldner", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], title="Geldner (De)", h1_level=3)
-      rk_details += "\n%s" % get_include("grassmann", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], title="Grassmann (De)", h1_level=3)
-      rk_details += "\n%s" % get_include("elizarenkova", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
-                                         classes=["collapsed"], title="Elizarenkova (Ru)", h1_level=3)
+      rk_details += "\n%s" % get_include("sarvASh_TIkAH", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
+                                         field_names=["devataa", "RShiH", "ChandaH"], classes=["collapsed"], h1_level=3)
 
       # dump_content(metadata=title_only_metadata, content=rk_details, suukta_id=suukta_id, rk_id=rk_id, base_dir=content_dir_base, destination_dir="sarva-prastutiH", dry_run=dry_run)
 
@@ -93,7 +55,7 @@ def dump(dry_run, start_id=None):
 
 def get_include(include_type, suukta_id, file_name_optitrans, h1_level, field_names=None, classes=None, title=None, ):
   if title is None:
-    title = sanscript.transliterate(include_type, _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI)
+    title = sanscript.transliterate(include_type.replace("_", " "), _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI)
   file_path = os.path.join(static_dir_base, include_type, suukta_id, file_name_optitrans)
   if not os.path.exists(file_path):
     return ""
@@ -104,4 +66,6 @@ def get_include(include_type, suukta_id, file_name_optitrans, h1_level, field_na
 
 if __name__ == '__main__':
   dump(dry_run=False)
+  include_helper.prefill_includes(dir_path=os.path.join(content_dir_base, "sarva-prastutiH"))
+
   # md.library.fix_index_files(content_dir_base)
