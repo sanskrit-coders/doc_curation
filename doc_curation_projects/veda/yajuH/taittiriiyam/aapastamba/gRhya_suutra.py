@@ -3,6 +3,7 @@ import os
 import regex
 from bs4 import BeautifulSoup
 
+import doc_curation.md.library.arrangement
 import doc_curation.scraping.sacred_texts
 from doc_curation.md import library
 from doc_curation.md.content_processor import include_helper
@@ -22,14 +23,14 @@ def fix_filenames():
     if base_name == "_index.md":
       return None
     elif "_" in base_name:
-      return library.get_sub_path_id(sub_path=regex.sub(".+/", "", str(x)), basename_id_pattern=r"(\d\du?_\d\d)")
+      return doc_curation.md.library.arrangement.get_sub_path_id(sub_path=regex.sub(".+/", "", str(x)), basename_id_pattern=r"(\d\du?_\d\d)")
     else:
       return "%s_%s" % (os.path.basename(os.path.dirname(x)), base_name.replace(".md", ""))
   metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
 
 
 def fix_includes():
-  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-TIkAH", file_pattern="[0-9][0-9]*.md")
+  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-TIkAH", file_pattern="[0-9][0-9]*.md")
   md_files = [f for f in md_files if os.path.basename(f.file_path) ]
   
   def include_fixer(match):
@@ -61,7 +62,7 @@ def fix_oldenberg():
 
   # library.shift_contents(os.path.join(oldenberg_dir, "03_vaivAhikaviShayAH"), start_index=5, substitute_content_offset=-1, index_position=1)
   # library.shift_contents(os.path.join(oldenberg_dir, "04_vivAhaprakaraNam/tmp"), start_index=2, substitute_content_offset=1, index_position=1)
-  library.shift_contents(os.path.join(oldenberg_dir, "04_vivAhaprakaraNam/tmp"), start_index=11, substitute_content_offset=-2, index_position=1)
+  doc_curation.md.library.arrangement.shift_contents(os.path.join(oldenberg_dir, "04_vivAhaprakaraNam/tmp"), start_index=11, substitute_content_offset=-2, index_position=1)
 
 
 if __name__ == '__main__':

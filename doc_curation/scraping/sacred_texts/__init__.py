@@ -4,6 +4,7 @@ import os
 import regex
 from bs4 import NavigableString, BeautifulSoup
 
+import doc_curation.md.library.arrangement
 from doc_curation.md import library, content_processor
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
@@ -131,5 +132,5 @@ def dump_serially(start_url, base_dir, dest_path_maker, dry_run=False):
 
 def dump_meta_article(url, outfile_path):
   dump(url=url, outfile_path=outfile_path, overwrite=True)
-  library.fix_index_files(os.path.dirname(outfile_path), transliteration_target=None)
+  doc_curation.md.library.arrangement.fix_index_files(os.path.dirname(outfile_path), transliteration_target=None)
   metadata_helper.set_title_from_filename(md_file=MdFile(file_path=outfile_path), dry_run=False, transliteration_target=None)

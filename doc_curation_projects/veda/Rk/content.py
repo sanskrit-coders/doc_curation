@@ -1,6 +1,7 @@
 import os
 import textwrap
 
+import doc_curation.md.content_processor.include_helper
 from doc_curation_projects.veda.Rk import json_lib
 from doc_curation import text_utils
 from doc_curation.md import library
@@ -96,8 +97,8 @@ def get_include(include_type, suukta_id, file_name_optitrans, h1_level, field_na
   file_path = os.path.join(static_dir_base, include_type, suukta_id, file_name_optitrans)
   if not os.path.exists(file_path):
     return ""
-  return library.get_include(field_names=field_names, classes=classes, title=title,
-                             url=os.path.join("/vedAH_Rk/shAkalam/saMhitA/", include_type, suukta_id,
+  return doc_curation.md.content_processor.include_helper.get_include(field_names=field_names, classes=classes, title=title,
+                                                                      url=os.path.join("/vedAH_Rk/shAkalam/saMhitA/", include_type, suukta_id,
                                               file_name_optitrans), h1_level=h1_level)
 
 

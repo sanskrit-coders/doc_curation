@@ -2,6 +2,8 @@ import os
 
 import regex
 from bs4 import BeautifulSoup
+
+import doc_curation.md.library.arrangement
 from doc_curation_projects import veda
 
 from doc_curation.md.file import MdFile
@@ -27,7 +29,7 @@ def fix_filenames():
     if base_name == "_index.md":
       return None
     elif "_" in base_name:
-      return library.get_sub_path_id(sub_path=regex.sub(".+/", "", str(x)), basename_id_pattern=r"(\d\du?_\d\d)")
+      return doc_curation.md.library.arrangement.get_sub_path_id(sub_path=regex.sub(".+/", "", str(x)), basename_id_pattern=r"(\d\du?_\d\d)")
     else:
       return "%s_%s" % (os.path.basename(os.path.dirname(x)), base_name.replace(".md", ""))
   metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/hiraNyakeshI/gRhyam/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
@@ -60,7 +62,7 @@ def oldenberg_fix():
   # Next fix some sUtra files missing (ie combined) in oldenberg but present in mUla.
   base_dir = os.path.join(oldenberg_dir, "1/26")
   # library.shift_contents(base_dir, start_index=8, substitute_content_offset=-2)
-  library.shift_contents(base_dir, start_index=14, substitute_content_offset=-2)
+  doc_curation.md.library.arrangement.shift_contents(base_dir, start_index=14, substitute_content_offset=-2)
 
   pass
 

@@ -2,13 +2,14 @@ import os
 
 import regex
 
+import doc_curation.md.library.arrangement
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import include_helper
 from indic_transliteration import sanscript
 
 
 def fix_includes():
-  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/sarva-prastutiH", file_pattern="[0-9][0-9]*.md")
+  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/sarva-prastutiH", file_pattern="[0-9][0-9]*.md")
   md_files = [f for f in md_files if os.path.basename(f.file_path) > "05.md" ]
   def include_fixer(match):
     return include_helper.alt_include_adder(match=match, source_dir="vishvAsa-prastutiH", alt_dirs=["gangAnatha-mUlAnuvAdaH", "medhAtithiH", "gangAnatha-bhAShyAnuvAdaH", "gangAnatha-TippanyaH", "gangAnatha-tulya-vAkyAni", "kullUkaH", "bhAruchiH", "buhler"])

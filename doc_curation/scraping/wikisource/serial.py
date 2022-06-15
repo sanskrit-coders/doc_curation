@@ -2,6 +2,7 @@ import os
 
 import regex
 
+import doc_curation.md.library.arrangement
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper import souper
@@ -29,5 +30,5 @@ def dump_text(start_url, out_path, base_url="https://sa.wikisource.org/", next_u
   if dumper is None:
     dumper = lambda url, outfile_path, title_prefix, dry_run: souper.dump_text_from_element(url=url, outfile_path=outfile_path, text_css_selector="div.mw-parser-output", title_maker=title_maker, title_prefix=title_prefix, html_fixer=html_fixer, dry_run=dry_run)
   souper.dump_series(start_url=start_url, out_path=out_path, dumper=dumper, next_url_getter=next_url_getter, dry_run=dry_run)
-  library.fix_index_files(dir_path=out_path, dry_run=dry_run, transliteration_target=transliteration_source, overwrite=True)
+  doc_curation.md.library.arrangement.fix_index_files(dir_path=out_path, dry_run=dry_run, transliteration_target=transliteration_source, overwrite=True)
   library.set_filenames_from_titles(dir_path=out_path, dry_run=dry_run, source_script=transliteration_source)

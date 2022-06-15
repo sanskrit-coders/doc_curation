@@ -2,6 +2,8 @@ import os
 
 import regex
 
+import doc_curation.md.content_processor.include_helper
+import doc_curation.md.library.arrangement
 from doc_curation.md import library, content_processor
 from doc_curation.md.file import MdFile
 from doc_curation.md.content_processor import include_helper
@@ -9,7 +11,7 @@ from indic_transliteration import sanscript
 
 
 def fix_includes():
-  md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/kAlidAsaH/raghuvaMsham/mallinAthaH", file_pattern="[0-9][0-9]*.md")
+  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/kAlidAsaH/raghuvaMsham/mallinAthaH", file_pattern="[0-9][0-9]*.md")
 
   for md_file in md_files:
     include_helper.transform_include_lines(md_file=md_file, transformer=old_include_remover)
@@ -45,7 +47,7 @@ def add_includes_to_content(content, metadata):
     sutra_num_dev = match.group(1)
     sutra_num = int(sanscript.transliterate(sutra_num_dev, sanscript.DEVANAGARI, sanscript.IAST))
     url = "/kAvyam/TIkA/padyam/kAlidAsaH/raghuvaMsham/mallinAthaH/%s/%02d.md" % (chapter_id, sutra_num)
-    include_line = library.get_include(url=url, h1_level=4, classes=["collapsed"], title="मल्लिनाथः")
+    include_line = doc_curation.md.content_processor.include_helper.get_include(url=url, h1_level=4, classes=["collapsed"], title="मल्लिनाथः")
     return "%s  \n%s\n" % (match.group(0), include_line)
   content = regex.sub("॥ *([०-९]+) *॥.*?(?=\n|$)", transformer, content)
   return content

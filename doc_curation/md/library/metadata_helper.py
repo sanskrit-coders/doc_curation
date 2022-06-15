@@ -3,6 +3,8 @@ import os
 import shutil
 
 import regex
+
+import doc_curation.md.library.arrangement
 from curation_utils import file_helper
 
 from curation_utils.file_helper import get_storage_name
@@ -183,10 +185,10 @@ def shloka_title_maker(text):
 
 def copy_metadata_and_filename(dest_dir, ref_dir, insert_missign_ref_files=False, sub_path_id_maker=None, dry_run=False):
   from doc_curation.md import library
-  sub_path_to_reference = library.get_sub_path_to_reference_map(ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
-  dest_md_files = library.get_md_files_from_path(dir_path=dest_dir)
+  sub_path_to_reference = doc_curation.md.library.arrangement.get_sub_path_to_reference_map(ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
+  dest_md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path=dest_dir)
   if sub_path_id_maker is None:
-    sub_path_id_maker = lambda x: library.get_sub_path_id(sub_path=str(x).replace(dest_dir, ""))
+    sub_path_id_maker = lambda x: doc_curation.md.library.arrangement.get_sub_path_id(sub_path=str(x).replace(dest_dir, ""))
   for md_file in dest_md_files:
     sub_path_id = sub_path_id_maker(md_file.file_path)
     if sub_path_id is None:

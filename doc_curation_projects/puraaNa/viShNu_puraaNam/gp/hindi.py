@@ -2,6 +2,7 @@ import os
 from collections import OrderedDict
 from copy import copy
 
+import doc_curation.md.library.arrangement
 from curation_utils import scraping
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
@@ -53,5 +54,5 @@ if __name__ == '__main__':
   # dump_all()
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=os.path.dirname(dest_file), frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=dest_path, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
-  library.fix_index_files(dir_path=dest_path, dry_run=False)
+  doc_curation.md.library.arrangement.fix_index_files(dir_path=dest_path, dry_run=False)
   pass

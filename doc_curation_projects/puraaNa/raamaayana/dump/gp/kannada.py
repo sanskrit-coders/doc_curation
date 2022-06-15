@@ -2,6 +2,7 @@ import os
 from collections import OrderedDict
 from copy import copy
 
+import doc_curation.md.library.arrangement
 from curation_utils import scraping
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
@@ -63,5 +64,5 @@ if __name__ == '__main__':
   #   content_transformer=None,
   #   metadata_transformer=lambda c, m: metadata_helper.add_value_to_field(m, "unicode_script", "kannada"),
   #   dry_run=False)
-  library.fix_index_files(dir_path=dest_path, dry_run=False)
+  doc_curation.md.library.arrangement.fix_index_files(dir_path=dest_path, dry_run=False)
   pass

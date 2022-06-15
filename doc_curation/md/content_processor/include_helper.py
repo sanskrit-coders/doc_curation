@@ -2,8 +2,9 @@ import logging
 import os
 
 import regex
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup
 
+import doc_curation.md.library.arrangement
 from curation_utils import file_helper
 from doc_curation.md import content_processor, library
 from doc_curation.md.file import MdFile
@@ -33,7 +34,7 @@ def vishvAsa_include_maker(file_path, h1_level=4, classes=None, title=None, ):
     return 
   url = file_path.replace("/home/vvasuki/vishvAsa/", "/").replace("/static/", "/")
   from doc_curation.md import library
-  return library.get_include(url=url, h1_level=h1_level, classes=classes, title=title)
+  return get_include(url=url, h1_level=h1_level, classes=classes, title=title)
 
 
 def init_word_title_maker(text_matched, index, file_title):
@@ -134,7 +135,7 @@ def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=[
     else:
       title = sanscript.transliterate(target_dir, sanscript.OPTITRANS, sanscript.DEVANAGARI)
   if os.path.exists(alt_file_path):
-    html = library.get_include(url=alt_url, h1_level=h1_level, classes=classes, title=title)
+    html = get_include(url=alt_url, h1_level=h1_level, classes=classes, title=title)
     html = f"<body>{html}</body>"
     return BeautifulSoup(html, 'html.parser').select_one("div")
   return None
@@ -235,9 +236,9 @@ def include_basename_fixer(inc, ref_dir):
   :param ref_dir: 
   :return: 
   """
-  sub_path_to_reference = library.get_sub_path_to_reference_map(ref_dir=ref_dir)
+  sub_path_to_reference = doc_curation.md.library.arrangement.get_sub_path_to_reference_map(ref_dir=ref_dir)
   url = inc["url"]
-  sub_path_id = library.get_sub_path_id(regex.sub(".+?/%s(/.+)" % os.path.basename(ref_dir), "\\1", url))
+  sub_path_id = doc_curation.md.library.arrangement.get_sub_path_id(regex.sub(".+?/%s(/.+)" % os.path.basename(ref_dir), "\\1", url))
   base_url = regex.sub("(.+?/%s)/.+" % os.path.basename(ref_dir), "\\1", url)
   new_sub_path = regex.sub(".+?/%s(/.+)" % os.path.basename(ref_dir), "\\1", str(sub_path_to_reference[sub_path_id].file_path))
   new_url = os.path.abspath(base_url + new_sub_path)
@@ -245,7 +246,7 @@ def include_basename_fixer(inc, ref_dir):
 
 
 def include_core_with_commentaries(dir_path, alt_dirs, file_pattern="**/*.md", source_dir="vishvAsa-prastutiH"):
-  md_files = library.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
+  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
   md_files = [f for f in md_files if os.path.basename(f.file_path) ]
 
   def include_fixer(inc):
@@ -256,3 +257,21 @@ def include_core_with_commentaries(dir_path, alt_dirs, file_pattern="**/*.md", s
     transform_include_lines(md_file=md_file, transformer=include_fixer)
     md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
 
+
+def get_include(url, field_names=None, classes=None, title=None, h1_level=2, extra_attributes=""):
+  field_names_str = ""
+  if field_names is not None:
+    field_names_str = "fieldNames=\"%s\"" % (",".join(field_names))
+  classes_str = ""
+  if classes is not None:
+    classes_str = " ".join(classes)
+  extra_attributes =  "%s %s" % (extra_attributes, " ".join([field_names_str]))
+  if title == "FILE_TITLE":
+    title_str = 'includeTitle="true"'
+  elif title is not None:
+    title_str = "title=\"%s\"" % title
+  else:
+    title_str = None
+  if title_str is not None:
+    extra_attributes = "%s %s" % (title_str, extra_attributes)
+  return """<div class="js_include %s" url="%s"  newLevelForH1="%d" %s> </div>"""  % (classes_str,url, h1_level, extra_attributes)

@@ -4,6 +4,7 @@ import shutil
 import regex
 from bs4 import BeautifulSoup
 
+import doc_curation.md.library.arrangement
 import doc_curation_projects.veda.suutra
 from doc_curation_projects import veda
 from doc_curation.md import library
@@ -22,7 +23,7 @@ ref_dir = os.path.join(static_dir_base, "mUlam")
 
 
 def fix_includes():
-  md_files = library.get_md_files_from_path(dir_path=os.path.join(content_dir_base, "sarva-prastutiH"), file_pattern="*/[0-9][0-9]*.md")
+  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path=os.path.join(content_dir_base, "sarva-prastutiH"), file_pattern="*/[0-9][0-9]*.md")
   md_files = [f for f in md_files if os.path.basename(f.file_path) ]
   
   def include_fixer(match):

@@ -1,11 +1,13 @@
+import doc_curation.md.library.arrangement
+import doc_curation.md.library.splitting
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
 def combine_files():
-  library.apply_function(fn=library.combine_files_in_dir, dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA/", file_pattern="**/_index.md", dry_run=False)
-  library.defolderify_single_md_dirs(dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA/", dry_run=False)
+  library.apply_function(fn=doc_curation.md.library.splitting.combine_files_in_dir, dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA/", file_pattern="**/_index.md", dry_run=False)
+  doc_curation.md.library.arrangement.defolderify_single_md_dirs(dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA/", dry_run=False)
 
 
 if __name__ == '__main__':
