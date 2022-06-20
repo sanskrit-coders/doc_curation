@@ -28,7 +28,7 @@ def combine_files_in_dir(md_file, dry_run=False):
       os.remove(source_md.file_path)
 
 
-def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=None, mode="overwrite", dravidian_titles=False, dry_run=False):
+def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=None, mode="overwrite", default_script=sanscript.DEVANAGARI, dravidian_titles=False, dry_run=False):
   final_content_map = defaultdict(lambda : "")
   final_metadata_map = defaultdict(lambda: {})
   ready_content = None
@@ -48,7 +48,7 @@ def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=
       title = source_path_to_title[source_path]
     else:
       title = os.path.basename(source_path)
-      title = sanscript.transliterate(title, _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI, maybe_use_dravidian_variant=dravidian_titles)
+      title = sanscript.transliterate(title, _from=sanscript.OPTITRANS, _to=default_script, maybe_use_dravidian_variant=dravidian_titles)
     
     md_files = get_md_files_from_path(dir_path=source_path)
     for md_file in tqdm(md_files):

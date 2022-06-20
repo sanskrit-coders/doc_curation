@@ -9,15 +9,16 @@ from curation_utils import dir_helper
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import include_helper
 from doc_curation.md.file import MdFile
-from doc_curation.md.library import metadata_helper
+from doc_curation.md.library import metadata_helper, combination
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 from indic_transliteration import sanscript
 import functools
 import logging
 
-ref_dir = "/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH"
-buhler_dir = "/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/dharma-sUtram/buhler/"
+content_dir_base = "/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram"
+static_dir_base = content_dir_base.replace("content", "static")
+ref_dir = os.path.join(static_dir_base, "vishvAsa-prastutiH")
 
 @functools.lru_cache
 def get_suutra_id_to_md():
@@ -33,17 +34,22 @@ def get_suutra_id_to_md():
   return suutra_id_to_md
 
 
+def combine():
+  subpaths = [os.path.join(static_dir_base, x) for x in ["buhler", "haradatta-TIkA", "shankarAchArya-vivaraNam", ]]
+  combination.combine_to_details(source_paths_or_content=subpaths, dest_path=os.path.join(static_dir_base, "sarvASh_TIkAH"), dravidian_titles=False, dry_run=False)
+
+
 def fix_includes():
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/sarva-prastutiH", file_pattern="**/[0-9][0-9]*.md")
+  dest_dir = os.path.join(content_dir_base, "sarva-prastutiH")
 
+  def include_fixer(x, current_file_path, *args):
+    return include_helper.alt_include_adder(x, current_file_path, source_dir="vishvAsa-prastutiH", alt_dirs=["sarvASh_TIkAH"])
 
-  def include_fixer(match):
-    return include_helper.alt_include_adder(match=match, source_dir="vishvAsa-prastutiH", alt_dirs=["haradatta-TIkA", "shankarAchArya-vivaraNam", "buhler"])
+  library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_helper.old_include_remover))
+  library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_fixer))
+  library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
+  include_helper.prefill_includes(dir_path=dest_dir)
 
-  for md_file in md_files:
-    include_helper.transform_include_lines(md_file=md_file, transformer=include_helper.old_include_remover)
-    include_helper.transform_include_lines(md_file=md_file, transformer=include_fixer)
-    md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
 
 
 def suutra_include_maker(suutra_id_dev, text_path, *args, **kwargs):
@@ -83,7 +89,8 @@ def migrate_and_include_shlokas():
     return include_helper.vishvAsa_include_maker(dest_path, h1_level=3, title="FILE_TITLE")
 
   PATTERN_SUTRA = "\n[^#\s<>\[\(][\s\S]+? \s*[०-९\d\.]+\s*?(?=\n|$)"
-  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[PATTERN_SUTRA], dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH", replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)
+  # library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[PATTERN_SUTRA], dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH", replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)
+  pass
 
 
 def buhler_dest_path_maker(url, base_dir):
@@ -101,12 +108,14 @@ def fix_buhler():
   # os.remove(os.path.join(base_dir, "2/06/13/13.md"))
 
   # library.shift_contents(os.path.join(buhler_dir, "2/05/10/"), start_index=4, substitute_content_offset=-1)
-  doc_curation.md.library.arrangement.shift_contents(os.path.join(buhler_dir, "1/02/08/"), start_index=24, substitute_content_offset=-1)
+  # doc_curation.md.library.arrangement.shift_contents(os.path.join(buhler_dir, "1/02/08/"), start_index=24, substitute_content_offset=-1)
   # os.remove(os.path.join(base_dir, "2/06/13/13.md"))
+  pass
 
 if __name__ == '__main__':
   # migrate_and_include_shlokas()
   # fix_buhler()
+  # combine()
   fix_includes()
   # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/apastamba-dharma-sutra/d/doc116233.html", base_dir=base_dir, dest_path_maker=buhler_dest_path_maker)
   # dir_helper.remove_empty_directories(base_dir)

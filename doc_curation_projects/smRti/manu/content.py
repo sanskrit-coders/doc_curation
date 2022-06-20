@@ -17,8 +17,8 @@ def fix_includes():
     return include_helper.alt_include_adder(inc=inc, current_file_path=current_file_path, source_dir="vishvAsa-prastutiH", alt_dirs=["sarvASh_TIkAH"])
 
   library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_helper.old_include_remover))
-  # library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_fixer))
-  # library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_fixer))
+  library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
 
 
 def get_title_id(text_matched):
@@ -52,4 +52,4 @@ def migrate_and_include_shlokas(chapter_id):
 if __name__ == '__main__':
   # migrate_and_include_shlokas(chapter_id=7)
   fix_includes()
-  # include_helper.prefill_includes(dir_path=dest_dir)
+  include_helper.prefill_includes(dir_path=dest_dir)

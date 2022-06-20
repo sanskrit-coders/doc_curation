@@ -3,11 +3,11 @@ import os
 import regex
 from bs4 import BeautifulSoup
 
-import doc_curation.md.library.arrangement
 import doc_curation.scraping.sacred_texts
 from doc_curation.md import library
 from doc_curation.md.content_processor import include_helper
-from doc_curation.md.library import metadata_helper
+from doc_curation.md.file import MdFile
+from doc_curation.md.library import arrangement, metadata_helper, combination
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 
@@ -29,17 +29,22 @@ def fix_filenames():
   metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
 
 
-def fix_includes():
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-TIkAH", file_pattern="[0-9][0-9]*.md")
-  md_files = [f for f in md_files if os.path.basename(f.file_path) ]
-  
-  def include_fixer(match):
-    return include_helper.alt_include_adder(match=match, source_dir="vishvAsa-prastutiH", alt_dirs=["haradattaH", "sudarshanaH", "oldenberg"])
 
-  for md_file in md_files:
-    include_helper.transform_include_lines(md_file=md_file, transformer=include_helper.old_include_remover)
-    include_helper.transform_include_lines(md_file=md_file, transformer=include_fixer)
-    md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
+def combine():
+  subpaths = [os.path.join(static_dir_base, "sUtra-pAThaH", x) for x in ["oldenberg", "haradatta-prastAvaH", "haradattaH", "sudarshanaH",]]
+  combination.combine_to_details(source_paths_or_content=subpaths, dest_path=os.path.join(static_dir_base, "sUtra-pAThaH", "sarvASh_TIkAH"), dravidian_titles=False, dry_run=False)
+
+
+def fix_includes():
+  dest_dir = os.path.join(content_dir_base, "sUtra-TIkAH")
+  
+  def include_fixer(x, current_file_path, *args):
+    return include_helper.alt_include_adder(x, current_file_path, source_dir="vishvAsa-prastutiH", alt_dirs=["mUlam", "sarvASh_TIkAH"])
+
+  library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_helper.old_include_remover))
+  library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_fixer))
+  library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
+  include_helper.prefill_includes(dir_path=dest_dir)
 
 
 def oldenberg_dest_path_maker(url, base_dir):
@@ -66,12 +71,13 @@ def fix_oldenberg():
 
 
 if __name__ == '__main__':
-  # fix_includes()
+  # combine()
+  fix_includes()
   # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/apastamba-grihya-sutra/d/doc116791.html", base_dir="/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg/", dest_path_maker=oldenberg_dest_path_maker)
   # para_translation.split(base_dir="/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg/")
   # fix_oldenberg()
   # fix_filenames()
 
-  from doc_curation.scraping.sacred_texts import para_translation as para_translation_st
-  doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe30/sbe30093.htm", outfile_path=os.path.join(content_dir_base, "meta", "oldenberg.md"))
+  # from doc_curation.scraping.sacred_texts import para_translation as para_translation_st
+  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe30/sbe30093.htm", outfile_path=os.path.join(content_dir_base, "meta", "oldenberg.md"))
   pass

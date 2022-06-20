@@ -42,8 +42,16 @@ def separate_commentaries(dest_path, dry_run=True):
         md_file.dump_to_file(metadata=metadata, content=translation, dry_run=dry_run)
 
 
+def fix_multi_Rk_notes():
+  source_paths = sorted(Path(source_dir).glob("**/*.md"))
+  source_paths = [f for f in source_paths if regex.match(".+/\d+-\d+\.md$", f)]
+  arrangement.migrate(files=source_paths, location_computer=lambda x: x.replace("sarvASh_TIkAH", "jamison_brereton_notes", dry_run=True))
+
+
+
 if __name__ == '__main__':
-  doc_curation_projects.veda.Rk.fix_Rk_file_names(dest_path=thomson_solcum_dir, ignore_missing=False, dry_run=False)
+  # doc_curation_projects.veda.Rk.fix_Rk_file_names(dest_path=thomson_solcum_dir, ignore_missing=False, dry_run=False)
+  fix_multi_Rk_notes()
   # separate_commentaries(dry_run=False)
   # def include_generator(file_path):
   #   return """<div class="js_include" url="%s"  newLevelForH1="3" newLevelForH1="2" includeTitle="true"> </div>"""  % (regex.sub(".+/vedAH/static/", "/vedAH/", file_path))

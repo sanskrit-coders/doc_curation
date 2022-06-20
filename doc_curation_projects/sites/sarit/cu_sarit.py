@@ -41,6 +41,10 @@ def dump_miimaamsaa():
   dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-raw/Ślōkavārttika/kumārila-ślokavārttika-umveka_commentary-deva.xml", md_path="/home/vvasuki/vishvAsa/mImAMsA/content/pUrvA/granthAH/shloka-vArttikam/umbeka-TIkA.md")
 
 
+def haravijaya():
+  for chapter_number in range(1, ):
+    dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/kAvyam/rathnAkara-TEI/haravijaya/%s/hv-%s-k.txt" % (id, id), md_path="/home/vvasuki/vishvAsa/kAvyam/content/laxyam/padyam/haravijayaH/%s.md" % id)
+
 
 
 if __name__ == '__main__':

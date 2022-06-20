@@ -200,7 +200,7 @@ def alt_include_adder(inc, current_file_path, source_dir, alt_dirs, hugo_base_di
   h1_level = int(h1_level) + 1
   for x in alt_dirs:
     new_include = make_alt_include(url=url, source_dir=source_dir, file_path=file_path, h1_level=h1_level, target_dir=x)
-    inc.insert_after(new_include)
+    inc.insert_after("\n\n", new_include, "\n\n")
 
 
 def file_path_from_url(url, hugo_base_dir, current_file_path):

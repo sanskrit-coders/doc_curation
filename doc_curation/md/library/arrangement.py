@@ -141,12 +141,11 @@ def migrate(files, location_computer, dry_run=False):
   logging.info("Processing %d files", len(files))
   for f in files:
     new_path = location_computer(str(f))
-    logging.info("Moving %s to %s", str(f), new_path)
-    md_file = MdFile(file_path=f)
-    (metadata, _) = md_file.read()
-    if not dry_run:
-      os.makedirs(os.path.dirname(new_path), exist_ok=True)
-      os.rename(src=f, dst=new_path)
+    if new_path is not None:
+      logging.info("Moving %s to %s", str(f), new_path)
+      if not dry_run:
+        os.makedirs(os.path.dirname(new_path), exist_ok=True)
+        os.rename(src=f, dst=new_path)
 
 
 def fix_index_files(dir_path, frontmatter_type=MdFile.TOML, transliteration_target=sanscript.DEVANAGARI, overwrite=False, dry_run=False):

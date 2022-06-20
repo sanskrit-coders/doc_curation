@@ -6,11 +6,12 @@ from curation_utils import file_helper
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import include_helper
 from doc_curation.md.file import MdFile
-from doc_curation.md.library import metadata_helper
+from doc_curation.md.library import metadata_helper, combination
 from indic_transliteration import sanscript
 
-aux_source_list = ["vAchana", "gamaka-pariShat/gadya", "gamaka-pariShat/padArtha", "gamaka-pariShat/pAThAntara", "gamaka-pariShat/TippanI", "mUla"]
+aux_source_list = ["vAchana", "sarva-TIkegaLu", "mUla"]
 main_source_path = "/home/vvasuki/vishvAsa/kannaDa/static/padya/kumAra-vyAsa-bhArata/vishvAsa-prastuti"
+STATIC_ROOT = os.path.dirname(main_source_path)
 
 parva_to_data_id_map={"01_Adi": "01_Adi", "02_sabhA": "03", "03_araNya": "06", "04_virATa": "07", "05_udyOga": "10", "06_bhIShma": "08", "07_drONa": "02", "08_karNa": "09", "09_shalya": "05", "10_gadA": "04"}
 parva_id_to_title_map = {}
@@ -52,8 +53,16 @@ def dump_parva(parva_num, dir_path="/home/vvasuki/vishvAsa/kannaDa/static/padya/
     pass
 
 
+def combine():
+  subpaths = [os.path.join(STATIC_ROOT, subpath) for subpath in aux_source_list[1:-1]]
+
+  combination.combine_to_details(source_paths_or_content=subpaths, dest_path=os.path.join(STATIC_ROOT, "sarva-TIkegaLu"), default_script=sanscript.KANNADA, dravidian_titles=True, dry_run=False)
+
+
+
 def make_sandhi_files(dest_path):
   library.make_per_src_folder_content_files(dest_path=dest_path, main_source_path=main_source_path, aux_source_list=aux_source_list, source_script=sanscript.KANNADA)
+  include_helper.prefill_includes(dir_path=dest_path)
   pass
   
 
@@ -90,6 +99,7 @@ if __name__ == '__main__':
   # for parva_num in range(1,11):
   # for parva_num in [2]:
   #   dump_parva(parva_num=parva_num)
+  # combine()
   make_sandhi_files(dest_path="/home/vvasuki/vishvAsa/kannaDa/content/padya/kumAra-vyAsa-bhArata")
   # make_audio_mds()
   # for x in aux_source_list + ["vishvAsa-prastuti"]:
