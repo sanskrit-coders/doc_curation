@@ -17,7 +17,7 @@ if __name__ == '__main__':
   # देवनागरी
   # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/vishvAsa/vedAH/content/sAma/jaiminIyam/brAhmaNam/talavakAra-brAhmaNam.md")
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/saMhitA/sarva-prastutiH/1/3.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None) # 
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/AsvAdaH/saMskRta-vANmaya-bRhad-itihAsa/08_kAvyashAstra.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI) # 
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/branches/nyAya-vaisheShike/articles/saMskRta-vANmaya-bRhad-itihAsa/", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI) # 
 
   # IAST
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/branches/brAhma/shAnakara-darshanam/satyanArAyaNa-shAstrI/let_go/", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.IAST) # 

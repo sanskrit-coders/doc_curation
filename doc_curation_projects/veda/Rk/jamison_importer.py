@@ -1,9 +1,11 @@
 import logging
 import os
+from pathlib import Path
 
 import regex
 
 import doc_curation_projects.veda.Rk
+from doc_curation.md.library import arrangement
 from doc_curation_projects import veda
 from doc_curation.md.file import MdFile
 
@@ -43,9 +45,9 @@ def separate_commentaries(dest_path, dry_run=True):
 
 
 def fix_multi_Rk_notes():
-  source_paths = sorted(Path(source_dir).glob("**/*.md"))
-  source_paths = [f for f in source_paths if regex.match(".+/\d+-\d+\.md$", f)]
-  arrangement.migrate(files=source_paths, location_computer=lambda x: x.replace("sarvASh_TIkAH", "jamison_brereton_notes", dry_run=True))
+  source_paths = sorted(Path("/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/sarvASh_TIkAH").glob("**/*.md"))
+  source_paths = [f for f in source_paths if regex.match(".+/\d+-\d+\.md$", str(f))]
+  arrangement.migrate(files=source_paths, location_computer=lambda x: x.replace("sarvASh_TIkAH", "jamison_brereton_notes"), dry_run=False)
 
 
 
