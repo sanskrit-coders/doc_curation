@@ -49,8 +49,9 @@ export GOOGLE_APPLICATION_CREDENTIALS="/home/user/Downloads/service-account-file
 
 - Invoke the script passing in the input file. Eg:
 
-```
+```bash
 python3 google_vision_pdf.py --input-file <input.pdf>
+/usr/bin/python3 -m doc_curation.pdf.google_vision_pdf  --input-file <input.pdf>
 ```
 
 ## For contributors
