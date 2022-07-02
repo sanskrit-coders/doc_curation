@@ -7,9 +7,10 @@ from pathlib import Path
 from curation_utils import file_helper
 from doc_curation import pdf
 from doc_curation.pdf import compress_with_gs, detext_via_jpg, split_into_small_pdfs, _get_ocr_dir
+import argparse
 
 
-def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf", detext=False):
+def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf", detext=False, google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json'):
   if os.path.isfile(dir_path):
     logging.warning("Got a file actually. processing it!")
     file_paths = [dir_path]
@@ -17,7 +18,7 @@ def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf", detext
     file_paths = sorted(Path(dir_path).glob(file_pattern))
   file_paths = [f for f in file_paths if not (str(f).endswith("_detexted.pdf") or str(f).endswith("_tiny.pdf"))]
   for file_path in file_paths:
-    split_and_ocr_on_drive(pdf_path=str(file_path), small_pdf_pages=small_pdf_pages, detext=detext)
+    split_and_ocr_on_drive(pdf_path=str(file_path), small_pdf_pages=small_pdf_pages, detext=detext, google_key=google_key)
 
  
 def split_and_ocr_on_drive(pdf_path,
@@ -126,3 +127,27 @@ def split_to_images_and_ocr(pdf_path,
   # Combine the ocr segments
   file_helper.concatenate_files(input_path_list=ocr_segments, output_path=final_ocr_path)
   file_helper.clear_bad_chars_in_file(file_path=final_ocr_path)
+
+
+def main():
+  """
+  Invocation example: /usr/bin/python3 -m doc_curation.pdf.drive_ocr --input_path=/home/vvasuki/Documents/books/granthasangrahaH/Chandas/ --google_key=/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json
+  
+  :return: 
+  """
+  parser = argparse.ArgumentParser(description="OCR a PDF using google drive")
+  parser.add_argument("--google_key", help="""
+  A json key file which can be obtained from https://console.cloud.google.com/iam-admin/serviceaccounts (create a project, generate a key via "Actions" column, enable Drive API and perhaps Vision APIs.). PS: Google drive takes some time (few hours?) before you can use it for the first time in a project - till then you will get an error.""", required=True,
+                      type=str)
+  parser.add_argument("--input_path", help="input pdf file or directory to be OCRed", required=True,
+                      type=str)
+  parser.add_argument("--small_pdf_pages", help="input file or directory to be OCRed", required=False, default=10,
+                      type=int)
+  parser.add_argument("--detext", help="Text in input file can fool the OCR process.", required=False, default=False,
+                      type=bool)
+  args = parser.parse_args()
+  split_and_ocr_all(dir_path=args.input_path, small_pdf_pages=args.small_pdf_pages, detext=args.detext, google_key=args.google_key)
+
+
+if __name__ == '__main__':
+  main()

@@ -31,6 +31,14 @@ key_file = '/home/key.json'
 pdf.drive_ocr.split_and_ocr_on_drive(pdf_file, key_file)
 ```
 
+Command line invocation:
+
+```bash
+# For help and details - 
+/usr/bin/python3 -m doc_curation.pdf.drive_ocr --help
+/usr/bin/python3 -m doc_curation.pdf.drive_ocr --input_path=/some/Dir/Or/File --google_key=/some/path/service_account_key.json
+```
+
 ### Usage for the `google_vision_pdf.py` to OCR pdf to txt files.
 - Follow the instructions here: https://cloud.google.com/vision/docs/before-you-begin. 
 - Make sure to set the environment variable for `GOOGLE_APPLICATION_CREDENTIALS` to the path of json containing your service account key.

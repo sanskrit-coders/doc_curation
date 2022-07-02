@@ -12,7 +12,7 @@ def title_fix():
   ## DEVANAGARI
   # library.apply_function(dir_path="/home/vvasuki/vvasuki-git/pALi/content", fn=MdFile.ensure_ordinal_in_title, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
   # library.apply_function(dir_path="/home/vvasuki/vishvAsa/kAvyam/content/laxaNam/articles/sAhitya-sAraH", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
-  # library.apply_function(dir_path="/home/vvasuki/vishvAsa/kAvyam/content/laxyam/padyam/vIra-kathAH/madhurA-vijayam/sv_sanxepaH", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
+  library.apply_function(dir_path="/home/vvasuki/vishvAsa/jyotiSham/content/naxatram/chAndra-naxatram/27-vibhAgaH/", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
   
   ##### General
   # library.apply_function(fn=MdFile.prepend_file_index_to_title, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/books/vivekAnanda", dry_run=False)
@@ -26,8 +26,9 @@ def title_fix():
   ## KANNADA
   # library.apply_function(dir_path="/home/vvasuki/vishvAsa/kannaDa/static/padya/kumAra-vyAsa-bhArata/vishvAsa-prastuti", fn=metadata_helper.transliterate_title, transliteration_target=sanscript.KANNADA, dry_run=False)
   pass
-
+sd
 if __name__ == '__main__':
+  title_fix()
   # library.apply_function(
   #   fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/kannaDAnuvAda",
   #   content_transformer=None,

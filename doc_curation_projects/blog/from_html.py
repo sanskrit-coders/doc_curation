@@ -68,6 +68,6 @@ if __name__ == '__main__':
   pass
   # word_clouds()
   dump_wordpress()
-  # dump_substack()
+  dump_substack()
 
   # blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path="/home/vvasuki/hindu-comm/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)
