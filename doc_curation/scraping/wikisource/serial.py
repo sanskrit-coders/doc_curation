@@ -13,7 +13,7 @@ def html_fixer(soup):
   souper.tag_replacer(soup=soup, css_selector="table", tag_name="div")
   souper.tag_replacer(soup=soup, css_selector="tbody", tag_name="div")
   souper.tag_replacer(soup=soup, css_selector="span[style*=\"font-weight:bold;\"]", tag_name="b")
-  souper.tag_remover(soup=soup, css_selector=".noprint")
+  souper.element_remover(soup=soup, css_selector=".noprint")
 
 
 # Alternatives for next_url_css:

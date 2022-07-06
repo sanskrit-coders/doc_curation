@@ -5,7 +5,7 @@ from copy import copy
 from bs4 import BeautifulSoup
 
 from curation_utils import scraping
-from doc_curation.md.content_processor.details_helper import Detail
+
 
 
 def get_class_counts(html, css_selector):
@@ -48,6 +48,7 @@ def soup_to_details(soup, css_selector, get_detail_type):
     if len(details) > 0 and details[-1].type == detail_type:
       details[-1].content = f"{details[-1].content.strip()}  \n{tag.text.strip()}\n"
     else:
+      from doc_curation.md.content_processor.details_helper import Detail
       details.append(Detail(type=detail_type, content=tag.text.strip()))
   return details
 

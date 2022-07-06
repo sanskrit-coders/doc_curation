@@ -14,7 +14,7 @@ from doc_curation.scraping.html_scraper import souper
 def dumper (url, outfile_path, title_prefix, dry_run):
   title_maker = lambda soup, *args, **kwargs: souper.title_from_element(soup=soup, title_css_selector="h1", title_prefix=title_prefix)
   def html_fixer(soup):
-    souper.tag_remover(soup=soup, css_selector="section.footnotes")
+    souper.element_remover(soup=soup, css_selector="section.footnotes")
     for element in soup.select("sup.ftnt"):
       text = element.get_text()
       text = text.replace("[", "[^")

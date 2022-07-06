@@ -1,11 +1,13 @@
+import copy
 import logging
 import os
 import textwrap
 
 import regex
-from bs4 import NavigableString
+from bs4 import NavigableString, BeautifulSoup
 
 from doc_curation.md.file import MdFile
+from doc_curation.scraping.html_scraper import souper
 from indic_transliteration import sanscript
 from doc_curation.md import content_processor
 
@@ -85,6 +87,54 @@ def transform_details_with_soup(content, metadata, transformer, *args, **kwargs)
   for detail in details:
     transformer(detail, *args, **kwargs)
     detail.insert_after("\n")
+  return content_processor._make_content_from_soup(soup=soup)
+
+
+def extract_details_from_file(md_file):
+  [metadata, content] = md_file.read()
+  # Stray usage of < can fool the soup parser. Hence the below.
+  if "details" not in content:
+    return []
+  soup = content_processor._soup_from_content(content=content, metadata=metadata)
+  details = soup.select("body>details", recursive=False)
+  return details
+
+
+def insert_after_detail(content, metadata, title, new_element):
+  # Stray usage of < can fool the soup parser. Hence the below.
+  if "details" not in content:
+    return content
+  soup = content_processor._soup_from_content(content=content, metadata=metadata)
+  if soup is None:
+    return content
+  details = soup.select("details")
+  for detail in details:
+    if detail.select_one("summary").text.strip() == title:
+      detail.insert_after("\n")
+      detail.insert_after(new_element)
+      detail.insert_after("\n")
+    detail.insert_after("\n")
+  return content_processor._make_content_from_soup(soup=soup)
+
+
+def rearrange_details(content, metadata, titles, *args, **kwargs):
+  # UNTESTED
+  # Stray usage of < can fool the soup parser. Hence the below.
+  if "details" not in content:
+    return content
+  soup = content_processor._soup_from_content(content=content, metadata=metadata)
+  if soup is None:
+    return content
+  details = soup.select("details")
+  final_details = []
+  title_to_detail = {detail.select_one("summary").text: detail for detail in details}
+  for title in titles:
+    if title in title_to_detail:
+      final_details.append(copy.copy(title_to_detail[title]))
+  for index, detail in details.enumerate():
+    detail.insert_after("\n")
+    detail.insert_after(final_details[index])
+    detail.decompose()
   return content_processor._make_content_from_soup(soup=soup)
 
 

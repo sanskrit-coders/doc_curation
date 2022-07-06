@@ -40,6 +40,8 @@ def get_month_urls(url, init_year_month_str=None):
       archives_element = soup.select_one("[name='archive-dropdown']")
       urls = sorted([option["value"] for option in archives_element.select("option") if option["value"] != ""])
       # TODO : Fix this.
+  else:
+    urls = sorted([anchor["href"] for anchor in month_anchors])
   if init_year_month_str is not None:
     urls = itertools.dropwhile(lambda x: init_year_month_str not in x, urls)
   return urls

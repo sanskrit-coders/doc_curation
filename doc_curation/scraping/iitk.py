@@ -10,7 +10,7 @@ def dump_item(item_url, outfile_path, title_maker):
   logging.info(item_url)
   def html_fixer(soup):
     souper.tag_replacer(soup=soup, css_selector="table", tag_name="div")
-    souper.tag_remover(soup=soup, css_selector="div.view-filters")
+    souper.element_remover(soup=soup, css_selector="div.view-filters")
 
   def md_fixer(md):
     md = md.replace("।।", " ॥ ")

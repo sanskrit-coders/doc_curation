@@ -46,7 +46,7 @@ def tag_replacer(soup, css_selector, tag_name):
     element.name = tag_name
 
 
-def tag_remover(soup, css_selector):
+def element_remover(soup, css_selector):
   for element in soup.select(css_selector):
     element.decompose()
 

@@ -82,9 +82,9 @@ def get_content(soup, main_content_extractor=get_main_content):
     footnote_md = f"[^{footnote_id}]"
     marker.parent.replace_with(footnote_md)
 
-  souper.tag_remover(soup=soup, css_selector="font[size='-1']")
-  souper.tag_remover(soup=soup, css_selector="font[size='-2']")
-  souper.tag_remover(soup=soup, css_selector="font[color='GREEN']")
+  souper.element_remover(soup=soup, css_selector="font[size='-1']")
+  souper.element_remover(soup=soup, css_selector="font[size='-2']")
+  souper.element_remover(soup=soup, css_selector="font[color='GREEN']")
 
   (main_div, footnote_div) = get_content_divs(soup=soup)
   content_out = main_content_extractor(main_div)
