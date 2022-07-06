@@ -248,8 +248,8 @@ class MdFile(object):
       new_content = content
     self.dump_to_file(metadata=new_metadata, content=new_content, dry_run=dry_run, silent=silent)
 
-  def split_to_bits(self, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, title_index_pattern="%02d", bits_dir_url=None,
-                    target_frontmantter_type=TOML, add_short_title=False, dry_run=False):
+  def split_to_bits(self, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, title_index_pattern="%02d", bits_dir_url=None, maybe_use_dravidian_variant="yes",
+                    target_frontmantter_type=TOML, add_short_title=False, dry_run=False, max_length=50):
     """Splits this md file into separate files - one for each section.
     
     Implementation notes: md parsers oft convert to html or json. Processing that output would be more complicated than what we need here.
@@ -285,7 +285,7 @@ class MdFile(object):
       short_title = text_utils.title_from_text(text=title, num_words=6, target_title_length=24)
       title_in_file_name = title
       if source_script is not None:
-        title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script, maybe_use_dravidian_variant=True, mixed_languages_in_titles=mixed_languages_in_titles)
+        title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script, maybe_use_dravidian_variant=maybe_use_dravidian_variant, mixed_languages_in_titles=mixed_languages_in_titles, max_length=max_length)
       if title_in_file_name == "":
         raise ValueError(title_in_file_name)
       file_name = file_helper.clean_file_path("%s.md" % title_in_file_name)

@@ -54,14 +54,14 @@ def pad_title_numbering(dir_path, dry_run):
       md_file.set_title(title=new_title, dry_run=dry_run)
 
 
-def set_filename_from_title(md_file, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, max_title_length=50, dry_run=False, skip_dirs=True):
+def set_filename_from_title(md_file, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, max_title_length=50, dry_run=False, skip_dirs=True, maybe_use_dravidian_variant="yes"):
   # logging.debug(md_file.file_path)
   if skip_dirs and str(md_file.file_path).endswith("_index.md"):
     logging.info("Special file %s. Skipping." % md_file.file_path)
     return
   title = md_file.get_title(omit_chapter_id=False)
   if source_script is not None:
-    title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script, maybe_use_dravidian_variant=True, mixed_languages_in_titles=mixed_languages_in_titles, max_length=max_title_length)
+    title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script, maybe_use_dravidian_variant=maybe_use_dravidian_variant, mixed_languages_in_titles=mixed_languages_in_titles, max_length=max_title_length)
 
   if os.path.basename(md_file.file_path) == "_index.md":
     current_path = os.path.dirname(md_file.file_path)
