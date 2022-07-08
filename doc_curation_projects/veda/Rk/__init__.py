@@ -9,6 +9,7 @@ from doc_curation.md.file import MdFile
 
 
 SAMHITA_DIR_STATIC = "/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/"
+commentary_base = os.path.join(SAMHITA_DIR_STATIC, "sarvASh_TIkAH")
 comment_dirs = ["vishvAsa-prastutiH", "mUlam", "pada-pAThaH", "anukramaNikA", "sAyaNa-bhAShyam",  "jamison_brereton", "griffith", "wilson", "hellwig_grammar"]
 
 

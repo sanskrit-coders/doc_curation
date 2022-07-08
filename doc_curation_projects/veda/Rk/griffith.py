@@ -4,9 +4,10 @@ from pathlib import Path
 
 import regex
 
+from doc_curation.md.content_processor import details_helper
+from doc_curation_projects.veda import Rk
 from doc_curation_projects.veda.Rk import json_lib
 from doc_curation.md.file import MdFile
-from doc_curation.scraping import html
 from doc_curation.scraping.html_scraper import souper
 
 
@@ -17,15 +18,16 @@ logging.basicConfig(
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
-griffith_dir_base = "/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/griffith"
 
 
 
-def dump(dest_dir, dry_run=False):
+def dump(dest_dir, suukta_ids, dry_run=False):
   suukta_id_to_rk_map = json_lib.get_suukta_id_to_rk_map()
-  for suukta_id in sorted(suukta_id_to_rk_map.keys()):
-    if suukta_id <= "08/048":
-      continue
+  if suukta_ids is None:
+    suukta_ids = sorted(suukta_id_to_rk_map.keys())
+  for suukta_id in suukta_ids:
+    # if suukta_id <= "08/048":
+    #   continue
     mandala_num = int(suukta_id.split("/")[0])
     suukta_num = int(suukta_id.split("/")[1])
     if mandala_num == 8 and suukta_num >= 49 and suukta_num <= 59:
@@ -39,6 +41,12 @@ def dump(dest_dir, dry_run=False):
       continue
     suukta_text = "\n%s\n9999. " % suukta_text
     matches = regex.findall("\n(\d+)\.\s+([\s\S]+?)\n\d+\. ", suukta_text, overlapped=True)
+    if len(matches) == 0:
+      suukta_text = suukta_text.replace("9999. ", "9999 ")
+      matches = regex.findall("\n(\d+)\s+(\D+?)\n\d+\s+", suukta_text, overlapped=True)
+    else:
+      # should be already ok.
+      continue
     for match in matches:
       rk_num = int(match[0])
       rk_id = "%02d" % rk_num
@@ -48,8 +56,9 @@ def dump(dest_dir, dry_run=False):
       dest_file = os.path.join(dest_dir, suukta_id, dest_file)
       # logging.debug("%d: %s", rk_num, dest_file)
       md_file = MdFile(file_path=dest_file)
-      md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
+      md_file.transform(content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title="Griffith", new_text=content), dry_run=dry_run)
 
 
 if __name__ == '__main__':
-  dump(dest_dir=griffith_dir_base)
+  # ["01/003", "01/004", "01/005", "01/006", "01/007"]
+  dump(dest_dir=Rk.commentary_base, suukta_ids=None, dry_run=False)

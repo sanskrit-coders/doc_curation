@@ -83,7 +83,7 @@ def transform_details_with_soup(content, metadata, transformer, *args, **kwargs)
   soup = content_processor._soup_from_content(content=content, metadata=metadata)
   if soup is None:
     return content
-  details = soup.select("details")
+  details = soup.select("body>details")
   for detail in details:
     transformer(detail, *args, **kwargs)
     detail.insert_after("\n")
@@ -136,6 +136,18 @@ def rearrange_details(content, metadata, titles, *args, **kwargs):
     detail.insert_after(final_details[index])
     detail.decompose()
   return content_processor._make_content_from_soup(soup=soup)
+
+
+def detail_content_replacer_soup(detail_tag, title, new_text):
+  summary = detail_tag.select_one("summary")
+  if summary.text != title:
+    return
+  for x in summary.find_next_siblings():
+    x.extract()
+  for x in detail_tag.contents:
+    if isinstance(x, NavigableString):
+      x.extract()
+  summary.insert_after(f"\n\n{new_text}\n")
 
 
 def vishvAsa_sanskrit_transformer(detail_tag):
