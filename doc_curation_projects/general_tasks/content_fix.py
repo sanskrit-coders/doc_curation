@@ -69,13 +69,9 @@ def prefill_vishvAsa_includes():
     include_helper.prefill_includes(dir_path=os.path.join(dir_path, "content"))
 
 
-
-
-
 if __name__ == '__main__':
   # devanaagarify(dir_path="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH/5_sundarakANDam/06-vana-nAshaH/044_rAvaNena_jambumAliprexaNam.md", source_script=sanscript.KANNADA)
   # fix_audio_tags()
-
   # prefill_vishvAsa_includes()
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: "documentation-theme" not in str(x))
@@ -83,15 +79,17 @@ if __name__ == '__main__':
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/sAyaNa-bhAShyam/", content_transformer=lambda x, y: sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(x, ignore_padaanta=True, omit_yrl=True), dry_run=False)
   # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
-  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/hiraNyakeshI/paddhatiH/saMskAraratnamAlA", patterns=[r"(?<=\n) (?=\S)"], replacement="", dry_run=False)
+
 
   # library.apply_function(fn=section_helper.create_sections_from_terminal_digits, dir_path="/home/vvasuki/vishvAsa/vedAH/content/Rk/shAkalam/aitareya-brAhmaNam/", dry_run=False)
 
   # library.apply_function(fn=details_helper.interleave_from_file, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/madhurA-vijayam/sarva-prastutiH/4.md", source_file=lambda x: x.replace("sarva-prastutiH", "AnglAnuvAdaH"), detail_title="tiruvenkaTAchAri (Eng)", dry_run=False)
 
-  # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/laxaNam/articles/bhoja-shRngAra-prakAshaH/_index.md")
+  # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/vishvAsa/vedAH_sAma/content/sUtram/gautama-dharma-sUtram/haradattaH.md")
   # library.apply_function(fn=MdFile.drop_sections, dir_path="/home/vvasuki/vishvAsa/purANam/static/rAmAyaNam/audIchya-pAThaH/vishvAsa-prastutiH", title_condition=lambda x: x != "मूलम्")
-  # library.apply_function(fn=MdFile.make_paras, dir_path="/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/jamison_brereton_notes")
+
+  # library.apply_function(fn=MdFile.transform, content_transformer=content_processor.make_paras, dir_path="/home/vvasuki/vishvAsa/notes-hugo/content/sapiens/branches/Trans-eurasian/japan/spirituality/hagakure")
+
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA", content_transformer=lambda x, y: content_processor.numerify_shloka_numbering(x))
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/kANe", content_transformer=lambda x, y: content_processor.fix_google_ocr(x))
@@ -106,7 +104,7 @@ if __name__ == '__main__':
   # add_init_words_to_includes()
   # md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH", file_pattern="**/_index.md")  
   # devanaagarify()
-  fix_footnotes(dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/articles/self-possessed/1_Orthodoxies_Madness_and_Method/1_Academic_and_Brahmanical_Orthodoxies/01_Sanskritic_Culture_and_the_Culture_of_Possession.md")
+  # fix_footnotes(dir_path="/home/vvasuki/vishvAsa/notes-hugo/content/sapiens/branches/Trans-eurasian/japan/spirituality/hagakure/bennet-translation/")
 
   # library.shift_contents(dir_path="/home/vvasuki/vishvAsa/purANam/static/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva/saMskRtam/rAmAnujaH/mUlam/13_xetra-xetrajna-yogaH", start_index=2, substitute_content_offset=-1)
 

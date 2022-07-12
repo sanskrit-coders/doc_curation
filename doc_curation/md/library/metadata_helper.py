@@ -108,12 +108,19 @@ def set_title_from_filename(md_file, transliteration_target=sanscript.DEVANAGARI
   md_file.set_title(dry_run=dry_run, title=title)
 
 
-def prepend_file_indexes_to_title(md_file, dry_run):
+def prepend_file_index_to_title(md_file, dry_run):
   if os.path.basename(md_file.file_path) == "_index.md":
     return
   else:
     index = regex.sub("_.+", "", os.path.basename(md_file.file_path))
   title = index + " " + md_file.get_title(omit_chapter_id=False)
+  md_file.set_title(dry_run=dry_run, title=title)
+
+
+def strip_index_from_title(md_file, dry_run):
+  title = md_file.get_title(omit_chapter_id=True)
+  if os.path.basename(md_file.file_path) == "_index.md":
+    title = f"+{title}"
   md_file.set_title(dry_run=dry_run, title=title)
 
 

@@ -157,7 +157,7 @@ class MdFile(object):
       title = title[1:]
     
     if omit_chapter_id and title is not None:
-      title = regex.sub("^[+०-९]+ +", "", title)
+      title = regex.sub("^[+०-९\d]+ +", "", title)
     return title
 
   def dump_mediawiki(self, outpath=None, dry_run=False):

@@ -6,7 +6,7 @@ import regex
 from indic_transliteration import sanscript
 
 
-def make_paras(content):
+def make_paras(content, *args, **kwargs):
   lines = content.splitlines(keepends=False)
   lines_out = [""]
   for line in lines:
