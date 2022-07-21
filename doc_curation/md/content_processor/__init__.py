@@ -155,6 +155,12 @@ def fix_google_ocr(text):
   return text
 
 
+def remove_fake_linebreaks(text):
+  text = regex.sub(r"(?<=\n|^)([^#-*!<][^\n]+\S)\n(?=[^#-*\s>!<])", r"\1 ", text)
+  text = regex.sub(r"(?<=\n|^)(>[^\n]+\S)\n(?=>)", r"\1 ", text)
+  return text
+
+
 def make_lines_end_with_pattern(content, full_line_pattern):
   lines = content.split("\n")
   lines_out = []

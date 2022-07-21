@@ -94,6 +94,9 @@ if __name__ == '__main__':
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/kANe", content_transformer=lambda x, y: content_processor.fix_google_ocr(x))
 
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/hindu-comm/weblogs/manasataramgini", content_transformer=lambda x, y: content_processor.remove_fake_linebreaks(x))
+
+
   title_post_processor = None
   # title_post_processor = lambda x: regex.sub("^मन्त्रः +", "", x)
   # title_post_processor = lambda x: regex.sub("[०-९]", "", x)
@@ -108,4 +111,5 @@ if __name__ == '__main__':
 
   # library.shift_contents(dir_path="/home/vvasuki/vishvAsa/purANam/static/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva/saMskRtam/rAmAnujaH/mUlam/13_xetra-xetrajna-yogaH", start_index=2, substitute_content_offset=-1)
 
+  # Details
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH/01_Adiparva/01_anukramaNikAparva/001_anukramaNikAparva.md", content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.vishvAsa_sanskrit_transformer))
