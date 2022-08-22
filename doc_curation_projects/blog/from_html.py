@@ -37,13 +37,18 @@ def dump_wordpress():
   wordpress.scrape_index(url="https://cestlaviepriya.wordpress.com/index/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/cestlaviepriya")
   wordpress.scrape_index(url="https://agnimaan.wordpress.com/index-of-all-posts/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/agnimaan")
 
-  wordpress.scrape_monthly_indexes(url="https://westhunt.wordpress.com/", dir_path="/home/vvasuki/hindu-comm/weblogs/westhunt", init_year_month_str="202201", dry_run=False)
-  wordpress.scrape_monthly_indexes(url="https://indianphilosophyblog.org/", dir_path="/home/vvasuki/hindu-comm/weblogs/indianphilosophyblog", init_year_month_str=None, dry_run=False)
-  wordpress.scrape_monthly_indexes(url="https://animeshnagarblog.wordpress.com/", dir_path="/home/vvasuki/hindu-comm/weblogs/animeshnagarblog", init_year_month_str=None, dry_run=False)
-  wordpress.scrape_monthly_indexes(url="https://aryanthought.wordpress.com/", dir_path="/home/vvasuki/hindu-comm/weblogs/aryanthought", init_year_month_str=None, dry_run=False)
-  wordpress.scrape_monthly_indexes(url="https://goghritam.wordpress.com/", dir_path="/home/vvasuki/hindu-comm/weblogs/goghritam", init_year_month_str=None, dry_run=False)
+def dump_wordpress_monthly():
+  init_year_month_str = "2022/05"
+  wordpress.scrape_monthly_indexes(url="https://westhunt.wordpress.com/", dir_path="/home/vvasuki/hindu-comm/weblogs/westhunt", init_year_month_str=init_year_month_str, dry_run=False)
+  wordpress.scrape_monthly_indexes(url="https://indianphilosophyblog.org/", dir_path="/home/vvasuki/hindu-comm/weblogs/indianphilosophyblog", init_year_month_str=init_year_month_str, dry_run=False)
+  wordpress.scrape_monthly_indexes(url="https://animeshnagarblog.wordpress.com/", dir_path="/home/vvasuki/hindu-comm/weblogs/animeshnagarblog", init_year_month_str=init_year_month_str, dry_run=False)
+  wordpress.scrape_monthly_indexes(url="https://aryanthought.wordpress.com/", dir_path="/home/vvasuki/hindu-comm/weblogs/aryanthought", init_year_month_str=init_year_month_str, dry_run=False)
+  wordpress.scrape_monthly_indexes(url="https://goghritam.wordpress.com/", dir_path="/home/vvasuki/hindu-comm/weblogs/goghritam", init_year_month_str=init_year_month_str, dry_run=False)
 
-  wordpress.scrape_monthly_indexes(url="https://vajrin.wordpress.com/", dir_path="/home/vvasuki/hindu-comm/weblogs/vajrin", init_year_month_str=None, dry_run=False)
+  wordpress.scrape_monthly_indexes(url="https://vajrin.wordpress.com/", dir_path="/home/vvasuki/hindu-comm/weblogs/vajrin", init_year_month_str=init_year_month_str, dry_run=False)
+  
+  # NOn-updated. One-time-dump done.
+  wordpress.scrape_monthly_indexes(url="https://musingsofhh.wordpress.com/", dir_path="/home/vvasuki/hindu-comm/weblogs/musingsofhh", init_year_month_str=None, dry_run=False)
 
   ## TODO: 
   # https://gairikshita.wordpress.com/
@@ -67,7 +72,8 @@ def dump_substack():
 if __name__ == '__main__':
   pass
   # word_clouds()
-  dump_wordpress()
+  # dump_wordpress()
+  dump_wordpress_monthly()
   dump_substack()
 
   # blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path="/home/vvasuki/hindu-comm/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)

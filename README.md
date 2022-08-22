@@ -28,7 +28,7 @@ A package for curating doc file collections. Prominent features:
 from doc_curation import pdf
 pdf_file = '/home/file.pdf'
 key_file = '/home/key.json'
-pdf.drive_ocr.split_and_ocr_on_drive(pdf_file, key_file)
+pdf.drive_ocr.split_and_ocr_on_drive(pdf_path=pdf_file, google_key=key_file, small_pdf_pages=5)
 ```
 
 Command line invocation:
@@ -36,7 +36,7 @@ Command line invocation:
 ```bash
 # For help and details - 
 /usr/bin/python3 -m doc_curation.pdf.drive_ocr --help
-/usr/bin/python3 -m doc_curation.pdf.drive_ocr --input_path=/some/Dir/Or/File --google_key=/some/path/service_account_key.json
+/usr/bin/python3 -m doc_curation.pdf.drive_ocr --input_path=/some/Dir/Or/File --google_key=/some/path/service_account_key.json --small_pdf_pages=5
 ```
 
 ### Usage for the `google_vision_pdf.py` to OCR pdf to txt files.

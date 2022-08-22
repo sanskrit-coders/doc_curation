@@ -248,8 +248,16 @@ class MdFile(object):
       new_content = content
     self.dump_to_file(metadata=new_metadata, content=new_content, dry_run=dry_run, silent=silent)
 
-  def split_to_bits(self, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, title_index_pattern="%02d", bits_dir_url=None, maybe_use_dravidian_variant="yes",
-                    target_frontmantter_type=TOML, add_short_title=False, dry_run=False, max_length=50):
+  def split_to_bits(
+      self, source_script=sanscript.DEVANAGARI, 
+      mixed_languages_in_titles=True, 
+      title_index_pattern="%02d", 
+      bits_dir_url=None, 
+      maybe_use_dravidian_variant="yes",
+      target_frontmantter_type=TOML,
+      add_short_title=False, 
+      start_index=1,
+      dry_run=False, max_length=50):
     """Splits this md file into separate files - one for each section.
     
     Implementation notes: md parsers oft convert to html or json. Processing that output would be more complicated than what we need here.
@@ -274,7 +282,7 @@ class MdFile(object):
       if title == None:
         title = ""
       if title_index_pattern is not None:
-        title_index = title_index_pattern % (section_index + 1)
+        title_index = title_index_pattern % (section_index + start_index)
         if source_script is not None:
           ## Transliterate the number
           title_index = sanscript.transliterate(title_index, sanscript.OPTITRANS, source_script)
