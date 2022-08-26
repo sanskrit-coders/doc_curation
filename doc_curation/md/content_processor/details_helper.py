@@ -117,6 +117,19 @@ def insert_after_detail(content, metadata, title, new_element):
   return content_processor._make_content_from_soup(soup=soup)
 
 
+def get_detail(content, metadata, title):
+  # Stray usage of < can fool the soup parser. Hence the below.
+  if "details" not in content:
+    return None
+  soup = content_processor._soup_from_content(content=content, metadata=metadata)
+  if soup is None:
+    return None
+  details = soup.select("details")
+  for detail in details:
+    if detail.select_one("summary").text.strip() == title:
+      return "".join([x.text for x in list(detail.children)[1:]])
+  return None
+
 def rearrange_details(content, metadata, titles, *args, **kwargs):
   # UNTESTED
   # Stray usage of < can fool the soup parser. Hence the below.
