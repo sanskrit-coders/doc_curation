@@ -15,12 +15,12 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/branches/brAhma/shAnakara-darshanam/articles/satyanArAyaNa-shAstrI/garaNi-rAdhAkRShNaH/ramaNa", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.KANNADA) # 
 
   # देवनागरी
-  # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/parAsharaH/mAdhavIyam.md")
+  library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/saMhitA/sAyaNaH/7.md")
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/purANam/content/harivaMshaH", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None) # 
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/laxyam/padyam/jagannAtha-paNDitaH/bhAminI-vilAsaH.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI) # 
 
   # IAST
-  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/vedAH/content/meta/articles/staal/discovering_vedas", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.IAST, start_index=1) # 
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/vedAH/content/meta/articles/staal/discovering_vedas", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.IAST, start_index=1) # 
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/vedAH/content/meta/articles/staal/discovering_vedas", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.IAST, mixed_languages_in_titles=True, title_index_pattern=None) # 
 
   ## ISO

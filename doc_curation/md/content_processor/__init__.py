@@ -226,6 +226,11 @@ def remove_fake_linebreaks(text):
   return text
 
 
+def markdownify_newlines(text):
+  text = regex.sub(r"(?<=\S)\n(?=\S)", r"  \n", text)
+  return text
+
+
 def make_lines_end_with_pattern(content, full_line_pattern):
   lines = content.split("\n")
   lines_out = []
