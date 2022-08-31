@@ -169,3 +169,18 @@ def vishvAsa_sanskrit_transformer(detail_tag):
   for x in detail_tag.contents:
     if isinstance(x, NavigableString):
       x.replace_with(content_processor.rehyphenate_sanskrit_line_endings(x))
+
+
+def shlokas_to_muula_viprastuti_details(content, pattern=None):
+  if "विश्वास-प्रस्तुतिः" in content:
+    return content
+  if pattern is None:
+    from doc_curation.md.content_processor import patterns
+    pattern = patterns.PATTERN_2LINE_SHLOKA
+  def detail_maker(match):
+    shloka = match.group()
+    detail_vishvaasa = Detail(type="विश्वास-प्रस्तुतिः", content=shloka)
+    detail_muula = Detail(type="मूलम्", content=shloka)
+    return f"{detail_vishvaasa.to_html()}\n\n{detail_muula.to_html()}" 
+  content = regex.sub(pattern, detail_maker, content)
+  return content
