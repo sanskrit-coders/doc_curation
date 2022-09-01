@@ -54,12 +54,18 @@ def pad_title_numbering(dir_path, dry_run):
       md_file.set_title(title=new_title, dry_run=dry_run)
 
 
-def set_filename_from_title(md_file, source_script=sanscript.DEVANAGARI, mixed_languages_in_titles=True, max_title_length=50, dry_run=False, skip_dirs=True, maybe_use_dravidian_variant="yes"):
+def set_filename_from_title(md_file, source_script=None, mixed_languages_in_titles=True, max_title_length=50, dry_run=False, skip_dirs=True, maybe_use_dravidian_variant="yes"):
   # logging.debug(md_file.file_path)
   if skip_dirs and str(md_file.file_path).endswith("_index.md"):
     logging.info("Special file %s. Skipping." % md_file.file_path)
     return
   title = md_file.get_title(omit_chapter_id=False)
+  if source_script is None:
+    from indic_transliteration import detect
+    source_script_deduced = detect.detect(title)
+    if source_script_deduced in sanscript.brahmic.SCHEMES:
+      source_script = source_script_deduced
+
   if source_script is not None:
     title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script, maybe_use_dravidian_variant=maybe_use_dravidian_variant, mixed_languages_in_titles=mixed_languages_in_titles, max_length=max_title_length)
 
@@ -138,16 +144,59 @@ def add_init_words_to_title(md_file, num_words=3, target_title_length=50,script=
 def transliterate_title(md_file, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
   # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
   logging.debug(md_file.file_path)
-  title_fixed = sanscript.transliterate(data=md_file.get_title(), _from=sanscript.OPTITRANS,
+  title_fixed = sanscript.transliterate(data=md_file.get_title(omit_chapter_id=False, omit_plus=False), _from=sanscript.OPTITRANS,
                                         _to=transliteration_target)
   md_file.set_title(title=title_fixed, dry_run=dry_run)
 
 
 
-def remove_post_numeric_title_text(md_file, dry_run=False):
-  logging.debug(md_file.file_path)
-  title_fixed = regex.sub("([\d०-९೦-೯-]+ ).+", "\\1", md_file.get_title())
-  md_file.set_title(title=title_fixed, dry_run=dry_run)
+def remove_post_numeric_title_text(md_file, removal_allower=lambda x:True, rename=True, set_in_content=False, dry_run=False):
+  title = md_file.get_title(omit_chapter_id=False)
+  match = regex.fullmatch("([\d०-९೦-೯-]+) +(\S.+)", title)
+  if match is None:
+    logging.warning(f"No match! Skipping {md_file.file_path}")
+    return 
+  title_numeric = match.group(1)
+  title_remainder = match.group(2)
+  if not removal_allower(title_remainder):
+    logging.info(f"Not allowing removal of {title_remainder} in {md_file.file_path}")
+    return 
+  (metadata, content) = md_file.read()
+  if md_file.file_path.endswith("_index.md"):
+    metadata["title"] = f"+{title_numeric}"
+  else:
+    metadata["title"] = title_numeric
+  if set_in_content:
+    content = f"[{title_remainder}]\n\n{content}"
+  logging.info(f"Title change: {title} → {title_numeric}")
+  md_file.dump_to_file(content=content, metadata=metadata, dry_run=dry_run)
+  if rename:
+    set_filename_from_title(md_file=md_file, skip_dirs=False, dry_run=dry_run)
+
+
+def remove_adhyaaya_word_from_title(md_file, adhyaaya_pattern="([अऽ]ध्याय|[ಅಽ]ಧ್ಯಾಯ)", rename=True, set_in_content=True, dry_run=False):
+  remove_post_numeric_title_text(
+    md_file=md_file, 
+    removal_allower=lambda x: len(list(regex.finditer(adhyaaya_pattern, x))) > 0, 
+    set_in_content=set_in_content, rename=rename, dry_run=dry_run)
+  
+def set_title_from_content(md_file, title_extractor, rename=True, log_level=logging.INFO, dry_run=False):
+  [metadata, content] = md_file.read()
+  title = metadata["title"]
+  if regex.fullmatch("[\d०-९೦-೯\- ]+", title):
+    title_extracted = title_extractor(content)
+    if title_extracted is not None:
+      title = f"{title.strip()} {title_extracted}"
+      md_file.set_title(title=title, dry_run=dry_run)
+    else:
+      if log_level <= logging.WARNING:
+        # pass
+        logging.warning(f"Could not extact title from: {md_file.file_path}")
+  else:
+    if log_level <= logging.DEBUG:
+      logging.debug(f"Preexisting title, skipping: {md_file.file_path}")
+  if rename:
+    set_filename_from_title(md_file=md_file, skip_dirs=False, dry_run=dry_run)
 
 
 def fix_field_values(md_files,
@@ -225,3 +274,47 @@ def copy_metadata_and_filename(dest_dir, ref_dir, insert_missign_ref_files=False
 def add_value_to_field(metadata, field, value): 
   metadata[field] = value
   return metadata
+
+
+def iti_naama_title_extractor(text, conclusion_pattern="इति.+ऽध्यायः"):
+  """
+  Example conclusion line: ॥ ॐ तत्सदिति श्रीमदान्त्ये पुराणोपनिषदि श्रीमन्मौद्गले महापुराणेपञ्चमे खण्डे लम्बोदरचरिते शेषातिदुःखवर्णनन्नाम षोडशोऽध्यायः ॥
+  
+  :param text: 
+  :param conclusion_pattern: 
+  :return: 
+  """
+  matches = list(regex.finditer(conclusion_pattern, text))
+  if len(matches) == 0:
+    return None
+  else:
+    final_line = matches[-1].group(0).replace("\n", " ")
+    final_line = regex.sub("न्नाम", "ं नाम", final_line)
+    final_line = regex.sub("(?<=ो|र्)नाम(?=.+ध्यायः)", " नाम", final_line)
+    matches = list(regex.finditer(".+ +(\S+)( *)(?=नाम)", final_line))
+    if len(matches) == 0:
+      return None
+    else:
+      title = matches[-1].group(1)
+    
+    title = regex.sub("ं$", "म्", title)
+    title = regex.sub("ो$", "ः", title)
+    title = regex.sub("र्$", "ः", title)
+    return title
+
+
+
+def iti_saptamii_title_extractor(text, conclusion_pattern="इति.+ऽध्यायः"):
+  matches = list(regex.finditer(conclusion_pattern, text))
+  if len(matches) == 0:
+    return None
+  else:
+    final_line = matches[-1].group(0).replace("\n", " ")
+    final_line = regex.sub(" (च|तु) ", " ", final_line)
+    matches = list(regex.finditer(".+ +(\S+)(?= \S+ *ऽ?ध्यायः)", final_line))
+    if len(matches) == 0:
+      return None
+    else:
+      title = matches[-1].group(1)
+    title = regex.sub("ं$", "म्", title)
+    return title

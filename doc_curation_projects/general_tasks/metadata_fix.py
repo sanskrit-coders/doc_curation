@@ -26,9 +26,13 @@ def title_fix():
   
   # md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/TIkA", file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d_\\d\\d", os.path.basename(x))) > 0)
   # library.metadata_helper.add_init_words_to_title(md_files=md_files, target_title_length=30, dry_run=False)
-  # library.metadata_helper.set_filenames_from_title(md_files=md_files, dry_run=False)
-  
-  
+  # library.apply_function(dir_path="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH/7_uttarakANDam", fn=metadata_helper.set_filename_from_title, dry_run=False)
+
+  # library.apply_function(dir_path="/home/vvasuki/vishvAsa/purANam/content/bhAgavatam", fn=metadata_helper.remove_adhyaaya_word_from_title, dry_run=False)
+
+  library.apply_function(fn=metadata_helper.set_title_from_content, dir_path=HI_ROOT, title_extractor=metadata_helper.iti_naama_title_extractor)
+
+
   ## KANNADA
   # library.apply_function(dir_path="/home/vvasuki/vishvAsa/kannaDa/static/padya/kumAra-vyAsa-bhArata/vishvAsa-prastuti", fn=metadata_helper.transliterate_title, transliteration_target=sanscript.KANNADA, dry_run=False)
   pass

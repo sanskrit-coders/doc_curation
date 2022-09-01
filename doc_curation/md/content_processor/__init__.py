@@ -178,6 +178,10 @@ def fix_bad_anunaasikas(text):
   return c
 
 
+def fix_lazy_anusvaara(text):
+  text = regex.sub("ंऽ", "ऽं", text)
+  text = sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(text, ignore_padaanta=True, omit_yrl=True)
+  return text
 def set_audio_caption_from_filename(text, prefix):
   """
   

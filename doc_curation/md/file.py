@@ -133,7 +133,7 @@ class MdFile(object):
         content = fin.read()
       return ({}, content)
 
-  def get_title(self, omit_chapter_id=True, ref_dir_for_ancestral_title=None):
+  def get_title(self, omit_chapter_id=True, omit_plus=True, ref_dir_for_ancestral_title=None):
     (metadata, content) = self.read()
     if not isinstance(metadata, dict):
       logging.fatal(f"Crazy metadata - {self.file_path}")
@@ -153,7 +153,7 @@ class MdFile(object):
     
     if title is None:
       logging.fatal("%s has None title", self.file_path)
-    if title.startswith("+"):
+    if omit_plus and title.startswith("+"):
       title = title[1:]
     
     if omit_chapter_id and title is not None:
@@ -234,7 +234,7 @@ class MdFile(object):
     metadata, content = self.read()
     if field_name in metadata and metadata[field_name] == value:
       return 
-    logging.info("Setting %s of %s to %s (was %s)", field_name, self.file_path, value, metadata.get(field_name, "None"))
+    logging.info(f"Setting %s: %s (← %s) of {self.file_path}", field_name, value, metadata.get(field_name, "None"))
     if not dry_run:
       metadata[field_name] = value
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
