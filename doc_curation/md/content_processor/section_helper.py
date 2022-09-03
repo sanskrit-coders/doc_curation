@@ -1,7 +1,6 @@
 import itertools
 import logging
 
-import doc_curation.md.library.metadata_helper
 import regex
 from more_itertools import peekable
 
@@ -118,6 +117,7 @@ def drop_sections(md_file, title_condition):
 
 
 def add_init_words_to_section_titles(md_file, num_words=2, title_post_processor=None, dry_run=False):
+  from doc_curation.md.library import metadata_helper
   [metadata, content] = md_file.read()
   lines = content.splitlines(keepends=False)
   (lines_till_section, remaining) = get_lines_till_section(lines)
@@ -132,7 +132,7 @@ def add_init_words_to_section_titles(md_file, num_words=2, title_post_processor=
       title = ""
     section_lines = list(section.lines)
     init_lines = get_init_content_lines(lines_in=section_lines)
-    extra_title = doc_curation.md.library.metadata_helper.title_from_text(text=" ".join(init_lines), num_words=num_words, target_title_length=None)
+    extra_title = metadata_helper.title_from_text(text=" ".join(init_lines), num_words=num_words, target_title_length=None)
     if extra_title is not None:
       title = "%s %s" % (title.strip(), extra_title)
 
