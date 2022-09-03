@@ -10,7 +10,6 @@ import toml
 import yamldown
 
 from doc_curation.md import get_md_with_pandoc
-from doc_curation.md.content_processor.section_helper import get_lines_till_section, reduce_section_depth, split_to_sections
 from indic_transliteration import sanscript
 
 # Remove all handlers associated with the root logger object.
@@ -263,6 +262,8 @@ class MdFile(object):
     Implementation notes: md parsers oft convert to html or json. Processing that output would be more complicated than what we need here.
     :return: 
     """
+    from doc_curation.md.content_processor.section_helper import get_lines_till_section, reduce_section_depth, split_to_sections
+
     # TODO: Fix links upon splitting.
     logging.debug("Processing file: %s", self.file_path)
     if os.path.basename(self.file_path) == "_index.md":
