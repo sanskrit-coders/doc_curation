@@ -1,6 +1,7 @@
 import logging
 import os
 
+import doc_curation.md.library.metadata_helper
 import regex
 from bs4 import BeautifulSoup
 
@@ -38,8 +39,8 @@ def vishvAsa_include_maker(file_path, h1_level=4, classes=None, title=None, ):
 
 
 def init_word_title_maker(text_matched, index, file_title):
-  title = content_processor.title_from_text(text=text_matched, num_words=2, target_title_length=None,
-                                            title_id="%02d"  % (index + 1))
+  title = doc_curation.md.library.metadata_helper.title_from_text(text=text_matched, num_words=2, target_title_length=None,
+                                                                  title_id="%02d"  % (index + 1))
   return title
 
 

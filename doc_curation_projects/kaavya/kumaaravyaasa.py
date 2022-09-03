@@ -1,4 +1,6 @@
 import os
+
+import doc_curation.md.library.metadata_helper
 import regex
 
 import doc_curation.md.library.arrangement
@@ -29,7 +31,7 @@ def dump_parva(parva_num, dir_path="/home/vvasuki/vishvAsa/kannaDa/static/padya/
   doc_data = get_doc_data(parva_num=parva_num)
   for index, row in doc_data.iterrows():
     content = regex.sub("\n+", "  \n", row["P1_Padya"]).replace("||", "॥")
-    title = content_processor.title_from_text(text=content, num_words=2, target_title_length=24, title_id="%02d" % int(row["Padya1"]), script=sanscript.KANNADA)
+    title = doc_curation.md.library.metadata_helper.title_from_text(text=content, num_words=2, target_title_length=24, title_id="%02d" % int(row["Padya1"]), script=sanscript.KANNADA)
     metadata = {"title": title}
     file_subpath = "%02d/%02d/%s.md" % (parva_num, int(row["Sandhi_no"]), file_helper.get_storage_name(text=title))
     md_file_muula = MdFile(file_path=os.path.join(dir_path, "mUla", file_subpath))

@@ -1,3 +1,4 @@
+import doc_curation.md.content_processor.footnote_helper
 import regex
 
 from doc_curation_projects.smRti.manu import content
@@ -40,7 +41,7 @@ def migrate_and_include_commentary(chapter_id):
 
 
 def fix_footnotes():
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH/", content_transformer=content_processor.define_footnotes_near_use, dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH/", content_transformer=doc_curation.md.content_processor.footnote_helper.define_footnotes_near_use, dry_run=False)
 
 
 if __name__ == '__main__':

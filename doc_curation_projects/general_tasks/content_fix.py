@@ -1,6 +1,10 @@
 import itertools
 import os
 
+import doc_curation.md.content_processor.embed_helper
+import doc_curation.md.content_processor.footnote_helper
+import doc_curation.md.content_processor.line_helper
+import doc_curation.md.content_processor.sanskrit_helper
 import regex
 
 from curation_utils import file_helper
@@ -31,13 +35,13 @@ def add_init_words_to_includes():
   
 
 def fix_footnotes(dir_path):
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: content_processor.define_footnotes_near_use(c), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: doc_curation.md.content_processor.footnote_helper.define_footnotes_near_use(c), dry_run=False)
 
 
 def devanaagarify(dir_path, source_script):
   def content_transformer(c, m): 
     c = content_processor.transliterate(text=c, source_script=source_script)
-    c = sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(c, omit_sam=True, omit_yrl=True, ignore_padaanta=True)
+    c = doc_curation.md.content_processor.sanskrit_helper.fix_lazy_anusvaara(c, omit_sam=True, omit_yrl=True, ignore_padaanta=True)
     c = regex.sub("\n\*\*(\s+)", "\n\\1**", c)
     c = regex.sub("\n[\t	 ]+", "\n> ", c)
     for x in range(1, 20):
@@ -52,7 +56,7 @@ def devanaagarify(dir_path, source_script):
 
 
 def fix_audio_tags():
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/content/tamiL/4k-divya-prabandha/02_tiruppAvai/_index.md", content_transformer=lambda x, y: content_processor.set_audio_caption_from_filename(x, prefix="vibhA"), dry_run=False, silent_iteration=True)
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/content/tamiL/4k-divya-prabandha/02_tiruppAvai/_index.md", content_transformer=lambda x, y: doc_curation.md.content_processor.embed_helper.set_audio_caption_from_filename(x, prefix="vibhA"), dry_run=False, silent_iteration=True)
 
 
 def prefill_vishvAsa_includes():
@@ -69,14 +73,23 @@ def prefill_vishvAsa_includes():
     include_helper.prefill_includes(dir_path=os.path.join(dir_path, "content"))
 
 
+def shloka_formatting():
+  pass
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/laxyam/padyam/gorUru-shrInivAsa-mUrtiH/chandrikA.md", content_transformer=lambda c, m: doc_curation.md.content_processor.line_helper.make_md_verse_lines(text=c))
+
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA", content_transformer=lambda x, y: content_processor.numerify_shloka_numbering(x))
+
+
+
 if __name__ == '__main__':
   # devanaagarify(dir_path="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH/5_sundarakANDam/06-vana-nAshaH/044_rAvaNena_jambumAliprexaNam.md", source_script=sanscript.KANNADA)
   # fix_audio_tags()
   # prefill_vishvAsa_includes()
+  # shloka_formatting()
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: "documentation-theme" not in str(x))
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/sanskrit/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: False not in [y not in str(x) for y in ["sarit", "gitasupersite", "wellcome", "dhaval", "wikisource", "vishvAsa"]])
-
+  
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/purANam/content/maudgala-purANam.md", content_transformer=lambda x, y: sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(x, ignore_padaanta=True, omit_yrl=True), dry_run=False)
   # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
 
@@ -91,8 +104,6 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.transform, content_transformer=content_processor.make_paras, dir_path="/home/vvasuki/hindu-comm/weblogs/aryaakasha")
 
   # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:content_processor.markdownify_newlines(c), dir_path="/home/vvasuki/sanskrit/raw_etexts/vedaH/yajur/taittirIya/sAyaNa")
-
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA", content_transformer=lambda x, y: content_processor.numerify_shloka_numbering(x))
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/kANe", content_transformer=lambda x, y: content_processor.fix_google_ocr(x))
 

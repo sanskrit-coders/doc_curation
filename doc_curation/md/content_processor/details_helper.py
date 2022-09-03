@@ -3,6 +3,7 @@ import logging
 import os
 import textwrap
 
+import doc_curation.md.content_processor.line_helper
 import regex
 from bs4 import NavigableString, BeautifulSoup
 
@@ -168,7 +169,7 @@ def vishvAsa_sanskrit_transformer(detail_tag):
     return
   for x in detail_tag.contents:
     if isinstance(x, NavigableString):
-      x.replace_with(content_processor.rehyphenate_sanskrit_line_endings(x))
+      x.replace_with(doc_curation.md.content_processor.line_helper.rehyphenate_sanskrit_line_endings(x))
 
 
 def shlokas_to_muula_viprastuti_details(content, pattern=None):

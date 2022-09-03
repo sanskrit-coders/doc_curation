@@ -1,4 +1,4 @@
-# Can't have look-behind (?<=\n|^) because: Invalid regular expression: look-behind requires fixed-width pattern
+# Can't have look-behind (?<=\n|^) because: "Invalid regular expression: look-behind requires fixed-width pattern" (Which regex environment??)
 PATTERN_SHLOKA = r"(?<=\n)([^#\s<>\[\(][\s\S]+?)॥\s*([०-९\d\.]+)\s*॥.*?(?=\n|$)"
 PATTERN_2LINE_SHLOKA = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।  +\n([^#\s<>\[\(][ \S]+?)॥\s*([०-९\d\.]+)\s*॥.*?(?=\n|$)"
 

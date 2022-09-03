@@ -1,5 +1,6 @@
 import os
 
+import doc_curation.md.library.metadata_helper
 import regex
 
 import doc_curation.md.library.arrangement
@@ -29,8 +30,8 @@ def get_title_id(text_matched):
 
 def title_maker(text_matched, index, file_title):
   title_id = get_title_id(text_matched=text_matched)
-  title = content_processor.title_from_text(text=text_matched, num_words=2, target_title_length=None,
-                                            title_id=title_id)
+  title = doc_curation.md.library.metadata_helper.title_from_text(text=text_matched, num_words=2, target_title_length=None,
+                                                                  title_id=title_id)
   return title
 
 

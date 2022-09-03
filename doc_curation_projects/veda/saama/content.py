@@ -1,6 +1,8 @@
 import logging
 import os
 
+import doc_curation.md.content_processor.stripper
+import doc_curation.md.library.metadata_helper
 import regex
 
 import doc_curation.md.content_processor.include_helper
@@ -18,8 +20,8 @@ PATH_ALL_SAMHITA = "/home/vvasuki/vishvAsa/vedAH/content/sAma/kauthumam/saMhitA/
 def title_maker(text_matched, index, file_title):
   title_id = regex.search("॥\s*([०-९\d-:]+)\s*॥", text_matched).group(1)
   title_id = title_id.replace(":", "_")
-  title = content_processor.title_from_text(text=text_matched, num_words=2, target_title_length=None,
-                                            title_id=title_id)
+  title = doc_curation.md.library.metadata_helper.title_from_text(text=text_matched, num_words=2, target_title_length=None,
+                                                                  title_id=title_id)
   return title
 
 
@@ -40,7 +42,7 @@ def read_RV_map():
   rv_map = {}
   for md_file in md_files:
     (metadata, content) = md_file.read()
-    text = content_processor.get_comparison_text(text=content)
+    text = doc_curation.md.content_processor.stripper.get_comparison_text(text=content)
     rv_map[text] = md_file.file_path
   logging.info("Got RV map with %d items", len(md_files))
   return rv_map
@@ -63,7 +65,7 @@ def link_rv_texts():
   unmatched_files = []
   for muula_md in muula_md_files:
     (metadata, saama_content) = muula_md.read()
-    saama_text = content_processor.get_comparison_text(text=saama_content)
+    saama_text = doc_curation.md.content_processor.stripper.get_comparison_text(text=saama_content)
     saama_text = regex.sub("(.+?)॥.+", "\\1", saama_text)
     (rv_text, rv_muula_path, score) = proximal_RV_text(saama_text=saama_text, rv_map=rv_map)
     logging.info("Edit distance: %s, %s to %s", score, os.path.basename(muula_md.file_path), os.path.basename(rv_muula_path))

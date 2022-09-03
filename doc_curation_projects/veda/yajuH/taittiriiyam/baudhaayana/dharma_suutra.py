@@ -1,6 +1,7 @@
 import functools
 import os
 
+import doc_curation.md.library.metadata_helper
 import regex
 from bs4 import BeautifulSoup
 
@@ -78,8 +79,8 @@ def get_title_id(text_matched):
 def title_maker(text_matched, index, file_title):
   title_id = get_title_id(text_matched=text_matched)
   text_without_id = regex.sub(" *([०-९]+) *$", "", text_matched)
-  title = content_processor.title_from_text(text=text_without_id, num_words=3, target_title_length=None,
-                                            title_id=title_id)
+  title = doc_curation.md.library.metadata_helper.title_from_text(text=text_without_id, num_words=3, target_title_length=None,
+                                                                  title_id=title_id)
   return title
 
 

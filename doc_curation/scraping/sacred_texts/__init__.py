@@ -1,6 +1,7 @@
 import logging
 import os
 
+import doc_curation.md.content_processor.footnote_helper
 import regex
 from bs4 import NavigableString, BeautifulSoup
 
@@ -90,7 +91,7 @@ def get_content(soup, main_content_extractor=get_main_content):
   content_out = main_content_extractor(main_div)
 
   content_out += footnote_extractor(footnote_div)
-  content_out = content_processor.define_footnotes_near_use(content=content_out)
+  content_out = doc_curation.md.content_processor.footnote_helper.define_footnotes_near_use(content=content_out)
   replacements = {"â": "ā", "î": "ī", "û": "ū", "": "\\`", "": " - ", " ": " "}
   for x, y in replacements.items():
     content_out = content_out.replace(x, y)

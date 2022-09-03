@@ -9,6 +9,7 @@ from curation_utils import file_helper
 
 from curation_utils.file_helper import get_storage_name
 from doc_curation.md import content_processor
+from doc_curation.md.content_processor.stripper import remove_non_content_text
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 
@@ -135,7 +136,7 @@ def add_init_words_to_title(md_file, num_words=3, target_title_length=50,script=
   title = metadata["title"]
   if replace_non_index_text:
     title = regex.sub("(?<=^[0-9०-९೦-೯]+) +.+", "", title)
-  extra_title = content_processor.title_from_text(text=content, num_words=num_words, target_title_length=target_title_length, script=script)
+  extra_title = title_from_text(text=content, num_words=num_words, target_title_length=target_title_length, script=script)
   if extra_title is not None:
     title = "%s %s" % (title.strip(), extra_title)
   md_file.set_title(title=title, dry_run=dry_run)
@@ -235,7 +236,7 @@ def shloka_title_maker(text):
   id_in_text = sanscript.transliterate(regex.search("॥\s*([०-९\d\.]+)\s*॥", text).group(1), sanscript.DEVANAGARI, sanscript.OPTITRANS)
   id_in_text = regex.search("\.?\s*(\d+)\s*$", id_in_text).group(1)
   title_id = "%03d" % int(id_in_text)
-  title = content_processor.title_from_text(text=text, num_words=2, target_title_length=None, depunctuate=True, title_id=title_id)
+  title = title_from_text(text=text, num_words=2, target_title_length=None, depunctuate=True, title_id=title_id)
   return title
 
 
@@ -318,3 +319,10 @@ def iti_saptamii_title_extractor(text, conclusion_pattern="इति.+ऽध्�
       title = matches[-1].group(1)
     title = regex.sub("ं$", "म्", title)
     return title
+
+
+def title_from_text(text, num_words=2, target_title_length=50, title_id=None, script=sanscript.DEVANAGARI):
+  text = remove_non_content_text(content=text)
+  from doc_curation import text_utils
+  title = text_utils.title_from_text(text=text, num_words=num_words, target_title_length=target_title_length, title_id=title_id, script=script)
+  return title
