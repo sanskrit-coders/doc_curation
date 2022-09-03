@@ -11,9 +11,9 @@ def fix_bad_anunaasikas(text):
   return c
 
 
-def fix_lazy_anusvaara(text):
+def fix_lazy_anusvaara(text, script=sanscript.DEVANAGARI):
   text = regex.sub("ंऽ", "ऽं", text)
-  text = sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(text, ignore_padaanta=True, omit_yrl=True)
+  text = sanscript.SCHEMES[script].fix_lazy_anusvaara(text, ignore_padaanta=True, omit_yrl=True)
   return text
 
 

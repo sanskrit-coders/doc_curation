@@ -12,6 +12,7 @@ def remove_parenthized_text(text):
 
 def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True, title_id=None, script=sanscript.DEVANAGARI):
   from indic_transliteration import detect
+  from doc_curation.md.content_processor.sanskrit_helper import fix_lazy_anusvaara
   if script is None:
     script = detect.detect(text=text)
   if depunctuate:
@@ -19,7 +20,7 @@ def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True,
     text = devanaaagari_scheme.remove_svaras(in_string=text)
     text = devanaaagari_scheme.remove_punctuation(in_string=text)
   text = remove_parenthized_text(text)
-  text = doc_curation.md.content_processor.sanskrit_helper.fix_lazy_anusvaara(data_in=text, omit_yrl=True, ignore_padaanta=True)
+  text = fix_lazy_anusvaara(text=text, script=script)
   init_words = text.split()[0:num_words]
   title = None
   if len(init_words) > 0:
