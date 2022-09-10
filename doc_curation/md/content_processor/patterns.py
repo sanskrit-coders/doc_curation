@@ -16,6 +16,7 @@ DEVANAGARI_DIGITS = "[०-९]"
 LOWER_CASE_ISO = "[a-zāīūṛr̥ēōṅñṇṭḍṣśḷṁṃḥḻṉṟäü]"
 UPPER_CASE_ISO = "[A-ZĀĪŪṚR̥ĒŌṄÑṆṬḌṢŚḶṀṂḤḺṈṞÜ]"
 
+DEVANAGARI_MANIPRAVALA_MID_K_L = f"(?<=[^\s्])क(?={DEVANAGARI_MATRA}?ळ)"
 
 def get_word_count(md_file, wc=None):
   if wc is None:

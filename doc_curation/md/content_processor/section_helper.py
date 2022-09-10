@@ -148,7 +148,7 @@ def add_init_words_to_section_titles(md_file, num_words=2, title_post_processor=
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
-def autonumber_section_lines(lines, dest_script=sanscript.DEVANAGARI, recursive=True):
+def autonumber_section_lines(lines, dest_script=sanscript.DEVANAGARI, recursive=True, init_index=1):
   (lines_till_section, remaining) = get_lines_till_section(lines)
   sections = split_to_sections(remaining)
   lines_out = list(lines_till_section)
@@ -158,21 +158,22 @@ def autonumber_section_lines(lines, dest_script=sanscript.DEVANAGARI, recursive=
     if title is None:
       title = ""
     title = regex.sub("^[0-9०-९೦-೯]+", "", title.strip())
-    transliterated_index = index_pattern % (section_index + 1)
+    transliterated_index = index_pattern % (section_index + init_index)
     if dest_script is not None:
       transliterated_index = sanscript.transliterate(data=transliterated_index, _to=dest_script, _from=sanscript.IAST)
     title = "%s %s" % (transliterated_index, title)
     lines_out.append("\n%s%s" % (section.header_prefix, title))
     if recursive:
-      section.lines = autonumber_section_lines(lines=section.lines, dest_script=dest_script, recursive=recursive) 
+      # Assume that numbers start with 1 at subsection level and beyond 
+      section.lines = autonumber_section_lines(lines=section.lines, dest_script=dest_script, recursive=recursive, init_index=1) 
     lines_out.extend(section.lines)
   return lines_out
 
 
-def autonumber(md_file, dest_script=sanscript.DEVANAGARI, recursive=True, dry_run=False):
+def autonumber(md_file, dest_script=sanscript.DEVANAGARI, recursive=True, init_index=1, dry_run=False):
   [metadata, content] = md_file.read()
   lines = content.splitlines(keepends=False)
-  lines = autonumber_section_lines(lines=lines, dest_script=dest_script, recursive=recursive)
+  lines = autonumber_section_lines(lines=lines, dest_script=dest_script, recursive=recursive, init_index=init_index)
   content = "\n".join(lines)
   content = regex.sub("\n\n+", "\n\n", content)
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
