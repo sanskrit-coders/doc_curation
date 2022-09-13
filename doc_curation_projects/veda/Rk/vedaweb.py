@@ -57,11 +57,34 @@ def get_paada_labels(label_str):
 
   return labels
 
+def get_morph_details(soup):
+  padas = soup.select("fs[type='zurich_info']")
+  morph_details = []
+  for pada in padas:
+    surface = pada.select_one("f[name='surface']").text.strip()
+    root_node = pada.select_one("f[name='gra_lemma']")
+    if root_node is None:
+      root = "UNK_ROOT"
+    else:
+      root = root_node.text.strip()
+    root_type_node = pada.select_one("f[name='gra_gramm']")
+    if root_type_node is None:
+      root_type = "UNK_TYPE"
+    else:
+      root_type = root_type_node.select_one("symbol")["value"]
+    glossing_rules = pada.select_one("fs[type='leipzig_glossing_rules']")
+    glosses = glossing_rules.select("f")
+    glosses = ["%s:%s" % (gloss["name"], gloss.select_one("symbol")["value"]) for gloss in glosses]
+    gloss_str = ", ".join(glosses)
+    morph_detail = f"{surface} ← {root} ({root_type})  \n{{{gloss_str}}}"
+    morph_details.append(morph_detail)
+  return "\n\n".join(morph_details)
+
 def dump_Rk(Rk_id, dest_subpath):  
   title = Rk_id.split("/")[-1]
   url = f"https://vedaweb.uni-koeln.de/rigveda/api/export/doc/{Rk_id.replace('/', '')}/xml"
   soup = scraping.get_post_soup(url, timeout=60.0)
-  
+  morph_details = get_morph_details(soup)
   def dump_commentary(text_id):
     commentary = soup.select_one(f"lg[source={text_id}]")
     if commentary is not None:
@@ -70,15 +93,15 @@ def dump_Rk(Rk_id, dest_subpath):
       md_file = MdFile(file_path=dest_path)
       md_file.dump_to_file(metadata={"title": title}, content=commentary, dry_run=False)
 
-  dump_commentary(text_id="geldner")
-  dump_commentary(text_id="grassmann")
-  dump_commentary(text_id="macdonell")
-  dump_commentary(text_id="oldenberg")
-  dump_commentary(text_id="elizarenkova")
+  # dump_commentary(text_id="geldner")
+  # dump_commentary(text_id="grassmann")
+  # dump_commentary(text_id="macdonell")
+  # dump_commentary(text_id="oldenberg")
+  # dump_commentary(text_id="elizarenkova")
 
   strata_text = ", ".join(OrderedSet([strata_meanings[x.text] for x in soup.select('f[name="strata"]')]))
   label_text = "  \n".join([";; ".join(get_paada_labels(x.text)) for x in soup.select('f[name="label"]')])
-  vedaweb_annotation = f"## Strata\n{strata_text}\n\n## Pāda-label\n{label_text}\n"
+  vedaweb_annotation = f"#### Strata\n{strata_text}\n\n#### Pāda-label\n{label_text}\n#### Morph\n{morph_details}\n"
   dest_path = os.path.join(Rk.SAMHITA_DIR_STATIC, "vedaweb_annotation", dest_subpath)
   md_file = MdFile(file_path=dest_path)
   md_file.dump_to_file(metadata={"title": title}, content=vedaweb_annotation, dry_run=False)
