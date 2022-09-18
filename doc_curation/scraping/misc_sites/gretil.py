@@ -3,7 +3,7 @@ import itertools
 import logging
 import os
 
-import doc_curation.md.content_processor.sanskrit_helper
+import doc_curation.utils.sanskrit_helper
 import regex
 from bs4 import BeautifulSoup
 from indic_transliteration import sanscript
@@ -42,7 +42,7 @@ def dump_devanaagarii(source_html, dest_file, overwrite=False):
         text = "  \n".join(list(iast_lines)[1:])
         text = regex.sub("(  \n){3,}", "\n\n", text)
         text = sanscript.transliterate(data=text, _from=sanscript.IAST, _to=sanscript.DEVANAGARI)
-        text = doc_curation.md.content_processor.sanskrit_helper.fix_lazy_anusvaara(text, omit_sam=False, omit_yrl=True, ignore_padaanta=True)
+        text = doc_curation.utils.sanskrit_helper.fix_lazy_anusvaara(text, omit_sam=False, omit_yrl=True, ignore_padaanta=True)
         text = "%s\n\n## पाठः\n%s" % (intro, text)
         out_file = MdFile(file_path=dest_file, frontmatter_type="toml")
         out_file.dump_to_file(metadata=metadata, content=text, dry_run=False)

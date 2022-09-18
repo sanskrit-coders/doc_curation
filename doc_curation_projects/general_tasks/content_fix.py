@@ -1,15 +1,14 @@
-import itertools
 import os
 
 import doc_curation.md.content_processor.embed_helper
 import doc_curation.md.content_processor.footnote_helper
 import doc_curation.md.content_processor.line_helper
-import doc_curation.md.content_processor.sanskrit_helper
+import doc_curation.utils.sanskrit_helper
 import regex
 
-from curation_utils import file_helper
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper, section_helper, details_helper, patterns
+from doc_curation.md.content_processor import include_helper
+from doc_curation.utils import patterns
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
@@ -41,7 +40,7 @@ def fix_footnotes(dir_path):
 def devanaagarify(dir_path, source_script):
   def content_transformer(c, m): 
     c = content_processor.transliterate(text=c, source_script=source_script)
-    c = doc_curation.md.content_processor.sanskrit_helper.fix_lazy_anusvaara(c, omit_sam=True, omit_yrl=True, ignore_padaanta=True)
+    c = doc_curation.utils.sanskrit_helper.fix_lazy_anusvaara(c, omit_sam=True, omit_yrl=True, ignore_padaanta=True)
     c = regex.sub("\n\*\*(\s+)", "\n\\1**", c)
     c = regex.sub("\n[\t	 ]+", "\n> ", c)
     for x in range(1, 20):
@@ -112,7 +111,8 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/articles/homa-variations", content_transformer=lambda x, y: content_processor.fix_plain_footnotes(x))
 
 
-  library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/branches/vaiShNavaH/shrI-sampradAyaH/venkaTanAthaH/rahasya-traya-sAraH/mUlam", patterns=[patterns.DEVANAGARI_MANIPRAVALA_MID_K_L], replacement="ग")
+  library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/branches/vaiShNavaH/shrI-sampradAyaH/venkaTanAthaH/rahasya-traya-sAraH/mUlam", patterns=[
+    patterns.DEVANAGARI_MANIPRAVALA_MID_K_L], replacement="ग")
 
 
 

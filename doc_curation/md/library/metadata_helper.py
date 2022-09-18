@@ -323,6 +323,6 @@ def iti_saptamii_title_extractor(text, conclusion_pattern="इति.+ऽध्�
 def title_from_text(text, num_words=2, target_title_length=50, title_id=None, script=sanscript.DEVANAGARI):
   from doc_curation.md.content_processor.stripper import remove_non_content_text
   text = remove_non_content_text(content=text)
-  from doc_curation import text_utils
+  from doc_curation.utils import text_utils
   title = text_utils.title_from_text(text=text, num_words=num_words, target_title_length=target_title_length, title_id=title_id, script=script)
   return title

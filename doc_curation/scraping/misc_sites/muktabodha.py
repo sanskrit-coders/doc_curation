@@ -1,7 +1,7 @@
 import logging
 import os
 
-import doc_curation.md.content_processor.sanskrit_helper
+import doc_curation.utils.sanskrit_helper
 import regex
 from bs4 import BeautifulSoup, Tag
 from curation_utils import scraping, file_helper
@@ -116,8 +116,8 @@ def process_catalog_page_selenium(url, out_dir):
   text_url = text_links[0].get_attribute("href")
   file = MdFile(file_path=dest_file_path, frontmatter_type="toml")
   text = get_iast_text(url=text_url)
-  text = doc_curation.md.content_processor.sanskrit_helper.fix_lazy_anusvaara(data_in=text, omit_sam=False, omit_yrl=True,
-                                                                              ignore_padaanta=True)
+  text = doc_curation.utils.sanskrit_helper.fix_lazy_anusvaara(data_in=text, omit_sam=False, omit_yrl=True,
+                                                               ignore_padaanta=True)
   text = text.replace("\n", "  \n")
   file.dump_to_file(metadata=metadata, content=text, dry_run=False)
 

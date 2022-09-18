@@ -290,7 +290,7 @@ class MdFile(object):
         title = "%s %s" % (title_index, title)
       title = title.strip()
 
-      from doc_curation import text_utils
+      from doc_curation.utils import text_utils
       short_title = text_utils.title_from_text(text=title, num_words=6, target_title_length=24)
       title_in_file_name = title
       if source_script is not None:

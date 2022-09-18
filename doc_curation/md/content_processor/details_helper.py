@@ -5,12 +5,12 @@ import textwrap
 
 import doc_curation.md.content_processor.line_helper
 import regex
-from bs4 import NavigableString, BeautifulSoup
+from bs4 import NavigableString
 
 from doc_curation.md.file import MdFile
-from doc_curation.scraping.html_scraper import souper
 from indic_transliteration import sanscript
 from doc_curation.md import content_processor
+from bs4 import BeautifulSoup, NavigableString
 
 
 class Detail(object):
@@ -32,6 +32,15 @@ class Detail(object):
     if attributes_str.strip() != "":
       attributes_str = " " + attributes_str
     return f"<details{attributes_str}><summary>{title}</summary>\n\n{self.content.strip()}\n</details>"
+
+  def to_soup(self):
+    return BeautifulSoup(self.to_html(), 'html.parser')
+
+  @classmethod
+  def from_soup_tag(cls, detail_tag):
+    title = detail_tag.select_one("summary").text.strip()
+    detail_text = "".join([x.text for x in list(detail_tag.children)[1:]]).strip()
+    return Detail(type=title, content=detail_text)
 
 
 def interleave_from_file(md_file, source_file, dest_pattern="[^\d०-९೦-೯]([\d०-९೦-೯]+) *॥.*(?=\n|$)", source_pattern="(?<=\n|^)([\d०-९೦-೯]+).+\n", detail_title="English", dry_run=False):
@@ -77,7 +86,7 @@ def interleave_from_file(md_file, source_file, dest_pattern="[^\d०-९೦-೯]
   source_md.replace_content_metadata(new_content=source_content, dry_run=dry_run)
 
 
-def transform_details_with_soup(content, metadata, transformer, *args, **kwargs):
+def transform_details_with_soup(content, metadata, transformer, title=None, *args, **kwargs):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
     return content
@@ -85,9 +94,11 @@ def transform_details_with_soup(content, metadata, transformer, *args, **kwargs)
   if soup is None:
     return content
   details = soup.select("body>details")
-  for detail in details:
-    transformer(detail, *args, **kwargs)
-    detail.insert_after("\n")
+  for detail_tag in details:
+    detail = Detail.from_soup_tag(detail_tag=detail_tag)
+    if title is None or title == detail.type:
+      transformer(detail_tag, *args, **kwargs)
+    detail_tag.insert_after("\n")
   return content_processor._make_content_from_soup(soup=soup)
 
 
@@ -103,11 +114,13 @@ def extract_details_from_file(md_file):
 
 def insert_after_detail(content, metadata, title, new_element):
   # Stray usage of < can fool the soup parser. Hence the below.
-  if "details" not in content:
+  if "details" not in content or title not in content:
     return content
   soup = content_processor._soup_from_content(content=content, metadata=metadata)
   if soup is None:
     return content
+  if isinstance(new_element, str):
+    new_element = BeautifulSoup(new_element, 'html.parser')
   details = soup.select("details")
   for detail in details:
     if detail.select_one("summary").text.strip() == title:
@@ -121,15 +134,16 @@ def insert_after_detail(content, metadata, title, new_element):
 def get_detail(content, metadata, title):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
-    return None
+    return (None, None)
   soup = content_processor._soup_from_content(content=content, metadata=metadata)
   if soup is None:
-    return None
+    return (None, None)
   details = soup.select("details")
-  for detail in details:
-    if detail.select_one("summary").text.strip() == title:
-      return "".join([x.text for x in list(detail.children)[1:]])
-  return None
+  for detail_tag in details:
+    detail = Detail.from_soup_tag(tag=detail_tag)
+    if detail.title == title:
+      return (detail_tag, detail)
+  return (None, None)
 
 def rearrange_details(content, metadata, titles, *args, **kwargs):
   # UNTESTED
@@ -152,16 +166,17 @@ def rearrange_details(content, metadata, titles, *args, **kwargs):
   return content_processor._make_content_from_soup(soup=soup)
 
 
-def detail_content_replacer_soup(detail_tag, title, new_text):
+def detail_content_replacer_soup(detail_tag, replacement):
   summary = detail_tag.select_one("summary")
-  if summary.text != title:
-    return
+  detail = Detail.from_soup_tag(detail_tag=detail_tag)
   for x in summary.find_next_siblings():
     x.extract()
   for x in detail_tag.contents:
     if isinstance(x, NavigableString):
       x.extract()
-  summary.insert_after(f"\n\n{new_text}\n")
+  if callable(replacement):
+    replacement = replacement(detail.content)
+  summary.insert_after(f"\n\n{replacement}\n")
 
 
 def vishvAsa_sanskrit_transformer(detail_tag):
@@ -176,7 +191,7 @@ def shlokas_to_muula_viprastuti_details(content, pattern=None):
   if "विश्वास-प्रस्तुतिः" in content:
     return content
   if pattern is None:
-    from doc_curation.md.content_processor import patterns
+    from doc_curation.utils import patterns
     pattern = patterns.PATTERN_2LINE_SHLOKA
   def detail_maker(match):
     shloka = match.group()

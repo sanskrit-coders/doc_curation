@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 
 from curation_utils import file_helper
 from curation_utils.file_helper import get_storage_name
-from doc_curation import text_utils
+from doc_curation.utils import text_utils
 from doc_curation.md import get_md_with_pandoc, library
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper.souper import get_tags_matching_css

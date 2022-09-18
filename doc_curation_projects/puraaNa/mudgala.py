@@ -1,10 +1,3 @@
-import regex
-from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import patterns, include_helper, section_helper, details_helper
-from doc_curation.md.library import metadata_helper
-from doc_curation.md.file import MdFile
-from indic_transliteration import sanscript
-
 CONTENT_DIR = "/home/vvasuki/vishvAsa/purANam/content/mudgala-purANam/"
 
 

@@ -1,5 +1,5 @@
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import patterns
+from doc_curation.utils import patterns
 
 CONTENT_DIR = "/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/saMhitA/sAyaNaH"
 

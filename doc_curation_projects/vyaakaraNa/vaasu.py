@@ -1,18 +1,4 @@
-import itertools
-import os
-
-import doc_curation.md.content_processor.embed_helper
-import doc_curation.md.content_processor.footnote_helper
-import doc_curation.md.content_processor.line_helper
-import doc_curation.md.content_processor.sanskrit_helper
-import regex
-
-from curation_utils import file_helper
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper, section_helper, details_helper, patterns
-from doc_curation.md.file import MdFile
-from doc_curation.md.library import metadata_helper
-from indic_transliteration import sanscript
 
 
 def fix_suutra_ids(dir_path):

@@ -100,13 +100,13 @@ def make_per_src_folder_content_files(dest_path, main_source_path, aux_source_li
 
 def dump_word_cloud(src_path, dest_path, stop_words=None, font_path='siddhanta'):
   from collections import Counter
-  from doc_curation.md.content_processor import patterns
+  from doc_curation.utils import patterns
   from wordcloud import WordCloud, STOPWORDS
   if stop_words is not None:
     stop_words = set(stop_words)
     stop_words.update(STOPWORDS)
   wc = WordCloud(width=1600, height=800, font_path=font_path, stopwords=stop_words, regexp=patterns.DEVANAGARI_OR_LATIN_WORD)
-  counts_map = apply_function(fn=patterns.get_word_count, dir_path=src_path, wc=wc)
+  counts_map = apply_function(fn=doc_curation.text_utils.get_word_count, dir_path=src_path, wc=wc)
   counts = Counter()
   for file_path, file_counts in counts_map.items():
     counts.update(file_counts)

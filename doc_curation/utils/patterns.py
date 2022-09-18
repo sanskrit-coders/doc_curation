@@ -3,6 +3,7 @@ PATTERN_SHLOKA = r"(?<=\n)([^#\s<>\[\(][\s\S]+?)॥\s*([०-९\d\.]+)\s*॥.*?(
 PATTERN_2LINE_SHLOKA = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।  +\n([^#\s<>\[\(][ \S]+?)॥\s*([०-९\d\.]+)\s*॥.*?(?=\n|$)"
 
 FOOTNOTE_DEFINITION = r"\n(\[\^.+?\]):[\s\S]+?(?=[\n\[])"
+SUMMARY = r"<summary>.+?</summary>"
 
 JS_COMMENTS = r"\+\+\+\([\s\S]+?\)\+\+\+"
 
@@ -12,15 +13,13 @@ DEVANAGARI_NON_DIGITS_NON_DANDA = r"[\u0900-ॣ॰-ॿ]"
 DEVANAGARI_OR_LATIN_WORD = r"[\u0900-\u097F\w]+"
 DEVANAGARI_NON_MATRA = r"[\u0900-हॐ-ॡॲ-ॿ़]"
 DEVANAGARI_MATRA = r"[ऺऻा-ॏॢॣ]"
+DEVANAGARI_YOGAVAHA = "[\u0900-\u0903\uA8F2-\uA8F7ᳩ-ᳶ]"
+DEVANAGARI_MATRA_YOGAVAHA = r"[ऺऻा-ॏॢॣ\u0900-\u0903\uA8F2-\uA8F7ᳩ-ᳶ]"
 DEVANAGARI_DIGITS = "[०-९]"
+DEVANAGARI_DANDAS = "[।॥]"
 LOWER_CASE_ISO = "[a-zāīūṛr̥ēōṅñṇṭḍṣśḷṁṃḥḻṉṟäü]"
 UPPER_CASE_ISO = "[A-ZĀĪŪṚR̥ĒŌṄÑṆṬḌṢŚḶṀṂḤḺṈṞÜ]"
+SVARAS = "[।॥॒॑᳐-᳨᳷-᳹꣠-꣱]"
 
 DEVANAGARI_MANIPRAVALA_MID_K_L = f"(?<=[^\s्])क(?={DEVANAGARI_MATRA}?ळ)"
 
-def get_word_count(md_file, wc=None):
-  if wc is None:
-    from wordcloud import WordCloud
-    wc = WordCloud()
-  (metadata, content) = md_file.read()
-  return wc.process_text(content)

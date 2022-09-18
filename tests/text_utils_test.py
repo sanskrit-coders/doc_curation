@@ -1,4 +1,4 @@
-from doc_curation import text_utils
+from doc_curation.utils import text_utils
 
 
 def test_remove_parenthized_text():

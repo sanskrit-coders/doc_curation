@@ -6,7 +6,11 @@ from indic_transliteration import sanscript
 def remove_non_content_text(content, remove_parenthized_text=True):
   # For correct regex matching.
   content = "\n%s\n\n" % content
-  from doc_curation.md.content_processor import patterns
+  from doc_curation.utils import patterns
+  # remove summary tags
+  content = regex.sub(patterns.SUMMARY, "", content)
+  # Remove remaining tags
+  content = regex.sub("<[^>\n]+?>", "", content)
   # remove footnote definitions
   content = regex.sub(patterns.FOOTNOTE_DEFINITION, "", content)
   # Remove footnote markers

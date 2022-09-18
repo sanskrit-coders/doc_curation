@@ -1,7 +1,7 @@
-import doc_curation.md.content_processor.sanskrit_helper
 from indic_transliteration import sanscript
 import regex
-
+import editdistance
+from doc_curation.utils import patterns
 
 def remove_parenthized_text(text):
   text = regex.sub(r"\[[^\]]+?\]", "", text)
@@ -12,7 +12,7 @@ def remove_parenthized_text(text):
 
 def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True, title_id=None, script=sanscript.DEVANAGARI):
   from indic_transliteration import detect
-  from doc_curation.md.content_processor.sanskrit_helper import fix_lazy_anusvaara
+  from doc_curation.utils.sanskrit_helper import fix_lazy_anusvaara
   if script is None:
     script = detect.detect(text=text)
   if depunctuate:
@@ -33,3 +33,25 @@ def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True,
   if title_id is not None:
     title = "%s %s" % (title_id, title)
   return title
+
+
+def normalized_edit_distance(a, b, strip_svaras):
+  a = regex.sub("\s", "", a)
+  b = regex.sub("\s", "", b)
+  if strip_svaras:
+    a = regex.sub(fr"{patterns.DEVANAGARI_DANDAS}|{patterns.SVARAS}|{patterns.DEVANAGARI_DIGITS}|[\.\(\)\[\],;]", "", a)
+    b = regex.sub(fr"{patterns.DEVANAGARI_DANDAS}|{patterns.SVARAS}|{patterns.DEVANAGARI_DIGITS}|[\.\(\)\[\],;]", "", b)
+  return round(editdistance.eval(a, b)/max(len(a), len(b)), 3)
+
+
+def edit_distance_match(a, b, cutoff=.1, strip_svaras=True):
+  distance = normalized_edit_distance(a=a, b=b, strip_svaras=strip_svaras)
+  return (distance < cutoff, distance)
+
+
+def get_word_count(md_file, wc=None):
+  if wc is None:
+    from wordcloud import WordCloud
+    wc = WordCloud()
+  (metadata, content) = md_file.read()
+  return wc.process_text(content)

@@ -3,7 +3,7 @@ import regex
 
 def fix_iast_gb(text):
   # When Google Drive api is used to extract text from copy-pasteable pdfs, certain replacements are needed to recover proper text.
-  from doc_curation.md.content_processor import patterns
+  from doc_curation.utils import patterns
   text = regex.sub(f"(n *\. *)(?={patterns.LOWER_CASE_ISO})", "ṇ", text)
   text = regex.sub(f"(N *\. *)(?={patterns.UPPER_CASE_ISO})", "Ṇ", text)
 

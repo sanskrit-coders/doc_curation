@@ -10,8 +10,9 @@ from curation_utils import file_helper
 from doc_curation import book_data
 from doc_curation.md import library, get_md_with_pandoc
 import roman_numerals
-
+from doc_curation_projects.veda import atharva
 from doc_curation.md.file import MdFile
+from doc_curation.md.content_processor import details_helper
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.html_scraper.souper import get_html, get_md_paragraphs_with_pandoc, get_md_paragraph
 
@@ -194,9 +195,17 @@ def dump_anukramaNii(dest_dir):
       # md_file.replace_content(new_content=str(commentary), dry_run=False)
       # logging.debug("Commentary for %s: %s", commentary_id, commentary)
 
+def title_to_content_detail(md_file, dry_run=False):
+  [metadata, content] = md_file.read()
+  if 'title_whitney' in metadata:
+    detail = details_helper.Detail(type="Whitney subject", content=metadata['title_whitney'])
+    new_content = f"{detail.to_html(attributes_str='open')}\n\n{content}"
+    md_file.dump_to_file(metadata=metadata, content=new_content, dry_run=dry_run)
+
 
 if __name__ == '__main__':
   # dump_anukramaNii(dest_dir=os.path.join(whitney_dir_base, "anukramaNikA"))
   # dump_kaanda_info(dest_dir=os.path.join(whitney_dir_base, "notes"))
   # dump_suukta_info(dest_dir=os.path.join(whitney_dir_base, "notes"))
-  dump_Rk_info(dest_dir=os.path.join(whitney_dir_base, "notes"))
+  # dump_Rk_info(dest_dir=os.path.join(whitney_dir_base, "notes"))
+  library.apply_function(fn=title_to_content_detail, dir_path=os.path.join(atharva.SAMHITA_DIR_STATIC, "sarvASh_TIkAH"))

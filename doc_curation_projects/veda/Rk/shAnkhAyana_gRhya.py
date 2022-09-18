@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 
 from doc_curation_projects import veda
 from doc_curation_projects.veda import suutra
-from doc_curation import text_utils
+from doc_curation.utils import text_utils
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import section_helper, include_helper
 from doc_curation.md.file import MdFile
