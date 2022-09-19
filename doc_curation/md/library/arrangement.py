@@ -36,7 +36,7 @@ def defolderify_single_md_dirs(dir_path, dry_run=False):
     os.rmdir(dir_path)
 
 
-def shift_contents(dir_path, substitute_content_offset, start_index=None, end_index=None, index_position=0, dry_run=False):
+def shift_contents(dir_path, substitute_content_offset, start_index=None, end_index=None, index_position=0, replacer=lambda md_file, content: md_file.replace_content_metadata(new_content=content, dry_run=False)):
   files = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
   files.sort()
   index_to_content_original = {}
@@ -59,7 +59,7 @@ def shift_contents(dir_path, substitute_content_offset, start_index=None, end_in
       if offset_index in index_to_content_original.keys():
         content = index_to_content_original[offset_index]
         md_file = index_to_md_file[index]
-        md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
+        replacer(md_file, content)
 
 
 def shift_indices(dir_path, new_index_offset, start_index=1, end_index=9999, index_position=0, dry_run=False):

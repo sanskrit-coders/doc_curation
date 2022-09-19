@@ -22,7 +22,7 @@ ref_dir = "/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/baudhAya
 @functools.lru_cache
 def get_suutra_id_to_md():
   suutra_id_to_md = {}
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path=ref_dir, file_pattern="**/[0-9][0-9]*.md")
+  md_files = arrangement.get_md_files_from_path(dir_path=ref_dir, file_pattern="**/[0-9][0-9]*.md")
   for md_file in md_files:
     file_path = str(md_file.file_path)
     match = regex.search(pattern=r"(\d)/(\d\d)/(\d\d)/(\d\d)_", string=file_path)
@@ -34,7 +34,7 @@ def get_suutra_id_to_md():
 
 
 def fix_includes():
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/baudhAyanaH/dharma-sUtram/sarva-prastutiH", file_pattern="**/[0-9][0-9]*.md")
+  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/baudhAyanaH/dharma-sUtram/sarva-prastutiH", file_pattern="**/[0-9][0-9]*.md")
 
 
   def include_fixer(match):
@@ -66,7 +66,7 @@ def suutra_include_maker(suutra_id_dev, text_path, *args, **kwargs):
 
 
 def replace_suutraid_with_includes():
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/baudhAyanaH/dharma-sUtram/viShaya-vibhAgaH")
+  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/baudhAyanaH/dharma-sUtram/viShaya-vibhAgaH")
   for md_file in md_files:
     include_helper.migrate_and_replace_texts(md_file=md_file, text_patterns=[r"(?<=[^०-९]|^)[०-९]+(?=[^०-९]|$)"], replacement_maker=suutra_include_maker, migrated_text_processor=None, destination_path_maker=lambda *args, **kwargs: None, title_maker=lambda *args, **kwargs: None, dry_run=False)
 
@@ -111,7 +111,7 @@ def buhler_dest_path_maker(url, base_dir):
 
 def fix_buhler():
   base_dir = ref_dir.replace("vishvAsa-prastutiH", "buhler")
-  doc_curation.md.library.arrangement.shift_contents(os.path.join(base_dir, "2/06/13/"), start_index=3, substitute_content_offset=1)
+  arrangement.shift_contents(os.path.join(base_dir, "2/06/13/"), start_index=3, substitute_content_offset=1)
   os.remove(os.path.join(base_dir, "2/06/13/13.md"))
 
 

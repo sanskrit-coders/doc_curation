@@ -19,7 +19,7 @@ def dump_svaasthya_posts(sheet_index, sheet_title_optitrans):
   with codecs.open("/home/vvasuki/vishvAsa/rahashtippanyah/content/ghaTanAH/svAsthyam/full_data.json", "r") as sheet_json:
     full_sheet = json.load(sheet_json)
     json_importer.dump_posts(objs=full_sheet[sheet_index], dest_dir=os.path.join(base_dir, sheet_title_optitrans), post_field_to_json_field=post_field_to_json_field, section_fields=section_fields, dry_run=False)
-  doc_curation.md.library.arrangement.fix_index_files(dir_path=base_dir)
+  arrangement.fix_index_files(dir_path=base_dir)
 
 
 if __name__ == '__main__':

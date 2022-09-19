@@ -38,7 +38,7 @@ def migrate_and_include_shlokas():
 
 def read_RV_map():
   rv_muula = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/mUlam"
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path=rv_muula, file_pattern="**/[0-9][0-9]*.md")
+  md_files = arrangement.get_md_files_from_path(dir_path=rv_muula, file_pattern="**/[0-9][0-9]*.md")
   rv_map = {}
   for md_file in md_files:
     (metadata, content) = md_file.read()
@@ -60,7 +60,7 @@ def proximal_RV_text(saama_text, rv_map):
 
 def link_rv_texts():
   saama_muula = "/home/vvasuki/vishvAsa/vedAH/static/sAma/kauthumam/saMhitA/mUlam"
-  muula_md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path=saama_muula, file_pattern="**/[0-9][0-9]*.md")
+  muula_md_files = arrangement.get_md_files_from_path(dir_path=saama_muula, file_pattern="**/[0-9][0-9]*.md")
   rv_map = read_RV_map()
   unmatched_files = []
   for muula_md in muula_md_files:

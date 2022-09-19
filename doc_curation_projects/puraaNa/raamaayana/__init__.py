@@ -7,7 +7,7 @@ from doc_curation.md import library
 
 
 def get_adhyaaya_md_files(md_file_path):
-    md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path=md_file_path, file_pattern="**/*.md", file_name_filter=lambda x: regex.match("^\\d\\d\\d_", os.path.basename(x)) is not None)
+    md_files = arrangement.get_md_files_from_path(dir_path=md_file_path, file_pattern="**/*.md", file_name_filter=lambda x: regex.match("^\\d\\d\\d_", os.path.basename(x)) is not None)
     return md_files
 
 

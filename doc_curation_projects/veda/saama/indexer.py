@@ -64,7 +64,7 @@ def check_format(md_file):
 
 
 def set_uttaraarchika_saMhitaa_indices():
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/sAma/kauthumam/saMhitA/4_uttarArchikaH", file_pattern="**/[0-9].md")
+  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/sAma/kauthumam/saMhitA/4_uttarArchikaH", file_pattern="**/[0-9].md")
   logging.info("Processing %d files.", len(md_files))
   final_index = 650
   from tqdm import tqdm

@@ -75,13 +75,13 @@ def fix_metadata_and_filename(dry_run=False):
 
 def make_audio_mds():
   mp3_path = "/home/vvasuki/Music/kumAra-vyAsa-bhArata_gaNaka-pariShat/mp3"
-  sub_path_to_reference = doc_curation.md.library.arrangement.get_sub_path_to_reference_map(ref_dir=main_source_path)
+  sub_path_to_reference = arrangement.get_sub_path_to_reference_map(ref_dir=main_source_path)
   target_dir = os.path.join(os.path.dirname(main_source_path), "vAchana")
 
   def id_maker(x):
     id = os.path.basename(x).replace(".mp3", "")
     id = id.replace("__", "/")
-    id = doc_curation.md.library.arrangement.get_sub_path_id(sub_path=id)
+    id = arrangement.get_sub_path_id(sub_path=id)
     return id
 
   import glob

@@ -35,12 +35,17 @@ def audio_saver(soup, dest_path):
   with open(dest_path_audio, 'wb') as f:
     f.write(audio_doc.content)
 
+def fix_jaatya_svarita(text):
+  text = regex.sub(f"([यव]{patterns.DEVANAGARI_MATRA_YOGAVAHA}*)", r"\1᳡", text)
+  text = regex.sub("᳡([ःं])", "\1᳡", text)
+  text = text.replace("[᳡]ऽ", "ऽ").replace("", "३॒॑").replace("", "१॒॑")
+  return text
+
 
 def check_mantra_match(soup, dest_path):
   if "atharva" in dest_path:
     mantra = soup.select_one("div.block-mantra").text.strip()
-    mantra = regex.sub(f"([यव]{patterns.DEVANAGARI_MATRA_YOGAVAHA}*)", r"\1᳡", mantra)
-    mantra = mantra.replace("᳡ऽ", "ऽ").replace("", "३॒॑").replace("", "१॒॑")
+    mantra = fix_jaatya_svarita(mantra)
   else:
     mantra = soup.select_one("div.block-mantra").text.strip().replace("", "ऽ")
   md_file = MdFile(file_path=dest_path.replace("sarvASh_TIkAH", "mUlam"))
@@ -58,27 +63,30 @@ def dump_mantra(dest_path, url, comment_detection_str, mode=ForceMode.NONE):
     logging.warning(f"Skipping dump for {url}")
     return next_url
 
-  (has_match, mantra, distance) = check_mantra_match(soup=soup, dest_path=dest_path)
-  if (has_match or (ForceMode.MANTRA & mode)) and distance != 0:
-    md_file = MdFile(file_path=dest_path.replace("sarvASh_TIkAH", "mUlam"))
-    md_file.replace_content_metadata(new_content=mantra)
-  if not (ForceMode.COMMENT & mode) and not has_match:
-    logging.warning(f"Could not match mantra: {url}, {dest_path}")
-    return next_url
+  md_file = MdFile(file_path=dest_path)
   if not os.path.exists(dest_path):
     logging.warning(f"Not found! {dest_path}")
-    return next_url
-  md_file = MdFile(file_path=dest_path)
-  [metadata, content] = md_file.read()
+    content = ""
+    # return next_url
+  else:
+    [metadata, content] = md_file.read()
+    (has_match, mantra, distance) = check_mantra_match(soup=soup, dest_path=dest_path)
+    if (has_match or (ForceMode.MANTRA & mode)) and distance != 0:
+      md_mantra = MdFile(file_path=dest_path.replace("sarvASh_TIkAH", "mUlam"))
+      md_mantra.replace_content_metadata(new_content=mantra)
+    if not (ForceMode.COMMENT & mode) and not has_match:
+      logging.warning(f"Could not match mantra: {url}, {dest_path}")
+      return next_url
 
 
   if comment_detection_str in content:
-    logging.info(f"Skipping: {url}")
+    # logging.info(f"Skipping: {url}")
     # md_file.transform(content_transformer=lambda c, m: details_helper.insert_after_detail(content=c, metadata=m, title="पदपाठः", new_element=comment_details[-1].to_soup()))
     return next_url
 
   pada_paaTha = soup.select_one("div.block-pad p").text
   pada_paaTha = regex.sub(" *[।॥] *", "। ", pada_paaTha).replace(":", "ः")
+  pada_paaTha = fix_jaatya_svarita(text=pada_paaTha)
   audio_saver(soup=soup, dest_path=dest_path)
   comments_div = soup.select_one("div.bhashya_show")
 
@@ -105,7 +113,10 @@ def dump_mantra(dest_path, url, comment_detection_str, mode=ForceMode.NONE):
     comment_details.append(details_helper.Detail(type=f"{title} - पादटिप्पनी", content=footnote))
     
   new_content = "\n\n".join([x.to_html() for x in comment_details])
-  md_file.replace_content_metadata(new_content=f"{content}\n\n{new_content}")
+  if not os.path.exists(dest_path):
+    md_file.dump_to_file(metadata={}, content=new_content, dry_run=False)
+  else:
+    md_file.replace_content_metadata(new_content=f"{content}\n\n{new_content}")
   return next_url
 
 
@@ -114,5 +125,8 @@ def dump_sequence(url, path_maker, comment_detection_str, max_mantras=99999):
   while url is not None and num_mantras <= max_mantras:
     (dest_path, mode) = path_maker(url)
     next_url = dump_mantra(dest_path=dest_path, url=url, comment_detection_str=comment_detection_str, mode=mode)
+    if url == next_url:
+      logging.info(f"Finished at {url}")
+      break
     url = next_url
     num_mantras += 1

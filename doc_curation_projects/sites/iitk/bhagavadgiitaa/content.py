@@ -31,7 +31,7 @@ def title_from_folder_path(folder_path):
 
 def make_content_files(base_dir):
   static_dir_base = base_dir.replace("/content/", "/static/")
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path=base_dir, file_pattern="**/*.md", file_name_filter=lambda x: regex.match("^\\d\\d_", os.path.basename(x)) is not None)
+  md_files = arrangement.get_md_files_from_path(dir_path=base_dir, file_pattern="**/*.md", file_name_filter=lambda x: regex.match("^\\d\\d_", os.path.basename(x)) is not None)
   for md_file in md_files:
     content = ""
     file_path = md_file.file_path

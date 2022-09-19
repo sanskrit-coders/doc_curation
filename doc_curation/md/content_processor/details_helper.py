@@ -140,10 +140,16 @@ def get_detail(content, metadata, title):
     return (None, None)
   details = soup.select("details")
   for detail_tag in details:
-    detail = Detail.from_soup_tag(tag=detail_tag)
-    if detail.title == title:
+    detail = Detail.from_soup_tag(detail_tag=detail_tag)
+    if detail.type == title:
       return (detail_tag, detail)
   return (None, None)
+
+
+def replace_with_detail_from_content(md_file, content, title, dry_run=False):
+  (detail_tag, detail) = get_detail(content=content, metadata={'_file_path': md_file.file_path}, title=title)
+  md_file.transform(content_transformer=lambda c, m: transform_details_with_soup(content=c, metadata=m, transformer=detail_content_replacer_soup, title=title, replacement=detail.content), dry_run=dry_run)
+
 
 def rearrange_details(content, metadata, titles, *args, **kwargs):
   # UNTESTED

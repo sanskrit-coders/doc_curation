@@ -235,9 +235,9 @@ def include_basename_fixer(inc, ref_dir):
   :param ref_dir: 
   :return: 
   """
-  sub_path_to_reference = doc_curation.md.library.arrangement.get_sub_path_to_reference_map(ref_dir=ref_dir)
+  sub_path_to_reference = arrangement.get_sub_path_to_reference_map(ref_dir=ref_dir)
   url = inc["url"]
-  sub_path_id = doc_curation.md.library.arrangement.get_sub_path_id(regex.sub(".+?/%s(/.+)" % os.path.basename(ref_dir), "\\1", url))
+  sub_path_id = arrangement.get_sub_path_id(regex.sub(".+?/%s(/.+)" % os.path.basename(ref_dir), "\\1", url))
   base_url = regex.sub("(.+?/%s)/.+" % os.path.basename(ref_dir), "\\1", url)
   new_sub_path = regex.sub(".+?/%s(/.+)" % os.path.basename(ref_dir), "\\1", str(sub_path_to_reference[sub_path_id].file_path))
   new_url = os.path.abspath(base_url + new_sub_path)
@@ -245,7 +245,7 @@ def include_basename_fixer(inc, ref_dir):
 
 
 def include_core_with_commentaries(dir_path, alt_dirs, file_pattern="**/*.md", source_dir="vishvAsa-prastutiH"):
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
+  md_files = arrangement.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
   md_files = [f for f in md_files if os.path.basename(f.file_path) ]
 
   def include_fixer(inc):

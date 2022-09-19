@@ -20,14 +20,14 @@ def fix_filenames():
     if base_name == "_index.md":
       return None
     elif "_" in base_name:
-      return doc_curation.md.library.arrangement.get_sub_path_id(sub_path=regex.sub(".+/", "", str(x)), basename_id_pattern=r"(\d\du?_\d\d)")
+      return arrangement.get_sub_path_id(sub_path=regex.sub(".+/", "", str(x)), basename_id_pattern=r"(\d\du?_\d\d)")
     else:
       return "%s_%s" % (os.path.basename(os.path.dirname(x)), base_name.replace(".md", ""))
   metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/gobhila/gRhyam/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
 
 
 def fix_includes():
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/gobhila/gRhyam/sUtra-TIkAH", file_pattern="[0-9][0-9]*.md")
+  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/gobhila/gRhyam/sUtra-TIkAH", file_pattern="[0-9][0-9]*.md")
   md_files = [f for f in md_files if os.path.basename(f.file_path) ]
   
   def include_fixer(match):
@@ -57,7 +57,7 @@ def fix_buhler():
   base_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/gobhila/gRhyam/oldenberg/11"
   # Merge 11, 12
   # library.shift_contents(base_dir, start_index=12, new_content_offset=1)
-  doc_curation.md.library.arrangement.shift_contents(base_dir, start_index=23, substitute_content_offset=1)
+  arrangement.shift_contents(base_dir, start_index=23, substitute_content_offset=1)
   os.remove(os.path.join(base_dir, "25.md"))
   os.remove(os.path.join(base_dir, "26.md"))
   

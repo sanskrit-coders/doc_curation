@@ -29,7 +29,7 @@ def dump_naatyashaastra():
     dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/mixed/cu-sarit/Abhinavabhāratī/nāṭyaśāstra-%02d/abhinavabhāratī_%02d-dn.xml" % (index, index), md_path="/home/vvasuki/vishvAsa/kAvyam/content/shAstram/nATyam/nATyashAstram/abhinavabhAratI/%02d.md" % (index))
     dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/mixed/cu-sarit/Abhinavabhāratī/nāṭyaśāstra-%02d/nāṭyaśāstra_%02d-dn.xml" % (index, index), md_path="/home/vvasuki/vishvAsa/kAvyam/content/shAstram/nATyam/nATyashAstram/mUlam/%02d.md" % (index))
 
-  doc_curation.md.library.arrangement.fix_index_files("/home/vvasuki/vishvAsa/kAvyam/content/shAstram/nATyam/", dry_run=False)
+  arrangement.fix_index_files("/home/vvasuki/vishvAsa/kAvyam/content/shAstram/nATyam/", dry_run=False)
 
 
 def dump_shRngaaraprakaasha():

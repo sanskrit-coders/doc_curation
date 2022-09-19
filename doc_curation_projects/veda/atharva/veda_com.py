@@ -1,8 +1,11 @@
 from doc_curation.scraping.misc_sites import veda_com
 from doc_curation.scraping.misc_sites.veda_com import ForceMode
 from doc_curation_projects.veda import atharva
-import os
+import os, regex, logging
 from doc_curation.md import library, content_processor
+from doc_curation.md.library import arrangement
+from doc_curation.md.content_processor import details_helper
+from urllib.parse import urljoin
 
 
 def path_maker(url):
@@ -19,7 +22,7 @@ def path_maker(url):
       if dest_path_bits[2] < 4:
         remove_paryaayas(dest_path_bits, paryaaya_lengths)
       elif dest_path_bits[2] in [4, 5]:
-        return ("SKIP: mantra_mismatch", False)
+        return (os.path.join(atharva.SAMHITA_DIR_STATIC, f"sarvASh_TIkAH/09/006_atithi-satkAraH/{dest_path_bits[2]}_{dest_path_bits[3]}.md"), ForceMode.COMMENT)
       else:
         dest_path_bits[2] = 48 + dest_path_bits[3]
         # 11/003_odanaH/13_RtaM_hastAvanejanaM 11/003_odanaH/18_charuM_panchabilamukhaM 30_naivAhamodanaM_na .. 56_brahmaNA_mukhena
@@ -48,11 +51,37 @@ def path_maker(url):
       if dest_path_bits[2] in range(15, 21):
         dest_path_bits[2] += 2
       elif dest_path_bits[2] in range(21, 30):
-        dest_path_bits[2] += 4      
-        
+        dest_path_bits[2] += 4
+    if dest_path_bits[1] == 5:
+      mantra_map = {5: 5, 7: 8, 9: 11, 11: 14, 13: 17, 15: 20}
+      if dest_path_bits[2] > 4:
+        if dest_path_bits[2] in mantra_map.keys():
+          mode = ForceMode.MANTRA_COMMENT
+          dest_path_bits[2] = mantra_map[dest_path_bits[2]]
+        elif dest_path_bits[2] - 1 in mantra_map.keys() and dest_path_bits[2] - 1 != 15:
+          dest_path_bits[2] = mantra_map[dest_path_bits[2] - 1] + 2
+        else:
+          return ("SKIP: mantra_mismatch", ForceMode.NONE)
+    if dest_path_bits[1] == 6:
+      if dest_path_bits[2] == 22:
+        mode = ForceMode.COMMENT
+      elif dest_path_bits[2] >= 23:
+        dest_path_bits[2] += 1
+  if dest_path_bits[0] == 16:
+    if dest_path_bits[1] == 8:
+      if dest_path_bits[2] > 4:
+        mode = ForceMode.MANTRA_COMMENT
+  if dest_path_bits[0] == 19:
+    if dest_path_bits[1] == 36:
+      mantra_map = {1: 2, 2: 1}
+      if dest_path_bits[2] in mantra_map.keys():
+        dest_path_bits[2] = mantra_map[dest_path_bits[2]]
+
   dest_path_suffix = "%02d/%03d/%02d" % (dest_path_bits[0], dest_path_bits[1], dest_path_bits[2])
-  if dest_path_suffix in ["03/024/03", "05/026/08", "05/026/11", "13/006/04", "13/008/05", "13/008/06"] or dest_path_suffix[0:6] in ["06/139", "07/011", "09/006"]:
-    mode = True
+  if dest_path_suffix in ["03/024/03", "05/026/08", "05/026/11", "13/006/04", "13/008/05", "13/008/06", "18/004/13"] or dest_path_suffix[0:6] in ["06/139", "07/011", "09/006"]:
+    mode = ForceMode.MANTRA_COMMENT
+  if dest_path_suffix in ["15/014/03", "19/023/03", "20/132/05", "20/134/05"]:
+    mode = ForceMode.COMMENT
   dest_path = os.path.join(atharva.SAMHITA_DIR_STATIC, "sarvASh_TIkAH", Rk_id_to_name_map[dest_path_suffix]) + ".md"
   return (dest_path, mode)
 
@@ -66,13 +95,20 @@ def remove_paryaayas(dest_path_bits, paryaaya_lengths):
 
 
 def fix_typos():
-  library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=[""], replacement="३॒॑")
-  library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=[""], replacement="१॒॑")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=[""], replacement="३॒॑")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=[""], replacement="१॒॑")
+  library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=["[᳡]ऽ"], replacement="ऽ")
+
+def check_completeness():
+  matches = library.list_matching_files(dir_path=atharva.TIKA_DIR, content_condition=lambda x: "पदपाठः" not in x, file_name_filter=lambda x: not str(x).endswith("_index.md"))
+  matches = [regex.sub("_.+?(?=/|$)", "", x).replace("/0", "/") for x in matches]
+  matches = [regex.sub("(/\d+)$", r"/0\1", x) for x in matches]
+  matches = [urljoin("https://xn--j2b3a4c.com/atharvaveda/", x[1:]) for x in matches]
+  logging.info("\n".join(matches))
 
 
 if __name__ == '__main__':
-  # 19_hetiH_shaphAnutkhidantI.md 32_aghaM_pachyamAnA.md  40_asvagatA_parihNutA.md 57_AdAya_jItaM.md 59_meniH_sharavyA_a.md 
-  # 13/004_adhyAtmam/03_sa_dhAtA.md  - 07_pashchAt_prAncha
+  pass
 
   # fix_typos()
   # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/3/24/0/3", path_maker=path_maker, max_mantras=1)
@@ -80,7 +116,14 @@ if __name__ == '__main__':
   # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/6/139/0/1", path_maker=path_maker, max_mantras=10)
   # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/7/11/0/1", path_maker=path_maker, max_mantras=1)
   # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/8/10/1/1", path_maker=path_maker, max_mantras=88)
-  # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/9/6/4/1", path_maker=path_maker, max_mantras=88)
-  
-  veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/15/5/0/1", comment_detection_str="क्षेमकरणदास", path_maker=path_maker, max_mantras=21)
-  # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/15/2/0/1", comment_detection_str="क्षेमकरणदास", path_maker=path_maker)
+  # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/9/6/4/1", path_maker=path_maker, max_mantras=20, comment_detection_str="क्षेमकरणदास")
+
+  # arrangement.shift_contents(os.path.join(atharva.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Whitney", dry_run=False))
+  # arrangement.shift_contents(os.path.join(atharva.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Griffith", dry_run=False))
+
+  # check_completeness()
+  veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/20/132/0/5", comment_detection_str="पदपाठः", path_maker=path_maker, max_mantras=1)
+  veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/20/134/0/5", comment_detection_str="पदपाठः", path_maker=path_maker, max_mantras=1)
+  # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/15/14/0/3", comment_detection_str="पदपाठः", path_maker=path_maker, max_mantras=21)
+  # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/16/9/0/1", comment_detection_str="क्षेमकरणदास", path_maker=path_maker)
+

@@ -12,7 +12,7 @@ from indic_transliteration import sanscript
 
 
 def fix_includes():
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/kAlidAsaH/raghuvaMsham/mallinAthaH", file_pattern="[0-9][0-9]*.md")
+  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/kAlidAsaH/raghuvaMsham/mallinAthaH", file_pattern="[0-9][0-9]*.md")
 
   for md_file in md_files:
     include_helper.transform_include_lines(md_file=md_file, transformer=old_include_remover)

@@ -5,7 +5,7 @@ from indic_transliteration import sanscript
 
 def combine_files():
   library.apply_function(fn=combine_files_in_dir, dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA/", file_pattern="**/_index.md", dry_run=False)
-  doc_curation.md.library.arrangement.defolderify_single_md_dirs(dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA/", dry_run=False)
+  arrangement.defolderify_single_md_dirs(dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA/", dry_run=False)
 
 
 if __name__ == '__main__':

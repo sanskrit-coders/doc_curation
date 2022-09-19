@@ -64,5 +64,5 @@ if __name__ == '__main__':
   #   content_transformer=None,
   #   metadata_transformer=lambda c, m: metadata_helper.add_value_to_field(m, "unicode_script", "kannada"),
   #   dry_run=False)
-  doc_curation.md.library.arrangement.fix_index_files(dir_path=dest_path, dry_run=False)
+  arrangement.fix_index_files(dir_path=dest_path, dry_run=False)
   pass

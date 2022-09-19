@@ -13,7 +13,7 @@ translations = translations.set_index("id")
 
 
 def dump(dest_dir):
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path=dest_dir, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d", os.path.basename(x))) > 0)
+  md_files = arrangement.get_md_files_from_path(dir_path=dest_dir, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d", os.path.basename(x))) > 0)
   for md_file in md_files:
     path_parts = regex.match(".+(\d\d)/(\d\d\d)/(\d\d)_", str(md_file.file_path))
     if path_parts is None:
@@ -27,7 +27,7 @@ def dump(dest_dir):
     # logging.debug("Commentary for %s: %s", commentary_id, commentary)
 
 def dump_suukta_info(dest_dir):
-  md_files = doc_curation.md.library.arrangement.get_md_files_from_path(dir_path=dest_dir, file_pattern="**/_index.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(os.path.dirname(x)))) > 0)
+  md_files = arrangement.get_md_files_from_path(dir_path=dest_dir, file_pattern="**/_index.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(os.path.dirname(x)))) > 0)
   for md_file in md_files:
     path_parts = regex.match(".+(\d\d)/(\d\d\d)", str(md_file.file_path))
     if path_parts is None:
