@@ -35,7 +35,7 @@ def insert_anukramaNis():
 def fix_padapaatha():
   # library.apply_function(fn=MdFile.transform, dir_path=atharva.TIKA_DIR, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title="पदपाठः", replacement=lambda x: x.replace(":", "ः")))
   library.apply_function(fn=MdFile.transform, dir_path=atharva.TIKA_DIR, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title="पदपाठः", replacement=lambda x: regex.sub(f"([यव]{patterns.DEVANAGARI_MATRA_YOGAVAHA}*)", r"\1᳡", x)))
-  library.apply_function(fn=MdFile.transform, dir_path=atharva.TIKA_DIR, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title="पदपाठः", replacement=lambda x: regex.sub("᳡([ःं])", "\1᳡", x)))
+  library.apply_function(fn=MdFile.transform, dir_path=atharva.TIKA_DIR, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title="पदपाठः", replacement=lambda x: regex.sub("᳡([ःं])", r"\1᳡", x)))
 
 
 def fix_names(dry_run=False):
@@ -53,13 +53,13 @@ def fix_names(dry_run=False):
   dir_path = atharva.MULA_DIR
   # library.apply_function(fn=metadata_helper.add_init_words_to_title, num_words=2, dir_path=dir_path, file_name_filter=lambda x: not os.path.basename(x).startswith("_")) 
   # library.apply_function(dir_path=dir_path, fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, file_name_filter=lambda x: not os.path.basename(x).startswith("_"), dry_run=dry_run)
-
-  # metadata_helper.copy_metadata_and_filename(dest_dir=os.path.join(STATIC_ROOT, "sarvASh_TIkAH"), ref_dir=atharva.MULA_DIR, dry_run=dry_run)
-  # metadata_helper.copy_metadata_and_filename(dest_dir=os.path.join(STATIC_ROOT, "vishvAsa-prastutiH"), ref_dir=atharva.MULA_DIR, dry_run=dry_run)
+  # 
+  metadata_helper.copy_metadata_and_filename(dest_dir=os.path.join(STATIC_ROOT, "sarvASh_TIkAH"), ref_dir=atharva.MULA_DIR, dry_run=dry_run)
+  metadata_helper.copy_metadata_and_filename(dest_dir=os.path.join(STATIC_ROOT, "vishvAsa-prastutiH"), ref_dir=atharva.MULA_DIR, dry_run=dry_run)
 
 
 if __name__ == '__main__':
   pass
-  # fix_names(dry_run=False)
+  fix_names(dry_run=False)
   # insert_anukramaNis()
   # fix_padapaatha()
