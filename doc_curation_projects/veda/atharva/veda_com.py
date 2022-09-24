@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 
 
 def path_maker(url):
+  # Example: https://xn--j2b3a4c.com/atharvaveda/3/24/0/3
   mode = ForceMode.NONE
   Rk_id_to_name_map = atharva.get_Rk_id_to_name_map_from_muulam()
   dest_path_bits = url.split("atharvaveda/")[-1].replace("/0/", "/").split("/")
@@ -94,10 +95,11 @@ def remove_paryaayas(dest_path_bits, paryaaya_lengths):
       dest_path_bits[2] += paryaaya_lengths[x]
 
 
-def fix_typos():
+def fix_muula_typos():
   # library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=[""], replacement="३॒॑")
   # library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=[""], replacement="१॒॑")
   library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=["[᳡]ऽ"], replacement="ऽ")
+
 
 def check_completeness():
   matches = library.list_matching_files(dir_path=atharva.TIKA_DIR, content_condition=lambda x: "पदपाठः" not in x, file_name_filter=lambda x: not str(x).endswith("_index.md"))

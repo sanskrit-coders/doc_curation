@@ -134,7 +134,7 @@ def add_init_words_to_title(md_file, num_words=3, target_title_length=50,script=
   (metadata, content) = md_file.read()
   title = metadata["title"]
   if replace_non_index_text:
-    title = regex.sub("(?<=^[0-9०-९೦-೯]+) +.+", "", title)
+    title = regex.sub("(?<=^[0-9०-९೦-೯_-]+) +.+", "", title)
   extra_title = title_from_text(text=content, num_words=num_words, target_title_length=target_title_length, script=script)
   if extra_title is not None:
     title = "%s %s" % (title.strip(), extra_title)
@@ -239,7 +239,7 @@ def shloka_title_maker(text):
   return title
 
 
-def copy_metadata_and_filename(dest_dir, ref_dir, insert_missign_ref_files=False, sub_path_id_maker=None, dry_run=False):
+def copy_metadata_and_filename(dest_dir, ref_dir, insert_missing_ref_files=False, sub_path_id_maker=None, dry_run=False):
   from doc_curation.md.library import arrangement
   sub_path_to_reference = arrangement.get_sub_path_to_reference_map(ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
   dest_md_files = arrangement.get_md_files_from_path(dir_path=dest_dir)
@@ -254,7 +254,7 @@ def copy_metadata_and_filename(dest_dir, ref_dir, insert_missign_ref_files=False
         pass
         # logging.warning("Could not find %s in ref_dir. Skipping", sub_path_id)
         continue
-      if insert_missign_ref_files:
+      if insert_missing_ref_files:
         target_path = os.path.join(ref_dir, sub_path_id + ".md")
         logging.warning(fr"Inserting missing ref: {sub_path_id}. Fix and rerun.")
         shutil.copy(md_file.file_path, target_path)

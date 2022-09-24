@@ -1,94 +1,135 @@
+import glob
 import logging
 import os
 
-import doc_curation.md.content_processor.stripper
-import doc_curation.md.library.metadata_helper
 import regex
 
 import doc_curation.md.content_processor.include_helper
-import doc_curation.md.library.arrangement
-from doc_curation.md import library, content_processor
+from doc_curation.md import library
 from doc_curation.md.content_processor import include_helper
 from doc_curation.md.file import MdFile
-from doc_curation.md.library import metadata_helper
+from doc_curation.md.content_processor.include_helper import get_include
+from doc_curation.md.library import arrangement
 from indic_transliteration import sanscript
 
-PATTERN_RK = "\n[^#<>\[\(][^॥]+?॥\s*[०-९\d-:]+\s*॥.*?(?=\n|$)"
-PATH_ALL_SAMHITA = "/home/vvasuki/vishvAsa/vedAH/content/sAma/kauthumam/saMhitA/"
+dest_dir_suuktas = "/home/vvasuki/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH"
+dest_dir_static = dest_dir_suuktas.replace("/content/", "/static/").replace("sarva-prastutiH", "")
+dest_dir_suukta_info = os.path.join(dest_dir_static, "info_vh")
+dest_dir_Rks = os.path.join(dest_dir_static, "mUlam")
 
 
-def title_maker(text_matched, index, file_title):
-  title_id = regex.search("॥\s*([०-९\d-:]+)\s*॥", text_matched).group(1)
-  title_id = title_id.replace(":", "_")
-  title = doc_curation.md.library.metadata_helper.title_from_text(text=text_matched, num_words=2, target_title_length=None,
-                                                                  title_id=title_id)
-  return title
 
 
-def migrate_and_include_shlokas():
-
-  def replacement_maker(text_matched, dest_path):
-    return include_helper.vishvAsa_include_maker(dest_path, h1_level=2, title="FILE_TITLE")
-
-  def destination_path_maker(title, original_path):
-    return include_helper.static_include_path_maker(title, original_path, path_replacements={"content": "static", ".md": "", "saMhitA": "saMhitA/mUlam"}, use_preexisting_file_with_prefix=False)
-
-  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[PATTERN_RK], dir_path=PATH_ALL_SAMHITA, destination_path_maker=destination_path_maker, title_maker=title_maker, replacement_maker=replacement_maker, dry_run=False)
-
-
-def read_RV_map():
-  rv_muula = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/mUlam"
-  md_files = arrangement.get_md_files_from_path(dir_path=rv_muula, file_pattern="**/[0-9][0-9]*.md")
-  rv_map = {}
+def set_book_content(dry_run=False):
+  md_files = arrangement.get_md_files_from_path(dir_path=dest_dir_suuktas, file_pattern="**/_index.md", file_name_filter=lambda x: regex.match("\\d\\d", os.path.basename(os.path.dirname(x))))
   for md_file in md_files:
-    (metadata, content) = md_file.read()
-    text = doc_curation.md.content_processor.stripper.get_comparison_text(text=content)
-    rv_map[text] = md_file.file_path
-  logging.info("Got RV map with %d items", len(md_files))
-  return rv_map
-
-
-def proximal_RV_text(saama_text, rv_map):
-  import editdistance
-  rv_texts = list(rv_map.keys())
-  scores = [editdistance.eval(saama_text, rv_text) for rv_text in rv_texts]
-  min_score = min(scores)
-  match = rv_texts[scores.index(min_score)]
-  normalized_score = round(min_score/len(saama_text), 3)
-  return (match, rv_map[match], normalized_score)
-
-
-def link_rv_texts():
-  saama_muula = "/home/vvasuki/vishvAsa/vedAH/static/sAma/kauthumam/saMhitA/mUlam"
-  muula_md_files = arrangement.get_md_files_from_path(dir_path=saama_muula, file_pattern="**/[0-9][0-9]*.md")
-  rv_map = read_RV_map()
-  unmatched_files = []
-  for muula_md in muula_md_files:
-    (metadata, saama_content) = muula_md.read()
-    saama_text = doc_curation.md.content_processor.stripper.get_comparison_text(text=saama_content)
-    saama_text = regex.sub("(.+?)॥.+", "\\1", saama_text)
-    (rv_text, rv_muula_path, score) = proximal_RV_text(saama_text=saama_text, rv_map=rv_map)
-    logging.info("Edit distance: %s, %s to %s", score, os.path.basename(muula_md.file_path), os.path.basename(rv_muula_path))
-    if score > 0.25:
-      logging.info("No match between %s and %s", rv_text, saama_text)
-      unmatched_files.append(str(muula_md.file_path))
+    path_parts = regex.match(".+/(\d\d)/_index\.md", str(md_file.file_path))
+    if path_parts is None:
       continue
-    dest_path = str(muula_md.file_path).replace("mUlam", "vishvAsa-prastutiH")
-    dest_md = MdFile(file_path=dest_path)
-    rv_url = str(rv_muula_path).replace("/home/vvasuki/vishvAsa/vedAH/static", "/vedAH").replace("mUlam", "vishvAsa-prastutiH")
-    metadata["similar_rv"] = rv_url
-    metadata["edit_distance_to_rv"] = score
-    (_, dest_content) = muula_md.read()
-    dest_content = regex.sub("<div[\s\S]]+</div>", "", dest_content)
-    content = "%s\n\n%s" % (dest_content, doc_curation.md.content_processor.include_helper.get_include(url=rv_url, h1_level=2, classes=None, title="विश्वास-शाकल-प्रस्तुतिः"))
-    dest_md.dump_to_file(metadata=metadata, content=content, dry_run=False)
+    book_id = path_parts.group(1)
+    content = ""
 
-  unmatched_files_md = MdFile(file_path=os.path.join(os.path.dirname(saama_muula), "vishvAsa-prastutiH/unmatched.md"))
-  unmatched_files_md.dump_to_file(metadata={"title": "Unmatched files"}, content="\n".join(sorted(unmatched_files)), dry_run=False)
+
+    file_path = os.path.join(dest_dir_static, "sarvASh_TIkAH", book_id + "/_index.md")
+    if os.path.exists(file_path):
+      url = regex.sub(".+?/vedAH/", "/vedAH/", file_path).replace("/static/", "/")
+      content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(field_names=None, classes=None, url=url, h1_level=2)
+
+    md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
+  arrangement.fix_index_files(dir_path=dest_dir_suuktas)
+
+
+def set_suukta_content(dry_run=False):
+  md_files = arrangement.get_md_files_from_path(dir_path=dest_dir_suuktas, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
+  for md_file in md_files:
+    [metadata, _] = md_file.read()
+    path_parts = regex.match(".+(\d\d/\d\d\d.*)\.md", str(md_file.file_path))
+    if path_parts is None:
+      continue
+    suukta_id = path_parts.group(1)
+    rk_file_names = sorted([x for x in os.listdir(os.path.join(dest_dir_Rks, suukta_id)) if x != "_index.md"])
+    content = get_suukta_meta_content(suukta_id)
+
+    for rk_file_name in rk_file_names:
+      content += get_rk_content(rk_file_name, suukta_id)
+
+    md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
+  arrangement.fix_index_files(dir_path=dest_dir_suuktas)
+
+
+def get_suukta_meta_content(suukta_id):
+  content = ""
+  file_path = os.path.join(dest_dir_static, "sarvASh_TIkAH", suukta_id + "/_index.md")
+  if os.path.exists(file_path):
+    url = regex.sub(".+?/vedAH/", "/vedAH/", file_path).replace("/static/", "/")
+    content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(classes=None, url=url,
+                                                                                     h1_level=2)
+
+  return content
+
+
+def get_rk_content(rk_file_name, suukta_id):
+  content = ""
+  file_path = os.path.join(dest_dir_static, "vishvAsa-prastutiH", suukta_id, rk_file_name)
+  md_file_rk = MdFile(file_path=file_path)
+  (metadata, _) = md_file_rk.read()
+  content += "## %s\n" % metadata["title"]
+  url = regex.sub(".+?/vedAH/", "/vedAH/", file_path).replace("/static/", "/")
+  content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(field_names=None, classes=None, title="विश्वास-प्रस्तुतिः", url=url,
+                                                                                   h1_level=3)
+  file_path = os.path.join(dest_dir_static, "mUlam", suukta_id, rk_file_name)
+  url = regex.sub(".+?/vedAH/", "/vedAH/", file_path).replace("/static/", "/")
+  content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(field_names=None, classes=["collapsed"], title="मूलम्", url=url, h1_level=4)
+  file_path = os.path.join(dest_dir_static, "sarvASh_TIkAH", suukta_id, rk_file_name)
+  if os.path.exists(file_path):
+    url = regex.sub(".+?/vedAH/", "/vedAH/", file_path).replace("/static/", "/")
+    content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(field_names=None, classes=None, url=url, h1_level=3)
+  return content
+
+
+def set_suukta_info_to_match(dest_dir, dry_run=False):
+  md_files = arrangement.get_md_files_from_path(dir_path=dest_dir_suukta_info, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
+  for md_file in md_files:
+    [metadata, content] = md_file.read()
+    path_parts = regex.match(".+(\d\d/\d\d\d)", str(md_file.file_path))
+    if path_parts is None:
+      continue
+    suukta_id = path_parts.group(1)
+    dest_md_file = MdFile(file_path=os.path.join(dest_dir, "%s/_index.md" % suukta_id))
+    dest_md_file.dump_to_file(metadata=metadata, content="", dry_run=dry_run)
+    dest_md_file.set_filename_from_title(source_script=sanscript.DEVANAGARI, dry_run=dry_run, skip_dirs=False)
+
+
+def rename_suukta_files(dest_dir, dry_run=False):
+  md_files = arrangement.get_md_files_from_path(dir_path=dest_dir_suukta_info, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
+  for md_file in md_files:
+    path_parts = regex.match(".+(\d\d)/(\d\d\d)", str(md_file.file_path))
+    if path_parts is None:
+      continue
+    kaanda_id = path_parts.group(1)
+    suukta_id = path_parts.group(2)
+    if not os.path.exists(os.path.join(dest_dir, kaanda_id)):
+      continue
+    suukta_file_names = [x for x in os.listdir(os.path.join(dest_dir, kaanda_id)) if x.startswith(suukta_id)]
+    if len(suukta_file_names) != 1:
+      logging.warning("%s/%s %s", kaanda_id, suukta_id, suukta_file_names)
+      continue
+    suukta_path = os.path.join(dest_dir, kaanda_id, suukta_file_names[0])
+    target_base_name = os.path.basename(md_file.file_path)
+    if not suukta_path.endswith(".md"):
+      target_base_name = target_base_name.replace(".md", "")
+    suukta_path_needed = os.path.join(dest_dir, kaanda_id, target_base_name)
+    if os.path.exists(suukta_path) and suukta_path != suukta_path_needed:
+      logging.info("Moving %s to %s", suukta_path, suukta_path_needed)
+      if not dry_run:
+        os.rename(suukta_path, suukta_path_needed)
 
 
 if __name__ == '__main__':
+  # dump_text(base_dir="/home/vvasuki/sanskrit/raw_etexts/vedaH/atharva/shaunaka/saMhitA_VH")
+  # set_suukta_content()
+  # set_book_content()
+  # include_helper.prefill_includes(dir_path=dest_dir_suuktas)
+  # rename_suukta_files(dest_dir=os.path.join(dest_dir_static, "whitney/notes"), dry_run=False)
+  # library.fix_index_files(dest_dir_suuktas)
   pass
-  # migrate_and_include_shlokas()
-  # library.apply_function(fn=metadata_helper.set_title_from_filename, dir_path=PATH_ALL_SAMHITA, dry_run=False)
-  link_rv_texts()

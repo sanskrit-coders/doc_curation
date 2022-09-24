@@ -38,7 +38,7 @@ def dump_wordpress():
   wordpress.scrape_index(url="https://agnimaan.wordpress.com/index-of-all-posts/", dry_run=False, dir_path="/home/vvasuki/hindu-comm/weblogs/agnimaan")
 
 def dump_wordpress_monthly():
-  init_year_month_str = "2022/05"
+  init_year_month_str = "2022/09"
   wordpress.scrape_monthly_indexes(url="https://westhunt.wordpress.com/", dir_path="/home/vvasuki/hindu-comm/weblogs/westhunt", init_year_month_str=init_year_month_str, dry_run=False)
   wordpress.scrape_monthly_indexes(url="https://indianphilosophyblog.org/", dir_path="/home/vvasuki/hindu-comm/weblogs/indianphilosophyblog", init_year_month_str=init_year_month_str, dry_run=False)
   wordpress.scrape_monthly_indexes(url="https://animeshnagarblog.wordpress.com/", dir_path="/home/vvasuki/hindu-comm/weblogs/animeshnagarblog", init_year_month_str=init_year_month_str, dry_run=False)

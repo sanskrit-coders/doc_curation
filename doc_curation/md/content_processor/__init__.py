@@ -46,4 +46,3 @@ def _soup_from_content(content, metadata):
     return None
   soup = BeautifulSoup(f"<body>{content}</body>", features="html.parser")
   return soup
-

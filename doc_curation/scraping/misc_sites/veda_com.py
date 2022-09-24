@@ -7,6 +7,7 @@ import regex
 from doc_curation.utils import text_utils, patterns
 from doc_curation.md.file import MdFile
 from doc_curation.md.content_processor import details_helper
+from doc_curation.md.library import metadata_helper
 import editdistance
 
 import doc_curation.md
@@ -16,7 +17,9 @@ from enum import Flag, auto
 class ForceMode(Flag):
   NONE = 0
   MANTRA = auto()
-  COMMENT = auto()
+  PADA = auto()
+  COMMENT_ONLY = auto()
+  COMMENT = PADA | COMMENT_ONLY
   MANTRA_COMMENT = MANTRA|COMMENT
 
 
@@ -42,21 +45,36 @@ def fix_jaatya_svarita(text):
   return text
 
 
-def check_mantra_match(soup, dest_path):
+def check_mantra_match(soup, dest_path, strip_svaras=False):
+  mantra = soup.select_one("div.block-mantra")
+  mantra = mantra.text.strip()
+  mantra_svara = soup.select_one("div.block-mantra-swara")
+  if mantra_svara is None:
+    mantra_svara = mantra
+  else:
+    [x.decompose() for x in mantra_svara.select("small")]
+    mantra_svara = mantra_svara.text.strip()
+    
   if "atharva" in dest_path:
-    mantra = soup.select_one("div.block-mantra").text.strip()
     mantra = fix_jaatya_svarita(mantra)
   else:
-    mantra = soup.select_one("div.block-mantra").text.strip().replace("", "ऽ")
+    mantra = mantra.replace("", "ऽ")
   md_file = MdFile(file_path=dest_path.replace("sarvASh_TIkAH", "mUlam"))
+  if not os.path.exists(md_file.file_path):
+    logging.warning("Missing mUla. Writing.")
+    md_file.dump_to_file(metadata={}, content=mantra_svara, dry_run=False)
+    metadata_helper.set_title_from_filename(md_file)
+    metadata_helper.add_init_words_to_title(md_file=md_file, num_words=2)
+    return (False, mantra_svara, mantra, 0.0)
   [metadata, content] = md_file.read()
-  (has_match, distance) = text_utils.edit_distance_match(a=content, b=mantra, strip_svaras=True)
+  content = regex.sub( patterns.DETAILS, "", content)
+  (has_match, distance) = text_utils.edit_distance_match(a=content, b=mantra_svara, strip_svaras=strip_svaras)
   if not has_match:
-    logging.warning(f"No match: {mantra} vs {content}")
-  return (has_match, mantra, distance)
+    logging.warning(f"No match: {mantra_svara} vs {content}")
+  return (has_match, mantra_svara, mantra, distance)
 
 
-def dump_mantra(dest_path, url, comment_detection_str, mode=ForceMode.NONE):
+def dump_mantra_details(dest_path, url, comment_detection_str, mode=ForceMode.NONE):
   soup = scraping.get_soup(url=url)
   next_url = urljoin("https://xn--j2b3a4c.com/", soup.select_one("li.next a")["href"])
   if "SKIP" in dest_path:
@@ -70,13 +88,14 @@ def dump_mantra(dest_path, url, comment_detection_str, mode=ForceMode.NONE):
     # return next_url
   else:
     [metadata, content] = md_file.read()
-    (has_match, mantra, distance) = check_mantra_match(soup=soup, dest_path=dest_path)
-    if (has_match or (ForceMode.MANTRA & mode)) and distance != 0:
-      md_mantra = MdFile(file_path=dest_path.replace("sarvASh_TIkAH", "mUlam"))
-      md_mantra.replace_content_metadata(new_content=mantra)
-    if not (ForceMode.COMMENT & mode) and not has_match:
-      logging.warning(f"Could not match mantra: {url}, {dest_path}")
-      return next_url
+  (has_match, mantra_svara, mantra, distance) = check_mantra_match(soup=soup, dest_path=dest_path)
+  if (has_match or (ForceMode.MANTRA & mode)) and distance != 0:
+    update_muula(dest_path, mantra, mantra_svara)
+  if "विस्वर-मूलम् (VC)" not in content:
+    update_muula(dest_path, mantra, mantra_svara, visvara_only=True)
+  if not (ForceMode.COMMENT & mode) and not has_match:
+    logging.warning(f"Could not match mantra: {url}, {dest_path}")
+    return next_url
 
 
   if comment_detection_str in content:
@@ -84,34 +103,31 @@ def dump_mantra(dest_path, url, comment_detection_str, mode=ForceMode.NONE):
     # md_file.transform(content_transformer=lambda c, m: details_helper.insert_after_detail(content=c, metadata=m, title="पदपाठः", new_element=comment_details[-1].to_soup()))
     return next_url
 
-  pada_paaTha = soup.select_one("div.block-pad p").text
-  pada_paaTha = regex.sub(" *[।॥] *", "। ", pada_paaTha).replace(":", "ः")
-  pada_paaTha = fix_jaatya_svarita(text=pada_paaTha)
-  audio_saver(soup=soup, dest_path=dest_path)
-  comments_div = soup.select_one("div.bhashya_show")
+  comment_details = []
+  if ForceMode.PADA & mode:
+    pada_paaTha = soup.select_one("div.block-pad p").text
+    pada_paaTha = regex.sub(" *[।॥] *", "। ", pada_paaTha).replace(":", "ः")
+    pada_paaTha = fix_jaatya_svarita(text=pada_paaTha)
+    comment_details.append(details_helper.Detail(type="पदपाठः", content=pada_paaTha))
 
-  for i in range(10):
-    if comments_div is not None:
-      break
-    soup = scraping.get_soup(url=url)
-    comments_div = soup.select_one("div.bhashya_show")
-  titles = [x.text for x in comments_div.select("div.headline h3")]
-  subjects = [x.text for x in comments_div.select("div.mb_subject")]
-  padaarthas = [x.text for x in comments_div.select("div.padarth")]
-  bhaavaaarthas = [x.text for x in comments_div.select("div.bhavarth")]
-  footnotes = [x.text for x in comments_div.select("div.footnote")]
-
-  comment_details = [details_helper.Detail(type="पदपाठः", content=pada_paaTha)]
-  annotations = [x.text for x in soup.select("div.mantra-bhag>.alert a")]
+  annotations = [x.text.strip() for x in soup.select("div.mantra-bhag>.alert a") if x.text.strip() != ""]
   comment_details.append(details_helper.Detail(type=f"अधिमन्त्रम् (VC)", content="- " + "\n- ".join(annotations)))
 
+  audio_saver(soup=soup, dest_path=dest_path)
 
-  for title, subject, padaartha, bhaavaartha, footnote in zip(titles, subjects, padaarthas, bhaavaaarthas, footnotes):
-    comment_details.append(details_helper.Detail(type=f"{title} - विषयः", content=subject))
-    comment_details.append(details_helper.Detail(type=f"{title} - पदार्थः", content=padaartha))
-    comment_details.append(details_helper.Detail(type=f"{title} - भावार्थः", content=bhaavaartha))
-    comment_details.append(details_helper.Detail(type=f"{title} - पादटिप्पनी", content=footnote))
-    
+  comments_divs = list(soup.select("div.bhashya_show"))
+  titles = []
+
+  for i in range(10):
+    if len(comments_divs) >= 1:
+      break
+    soup = scraping.get_soup(url=url)
+    comments_divs = soup.select("div.bhashya_show")
+
+  comments_divs.extend(soup.select("div.bhashya_hide"))
+  for comments_div in comments_divs:
+    comment_details.extend(comments_from_div(comments_div, titles=titles))
+
   new_content = "\n\n".join([x.to_html() for x in comment_details])
   if not os.path.exists(dest_path):
     md_file.dump_to_file(metadata={}, content=new_content, dry_run=False)
@@ -120,11 +136,54 @@ def dump_mantra(dest_path, url, comment_detection_str, mode=ForceMode.NONE):
   return next_url
 
 
+def update_muula(dest_path, mantra, mantra_svara, visvara_only=False):
+  md_mantra = MdFile(file_path=dest_path.replace("sarvASh_TIkAH", "mUlam"))
+  (metadata, content) = md_mantra.read()
+  if "मूलम् (VC)" not in content:
+    if not visvara_only:
+      detail = details_helper.Detail(type="मूलम् (VC)", content=mantra_svara)
+      content = f"{content}\n\n{detail.to_html()}"
+    if mantra_svara != mantra:
+      detail = details_helper.Detail(type="विस्वर-मूलम् (VC)", content=mantra)
+      content = f"{content}\n\n{detail.to_html()}"
+    md_mantra.replace_content_metadata(new_content=content)
+
+
+def comments_from_div(div, titles):
+  comment_details = []
+  title_div = div.select_one("div.headline")
+  body_divs = div.select("div.mantra-bhashya")
+  title = title_div.text.strip()
+  title = regex.sub("\s+", " ", title)
+  if title == "स्वामी दयानन्द सरस्वती":
+    if "स्वामी दयानन्द सरस्वती" in titles:
+      title = "दयानन्द-सरस्वती (सं)"
+    else:
+      title = "दयानन्द-सरस्वती (हि)"
+  elif "माता सविता जोशी (यह अनुवाद स्वामी दयानन्द सरस्वती जी के आधार पर किया गया है।)" in title:
+    title = "सविता जोशी ← दयानन्द-सरस्वती (म)"
+
+  titles.append(title)
+
+  for body_div in body_divs:
+    def append_detail_if_present(div, css, appendix):
+      tag = div.select_one(css)
+      if tag is not None:
+        comment_details.append(details_helper.Detail(type=f"{title} - {appendix}", content=tag.text))
+
+    append_detail_if_present(div=div, css="div.anavay", appendix="अन्वयः")
+    append_detail_if_present(div=div, css="div.mb_subject", appendix="विषयः")
+    append_detail_if_present(div=div, css="div.padarth", appendix="पदार्थः")
+    append_detail_if_present(div=div, css="div.bhavarth", appendix="भावार्थः")
+    append_detail_if_present(div=div, css="div.footnote", appendix="पादटिप्पनी")
+  return comment_details
+
+
 def dump_sequence(url, path_maker, comment_detection_str, max_mantras=99999):
   num_mantras = 1
   while url is not None and num_mantras <= max_mantras:
     (dest_path, mode) = path_maker(url)
-    next_url = dump_mantra(dest_path=dest_path, url=url, comment_detection_str=comment_detection_str, mode=mode)
+    next_url = dump_mantra_details(dest_path=dest_path, url=url, comment_detection_str=comment_detection_str, mode=mode)
     if url == next_url:
       logging.info(f"Finished at {url}")
       break

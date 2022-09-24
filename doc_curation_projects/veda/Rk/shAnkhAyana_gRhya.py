@@ -47,7 +47,7 @@ def dump_oldenberg():
   # sacred_texts.dump(url="https://www.sacred-texts.com/hin/sbe29/sbe29093.htm", outfile_path=os.path.join(static_dir_base, "oldenberg/6", "01.md"), main_content_extractor=para_translation_st.get_main_content)
   # para_translation_st.split(base_dir=ref_dir.replace("mUlam", "oldenberg"))
 
-  metadata_helper.copy_metadata_and_filename(dest_dir=ref_dir.replace("mUlam", "oldenberg"), ref_dir=ref_dir, insert_missign_ref_files=True)
+  metadata_helper.copy_metadata_and_filename(dest_dir=ref_dir.replace("mUlam", "oldenberg"), ref_dir=ref_dir, insert_missing_ref_files=True)
 
 
 def dump_muulam():

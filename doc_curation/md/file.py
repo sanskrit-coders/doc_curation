@@ -245,6 +245,8 @@ class MdFile(object):
       new_metadata = metadata
     if new_content is None:
       new_content = content
+    if metadata == new_metadata and content == new_content:
+      return 
     self.dump_to_file(metadata=new_metadata, content=new_content, dry_run=dry_run, silent=silent)
 
   def split_to_bits(

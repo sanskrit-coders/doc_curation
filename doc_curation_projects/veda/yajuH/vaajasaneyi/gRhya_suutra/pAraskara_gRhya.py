@@ -39,7 +39,7 @@ def dump_oldenberg():
   # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/paraskara-grihya-sutra/d/doc116613.html", base_dir=ref_dir.replace("vishvAsa-prastutiH", "oldenberg"), dest_path_maker=oldenberg_dest_path_maker)
   # para_translation.split(base_dir=ref_dir.replace("vishvAsa-prastutiH", "oldenberg"))
   # sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe29/sbe29154.htm", outfile_path=os.path.join(content_dir_base, "meta", "oldenberg.md"))
-  metadata_helper.copy_metadata_and_filename(dest_dir=ref_dir.replace("mUlam", "oldenberg"), ref_dir=ref_dir, insert_missign_ref_files=True)
+  metadata_helper.copy_metadata_and_filename(dest_dir=ref_dir.replace("mUlam", "oldenberg"), ref_dir=ref_dir, insert_missing_ref_files=True)
 
 
 def dump_muulam():
@@ -71,7 +71,7 @@ def fix_oldenberg():
 
   work_dir = os.path.join(base_dir, "3/15")
   # library.shift_contents(work_dir, start_index=8, substitute_content_offset=1)
-  metadata_helper.copy_metadata_and_filename(dest_dir=ref_dir.replace("mUlam", "oldenberg"), ref_dir=ref_dir, insert_missign_ref_files=True)
+  metadata_helper.copy_metadata_and_filename(dest_dir=ref_dir.replace("mUlam", "oldenberg"), ref_dir=ref_dir, insert_missing_ref_files=True)
   pass
 
 

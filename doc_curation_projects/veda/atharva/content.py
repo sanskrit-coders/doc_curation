@@ -62,7 +62,7 @@ def get_suukta_meta_content(suukta_id):
   file_path = os.path.join(dest_dir_static, "sarvASh_TIkAH", suukta_id + "/_index.md")
   if os.path.exists(file_path):
     url = regex.sub(".+?/vedAH/", "/vedAH/", file_path).replace("/static/", "/")
-    content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(field_names=["title_whitney"], classes=None, url=url,
+    content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(classes=None, url=url,
                                                                                      h1_level=2)
 
   return content
@@ -127,7 +127,7 @@ def rename_suukta_files(dest_dir, dry_run=False):
 
 if __name__ == '__main__':
   # dump_text(base_dir="/home/vvasuki/sanskrit/raw_etexts/vedaH/atharva/shaunaka/saMhitA_VH")
-  set_suukta_content()
+  # set_suukta_content()
   # set_book_content()
   # include_helper.prefill_includes(dir_path=dest_dir_suuktas)
   # rename_suukta_files(dest_dir=os.path.join(dest_dir_static, "whitney/notes"), dry_run=False)

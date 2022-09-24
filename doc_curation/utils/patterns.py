@@ -4,6 +4,7 @@ PATTERN_2LINE_SHLOKA = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।  +\n([^#\s<>\[\(][ \S
 
 FOOTNOTE_DEFINITION = r"\n(\[\^.+?\]):[\s\S]+?(?=[\n\[])"
 SUMMARY = r"<summary>.+?</summary>"
+DETAILS = r"<details>.+?</details>"
 
 JS_COMMENTS = r"\+\+\+\([\s\S]+?\)\+\+\+"
 
@@ -20,6 +21,7 @@ DEVANAGARI_DANDAS = "[।॥]"
 LOWER_CASE_ISO = "[a-zāīūṛr̥ēōṅñṇṭḍṣśḷṁṃḥḻṉṟäü]"
 UPPER_CASE_ISO = "[A-ZĀĪŪṚR̥ĒŌṄÑṆṬḌṢŚḶṀṂḤḺṈṞÜ]"
 SVARAS = "[।॥॒॑᳐-᳨᳷-᳹꣠-꣱]"
+PUNCT = "[\.\(\)\[\],;+\*_\-:]"
 
 DEVANAGARI_MANIPRAVALA_MID_K_L = f"(?<=[^\s्])क(?={DEVANAGARI_MATRA}?ळ)"
 
