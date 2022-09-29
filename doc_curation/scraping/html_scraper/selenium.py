@@ -1,6 +1,6 @@
 import logging
 import os
-
+from functools import lru_cache
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome import options
@@ -18,10 +18,13 @@ logging.basicConfig(
   level=logging.DEBUG,
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
-opts = options.Options()
-opts.headless = False
-browser = webdriver.Chrome(options=opts)
-browser.implicitly_wait(2)
+
+@lru_cache
+def get_browser():
+  opts = options.Options()
+  opts.headless = False
+  browser = webdriver.Chrome(options=opts)
+  browser.implicitly_wait(2)
 
 def get_soup(browser):
   return BeautifulSoup(browser.page_source, features="lxml")

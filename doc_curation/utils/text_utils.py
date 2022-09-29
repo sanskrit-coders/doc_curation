@@ -41,8 +41,8 @@ def normalized_edit_distance(a, b, strip_svaras):
   a = regex.sub(fr"{patterns.DEVANAGARI_DANDAS}|{patterns.DEVANAGARI_DIGITS}|\d|{patterns.PUNCT}", "", a)
   b = regex.sub(fr"{patterns.DEVANAGARI_DANDAS}|{patterns.DEVANAGARI_DIGITS}|\d|{patterns.PUNCT}", "", b)
   if strip_svaras:
-    a = regex.sub(fr"{patterns.SVARAS}", "", a)
-    b = regex.sub(fr"{patterns.SVARAS}", "", b)
+    a = regex.sub(fr"{patterns.ACCENTS}", "", a)
+    b = regex.sub(fr"{patterns.ACCENTS}", "", b)
   if a.strip() == b.strip():
     return 0
   return round(editdistance.eval(a, b)/max(len(a), len(b)), 3)

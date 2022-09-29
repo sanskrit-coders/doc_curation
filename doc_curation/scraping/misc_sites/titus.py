@@ -10,10 +10,10 @@ logging.basicConfig(
   level=logging.DEBUG,
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
-browser = selenium_scraper.browser
 
 
 def navigate_to_part(base_page_url, level_3_id, level_4_id=None, level_3_frame="etaindex"):
+  browser = selenium_scraper.get_browser()
   browser.get(base_page_url)
 
   browser.switch_to.frame("vadd")
@@ -33,7 +33,8 @@ def navigate_to_part(base_page_url, level_3_id, level_4_id=None, level_3_frame="
   browser.switch_to.default_content()
 
 
-def get_text(text_css="span#iovpla16, span#iovmla16", part_css="span#h4, span#h5, span#h6"):
+def get_text(text_css="span#iovpla16, span#iovmla16", part_css="span#h5, span#h6"):
+  browser = selenium_scraper.get_browser()
   browser.switch_to.default_content()
   browser.switch_to.frame("etatext")
   soup = selenium_scraper.get_soup(browser=browser)
@@ -44,13 +45,13 @@ def get_text(text_css="span#iovpla16, span#iovmla16", part_css="span#h4, span#h5
   lines = []
   for element in text_elements:
     if element.attrs["id"] == "h4":
-      text = regex.sub(".+: ", "## ", element.text)
+      text = regex.sub(".+: ", "# ", element.text)
     elif element.attrs["id"] == "h5":
-      text = regex.sub(".+: ", "### ", element.text)
+      text = regex.sub(".+: ", "## ", element.text)
     elif element.attrs["id"] == "h6":
-      text = regex.sub(".+: ", "#### ", element.text)
+      text = regex.sub(".+: ", "### ", element.text)
     else:
-      text = element.text
+      text = element.text + "॥"
     lines.append(text.strip())
   # logging.info(sentences)
   return lines
