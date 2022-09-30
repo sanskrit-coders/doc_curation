@@ -23,13 +23,20 @@ class ForceMode(Flag):
   MANTRA_COMMENT = MANTRA|COMMENT
 
 
+def fix_text(text, muula_text=True):
+  if muula_text:
+    text = text.replace(":", "ः").replace("", "᳡").replace("", "३॒॑").replace("", "१॒॑")
+    text = regex.sub("।\s*", "।  \n", text)
+  text = regex.sub("([३१]?)([३१]?)", r"\1\2॒॑", text)
+  return text_utils.svara_post_yogavaaha(text)
+
+
 def check_mantra_match(soup, dest_path, strip_svaras=False):
   mantra_svara = soup.select_one(".mantra-bhag h3.vs-mantra")
   mantra_svara = mantra_svara.text.strip()
   if "atharva" in dest_path:
-    mantra_svara = mantra_svara.replace("", "᳡")
-  mantra_svara = mantra_svara.replace("", "३॒॑").replace("", "१॒॑")
-  mantra_svara = regex.sub("([३१]?)([३१]?)", r"\1\2॒॑", mantra_svara)
+    mantra_svara = fix_text(mantra_svara)
+  mantra_svara = mantra_svara
   md_file = MdFile(file_path=dest_path.replace("sarvASh_TIkAH", "mUlam"))
   if not os.path.exists(md_file.file_path):
     logging.warning("Missing mUla. Writing.")
@@ -51,7 +58,11 @@ def check_mantra_match(soup, dest_path, strip_svaras=False):
 
 def dump_mantra_details(dest_path, url, commentaries_needed, mode=ForceMode.NONE, muula_insertion_mode="all_detail"):
   soup = scraping.get_soup(url=url)
-  next_url = urljoin("https://vedicscriptures.in/atharvaveda/", soup.select("a.rounded-sm.border-dark")[-1]["href"])
+  buttons = soup.select("a.rounded-sm.border-dark")
+  if len(buttons) < 2:
+    return None
+  else:
+    next_url = urljoin("https://vedicscriptures.in/atharvaveda/", buttons[-1]["href"])
   if "SKIP" in dest_path:
     logging.warning(f"Skipping dump for {url}")
     return next_url
@@ -80,8 +91,9 @@ def dump_mantra_details(dest_path, url, commentaries_needed, mode=ForceMode.NONE
   pada_paaTha = None
   if ForceMode.PADA & mode:
     pada_paaTha = soup.select_one("p.pt-1.mb-2").text
-    pada_paaTha = regex.sub(" *[।॥] *", "। ", pada_paaTha).replace(":", "ः")
-    pada_paaTha = pada_paaTha.replace("", "᳡")
+    pada_paaTha = regex.sub(" *[।॥] *", "। ", pada_paaTha)
+    pada_paaTha = fix_text(pada_paaTha)
+    pada_paaTha = pada_paaTha
 
 
   # comments_divs = list(soup.select("div.bhashya-bhag card"))

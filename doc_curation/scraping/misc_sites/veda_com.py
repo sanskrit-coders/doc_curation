@@ -70,7 +70,7 @@ def check_mantra_match(soup, dest_path, strip_svaras=False):
     return (False, mantra_svara, mantra, 0.0)
   [metadata, content] = md_file.read()
   content = regex.sub( patterns.DETAILS, "", content)
-  (has_match, distance) = text_utils.edit_distance_match(a=content, b=mantra_svara, strip_svaras=strip_svaras)
+  (has_match, distance) = text_utils.edit_distance_match(a=content, b=mantra_svara, strip_svaras=strip_svaras, cutoff=.2)
   if not has_match:
     logging.warning(f"No match: {mantra_svara} vs {content}")
   return (has_match, mantra_svara, mantra, distance)

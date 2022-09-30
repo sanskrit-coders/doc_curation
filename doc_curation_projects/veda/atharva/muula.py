@@ -28,16 +28,16 @@ def fix_names(dry_run=False):
   # library.apply_function(fn=metadata_helper.add_init_words_to_title, num_words=2, dir_path=dir_path, file_name_filter=lambda x: not os.path.basename(x).startswith("_")) 
   # library.apply_function(dir_path=dir_path, fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, file_name_filter=lambda x: not os.path.basename(x).startswith("_"), dry_run=dry_run)
   # 
-  metadata_helper.copy_metadata_and_filename(dest_dir=os.path.join(STATIC_ROOT, "sarvASh_TIkAH"), ref_dir=atharva.MULA_DIR, dry_run=dry_run)
-  metadata_helper.copy_metadata_and_filename(dest_dir=os.path.join(STATIC_ROOT, "vishvAsa-prastutiH"), ref_dir=atharva.MULA_DIR, dry_run=dry_run)
+  # metadata_helper.copy_metadata_and_filename(dest_dir=atharva.TIKA_DIR, ref_dir=atharva.MULA_DIR, dry_run=dry_run)
+  metadata_helper.copy_metadata_and_filename(dest_dir=os.path.join(atharva.MULA_DIR, "../vishvAsa-prastutiH"), ref_dir=atharva.MULA_DIR, dry_run=dry_run)
   
 
 def copy_to_vishvas(dry_run=False):
-  content_helper.copy_contents(src_dir=atharva.MULA_DIR, dest_dir=atharva.MULA_DIR.replace("mUlam", "vishvAsa-prastutiH"), dest_content_condition=lambda x: not text_utils.detect_vishvaasa_mods(content=x)[0], dry_run=dry_run)
+  content_helper.copy_contents(src_dir=atharva.MULA_DIR, dest_dir=atharva.MULA_DIR.replace("mUlam", "vishvAsa-prastutiH"), detail_title="मूलम् (VS)", dest_content_condition=lambda x: not text_utils.detect_vishvaasa_mods(content=x)[0], dry_run=dry_run)
 
 
 if __name__ == '__main__':
   pass
   # fix_typos()
-  # copy_to_vishvas(dry_run=False)
+  copy_to_vishvas(dry_run=False)
   # fix_names(dry_run=False)

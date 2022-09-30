@@ -3,6 +3,7 @@ import regex
 import editdistance
 from doc_curation.utils import patterns
 
+
 def remove_parenthized_text(text):
   text = regex.sub(r"\[[^\]]+?\]", "", text)
   text = regex.sub(r"\+\+\+\([^)]+?\)\+\+\+", "", text)
@@ -80,3 +81,7 @@ def fix_svara_duplicates(text):
     text = regex.sub(f"{svara}{svara}+", svara, text)
   return text
 
+
+def svara_post_yogavaaha(text):
+  text = regex.sub(f"({patterns.ACCENTS})({patterns.DEVANAGARI_YOGAVAHA}+)", r"\2\1", text)
+  return text

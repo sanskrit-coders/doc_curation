@@ -4,9 +4,10 @@ from doc_curation_projects.veda import atharva
 import os, regex, logging
 from doc_curation.md import library, content_processor
 from doc_curation.md.library import arrangement
+from doc_curation.md.file import MdFile
 from doc_curation.md.content_processor import details_helper
 from urllib.parse import urljoin
-
+from doc_curation.utils import text_utils
 
 def path_maker(url):
   # Example: https://vedicscriptures.in/atharvaveda/3/4/0/6
@@ -20,7 +21,13 @@ def path_maker(url):
       remove_paryaayas(dest_path_bits, paryaaya_lengths)
     if dest_path_bits[0] == 9:
       paryaaya_lengths = [17, 13, 9, 10, 10, 14]
-      remove_paryaayas(dest_path_bits, paryaaya_lengths)
+      if dest_path_bits[2] < 4:
+        remove_paryaayas(dest_path_bits, paryaaya_lengths)
+      elif dest_path_bits[2] in [4, 5]:
+        # Succeding Rk pairs (or triplets in some cases) are to be collapsed into 1 for paryAya-s 4 and 5. This should be done manually.
+        return (os.path.join(atharva.SAMHITA_DIR_STATIC, f"sarvASh_TIkAH/09/006_atithi-satkAraH/{dest_path_bits[2]}_{dest_path_bits[3]}.md"), ForceMode.COMMENT)
+      else:
+        dest_path_bits[2] = 48 + dest_path_bits[3]
   if dest_path_bits[0] == 11 and dest_path_bits[1] == 3 and dest_path_bits[2] >=30:
     mode = ForceMode.MANTRA
   if dest_path_bits[0] == 13 and dest_path_bits[1] == 4:
@@ -41,6 +48,7 @@ def path_maker(url):
       mode = ForceMode.MANTRA
   if dest_path_bits[0] == 15:
     if dest_path_bits[1] == 2:
+      # Mantra to be split into multiple files. Manual attention needed.
       if dest_path_bits[2] in [14, 20]:
         mode = ForceMode.MANTRA
       if dest_path_bits[2] in range(15, 21):
@@ -48,6 +56,7 @@ def path_maker(url):
       elif dest_path_bits[2] in range(21, 30):
         dest_path_bits[2] += 4
     if dest_path_bits[1] == 5:
+      # Mantra split into multiple files. Manual attention required.
       mantra_map = {5: 5, 7: 8, 9: 11, 11: 14, 13: 17, 15: 20}
       if dest_path_bits[2] > 4:
         if dest_path_bits[2] in mantra_map.keys():
@@ -58,6 +67,7 @@ def path_maker(url):
         else:
           return ("SKIP: mantra_mismatch", ForceMode.NONE)
     if dest_path_bits[1] == 6:
+      # Mantra split into multiple files. Manual attention required.
       if dest_path_bits[2] == 22:
         mode = ForceMode.MANTRA
       elif dest_path_bits[2] >= 23:
@@ -75,7 +85,7 @@ def path_maker(url):
   dest_path_suffix = "%02d/%03d/%02d" % (dest_path_bits[0], dest_path_bits[1], dest_path_bits[2])
   if dest_path_suffix in ["03/024/03", "05/026/08", "05/026/11", "13/006/04", "13/008/05", "13/008/06", "18/004/13"] or dest_path_suffix[0:6] in ["06/139", "07/011", "09/006"]:
     mode = ForceMode.MANTRA
-  if dest_path_suffix in ["15/014/03", "19/023/03", "20/132/05", "20/134/05"]:
+  if dest_path_suffix in ["15/014/03", "19/023/03", "20/098/01", "20/098/02", "20/132/05", "20/134/05"]:
     mode = ForceMode.MANTRA
   dest_path = os.path.join(atharva.SAMHITA_DIR_STATIC, "sarvASh_TIkAH", Rk_id_to_name_map[dest_path_suffix]) + ".md"
   return (dest_path, mode)
@@ -89,10 +99,10 @@ def remove_paryaayas(dest_path_bits, paryaaya_lengths):
       dest_path_bits[2] += paryaaya_lengths[x]
 
 
-def fix_muula_typos():
-  # library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=[""], replacement="३॒॑")
-  # library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=[""], replacement="१॒॑")
-  library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=["[᳡]ऽ"], replacement="ऽ")
+def fix_typos():
+  for dir in [atharva.MULA_DIR, atharva.TIKA_DIR]:
+    library.apply_function(fn=MdFile.transform, dir_path=dir, content_transformer=lambda c, m: vedic_scriptures.fix_text(c, muula_text="mUlam" in dir))
+  
 
 
 def check_completeness():
@@ -106,14 +116,17 @@ def check_completeness():
 if __name__ == '__main__':
   pass
   # vedic_scriptures.dump_sequence(url="https://vedicscriptures.in/atharvaveda/7/75/0/1", path_maker=path_maker)
-  vedic_scriptures.dump_sequence(url="https://vedicscriptures.in/atharvaveda/9/6/4/1", path_maker=path_maker, max_mantras=11)
-  # Missing https://vedicscriptures.in/atharvaveda/9/6/4/1 - 10
-  # fix_typos()
+  # check_completeness()
+  
+  # Special attention:
+  # vedic_scriptures.dump_sequence(url="https://vedicscriptures.in/atharvaveda/9/6/4/1", path_maker=path_maker, max_mantras=21)
+  # vedic_scriptures.dump_sequence(url="https://vedicscriptures.in/atharvaveda/20/98/0/1", path_maker=path_maker, max_mantras=2)
+  # 
+  fix_typos()
 
   # arrangement.shift_contents(os.path.join(atharva.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Whitney", dry_run=False))
   # arrangement.shift_contents(os.path.join(atharva.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Griffith", dry_run=False))
 
-  # check_completeness()
   # vedic_scriptures.dump_sequence(url="https://vedicscriptures.in/atharvaveda/20/132/0/5", path_maker=path_maker, max_mantras=1)
   # vedic_scriptures.dump_sequence(url="https://vedicscriptures.in/atharvaveda/15/14/0/3", path_maker=path_maker, max_mantras=21)
   # vedic_scriptures.dump_sequence(url="https://vedicscriptures.in/atharvaveda/16/9/0/1", comment_detection_str="क्षेमकरणदास", path_maker=path_maker)

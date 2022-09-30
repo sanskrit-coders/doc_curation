@@ -20,6 +20,7 @@ def path_maker(url):
       remove_paryaayas(dest_path_bits, paryaaya_lengths)
     if dest_path_bits[0] == 9:
       paryaaya_lengths = [17, 13, 9, 10, 10, 14]
+      # Succeding Rk pairs (or triplets in some cases) are to be collapsed into 1 for paryAya-s 4 and 5. This should be done manually.
       if dest_path_bits[2] < 4:
         remove_paryaayas(dest_path_bits, paryaaya_lengths)
       elif dest_path_bits[2] in [4, 5]:
@@ -123,9 +124,9 @@ if __name__ == '__main__':
   # arrangement.shift_contents(os.path.join(atharva.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Whitney", dry_run=False))
   # arrangement.shift_contents(os.path.join(atharva.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Griffith", dry_run=False))
 
-  # check_completeness()
-  veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/20/132/0/5", comment_detection_str="पदपाठः", path_maker=path_maker, max_mantras=1)
-  veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/20/134/0/5", comment_detection_str="पदपाठः", path_maker=path_maker, max_mantras=1)
+  check_completeness()
+  # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/20/98/0/2", comment_detection_str="पदपाठः", path_maker=path_maker, max_mantras=1)
+  # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/20/134/0/5", comment_detection_str="पदपाठः", path_maker=path_maker, max_mantras=1)
   # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/15/14/0/3", comment_detection_str="पदपाठः", path_maker=path_maker, max_mantras=21)
   # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/16/9/0/1", comment_detection_str="क्षेमकरणदास", path_maker=path_maker)
 

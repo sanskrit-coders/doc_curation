@@ -37,7 +37,7 @@ def set_book_content(dry_run=False):
 
     md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
   arrangement.fix_index_files(dir_path=dest_dir_suuktas)
-
+  include_helper.prefill_includes(dir_path=dest_dir_suuktas)
 
 def set_suukta_content(dry_run=False):
   md_files = arrangement.get_md_files_from_path(dir_path=dest_dir_suuktas, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
@@ -55,6 +55,7 @@ def set_suukta_content(dry_run=False):
 
     md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
   arrangement.fix_index_files(dir_path=dest_dir_suuktas)
+  include_helper.prefill_includes(dir_path=dest_dir_suuktas)
 
 
 def get_suukta_meta_content(suukta_id):
@@ -129,7 +130,7 @@ if __name__ == '__main__':
   # dump_text(base_dir="/home/vvasuki/sanskrit/raw_etexts/vedaH/atharva/shaunaka/saMhitA_VH")
   # set_suukta_content()
   # set_book_content()
-  # include_helper.prefill_includes(dir_path=dest_dir_suuktas)
+  include_helper.prefill_includes(dir_path=dest_dir_suuktas)
   # rename_suukta_files(dest_dir=os.path.join(dest_dir_static, "whitney/notes"), dry_run=False)
   # library.fix_index_files(dest_dir_suuktas)
   pass
