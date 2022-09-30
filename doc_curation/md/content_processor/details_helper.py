@@ -146,11 +146,6 @@ def get_detail(content, metadata, title):
   return (None, None)
 
 
-def replace_with_detail_from_content(md_file, content, title, dry_run=False):
-  (detail_tag, detail) = get_detail(content=content, metadata={'_file_path': md_file.file_path}, title=title)
-  md_file.transform(content_transformer=lambda c, m: transform_details_with_soup(content=c, metadata=m, transformer=detail_content_replacer_soup, title=title, replacement=detail.content), dry_run=dry_run)
-
-
 def rearrange_details(content, metadata, titles, *args, **kwargs):
   # UNTESTED
   # Stray usage of < can fool the soup parser. Hence the below.

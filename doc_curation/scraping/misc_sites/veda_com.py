@@ -41,7 +41,7 @@ def audio_saver(soup, dest_path):
 def fix_jaatya_svarita(text):
   text = regex.sub(f"([यव]{patterns.DEVANAGARI_MATRA_YOGAVAHA}*)", r"\1᳡", text)
   text = regex.sub("᳡([ःं])", "\1᳡", text)
-  text = text.replace("[᳡]ऽ", "ऽ").replace("", "३॒॑").replace("", "१॒॑")
+  text = text.replace("[᳡]ऽ", "ऽ")
   return text
 
 
@@ -59,6 +59,8 @@ def check_mantra_match(soup, dest_path, strip_svaras=False):
     mantra = fix_jaatya_svarita(mantra)
   else:
     mantra = mantra.replace("", "ऽ")
+  mantra = mantra.replace("", "३॒॑").replace("", "१॒॑")
+  mantra = regex.sub("([३१]?)([३१]?)", r"\1\2॒॑", mantra)
   md_file = MdFile(file_path=dest_path.replace("sarvASh_TIkAH", "mUlam"))
   if not os.path.exists(md_file.file_path):
     logging.warning("Missing mUla. Writing.")
