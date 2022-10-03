@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from doc_curation_projects import veda
 from doc_curation_projects.veda import suutra
 from doc_curation.md import library
-from doc_curation.md.content_processor import section_helper, include_helper
+from doc_curation.md.content_processor import section_helper, include_helper, details_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from doc_curation.scraping import sacred_texts
@@ -16,6 +16,7 @@ from doc_curation.scraping.wisdom_lib import para_translation
 from indic_transliteration import sanscript
 
 static_dir_base = "/home/vvasuki/vishvAsa/vedAH_yajuH/static/vAjasaneyam/sUtram/pAraskara-gRhyam"
+TIKA_DIR = os.path.join(static_dir_base, "sarvASh_TIkAH")
 content_dir_base = static_dir_base.replace("static/", "content/")
 ref_dir = os.path.join(static_dir_base, "mUlam")
 
@@ -75,10 +76,13 @@ def fix_oldenberg():
   pass
 
 
+
+
 if __name__ == '__main__':
   # dump_oldenberg()
   # fix_oldenberg()
   # dump_muulam()
   # suutra.set_basic_content(static_dir_base=static_dir_base)
   # include_helper.include_core_with_commentaries(dir_path=os.path.join(content_dir_base, "sarva-prastutiH"), alt_dirs=["oldenberg"])
+  # library.apply_function(fn=MdFile.transform, dir_path=TIKA_DIR, content_transformer=lambda c, m: details_helper.wrap_into_detail(c, title="Oldenberg"))
   pass

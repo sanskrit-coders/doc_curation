@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from doc_curation_projects.veda import atharva
+from doc_curation_projects.veda.atharva import shaunakam
 
 import regex
 
@@ -24,16 +24,16 @@ def fix_names(dry_run=False):
   # arrangement.shift_indices(dir_path=dir_path, start_index=29, new_index_offset=-1, dry_run=dry_run)
   # arrangement.shift_indices(dir_path=dir_path, start_index=42, new_index_offset=-1, dry_run=dry_run)
   # library.apply_function(dir_path=dir_path, fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=dry_run)
-  dir_path = atharva.MULA_DIR
+  dir_path = shaunakam.MULA_DIR
   # library.apply_function(fn=metadata_helper.add_init_words_to_title, num_words=2, dir_path=dir_path, file_name_filter=lambda x: not os.path.basename(x).startswith("_")) 
   # library.apply_function(dir_path=dir_path, fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, file_name_filter=lambda x: not os.path.basename(x).startswith("_"), dry_run=dry_run)
   # 
-  # metadata_helper.copy_metadata_and_filename(dest_dir=atharva.TIKA_DIR, ref_dir=atharva.MULA_DIR, dry_run=dry_run)
-  metadata_helper.copy_metadata_and_filename(dest_dir=os.path.join(atharva.MULA_DIR, "../vishvAsa-prastutiH"), ref_dir=atharva.MULA_DIR, dry_run=dry_run)
+  # metadata_helper.copy_metadata_and_filename(dest_dir=shaunakam.TIKA_DIR, ref_dir=shaunakam.MULA_DIR, dry_run=dry_run)
+  metadata_helper.copy_metadata_and_filename(dest_dir=os.path.join(shaunakam.MULA_DIR, "../vishvAsa-prastutiH"), ref_dir=shaunakam.MULA_DIR, dry_run=dry_run)
   
 
 def copy_to_vishvas(dry_run=False):
-  content_helper.copy_contents(src_dir=atharva.MULA_DIR, dest_dir=atharva.MULA_DIR.replace("mUlam", "vishvAsa-prastutiH"), detail_title="मूलम् (VS)", dest_content_condition=lambda x: not text_utils.detect_vishvaasa_mods(content=x)[0], dry_run=dry_run)
+  content_helper.copy_contents(src_dir=shaunakam.MULA_DIR, dest_dir=shaunakam.MULA_DIR.replace("mUlam", "vishvAsa-prastutiH"), detail_title="मूलम् (VS)", dest_content_condition=lambda x: not text_utils.detect_vishvaasa_mods(content=x)[0], dry_run=dry_run)
 
 
 if __name__ == '__main__':

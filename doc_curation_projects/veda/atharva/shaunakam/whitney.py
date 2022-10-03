@@ -10,7 +10,7 @@ from curation_utils import file_helper
 from doc_curation import book_data
 from doc_curation.md import library, get_md_with_pandoc
 import roman_numerals
-from doc_curation_projects.veda import atharva
+from doc_curation_projects.veda.atharva import shaunakam
 from doc_curation.md.file import MdFile
 from doc_curation.md.content_processor import details_helper
 from doc_curation.scraping.html_scraper import souper
@@ -208,4 +208,4 @@ if __name__ == '__main__':
   # dump_kaanda_info(dest_dir=os.path.join(whitney_dir_base, "notes"))
   # dump_suukta_info(dest_dir=os.path.join(whitney_dir_base, "notes"))
   # dump_Rk_info(dest_dir=os.path.join(whitney_dir_base, "notes"))
-  library.apply_function(fn=title_to_content_detail, dir_path=os.path.join(atharva.SAMHITA_DIR_STATIC, "sarvASh_TIkAH"))
+  library.apply_function(fn=title_to_content_detail, dir_path=os.path.join(shaunakam.SAMHITA_DIR_STATIC, "sarvASh_TIkAH"))

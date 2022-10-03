@@ -201,3 +201,9 @@ def shlokas_to_muula_viprastuti_details(content, pattern=None):
     return f"{detail_vishvaasa.to_html()}\n\n{detail_muula.to_html()}" 
   content = regex.sub(pattern, detail_maker, content)
   return content
+
+def wrap_into_detail(content, title):
+  content_out = content.strip()
+  if content_out == "":
+    return content
+  return details_helper.Detail(type="Oldenberg", content=c.strip()).to_html()

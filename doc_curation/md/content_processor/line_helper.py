@@ -3,7 +3,7 @@ from indic_transliteration import sanscript
 
 
 def remove_fake_linebreaks(text):
-  text = regex.sub(r"(?<=\n|^)([^#-*!<][^\n]+\S)\n(?=[^#-*\s>!<])", r"\1 ", text)
+  text = regex.sub(r"(?<=\n|^)([^#-*!<\s][^\n]+\S)\n(?=[^#-*\s>!<])", r"\1 ", text)
   text = regex.sub(r"(?<=\n|^)(>[^\n]+\S)\n(?=>)", r"\1 ", text)
   return text
 
@@ -23,9 +23,9 @@ def make_md_verse_lines(text):
   :param text: 
   :return: 
   """
-  text = regex.sub("\n\n+", "\n", text)
-  text = regex.sub(r"(?<=\n|^)([^#-*!<\[>][^\n]+\S) *\n+(?=[^#-*\s>!<\[>])", r"\1  \n", text)
+  text = regex.sub(r"(?<=\n|^)([^#-*!<\[>\s][^\n]+\S) *\n+(?=[^#-*\s>!<\[>])", r"\1  \n", text)
   text = regex.sub(r"॥ *(?=\n|$)", r"॥\n", text)
+  text = regex.sub("\n\n\n+", "\n\n", text) ## Be careful not to mess with two new lines after detail tag opening.
   return text
 
 

@@ -1,6 +1,6 @@
 from doc_curation.scraping.misc_sites import veda_com
 from doc_curation.scraping.misc_sites.veda_com import ForceMode
-from doc_curation_projects.veda import atharva
+from doc_curation_projects.veda.atharva import shaunakam
 import os, regex, logging
 from doc_curation.md import library, content_processor
 from doc_curation.md.library import arrangement
@@ -11,7 +11,7 @@ from urllib.parse import urljoin
 def path_maker(url):
   # Example: https://xn--j2b3a4c.com/atharvaveda/3/24/0/3
   mode = ForceMode.NONE
-  Rk_id_to_name_map = atharva.get_Rk_id_to_name_map_from_muulam()
+  Rk_id_to_name_map = shaunakam.get_Rk_id_to_name_map_from_muulam()
   dest_path_bits = url.split("atharvaveda/")[-1].replace("/0/", "/").split("/")
   dest_path_bits = [int(x) for x in dest_path_bits]
   if len(dest_path_bits) == 4:
@@ -24,7 +24,7 @@ def path_maker(url):
       if dest_path_bits[2] < 4:
         remove_paryaayas(dest_path_bits, paryaaya_lengths)
       elif dest_path_bits[2] in [4, 5]:
-        return (os.path.join(atharva.SAMHITA_DIR_STATIC, f"sarvASh_TIkAH/09/006_atithi-satkAraH/{dest_path_bits[2]}_{dest_path_bits[3]}.md"), ForceMode.COMMENT)
+        return (os.path.join(shaunakam.SAMHITA_DIR_STATIC, f"sarvASh_TIkAH/09/006_atithi-satkAraH/{dest_path_bits[2]}_{dest_path_bits[3]}.md"), ForceMode.COMMENT)
       else:
         dest_path_bits[2] = 48 + dest_path_bits[3]
         # 11/003_odanaH/13_RtaM_hastAvanejanaM 11/003_odanaH/18_charuM_panchabilamukhaM 30_naivAhamodanaM_na .. 56_brahmaNA_mukhena
@@ -84,7 +84,7 @@ def path_maker(url):
     mode = ForceMode.MANTRA_COMMENT
   if dest_path_suffix in ["15/014/03", "19/023/03", "20/132/05", "20/134/05"]:
     mode = ForceMode.COMMENT
-  dest_path = os.path.join(atharva.SAMHITA_DIR_STATIC, "sarvASh_TIkAH", Rk_id_to_name_map[dest_path_suffix]) + ".md"
+  dest_path = os.path.join(shaunakam.SAMHITA_DIR_STATIC, "sarvASh_TIkAH", Rk_id_to_name_map[dest_path_suffix]) + ".md"
   return (dest_path, mode)
 
 
@@ -97,13 +97,13 @@ def remove_paryaayas(dest_path_bits, paryaaya_lengths):
 
 
 def fix_muula_typos():
-  # library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=[""], replacement="३॒॑")
-  # library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=[""], replacement="१॒॑")
-  library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.MULA_DIR, patterns=["[᳡]ऽ"], replacement="ऽ")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=shaunakam.MULA_DIR, patterns=[""], replacement="३॒॑")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=shaunakam.MULA_DIR, patterns=[""], replacement="१॒॑")
+  library.apply_function(fn=content_processor.replace_texts, dir_path=shaunakam.MULA_DIR, patterns=["[᳡]ऽ"], replacement="ऽ")
 
 
 def check_completeness():
-  matches = library.list_matching_files(dir_path=atharva.TIKA_DIR, content_condition=lambda x: "पदपाठः" not in x, file_name_filter=lambda x: not str(x).endswith("_index.md"))
+  matches = library.list_matching_files(dir_path=shaunakam.TIKA_DIR, content_condition=lambda x: "पदपाठः" not in x, file_name_filter=lambda x: not str(x).endswith("_index.md"))
   matches = [regex.sub("_.+?(?=/|$)", "", x).replace("/0", "/") for x in matches]
   matches = [regex.sub("(/\d+)$", r"/0\1", x) for x in matches]
   matches = [urljoin("https://xn--j2b3a4c.com/atharvaveda/", x[1:]) for x in matches]
@@ -121,8 +121,8 @@ if __name__ == '__main__':
   # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/8/10/1/1", path_maker=path_maker, max_mantras=88)
   # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/9/6/4/1", path_maker=path_maker, max_mantras=20, comment_detection_str="क्षेमकरणदास")
 
-  # arrangement.shift_contents(os.path.join(atharva.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Whitney", dry_run=False))
-  # arrangement.shift_contents(os.path.join(atharva.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Griffith", dry_run=False))
+  # arrangement.shift_contents(os.path.join(shaunakam.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Whitney", dry_run=False))
+  # arrangement.shift_contents(os.path.join(shaunakam.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Griffith", dry_run=False))
 
   check_completeness()
   # veda_com.dump_sequence(url="https://xn--j2b3a4c.com/atharvaveda/20/98/0/2", comment_detection_str="पदपाठः", path_maker=path_maker, max_mantras=1)

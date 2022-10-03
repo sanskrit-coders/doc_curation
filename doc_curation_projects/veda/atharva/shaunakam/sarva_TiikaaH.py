@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from doc_curation_projects.veda import atharva
+from doc_curation_projects.veda.atharva import shaunakam
 
 import regex
 
@@ -11,7 +11,7 @@ from doc_curation.md.file import MdFile
 from doc_curation.md.library import combination, arrangement, metadata_helper
 from doc_curation.utils import patterns
 
-STATIC_ROOT = atharva.STATIC_ROOT
+STATIC_ROOT = shaunakam.STATIC_ROOT
 
 
 def combine():
@@ -33,13 +33,13 @@ def insert_anukramaNis():
 
 
 def fix_padapaatha():
-  # library.apply_function(fn=MdFile.transform, dir_path=atharva.TIKA_DIR, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title="पदपाठः", replacement=lambda x: x.replace(":", "ः")))
-  library.apply_function(fn=MdFile.transform, dir_path=atharva.TIKA_DIR, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title="पदपाठः", replacement=lambda x: regex.sub(f"([यव]{patterns.DEVANAGARI_MATRA_YOGAVAHA}*)", r"\1᳡", x)))
-  library.apply_function(fn=MdFile.transform, dir_path=atharva.TIKA_DIR, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title="पदपाठः", replacement=lambda x: regex.sub("᳡([ःं])", r"\1᳡", x)))
+  # library.apply_function(fn=MdFile.transform, dir_path=shaunakam.TIKA_DIR, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title="पदपाठः", replacement=lambda x: x.replace(":", "ः")))
+  library.apply_function(fn=MdFile.transform, dir_path=shaunakam.TIKA_DIR, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title="पदपाठः", replacement=lambda x: regex.sub(f"([यव]{patterns.DEVANAGARI_MATRA_YOGAVAHA}*)", r"\1᳡", x)))
+  library.apply_function(fn=MdFile.transform, dir_path=shaunakam.TIKA_DIR, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title="पदपाठः", replacement=lambda x: regex.sub("᳡([ःं])", r"\1᳡", x)))
 
 
 def fix_typos():
-  library.apply_function(fn=content_processor.replace_texts, dir_path=atharva.TIKA_DIR, patterns=["details open"], replacement="details")
+  library.apply_function(fn=content_processor.replace_texts, dir_path=shaunakam.TIKA_DIR, patterns=["details open"], replacement="details")
 
 # Griffith Name: Comment
 

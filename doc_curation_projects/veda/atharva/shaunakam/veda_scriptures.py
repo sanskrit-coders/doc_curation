@@ -1,6 +1,6 @@
 from doc_curation.scraping.misc_sites import vedic_scriptures
 from doc_curation.scraping.misc_sites.vedic_scriptures import ForceMode
-from doc_curation_projects.veda import atharva
+from doc_curation_projects.veda.atharva import shaunakam
 import os, regex, logging
 from doc_curation.md import library, content_processor
 from doc_curation.md.library import arrangement
@@ -12,7 +12,7 @@ from doc_curation.utils import text_utils
 def path_maker(url):
   # Example: https://vedicscriptures.in/atharvaveda/3/4/0/6
   mode = ForceMode.MANTRA
-  Rk_id_to_name_map = atharva.get_Rk_id_to_name_map_from_muulam()
+  Rk_id_to_name_map = shaunakam.get_Rk_id_to_name_map_from_muulam()
   dest_path_bits = url.split("atharvaveda/")[-1].replace("/0/", "/").split("/")
   dest_path_bits = [int(x) for x in dest_path_bits]
   if len(dest_path_bits) == 4:
@@ -25,7 +25,7 @@ def path_maker(url):
         remove_paryaayas(dest_path_bits, paryaaya_lengths)
       elif dest_path_bits[2] in [4, 5]:
         # Succeding Rk pairs (or triplets in some cases) are to be collapsed into 1 for paryAya-s 4 and 5. This should be done manually.
-        return (os.path.join(atharva.SAMHITA_DIR_STATIC, f"sarvASh_TIkAH/09/006_atithi-satkAraH/{dest_path_bits[2]}_{dest_path_bits[3]}.md"), ForceMode.COMMENT)
+        return (os.path.join(shaunakam.SAMHITA_DIR_STATIC, f"sarvASh_TIkAH/09/006_atithi-satkAraH/{dest_path_bits[2]}_{dest_path_bits[3]}.md"), ForceMode.COMMENT)
       else:
         dest_path_bits[2] = 48 + dest_path_bits[3]
   if dest_path_bits[0] == 11 and dest_path_bits[1] == 3 and dest_path_bits[2] >=30:
@@ -87,7 +87,7 @@ def path_maker(url):
     mode = ForceMode.MANTRA
   if dest_path_suffix in ["15/014/03", "19/023/03", "20/098/01", "20/098/02", "20/132/05", "20/134/05"]:
     mode = ForceMode.MANTRA
-  dest_path = os.path.join(atharva.SAMHITA_DIR_STATIC, "sarvASh_TIkAH", Rk_id_to_name_map[dest_path_suffix]) + ".md"
+  dest_path = os.path.join(shaunakam.SAMHITA_DIR_STATIC, "sarvASh_TIkAH", Rk_id_to_name_map[dest_path_suffix]) + ".md"
   return (dest_path, mode)
 
 
@@ -100,13 +100,13 @@ def remove_paryaayas(dest_path_bits, paryaaya_lengths):
 
 
 def fix_typos():
-  for dir in [atharva.MULA_DIR, atharva.TIKA_DIR]:
+  for dir in [shaunakam.MULA_DIR, shaunakam.TIKA_DIR]:
     library.apply_function(fn=MdFile.transform, dir_path=dir, content_transformer=lambda c, m: vedic_scriptures.fix_text(c, muula_text="mUlam" in dir))
   
 
 
 def check_completeness():
-  matches = library.list_matching_files(dir_path=atharva.MULA_DIR, content_condition=lambda x: "VS" not in x, file_name_filter=lambda x: not str(x).endswith("_index.md"))
+  matches = library.list_matching_files(dir_path=shaunakam.MULA_DIR, content_condition=lambda x: "VS" not in x, file_name_filter=lambda x: not str(x).endswith("_index.md"))
   matches = [regex.sub("_.+?(?=/|$)", "", x).replace("/0", "/") for x in matches]
   matches = [regex.sub("(/\d+)$", r"/0\1", x) for x in matches]
   matches = [urljoin("https://vedicscriptures.in/atharvaveda/", x[1:]) for x in matches]
@@ -124,8 +124,8 @@ if __name__ == '__main__':
   # 
   fix_typos()
 
-  # arrangement.shift_contents(os.path.join(atharva.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Whitney", dry_run=False))
-  # arrangement.shift_contents(os.path.join(atharva.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Griffith", dry_run=False))
+  # arrangement.shift_contents(os.path.join(shaunakam.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Whitney", dry_run=False))
+  # arrangement.shift_contents(os.path.join(shaunakam.TIKA_DIR, "16/008"), start_index=5, substitute_content_offset=-3, end_index=28, replacer=lambda md_file, x: details_helper.replace_with_detail_from_content(md_file=md_file, content=x, title="Griffith", dry_run=False))
 
   # vedic_scriptures.dump_sequence(url="https://vedicscriptures.in/atharvaveda/20/132/0/5", path_maker=path_maker, max_mantras=1)
   # vedic_scriptures.dump_sequence(url="https://vedicscriptures.in/atharvaveda/15/14/0/3", path_maker=path_maker, max_mantras=21)

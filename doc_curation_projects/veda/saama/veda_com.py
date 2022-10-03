@@ -11,14 +11,14 @@ from urllib.parse import urljoin
 def path_maker(url):
   mode = ForceMode.MANTRA_COMMENT
   # Example: https://xn--j2b3a4c.com/samveda/54
-  Rk_id_to_name_map = saama.get_Rk_id_to_name_map_from_muulam()
+  (_, Rk_num_to_name_map) = saama.get_Rk_id_to_name_map_from_muulam()
   Rk_id_int = int(url.split("samveda/")[-1])
   Rk_id = "%04d"  % Rk_id_int
-  if Rk_id not in Rk_id_to_name_map:
+  if Rk_id not in Rk_num_to_name_map:
     Rk_id_prev = "%04d"  % (Rk_id_int - 1)
-    dest_path = os.path.join(saama.TIKA_DIR, Rk_id_to_name_map.get(Rk_id_prev).replace(Rk_id_prev, Rk_id) + ".md")
+    dest_path = os.path.join(saama.TIKA_DIR, Rk_num_to_name_map.get(Rk_id_prev).replace(Rk_id_prev, Rk_id) + ".md")
   else:
-    dest_path = os.path.join(saama.TIKA_DIR, Rk_id_to_name_map.get(Rk_id) + ".md")
+    dest_path = os.path.join(saama.TIKA_DIR, Rk_num_to_name_map.get(Rk_id) + ".md")
   return (dest_path, mode)
 
 
