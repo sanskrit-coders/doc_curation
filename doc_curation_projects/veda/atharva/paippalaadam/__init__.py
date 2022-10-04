@@ -34,3 +34,14 @@ def get_Rk_id_to_name_map_from_muulam():
     Rk_path = regex.sub(".*mUlam/", "", Rk_path).replace(".md", "")
     Rk_id_to_name_map[Rk_id_numerical] = Rk_path
   return Rk_id_to_name_map
+
+
+def get_suukta_id_to_rk_map():
+  suukta_id_to_rk_map = {}
+  for kaanda_index in range(1, 21):
+    kaanda_id = f"{kaanda_index:02}"
+    suukta_ids = [f"{kaanda_id}/{x}" for x in os.listdir(os.path.join(MULA_DIR, kaanda_id)) if x != "_index.md"]
+    for suukta_id in suukta_ids:
+      rk_ids = [f"{suukta_id}/{x}" for x in os.listdir(os.path.join(MULA_DIR, suukta_id)) if x != "_index.md"]
+      suukta_id_to_rk_map[suukta_id] = sorted(rk_ids)
+  return suukta_id_to_rk_map

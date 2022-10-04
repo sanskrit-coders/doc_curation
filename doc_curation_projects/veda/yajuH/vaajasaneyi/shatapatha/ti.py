@@ -11,6 +11,8 @@
 # noinspection PyUnresolvedReferences
 import logging
 import os, regex
+
+from doc_curation_projects.veda.yajuH.vaajasaneyi import shatapatha
 from indic_transliteration import sanscript
 from indic_transliteration.sanscript.schemes import brahmic
 from indic_transliteration.sanscript.schemes.brahmic import accent
@@ -21,7 +23,7 @@ from doc_curation.md.library import metadata_helper
 from doc_curation import book_data
 from doc_curation.md.file import MdFile
 
-base_dir = "/home/vvasuki/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/weber-srotaH/sasvaram-alt"
+base_dir = os.path.join(shatapatha.CONTENT_BASE, "weber-srotaH/sasvaram-alt")
 devanagari = sanscript.SCHEMES[sanscript.DEVANAGARI]
 
 

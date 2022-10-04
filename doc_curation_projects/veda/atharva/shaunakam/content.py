@@ -39,6 +39,7 @@ def set_book_content(dry_run=False):
   arrangement.fix_index_files(dir_path=dest_dir_suuktas)
   include_helper.prefill_includes(dir_path=dest_dir_suuktas)
 
+
 def set_suukta_content(dry_run=False):
   md_files = arrangement.get_md_files_from_path(dir_path=dest_dir_suuktas, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
   for md_file in md_files:

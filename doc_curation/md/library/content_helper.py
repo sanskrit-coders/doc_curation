@@ -22,14 +22,14 @@ def copy_contents(src_dir, dest_dir, detail_title=None, dest_content_condition=N
   for src_md_file in src_md_files:
     path_suffix = regex.sub(f"{src_dir}/*(.+)", r"\1", src_md_file.file_path)
     dest_md_file = MdFile(file_path=os.path.join(dest_dir, path_suffix))
+    (metadata_src, content_src) = src_md_file.read()
     if not os.path.exists(dest_md_file.file_path):
       if not create_missing_files:
         logging.info(f"Skipping {path_suffix} - Dest file missing.")
         continue
       else:
-        dest_md_file.dump_to_file(metadata={}, content="", dry_run=dry_run)
+        dest_md_file.dump_to_file(metadata=metadata_src, content="", dry_run=dry_run)
     (metadata_dest, content_dest) = dest_md_file.read()
-    (metadata_src, content_src) = src_md_file.read()
     score = text_utils.normalized_edit_distance(a=content_dest, b=content_src, strip_svaras=False)
     if score == 0:
       continue

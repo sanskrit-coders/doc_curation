@@ -8,21 +8,30 @@ from bs4 import NavigableString, BeautifulSoup
 import doc_curation.md.library.arrangement
 from doc_curation.md import library, content_processor
 from doc_curation.md.file import MdFile
-from doc_curation.md.library import metadata_helper
+from doc_curation.md.library import metadata_helper, arrangement
 from doc_curation.scraping.html_scraper import souper
 
 
 def footnote_extractor(footnote_div):
   footnote_elements = footnote_div.findChildren('p',recursive=False)
-  content_out = ""
+  definitions = {}
+  prev_footnote = None
   for tag in footnote_elements:
     anchors = tag.findChildren('a',recursive=False)
     if len(anchors) < 2:
       continue
-    footnote_id = anchors[0].get('name').strip()
-    for anchor in anchors:
-      anchor.decompose()
+    footnote_id = anchors[0].get('name')
+    anchors[0].decompose()
     definition = get_text(tag).strip()
+    if footnote_id is None:
+      definitions[prev_footnote] += definition
+    else:
+      footnote_id = footnote_id.strip()
+    definitions[footnote_id] = definition
+    prev_footnote = footnote_id
+
+  content_out = ""
+  for footnote_id, definition in definitions.items():
     content_out += "\n\n[^%s]: %s" % (footnote_id, definition)
   content_out = content_out.replace("", " - ")
   return content_out
@@ -89,8 +98,8 @@ def get_content(soup, main_content_extractor=get_main_content):
 
   (main_div, footnote_div) = get_content_divs(soup=soup)
   content_out = main_content_extractor(main_div)
-
-  content_out += footnote_extractor(footnote_div)
+  if footnote_div is not None:
+    content_out += footnote_extractor(footnote_div)
   content_out = doc_curation.md.content_processor.footnote_helper.define_footnotes_near_use(content=content_out)
   replacements = {"â": "ā", "î": "ī", "û": "ū", "": "\\`", "": " - ", " ": " "}
   for x, y in replacements.items():
@@ -103,9 +112,12 @@ def get_content(soup, main_content_extractor=get_main_content):
 def dump(url, outfile_path, main_content_extractor=get_main_content, dry_run=False, overwrite=False):
   if callable(outfile_path):
     outfile_path = outfile_path(url)
+    if outfile_path is None:
+      logging.info(f"Likely reached special page: {url}")
+      return None
   if not overwrite and os.path.exists(outfile_path):
     logging.info("skipping: %s - it exists already", outfile_path)
-    return
+    return None
   logging.info("Dumping: %s to %s", url, outfile_path)
   html = souper.get_html(url=url)
   soup = BeautifulSoup(html, 'html.parser')

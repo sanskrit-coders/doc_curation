@@ -206,4 +206,4 @@ def wrap_into_detail(content, title):
   content_out = content.strip()
   if content_out == "":
     return content
-  return details_helper.Detail(type="Oldenberg", content=c.strip()).to_html()
+  return Detail(type=title, content=content.strip()).to_html()

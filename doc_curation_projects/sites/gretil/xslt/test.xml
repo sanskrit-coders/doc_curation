@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="abhinavabhāratī_01-dn" >
+    <teiHeader>
+        <fileDesc>
+            <titleStmt>
+                <title>Abhinavabhāratī, Chapter 1</title>
+                <author>Abhinavagupta</author>
+            </titleStmt>
+            <publicationStmt>
+            </publicationStmt>
+            <sourceDesc>
+                <bibl>
+                    <title type="main">Nāṭyaśāstra of Bharatamuni</title>:
+                    <title type="sub">With the Commentary Abhinavabhāratī</title> of
+                    <author>Abhinavagupta</author>. Chapters 1-7 Illustrated, Vol. 1 Revised and critically edited by Dr. <editor xml:id="AU">K. Krishnamoorthy</editor>, M.A., B.T., Ph.D.
+                    <imprint>
+                        <publisher>Oriental Institute</publisher>
+                        <pubPlace>Vadodara</pubPlace>
+                        <date when="1966">1992</date>
+                    </imprint>
+                    <series>
+                        <title level="s">Gaekwad's Oriental Series</title>
+                        <biblScope type="number">34</biblScope>
+                        <respStmt>
+                            <resp>General Editor</resp>:
+                            <name>Ramakrishna T. Vyas</name>
+                        </respStmt>
+                    </series>
+                </bibl>
+            </sourceDesc>
+        </fileDesc>
+        <encodingDesc>
+        </encodingDesc>
+        <revisionDesc>
+        </revisionDesc>
+    </teiHeader>
+
+
+    <text>
+        <body>
+            <div>
+            <lg>
+                <l>
+                    <seg type="pāda">यस्तन्मयान्हृदयसंवदनक्रमेण</seg>
+                    <seg type="pāda">द्राक्चित्रशक्तिगणभूमिविभागभागी ।</seg>
+                </l>
+                <l>
+                    <seg type="pāda">हर्षोल्लसत्परविकारजुषः करोति</seg>
+                    <seg type="pāda">वन्देतमां तमहमिन्दुकलावतंसम् ॥ १ ॥</seg>
+                </l>
+            </lg>
+            <lg><l>यदा तु शबलं वस्तु युगपत् प्रतिपद्यते ।</l><lb ed="ri"/>
+                <l>तदान्यानन्यभेदेन सर्वमेव प्रतीयते ॥</l></lg><lb ed="ri"/>
+        </div>
+        </body>
+    </text>
+</TEI>
