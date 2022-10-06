@@ -16,7 +16,7 @@ def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVA
     c = aksharamukha.transliterate.process(src=source_script, tgt=dest_script, txt=text, nativize = True, pre_options = aksharamukha_pre_options, post_options = aksharamukha_post_options)
   else:
     text = text.replace("+++(", "<<").replace(")+++", ">>")
-    c = sanscript.transliterate(text, source_script, dest_script, suspend_on=set("<<"), suspend_off=set(">>"))
+    c = sanscript.transliterate(text, source_script, dest_script, suspend_on=set(("<", "{{")), suspend_off=set((">", "}}")))
     c = sanscript.SCHEMES[dest_script].dot_for_numeric_ids(c)
     c = c.replace("<<", "+++(").replace(">>", ")+++")
   if dest_script == sanscript.DEVANAGARI:

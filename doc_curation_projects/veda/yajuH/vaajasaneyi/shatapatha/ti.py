@@ -18,12 +18,12 @@ from indic_transliteration.sanscript.schemes import brahmic
 from indic_transliteration.sanscript.schemes.brahmic import accent
 
 from doc_curation.scraping.misc_sites import titus
-from doc_curation.md import library
+from doc_curation.md import library, content_processor
 from doc_curation.md.library import metadata_helper
 from doc_curation import book_data
 from doc_curation.md.file import MdFile
 
-base_dir = os.path.join(shatapatha.CONTENT_BASE, "weber-srotaH/sasvaram-alt")
+base_dir = os.path.join(shatapatha.CONTENT_BASE, "weber-srotaH/sasvaram")
 devanagari = sanscript.SCHEMES[sanscript.DEVANAGARI]
 
 
@@ -90,6 +90,6 @@ def dump_text(base_dir, do_transliteration=False):
 if __name__ == '__main__':
   # dump_text(base_dir=base_dir, do_transliteration=True)
   # library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: fix_text(c))
-  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/weber-srotaH/sasvaram", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, title_index_pattern=None) # 
-
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path=base_dir, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, title_index_pattern=None) # 
+  library.apply_function(fn=content_processor.replace_texts, dir_path=base_dir, patterns=["(?<=## )(?=[०-९]\n)"], replacement="०")
   pass

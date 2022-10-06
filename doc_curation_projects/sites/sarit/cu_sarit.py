@@ -1,7 +1,9 @@
 import logging
 import os
 
-import doc_curation.md.library.arrangement
+from indic_transliteration import sanscript
+from doc_curation.md.library import arrangement
+from doc_curation.md import content_processor
 from curation_utils.file_helper import clear_bad_chars
 from doc_curation import tei
 from doc_curation.md import library
@@ -46,8 +48,18 @@ def haravijaya():
     dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/kAvyam/rathnAkara-TEI/haravijaya/%s/hv-%s-k.txt" % (id, id), md_path="/home/vvasuki/vishvAsa/kAvyam/content/laxyam/padyam/haravijayaH/%s.md" % id)
 
 
+def dump_brahmapuraana():
+  md_path = "/home/vvasuki/vishvAsa/purANam/content/brahma-purANam.md"
+  dir_path = md_path.replace(".md", "")
+  # dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit/brahmapurana.xml", md_path=md_path, xsl=os.path.join(os.path.dirname(__file__), "xslt/purANa.xsl"), overwrite=True)
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=md_path, patterns=["## (?=\d\n)"], replacement="## 0")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=md_path, patterns=["## (?=\d\d\n)"], replacement="## 0")
+  # MdFile(file_path=md_path).split_to_bits(source_script=sanscript.IAST, title_index_pattern=None)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: content_processor.transliterate(c, source_script=sanscript.IAST), dry_run=False)
+
 
 if __name__ == '__main__':
   # dump_naatyashaastra()
   # dump_shRngaaraprakaasha()
-  dump_miimaamsaa()
+  # dump_miimaamsaa()
+  dump_brahmapuraana()

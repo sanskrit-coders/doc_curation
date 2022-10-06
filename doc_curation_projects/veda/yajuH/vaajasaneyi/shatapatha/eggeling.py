@@ -17,13 +17,14 @@ from indic_transliteration import sanscript
 
 base_dir = os.path.join(shatapatha.CONTENT_BASE, "eggeling/")
 
+
 def dest_path_maker(url, base_dir):
   html = souper.get_html(url=url)
   soup = BeautifulSoup(html, 'html.parser')
   path_suffix = soup.select_one(".margnote")
   if path_suffix is None:
     return None
-  path_suffix = path_suffix.text
+  path_suffix = path_suffix.text.replace(";", ":")
   ordinals = [int(x) for x in path_suffix.split(":") if x != ""]
   assert len(ordinals) >= 3
   return os.path.join(base_dir, f"{ordinals[0]:02}/{ordinals[1]:02}/{ordinals[2]}.md")
@@ -48,9 +49,9 @@ def special_pages():
 
 if __name__ == '__main__':
   # special_pages()
-  # sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbr/sbe12/sbe1214.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)
-  sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbr/sbe12/sbe1203.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)
-  sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbr/sbe26/sbe2603.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)
+  # sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbr/sbe12/sbe1203.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)
+  # sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbr/sbe26/sbe2603.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)
+  sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbr/sbe41/sbe4103.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)
   sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbr/sbe43/sbe4303.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)
   sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbr/sbe44/sbe44003.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)
   # para_translation.split(base_dir=base_dir)
