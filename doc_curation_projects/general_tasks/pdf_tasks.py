@@ -24,5 +24,5 @@ if __name__ == '__main__':
     #     doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="/home/vvasuki/Documents/books/granthasangrahaH/history/New-History-Of-The-Marathas-Vol%d.pdf" % i,  small_pdf_pages=10, start_page=1, detext=False)
     # doc_curation.pdf.drive_ocr.split_and_ocr_on_drive(pdf_path="", small_pdf_pages=10, detext=False)
     # doc_curation.pdf.drive_ocr.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/kAvyam/stotram/shrIvaiShNavAH/4kDivyaPrabandham", small_pdf_pages=10, detext=True)
-    doc_curation.pdf.drive_ocr.split_and_ocr_all( dir_path="/home/vvasuki/Documents/books/granthasangrahaH/kalpaH/Baudhayana-Prayoga-Ratna-Mala.pdf", small_pdf_pages=5, detext=False)
+    doc_curation.pdf.drive_ocr.split_and_ocr_all( dir_path="/home/vvasuki/Documents/books/granthasangrahaH/bhAShA/sanskrit", small_pdf_pages=5, detext=False)
     # doc_curation.pdf.drive_ocr.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/vyAkaraNam/deshapANDeya-mAdhavaH/", small_pdf_pages=10, detext=False)
