@@ -1,3 +1,4 @@
+from curation_utils import archive_utility
 import logging
 from urllib.error import HTTPError
 import wget, os
@@ -84,6 +85,9 @@ def get_sanskrit():
   get_all(years, out_dir, url_maker=lambda year, month: f"https://chandamama.in/resources/sanskrit/{year}/Chandamama_Sanskrit_{year}_{month:02}.pdf")
 
 
+BASE = "/home/vvasuki/Documents/books/granthasangrahaH/bhAShA/"
+
+
 if __name__ == '__main__':
   # get_telugu()
   # get_malayalam()
@@ -92,4 +96,6 @@ if __name__ == '__main__':
   # get_assamese()
   # get_bengali()
   # get_hindI()
-  get_sanskrit()
+  # get_sanskrit()
+
+  archive_utility.update_item(item_id="chandamama_telugu_all", dir_path=os.path.join(BASE, "telugu/chandamama"))
