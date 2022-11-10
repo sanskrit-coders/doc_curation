@@ -66,6 +66,7 @@ def dump_substack():
   substack.scrape_free_articles_from_index_anchors(url="https://nemets.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/nemets", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://rasajournal.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/rasajournal", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://ekavali.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/ekavali", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://bharadvajatmaja.substack.com/archive", dir_path="/home/vvasuki/hindu-comm/weblogs/bharadvajatmaja", dry_run=False)
   pass
 
 
