@@ -23,7 +23,7 @@ for title in parva_to_data_id_map.keys():
 
 def get_doc_data(parva_num):
   from curation_utils.google import sheets
-  doc_data = sheets.IndexSheet(spreadhsheet_id="1N9klz4d4sr5BRDlKU1jTCwZS9tC1s_h2HEvChIH5CAM", worksheet_name=str(parva_num), id_column="Id", google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json')
+  doc_data = sheets.IndexSheet(spreadhsheet_id="1N9klz4d4sr5BRDlKU1jTCwZS9tC1s_h2HEvChIH5CAM", worksheet_name=str(parva_num), id_column="Id", google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/sanskritnlp/service_account_key.json')
   return doc_data.get_df()
 
 

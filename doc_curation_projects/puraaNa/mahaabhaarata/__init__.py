@@ -38,7 +38,7 @@ def get_adhyaaya_to_source_file_map(md_path=PATH_GP):
 
 def get_doc_data(worksheet_name="कार्यावली"):
     from curation_utils.google import sheets
-    doc_data = sheets.IndexSheet(spreadhsheet_id="1sNH1AWhhoa5VATqMdLbF652s7srTG0Raa6K-sCwDR-8", worksheet_name=worksheet_name, id_column="पर्व-अध्यायः", google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json')
+    doc_data = sheets.IndexSheet(spreadhsheet_id="1sNH1AWhhoa5VATqMdLbF652s7srTG0Raa6K-sCwDR-8", worksheet_name=worksheet_name, id_column="पर्व-अध्यायः", google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/sanskritnlp/service_account_key.json')
     return doc_data
 
 

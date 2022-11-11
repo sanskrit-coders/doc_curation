@@ -201,7 +201,7 @@ def set_title_from_content(md_file, title_extractor, rename=True, log_level=logg
 
 def fix_field_values(md_files,
                      spreadhsheet_id, worksheet_name, id_column, value_column,
-                     md_file_to_id, md_frontmatter_field_name="title", google_key='/home/vvasuki/sysconf/kunchikA/google/sanskritnlp/service_account_key.json', post_process_fn=None,
+                     md_file_to_id, md_frontmatter_field_name="title", google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/sanskritnlp/service_account_key.json', post_process_fn=None,
                      dry_run=False):
   # logging.debug(adhyaaya_to_mp3_map)
   logging.info("Fixing titles of %d files", len(md_files))
