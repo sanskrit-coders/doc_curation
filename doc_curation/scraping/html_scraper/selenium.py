@@ -114,9 +114,12 @@ def click_element(browser, element):
 
 def click_link_by_text(browser, element_text):
   try:
-    subunit_element = browser.find_element(By.LINK_TEXT, element_text)
+    subunit_elements = browser.find_elements(By.LINK_TEXT, element_text)
+    if len(subunit_elements) == 0:
+      logging.warning("Could not find %s", element_text)
+      return False
     logging.info("Clicking: %s" % element_text)
-    click_element(browser=browser, element=subunit_element)
+    click_element(browser=browser, element=subunit_elements[-1])
     return True
   except NoSuchElementException:
     logging.warning("Could not find %s", element_text)

@@ -20,4 +20,4 @@ def get_tamil(browser):
 if __name__ == '__main__':
   browser = parankusha.get_logged_in_browser(headless=False)
   # get_tamil(browser=browser)
-  parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "सच्चरित्र-रक्षा", "सुदर्शनपाञ्चजन्यधारणविधिर्नाम प्रथमोऽधिकारः"], outdir="AryaH/hinduism/branches/vaiShNavaH/shrI-sampradAyaH/kriyA/sachcharitra-raxA/1.md")
+  parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "निक्षेप-रक्षा", "expand:निक्षेप-रक्षा", "expand:उपोद्घातः", "उपोद्घातः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/vaiShNavaH/shrI-sampradAyaH/venkaTanAthaH/nixepa-raxA")

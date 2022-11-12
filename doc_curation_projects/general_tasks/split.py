@@ -29,9 +29,9 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.split_to_bits,  dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/content/tamiL/4k-divya-prabandha/hart/10_pEriya_thirumOzhi_thirumangai_azhvar_pAsurams_948_-2031.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.ISO, mixed_languages_in_titles=False, title_index_pattern=None, maybe_use_dravidian_variant="force", max_length=70) # 
 
   ## None Script
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/articles/tantrAgamAH/svoboda/aghora/3_law_of_karma", dry_run=False, source_script=None, start_index=0)
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="", dry_run=False, source_script=None, start_index=0)
 
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/jyotiSham/content/observation/history/hindu/precession_records/direct_acknowledgement.md", dry_run=False, source_script=None,  title_index_pattern=None)
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/economics/assets/goods/tradeables.md", dry_run=False, source_script=None,  title_index_pattern=None)
   # MdFile(file_path="/home/vvasuki/vishvAsa/notes-hugo/content/sapiens/branches/Aryan/kentum/germanic/english/USA/articles/expansion_of_england_seel.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, title_index_pattern=None)
   #  , title_index_pattern=None
   
