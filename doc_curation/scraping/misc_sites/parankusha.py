@@ -3,6 +3,8 @@ import logging
 import os
 import traceback
 
+from selenium.webdriver.common.by import By
+
 from doc_curation import book_data
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper.selenium import click_link_by_text
@@ -26,21 +28,21 @@ def get_logged_in_browser(headless=True):
   """Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen """
   browser = scraping.get_selenium_chrome(headless=headless)
   browser.get("http://parankusan.cloudapp.net/Integrated/Texts.aspx")
-  username = browser.find_element_by_id("txtUserName")
+  username = browser.find_element(By.ID, "txtUserName")
   username.send_keys(configuration_parankusha["user"])
-  browser.find_element_by_id("btnNext").click()
-  browser.find_element_by_id("txtPassword").send_keys(configuration_parankusha["pass"])
-  browser.find_element_by_id("btnLogin").click()
+  browser.find_element(By.ID, "btnNext").click()
+  browser.find_element(By.ID, "txtPassword").send_keys(configuration_parankusha["pass"])
+  browser.find_element(By.ID, "btnLogin").click()
   browser.get("http://parankusan.cloudapp.net/Integrated/Texts.aspx")
   return browser
 
 
 def expand_tree_by_text(browser, element_text):
   try:
-    subunit_element = browser.find_element_by_link_text(element_text)
-    expansion_element = subunit_element.find_element_by_xpath(xpath="./..")
-    expansion_element = subunit_element.find_element_by_xpath(xpath="./../preceding-sibling::td")
-    expansion_element = subunit_element.find_element_by_xpath(xpath="./../preceding-sibling::td/descendant::a")
+    subunit_element = browser.find_element(By.LINK_TEXT, element_text)
+    expansion_element = subunit_element.find_element(By.XPATH, xpath="./..")
+    expansion_element = subunit_element.find_element(By.XPATH, xpath="./../preceding-sibling::td")
+    expansion_element = subunit_element.find_element(By.XPATH, xpath="./../preceding-sibling::td/descendant::a")
     logging.info("Expanding: %s" % element_text)
     # subunit_element.click()
     # Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen 
@@ -52,8 +54,8 @@ def expand_tree_by_text(browser, element_text):
 
 
 def deduce_text_name(browser, sequence):
-  element = browser.find_elements_by_css_selector("td>a.tv_0.tv_3")[-1]
-  # element = browser.find_elements_by_css_selector("#gvResults tr[valign=\"top\"] td")[-1]
+  element = browser.find_elements(By.CSS_SELECTOR, "td>a.tv_0.tv_3")[-1]
+  # element = browser.find_elements(By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"] td")[-1]
   return "%02d %s" % (sequence, element.text.strip())
 
 
@@ -66,7 +68,7 @@ def get_output_path(text_name, outdir):
 def dump_text(browser, outdir, sequence):
   text_name = deduce_text_name(browser, sequence)
   out_file_path = get_output_path(text_name=text_name, outdir=outdir)
-  text_spans = browser.find_elements_by_css_selector("#gvResults tr[valign=\"top\"] td span")
+  text_spans = browser.find_element(By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"] td span")
   text_segments = [span.text.strip().replace("\n", "  \n") for span in text_spans]
   text = "\n\n".join(text_segments)
   md_file = MdFile(file_path=out_file_path)
@@ -121,7 +123,7 @@ def get_structured_text(browser, start_nodes, base_dir, unit_info_file):
     if os.path.exists(outfile_path):
       logging.info("Skipping " + outfile_path)
     else:
-      text_spans = browser.find_element_by_id("divResults").find_elements_by_tag_name("span")
+      text_spans = browser.find_element(By.ID, "divResults").find_element(By.TAG_NAME, "span")
       lines = ["\n", "\n"]
       for span in text_spans:
         lines.append(span.text + "  \n")

@@ -24,11 +24,11 @@ def get_book_browser(url):
   browser = scraping.get_selenium_chrome(headless=False)
   browser.get(url=url)
   time.sleep(6)
-  next_element = browser.find_element_by_link_text("पुस्तक पढ़ें")
+  next_element = browser.find_element(By.LINK_TEXT, "पुस्तक पढ़ें")
   browser.execute_script("arguments[0].click();", next_element)
   logging.info("Rewinding")
   for _ in tqdm(generator()):
-    prev_arrow = browser.find_element_by_css_selector("#prev")
+    prev_arrow = browser.find_element(By.CSS_SELECTOR, "#prev")
     if "hidden" in prev_arrow.get_attribute("style"):
       break
     try:
@@ -40,7 +40,7 @@ def get_book_browser(url):
 def get_page_content(browser):
   while True:
     try:
-      iframe = browser.find_element_by_tag_name("iframe")
+      iframe = browser.find_element(By.TAG_NAME, "iframe")
       content = iframe.get_attribute("srcdoc")
     except (StaleElementReferenceException, NoSuchElementException):
       continue
@@ -72,7 +72,7 @@ def dump_book(url, dest_html_path, final_url_check=None):
         dest_file.write(part_content + "\n")
       url_old = url
       part_content_old = part_content
-      next_arrow = browser.find_element_by_css_selector("#next")
+      next_arrow = browser.find_element(By.CSS_SELECTOR, "#next")
       if "hidden" in next_arrow.get_attribute("style"):
         break
       try:

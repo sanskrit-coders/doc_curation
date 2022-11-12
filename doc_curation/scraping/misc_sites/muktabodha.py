@@ -1,6 +1,8 @@
 import logging
 import os
 
+from selenium.webdriver.common.by import By
+
 import doc_curation.utils.sanskrit_helper
 import regex
 from bs4 import BeautifulSoup, Tag
@@ -95,14 +97,14 @@ def process_catalog_page_selenium(url, out_dir):
   # For some reason, soup does not manage to get the full source. Content of div.catalog_record_body is empty. Hence using selenium.
   
   browser.get(url=url)
-  text_links = browser.find_elements_by_link_text("View in Unicode transliteration")
+  text_links = browser.find_elements(By.LINK_TEXT, "View in Unicode transliteration")
   # The below yields rare transliteration errors, such as  तडिच्चञ्चलमायुश्च कस्य स्याज्जगतो [धृ]तिः ॥ in kulArNavatantra:30.
   # text_links = browser.find_elements_by_link_text("View in Unicode devanagari")
   if len(text_links) == 0:
     logging.warning("%s does not have text", url)
     return
 
-  catalog_body = browser.find_element_by_css_selector(".catalog_record_body")
+  catalog_body = browser.find_element(By.CSS_SELECTOR, ".catalog_record_body")
   metadata = get_front_matter(catalog_body.get_attribute('innerHTML'))
   logging.info(metadata)
 

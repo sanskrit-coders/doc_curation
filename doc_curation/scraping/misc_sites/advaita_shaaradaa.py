@@ -51,7 +51,7 @@ prakarana_texts = ["vivekachudamani", "shrutisarasamuddharanam", "shatashloki", 
 
 def get_text(url):
     browser.get(url=url)
-    chapter_links = browser.find_elements_by_css_selector(css_selector="ul#sidebar > li:not(.special) > a")
+    chapter_links = browser.find_elements(By.CSS_SELECTOR, "ul#sidebar > li:not(.special) > a")
     for chapter_link in chapter_links:
         target = chapter_link.get_attribute("href").replace(url, "").replace("/", "")
         if chapter_link.text.strip() == "" or target == "#":
@@ -62,8 +62,8 @@ def get_text(url):
             presence_of_element_located((By.CSS_SELECTOR, target))
         )
     
-    title_divs = browser.find_elements_by_css_selector("div.col-md-7")
-    chapter_divs = browser.find_elements_by_css_selector("div.chapter")
+    title_divs = browser.find_elements(By.CSS_SELECTOR, "div.col-md-7")
+    chapter_divs = browser.find_elements(By.CSS_SELECTOR, "div.chapter")
     text_md = ""
     if len(title_divs + chapter_divs) == 0:
         return None

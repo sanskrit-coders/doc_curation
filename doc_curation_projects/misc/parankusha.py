@@ -2,8 +2,9 @@ import logging
 
 from doc_curation.md import library, content_processor
 from doc_curation.md.file import MdFile
-from doc_curation.scraping import parankusha
 from indic_transliteration import sanscript
+
+from doc_curation.scraping.misc_sites import parankusha
 
 
 def get_tamil(browser):
@@ -18,5 +19,5 @@ def get_tamil(browser):
 
 if __name__ == '__main__':
   browser = parankusha.get_logged_in_browser(headless=False)
-  get_tamil(browser=browser)
-  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "देशिक-स्तोत्राणि", "expand:देशिक-स्तोत्राणि", "Stotram-श्री अभीतिस्तवः"], outdir="/home/vvasuki/sanskrit/raw_etexts/kAvyam/stotram/vedAnta-deshikaH/")
+  # get_tamil(browser=browser)
+  parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "सच्चरित्र-रक्षा", "सुदर्शनपाञ्चजन्यधारणविधिर्नाम प्रथमोऽधिकारः"], outdir="AryaH/hinduism/branches/vaiShNavaH/shrI-sampradAyaH/kriyA/sachcharitra-raxA/1.md")

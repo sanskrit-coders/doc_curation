@@ -4,10 +4,12 @@ from functools import lru_cache
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome import options
+from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.remote_connection import LOGGER
 import time
 from bs4 import BeautifulSoup
 
+from doc_curation.md.file import MdFile
 
 LOGGER.setLevel(logging.WARNING)
 from urllib3.connectionpool import log as urllibLogger
@@ -39,6 +41,7 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_css_selec
     logging.info("Skipping dumping: %s to %s", url, outfile_path)
     return
   logging.info("Dumping: %s to %s", url, outfile_path)
+  browser = get_browser()
   browser.get(url)
   os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
   with open(outfile_path, "w") as outfile:
@@ -62,6 +65,7 @@ def get_title(title_css_selector):
   if title_css_selector is None:
     return "UNKNOWN_TITLE"
   try:
+    browser = get_browser()
     title_element = browser.find_element_by_css_selector(title_css_selector)
     title = title_element.text.strip()
   except NoSuchElementException:
@@ -73,6 +77,7 @@ def dump_pages(url, out_path, next_button_css, content_css, page_id_css_selector
   if os.path.exists(out_path):
     return 
   logging.info("Dumping: %s to %s", url, out_path)
+  browser = get_browser()
   browser.get(url)
   page_number = 1
   prev_page_id = "DUMMY"
@@ -109,7 +114,7 @@ def click_element(browser, element):
 
 def click_link_by_text(browser, element_text):
   try:
-    subunit_element = browser.find_element_by_link_text(element_text)
+    subunit_element = browser.find_element(By.LINK_TEXT, element_text)
     logging.info("Clicking: %s" % element_text)
     click_element(browser=browser, element=subunit_element)
     return True

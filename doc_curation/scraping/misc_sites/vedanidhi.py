@@ -20,10 +20,10 @@ def get_logged_in_browser(headless=True):
     """Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen """
     browser = scraping.get_selenium_chrome(headless=headless)
     browser.get("https://vaakya.vedanidhi.in/login/")
-    username = browser.find_element_by_id("username")
+    username = browser.find_element_by_id(By.ID, "username")
     username.send_keys(site_configuration["user"])
-    browser.find_element_by_id("password").send_keys(site_configuration["pass"])
-    browser.find_element_by_id("submit_button").click()
+    browser.find_element_by_id(By.ID, "password").send_keys(site_configuration["pass"])
+    browser.find_element_by_id(By.ID, "submit_button").click()
     browser.get("https://vaakya.vedanidhi.in/browse/?lang=En")
     return browser
 

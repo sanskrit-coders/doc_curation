@@ -1,5 +1,7 @@
 import logging, regex
 
+from selenium.webdriver.common.by import By
+
 from doc_curation.scraping.html_scraper import selenium as selenium_scraper
 from selenium.webdriver.support.select import Select
 from urllib3.connectionpool import log as urllibLogger
@@ -18,18 +20,18 @@ def navigate_to_part(base_page_url, level_3_id, level_4_id=None, level_3_frame="
 
   browser.switch_to.frame("vadd")
   browser.switch_to.frame(level_3_frame)
-  Select(browser.find_element_by_name("TT3")).select_by_visible_text(str(level_3_id))
+  Select(browser.find_element(By.NAME, "TT3")).select_by_visible_text(str(level_3_id))
   browser.switch_to.default_content()
 
   if level_4_id != None:
     browser.switch_to.frame("vadd")
     browser.switch_to.frame("etaindexb")
-    Select(browser.find_element_by_name("TT4")).select_by_visible_text(str(level_4_id))
+    Select(browser.find_element(By.NAME, "TT4")).select_by_visible_text(str(level_4_id))
     browser.switch_to.default_content()
 
   browser.switch_to.frame("vadd")
   browser.switch_to.frame("etaindexb")
-  browser.find_element_by_name("TTForm").submit()
+  browser.find_element(By.NAME, "TTForm").submit()
   browser.switch_to.default_content()
 
 
