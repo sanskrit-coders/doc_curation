@@ -31,7 +31,7 @@ if __name__ == '__main__':
   ## None Script
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="", dry_run=False, source_script=None, start_index=0)
 
-  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/economics/assets/goods/tradeables.md", dry_run=False, source_script=None,  title_index_pattern=None)
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/economics/assets/goods/tradeables.md", dry_run=False, source_script=None,  title_index_pattern=None)
   # MdFile(file_path="/home/vvasuki/vishvAsa/notes-hugo/content/sapiens/branches/Aryan/kentum/germanic/english/USA/articles/expansion_of_england_seel.md",frontmatter_type=MdFile.TOML).split_to_bits(dry_run=False, source_script=None, title_index_pattern=None)
   #  , title_index_pattern=None
   

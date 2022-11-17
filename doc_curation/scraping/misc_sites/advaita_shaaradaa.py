@@ -72,7 +72,7 @@ def get_text(url):
         chapter_html = regex.sub("<(a|span)[^>]+>|</(a|span)>", "", chapter_html)
         chapter_html = regex.sub("<div[^>]+>", "<p>", chapter_html)
         chapter_html = regex.sub("</div[^>]+>", "</p>", chapter_html)
-        chapter_md = pypandoc.convert_text(source=chapter_html, to="gfm", format='html', extra_args=['--atx-headers'])
+        chapter_md = pypandoc.convert_text(source=chapter_html, to="gfm", format='html', extra_args=['--markdown-headings=atx'])
         text_md = "%s\n\n%s" % (text_md, chapter_md)
     return text_md
 
