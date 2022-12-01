@@ -18,7 +18,7 @@ from indic_transliteration import sanscript
 base_dir = os.path.join(shatapatha.CONTENT_BASE, "eggeling/")
 
 
-def dest_path_maker(url, base_dir):
+def dest_path_maker(url, base_dir, *args, **kwargs):
   html = souper.get_html(url=url)
   soup = BeautifulSoup(html, 'html.parser')
   path_suffix = soup.select_one(".margnote")
@@ -27,7 +27,7 @@ def dest_path_maker(url, base_dir):
   path_suffix = path_suffix.text.replace(";", ":")
   ordinals = [int(x) for x in path_suffix.split(":") if x != ""]
   assert len(ordinals) >= 3
-  return os.path.join(base_dir, f"{ordinals[0]:02}/{ordinals[1]:02}/{ordinals[2]}.md")
+  return (os.path.join(base_dir, f"{ordinals[0]:02}/{ordinals[1]:02}/{ordinals[2]}.md"), soup)
 
 
 def special_pages():

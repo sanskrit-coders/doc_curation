@@ -112,7 +112,7 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/articles/homa-variations", content_transformer=lambda x, y: content_processor.fix_plain_footnotes(x))
 
 
-  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/vishvAsa/purANam/content/agni-purANam", patterns=["\n॥"], replacement="॥")
+  library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/brAhmaH/shrI-bhAShyam_rAmAnujaH", patterns=["््+"], replacement="्")
 
 
 

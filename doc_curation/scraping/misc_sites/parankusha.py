@@ -6,7 +6,9 @@ import traceback
 from selenium.webdriver.common.by import By
 
 from doc_curation import book_data
+from doc_curation.md import library
 from doc_curation.md.file import MdFile
+from doc_curation.scraping.html_scraper import selenium
 from doc_curation.scraping.html_scraper.selenium import click_link_by_text
 from indic_transliteration import sanscript
 from selenium.common.exceptions import NoSuchElementException
@@ -65,12 +67,23 @@ def get_output_path(text_name, outdir):
   return os.path.join(outdir, file_helper.clean_file_path(text_name_transliterated) + ".md")
 
 
-def dump_text(browser, outdir, sequence):
+def dump_text(browser, outdir, sequence, has_comment=False):
   text_name = deduce_text_name(browser, sequence)
   out_file_path = get_output_path(text_name=text_name, outdir=outdir)
-  text_spans = browser.find_elements(By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"] td span")
-  text_segments = [span.text.strip().replace("\n", "  \n") for span in text_spans]
-  text = "\n\n".join(text_segments)
+  rows = browser.find_elements(By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"]")
+  text = ""
+  for row in rows:
+    tds = row.find_elements(By.CSS_SELECTOR, "td")
+    for td in tds:
+      spans = td.find_elements(By.CSS_SELECTOR, "span")
+      if len(spans) > 0:
+        text_segments = [span.text.strip().replace("\n", "  \n") for span in spans]
+        text += "\n\n".join(text_segments)
+        if has_comment:
+          comment_tds = td.find_elements(By.XPATH, './/following-sibling::*')
+          for comment_td in comment_tds:
+            text += f"\n\n<details><summary>टीका</summary>\n\n{comment_td.text.strip()}\n</details>\n\n"
+      
   md_file = MdFile(file_path=out_file_path)
   md_file.dump_to_file(metadata={"title": text_name}, content=text, dry_run=False)
 
@@ -83,14 +96,15 @@ def browse_nodes(browser, start_nodes):
       click_link_by_text(browser=browser, element_text=node)
 
 
-def get_texts(browser, outdir, start_nodes):
+def get_texts(browser, outdir, start_nodes, sequence_start=1, has_comment=False):
   browse_nodes(browser=browser, start_nodes=start_nodes)
   os.makedirs(name=outdir, exist_ok=True)
-  sequence = 1
-  dump_text(browser=browser, outdir=outdir, sequence=sequence)
+  sequence = sequence_start
+  dump_text(browser=browser, outdir=outdir, sequence=sequence, has_comment=has_comment)
   while click_link_by_text(browser=browser, element_text="Next"):
     sequence = sequence + 1
-    dump_text(browser=browser, outdir=outdir, sequence=sequence)
+    dump_text(browser=browser, outdir=outdir, sequence=sequence, has_comment=has_comment)
+  library.fix_index_files(dir_path=outdir, overwrite=False, dry_run=False)
 
 
 def get_structured_text(browser, start_nodes, base_dir, unit_info_file):

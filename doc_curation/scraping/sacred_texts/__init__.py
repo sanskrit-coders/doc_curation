@@ -1,11 +1,14 @@
 import logging
 import os
 
+from indic_transliteration import sanscript
+
 import doc_curation.md.content_processor.footnote_helper
 import regex
 from bs4 import NavigableString, BeautifulSoup
 
 import doc_curation.md.library.arrangement
+from curation_utils import scraping
 from doc_curation.md import library, content_processor
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper, arrangement
@@ -50,7 +53,11 @@ def get_text(tag):
   if isinstance(tag, NavigableString):
     content_out += tag
   elif tag.name == "i":
-    content_out += decode_italicized_text(tag.text)
+    text = tag.text
+    if len(text) <= 2:
+      content_out += decode_italicized_text(text)
+    else:
+      content_out += f"_{text}_"
   elif tag.name == "br":
     content_out += "  \n"
   else:
@@ -58,6 +65,10 @@ def get_text(tag):
       if child.name == "p":
         content_out += "\n\n"
       content_out += get_text(tag=child)
+  replacements = {"â": "ā", "î": "ī", "û": "ū", "": "\\`", "": " - ", " ": " "}
+  for x, y in replacements.items():
+    content_out = content_out.replace(x, y)
+    content_out = content_out.replace(x.capitalize(), y.capitalize())
   return content_out
 
 
@@ -70,7 +81,7 @@ def get_content_divs(soup):
     if len(footnote_tags) > 0:
       footnote_content_tag = partition
       break
-    else:
+    elif main_content_tag is None:
       main_content_tag = partition
   return (main_content_tag, footnote_content_tag)
 
@@ -83,6 +94,12 @@ def get_main_content(main_content_tag):
   return content_out
 
 
+def remove_superfluous_tags(soup):
+  souper.element_remover(soup=soup, css_selector="font[size='-1']")
+  souper.element_remover(soup=soup, css_selector="font[size='-2']")
+  souper.element_remover(soup=soup, css_selector="font[color='GREEN']")
+
+
 def get_content(soup, main_content_extractor=get_main_content):
   # Pandoc cannot handle html footnotes well by itself. Hence, not using it.
   souper.insert_divs_between_tags(soup, "hr")
@@ -92,26 +109,23 @@ def get_content(soup, main_content_extractor=get_main_content):
     footnote_md = f"[^{footnote_id}]"
     marker.parent.replace_with(footnote_md)
 
-  souper.element_remover(soup=soup, css_selector="font[size='-1']")
-  souper.element_remover(soup=soup, css_selector="font[size='-2']")
-  souper.element_remover(soup=soup, css_selector="font[color='GREEN']")
-
   (main_div, footnote_div) = get_content_divs(soup=soup)
   content_out = main_content_extractor(main_div)
   if footnote_div is not None:
     content_out += footnote_extractor(footnote_div)
   content_out = doc_curation.md.content_processor.footnote_helper.define_footnotes_near_use(content=content_out)
-  replacements = {"â": "ā", "î": "ī", "û": "ū", "": "\\`", "": " - ", " ": " "}
-  for x, y in replacements.items():
-    content_out = content_out.replace(x, y)
-    content_out = content_out.replace(x.capitalize(), y.capitalize())
   content_out = regex.sub("\n\n+", "\n\n", content_out)
   return content_out
 
 
+
+
 def dump(url, outfile_path, main_content_extractor=get_main_content, dry_run=False, overwrite=False):
+  soup = None
   if callable(outfile_path):
     outfile_path = outfile_path(url)
+    if isinstance(outfile_path, tuple):
+      outfile_path, soup = outfile_path
     if outfile_path is None:
       logging.info(f"Likely reached special page: {url}")
       return None
@@ -119,13 +133,32 @@ def dump(url, outfile_path, main_content_extractor=get_main_content, dry_run=Fal
     logging.info("skipping: %s - it exists already", outfile_path)
     return None
   logging.info("Dumping: %s to %s", url, outfile_path)
-  html = souper.get_html(url=url)
-  soup = BeautifulSoup(html, 'html.parser')
+  if soup is None:
+    soup = scraping.get_soup(url, features='html.parser')
+  full_title = title_from_element(soup, title_css_selector="h3,h4")
+  title = metadata_helper.title_from_text(text=full_title, num_words=3, target_title_length=30, script=sanscript.IAST)
   content = get_content(soup=soup, main_content_extractor=main_content_extractor)
-  title = souper.title_from_element(soup, title_css_selector="h4")
+  metadata = {"title": title}
+  if full_title != title:
+    metadata["full_title"] = full_title
+    content = f"{full_title}\n\n{content}"
   md_file = MdFile(file_path=outfile_path)
-  md_file.dump_to_file(metadata={"title": title}, content=content, dry_run=dry_run)
+  md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
+  metadata_helper.prepend_file_index_to_title(md_file=md_file, dry_run=dry_run)
   return soup
+
+def title_from_element(soup, title_css_selector=None, title_prefix=""):
+  title_elements = soup.select(title_css_selector)
+  titles = [get_text(title_element) for title_element in title_elements]
+  titles = [x for x in titles if x.strip() not in ["Footnotes"]]
+  if len(titles) > 0:
+    title = titles[0]
+    # title = " ".join(titles)
+  else:
+    title = ""
+  title = ("%s %s" % (title_prefix, title)).strip()
+  title = title.replace(" Footnotes", "")
+  return title
 
 
 def dump_serially(start_url, base_dir, dest_path_maker, dry_run=False):

@@ -28,8 +28,12 @@ def get_browser():
   browser = webdriver.Chrome(options=opts)
   browser.implicitly_wait(2)
 
-def get_soup(browser):
-  return BeautifulSoup(browser.page_source, features="lxml")
+def get_soup(x):
+  if hasattr(x, page_source):
+    return BeautifulSoup(browser.page_source, features="html.parser")
+  else:
+    elementHTML = x.get_attribute('outerHTML')
+    return BeautifulSoup(elementHTML,'html.parser')
 
 def get_text(browser, text_css_selector):
   text_elements = browser.find_elements_by_css_selector(text_css_selector)
