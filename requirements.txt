@@ -24,4 +24,5 @@ joblib
 tqdm
 roman
 editdistance
-
+kraken
+kraken[pdf]
