@@ -1,13 +1,10 @@
 import os
 
-import doc_curation.md.content_processor.embed_helper
-import doc_curation.md.content_processor.footnote_helper
-import doc_curation.md.content_processor.line_helper
 import doc_curation.utils.sanskrit_helper
 import regex
 
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper, section_helper
+from doc_curation.md.content_processor import include_helper, section_helper, details_helper
 from doc_curation.utils import patterns
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
@@ -95,8 +92,6 @@ if __name__ == '__main__':
 
   # library.apply_function(fn=section_helper.create_sections_from_terminal_digits, dir_path="/home/vvasuki/vishvAsa/vedAH/content/Rk/shAkalam/aitareya-brAhmaNam/", dry_run=False)
 
-  # library.apply_function(fn=details_helper.interleave_from_file, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/madhurA-vijayam/sarva-prastutiH/4.md", source_file=lambda x: x.replace("sarva-prastutiH", "AnglAnuvAdaH"), detail_title="tiruvenkaTAchAri (Eng)", dry_run=False)
-
   # for i in range(12, 20):
   # library.apply_function(fn=section_helper.autonumber, dir_path=f"/home/vvasuki/vishvAsa/purANam/content/vAmana-purANam/laghu-pAThaH.md", init_index=1)
   # library.apply_function(fn=MdFile.drop_sections, dir_path="/home/vvasuki/vishvAsa/purANam/static/rAmAyaNam/audIchya-pAThaH/vishvAsa-prastutiH", title_condition=lambda x: x != "मूलम्")
@@ -131,6 +126,9 @@ if __name__ == '__main__':
   # library.shift_contents(dir_path="/home/vvasuki/vishvAsa/purANam/static/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva/saMskRtam/rAmAnujaH/mUlam/13_xetra-xetrajna-yogaH", start_index=2, substitute_content_offset=-1)
 
   # Details
+  # library.apply_function(fn=details_helper.interleave_from_file, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/madhurA-vijayam/sarva-prastutiH/4.md", source_file=lambda x: x.replace("sarva-prastutiH", "AnglAnuvAdaH"), detail_title="tiruvenkaTAchAri (Eng)", dry_run=False)
+
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/purANam/content/mudgala-purANam/5_lambodara-charitam/25.md", content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c))
+
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH/01_Adiparva/01_anukramaNikAparva/001_anukramaNikAparva.md", content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.vishvAsa_sanskrit_transformer))
