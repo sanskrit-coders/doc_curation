@@ -70,7 +70,7 @@ def get_title(title_css_selector):
     return "UNKNOWN_TITLE"
   try:
     browser = get_browser()
-    title_element = browser.find_element_by_css_selector(title_css_selector)
+    title_element = browser.find_element(title_css_selector, by=By.CSS_SELECTOR)
     title = title_element.text.strip()
   except NoSuchElementException:
     title = "UNKNOWN_TITLE"
@@ -89,7 +89,7 @@ def dump_pages(url, out_path, next_button_css, content_css, page_id_css_selector
   with open(out_path, "w") as outfile:
     while True:
       if page_id_css_selector is not None:
-        element = browser.find_element_by_css_selector(page_id_css_selector)
+        element = browser.find_element(page_id_css_selector, by=By.CSS_SELECTOR)
         if element.tag_name.lower() == "input":
           page_id = element.get_attribute('value')
         else:
@@ -101,7 +101,7 @@ def dump_pages(url, out_path, next_button_css, content_css, page_id_css_selector
       logging.info("page_id: %s", page_id)
       text = get_text(browser=browser, text_css_selector=content_css)
       outfile.write(f"[[{page_id}]]\n\n{text}\n\n")
-      next_button = browser.find_element_by_css_selector(next_button_css)
+      next_button = browser.find_element(next_button_css, by=By.CSS_SELECTOR)
       if next_button is None or next_button.get_attribute("disabled") == "true":
         break
       else:

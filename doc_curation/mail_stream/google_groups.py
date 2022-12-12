@@ -52,7 +52,7 @@ def get_thread_messages_selenium(url, browser=thread_browser):
     expand_link.click()
   except NoSuchElementException:
     pass
-  subject = browser.find_element_by_css_selector("h1").text
+  subject = browser.find_element(value="h1", by=By.CSS_SELECTOR).text
   section_tags = browser.find_elements_by_css_selector("section")
   thread_dir = None
   messages = []
@@ -134,7 +134,7 @@ def scrape_threads(url, dest_dir, start_url=None, dumper=dump_messages_to_files,
           start_url = None
       (messages, subject) = get_thread_messages_selenium(url=thread_url)
       dumper(messages=messages, subject=subject, dest_dir=dest_dir, url=thread_url, dry_run=dry_run)
-    next_url_tag = browser.find_element_by_css_selector('[aria-label="Next page"]')
+    next_url_tag = browser.find_element('[aria-label="Next page"]', by=By.CSS_SELECTOR)
     if next_url_tag.get_attribute("aria-disabled") is not None:
       # TODO: The above is not working properly.
       break

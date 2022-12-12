@@ -3,6 +3,7 @@ import os
 
 from selenium import webdriver
 from selenium.webdriver.chrome import options
+from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.remote_connection import LOGGER
 
 LOGGER.setLevel(logging.WARNING)
@@ -28,14 +29,14 @@ def get_item(item_url):
     if "error" in root:
         logging.error("Could not retrieve: " + item_url)
         raise IOError(item_url)
-    data_rows = item_browser.find_element_by_css_selector(".declension").find_elements_by_css_selector(".row")
+    data_rows = item_browser.find_element(value=".declension", by=By.CSS_SELECTOR).find_elements_by_css_selector(".row")
     body_data = [root]
     headwords = [root]
     for row in data_rows:
         if row.text.strip().startswith("कृत"):
             continue
         body_data.append(row.text.replace("\n",  " = "))
-        values = row.find_element_by_css_selector(".col-8").text.split(" - ")
+        values = row.find_element(value=".col-8", by=By.CSS_SELECTOR).text.split(" - ")
         headwords.extend(values)
     item_browser.close()
     return (headwords, "<br>".join(body_data))

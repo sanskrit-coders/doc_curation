@@ -22,12 +22,12 @@ browser.implicitly_wait(6)
 
 def dump_page(outfile_path):
     logging.info(browser.current_url)
-    text_element = browser.find_element_by_css_selector("div.mangal_text")
+    text_element = browser.find_element(value="div.mangal_text", by=By.CSS_SELECTOR)
     os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
     with open(outfile_path, "a") as outfile:
         outfile.writelines(text_element.text)
     try:
-        next_link_element = browser.find_element_by_css_selector('[src="../image/next.gif"]')
+        next_link_element = browser.find_element('[src="../image/next.gif"]', by=By.CSS_SELECTOR)
         next_link_element.click()
         dump_page(outfile_path=outfile_path)
     except NoSuchElementException:

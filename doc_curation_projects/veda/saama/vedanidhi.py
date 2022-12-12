@@ -12,24 +12,24 @@ from indic_transliteration import sanscript
 
 def select_part(browser, veda, shaakhaa, text, division=None, chapter=None, para=None, cluster=None):
   time.sleep(2)
-  Select(browser.find_element_by_css_selector("select#vedam")).select_by_visible_text(veda)
+  Select(browser.find_element(value="select#vedam", by=By.CSS_SELECTOR)).select_by_visible_text(veda)
   time.sleep(2)
-  Select(browser.find_element_by_css_selector("select#shakha")).select_by_visible_text(shaakhaa)
+  Select(browser.find_element(value="select#shakha", by=By.CSS_SELECTOR)).select_by_visible_text(shaakhaa)
   time.sleep(2)
-  Select(browser.find_element_by_css_selector("select#text")).select_by_visible_text(text)
+  Select(browser.find_element(value="select#text", by=By.CSS_SELECTOR)).select_by_visible_text(text)
   if division is not None:
     time.sleep(2)
-    Select(browser.find_element_by_css_selector("select#division")).select_by_visible_text(division)
+    Select(browser.find_element(value="select#division", by=By.CSS_SELECTOR)).select_by_visible_text(division)
   if chapter is not None:
     time.sleep(2)
-    Select(browser.find_element_by_css_selector("select#chapter")).select_by_visible_text(chapter)
+    Select(browser.find_element(value="select#chapter", by=By.CSS_SELECTOR)).select_by_visible_text(chapter)
   if para is not None:
     time.sleep(2)
-    Select(browser.find_element_by_css_selector("select#para")).select_by_visible_text(para)
+    Select(browser.find_element(value="select#para", by=By.CSS_SELECTOR)).select_by_visible_text(para)
   if cluster is not None:
-    Select(browser.find_element_by_css_selector("select#cluster")).select_by_visible_text(cluster)
+    Select(browser.find_element(value="select#cluster", by=By.CSS_SELECTOR)).select_by_visible_text(cluster)
 
-  browser.find_element_by_css_selector("#browse-data1").click()
+  browser.find_element(value="#browse-data1", by=By.CSS_SELECTOR).click()
   time.sleep(2)
 
 

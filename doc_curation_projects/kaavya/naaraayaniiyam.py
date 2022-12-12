@@ -33,7 +33,7 @@ def get_item(id, dir_path):
     item_url = "https://sa.wikisource.org/wiki/" + urllib.parse.quote(dashaka_id)
     logging.info(item_url)
     browser.get(item_url)
-    text = browser.find_element_by_css_selector("div.poem").text
+    text = browser.find_element(value="div.poem", by=By.CSS_SELECTOR).text
     text = text.replace("cअ", "च").replace("cइ", "चि").replace("cई", "ची").replace("cउ", "चु").replace("cऊ", "चू").replace("cऋ", "चृ").replace("cॠ", "चॄ").replace("cऌ", "चॢ").replace("cॡ", "चॣ").replace("cए", "चे").replace("cऐ", "चै").replace("cओ", "चो").replace("cऔ", "चौ").replace("c", "च्").replace("ळ", "ल")
     shlokas = text.split("\n\n")
     outfile_path = os.path.join(dir_path, "%03d.md" % id)

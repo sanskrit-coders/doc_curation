@@ -3,6 +3,7 @@ import logging
 import os
 
 import regex
+from selenium.webdriver.common.by import By
 
 from doc_curation import scraping
 from selenium import webdriver
@@ -27,13 +28,13 @@ def generic_selenium_dumper(title, url, outfile_path, get_collapsible_content=Fa
   text = ""
   if not get_collapsible_content:
     try:
-      text = browser.find_element_by_css_selector("div.poem").text
+      text = browser.find_element(value="div.poem", by=By.CSS_SELECTOR).text
     except NoSuchElementException:
-      content_element = browser.find_element_by_css_selector(".mw-parser-output")
+      content_element = browser.find_element(value=".mw-parser-output", by=By.CSS_SELECTOR)
       para_elements = content_element.find_elements_by_tag_name("p")
       text = "\n\n".join(map(lambda x: x.text, para_elements))
   else:
-    text = browser.find_element_by_css_selector(".mw-collapsible-content").text
+    text = browser.find_element(value=".mw-collapsible-content", by=By.CSS_SELECTOR).text
   os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
   with open(outfile_path, "w") as outfile:
     outfile.writelines(text.replace("\n", "  \n"))
