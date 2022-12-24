@@ -107,8 +107,9 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/AgamaH/content/AryaH/hinduism/articles/homa-variations", content_transformer=lambda x, y: content_processor.fix_plain_footnotes(x))
 
 
-  library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/brAhmaH/shrI-bhAShyam_rAmAnujaH", patterns=["््+"], replacement="्")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/brAhmaH/shrI-bhAShyam_rAmAnujaH", patterns=["््+"], replacement="्")
 
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/kentum/mediterranian/articles/durant_caesar_and_christ", content_transformer=lambda x, y: section_helper.derominize_section_numbers(x))
 
 
   title_post_processor = None

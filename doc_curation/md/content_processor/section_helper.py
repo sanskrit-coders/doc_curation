@@ -116,6 +116,19 @@ def drop_sections(md_file, title_condition):
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
+def derominize_section_numbers(content):
+  lines = content.splitlines(keepends=False)
+  outlines = []
+  def deromanize(match):
+    import roman
+    number = roman.fromRoman(match.group(2))
+    return f"{match.group(1)} {number:02d} {match.group(3)}"
+  for line in lines:
+    outline = regex.sub("^(#+) *([XIVxiv]+)[\.\s]+(.+)", deromanize, line)
+    outlines.append(outline)
+  return "\n".join(outlines)
+
+
 def add_init_words_to_section_titles(md_file, num_words=2, title_post_processor=None, dry_run=False):
   from doc_curation.md.library import metadata_helper
   [metadata, content] = md_file.read()
