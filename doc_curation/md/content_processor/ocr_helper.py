@@ -1,7 +1,7 @@
 import regex
 
 
-def fix_iast_gb(text):
+def fix_iast_for_pdfs(text):
   # When Google Drive api is used to extract text from copy-pasteable pdfs, certain replacements are needed to recover proper text.
   from doc_curation.utils import patterns
   text = regex.sub(f"(n *\. *)(?={patterns.LOWER_CASE_ISO})", "ṇ", text)
@@ -63,4 +63,17 @@ def fix_iast_gb(text):
 def fix_google_ocr(text):
   text = regex.sub("^-+", "", text)
   text = regex.sub("\n", "\n\n", text)
+  return text
+
+
+def fix_google_ocr_iast_iso(text):
+  text = regex.sub("ş", "ṣ", text)
+  text = regex.sub("ń(?=[kg])", "ṅ", text)
+  text = regex.sub("ń(?=[cj])", "ñ", text)
+  text = regex.sub("ņ", "ṇ", text)
+  text = regex.sub("Š", "Ś", text)
+  text = regex.sub("Ş", "Ṣ", text)
+  text = regex.sub("š", "ś", text)
+  text = regex.sub("ä|ă", "ā", text)
+  text = regex.sub("ü", "ū", text)
   return text

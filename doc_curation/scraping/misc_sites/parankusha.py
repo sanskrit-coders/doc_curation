@@ -55,10 +55,14 @@ def expand_tree_by_text(browser, element_text):
     return False
 
 
-def deduce_text_name(browser, sequence):
+def deduce_text_name(browser, sequence=None):
   element = browser.find_elements(By.CSS_SELECTOR, "td>a.tv_0.tv_3")[-1]
   # element = browser.find_elements(By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"] td")[-1]
-  return "%02d %s" % (sequence, element.text.strip())
+  text_name = element.text.strip()
+  if sequence is None:
+    return text_name
+  else:
+    return "%02d %s" % (sequence, text_name)
 
 
 def get_output_path(text_name, outdir):
@@ -67,7 +71,7 @@ def get_output_path(text_name, outdir):
   return os.path.join(outdir, file_helper.clean_file_path(text_name_transliterated) + ".md")
 
 
-def dump_text(browser, outdir, sequence, has_comment=False):
+def dump_text(browser, outdir, sequence=None, has_comment=False):
   text_name = deduce_text_name(browser, sequence)
   out_file_path = get_output_path(text_name=text_name, outdir=outdir)
   rows = browser.find_elements(By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"]")
@@ -102,7 +106,8 @@ def get_texts(browser, outdir, start_nodes, sequence_start=1, has_comment=False)
   sequence = sequence_start
   dump_text(browser=browser, outdir=outdir, sequence=sequence, has_comment=has_comment)
   while click_link_by_text(browser=browser, element_text="Next"):
-    sequence = sequence + 1
+    if sequence is not None:
+      sequence = sequence + 1
     dump_text(browser=browser, outdir=outdir, sequence=sequence, has_comment=has_comment)
   library.fix_index_files(dir_path=outdir, overwrite=False, dry_run=False)
 
