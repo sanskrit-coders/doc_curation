@@ -10,7 +10,7 @@ from doc_curation.md.library import metadata_helper
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 
-ref_dir = "/home/vvasuki/vishvAsa/vedAH_Rk/static/sUtram/vasiShTha-dharma-sUtram/vishvAsa-prastutiH"
+ref_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_Rk/static/sUtram/vasiShTha-dharma-sUtram/vishvAsa-prastutiH"
 
 
 def fix_filenames():
@@ -23,11 +23,11 @@ def fix_filenames():
       return arrangement.get_sub_path_id(sub_path=regex.sub(".+/", "", str(x)), basename_id_pattern=r"(\d\du?_\d\d)")
     else:
       return "%s_%s" % (os.path.basename(os.path.dirname(x)), base_name.replace(".md", ""))
-  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/gobhila/gRhyam/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
+  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/gitland/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/gobhila/gRhyam/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
 
 
 def fix_includes():
-  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/gobhila/gRhyam/sUtra-TIkAH", file_pattern="[0-9][0-9]*.md")
+  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/gobhila/gRhyam/sUtra-TIkAH", file_pattern="[0-9][0-9]*.md")
   md_files = [f for f in md_files if os.path.basename(f.file_path) ]
   
   def include_fixer(match):
@@ -54,7 +54,7 @@ def english_dest_path_maker(url, base_dir):
 
 def fix_buhler():
   # Off by 1 in 4 as well. Then:
-  base_dir = "/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/gobhila/gRhyam/oldenberg/11"
+  base_dir = "/home/vvasuki/gitland/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/gobhila/gRhyam/oldenberg/11"
   # Merge 11, 12
   # library.shift_contents(base_dir, start_index=12, new_content_offset=1)
   arrangement.shift_contents(base_dir, start_index=23, substitute_content_offset=1)

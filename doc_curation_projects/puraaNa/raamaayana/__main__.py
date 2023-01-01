@@ -17,7 +17,7 @@ logging.basicConfig(
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
-md_file_path = "/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam"
+md_file_path = "/home/vvasuki/gitland/vishvAsa/purANam/content/rAmAyaNam"
 
 def get_titles_english():
   titles_english = MdFile.get_metadata_field_values(md_files=raamaayana.get_adhyaaya_md_files(md_file_path), field_name="title_english")

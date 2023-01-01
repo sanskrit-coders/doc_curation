@@ -9,7 +9,7 @@ from doc_curation.md.file import MdFile
 from doc_curation.md.content_processor import include_helper
 from indic_transliteration import sanscript
 
-dest_dir = "/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/sarva-prastutiH"
+dest_dir = "/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/manuH/sarva-prastutiH"
 
 def fix_includes():
   md_files = library.arrangement.get_md_files_from_path(dir_path=dest_dir, file_pattern="[0-9][0-9]*.md")
@@ -47,7 +47,7 @@ def migrate_and_include_shlokas(chapter_id):
   def destination_path_maker(title, original_path):
     return include_helper.static_include_path_maker(title, original_path, path_replacements={"content": "static", ".md": "", "manuH": "manuH/vishvAsa_prastutiH"}, use_preexisting_file_with_prefix=False)
 
-  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[include_helper.PATTERN_SHLOKA], dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/%02d.md" % chapter_id, destination_path_maker=destination_path_maker, title_maker=title_maker, replacement_maker=replacement_maker, dry_run=False)
+  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[include_helper.PATTERN_SHLOKA], dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/manuH/%02d.md" % chapter_id, destination_path_maker=destination_path_maker, title_maker=title_maker, replacement_maker=replacement_maker, dry_run=False)
 
 
 if __name__ == '__main__':

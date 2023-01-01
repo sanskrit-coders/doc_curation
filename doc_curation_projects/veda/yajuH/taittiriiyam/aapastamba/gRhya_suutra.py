@@ -11,7 +11,7 @@ from doc_curation.md.library import arrangement, metadata_helper, combination
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 
-content_dir_base = "/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/"
+content_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/"
 static_dir_base = content_dir_base.replace("content", "static")
 ref_dir = os.path.join(static_dir_base, "vishvAsa-prastutiH",)
 oldenberg_dir = ref_dir.replace("vishvAsa-prastutiH", "oldenberg")
@@ -26,7 +26,7 @@ def fix_filenames():
       return arrangement.get_sub_path_id(sub_path=regex.sub(".+/", "", str(x)), basename_id_pattern=r"(\d\du?_\d\d)")
     else:
       return "%s_%s" % (os.path.basename(os.path.dirname(x)), base_name.replace(".md", ""))
-  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
+  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
 
 
 
@@ -73,8 +73,8 @@ def fix_oldenberg():
 if __name__ == '__main__':
   # combine()
   fix_includes()
-  # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/apastamba-grihya-sutra/d/doc116791.html", base_dir="/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg/", dest_path_maker=oldenberg_dest_path_maker)
-  # para_translation.split(base_dir="/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg/")
+  # para_translation.dump_serially(start_url="https://www.wisdomlib.org/hinduism/book/apastamba-grihya-sutra/d/doc116791.html", base_dir="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg/", dest_path_maker=oldenberg_dest_path_maker)
+  # para_translation.split(base_dir="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/gRhyam/sUtra-pAThaH/oldenberg/")
   # fix_oldenberg()
   # fix_filenames()
 

@@ -175,7 +175,7 @@ def dump_all(base_path, urls=None, dry_run=False):
   for x in soup_toc.select("navMap>navPoint"):
     dump_nav_point(nav_point=x, toc_to_opf_contents=toc_to_opf_contents, base_path=base_path, urls=urls, dry_run=dry_run)
   # library.fix_index_files(dir_path=base_path)
-  # library.fix_index_files(dir_path="/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/meta/gItA-mudraNAlayAvRttiH")
+  # library.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/mahAbhAratam/meta/gItA-mudraNAlayAvRttiH")
   pass
 
 

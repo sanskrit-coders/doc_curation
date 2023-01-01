@@ -12,7 +12,7 @@ from doc_curation_projects.puraaNa.raamaayana import dump
 from indic_transliteration import sanscript
 
 source_file = "/home/vvasuki/sanskrit/raw_etexts/purANam/adhyAtma-rAmAyaNam/goraxapura-pAThaH/raw/kannada.html"
-dest_file = "/home/vvasuki/vishvAsa/purANam/content/adhyAtma-rAmAyaNam/goraxapura-pAThaH/kannaDAnuvAda.md"
+dest_file = "/home/vvasuki/gitland/vishvAsa/purANam/content/adhyAtma-rAmAyaNam/goraxapura-pAThaH/kannaDAnuvAda.md"
 dest_path = dest_file.replace(".md", "")
 
 detail_map = OrderedDict([
@@ -51,7 +51,7 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=dest_file, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.KANNADA)
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=os.path.join(dest_path, "0"), frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.KANNADA)
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=dest_path, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.KANNADA)
-  # dump.fix_metadata_and_paths(base_dir_ref="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH", base_dir=dest_path, sarga_identifier=lambda x: os.path.basename(x), dry_run=False)
+  # dump.fix_metadata_and_paths(base_dir_ref="/home/vvasuki/gitland/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH", base_dir=dest_path, sarga_identifier=lambda x: os.path.basename(x), dry_run=False)
   library.apply_function(
     fn=MdFile.transform, dir_path=dest_path,
     content_transformer=None,

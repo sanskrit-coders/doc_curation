@@ -18,7 +18,7 @@ logging.basicConfig(
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
-dest_dir_suuktas = "/home/vvasuki/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH"
+dest_dir_suuktas = "/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH"
 dest_dir_static = dest_dir_suuktas.replace("/content/", "/static/").replace("sarva-prastutiH", "")
 dest_dir_suukta_info = os.path.join(dest_dir_static, "info_vh")
 dest_dir_Rks = os.path.join(dest_dir_static, "mUlam")

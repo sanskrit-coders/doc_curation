@@ -1,7 +1,7 @@
 from doc_curation.md import library, content_processor
 from doc_curation_projects.smRti import utexas
 
-dir_path = "/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/parAsharaH/mAdhavIyam"
+dir_path = "/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/parAsharaH/mAdhavIyam"
 
 
 def special_fix():

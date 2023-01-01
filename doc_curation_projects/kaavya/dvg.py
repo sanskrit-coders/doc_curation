@@ -7,7 +7,7 @@ from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
 
-content_dir_base = "/home/vvasuki/vishvAsa/kannaDa/content/padya/DVG/kagga"
+content_dir_base = "/home/vvasuki/gitland/vishvAsa/kannaDa/content/padya/DVG/kagga"
 static_dir_base = content_dir_base.replace("content", "static")
 ref_dir = os.path.join(static_dir_base, "vishvAsa-prastutiH")
 

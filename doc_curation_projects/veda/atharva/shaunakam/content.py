@@ -12,7 +12,7 @@ from doc_curation.md.content_processor.include_helper import get_include
 from doc_curation.md.library import arrangement
 from indic_transliteration import sanscript
 
-dest_dir_suuktas = "/home/vvasuki/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH"
+dest_dir_suuktas = "/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH"
 dest_dir_static = dest_dir_suuktas.replace("/content/", "/static/").replace("sarva-prastutiH", "")
 dest_dir_suukta_info = os.path.join(dest_dir_static, "info_vh")
 dest_dir_Rks = os.path.join(dest_dir_static, "mUlam")

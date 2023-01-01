@@ -8,7 +8,7 @@ import regex
 from doc_curation.md.file import MdFile
 
 
-SAMHITA_DIR_STATIC = "/home/vvasuki/vishvAsa/vedAH_sAma/static/kauthumam/saMhitA"
+SAMHITA_DIR_STATIC = "/home/vvasuki/gitland/vishvAsa/vedAH_sAma/static/kauthumam/saMhitA"
 MULA_DIR = os.path.join(SAMHITA_DIR_STATIC, "mUlam")
 TIKA_DIR = os.path.join(SAMHITA_DIR_STATIC, "sarvASh_TIkAH")
 

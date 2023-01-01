@@ -14,11 +14,11 @@ from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
 PATTERN_RK = "\n[^#<>\[\(][^॥]+?॥\s*[०-९\d-:]+\s*॥.*?(?=\n|$)"
-PATH_ALL_SAMHITA = "/home/vvasuki/vishvAsa/vedAH-sAma/content/kauthumam/saMhitA/"
+PATH_ALL_SAMHITA = "/home/vvasuki/gitland/vishvAsa/vedAH-sAma/content/kauthumam/saMhitA/"
 
 
 def read_RV_map():
-  rv_muula = "/home/vvasuki/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/mUlam"
+  rv_muula = "/home/vvasuki/gitland/vishvAsa/vedAH/static/Rk/shAkalam/saMhitA/mUlam"
   md_files = arrangement.get_md_files_from_path(dir_path=rv_muula, file_pattern="**/[0-9][0-9]*.md")
   rv_map = {}
   for md_file in md_files:
@@ -40,7 +40,7 @@ def proximal_RV_text(saama_text, rv_map):
 
 
 def link_rv_texts():
-  saama_muula = "/home/vvasuki/vishvAsa/vedAH/static/sAma/kauthumam/saMhitA/mUlam"
+  saama_muula = "/home/vvasuki/gitland/vishvAsa/vedAH/static/sAma/kauthumam/saMhitA/mUlam"
   muula_md_files = arrangement.get_md_files_from_path(dir_path=saama_muula, file_pattern="**/[0-9][0-9]*.md")
   rv_map = read_RV_map()
   unmatched_files = []
@@ -56,7 +56,7 @@ def link_rv_texts():
       continue
     dest_path = str(muula_md.file_path).replace("mUlam", "vishvAsa-prastutiH")
     dest_md = MdFile(file_path=dest_path)
-    rv_url = str(rv_muula_path).replace("/home/vvasuki/vishvAsa/vedAH/static", "/vedAH").replace("mUlam", "vishvAsa-prastutiH")
+    rv_url = str(rv_muula_path).replace("/home/vvasuki/gitland/vishvAsa/vedAH/static", "/vedAH").replace("mUlam", "vishvAsa-prastutiH")
     metadata["similar_rv"] = rv_url
     metadata["edit_distance_to_rv"] = score
     (_, dest_content) = muula_md.read()

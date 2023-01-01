@@ -17,7 +17,7 @@ logging.basicConfig(
 
 def update():
     # logging.debug(adhyaaya_to_mp3_map)
-    base_dir = "/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH"
+    base_dir = "/home/vvasuki/gitland/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH"
     dest_md_files = raamaayana.get_adhyaaya_md_files(md_file_path=base_dir)
     doc_data = raamaayana.get_doc_data()
     doc_data_drAviDam = raamaayana.get_doc_data(worksheet_name="द्राविडपाठः")
@@ -38,32 +38,32 @@ def update():
           target_content = "%s\n\n" % audio_tag
 
         url = file_path.replace(base_dir, "/purANam/rAmAyaNam/audIchya-pAThaH/vishvAsa-prastutiH/")
-        included_file_path = url.replace("/purANam", "/home/vvasuki/vishvAsa/purANam/static")
+        included_file_path = url.replace("/purANam", "/home/vvasuki/gitland/vishvAsa/purANam/static")
         if os.path.exists(included_file_path):
             target_content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(field_names=None, classes=None, title="विश्वास-प्रस्तुतिः", url=url)
 
         url = file_path.replace(base_dir, "/purANam/rAmAyaNam/audIchya-pAThaH/iitk/")
-        included_file_path = url.replace("/purANam", "/home/vvasuki/vishvAsa/purANam/static")
+        included_file_path = url.replace("/purANam", "/home/vvasuki/gitland/vishvAsa/purANam/static")
         if os.path.exists(included_file_path):
             target_content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(field_names=None, classes=["collapsed"], title="IITK", url=url)
 
         url = file_path.replace(base_dir, "/purANam/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNa_iitk/")
-        included_file_path = url.replace("/purANam", "/home/vvasuki/vishvAsa/purANam/static")
+        included_file_path = url.replace("/purANam", "/home/vvasuki/gitland/vishvAsa/purANam/static")
         if os.path.exists(included_file_path):
             target_content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(field_names=None, classes=["collapsed"], title="भूषणम्", url=url)
 
         url = file_path.replace(base_dir, "/purANam/rAmAyaNam/audIchya-pAThaH/TIkA/shiromaNI_iitk/")
-        included_file_path = url.replace("/purANam", "/home/vvasuki/vishvAsa/purANam/static")
+        included_file_path = url.replace("/purANam", "/home/vvasuki/gitland/vishvAsa/purANam/static")
         if os.path.exists(included_file_path):
             target_content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(field_names=None, classes=["collapsed"], title="शिरोमणी", url=url)
 
         url = file_path.replace(base_dir, "/purANam/rAmAyaNam/audIchya-pAThaH/TIkA/tilaka_iitk/")
-        included_file_path = url.replace("/purANam", "/home/vvasuki/vishvAsa/purANam/static")
+        included_file_path = url.replace("/purANam", "/home/vvasuki/gitland/vishvAsa/purANam/static")
         if os.path.exists(included_file_path):
             target_content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(field_names=None, classes=["collapsed"], title="तिलकम्", url=url)
 
         url = file_path.replace(base_dir, "/purANam/rAmAyaNam/drAviDapAThaH/")
-        included_file_path = url.replace("/purANam", "/home/vvasuki/vishvAsa/purANam/static")
+        included_file_path = url.replace("/purANam", "/home/vvasuki/gitland/vishvAsa/purANam/static")
         if os.path.exists(included_file_path):
             classes = ["collapsed"]
             if adhyaaya_id >= "6":

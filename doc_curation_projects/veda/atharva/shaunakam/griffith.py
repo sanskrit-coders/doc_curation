@@ -44,4 +44,4 @@ def dump_suukta_info(dest_dir):
 
 
 if __name__ == '__main__':
-  dump_suukta_info(dest_dir="/home/vvasuki/vishvAsa/vedAH/static/atharva/shaunakam/rUDha-saMhitA/griffith")
+  dump_suukta_info(dest_dir="/home/vvasuki/gitland/vishvAsa/vedAH/static/atharva/shaunakam/rUDha-saMhitA/griffith")

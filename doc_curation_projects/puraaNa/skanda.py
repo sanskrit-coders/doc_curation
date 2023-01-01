@@ -10,7 +10,7 @@ from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
-BASE_DIR = "/home/vvasuki/vishvAsa/purANam/content/skanda-purANam"
+BASE_DIR = "/home/vvasuki/gitland/vishvAsa/purANam/content/skanda-purANam"
 
 def dump():
   from doc_curation.scraping import wikisource

@@ -12,7 +12,7 @@ from doc_curation.md.library import metadata_helper, combination
 from indic_transliteration import sanscript
 
 aux_source_list = ["vAchana", "sarva-TIkegaLu", "mUla"]
-main_source_path = "/home/vvasuki/vishvAsa/kannaDa/static/padya/kumAra-vyAsa-bhArata/vishvAsa-prastuti"
+main_source_path = "/home/vvasuki/gitland/vishvAsa/kannaDa/static/padya/kumAra-vyAsa-bhArata/vishvAsa-prastuti"
 STATIC_ROOT = os.path.dirname(main_source_path)
 
 parva_to_data_id_map={"01_Adi": "01_Adi", "02_sabhA": "03", "03_araNya": "06", "04_virATa": "07", "05_udyOga": "10", "06_bhIShma": "08", "07_drONa": "02", "08_karNa": "09", "09_shalya": "05", "10_gadA": "04"}
@@ -27,7 +27,7 @@ def get_doc_data(parva_num):
   return doc_data.get_df()
 
 
-def dump_parva(parva_num, dir_path="/home/vvasuki/vishvAsa/kannaDa/static/padya/kumAra-vyAsa-bhArata", dry_run=False):
+def dump_parva(parva_num, dir_path="/home/vvasuki/gitland/vishvAsa/kannaDa/static/padya/kumAra-vyAsa-bhArata", dry_run=False):
   doc_data = get_doc_data(parva_num=parva_num)
   for index, row in doc_data.iterrows():
     content = regex.sub("\n+", "  \n", row["P1_Padya"]).replace("||", "॥")
@@ -102,7 +102,7 @@ if __name__ == '__main__':
   # for parva_num in [2]:
   #   dump_parva(parva_num=parva_num)
   # combine()
-  make_sandhi_files(dest_path="/home/vvasuki/vishvAsa/kannaDa/content/padya/kumAra-vyAsa-bhArata")
+  make_sandhi_files(dest_path="/home/vvasuki/gitland/vishvAsa/kannaDa/content/padya/kumAra-vyAsa-bhArata")
   # make_audio_mds()
   # for x in aux_source_list + ["vishvAsa-prastuti"]:
   #   file_helper.rename_files(name_map=parva_id_to_title_map, path_prefix=os.path.join(os.path.dirname(main_source_path), x), dry_run=False)

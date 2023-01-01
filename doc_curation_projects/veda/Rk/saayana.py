@@ -83,13 +83,13 @@ def url_maker(subunit_path, *args, **kwargs):
 
 
 def dump_from_wiki():
-  # enumerated.dump_deep_text(url_maker=url_maker, dir_path="/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/sAyaNaH/", unit_info_file="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/book_data/vedaH/shakala/saMhitA.json", dumper=rv_wiki_dumper, dry_run=False, start_path="10/175", end_path="10/175", wait_between_requests=5)
+  # enumerated.dump_deep_text(url_maker=url_maker, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/sAyaNaH/", unit_info_file="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/book_data/vedaH/shakala/saMhitA.json", dumper=rv_wiki_dumper, dry_run=False, start_path="10/175", end_path="10/175", wait_between_requests=5)
   
   paths_to_correct = ["01/059", "01/065", "01/066", "01/067", "01/068", "01/069", "01/105", "01/108", "01/133", "01/154", "01/164", "01/179",
                       "03/033", "05/051", "05/054", "08/051", "08/058", "08/072", "08/092", 
                       "10/012",]
   for path in paths_to_correct:
-    enumerated.dump_deep_text(url_maker=url_maker, dir_path="/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/sAyaNaH/", unit_info_file="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/book_data/vedaH/shakala/saMhitA.json", dumper=rv_wiki_dumper, dry_run=False, start_path="%s.md" % path, end_path="%s.md" % path, wait_between_requests=1)
+    enumerated.dump_deep_text(url_maker=url_maker, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/sAyaNaH/", unit_info_file="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/book_data/vedaH/shakala/saMhitA.json", dumper=rv_wiki_dumper, dry_run=False, start_path="%s.md" % path, end_path="%s.md" % path, wait_between_requests=1)
 
 
 ## Warnings

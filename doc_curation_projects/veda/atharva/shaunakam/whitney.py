@@ -16,7 +16,7 @@ from doc_curation.md.content_processor import details_helper
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.html_scraper.souper import get_html, get_md_paragraphs_with_pandoc, get_md_paragraph
 
-whitney_dir_base = "/home/vvasuki/vishvAsa/vedAH/static/atharva/shaunakam/rUDha-saMhitA/whitney"
+whitney_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH/static/atharva/shaunakam/rUDha-saMhitA/whitney"
 
 
 def get_suukta_url(kaanda_index, subunit_index):

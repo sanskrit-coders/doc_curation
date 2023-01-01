@@ -14,7 +14,7 @@ from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
 PATTERN_RK = "\n[^#<>\[\(][^॥]+?॥\s*[०-९\d-:]+\s*॥.*?(?=\n|$)"
-PATH_ALL_SAMHITA = "/home/vvasuki/vishvAsa/vedAH/content/sAma/kauthumam/saMhitA/"
+PATH_ALL_SAMHITA = "/home/vvasuki/gitland/vishvAsa/vedAH/content/sAma/kauthumam/saMhitA/"
 
 
 def title_maker(text_matched, index, file_title):

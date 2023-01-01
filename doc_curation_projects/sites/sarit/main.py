@@ -24,7 +24,7 @@ def dump_sarit_markdown(src_dir, dest_dir):
 
 # tei.dump_md(tei_path="/home/vvasuki/sanskrit/SARIT-corpus/kumarila-tantravarttika.xml", md_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/tantravArtikam.md", xsl=os.path.join(os.path.dirname(__file__), "tantra-vArtikam.xsl"))
 
-# tei.dump_md(tei_path=os.path.join(os.path.dirname(__file__), "xslt/test.xml"), md_path="/home/vvasuki/vishvAsa/kAvyam/content/shAstram/nATyam/abhinavabhAratI/01.md", xsl=os.path.join(os.path.dirname(__file__), "xslt/tei-to-markdown-cu-sarit.xsl"))
+# tei.dump_md(tei_path=os.path.join(os.path.dirname(__file__), "xslt/test.xml"), md_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/shAstram/nATyam/abhinavabhAratI/01.md", xsl=os.path.join(os.path.dirname(__file__), "xslt/tei-to-markdown-cu-sarit.xsl"))
 
 
 # MdFile(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/tantravArtikam.md").dump_mediawiki("/home/vvasuki/sanskrit/raw_etexts/mImAMsA/tantravArtikam.wiki")

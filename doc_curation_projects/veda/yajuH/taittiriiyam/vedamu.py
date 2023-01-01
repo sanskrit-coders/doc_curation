@@ -1,7 +1,7 @@
 from doc_curation.md import library, content_processor
 from doc_curation.utils import patterns
 
-CONTENT_DIR = "/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/saMhitA/sAyaNaH"
+CONTENT_DIR = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/saMhitA/sAyaNaH"
 
 def dump_all():
   pass
@@ -27,4 +27,4 @@ def fix_all(dir_path=CONTENT_DIR):
 if __name__ == '__main__':
   # dump_all()
   # fix_all()
-  fix_all(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/saMhitA/sarva-prastutiH/4")
+  fix_all(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/saMhitA/sarva-prastutiH/4")

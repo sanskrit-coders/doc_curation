@@ -27,7 +27,7 @@ def dump_google_groups():
   pass
   # google_groups.scrape_threads(url="https://groups.google.com/g/hindu-vidya", dest_dir="/home/vvasuki/hindu-comm/hindu-vidya", dry_run=False)
   google_groups.scrape_threads(url="https://groups.google.com/g/advaitin", dest_dir="/home/vvasuki/hindu-comm/advaitin", dry_run=False, start_url="YlKKle4tC2s")
-  # google_groups.scrape_threads(url="https://groups.google.com/g/sadaswada", dest_dir="/home/vvasuki/vishvAsa/kAvyam/content/AsvAdaH/sadAsvAdaH", dumper=dump_sadaasvaada, dry_run=False)
+  # google_groups.scrape_threads(url="https://groups.google.com/g/sadaswada", dest_dir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/AsvAdaH/sadAsvAdaH", dumper=dump_sadaasvaada, dry_run=False)
   # google_groups.scrape_threads(url="https://groups.google.com/g/bvparishat", dest_dir="/home/vvasuki/hindu-comm/bvparishat", dry_run=False, start_url="ry4713TxiuQ")
   # google_groups.scrape_threads(url="https://groups.google.com/g/samskrita", dest_dir="/home/vvasuki/hindu-comm/samskrita", dry_run=False, start_url="qVDwKqFADvg")
   # google_groups.get_thread_messages_selenium(url="https://groups.google.com/g/bvparishat/c/vkOvpkrL97o")
@@ -35,8 +35,8 @@ def dump_google_groups():
 def word_clouds():
   stop_words = ["https", "groups", "group", "google", "com", "email", "subscribed", "msgid", "wrote", "gmail", "regards", "samskrita", "bvparishat", "http", "googlegroups", "तव", "send", "post", "discussion", "unsubscribe", "namaste", "PM", "AM", "footer", "Professor", "Source"]
   library.dump_word_cloud(src_path="/home/vvasuki/hindu-comm/samskrita", dest_path="word-clouds/general.png", stop_words=stop_words)
-  library.dump_word_cloud(src_path="/home/vvasuki/vishvAsa/kAvyam/content/AsvAdaH/sadAsvAdaH", dest_path="word-clouds/general.png", stop_words=stop_words)
-  library.dump_word_cloud(src_path="/home/vvasuki/vishvAsa/kAvyam/content/AsvAdaH/sadAsvAdaH", dest_path="word-clouds/general.png", stop_words=stop_words)
+  library.dump_word_cloud(src_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/AsvAdaH/sadAsvAdaH", dest_path="word-clouds/general.png", stop_words=stop_words)
+  library.dump_word_cloud(src_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/AsvAdaH/sadAsvAdaH", dest_path="word-clouds/general.png", stop_words=stop_words)
   library.dump_word_cloud(src_path="/home/vvasuki/hindu-comm/mail_stream_indology", dest_path="word-clouds/general.png", stop_words=stop_words)
   library.dump_word_cloud(src_path="/home/vvasuki/hindu-comm/mail_stream_advaita-l", dest_path="word-clouds/general.png", stop_words=stop_words)
   library.dump_word_cloud(src_path="/home/vvasuki/hindu-comm/hindu-vidya", dest_path="word-clouds/general.png", stop_words=stop_words)

@@ -28,28 +28,28 @@ def dump_cu_sarit_markdown(tei_path, md_path, xsl=os.path.join(os.path.dirname(_
 
 def dump_naatyashaastra():
   for index in range(1, 38):
-    dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/mixed/cu-sarit/Abhinavabhāratī/nāṭyaśāstra-%02d/abhinavabhāratī_%02d-dn.xml" % (index, index), md_path="/home/vvasuki/vishvAsa/kAvyam/content/shAstram/nATyam/nATyashAstram/abhinavabhAratI/%02d.md" % (index))
-    dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/mixed/cu-sarit/Abhinavabhāratī/nāṭyaśāstra-%02d/nāṭyaśāstra_%02d-dn.xml" % (index, index), md_path="/home/vvasuki/vishvAsa/kAvyam/content/shAstram/nATyam/nATyashAstram/mUlam/%02d.md" % (index))
+    dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/mixed/cu-sarit/Abhinavabhāratī/nāṭyaśāstra-%02d/abhinavabhāratī_%02d-dn.xml" % (index, index), md_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/shAstram/nATyam/nATyashAstram/abhinavabhAratI/%02d.md" % (index))
+    dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/mixed/cu-sarit/Abhinavabhāratī/nāṭyaśāstra-%02d/nāṭyaśāstra_%02d-dn.xml" % (index, index), md_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/shAstram/nATyam/nATyashAstram/mUlam/%02d.md" % (index))
 
-  arrangement.fix_index_files("/home/vvasuki/vishvAsa/kAvyam/content/shAstram/nATyam/", dry_run=False)
+  arrangement.fix_index_files("/home/vvasuki/gitland/vishvAsa/kAvyam/content/shAstram/nATyam/", dry_run=False)
 
 
 def dump_shRngaaraprakaasha():
-  dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-raw/Śr̥ṅgāraprakāśa/srngaraprakasa-deva.xml", md_path="/home/vvasuki/vishvAsa/kAvyam/content/laxaNam/articles/bhoja-shRngAra-prakAshaH/_index.md", xsl="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/tei_xsl/markdown/tei-to-markdown.xsl")
+  dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-raw/Śr̥ṅgāraprakāśa/srngaraprakasa-deva.xml", md_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxaNam/articles/bhoja-shRngAra-prakAshaH/_index.md", xsl="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/tei_xsl/markdown/tei-to-markdown.xsl")
 
 
 def dump_miimaamsaa():
   # TODO : Fix tags first.
-  dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-raw/Ślōkavārttika/kumārila-ślokavārttika-umveka_commentary-deva.xml", md_path="/home/vvasuki/vishvAsa/mImAMsA/content/pUrvA/granthAH/shloka-vArttikam/umbeka-TIkA.md")
+  dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit-raw/Ślōkavārttika/kumārila-ślokavārttika-umveka_commentary-deva.xml", md_path="/home/vvasuki/gitland/vishvAsa/mImAMsA/content/pUrvA/granthAH/shloka-vArttikam/umbeka-TIkA.md")
 
 
 def haravijaya():
   for chapter_number in range(1, ):
-    dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/kAvyam/rathnAkara-TEI/haravijaya/%s/hv-%s-k.txt" % (id, id), md_path="/home/vvasuki/vishvAsa/kAvyam/content/laxyam/padyam/haravijayaH/%s.md" % id)
+    dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/kAvyam/rathnAkara-TEI/haravijaya/%s/hv-%s-k.txt" % (id, id), md_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/haravijayaH/%s.md" % id)
 
 
 def dump_brahmapuraana():
-  md_path = "/home/vvasuki/vishvAsa/purANam/content/brahma-purANam.md"
+  md_path = "/home/vvasuki/gitland/vishvAsa/purANam/content/brahma-purANam.md"
   dir_path = md_path.replace(".md", "")
   # dump_cu_sarit_markdown(tei_path="/home/vvasuki/sanskrit/raw_etexts/mixed/sarit/brahmapurana.xml", md_path=md_path, xsl=os.path.join(os.path.dirname(__file__), "xslt/purANa.xsl"), overwrite=True)
   # library.apply_function(fn=content_processor.replace_texts, dir_path=md_path, patterns=["## (?=\d\n)"], replacement="## 0")

@@ -39,7 +39,7 @@ def get_md_file(soup, dest_dir, chapter_id):
   if chapter_id == "01":
     chapter_id += "_praveshaH"
   dest_dir = os.path.join(dest_dir, chapter_id)
-  reference_dir = "/home/vvasuki/vishvAsa/kalpAntaram/static/smRtiH/manuH/vishvAsa_prastutiH/%s" % chapter_id
+  reference_dir = "/home/vvasuki/gitland/vishvAsa/kalpAntaram/static/smRtiH/manuH/vishvAsa_prastutiH/%s" % chapter_id
   similar_files = [x for x in os.listdir(reference_dir) if x.startswith(verse_id + "_")]
   md_file = MdFile(file_path=os.path.join(dest_dir, similar_files[0]))
   if not os.path.exists(md_file.file_path):
@@ -110,4 +110,4 @@ def get_chapter_urls():
 
 if __name__ == '__main__':
   for i in range(7, 8):
-    dump_chapter(dest_dir="/home/vvasuki/vishvAsa/kalpAntaram/static/smRtiH/manuH/", chapter_id="%02d" % i)
+    dump_chapter(dest_dir="/home/vvasuki/gitland/vishvAsa/kalpAntaram/static/smRtiH/manuH/", chapter_id="%02d" % i)

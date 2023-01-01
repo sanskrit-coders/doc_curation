@@ -12,7 +12,7 @@ from doc_curation_projects.puraaNa.raamaayana import dump
 from indic_transliteration import sanscript
 
 source_file = "/home/vvasuki/sanskrit/raw_etexts/purANam/adhyAtma-rAmAyaNam/goraxapura-pAThaH/raw/hindi.html"
-dest_file = "/home/vvasuki/vishvAsa/purANam/content/adhyAtma-rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH.md"
+dest_file = "/home/vvasuki/gitland/vishvAsa/purANam/content/adhyAtma-rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH.md"
 dest_path = dest_file.replace(".md", "")
 
 detail_map = OrderedDict([

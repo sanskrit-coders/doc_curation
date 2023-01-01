@@ -29,7 +29,7 @@ def audio_saver(soup, dest_path):
     logging.info(f"No audio found for {dest_path}")
     return 
   audio_url = urljoin("https://xn--j2b3a4c.com/", audio_tag["src"])
-  dest_path_audio = dest_path.replace("/home/vvasuki/vishvAsa/", "/mnt/vmedia/audio/curation/archive/veda_com/").replace("static/", "").replace("sarvASh_TIkAH/", "") + ".mp3"
+  dest_path_audio = dest_path.replace("/home/vvasuki/gitland/vishvAsa/", "/mnt/vmedia/audio/curation/archive/veda_com/").replace("static/", "").replace("sarvASh_TIkAH/", "") + ".mp3"
   dest_path_audio = regex.sub("/vedAH/", "/vedAH_", dest_path_audio)
   if os.path.exists(dest_path_audio):
     return 

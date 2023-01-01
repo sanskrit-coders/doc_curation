@@ -11,7 +11,7 @@ from indic_transliteration import sanscript
 
 def fix_names():
   pass
-  library.apply_function(dir_path="/home/vvasuki/vishvAsa/purANam/content/adhyAtma-rAmAyaNam", fn=metadata_helper.remove_adhyaaya_word_from_title, adhyaaya_pattern="ಸರ್ಗ|सर्ग", dry_run=False)
+  library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/adhyAtma-rAmAyaNam", fn=metadata_helper.remove_adhyaaya_word_from_title, adhyaaya_pattern="ಸರ್ಗ|सर्ग", dry_run=False)
 
 
 fix_names()

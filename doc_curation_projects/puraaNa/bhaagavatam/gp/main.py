@@ -9,7 +9,7 @@ from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
-ROOT_DIR = "/home/vvasuki/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH"
+ROOT_DIR = "/home/vvasuki/gitland/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH"
 HI_ROOT = os.path.join(ROOT_DIR, "hindy-anuvAdaH")
 
 

@@ -42,11 +42,11 @@ def migrate_and_include(chapter_id):
   chapter_id = "%02d" % chapter_id
   if chapter_id == "01":
     chapter_id += "_praveshaH"
-  include_helper.migrate_and_replace_texts(text_patterns=["\d+\t.+"], md_file=MdFile("/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/buhler/%s.md" % chapter_id), replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)
+  include_helper.migrate_and_replace_texts(text_patterns=["\d+\t.+"], md_file=MdFile("/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/manuH/buhler/%s.md" % chapter_id), replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)
   
 
 
 if __name__ == '__main__':
   for x in range(11, 12):
-    # dump_chapter(chapter_id=x, dest_dir="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/buhler")
+    # dump_chapter(chapter_id=x, dest_dir="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/manuH/buhler")
     migrate_and_include(chapter_id=x)

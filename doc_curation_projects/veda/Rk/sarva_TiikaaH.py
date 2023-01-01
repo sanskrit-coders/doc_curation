@@ -10,7 +10,7 @@ from doc_curation.md.file import MdFile
 from doc_curation.md.library import combination
 from doc_curation_projects.veda import Rk
 
-STATIC_ROOT = "/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA"
+STATIC_ROOT = "/home/vvasuki/gitland/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA"
 TIKA_BASE = os.path.join(STATIC_ROOT, "sarvASh_TIkAH")
 
 

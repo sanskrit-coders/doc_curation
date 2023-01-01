@@ -72,6 +72,6 @@ def dump_chapter(chapter_id, base_dir):
 
 
 if __name__ == '__main__':
-  base_dir = "/home/vvasuki/vishvAsa/purANam/static/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva"
+  base_dir = "/home/vvasuki/gitland/vishvAsa/purANam/static/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva"
   for chapter_id in range(1, 19):
     dump_chapter(chapter_id=chapter_id, base_dir=base_dir)

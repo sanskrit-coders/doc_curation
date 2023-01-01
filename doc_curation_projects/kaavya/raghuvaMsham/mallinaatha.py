@@ -24,7 +24,7 @@ def migrate_and_include_commentary():
       return text_matched
 
   PATTERN_TIKA = "॥ *\d+ *॥[\s\n]+[^॥\n]+?ति *॥[\s\S]+? *॥ *[\d]+ *?॥ *(?=\n|$)"
-  library.apply_function(fn=include_helper.migrate_and_replace_texts, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/kAlidAsaH/raghuvaMsham/mallinAthaH", text_patterns = [PATTERN_TIKA], migrated_text_processor=text_processor, replacement_maker=replacement_maker,
+  library.apply_function(fn=include_helper.migrate_and_replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/TIkA/padyam/kAlidAsaH/raghuvaMsham/mallinAthaH", text_patterns = [PATTERN_TIKA], migrated_text_processor=text_processor, replacement_maker=replacement_maker,
                          title_maker=title_maker, dry_run=False)
 
 

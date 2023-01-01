@@ -16,7 +16,7 @@ from indic_transliteration import sanscript
 import functools
 import logging
 
-content_dir_base = "/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram"
+content_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram"
 static_dir_base = content_dir_base.replace("content", "static")
 ref_dir = os.path.join(static_dir_base, "vishvAsa-prastutiH")
 
@@ -72,7 +72,7 @@ def suutra_include_maker(suutra_id_dev, text_path, *args, **kwargs):
 
 
 def replace_suutraid_with_includes():
-  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/viShaya-vibhAgaH")
+  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/viShaya-vibhAgaH")
   for md_file in md_files:
     include_helper.migrate_and_replace_texts(md_file=md_file, text_patterns=[r"(?<=[^०-९]|^)[०-९]+(?=[^०-९]|$)"], replacement_maker=suutra_include_maker, migrated_text_processor=None, destination_path_maker=lambda *args, **kwargs: None, title_maker=lambda *args, **kwargs: None, dry_run=False)
 
@@ -89,7 +89,7 @@ def migrate_and_include_shlokas():
     return include_helper.vishvAsa_include_maker(dest_path, h1_level=3, title="FILE_TITLE")
 
   PATTERN_SUTRA = "\n[^#\s<>\[\(][\s\S]+? \s*[०-९\d\.]+\s*?(?=\n|$)"
-  # library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[PATTERN_SUTRA], dir_path="/home/vvasuki/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH", replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)
+  # library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[PATTERN_SUTRA], dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/vishvAsa-prastutiH", replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)
   pass
 
 

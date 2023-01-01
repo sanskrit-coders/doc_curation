@@ -5,7 +5,7 @@ import doc_curation.md.library.metadata_helper
 import regex
 from bs4 import BeautifulSoup
 
-import doc_curation.md.library.arrangement
+from doc_curation.md.library import arrangement
 from curation_utils import file_helper
 from doc_curation.md import content_processor, library
 from doc_curation.md.file import MdFile
@@ -33,7 +33,7 @@ def vishvAsa_include_maker(file_path, h1_level=4, classes=None, title=None, ):
   if not os.path.exists(file_path):
     logging.info(f"Does not exist - {file_path} . Skipping")
     return 
-  url = file_path.replace("/home/vvasuki/vishvAsa/", "/").replace("/static/", "/")
+  url = file_path.replace("/home/vvasuki/gitland/vishvAsa/", "/").replace("/static/", "/")
   from doc_curation.md import library
   return get_include(url=url, h1_level=h1_level, classes=classes, title=title)
 
@@ -137,12 +137,14 @@ def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=[
     html = get_include(url=alt_url, h1_level=h1_level, classes=classes, title=title)
     html = f"<body>{html}</body>"
     return BeautifulSoup(html, 'html.parser').select_one("div")
-  return None
+  else:
+    logging.error(f"{alt_file_path} not found!")
+    return None
 
 
 
 
-def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="/home/vvasuki/vishvAsa"):
+def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="/home/vvasuki/gitland/vishvAsa"):
   """To be used with transform_include_lines.
   
   :param match: 
@@ -187,7 +189,7 @@ def prefill_includes(dir_path):
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: transform_includes_with_soup(x, y,transformer=prefill_include))
 
 
-def alt_include_adder(inc, current_file_path, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/vishvAsa"):
+def alt_include_adder(inc, current_file_path, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/gitland/vishvAsa"):
   """To be used with transform_include_lines.
   
   :param match: 
@@ -245,16 +247,12 @@ def include_basename_fixer(inc, ref_dir):
 
 
 def include_core_with_commentaries(dir_path, alt_dirs, file_pattern="**/*.md", source_dir="vishvAsa-prastutiH"):
-  md_files = arrangement.get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern)
-  md_files = [f for f in md_files if os.path.basename(f.file_path) ]
+  def include_fixer(inc, file_path, *args, **kwargs):
+    return alt_include_adder(inc=inc, current_file_path=file_path, source_dir=source_dir, alt_dirs=alt_dirs)
 
-  def include_fixer(inc):
-    return alt_include_adder(inc=inc, source_dir=source_dir, alt_dirs=alt_dirs)
-
-  for md_file in md_files:
-    transform_include_lines(md_file=md_file, transformer=old_include_remover)
-    transform_include_lines(md_file=md_file, transformer=include_fixer)
-    md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, file_pattern=file_pattern, content_transformer=lambda x, y: transform_includes_with_soup(x, y,transformer=old_include_remover))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, file_pattern=file_pattern, content_transformer=lambda x, y: transform_includes_with_soup(x, y,transformer=include_fixer))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, file_pattern=file_pattern, content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
 
 
 def get_include(url, field_names=None, classes=None, title=None, h1_level=2, extra_attributes=""):

@@ -47,14 +47,14 @@ def migrate_and_include_commentary(chapter_id):
     include_line = include_helper.vishvAsa_include_maker(dest_path, h1_level=4, classes=[], title="भारुचिः")
     return "%s\n%s" % (id_line, include_line)
 
-  library.apply_function(fn=include_helper.migrate_and_replace_texts, dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/bhAruchiH/%s.md" % chapter_id, text_patterns = ["[॥ ०-९]+\.[०-९\.]+? *॥.+\n[^>][\\s\\S]+?(?=\n>|$)"], migrated_text_processor=text_processor, replacement_maker=replacement_maker,
+  library.apply_function(fn=include_helper.migrate_and_replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/manuH/bhAruchiH/%s.md" % chapter_id, text_patterns = ["[॥ ०-९]+\.[०-९\.]+? *॥.+\n[^>][\\s\\S]+?(?=\n>|$)"], migrated_text_processor=text_processor, replacement_maker=replacement_maker,
                          title_maker=title_maker, dry_run=False)
 
 
 if __name__ == '__main__':
   pass
-  # library.combine_files_in_dir(md_file=MdFile(file_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH/08/_index.md"))
-  # library.defolderify_single_md_dirs(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH")
+  # library.combine_files_in_dir(md_file=MdFile(file_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH/08/_index.md"))
+  # library.defolderify_single_md_dirs(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH")
   migrate_and_include_commentary(chapter_id="%02d" % 11)
   # logging.info(get_canonical_verse_number(248, "08"))
   # logging.info(get_canonical_verse_number(178, "03"))

@@ -12,7 +12,7 @@ from indic_transliteration import sanscript
 
 
 def fix_includes():
-  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/kAlidAsaH/raghuvaMsham/mallinAthaH", file_pattern="[0-9][0-9]*.md")
+  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/TIkA/padyam/kAlidAsaH/raghuvaMsham/mallinAthaH", file_pattern="[0-9][0-9]*.md")
 
   for md_file in md_files:
     include_helper.transform_include_lines(md_file=md_file, transformer=old_include_remover)
@@ -38,7 +38,7 @@ def migrate_and_include_shlokas():
     return include_helper.vishvAsa_include_maker(dest_path, h1_level=3, title="FILE_TITLE")
 
   PATTERN_SUTRA = "\n[^#\s<>\[\(][\s\S]+? \s*[०-९\d\.]+\s*?(?=\n|$)"
-  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[PATTERN_SUTRA], dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/kAlidAsaH/raghuvaMsham/", replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)
+  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[PATTERN_SUTRA], dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/TIkA/padyam/kAlidAsaH/raghuvaMsham/", replacement_maker=replacement_maker, title_maker=title_maker, dry_run=False)
 
 
 
@@ -55,5 +55,5 @@ def add_includes_to_content(content, metadata):
 
 
 if __name__ == '__main__':
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/TIkA/padyam/kAlidAsaH/raghuvaMsham/sarva-prastutiH", content_transformer=add_includes_to_content) 
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/TIkA/padyam/kAlidAsaH/raghuvaMsham/sarva-prastutiH", content_transformer=add_includes_to_content) 
   # fix_includes()

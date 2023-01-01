@@ -6,7 +6,7 @@ from doc_curation.md import library
 from doc_curation.md.file import MdFile
 
 
-PATH_GP = "/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH"
+PATH_GP = "/home/vvasuki/gitland/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH"
 PATH_KUMBH = "/home/vvasuki/sanskrit/raw_etexts/purANa/mahAbhArata/kumbhakonam"
 
 def get_adhyaaya_md_files(md_file_path):

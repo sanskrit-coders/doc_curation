@@ -12,7 +12,7 @@ def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVA
     dest_script = dest_script.capitalize()
     aksharamukha_pre_options = ["TamilTranscribe"]
   if len(aksharamukha_pre_options) + len(aksharamukha_post_options) > 0:
-    import aksharamukha
+    import aksharamukha.transliterate
     c = aksharamukha.transliterate.process(src=source_script, tgt=dest_script, txt=text, nativize = True, pre_options = aksharamukha_pre_options, post_options = aksharamukha_post_options)
   else:
     text = text.replace("+++(", "<<").replace(")+++", ">>")

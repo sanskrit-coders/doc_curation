@@ -11,7 +11,7 @@ from indic_transliteration import sanscript
 
 
 def fix_includes():
-  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/kalpAntaram/content/smRtiH/yAjJNavalkyaH/prastutiH", file_pattern="[0-9][0-9]*.md")
+  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/yAjJNavalkyaH/prastutiH", file_pattern="[0-9][0-9]*.md")
 
   for md_file in md_files:
     include_helper.transform_include_lines(md_file=md_file, transformer=include_helper.old_include_remover)
@@ -48,13 +48,13 @@ def migrate_and_include_TIkA():
   def destination_path_maker(title, original_path):
     return include_helper.static_include_path_maker(title, original_path, path_replacements={"TIkA": "hindI-bhAvArtha", ".md": ""}, use_preexisting_file_with_prefix=False)
 
-  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=["\nभावार्थ[\s\S]+?॥\s*[०-९\d\.]+\s*॥.*?(?=\n|$)"], dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA", destination_path_maker=destination_path_maker, title_maker=title_maker_TIkA, replacement_maker=replacement_maker, dry_run=False)
+  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=["\nभावार्थ[\s\S]+?॥\s*[०-९\d\.]+\s*॥.*?(?=\n|$)"], dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA", destination_path_maker=destination_path_maker, title_maker=title_maker_TIkA, replacement_maker=replacement_maker, dry_run=False)
 
 
 def fix_paths(dest_dir):
   def sub_path_id_maker(file_path):
     return regex.sub(".+?/(\d\d_.+?)/.*(\d\d\d).+\.md", "\\1/\\2", file_path)
-  metadata_helper.copy_metadata_and_filename(ref_dir="/home/vvasuki/vishvAsa/kalpAntaram/static/smRtiH/yAjJNavalkyaH/mUlam/", dest_dir=dest_dir, sub_path_id_maker=sub_path_id_maker)
+  metadata_helper.copy_metadata_and_filename(ref_dir="/home/vvasuki/gitland/vishvAsa/kalpAntaram/static/smRtiH/yAjJNavalkyaH/mUlam/", dest_dir=dest_dir, sub_path_id_maker=sub_path_id_maker)
 
 
 if __name__ == '__main__':
@@ -62,5 +62,5 @@ if __name__ == '__main__':
   migrate_and_include_TIkA()
   # migrate_and_include_shlokas(chapter_id="02_vyavahAraH")
   # migrate_and_include_shlokas(chapter_id="03_prAyashchittam")
-  # fix_paths(dest_dir="/home/vvasuki/vishvAsa/kalpAntaram/static/smRtiH/yAjJNavalkyaH/vishvAsa-prastutiH")
+  # fix_paths(dest_dir="/home/vvasuki/gitland/vishvAsa/kalpAntaram/static/smRtiH/yAjJNavalkyaH/vishvAsa-prastutiH")
   # fix_includes()

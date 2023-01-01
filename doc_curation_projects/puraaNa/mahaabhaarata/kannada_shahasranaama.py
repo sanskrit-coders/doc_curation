@@ -11,7 +11,7 @@ from doc_curation_projects.puraaNa.raamaayana import dump
 from indic_transliteration import sanscript
 
 source_file = "/home/vvasuki/sanskrit/raw_etexts/purANam/viShNu-sahasranAma-stotram/gp/raw/kannada.html"
-dest_file = "/home/vvasuki/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH/kannaDAnuvAdaH/13_149_viShNu-sahasranAma.md"
+dest_file = "/home/vvasuki/gitland/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH/kannaDAnuvAdaH/13_149_viShNu-sahasranAma.md"
 dest_path = dest_file.replace(".md", "")
 
 detail_map = OrderedDict([
@@ -48,7 +48,7 @@ if __name__ == '__main__':
   # html_scraper.get_class_counts(html=source_file, css_selector="p")
   dump_all()
   # library.apply_function(
-  #   fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/kannaDAnuvAda",
+  #   fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/kannaDAnuvAda",
   #   content_transformer=None,
   #   metadata_transformer=lambda c, m: metadata_helper.add_value_to_field(m, "unicode_script", "kannada"),
   #   dry_run=False)

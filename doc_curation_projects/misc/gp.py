@@ -21,7 +21,7 @@ def dump_tulasi():
 
 def dump_suradas():
   # for (let x of document.querySelectorAll(".ebooks> a")) console.log("gp.dump_book(url=\"" + x.href + "\", dest_html_path=base_dir)")
-  base_dir = "/home/vvasuki/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/suradAsa"
+  base_dir = "/home/vvasuki/gitland/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/suradAsa"
   # gp.dump_book(url="https://gitaseva.org/books/virah-padawali", dest_html_path=base_dir)
   # gp.dump_book(url="https://gitaseva.org/books/sur-ramchritawali", dest_html_path=base_dir)
   # gp.dump_book(url="https://gitaseva.org/books/anurag-padavali", dest_html_path=base_dir)
@@ -30,7 +30,7 @@ def dump_suradas():
 
 
 def dump_sanskrit():
-  base_dir = "/home/vvasuki/vishvAsa/purANam/static/"
+  base_dir = "/home/vvasuki/gitland/vishvAsa/purANam/static/"
   # gp.dump_book(url="https://gitaseva.org/books/srimad-valmikiya-ramayan", dest_html_path=os.path.join(base_dir, "rAmAyaNam/goraxapura-pAThaH/source.html"), final_url_check=lambda x: "toc_marker-14" in x)
   # gp.dump_book(url="https://gitaseva.org/books/shrimad-bhagwat-mahapuran-with-hindi-explanation", dest_html_path=os.path.join(base_dir, "bhAgavatam/goraxapura-pAThaH/source.html"), "source.html"), final_url_check=lambda x: "toc_marker-32" in x)
   # gp.dump_book(url="https://gitaseva.org/books/shrimad-bhagwat-mahapuran-with-hindi-explanation", dest_html_path=os.path.join(base_dir, "viShNu-purANam/goraxapura-pAThaH/source.html"), final_url_check=lambda x: "toc_marker-9" in x)
@@ -38,7 +38,7 @@ def dump_sanskrit():
   # gp.dump_book(url="https://gitaseva.org/books/adhyatam-ramayan", dest_html_path=os.path.join(base_dir, "adhyAtma-rAmAyaNam/goraxapura-pAThaH/source.html"), "source.html"), final_url_check=lambda x: "toc_marker-12" in x)
 
 def dump_kannada():
-  base_dir = "/home/vvasuki/vishvAsa/purANam/static/kannada/"
+  base_dir = "/home/vvasuki/gitland/vishvAsa/purANam/static/kannada/"
   gp.dump_book(url="https://gitaseva.org/books/adhyatam-ramayan-%28kannada%29", dest_html_path=base_dir)
   gp.dump_book(url="https://gitaseva.org/books/srimad-bhagwadgita-sadhak-sanjivani-kannada", dest_html_path=base_dir)
   gp.dump_book(url="https://gitaseva.org/books/srimad-bhagwat-mahapuranam-kannada", dest_html_path=base_dir)
@@ -311,7 +311,7 @@ def dump_english():
 
 
 def dump_pUjA():
-  base_dir = "/home/vvasuki/vishvAsa/purANam/static/misc-gp/raw"
+  base_dir = "/home/vvasuki/gitland/vishvAsa/purANam/static/misc-gp/raw"
   # gp.dump_book(url="https://gitaseva.org/books/bhajnamrit", dest_html_path=base_dir)
   # gp.dump_book(url="https://gitaseva.org/books/devi-stotra-ratnakar", dest_html_path=base_dir)
   # gp.dump_book(url="https://gitaseva.org/books/sanskar-prakash", dest_html_path=base_dir)

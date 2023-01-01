@@ -47,7 +47,7 @@ def dump_all(source_file, dest_file):
 
 def sur_vinaya_patrikaa():
   source_file = "/home/vvasuki/indic-texts/raw_etexts_misc/quasi-hindi/sUradAsa/gp_raw/sur-vinay-patrika.html"
-  dest_file = "/home/vvasuki/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/sUradAsa/vinaya-patrikA.md"
+  dest_file = "/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/sUradAsa/vinaya-patrikA.md"
   dest_path = dest_file.replace(".md", "")
   # html_scraper.get_class_counts(html=source_file, css_selector="p")
   dump_all(source_file=source_file, dest_file=dest_file)
@@ -55,7 +55,7 @@ def sur_vinaya_patrikaa():
 
 def raamacahritaavalii():
   source_file = "/home/vvasuki/indic-texts/raw_etexts_misc/quasi-hindi/sUradAsa/gp_raw/sur-ramchritawali.html"
-  dest_file = "/home/vvasuki/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/sUradAsa/rAma-charitAvalI.md"
+  dest_file = "/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/sUradAsa/rAma-charitAvalI.md"
   dest_path = dest_file.replace(".md", "")
   # html_scraper.get_class_counts(html=source_file, css_selector="p")
   dump_all(source_file=source_file, dest_file=dest_file)
@@ -64,7 +64,7 @@ def raamacahritaavalii():
 
 def virah_padaavalii():
   source_file = "/home/vvasuki/indic-texts/raw_etexts_misc/quasi-hindi/sUradAsa/gp_raw/virah-padawali.html"
-  dest_file = "/home/vvasuki/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/sUradAsa/viraha-padAvalI.md"
+  dest_file = "/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/sUradAsa/viraha-padAvalI.md"
   dest_path = dest_file.replace(".md", "")
   # html_scraper.get_class_counts(html=source_file, css_selector="p")
   dump_all(source_file=source_file, dest_file=dest_file)
@@ -74,7 +74,7 @@ def virah_padaavalii():
 
 def krishan_baala_maadhurii():
   source_file = "/home/vvasuki/indic-texts/raw_etexts_misc/quasi-hindi/sUradAsa/gp_raw/shri-krishan-bal-madhuri.html"
-  dest_file = "/home/vvasuki/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/sUradAsa/shrI-kRShNa-bAla-mAdhurI.md"
+  dest_file = "/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/sUradAsa/shrI-kRShNa-bAla-mAdhurI.md"
   dest_path = dest_file.replace(".md", "")
   # html_scraper.get_class_counts(html=source_file, css_selector="p")
   dump_all(source_file=source_file, dest_file=dest_file)
@@ -84,7 +84,7 @@ def krishan_baala_maadhurii():
 
 def anuraag():
   source_file = "/home/vvasuki/indic-texts/raw_etexts_misc/quasi-hindi/sUradAsa/gp_raw/anurag-padavali.html"
-  dest_file = "/home/vvasuki/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/sUradAsa/anurAga-padAvalI.md"
+  dest_file = "/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/sUradAsa/anurAga-padAvalI.md"
   dest_path = dest_file.replace(".md", "")
   # html_scraper.get_class_counts(html=source_file, css_selector="p")
   dump_all(source_file=source_file, dest_file=dest_file)
@@ -96,7 +96,7 @@ if __name__ == '__main__':
   # krishan_baala_maadhurii()
   # raamacahritaavalii()
   # sur_vinaya_patrikaa()
-  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/sUradAsa", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/sUradAsa", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=dest_path, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
   # library.fix_index_files(dir_path=dest_path, dry_run=False)
   pass

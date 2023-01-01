@@ -1,4 +1,4 @@
-CONTENT_DIR = "/home/vvasuki/vishvAsa/purANam/content/mudgala-purANam/"
+CONTENT_DIR = "/home/vvasuki/gitland/vishvAsa/purANam/content/mudgala-purANam/"
 
 
 def fix_all(dir_path=CONTENT_DIR):
@@ -23,8 +23,8 @@ def fix_all(dir_path=CONTENT_DIR):
   # library.apply_function(fn=metadata_helper.set_title_from_content, dir_path=dir_path, title_extractor=metadata_helper.iti_naama_title_extractor)
   # library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path=dir_path)
 
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/purANam/content/mudgala-purANam/4_gajAnana-charitam/06.md", content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c))
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/purANam/content/mudgala-purANam/5_lambodara-charitam/26.md", content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c))
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/mudgala-purANam/4_gajAnana-charitam/06.md", content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c))
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/mudgala-purANam/5_lambodara-charitam/26.md", content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c))
 
 
 if __name__ == '__main__':

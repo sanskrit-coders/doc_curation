@@ -16,7 +16,7 @@ from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 from indic_transliteration import sanscript
 
-static_dir_base = "/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/hiraNyakeshI/gRhyam/"
+static_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/hiraNyakeshI/gRhyam/"
 content_dir_base = static_dir_base.replace("static/", "content/")
 ref_dir = os.path.join(static_dir_base, "vishvAsa-prastutiH")
 oldenberg_dir = os.path.join(static_dir_base, "oldenberg")
@@ -32,7 +32,7 @@ def fix_filenames():
       return arrangement.get_sub_path_id(sub_path=regex.sub(".+/", "", str(x)), basename_id_pattern=r"(\d\du?_\d\d)")
     else:
       return "%s_%s" % (os.path.basename(os.path.dirname(x)), base_name.replace(".md", ""))
-  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/hiraNyakeshI/gRhyam/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
+  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/hiraNyakeshI/gRhyam/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
 
 
 def oldenberg_dest_path_maker(url, base_dir):

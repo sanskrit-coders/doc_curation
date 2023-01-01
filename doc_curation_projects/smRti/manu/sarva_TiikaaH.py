@@ -7,7 +7,7 @@ from doc_curation.md.content_processor import details_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import combination, arrangement
 
-STATIC_ROOT = "/home/vvasuki/vishvAsa/kalpAntaram/static/smRtiH/manuH"
+STATIC_ROOT = "/home/vvasuki/gitland/vishvAsa/kalpAntaram/static/smRtiH/manuH"
 
 def combine():
   subpaths = ["gangAnatha-mUlAnuvAdaH", "medhAtithiH", "gangAnatha-bhAShyAnuvAdaH", "gangAnatha-TippanyaH", "gangAnatha-tulya-vAkyAni", "kullUkaH", "bhAruchiH", "buhler"]

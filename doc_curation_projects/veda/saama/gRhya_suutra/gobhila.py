@@ -17,7 +17,7 @@ from doc_curation.scraping.wisdom_lib import para_translation
 from doc_curation.scraping.sacred_texts import para_translation as para_translation_st, dump_meta_article
 from indic_transliteration import sanscript
 
-content_dir_base = "/home/vvasuki/vishvAsa/vedAH/content/sAma/kauthumam/sUtram/gobhila-gRhyam/"
+content_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH/content/sAma/kauthumam/sUtram/gobhila-gRhyam/"
 static_dir_base = content_dir_base.replace("content", "static")
 ref_dir = os.path.join(static_dir_base, "mUlam")
 

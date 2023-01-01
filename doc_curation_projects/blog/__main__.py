@@ -14,4 +14,4 @@ def print_usage_report(src_dir, dest_dir):
     print(f"{src_file} : {str(matches[:5])}")
 
 
-print_usage_report(src_dir="/home/vvasuki/hindu-comm/weblogs/manasataramgini", dest_dir="/home/vvasuki/vishvAsa")
+print_usage_report(src_dir="/home/vvasuki/hindu-comm/weblogs/manasataramgini", dest_dir="/home/vvasuki/gitland/vishvAsa")

@@ -13,7 +13,7 @@ from doc_curation_projects.puraaNa.raamaayana import dump
 from indic_transliteration import sanscript
 
 source_file = "/home/vvasuki/sanskrit/raw_etexts/purANam/bhAgavata-purANam/goraxapura-pAThaH/raw/hindI.html"
-dest_file = "/home/vvasuki/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/hindy-anuvAdaH.md"
+dest_file = "/home/vvasuki/gitland/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/hindy-anuvAdaH.md"
 dest_path = dest_file.replace(".md", "")
 
 detail_map = OrderedDict([
@@ -56,9 +56,9 @@ if __name__ == '__main__':
   # library.shift_indices(dir_path=os.path.join(dest_path, "02_dvitIyaH_skandhaH"), start_index=3, new_index_offset=-1)
   # library.shift_indices(dir_path=os.path.join(dest_path, "05_panchamaH_skandhaH"), start_index=9, new_index_offset=1)
   
-  # content_fix.devanaagarify(dir_path="/home/vvasuki/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/hindy-anuvAdaH/05_panchamaH_skandhaH/09_oMbhattaneya_adhyAya.md", source_script=sanscript.KANNADA)
-  # content_fix.devanaagarify(dir_path="/home/vvasuki/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/hindy-anuvAdaH/05_panchamaH_skandhaH/23_ippattamUraneya_adhyAya.md", source_script=sanscript.KANNADA)
-  # content_fix.devanaagarify(dir_path="/home/vvasuki/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/hindy-anuvAdaH/05_panchamaH_skandhaH/25_ippattaidaneya_adhyAya.md", source_script=sanscript.KANNADA)
+  # content_fix.devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/hindy-anuvAdaH/05_panchamaH_skandhaH/09_oMbhattaneya_adhyAya.md", source_script=sanscript.KANNADA)
+  # content_fix.devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/hindy-anuvAdaH/05_panchamaH_skandhaH/23_ippattamUraneya_adhyAya.md", source_script=sanscript.KANNADA)
+  # content_fix.devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/hindy-anuvAdaH/05_panchamaH_skandhaH/25_ippattaidaneya_adhyAya.md", source_script=sanscript.KANNADA)
   library.apply_function(dir_path=dest_path, fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
 
   # library.shift_indices(dir_path=os.path.join(dest_path, "10b_dashamaH_skandhaH_uttarArdhaH"), start_index=1, new_index_offset=49)

@@ -15,7 +15,7 @@ from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.sacred_texts import para_translation
 from indic_transliteration import sanscript
 
-content_dir_base = "/home/vvasuki/vishvAsa/vedAH_yajuH/content/vAjasaneyam/sUtram/kAtyAyanaH/shrautam"
+content_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/sUtram/kAtyAyanaH/shrautam"
 static_dir_base = content_dir_base.replace("content", "static")
 ref_dir = os.path.join(static_dir_base, "mUlam")
 

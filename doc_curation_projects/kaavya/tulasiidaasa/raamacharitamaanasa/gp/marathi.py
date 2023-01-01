@@ -13,7 +13,7 @@ from doc_curation_projects.puraaNa.raamaayana import dump
 from indic_transliteration import sanscript
 
 source_file = "/home/vvasuki/indic-texts/raw_etexts_misc/quasi-hindi/tulasIdAsa/gp_raw/shri-ramchritmanas_marAThI.html"
-dest_file = "/home/vvasuki/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/tulasIdAsa/rAmacharitamAnasa/goraxapura-pATha/marAThy-anuvAda.md"
+dest_file = "/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/tulasIdAsa/rAmacharitamAnasa/goraxapura-pATha/marAThy-anuvAda.md"
 dest_path = dest_file.replace(".md", "")
 
 detail_map = OrderedDict([

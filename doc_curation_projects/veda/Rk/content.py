@@ -9,8 +9,8 @@ from doc_curation.md import library
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 
-static_dir_base = "/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/"
-content_dir_base = "/home/vvasuki/vishvAsa/vedAH_Rk/content/shAkalam/saMhitA/"
+static_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/"
+content_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content/shAkalam/saMhitA/"
 
 
 def dump(dry_run, start_id=None):

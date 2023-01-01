@@ -9,7 +9,7 @@ from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
-ROOT_DIR = "/home/vvasuki/vishvAsa/purANam/"
+ROOT_DIR = "/home/vvasuki/gitland/vishvAsa/purANam/"
 
 
 def fix_names(dir_path, conclusion_pattern="इति.+ऽध्यायः"):
@@ -19,8 +19,8 @@ def fix_names(dir_path, conclusion_pattern="इति.+ऽध्यायः"):
 
 def dump():
   pass
-  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/vishvAsa/purANam/content/shiva-purANam", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None) # 
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/shiva-purANam", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None) # 
 
 
 
-fix_names(dir_path="/home/vvasuki/vishvAsa/purANam/content/shiva-purANam/7_vAyavIya-saMhitA", conclusion_pattern=r"इति .+संहिताया.+ध्यायः")
+fix_names(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/shiva-purANam/7_vAyavIya-saMhitA", conclusion_pattern=r"इति .+संहिताया.+ध्यायः")

@@ -12,7 +12,7 @@ from doc_curation_projects.puraaNa.raamaayana import dump
 from indic_transliteration import sanscript
 
 source_file = "/home/vvasuki/sanskrit/raw_etexts/purANam/bhAgavata-purANam/goraxapura-pAThaH/raw/kannada.html"
-dest_file = "/home/vvasuki/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/kannaDAnuvAda.md"
+dest_file = "/home/vvasuki/gitland/vishvAsa/purANam/content/bhAgavatam/goraxapura-pAThaH/kannaDAnuvAda.md"
 dest_path = dest_file.replace(".md", "")
 
 detail_map = OrderedDict([

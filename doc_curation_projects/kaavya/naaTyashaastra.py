@@ -2,7 +2,7 @@ import os
 
 from doc_curation.scraping.wisdom_lib import serial
 
-path_manamohana = "/home/vvasuki/vishvAsa/kAvyam/content/laxaNam/granthaH/nATyashAstram/manamohanAnuvAdaH"
+path_manamohana = "/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxaNam/granthaH/nATyashAstram/manamohanAnuvAdaH"
 
 
 def dump_manamohana():

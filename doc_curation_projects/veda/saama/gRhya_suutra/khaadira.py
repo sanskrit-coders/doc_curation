@@ -15,7 +15,7 @@ from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.sacred_texts import para_translation
 from indic_transliteration import sanscript
 
-content_dir_base = "/home/vvasuki/vishvAsa/vedAH/content/sAma/kauthumam/sUtram/drAhyAyaNaH/khAdira-gRhyam"
+content_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH/content/sAma/kauthumam/sUtram/drAhyAyaNaH/khAdira-gRhyam"
 static_dir_base = content_dir_base.replace("content", "static")
 ref_dir = os.path.join(static_dir_base, "mUlam")
 
@@ -42,11 +42,11 @@ def fix_filenames():
       return arrangement.get_sub_path_id(sub_path=regex.sub(".+/", "", str(x)), basename_id_pattern=r"(\d\du?_\d\d)")
     else:
       return "%s_%s" % (os.path.basename(os.path.dirname(x)), base_name.replace(".md", ""))
-  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/khaadira/gRhyam/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
+  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/gitland/vishvAsa/vedAH/static/yajuH/taittirIyam/sUtram/khaadira/gRhyam/oldenberg", ref_dir=ref_dir, sub_path_id_maker=sub_path_id_maker)
 
 
 def fix_includes():
-  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/vishvAsa/vedAH/content/sAma/kauthumam/sUtram/drAhyAyaNaH/khAdira-gRhyam/sarva-prastutiH/", file_pattern="**/[0-9][0-9]*.md")
+  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH/content/sAma/kauthumam/sUtram/drAhyAyaNaH/khAdira-gRhyam/sarva-prastutiH/", file_pattern="**/[0-9][0-9]*.md")
   md_files = [f for f in md_files if os.path.basename(f.file_path) ]
   
   def include_fixer(match):

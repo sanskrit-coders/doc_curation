@@ -10,7 +10,7 @@ from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
 
-BASE_DIR = "/home/vvasuki/vishvAsa/purANam/content/agni-purANam/"
+BASE_DIR = "/home/vvasuki/gitland/vishvAsa/purANam/content/agni-purANam/"
 
 
 def set_titles(dry_run=False):
@@ -35,11 +35,11 @@ def set_titles(dry_run=False):
 
 
 def fix_content():
-  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/vishvAsa/purANam/content/agni-purANam", patterns=["\n॥"], replacement="॥")
-  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/vishvAsa/purANam/content/agni-purANam", patterns=["\(([०-९]+)\)"], replacement=r"[^\1]")
-  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/vishvAsa/purANam/content/agni-purANam", patterns=["(?<=\n)([०-९]+) "], replacement=r"[^\1]: ")
-  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/vishvAsa/purANam/content/agni-purANam", patterns=["(?<=\n):श् +(.+?)(?=\n|$)"], replacement=r"\{\1\}")
-  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/vishvAsa/purANam/content/agni-purANam", patterns=["(?<=\n):ए +(.+?)(?=\n|$)"], replacement=r"\{\1\}")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/agni-purANam", patterns=["\n॥"], replacement="॥")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/agni-purANam", patterns=["\(([०-९]+)\)"], replacement=r"[^\1]")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/agni-purANam", patterns=["(?<=\n)([०-९]+) "], replacement=r"[^\1]: ")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/agni-purANam", patterns=["(?<=\n):श् +(.+?)(?=\n|$)"], replacement=r"\{\1\}")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/agni-purANam", patterns=["(?<=\n):ए +(.+?)(?=\n|$)"], replacement=r"\{\1\}")
   pass
 
 

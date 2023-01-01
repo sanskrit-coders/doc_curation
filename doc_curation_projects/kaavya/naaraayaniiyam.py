@@ -61,4 +61,4 @@ if __name__ == '__main__':
   pass
   # for id in range(1, 101):
   #     get_item(id=id, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANa/nArAyaNIyam/" )
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/vishvAsa/kAvyam/content/laxyam/padyam/purANam/nArAyaNIyam", content_transformer=insert_translation, dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/purANam/nArAyaNIyam", content_transformer=insert_translation, dry_run=False)

@@ -17,7 +17,7 @@ from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 from indic_transliteration import sanscript
 
-static_dir_base = "/home/vvasuki/vishvAsa/vedAH_Rk/static/shAkalam/sUtram/AshvalAyanaH/gRhyam/"
+static_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_Rk/static/shAkalam/sUtram/AshvalAyanaH/gRhyam/"
 content_dir_base = static_dir_base.replace("static/", "content/")
 ref_dir = os.path.join(static_dir_base, "vishvAsa-prastutiH")
 oldenberg_dir = os.path.join(static_dir_base, "oldenberg")

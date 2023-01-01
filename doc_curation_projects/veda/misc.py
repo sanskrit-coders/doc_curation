@@ -3,7 +3,7 @@ import os
 import doc_curation.scraping.sacred_texts
 from doc_curation.scraping.sacred_texts import para_translation
 
-content_dir_base = "/home/vvasuki/vishvAsa/vedAH/content/"
+content_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH/content/"
 
 
 def dump_oldenberg_intros():

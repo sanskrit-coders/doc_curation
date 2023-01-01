@@ -81,12 +81,24 @@ def dump_text(browser, outdir, sequence=None, has_comment=False):
     for td in tds:
       spans = td.find_elements(By.CSS_SELECTOR, "span")
       if len(spans) > 0:
-        text_segments = [span.text.strip().replace("\n", "  \n") for span in spans]
-        text += "\n\n".join(text_segments)
+        text_segments = [span.text.strip().replace("\\n", "\n").replace("\n", "  \n") for span in spans]
+        main_text = "\n\n".join(text_segments)
         if has_comment:
-          comment_tds = td.find_elements(By.XPATH, './/following-sibling::*')
-          for comment_td in comment_tds:
-            text += f"\n\n<details><summary>टीका</summary>\n\n{comment_td.text.strip()}\n</details>\n\n"
+          commentary_main = False
+          if not commentary_main:
+            text += f"\n\n<details open><summary>मूलम्</summary>\n\n{main_text}\n</details>\n\n"
+            comment_tds = td.find_elements(By.XPATH, './/following-sibling::*')
+            for comment_td in comment_tds:
+              comment_text = comment_td.text.strip()
+              if comment_text != "":
+                text += f"\n\n<details><summary>टीका</summary>\n\n{comment_text}\n</details>\n\n"
+          else:
+            comment_tds = td.find_elements(By.XPATH, './/following-sibling::*')
+            for comment_td in comment_tds:
+              text += f"\n\n<details open><summary>मूलम्</summary>\n\n{comment_td.text.strip()}\n</details>\n\n"
+            text += f"\n\n<details><summary>टीका</summary>\n\n{main_text}\n</details>\n\n"
+        else:
+          text += main_text
       
   md_file = MdFile(file_path=out_file_path)
   md_file.dump_to_file(metadata={"title": text_name}, content=text, dry_run=False)
