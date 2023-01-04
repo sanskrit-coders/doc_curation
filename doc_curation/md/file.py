@@ -249,6 +249,14 @@ class MdFile(object):
       return 
     self.dump_to_file(metadata=new_metadata, content=new_content, dry_run=dry_run, silent=silent)
 
+  def get_sections(self):
+    from doc_curation.md.content_processor.section_helper import get_lines_till_section, reduce_section_depth, split_to_sections
+    (metadata, content) = self.read()
+    lines = content.splitlines(keepends=False)
+    (lines_till_section, remaining) = get_lines_till_section(lines)
+    sections = split_to_sections(remaining)
+    return sections
+
   def split_to_bits(
       self, source_script=sanscript.DEVANAGARI, 
       mixed_languages_in_titles=True, 
