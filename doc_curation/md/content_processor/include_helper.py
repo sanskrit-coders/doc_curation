@@ -62,8 +62,9 @@ def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa
   content = "\n" + content
   matches = []
   for text_pattern in text_patterns:
-    matches.extend(regex.findall(text_pattern, content))
-  for index, text_matched in enumerate(matches):
+    matches.extend(regex.finditer(text_pattern, content))
+  for index, match in enumerate(matches):
+    text_matched = match.group(0)
     text = text_matched.strip()
     if migrated_text_processor is not None:
       text = migrated_text_processor(text)

@@ -183,10 +183,10 @@ def autonumber_section_lines(lines, dest_script=sanscript.DEVANAGARI, recursive=
   return lines_out
 
 
-def autonumber(md_file, dest_script=sanscript.DEVANAGARI, recursive=True, init_index=1, dry_run=False):
+def autonumber(md_file, dest_script=sanscript.DEVANAGARI, recursive=True, start_index=1, dry_run=False):
   [metadata, content] = md_file.read()
   lines = content.splitlines(keepends=False)
-  lines = autonumber_section_lines(lines=lines, dest_script=dest_script, recursive=recursive, init_index=init_index)
+  lines = autonumber_section_lines(lines=lines, dest_script=dest_script, recursive=recursive, init_index=start_index)
   content = "\n".join(lines)
   content = regex.sub("\n\n+", "\n\n", content)
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
