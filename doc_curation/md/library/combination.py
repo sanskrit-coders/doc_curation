@@ -10,19 +10,19 @@ from doc_curation.md.library import get_md_files_from_path
 from indic_transliteration import sanscript
 
 
-def combine_select_files_in_dir(md_file, source_fname_list, dry_run=False):
+def combine_select_files_in_dir(md_file, source_fname_list, title_format="## %s\n", dry_run=False):
   dir_path = os.path.dirname(md_file.file_path)
   source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in source_fname_list if x in os.listdir(dir_path)]
-  md_file.append_content_from_mds(source_mds=source_mds, dry_run=dry_run)
+  md_file.append_content_from_mds(source_mds=source_mds, title_format=title_format, dry_run=dry_run)
   if not dry_run:
     for source_md in source_mds:
       os.remove(source_md.file_path)
 
 
-def combine_files_in_dir(md_file, dry_run=False):
+def combine_files_in_dir(md_file, title_format="## %s\n", dry_run=False):
   dir_path = os.path.dirname(md_file.file_path)
   source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in sorted(os.listdir(dir_path)) if os.path.isfile(os.path.join(dir_path, x)) and x.endswith(".md") and x != os.path.basename(md_file.file_path) ]
-  md_file.append_content_from_mds(source_mds=source_mds, dry_run=dry_run)
+  md_file.append_content_from_mds(source_mds=source_mds, title_format=title_format, dry_run=dry_run)
   if not dry_run:
     for source_md in source_mds:
       os.remove(source_md.file_path)
@@ -61,7 +61,7 @@ def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=
         if ready_content is not None:
           final_content_map[subpath] += f"\n{ready_content}\n"
         detail = details_helper.Detail(type=title, content=content)
-        final_content_map[subpath] += f"\n{detail.to_html()}\n"
+        final_content_map[subpath] += f"\n{detail.to_md_html()}\n"
       for key, value in metadata.items():
         final_metadata = final_metadata_map[subpath]
         if key not in final_metadata:

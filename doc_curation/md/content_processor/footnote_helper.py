@@ -21,6 +21,11 @@ def define_footnotes_near_use(content, *args, **kwargs):
   return content
 
 
+def fix_intra_word_footnotes(content, *args, **kwargs):
+  content = regex.sub(r"(\[\^[\d-]+?\])([^:\[\s]+)", "\\2\\1", content)
+  return content
+
+
 def fix_plain_footnotes(text, definiton_pattern="(?<=\n)(\d+)\.?(?= )"):
   text = regex.sub(definiton_pattern, r"[^\1]:", text)
   text = regex.sub("r(?<=[^\s\d\^\-,\(\);:])(\d+)(?=\D)", r"[^\1]", text)

@@ -4,7 +4,7 @@ import doc_curation.utils.sanskrit_helper
 import regex
 
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper, section_helper, details_helper, ocr_helper
+from doc_curation.md.content_processor import include_helper, section_helper, details_helper, ocr_helper, footnote_helper
 from doc_curation.utils import patterns
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
@@ -31,7 +31,8 @@ def add_init_words_to_includes():
   
 
 def fix_footnotes(dir_path):
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: doc_curation.md.content_processor.footnote_helper.define_footnotes_near_use(c), dry_run=False)
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.define_footnotes_near_use(c), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.fix_intra_word_footnotes(c), dry_run=False)
 
 
 def devanaagarify(dir_path, source_script):
@@ -100,7 +101,7 @@ if __name__ == '__main__':
 
   # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:content_processor.markdownify_newlines(c), dir_path="/home/vvasuki/sanskrit/raw_etexts/vedaH/yajur/taittirIya/sAyaNa")
 
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/kANe", content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/kANe", content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/social-cultivation/violence/articles/Sacred-ground_Bakker", content_transformer=lambda x, y: content_processor.fix_iast_gb(x))
 
@@ -133,3 +134,5 @@ if __name__ == '__main__':
 
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH/01_Adiparva/01_anukramaNikAparva/001_anukramaNikAparva.md", content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.vishvAsa_sanskrit_transformer))
+
+  # fix_footnotes("/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v2/articles/kalhaNa-rAjatarangiNI")

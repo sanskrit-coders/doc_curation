@@ -50,7 +50,7 @@ def insert_translation(content, *args):
   def replacement_maker(match):
     text = match.group(0)
     soup = scraping.get_soup(url=f"https://sanskritdocuments.org/sites/completenarayaneeyam/GistHtm/{match.group(2)}gist.htm")
-    detail = details_helper.Detail(type="English (Padmini)", content=soup.select_one("body").text).to_html()
+    detail = details_helper.Detail(type="English (Padmini)", content=soup.select_one("body").text).to_md_html()
     text += f"\n\n{detail}\n\n"
     return text
   content = regex.sub("(\<div[\s\S]+?)(\d\d\d_\d\d)([\s\S]+?)(?=<div|$)", replacement_maker, content)

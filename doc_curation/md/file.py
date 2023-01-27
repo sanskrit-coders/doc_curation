@@ -240,7 +240,9 @@ class MdFile(object):
       self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
   def replace_content_metadata(self, new_content=None, new_metadata=None, dry_run=False, silent=False):
-    (metadata, content) = self.read()
+    (metadata, content) = ({"title": ""}, "")
+    if os.path.exists(self.file_path):
+      (metadata, content) = self.read()
     if new_metadata is None:
       new_metadata = metadata
     if new_content is None:
@@ -353,13 +355,16 @@ class MdFile(object):
     if update_needed:
       self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
-  def append_content_from_mds(self, source_mds, dry_run=False):
-    (_, dest_content) = self.read()
+  def append_content_from_mds(self, source_mds, title_format="## %s\n", dry_run=False):
+    dest_content = ""
+    if os.path.exists(self.file_path):
+      (_, dest_content) = self.read()
     new_content = dest_content
     for source_md in source_mds:
       (metadata, source_content) = source_md.read()
       source_content = regex.sub("(?<=^|\n)#", "##", source_content)
-      new_content += "\n\n## %s\n%s" % (metadata["title"], source_content)
+      title = title_format % metadata["title"]
+      new_content += f"\n\n{title}{source_content}"
     if new_content != dest_content:
       self.replace_content_metadata(new_content=new_content, dry_run=dry_run)
 

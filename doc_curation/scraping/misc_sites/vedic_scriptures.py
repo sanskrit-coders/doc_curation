@@ -123,12 +123,12 @@ def update_muula(dest_path, mantra_svara, insertion_mode="add_detail"):
   (metadata, content) = md_mantra.read()
   detail = details_helper.Detail(type="मूलम् (VS)", content=mantra_svara)
   if insertion_mode=="add_detail" and "मूलम् (VS)" not in content:
-    content = f"{content}\n\n{detail.to_html()}"
+    content = f"{content}\n\n{detail.to_md_html()}"
   elif insertion_mode == "all_detail":
     old_detail = details_helper.Detail(type="मूलम् (VC)", content=content)
-    content = f"{old_detail.to_html()}\n\n{detail.to_html()}"
+    content = f"{old_detail.to_md_html()}\n\n{detail.to_md_html()}"
   elif insertion_mode == "replace":
-    content = detail.to_html()
+    content = detail.to_md_html()
   md_mantra.replace_content_metadata(new_content=content)
 
 

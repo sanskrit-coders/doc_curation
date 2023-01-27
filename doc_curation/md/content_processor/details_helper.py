@@ -18,7 +18,7 @@ class Detail(object):
     self.type = type
     self.content = content
 
-  def to_html(self, attributes_str=None):
+  def to_md_html(self, attributes_str=None):
     if self.type is None:
       title = "Misc Detail"
       logging.warning(f"Unknown detail type for: {self.content}")
@@ -34,7 +34,7 @@ class Detail(object):
     return f"<details{attributes_str}><summary>{title}</summary>\n\n{self.content.strip()}\n</details>"
 
   def to_soup(self):
-    return BeautifulSoup(self.to_html(), 'html.parser')
+    return BeautifulSoup(self.to_md_html(), 'html.parser')
 
   @classmethod
   def from_soup_tag(cls, detail_tag):
@@ -215,7 +215,7 @@ def shlokas_to_muula_viprastuti_details(content, pattern=None):
     shloka = match.group()
     detail_vishvaasa = Detail(type="विश्वास-प्रस्तुतिः", content=shloka)
     detail_muula = Detail(type="मूलम्", content=shloka)
-    return f"{detail_vishvaasa.to_html()}\n\n{detail_muula.to_html()}" 
+    return f"\n{detail_vishvaasa.to_md_html()}\n\n{detail_muula.to_md_html()}" 
   content = regex.sub(pattern, detail_maker, content)
   return content
 
@@ -223,4 +223,4 @@ def wrap_into_detail(content, title):
   content_out = content.strip()
   if content_out == "":
     return content
-  return Detail(type=title, content=content.strip()).to_html()
+  return Detail(type=title, content=content.strip()).to_md_html()

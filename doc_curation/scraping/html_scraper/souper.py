@@ -13,7 +13,7 @@ from doc_curation import md
 
 from curation_utils import file_helper, scraping
 from curation_utils import scraping
-from doc_curation.md import content_processor
+from doc_curation.md import content_processor, library
 from doc_curation.md.file import MdFile
 
 logging.basicConfig(
@@ -158,9 +158,15 @@ def anchor_url_from_soup_css(soup, css, base_url, pattern=None):
   return None
 
 
+def detail_dumper(url, outfile_path, title_prefix, detail_maker, dry_run=False):
+  soup = scraping.get_soup(url=url)
+  details = detail_maker(soup)
+  content = "\n\n".join([d.to_md_html() for d in details])
+  md_file = MdFile(file_path=outfile_path)
+  md_file.dump_to_file(metadata={"title": title_prefix}, content=content, dry_run=dry_run)
+  return soup
 
-def dump_series(start_url, out_path, dumper, next_url_getter, end_url=None, index_format="%02d", dry_run=False):
-  index = 1
+def dump_series(start_url, out_path, dumper, next_url_getter, end_url=None, index_format="%02d", index = 1, dry_run=False):
   next_url = start_url
   while next_url:
     soup = dumper(url=next_url, outfile_path=os.path.join(out_path, index_format % index + ".md"), title_prefix= index_format % index, dry_run=dry_run)
@@ -170,6 +176,7 @@ def dump_series(start_url, out_path, dumper, next_url_getter, end_url=None, inde
     next_url = next_url_getter(soup)
     index = index + 1
     # break # For testing
+  library.fix_index_files(dir_path=out_path, dry_run=dry_run)
   logging.info("Reached end of series")
 
 

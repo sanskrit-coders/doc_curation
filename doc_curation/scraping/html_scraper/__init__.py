@@ -64,7 +64,7 @@ def content_from_details(details, format_map):
       if detail.type is not None and detail.type.startswith("मूल"):
         detail_vishvaasa = copy(detail)
         detail_vishvaasa.type = "विश्वास-प्रस्तुतिः"
-        content += "\n" + detail_vishvaasa.to_html() + "\n"
-      content += "\n" + detail.to_html() + "\n"
+        content += "\n" + detail_vishvaasa.to_md_html() + "\n"
+      content += "\n" + detail.to_md_html() + "\n"
   return content
 

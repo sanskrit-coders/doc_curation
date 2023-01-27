@@ -130,7 +130,7 @@ def dump_mantra_details(dest_path, url, comment_detection_str, mode=ForceMode.NO
   for comments_div in comments_divs:
     comment_details.extend(comments_from_div(comments_div, titles=titles))
 
-  new_content = "\n\n".join([x.to_html() for x in comment_details])
+  new_content = "\n\n".join([x.to_md_html() for x in comment_details])
   if not os.path.exists(dest_path):
     md_file.dump_to_file(metadata={}, content=new_content, dry_run=False)
   else:
@@ -144,10 +144,10 @@ def update_muula(dest_path, mantra, mantra_svara, visvara_only=False):
   if "मूलम् (VC)" not in content:
     if not visvara_only:
       detail = details_helper.Detail(type="मूलम् (VC)", content=mantra_svara)
-      content = f"{content}\n\n{detail.to_html()}"
+      content = f"{content}\n\n{detail.to_md_html()}"
     if mantra_svara != mantra:
       detail = details_helper.Detail(type="विस्वर-मूलम् (VC)", content=mantra)
-      content = f"{content}\n\n{detail.to_html()}"
+      content = f"{content}\n\n{detail.to_md_html()}"
     md_mantra.replace_content_metadata(new_content=content)
 
 
