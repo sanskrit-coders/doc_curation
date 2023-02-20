@@ -130,7 +130,7 @@ def derominize_section_numbers(content):
     number = roman.fromRoman(match.group(2))
     return f"{match.group(1)} {number:02d} {match.group(3)}"
   for line in lines:
-    outline = regex.sub("^(#+) *([XIVxiv]+)[\.\s]+(.+)", deromanize, line)
+    outline = regex.sub(r"^(#+) *([XIVxiv]+)[\.\s]+(.+)", deromanize, line)
     outlines.append(outline)
   return "\n".join(outlines)
 
@@ -211,7 +211,7 @@ def create_sections_from_terminal_digits(md_file, digit_pattern="([०-९]+)", 
   
 
 def section_hash_by_index(section):
-  matches = list(regex.finditer("\d+", section.title))
+  matches = list(regex.finditer(r"\d+", section.title))
   if len(matches) > 0:
     return int(matches[0][0])
   else:

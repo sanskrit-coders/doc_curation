@@ -21,7 +21,7 @@ DEVANAGARI_DANDAS = "[।॥]"
 LOWER_CASE_ISO = "[a-zāīūṛr̥ēōṅñṇṭḍṣśḷṁṃḥḻṉṟäü]"
 UPPER_CASE_ISO = "[A-ZĀĪŪṚR̥ĒŌṄÑṆṬḌṢŚḶṀṂḤḺṈṞÜ]"
 ACCENTS = "[\u1CD0-\u1CE8\u1CF9\u1CFA\uA8E0-\uA8F1\u0951-\u0954\u0957]" # included  ॗ , which is used as svara for weber's shatapatha
-PUNCT = "[।॥\.\(\)\[\],;+\*_\-:]"
+PUNCT = r"[।॥\.\(\)\[\],;+\*_\-:]"
 
-DEVANAGARI_MANIPRAVALA_MID_K_L = f"(?<=[^\s्])क(?={DEVANAGARI_MATRA}?ळ)"
+DEVANAGARI_MANIPRAVALA_MID_K_L = f"(?<=[^\\s्])क(?={DEVANAGARI_MATRA}?ळ)"
 

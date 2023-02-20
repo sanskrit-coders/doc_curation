@@ -64,7 +64,7 @@ def get_word_count(md_file, wc=None):
 
 def detect_vishvaasa_mods(content, cutoff=0.001):
   mod_likelihood = 0
-  if "+++\(" in content:
+  if "+++(" in content or "+++\\(" in content:
     mod_likelihood += 1
   else:
     if "**" in content:

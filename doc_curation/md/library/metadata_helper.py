@@ -3,14 +3,11 @@ import os
 import shutil
 
 import regex
-
-import doc_curation.md.library.arrangement
-from curation_utils import file_helper
-
-from curation_utils.file_helper import get_storage_name
-from doc_curation.md import content_processor
-from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
+from regex import Match
+
+from curation_utils import file_helper
+from doc_curation.md.file import MdFile
 
 
 def ensure_ordinal_in_title(dir_path, transliteration_target=sanscript.DEVANAGARI, first_file_index=1, dry_run=False, recursive=False, format=None):
@@ -19,7 +16,7 @@ def ensure_ordinal_in_title(dir_path, transliteration_target=sanscript.DEVANAGAR
   for index, file in enumerate(files):
     md_file = MdFile(file_path=os.path.join(dir_path, file))
     title = md_file.get_title(omit_chapter_id=False)
-    title = regex.sub("(^[\d०-९೦-೯ ]+ )", "", title)
+    title = regex.sub(r"(^[\d०-९೦-೯ ]+ )", "", title)
     # if regex.fullmatch("[+०-९0-9].+", title):
     #   return
 
@@ -42,7 +39,7 @@ def pad_title_numbering(dir_path, dry_run):
   files = [x for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
   files.sort()
   for index, file in enumerate(files):
-    md_file = os.path.join(dir_path, file)
+    md_file = MdFile(file_path=os.path.join(dir_path, file))
     title = md_file.get_title()
     if title is None:
       return
@@ -68,6 +65,8 @@ def set_filename_from_title(md_file, source_script=None, mixed_languages_in_titl
 
   if source_script is not None:
     title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script, maybe_use_dravidian_variant=maybe_use_dravidian_variant, mixed_languages_in_titles=mixed_languages_in_titles, max_length=max_title_length)
+  else:
+    title_in_file_name = title
 
   if os.path.basename(md_file.file_path) == "_index.md":
     current_path = os.path.dirname(md_file.file_path)
@@ -154,7 +153,7 @@ def transliterate_title(md_file, transliteration_target=sanscript.DEVANAGARI, dr
 
 def remove_post_numeric_title_text(md_file, removal_allower=lambda x:True, rename=True, set_in_content=False, dry_run=False):
   title = md_file.get_title(omit_chapter_id=False)
-  match = regex.fullmatch("([\d०-९೦-೯-]+) +(\S.+)", title)
+  match = regex.fullmatch(r"([\d०-९೦-೯-]+) +(\S.+)", title)
   if match is None:
     logging.warning(f"No match! Skipping {md_file.file_path}")
     return 
@@ -185,7 +184,7 @@ def remove_adhyaaya_word_from_title(md_file, adhyaaya_pattern="([अऽ]ध्�
 def set_title_from_content(md_file, title_extractor, rename=True, log_level=logging.INFO, dry_run=False):
   [metadata, content] = md_file.read()
   title = metadata["title"]
-  if regex.fullmatch("[\d०-९೦-೯\- ]+", title):
+  if regex.fullmatch(r"[\d०-९೦-೯\- ]+", title):
     title_extracted = title_extractor(content)
     if title_extracted is not None:
       title = f"{title.strip()} {title_extracted}"
@@ -234,8 +233,8 @@ def get_metadata_field_values(md_files, field_name):
 
 
 def shloka_title_maker(text):
-  id_in_text = sanscript.transliterate(regex.search("॥\s*([०-९\d\.]+)\s*॥", text).group(1), sanscript.DEVANAGARI, sanscript.OPTITRANS)
-  id_in_text = regex.search("\.?\s*(\d+)\s*$", id_in_text).group(1)
+  id_in_text = sanscript.transliterate(regex.search(r"॥\s*([०-९\d\.]+)\s*॥", text).group(1), sanscript.DEVANAGARI, sanscript.OPTITRANS)
+  id_in_text = regex.search(r"\.?\s*(\d+)\s*$", id_in_text).group(1)
   title_id = "%03d" % int(id_in_text)
   title = title_from_text(text=text, num_words=2, target_title_length=None, depunctuate=True, title_id=title_id)
   return title
@@ -286,14 +285,14 @@ def iti_naama_title_extractor(text, conclusion_pattern="इति.+ऽध्य�
   :param conclusion_pattern: 
   :return: 
   """
-  matches = list(regex.finditer(conclusion_pattern, text))
+  matches: list[Match] = list(regex.finditer(conclusion_pattern, text))
   if len(matches) == 0:
     return None
   else:
     final_line = matches[-1].group(0).replace("\n", " ")
     final_line = regex.sub("न्नाम", "ं नाम", final_line)
-    final_line = regex.sub("(?<=ो|र्)नाम(?=.+ध्यायः)", " नाम", final_line)
-    matches = list(regex.finditer(".+ +(\S+)( *)(?=नाम)", final_line))
+    final_line = regex.sub(r"(?<=ो|र्)नाम(?=.+ध्यायः)", " नाम", final_line)
+    matches = list(regex.finditer(r".+ +(\S+)( *)(?=नाम)", final_line))
     if len(matches) == 0:
       return None
     else:
@@ -313,7 +312,7 @@ def iti_saptamii_title_extractor(text, conclusion_pattern="इति.+ऽध्�
   else:
     final_line = matches[-1].group(0).replace("\n", " ")
     final_line = regex.sub(" (च|तु) ", " ", final_line)
-    matches = list(regex.finditer(".+ +(\S+)(?= \S+ *ऽ?ध्यायः)", final_line))
+    matches = list(regex.finditer(r".+ +(\S+)(?= \S+ *ऽ?ध्यायः)", final_line))
     if len(matches) == 0:
       return None
     else:
@@ -322,9 +321,9 @@ def iti_saptamii_title_extractor(text, conclusion_pattern="इति.+ऽध्�
     return title
 
 
-def title_from_text(text, num_words=2, target_title_length=50, title_id=None, script=sanscript.DEVANAGARI):
+def title_from_text(text, num_words=2, target_title_length=50, title_id=None, depunctuate=True, script=sanscript.DEVANAGARI):
   from doc_curation.md.content_processor.stripper import remove_non_content_text
   text = remove_non_content_text(content=text)
   from doc_curation.utils import text_utils
-  title = text_utils.title_from_text(text=text, num_words=num_words, target_title_length=target_title_length, title_id=title_id, script=script)
+  title = text_utils.title_from_text(text=text, num_words=num_words, target_title_length=target_title_length, title_id=title_id, script=script, depunctuate=depunctuate)
   return title

@@ -28,7 +28,7 @@ class MdFile(object):
   YAML = "yaml"
   TOML = "toml"
 
-  def __init__(self, file_path, frontmatter_type=None):
+  def __init__(self, file_path: object, frontmatter_type: object = None) -> object:
     self.file_path = str(file_path)
     self.frontmatter_type = frontmatter_type
 
@@ -156,7 +156,7 @@ class MdFile(object):
       title = title[1:]
     
     if omit_chapter_id and title is not None:
-      title = regex.sub("^[+०-९\d]+ +", "", title)
+      title = regex.sub(r"^[+०-९\d]+ +", "", title)
     return title
 
   def dump_mediawiki(self, outpath=None, dry_run=False):
