@@ -30,7 +30,7 @@ def to_tsv(dir_path, out_path):
     tsv_writer = csv.writer(out_file, delimiter='\t')
     for md_file in tqdm(md_files):
       file_id_base = md_file.file_path.replace(os.path.dirname(dir_path) + "/", "").replace(".md", "").replace("/", ".")
-      sections = md_file.get_sections()
+      (lines_till_section, sections) = md_file.get_sections()
       for section in sections:
         tsv_writer.writerow([f"{file_id_base}.{sanscript.transliterate(section.title, _to=sanscript.IAST)}", "    ".join(section.lines)])
   pass

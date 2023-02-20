@@ -113,7 +113,7 @@ def split_to_images_and_ocr(pdf_path,
   if os.path.exists(final_ocr_path):
     logging.warning("Skipping %s: %s exists", pdf_path, final_ocr_path)
     return
-  image_directory = _get_ocr_dir(pdf_path)
+  image_directory = _get_ocr_dir(pdf_path, 1)
   os.makedirs(image_directory, exist_ok=True)
   pdf.dump_images(pdf_path, image_directory)
   image_segments = [str(pdf_segment) for pdf_segment in Path(_get_ocr_dir(pdf_path)).glob("*.jpg")]

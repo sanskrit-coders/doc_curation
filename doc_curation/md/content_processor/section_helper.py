@@ -3,6 +3,9 @@ import logging
 
 import regex
 from more_itertools import peekable
+from curation_utils.list_helper import OrderedDefaultDict
+
+from doc_curation.md import file
 
 from doc_curation.md import content_processor
 from indic_transliteration import sanscript
@@ -28,6 +31,9 @@ class Section(object):
     self.title = title
     self.lines = lines
     self.header_prefix = header_prefix
+
+  def __repr__(self):
+    return f"{self.header_prefix} {self.title} ({len(self.lines)})"
 
 def get_section(lines_in):
   """
@@ -161,7 +167,7 @@ def add_init_words_to_section_titles(md_file, num_words=2, title_post_processor=
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
-def autonumber_section_lines(lines, dest_script=sanscript.DEVANAGARI, recursive=True, init_index=1):
+def autonumber_section_lines(lines, dest_script=sanscript.DEVANAGARI, recursive=True, overwrite_numbers=False, init_index=1):
   (lines_till_section, remaining) = get_lines_till_section(lines)
   sections = split_to_sections(remaining)
   lines_out = list(lines_till_section)
@@ -170,23 +176,29 @@ def autonumber_section_lines(lines, dest_script=sanscript.DEVANAGARI, recursive=
     title = section.title
     if title is None:
       title = ""
+    if overwrite_numbers:
+      transliterated_index = index_pattern % (section_index + init_index)
+    else:
+      if regex.match("^[0-9०-९೦-೯]+", title.strip()):
+        transliterated_index = regex.match("^[0-9०-९೦-೯]+", title.strip()).group()
+      else:
+        transliterated_index = index_pattern % (section_index + init_index)
     title = regex.sub("^[0-9०-९೦-೯]+", "", title.strip())
-    transliterated_index = index_pattern % (section_index + init_index)
     if dest_script is not None:
       transliterated_index = sanscript.transliterate(data=transliterated_index, _to=dest_script, _from=sanscript.IAST)
     title = "%s %s" % (transliterated_index, title)
     lines_out.append("\n%s%s" % (section.header_prefix, title))
     if recursive:
       # Assume that numbers start with 1 at subsection level and beyond 
-      section.lines = autonumber_section_lines(lines=section.lines, dest_script=dest_script, recursive=recursive, init_index=1) 
+      section.lines = autonumber_section_lines(lines=section.lines, dest_script=dest_script, recursive=recursive, init_index=1, overwrite_numbers=overwrite_numbers) 
     lines_out.extend(section.lines)
   return lines_out
 
 
-def autonumber(md_file, dest_script=sanscript.DEVANAGARI, recursive=True, start_index=1, dry_run=False):
+def autonumber(md_file, dest_script=sanscript.DEVANAGARI, recursive=True, start_index=1, overwrite_numbers=True, dry_run=False):
   [metadata, content] = md_file.read()
   lines = content.splitlines(keepends=False)
-  lines = autonumber_section_lines(lines=lines, dest_script=dest_script, recursive=recursive, init_index=start_index)
+  lines = autonumber_section_lines(lines=lines, dest_script=dest_script, recursive=recursive, init_index=start_index, overwrite_numbers=overwrite_numbers)
   content = "\n".join(lines)
   content = regex.sub("\n\n+", "\n\n", content)
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
@@ -196,3 +208,38 @@ def create_sections_from_terminal_digits(md_file, digit_pattern="([०-९]+)", 
   def replacement_maker(match):
     return "\n%s %s\n%s\n\n" %  (section_mark, match.group(1), match.group().strip())
   content_processor.replace_texts(md_file=md_file, patterns=[r"\n[\s\S]+?%s *\n" % (digit_pattern)], replacement=replacement_maker, dry_run=dry_run)
+  
+
+def section_hash_by_index(section):
+  matches = list(regex.finditer("\d+", section.title))
+  if len(matches) > 0:
+    return int(matches[0][0])
+  else:
+    return 999999
+
+def merge_sections(md_files, out_path=None, section_hasher=lambda x: x, dry_run=False):
+  content = ""
+  section_map = OrderedDefaultDict(list)
+  for md_file in md_files:
+    (lines_till_section, sections) = md_file.get_sections()
+    content += f"{lines_till_section}\n\n"
+    for section in sections:
+      title = section_hasher(section)
+      section_map[title].append(section)
+
+  sections_final = []
+  for id, sections in section_map.items():
+    section_final = Section(title=sections[0].title, header_prefix=sections[0].header_prefix, lines=list(sections[0].lines))
+    for section in sections[1:]:
+      section_final.lines.extend(list(section.lines))
+    sections_final.append(section_final)
+  
+  for section in sections_final:
+    lines = "\n".join(section.lines)
+    content += f"{section.header_prefix} {section.title}\n{lines}\n\n"
+
+  (metadata_out, _) = md_files[0].read()
+  if out_path is None:
+    out_path = md_files[0].file_path
+  md_file = file.MdFile(file_path=out_path)
+  md_file.dump_to_file(metadata=metadata_out, content=content, dry_run=dry_run)

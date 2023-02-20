@@ -8,7 +8,6 @@ wordcloud
 selenium
 urllib3
 regex
-yamldown
 pandas
 requests
 lxml

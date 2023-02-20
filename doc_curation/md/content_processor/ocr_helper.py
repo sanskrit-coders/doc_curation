@@ -61,8 +61,13 @@ def fix_iast_for_pdfs(text):
 
 
 def fix_google_ocr(text):
-  text = regex.sub("^-+", "", text)
-  text = regex.sub("\n", "\n\n", text)
+  text = regex.sub(r"(?<=\n)[\-=]+ *(?=\n)", "", text)
+  text = regex.sub("(?<=\n)([०-९\d]+) *(?=\n)", r"[[\1]]", text)
+  text = regex.sub("(?<=[ँ-९]):", "ः", text)
+  text = regex.sub(r"\|\|", "॥", text)
+  text = regex.sub(r"\|", "।", text)
+  text = regex.sub(r"।।", "॥", text)
+  text = regex.sub("(?<=\S ?)\n", "\n\n", text)
   return text
 
 

@@ -12,6 +12,11 @@ from pikepdf import Pdf
 
 from curation_utils import list_helper
 
+## To thwart DecompressionBombError: Image size (268216326 pixels) exceeds limit of 178956970 pixels, could be decompression bomb DOS attack.
+from PIL import Image
+Image.MAX_IMAGE_PIXELS = None
+
+
 # Remove all handlers associated with the root logger object.
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)
@@ -20,15 +25,18 @@ logging.basicConfig(
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
-def _get_ocr_dir(pdf_path):
-  return os.path.join(os.path.dirname(pdf_path), Path(pdf_path).stem + "_splits")
+def _get_ocr_dir(pdf_path, small_pdf_pages=None):
+  if small_pdf_pages is None:
+    return os.path.join(os.path.dirname(pdf_path), f"{Path(pdf_path).stem}_splits")
+  else:
+    return os.path.join(os.path.dirname(pdf_path), f"{Path(pdf_path).stem}_{small_pdf_pages}_splits")
 
 
 def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_page=None, small_pdf_pages=25):
   logging.info("Splitting %s into segments of %d", pdf_path, small_pdf_pages)
   pdf_name_stem = Path(pdf_path).stem
   if output_directory == None:
-    output_directory = _get_ocr_dir(pdf_path)
+    output_directory = _get_ocr_dir(pdf_path, small_pdf_pages)
   # noinspection PyArgumentList
   with Pdf.open(pdf_path) as pdf:
     if end_page == None:
@@ -111,7 +119,7 @@ def detext_via_ps(input_file_path, output_file_path):
 
 def dump_images(input_file_path, output_path):
   from pdf2image import convert_from_path
-  image_segments = [str(pdf_segment) for pdf_segment in Path(_get_ocr_dir(input_file_path)).glob("*.jpg")]
+  image_segments = [str(pdf_segment) for pdf_segment in Path(_get_ocr_dir(input_file_path, 1)).glob("*.jpg")]
   if len(image_segments) > 0:
     logging.info("%d images already exist! So not dumping afresh.", len(image_segments))
     return 
@@ -121,6 +129,7 @@ def dump_images(input_file_path, output_path):
 
 def images_to_pdf(image_dir, output_path):
   import img2pdf
+  
   with open(output_path,"wb") as f:
     imgs = []
     image_files = os.listdir(image_dir)
@@ -136,7 +145,7 @@ def images_to_pdf(image_dir, output_path):
 
 
 def detext_via_jpg(input_file_path, output_file_path):
-  image_directory = _get_ocr_dir(input_file_path)
+  image_directory = _get_ocr_dir(input_file_path, 1)
   os.makedirs(image_directory, exist_ok=True)
   dump_images(input_file_path, image_directory)
   images_to_pdf(image_directory, output_file_path)
@@ -150,7 +159,7 @@ def detext_with_pdfimages(input_file_path, output_file_path):
   :param output_file_path: 
   :return: 
   """
-  image_directory = _get_ocr_dir(input_file_path)
+  image_directory = _get_ocr_dir(input_file_path, 1)
   os.makedirs(image_directory, exist_ok=True)
   subprocess.call(["pdfimages", "-j", input_file_path, image_directory + "/page"])
   # subprocess.call(["convert", input_file_path, image_directory  + "/page%04.jpg"])

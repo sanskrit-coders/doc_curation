@@ -3,13 +3,33 @@ from urllib.parse import urljoin
 from doc_curation.scraping import wikisource
 from doc_curation.scraping.wikisource import enumerated, serial
 from indic_transliteration import sanscript
+from doc_curation.md.library import metadata_helper
+from doc_curation.md import content_processor
+from indic_transliteration import sanscript
+from doc_curation.md import library
+from doc_curation.md.file import MdFile
+
+def lakshmiinaaraayana():
+  title_maker = lambda x, y: sanscript.transliterate(y, _to=sanscript.DEVANAGARI)
+  base_dir = "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/laxmI-nArAyaNa-saMhitA/"
+  serial.dump_text(start_url="https://sa.wikisource.org/s/1mwo", out_path=base_dir + "1_kRta-yuga-santAnaH/", title_maker=title_maker, index_format="%03d", text_css_selector="div.mw-parser-output .poem", next_url_css='[style="width:200%; text-align:right;font-size:0.9em;"] a', transliteration_source=sanscript.DEVANAGARI, base_url="http://sa.wikisource.org/", dry_run=False)
+  serial.dump_text(start_url="https://sa.wikisource.org/s/1ua7", out_path=base_dir + "2_tretA-yuga-santAnaH/", title_maker=title_maker, index_format="%03d", text_css_selector="div.mw-parser-output .poem", next_url_css='[style="width:200%; text-align:right;font-size:0.9em;"] a', transliteration_source=sanscript.DEVANAGARI, base_url="http://sa.wikisource.org/", dry_run=False)
+  serial.dump_text(start_url="https://sa.wikisource.org/s/1zxo", out_path=base_dir + "3_dvApara-yuga-santAnaH/", title_maker=title_maker, index_format="%03d", text_css_selector="div.mw-parser-output .poem", next_url_css='[style="width:200%; text-align:right;font-size:0.9em;"] a', transliteration_source=sanscript.DEVANAGARI, base_url="http://sa.wikisource.org/", dry_run=False)
+  serial.dump_text(start_url="https://sa.wikisource.org/s/2ey3", out_path= base_dir + "4_kali-yuga-santAnaH/", title_maker=title_maker, index_format="%03d", text_css_selector="div.mw-parser-output .poem", next_url_css='[style="width:200%; text-align:right;font-size:0.9em;"] a', transliteration_source=sanscript.DEVANAGARI, base_url="http://sa.wikisource.org/", dry_run=False)
+  library.apply_function(dir_path=base_dir, fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda x, y: sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(x, ignore_padaanta=True, omit_yrl=True), dry_run=False)
+  library.apply_function(fn=content_processor.replace_texts, dir_path=base_dir, patterns=["(। *){2,}"], replacement="॥")
+
 
 if __name__ == '__main__':
-    skanda()
+  pass
+  lakshmiinaaraayana()
+
 
 
 def remainder():
   pass
+  
   # enumerated.dump_text(url_base="अग्निपुराणम्/अध्यायः", num_parts=383, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANam/agni-purANam/")
   # enumerated.dump_text(url_base="गरुडपुराणम्/आचारकाण्डः/अध्यायः", num_parts=240, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANam/garuDa-purANam/AchAra-kANDaH/")
   # enumerated.dump_text(url_base="गरुडपुराणम्/प्रेतकाण्डः_(धर्मकाण्डः)/अध्यायः", num_parts=49, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANam/garuDa-purANam/dharma-kANDaH/")

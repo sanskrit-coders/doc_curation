@@ -257,7 +257,7 @@ class MdFile(object):
     lines = content.splitlines(keepends=False)
     (lines_till_section, remaining) = get_lines_till_section(lines)
     sections = split_to_sections(remaining)
-    return sections
+    return (lines_till_section, sections)
 
   def split_to_bits(
       self, source_script=sanscript.DEVANAGARI, 
