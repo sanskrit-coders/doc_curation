@@ -148,7 +148,7 @@ class MdFile(object):
         if parent_dir != ref_dir_for_ancestral_title:
           parent_title = parent_md.get_title(omit_chapter_id=omit_chapter_id, ref_dir_for_ancestral_title=ref_dir_for_ancestral_title)
           title = "%s// %s" % (parent_title, title)
-          title = regex.sub("(?:^| )\+", "", title)
+          title = regex.sub(r"(?:^| )\+", "", title)
     
     if title is None:
       logging.fatal("%s has None title", self.file_path)

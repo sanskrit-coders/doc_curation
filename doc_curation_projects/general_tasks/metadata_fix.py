@@ -13,7 +13,6 @@ from indic_transliteration import sanscript
 def title_fix():
   ## DEVANAGARI
   # library.apply_function(dir_path="/home/vvasuki/vvasuki-git/pALi/content", fn=MdFile.ensure_ordinal_in_title, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
-  # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxaNam/articles/sAhitya-sAraH", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/shAktam/devI-bhAgavatam", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
   
   ##### General
@@ -39,7 +38,8 @@ def title_fix():
 
 
 if __name__ == '__main__':
-  title_fix()
+  # title_fix()
+  library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnakara-darshanam/prakaraNa-granthaH", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
   # arrangement.shift_indices(dir_path="/home/vvasuki/gitland/vishvAsa/notes-hugo/content/sapiens/branches/Trans-eurasian/japan/spirituality/hagakure/wilson-translation", start_index=5, new_index_offset=1)
 
   # library.apply_function(
