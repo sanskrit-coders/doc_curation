@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import time
 import urllib
 from urllib.parse import urlsplit, urljoin, unquote
 from urllib.request import urlopen, Request
@@ -90,12 +91,13 @@ def fix_special_markup(content):
 def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entry_css_list=None):
 
   (title, post_html, date_obj) = (None, None, None)
-  
+  post_parsed = True
   
   if regex.search("/(\d\d\d\d)/(\d\d)/", url):
     file_name = file_name_from_url(url=url, max_title_length=max_title_length)
     result = regex.search("(\d\d\d\d)/(\d\d)/(\d\d)?", url)
     date_obj = parser.parse(result.group().replace("/", "-"), fuzzy=True)
+    post_parsed = False
   else:
     ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list)
     date_obj, title = get_post_metadata(soup)
@@ -105,7 +107,7 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
 
   if os.path.exists(file_path):
     logging.warning("Skipping %s : exists", file_name)
-    return
+    return post_parsed
   
   # post_html could've been computed in order to determine target file name.
   if post_html is None:
@@ -124,9 +126,9 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
   content = fix_special_markup(content=content)
   content = "Source: [here](%s).\n\n%s\n\n%s" % (url, title, content)
   md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
+  return post_parsed
 
-
-def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, browser=None, entry_css_list=None, anchor_css="a[href]", anchor_filter=lambda x: True, urlpattern=None, dry_run=False):
+def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, browser=None, entry_css_list=None, anchor_css="a[href]", anchor_filter=lambda x: True, urlpattern=None, delay=None, dry_run=False):
   # standardize lengths of preexisting files to avoid duplication.
   from doc_curation.md.library import metadata_helper
   library.apply_function(fn=metadata_helper.truncate_file_name, max_length=50 + len("2020-02-10_"), dry_run=dry_run, dir_path=dir_path)
@@ -147,8 +149,16 @@ def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdow
       logging.info('Skipping %s', anchor["href"])
       continue
     if post_url != url:
-      article_scraper(url=post_url, dir_path=dir_path, dry_run=dry_run)
+      post_parsed = article_scraper(url=post_url, dir_path=dir_path, dry_run=dry_run)
+      if post_parsed and delay is not None:
+        logging.info(f'Waiting for {delay} secs.')
+        time.sleep(delay)
+        logging.info(f'Waited for {delay} secs.')
 
   prev_page_anchor = soup.select_one(".nav-previous a")
   if prev_page_anchor is not None:
-    scrape_index_from_anchors(url=prev_page_anchor["href"], dir_path=dir_path, article_scraper=article_scraper, browser=browser, anchor_css=anchor_css, anchor_filter=anchor_filter, urlpattern=urlpattern, dry_run=dry_run)
+    if delay is not None:
+      logging.info(f'Waiting for {delay} secs.')
+      time.sleep(delay)
+      logging.info(f'Waited for {delay} secs.')
+    scrape_index_from_anchors(url=prev_page_anchor["href"], dir_path=dir_path, article_scraper=article_scraper, browser=browser, anchor_css=anchor_css, anchor_filter=anchor_filter, urlpattern=urlpattern, dry_run=dry_run, delay=delay)

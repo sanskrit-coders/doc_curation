@@ -40,14 +40,15 @@ def get_month_urls(url, reverse=True, init_year_month_str=None):
   ( post_html, soup) = blog.get_post_html(url=url)
   month_anchors = soup.select(".widget_archive a")
   if len(month_anchors) == 0:
-    archives_elements = soup.find_all(text="Archives")
+    archives_elements = soup.select_one("[name='archive-dropdown']")
     if len(archives_elements) != 0:
+      urls = sorted([option["value"] for option in archives_elements.select("option") if option["value"] != ""], reverse=reverse)
+      pass
+      # TODO : Fix this.
+    else:
+      archives_elements = soup.find_all(text="Archives")
       month_anchors = archives_elements[0].parent.parent.select("a")
       urls = sorted([anchor["href"] for anchor in month_anchors], reverse=reverse)
-    else:
-      archives_element = soup.select_one("[name='archive-dropdown']")
-      urls = sorted([option["value"] for option in archives_element.select("option") if option["value"] != ""], reverse=reverse)
-      # TODO : Fix this.
   else:
     urls = sorted([anchor["href"] for anchor in month_anchors], reverse=reverse)
   if init_year_month_str is not None:
@@ -55,10 +56,11 @@ def get_month_urls(url, reverse=True, init_year_month_str=None):
       urls = itertools.dropwhile(lambda x: init_year_month_str > month_str_from_url(x), urls)
     else:
       urls = itertools.takewhile(lambda x: init_year_month_str <= month_str_from_url(x), urls)
+  urls = list(urls)
   return urls
 
 
-def scrape_monthly_indexes(url, dir_path, reverse=True, init_year_month_str=None, dry_run=False):
+def scrape_monthly_indexes(url, dir_path, reverse=True, init_year_month_str=None, delay=None, dry_run=False):
   """
   
   :param url: 
@@ -70,4 +72,4 @@ def scrape_monthly_indexes(url, dir_path, reverse=True, init_year_month_str=None
   """
   month_urls = get_month_urls(url, init_year_month_str=init_year_month_str, reverse=reverse)
   for month_url in month_urls:
-    scrape_index_from_anchors(url=month_url, dir_path=dir_path, anchor_css=None, dry_run=dry_run)
+    scrape_index_from_anchors(url=month_url, dir_path=dir_path, anchor_css=None, dry_run=dry_run, delay=delay)

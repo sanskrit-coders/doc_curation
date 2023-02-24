@@ -79,6 +79,12 @@ def fix_google_ocr_iast_iso(text):
   text = regex.sub("Š", "Ś", text)
   text = regex.sub("Ş", "Ṣ", text)
   text = regex.sub("š", "ś", text)
+  text = regex.sub("ș", "ṣ", text)
+  text = regex.sub("ț|ṱ", "ṭ", text)
+  text = regex.sub("Ç", "Ś", text)
+  text = regex.sub("ç", "ś", text)
+  text = regex.sub("ḑ", "ḍ", text)
   text = regex.sub("ä|ă", "ā", text)
   text = regex.sub("ü", "ū", text)
+  text = regex.sub("(?<=[a-z])\- +(?=[a-z])", "", text)
   return text

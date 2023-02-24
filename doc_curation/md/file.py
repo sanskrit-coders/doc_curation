@@ -267,6 +267,7 @@ class MdFile(object):
       maybe_use_dravidian_variant="yes",
       target_frontmantter_type=TOML,
       add_short_title=False, 
+      deromanize=False,
       start_index=1,
       dry_run=False, max_length=50):
     """Splits this md file into separate files - one for each section.
@@ -300,6 +301,13 @@ class MdFile(object):
           ## Transliterate the number
           title_index = sanscript.transliterate(title_index, sanscript.OPTITRANS, source_script)
         title = "%s %s" % (title_index, title)
+      else:
+        if deromanize:
+          def deromanizer(match):
+            import roman
+            return str(roman.fromRoman(match.group(1)))
+          title = regex.sub(r"^([IVX]+)\.?", deromanizer, title)
+
       title = title.strip()
 
       from doc_curation.utils import text_utils
