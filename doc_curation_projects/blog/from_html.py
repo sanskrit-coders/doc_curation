@@ -39,8 +39,8 @@ def dump_wordpress():
 
 def dump_wordpress_monthly():
 
-  init_year_month_str = "2005/01"
-  wordpress.scrape_monthly_indexes(url="https://www.gnxp.com/WordPress/", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/gnxp_razib", init_year_month_str=init_year_month_str, dry_run=False, delay=10, reverse=False)
+  init_year_month_str = "2006/05"
+  wordpress.scrape_monthly_indexes(url="https://www.gnxp.com/WordPress/", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/gnxp_razib", init_year_month_str=init_year_month_str, dry_run=False, delay=30, reverse=False)
 
   init_year_month_str = "2022/09"
   wordpress.scrape_monthly_indexes(url="https://westhunt.wordpress.com/", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/westhunt", init_year_month_str=init_year_month_str, dry_run=False)

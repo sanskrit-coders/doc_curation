@@ -91,7 +91,6 @@ def fix_special_markup(content):
 def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entry_css_list=None):
 
   (title, post_html, date_obj) = (None, None, None)
-  post_parsed = True
   
   if regex.search("/(\d\d\d\d)/(\d\d)/", url):
     file_name = file_name_from_url(url=url, max_title_length=max_title_length)
@@ -107,7 +106,7 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
 
   if os.path.exists(file_path):
     logging.warning("Skipping %s : exists", file_name)
-    return post_parsed
+    return post_html is not None
   
   # post_html could've been computed in order to determine target file name.
   if post_html is None:
@@ -126,7 +125,7 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
   content = fix_special_markup(content=content)
   content = "Source: [here](%s).\n\n%s\n\n%s" % (url, title, content)
   md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
-  return post_parsed
+  return post_html is not None
 
 def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, browser=None, entry_css_list=None, anchor_css="a[href]", anchor_filter=lambda x: True, urlpattern=None, delay=None, dry_run=False):
   # standardize lengths of preexisting files to avoid duplication.
