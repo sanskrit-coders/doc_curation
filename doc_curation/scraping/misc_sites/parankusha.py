@@ -55,14 +55,15 @@ def expand_tree_by_text(browser, element_text):
     return False
 
 
-def deduce_text_name(browser, sequence=None):
+def deduce_text_name(browser, ordinal=None):
+  logging.debug(f"Sequence {ordinal}")
   element = browser.find_elements(By.CSS_SELECTOR, "td>a.tv_0.tv_3")[-1]
   # element = browser.find_elements(By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"] td")[-1]
   text_name = element.text.strip()
-  if sequence is None:
+  if ordinal is None:
     return text_name
   else:
-    return "%02d %s" % (sequence, text_name)
+    return "%02d %s" % (ordinal, text_name)
 
 
 def get_output_path(text_name, outdir):
@@ -71,8 +72,8 @@ def get_output_path(text_name, outdir):
   return os.path.join(outdir, file_helper.clean_file_path(text_name_transliterated) + ".md")
 
 
-def dump_text(browser, outdir, sequence=None, has_comment=False):
-  text_name = deduce_text_name(browser, sequence)
+def dump_text(browser, outdir, ordinal=None, has_comment=False):
+  text_name = deduce_text_name(browser, ordinal)
   out_file_path = get_output_path(text_name=text_name, outdir=outdir)
   rows = browser.find_elements(By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"]")
   text = ""
@@ -112,15 +113,15 @@ def browse_nodes(browser, start_nodes):
       click_link_by_text(browser=browser, element_text=node)
 
 
-def get_texts(browser, outdir, start_nodes, sequence_start=1, has_comment=False):
+def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False):
   browse_nodes(browser=browser, start_nodes=start_nodes)
   os.makedirs(name=outdir, exist_ok=True)
-  sequence = sequence_start
-  dump_text(browser=browser, outdir=outdir, sequence=sequence, has_comment=has_comment)
+  ordinal = ordinal_start
+  dump_text(browser=browser, outdir=outdir, ordinal=ordinal, has_comment=has_comment)
   while click_link_by_text(browser=browser, element_text="Next"):
-    if sequence is not None:
-      sequence = sequence + 1
-    dump_text(browser=browser, outdir=outdir, sequence=sequence, has_comment=has_comment)
+    if ordinal is not None:
+      ordinal = ordinal + 1
+    dump_text(browser=browser, outdir=outdir, ordinal=ordinal, has_comment=has_comment)
   library.fix_index_files(dir_path=outdir, overwrite=False, dry_run=False)
 
 

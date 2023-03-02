@@ -39,7 +39,7 @@ def dump_wordpress():
 
 def dump_wordpress_monthly():
 
-  init_year_month_str = "2006/05"
+  init_year_month_str = "2010/01"
   wordpress.scrape_monthly_indexes(url="https://www.gnxp.com/WordPress/", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/gnxp_razib", init_year_month_str=init_year_month_str, dry_run=False, delay=30, reverse=False)
 
   init_year_month_str = "2022/09"
