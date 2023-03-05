@@ -39,10 +39,7 @@ def dump_wordpress():
 
 def dump_wordpress_monthly():
 
-  init_year_month_str = "2010/01"
-  wordpress.scrape_monthly_indexes(url="https://www.gnxp.com/WordPress/", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/gnxp_razib", init_year_month_str=init_year_month_str, dry_run=False, delay=30, reverse=False)
-
-  init_year_month_str = "2022/09"
+  init_year_month_str = "2023/03"
   wordpress.scrape_monthly_indexes(url="https://westhunt.wordpress.com/", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/westhunt", init_year_month_str=init_year_month_str, dry_run=False)
   wordpress.scrape_monthly_indexes(url="https://pradyaus.wordpress.com/", dry_run=False, dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/pradyaus")
   wordpress.scrape_monthly_indexes(url="https://indianphilosophyblog.org/", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/indianphilosophyblog", init_year_month_str=init_year_month_str, dry_run=False)
@@ -51,6 +48,8 @@ def dump_wordpress_monthly():
   wordpress.scrape_monthly_indexes(url="https://goghritam.wordpress.com/", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/goghritam", init_year_month_str=init_year_month_str, dry_run=False)
 
   wordpress.scrape_monthly_indexes(url="https://vajrin.wordpress.com/", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/vajrin", init_year_month_str=init_year_month_str, dry_run=False)
+
+  wordpress.scrape_monthly_indexes(url="https://www.gnxp.com/WordPress/", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/gnxp_razib", init_year_month_str=init_year_month_str, dry_run=False, delay=30, reverse=False)
 
 
   # NOn-updated. One-time-dump done.

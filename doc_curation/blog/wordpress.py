@@ -41,7 +41,7 @@ def get_month_urls(url, reverse=True, init_year_month_str=None):
   month_anchors = soup.select(".widget_archive a")
   if len(month_anchors) == 0:
     archives_elements = soup.select_one("[name='archive-dropdown']")
-    if len(archives_elements) != 0:
+    if archives_elements is not None and len(archives_elements) != 0:
       urls = sorted([option["value"] for option in archives_elements.select("option") if option["value"] != ""], reverse=reverse)
       pass
       # TODO : Fix this.
