@@ -100,7 +100,8 @@ def fix_muula_typos():
   # library.apply_function(fn=content_processor.replace_texts, dir_path=shaunakam.MULA_DIR, patterns=[""], replacement="३॒॑")
   # library.apply_function(fn=content_processor.replace_texts, dir_path=shaunakam.MULA_DIR, patterns=[""], replacement="१॒॑")
   library.apply_function(fn=content_processor.replace_texts, dir_path=shaunakam.MULA_DIR, patterns=["[᳡]ऽ"], replacement="ऽ")
-
+  library.apply_function(fn=content_processor.replace_texts, dir_path=shaunakam.MULA_DIR, patterns=[""], replacement="॒")
+  library.apply_function(fn=content_processor.replace_texts, dir_path=shaunakam.MULA_DIR, patterns=["॒॒॑"], replacement="॒॑")
 
 def check_completeness():
   matches = library.list_matching_files(dir_path=shaunakam.TIKA_DIR, content_condition=lambda x: "पदपाठः" not in x, file_name_filter=lambda x: not str(x).endswith("_index.md"))

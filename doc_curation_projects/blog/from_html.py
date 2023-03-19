@@ -65,7 +65,7 @@ def dump_wordpress_monthly():
 
 def dump_substack():
   substack.scrape_free_articles_from_index_anchors(url="https://vikramdialogues.substack.com/archive", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/vikramdialogues", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://indianhistory.substack.com/archive", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/indianhistory", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://eruditus.substack.com/archive", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/eruditus", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/razib", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://hindoohistory.substack.com/archive", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/hindoohistory", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://nemets.substack.com/archive", dir_path="/home/vvasuki/gitland/hindu-comm/weblogs/nemets", dry_run=False)

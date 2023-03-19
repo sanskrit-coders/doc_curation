@@ -10,6 +10,8 @@ from doc_curation.md.file import MdFile
 from doc_curation.md.content_processor import include_helper
 from indic_transliteration import sanscript
 
+from doc_curation.md.library import arrangement
+
 
 def fix_includes():
   md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/TIkA/padyam/kAlidAsaH/raghuvaMsham/mallinAthaH", file_pattern="[0-9][0-9]*.md")
