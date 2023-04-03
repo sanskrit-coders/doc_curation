@@ -89,9 +89,9 @@ def dump_mags():
 if __name__ == '__main__':
   pass
   # word_clouds()
-  dump_mags()
-  # dump_wordpress_monthly()
-  # dump_wordpress()
-  # dump_substack()
+  # dump_mags()
+  dump_wordpress_monthly()
+  dump_wordpress()
+  dump_substack()
 
   # blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path=f"{BASE_PATH}/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)

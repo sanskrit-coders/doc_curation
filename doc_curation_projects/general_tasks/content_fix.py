@@ -31,7 +31,7 @@ def add_init_words_to_includes():
   
 
 def fix_footnotes(dir_path):
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.define_footnotes_near_use(c), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.define_footnotes_near_use(c), dry_run=False)
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.fix_intra_word_footnotes(c), dry_run=False)
 
 
@@ -102,14 +102,14 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: "documentation-theme" not in str(x))
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/sanskrit/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: False not in [y not in str(x) for y in ["sarit", "gitasupersite", "wellcome", "dhaval", "wikisource", "vishvAsa"]])
   
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/kAraNAgamaH/1.md", content_transformer=lambda x, y: sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(x, ignore_padaanta=True, omit_yrl=True), dry_run=False)
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/kAraNAgamaH/2_kriyA-pAdaH", content_transformer=lambda x, y: sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(x, ignore_padaanta=True, omit_yrl=True), dry_run=False)
   # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
 
   # library.apply_function(fn=MdFile.transform, content_transformer=content_processor.make_paras, dir_path="/home/vvasuki/hindu-comm/weblogs/aryaakasha")
 
   # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:content_processor.markdownify_newlines(c), dir_path="/home/vvasuki/sanskrit/raw_etexts/vedaH/yajur/taittirIya/sAyaNa")
 
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH/content/meta/articles/keith", content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/articles/winternitz-Apastamba-mantra-pATha.md", content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/nyAya-vaisheShike/tarkasangrahaH/TIkA-mUlAni", content_transformer=lambda x, y: ocr_helper.fix_google_ocr(x))
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/social-cultivation/violence/articles/Sacred-ground_Bakker", content_transformer=lambda x, y: content_processor.fix_iast_gb(x))
@@ -119,7 +119,7 @@ if __name__ == '__main__':
 
   # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/brAhmaH/shrI-bhAShyam_rAmAnujaH", patterns=["््+"], replacement="्")
 
-
+  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/kAraNAgamaH/", patterns=["ळ"], replacement="ल")
 
   # migrate_and_include_shlokas()
   # add_init_words_to_includes()
@@ -137,4 +137,4 @@ if __name__ == '__main__':
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH/01_Adiparva/01_anukramaNikAparva/001_anukramaNikAparva.md", content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.vishvAsa_sanskrit_transformer))
 
-  # fix_footnotes("/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v2/articles/kalhaNa-rAjatarangiNI")
+  # fix_footnotes("/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/champUH/vishva-guNAdarshaH.md")
