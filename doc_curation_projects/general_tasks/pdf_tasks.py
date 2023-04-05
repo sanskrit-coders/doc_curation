@@ -25,7 +25,7 @@ if __name__ == '__main__':
     # drive_ocr.split_and_ocr_on_drive(pdf_path="", small_pdf_pages=10, detext=False)
     # drive_ocr.split_and_ocr_all(dir_path="/home/vvasuki/Documents/books/granthasangrahaH/kAvyam/stotram/shrIvaiShNavAH/4kDivyaPrabandham", small_pdf_pages=10, detext=True)
     # drive_ocr.split_and_ocr_all( dir_path="/run/media/vvasuki/vData/text/granthasangrahaH/vyAkaraNam/", small_pdf_pages=10, detext=False)
-    drive_ocr.split_and_ocr_all(dir_path="/run/media/vvasuki/vData/text/granthasangrahaH/kAvyam/shrIvaiShNavakRtam/sankalpa-sUryodayaH", small_pdf_pages=10, detext=True)
+    drive_ocr.split_and_ocr_all(dir_path="/run/media/vvasuki/vData/text/granthasangrahaH/kalpaH/later", small_pdf_pages=10, detext=False)
 
 
     # image_ops.fix_images(input_file="/run/media/vvasuki/vData/text/granthasangrahaH/gaNitam/child-texts/dav/Mathematics class 2.pdf", output_file="/run/media/vvasuki/vData/text/granthasangrahaH/gaNitam/child-texts/dav/c2.pdf", fixer=image_ops.threshold_adaptive, threshold=60)

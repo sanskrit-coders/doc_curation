@@ -127,8 +127,6 @@ if __name__ == '__main__':
   # devanaagarify()
   # fix_footnotes(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/vaiShNavaH/shrI-sampradAyaH/venkaTanAthaH/rahasya-traya-sAraH/rAjagopAla-translation/gss_corrected.md")
 
-  # library.shift_contents(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/static/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva/saMskRtam/rAmAnujaH/mUlam/13_xetra-xetrajna-yogaH", start_index=2, substitute_content_offset=-1)
-
   # Details
   # library.apply_function(fn=details_helper.interleave_from_file, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/TIkA/padyam/madhurA-vijayam/sarva-prastutiH/4.md", source_file=lambda x: x.replace("sarva-prastutiH", "AnglAnuvAdaH"), detail_title="tiruvenkaTAchAri (Eng)", dry_run=False)
 
