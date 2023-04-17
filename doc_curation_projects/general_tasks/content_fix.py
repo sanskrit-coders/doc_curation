@@ -82,7 +82,7 @@ def section_fix():
 
   base_dir = "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/mahAbhAratam/goraxapura-pAThaH/hindy-anuvAdaH/13_anushAsanaparva/01_dAna-dharma-parva/149_viShNu-sahasra-nAma-stotram/TIkA/sarva-prastutiH"
   # library.apply_function(fn=section_helper.autonumber, dir_path=os.path.join(base_dir, "_index.md"), start_index=1)
-  library.apply_function(fn=MdFile.split_to_bits, dir_path=os.path.join(base_dir), frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None) # 
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path=os.path.join(base_dir), frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None) # 
 
   # section_helper.merge_sections(md_files=[MdFile(file_path=os.path.join(base_dir, "en.md")), MdFile(file_path=os.path.join(base_dir, "bhagavadguNadarpaNam.md")), ], section_hasher=section_helper.section_hash_by_index)
 
@@ -102,7 +102,7 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: "documentation-theme" not in str(x))
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/sanskrit/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: False not in [y not in str(x) for y in ["sarit", "gitasupersite", "wellcome", "dhaval", "wikisource", "vishvAsa"]])
   
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/kAraNAgamaH/2_kriyA-pAdaH", content_transformer=lambda x, y: sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(x, ignore_padaanta=True, omit_yrl=True), dry_run=False)
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/vedAnta-deshika-dinacharyA.md", content_transformer=lambda x, y: sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(x, ignore_padaanta=True, omit_yrl=True), dry_run=False)
   # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
 
   # library.apply_function(fn=MdFile.transform, content_transformer=content_processor.make_paras, dir_path="/home/vvasuki/hindu-comm/weblogs/aryaakasha")
@@ -117,7 +117,7 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/articles/homa-variations", content_transformer=lambda x, y: content_processor.fix_plain_footnotes(x))
 
 
-  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/brAhmaH/shrI-bhAShyam_rAmAnujaH", patterns=["््+"], replacement="्")
+  library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/parameshvara-saMhitA", patterns=["।।"], replacement="॥")
 
   # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/kAraNAgamaH/", patterns=["ळ"], replacement="ल")
 

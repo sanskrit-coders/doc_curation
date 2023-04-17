@@ -58,6 +58,7 @@ def get_post_metadata(soup):
   time_css_list = [".entry-date", ".post-date", ".published", "div.card-body>center", "time"]
   time_tags = get_tags_matching_css(soup=soup, css_selector_list=time_css_list)
   date = None
+
   if len(time_tags) > 0:
     try:
       time_tag = time_tags[0]
@@ -68,6 +69,14 @@ def get_post_metadata(soup):
     except parser.ParserError:
       date_str = regex.search("\d+[-/]\d+[-/]\d+", time_tags[0].text).group()
       date = parser.parse(date_str, dayfirst=True, fuzzy=True)
+  else:
+    post_tags = get_tags_matching_css(soup=soup, css_selector_list=["article", ".post"])
+    if len(post_tags) > 0:
+      import datefinder
+      matches = list(datefinder.find_dates(post_tags[0].text))
+      if len(matches) > 0:
+        date = matches[0]
+
   return date, title
 
 
@@ -102,7 +111,10 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
     date_obj, title = get_post_metadata(soup)
     file_name = "%s.md" % get_storage_name(text=title, max_length=max_title_length)
 
-  file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, datetime.datetime.strftime(date_obj, "%Y/%m/%Y-%m-%d_") + file_name))
+  if date_obj is None:
+    file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, "undated", file_name))
+  else:
+    file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, datetime.datetime.strftime(date_obj, "%Y/%m/%Y-%m-%d_") + file_name))
 
   if os.path.exists(file_path):
     logging.warning("Skipping %s : exists", file_name)
@@ -119,7 +131,9 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
   full_title = text_utils.title_from_text(text=title, num_words=50, target_title_length=200)
   logging.info("Dumping %s to %s with title %s.", url, file_path, short_title)
 
-  metadata = {"title": short_title, "full_title": full_title, "date": datetime.datetime.strftime(date_obj, "%Y-%m-%d"), "upstream_url": url}
+  metadata = {"title": short_title, "full_title": full_title, "upstream_url": url}
+  if date_obj is not None:
+    metadata["date"] = datetime.datetime.strftime(date_obj, "%Y-%m-%d")
   md_file = MdFile(file_path=file_path, frontmatter_type=MdFile.TOML)
   content = get_md_with_pandoc(content_in=post_html, source_format="html")
   content = fix_special_markup(content=content)

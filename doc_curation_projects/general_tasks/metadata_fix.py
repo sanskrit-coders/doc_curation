@@ -29,7 +29,7 @@ def title_fix():
 
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/bhAgavatam", fn=metadata_helper.remove_adhyaaya_word_from_title, dry_run=False)
 
-  # library.apply_function(fn=metadata_helper.set_title_from_content, dir_path=HI_ROOT, title_extractor=metadata_helper.iti_naama_title_extractor)
+  library.apply_function(fn=metadata_helper.set_title_from_content, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/parameshvara-saMhitA", title_extractor=metadata_helper.iti_naama_title_extractor)
 
 
   ## KANNADA
@@ -38,8 +38,8 @@ def title_fix():
 
 
 if __name__ == '__main__':
-  # title_fix()
-  library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnakara-darshanam/prakaraNa-granthaH", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
+  title_fix()
+  # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnakara-darshanam/prakaraNa-granthaH", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
   # arrangement.shift_indices(dir_path="/home/vvasuki/gitland/vishvAsa/notes-hugo/content/sapiens/branches/Trans-eurasian/japan/spirituality/hagakure/wilson-translation", start_index=5, new_index_offset=1)
 
   # library.apply_function(

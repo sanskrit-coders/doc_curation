@@ -25,3 +25,4 @@ roman
 editdistance
 kraken
 kraken[pdf]
+datefinder
