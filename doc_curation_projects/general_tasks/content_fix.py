@@ -98,6 +98,9 @@ if __name__ == '__main__':
   # prefill_vishvAsa_includes()
   # shloka_formatting()
   # section_fix()
+  # details_helper.dump_detail_content(source_md=MdFile(file_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1.md"), dest_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1_prabhAvalI.md", titles=["प्रभावली"])
+  # details_helper.dump_detail_content(source_md=MdFile(file_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1.md"), dest_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1_mUlam.md", titles=["मूलम्"])
+
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: "documentation-theme" not in str(x))
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/sanskrit/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: False not in [y not in str(x) for y in ["sarit", "gitasupersite", "wellcome", "dhaval", "wikisource", "vishvAsa"]])
@@ -111,13 +114,17 @@ if __name__ == '__main__':
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/articles/winternitz-Apastamba-mantra-pATha.md", content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/nyAya-vaisheShike/tarkasangrahaH/TIkA-mUlAni", content_transformer=lambda x, y: ocr_helper.fix_google_ocr(x))
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/pAdma-saMhitA/", content_transformer=lambda x, y: ocr_helper.misc_sanskrit_typos(x))
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/pAdma-saMhitA/", content_transformer=lambda x, y: ocr_helper.fix_mid_shloka_empty_lines(x))
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/social-cultivation/violence/articles/Sacred-ground_Bakker", content_transformer=lambda x, y: content_processor.fix_iast_gb(x))
 
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/articles/homa-variations", content_transformer=lambda x, y: content_processor.fix_plain_footnotes(x))
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/articles/homa-variations", content_transformer=lambda x, y: footnote_helper.fix_plain_footnotes(x))
+
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/pAdma-saMhitA/", content_transformer=lambda x, y: footnote_helper.fix_plain_footnotes(x, def_pattern=r"\((\d+)[\. ]*([^\d\)][^\)]+)\) *", def_replacement_pattern=r"\n[^\1]: \2\n", ref_pattern=r"\((\d+)\)"))
 
 
-  library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/parameshvara-saMhitA", patterns=["।।"], replacement="॥")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/pAdma-saMhitA/", patterns=["। *\n"], replacement="।  \n")
 
   # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/kAraNAgamaH/", patterns=["ळ"], replacement="ल")
 
@@ -128,7 +135,8 @@ if __name__ == '__main__':
   # fix_footnotes(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/vaiShNavaH/shrI-sampradAyaH/venkaTanAthaH/rahasya-traya-sAraH/rAjagopAla-translation/gss_corrected.md")
 
   # Details
-  # library.apply_function(fn=details_helper.interleave_from_file, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/TIkA/padyam/madhurA-vijayam/sarva-prastutiH/4.md", source_file=lambda x: x.replace("sarva-prastutiH", "AnglAnuvAdaH"), detail_title="tiruvenkaTAchAri (Eng)", dry_run=False)
+  # library.apply_function(fn=details_helper.interleave_from_file, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1_mUlam.md", source_file=lambda x: x.replace("_mUlam", "_prabhAvalI"), detail_title=None, dest_pattern= "<details.+?summary>मूलम् *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>प्रभावलिः *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
+  # library.apply_function(fn=details_helper.interleave_from_file, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1_mUlam.md", source_file=lambda x: x.replace("_mUlam", "_prabhAvilAsa"), detail_title=None, dest_pattern= "<details.+?summary>प्रभावलिः *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>प्रभाविलासः *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/mudgala-purANam/5_lambodara-charitam/25.md", content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c))
 

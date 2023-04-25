@@ -38,9 +38,9 @@ def title_fix():
 
 
 if __name__ == '__main__':
-  title_fix()
+  # title_fix()
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnakara-darshanam/prakaraNa-granthaH", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
-  # arrangement.shift_indices(dir_path="/home/vvasuki/gitland/vishvAsa/notes-hugo/content/sapiens/branches/Trans-eurasian/japan/spirituality/hagakure/wilson-translation", start_index=5, new_index_offset=1)
+  # arrangement.shift_indices(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/gopAla-deshikaH/Ahnikam_AhnikArtha-prakAshikA/", start_index=21, new_index_offset=-18)
 
   # library.apply_function(
   #   fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/kannaDAnuvAda",

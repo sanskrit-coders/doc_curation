@@ -44,6 +44,8 @@ def dump_wordpress():
 def dump_wordpress_monthly():
 
   init_year_month_str = "2023/04"
+
+  wordpress.scrape_monthly_indexes(url="https://suganyasmusingsscribblings.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/suganya", init_year_month_str=init_year_month_str, dry_run=False)
   wordpress.scrape_monthly_indexes(url="https://westhunt.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/westhunt", init_year_month_str=init_year_month_str, dry_run=False)
   wordpress.scrape_monthly_indexes(url="https://pradyaus.wordpress.com/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/pradyaus")
   wordpress.scrape_monthly_indexes(url="https://indianphilosophyblog.org/", dir_path=f"{BASE_PATH}/weblogs/indianphilosophyblog", init_year_month_str=init_year_month_str, dry_run=False)

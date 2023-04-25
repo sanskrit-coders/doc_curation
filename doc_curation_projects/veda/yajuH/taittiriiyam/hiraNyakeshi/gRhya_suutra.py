@@ -10,7 +10,7 @@ from doc_curation.md.file import MdFile
 
 from doc_curation.md import library
 from doc_curation.md.content_processor import include_helper, section_helper
-from doc_curation.md.library import metadata_helper
+from doc_curation.md.library import metadata_helper, arrangement
 from doc_curation.scraping import sacred_texts
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation

@@ -44,6 +44,19 @@ class Detail(object):
 
 
 def interleave_from_file(md_file, source_file, dest_pattern="[^\d०-९೦-೯]([\d०-९೦-೯]+) *॥.*(?=\n|$)", source_pattern="(?<=\n|^)([\d०-९೦-೯]+).+\n", detail_title="English", dry_run=False):
+  """
+  
+  :param md_file: 
+  :param source_file: Can be a function returning a string or a string.
+  :param dest_pattern: Common patterns: 
+        [^\d०-९೦-೯]([\d०-९೦-೯]+) *॥.*(?=\n|$)
+        <details.+?summary>मूलम् *- *(\S+)</summary>[\s\S]+?</details>\n
+  :param source_pattern: Pattern to find in the source. Common patterns:
+      (?<=\n|^)([\d०-९೦-೯]+).+\n
+  :param detail_title: If None, no new detail is inserted.
+  :param dry_run: Boolean
+  :return: 
+  """
   (_, dest_content) = md_file.read()
   if callable(source_file):
     source_file = source_file(md_file.file_path)
@@ -55,6 +68,7 @@ def interleave_from_file(md_file, source_file, dest_pattern="[^\d०-९೦-೯]
   (_, source_content) = source_md.read()
   dest_matches = list(regex.finditer(dest_pattern, dest_content))
   source_matches = list(regex.finditer(source_pattern, source_content))
+  logging.info(f"Got {len(dest_matches)} dest matches and {len(source_matches)} source matches ")
   source_match_map = {}
   for source_match in source_matches:
     index_str = sanscript.transliterate(source_match.group(1), _to=sanscript.IAST)
@@ -71,16 +85,18 @@ def interleave_from_file(md_file, source_file, dest_pattern="[^\d०-९೦-೯]
     if index not in source_match_map:
       logging.warning("Could not get index %d in source: %s", index, dest_match.group())
       continue
-    detail_html = textwrap.dedent(
-      """
-      
-      <details><summary>%s</summary>
-
-      %s
-      </details>
-      """
-    ) % (detail_title, source_match_map[index].group())
-    dest_content = dest_content.replace(dest_match.group(), "%s\n%s" % (dest_match.group(), detail_html))
+    if detail_title is not None:
+      inserted_html = textwrap.dedent(
+        """
+        <details><summary>%s</summary>
+  
+        %s
+        </details>
+        """
+      ) % (detail_title, source_match_map[index].group())
+    else:
+      inserted_html = source_match_map[index].group()
+    dest_content = dest_content.replace(dest_match.group(), "%s\n\n%s" % (dest_match.group(), inserted_html))
     source_content = source_content.replace(source_match_map[index].group(), "")
   md_file.replace_content_metadata(new_content=dest_content, dry_run=dry_run)
   source_md.replace_content_metadata(new_content=source_content, dry_run=dry_run)
@@ -102,7 +118,7 @@ def transform_details_with_soup(content, metadata, transformer, title=None, *arg
   return content_processor._make_content_from_soup(soup=soup)
 
 
-def extract_details_from_file(md_file):
+def extract_detail_tags_from_file(md_file):
   [metadata, content] = md_file.read()
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
@@ -131,7 +147,7 @@ def insert_after_detail(content, metadata, title, new_element):
   return content_processor._make_content_from_soup(soup=soup)
 
 
-def get_details(content, metadata, title):
+def get_details(content, title, metadata=None):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
     return []
@@ -154,14 +170,22 @@ def get_detail(content, metadata, title):
   else:
     return details[0]
 
-def get_detail_content(content, metadata, titles):
+def get_detail_content(content, titles, metadata=None):
   result = ""
   for title in titles:
     details = get_details(content=content, metadata=metadata, title=title)
     for detail_tuple in details:
       (tag, detail) = detail_tuple
-      result = f"{result}\n\n{detail.content}"
+      result = f"{result}  \n{detail.content}"
   return result
+
+
+def dump_detail_content(source_md, dest_path, titles, dry_run=False):
+  (metadata, content) = source_md.read()
+  detail_content = get_detail_content(content=content, metadata=metadata, titles=titles)
+  dest_md = MdFile(file_path=dest_path)
+  dest_md.dump_to_file(metadata={"title": " ".join(titles)}, content=detail_content, dry_run=dry_run)
+
 
 def rearrange_details(content, metadata, titles, *args, **kwargs):
   # UNTESTED

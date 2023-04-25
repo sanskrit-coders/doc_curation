@@ -7,6 +7,8 @@ from indic_transliteration import sanscript
 from regex import Match
 
 from curation_utils import file_helper
+from tqdm import tqdm
+
 from doc_curation.md.file import MdFile
 
 
@@ -246,7 +248,7 @@ def copy_metadata_and_filename(dest_dir, ref_dir, insert_missing_ref_files=False
   dest_md_files = arrangement.get_md_files_from_path(dir_path=dest_dir)
   if sub_path_id_maker is None:
     sub_path_id_maker = lambda x: arrangement.get_sub_path_id(sub_path=str(x).replace(dest_dir, ""))
-  for md_file in dest_md_files:
+  for md_file in tqdm(dest_md_files):
     sub_path_id = sub_path_id_maker(md_file.file_path)
     if sub_path_id is None:
       continue

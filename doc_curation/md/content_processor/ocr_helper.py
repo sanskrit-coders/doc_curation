@@ -70,6 +70,19 @@ def fix_google_ocr(text):
   text = regex.sub("(?<=\S ?)\n", "\n\n", text)
   return text
 
+def fix_mid_shloka_empty_lines(text):
+  text = regex.sub(r"।\n\n+", "।  \n", text)
+  return text
+
+def misc_sanskrit_typos(text):
+  text = regex.sub(r"\|\|", "॥", text)
+  text = regex.sub(r"\|", "।", text)
+  text = regex.sub(r"।।", "॥", text)
+  text = regex.sub("[ञनम](्[क-घ])\n", r"ङ\1", text)
+  text = regex.sub("[ङनम](्[च-झ])\n", r"ञ\1", text)
+  text = regex.sub("[ञङम](्[त-न])\n", r"न\1", text)
+  text = regex.sub("[ञनङ](्[प-म])\n", r"म्\1", text)
+  return text
 
 def fix_google_ocr_iast_iso(text):
   text = regex.sub("ş", "ṣ", text)

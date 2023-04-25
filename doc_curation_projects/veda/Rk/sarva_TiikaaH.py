@@ -20,7 +20,7 @@ def fix_bare_Rk_files():
   rk_id_to_name = Rk.get_Rk_id_to_name_map_from_muulam()
   for source_path in source_paths:
     md_file = MdFile(file_path=source_path)
-    details = details_helper.extract_details_from_file(md_file=md_file)
+    details = details_helper.extract_detail_tags_from_file(md_file=md_file)
     Rk_id_numerical = Rk.rk_id_from_path(source_path)
     if Rk_id_numerical not in rk_id_to_name:
       logging.warning(f"{Rk_id_numerical} not found. Skipping.")

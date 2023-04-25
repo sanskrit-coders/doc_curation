@@ -26,7 +26,19 @@ def fix_intra_word_footnotes(content, *args, **kwargs):
   return content
 
 
-def fix_plain_footnotes(text, definiton_pattern="(?<=\n)(\d+)\.?(?= )"):
-  text = regex.sub(definiton_pattern, r"[^\1]:", text)
-  text = regex.sub("r(?<=[^\s\d\^\-,\(\);:])(\d+)(?=\D)", r"[^\1]", text)
+def fix_plain_footnotes(text, def_pattern="(?<=\n)(\d+)\.?(?= )", def_replacement_pattern=r"[^\1]:", ref_pattern=r"(?<=[^\s\d\^\-,\(\);:])(\d+)(?=\D)"):
+  """
+  Common def_patterns: (?<=\n)(\d+)\.?(?= ) to r"[^\1]:"
+  r"\((\d+)[\. ]*([^\d\)][^\)]+)\) *" to r"\n[^\1]: \2\n"
+  
+  ref_patterns: r"(?<=[^\s\d\^\-,\(\);:])(\d+)(?=\D)" to r"[^\1]"
+  r"\((\d+)\)"
+  
+  :param text: 
+  :param def_pattern: 
+  :return: 
+  """
+  text = regex.sub(def_pattern, def_replacement_pattern, text)
+  text = regex.sub(ref_pattern, r"[^\1]", text)
   return text
+
