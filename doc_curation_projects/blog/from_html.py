@@ -77,7 +77,7 @@ def dump_substack():
   substack.scrape_free_articles_from_index_anchors(url="https://nemets.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/nemets", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://rasajournal.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/rasajournal", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://ekavali.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/ekavali", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://bharadvajatmaja.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/bharadvajatmaja", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://bharadvajatmaja.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/bharadvajatmata", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://machiavellianhindu.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/machiavellianhindu", dry_run=False)
   pass
 
@@ -92,8 +92,8 @@ if __name__ == '__main__':
   pass
   # word_clouds()
   # dump_mags()
-  # dump_wordpress_monthly()
-  # dump_wordpress()
+  dump_wordpress_monthly()
+  dump_wordpress()
   dump_substack()
 
   # blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path=f"{BASE_PATH}/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)

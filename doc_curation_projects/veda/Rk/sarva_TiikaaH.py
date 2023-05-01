@@ -30,7 +30,7 @@ def fix_bare_Rk_files():
     assert len(details) == 1, source_path
     assert details[0].select_one("summary").text == "+Jamison Brereton Notes", source_path
     dest_md_file = MdFile(file_path=dest_md_file_path)
-    dest_md_file.transform(content_transformer=lambda c, m: details_helper.insert_after_detail(content=c, metadata=m, title="+Jamison Brereton", new_element=details[0]))
+    dest_md_file.transform(content_transformer=lambda c, m: details_helper.insert_adjascent_detail(content=c, metadata=m, title="+Jamison Brereton", new_element=details[0]))
     os.remove(source_path)
 
 

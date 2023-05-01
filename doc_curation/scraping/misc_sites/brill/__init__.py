@@ -21,7 +21,7 @@ def dump_chapter(url, dest_path, dry_run=False, overwrite=False):
     chapter_div = soup.select_one("#chapterBody")
     fix_footnote_refs(chapter_div)
     content = md.get_md_with_pandoc(content_in=str(chapter_div))
-
+    content = content.replace("\[", "[").replace("\]", "]")
     footnote_def_md = get_footnote_def_md(chapter_div)
     content = content + "\n\n" + footnote_def_md
     content = footnote_helper.define_footnotes_near_use(content)
@@ -43,8 +43,9 @@ def get_devanaagarii_page_md(core_page, comment_detail):
   md_content = md.get_md_with_pandoc(content_in=str(core_page))
 
   logging.debug(f"Text snippet  : {md_content[:30]}")
-  md_content = md_content.replace("\[", "[").replace("\]", "]")
+  md_content = md_content.replace("\[", "[").replace("\]", "]").replace("\|", "|")
   md_content = sanscript.transliterate(md_content, _from=sanscript.IAST, _to=sanscript.DEVANAGARI, suspend_on= set(['<', '[^']), suspend_off = set(['>', ']']))
+  md_content = md_content.replace("।।", "॥")
   prastuti_detail = details_helper.Detail(type="विश्वास-प्रस्तुतिः", content=md_content)
   core_detail = details_helper.Detail(type="मूलम्", content=md_content)
   md_content = f"{prastuti_detail.to_md_html()}\n\n{comment_detail.to_md_html()}\n\n{core_detail.to_md_html()}"
@@ -72,6 +73,8 @@ def get_footnote_def_md(base_div):
   for footnote_def in tqdm(footnote_def_divs):
     id = footnote_def["id"]
     sup_tag = footnote_def.select_one("sup")
+    if sup_tag is None:
+      sup_tag = footnote_def.select_one("a")
     if sup_tag is None:
       logging.warning(f"No superscript found! {id}")
     else:

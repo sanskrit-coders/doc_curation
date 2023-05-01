@@ -3,6 +3,7 @@ import logging
 import os
 import textwrap
 
+from bs4.element import PageElement
 import doc_curation.md.content_processor.line_helper
 import regex
 from bs4 import NavigableString
@@ -33,8 +34,8 @@ class Detail(object):
       attributes_str = " " + attributes_str
     return f"<details{attributes_str}><summary>{title}</summary>\n\n{self.content.strip()}\n</details>"
 
-  def to_soup(self):
-    return BeautifulSoup(self.to_md_html(), 'html.parser')
+  def to_soup(self, attributes_str=None):
+    return BeautifulSoup(self.to_md_html(attributes_str=attributes_str), 'html.parser')
 
   @classmethod
   def from_soup_tag(cls, detail_tag):
@@ -112,10 +113,31 @@ def transform_details_with_soup(content, metadata, transformer, title=None, *arg
   details = soup.select("body>details")
   for detail_tag in details:
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
-    if title is None or title == detail.type:
+    if title is None or regex.fullmatch(title, detail.type):
       transformer(detail_tag, *args, **kwargs)
     detail_tag.insert_after("\n")
   return content_processor._make_content_from_soup(soup=soup)
+
+
+def insert_duplicate_before(content, metadata, old_title_pattern="मूलम्.*", new_title="विश्वास-प्रस्तुतिः"):
+  if new_title in content:
+    logging.error(f"{new_title} already present. returning")
+    return content
+  def transformer(detail_tag):
+    detail = Detail.from_soup_tag(detail_tag=detail_tag)
+    detail.type = new_title
+    if new_title == "विश्वास-प्रस्तुतिः":
+      attribute_str = "open"
+    detail_tag.insert_before("\n\n")
+    detail_tag.insert_before(detail.to_soup(attributes_str=attribute_str))
+    detail_tag.insert_before("\n\n")
+    if "open" in detail_tag and "मूलम्" in old_title_pattern:
+      del detail_tag["open"]
+  content = transform_details_with_soup(content=content, metadata=metadata, transformer=transformer, title=old_title_pattern)
+  content.replace("open = \"\"", "open")
+  if "मूलम्" in old_title_pattern:
+    content.replace("<details open><summary>मूलम्", "<details><summary>मूलम्")
+  return content
 
 
 def extract_detail_tags_from_file(md_file):
@@ -128,7 +150,7 @@ def extract_detail_tags_from_file(md_file):
   return details
 
 
-def insert_after_detail(content, metadata, title, new_element):
+def insert_adjascent_detail(content, metadata, title, new_element, inserter=PageElement.insert_after):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content or title not in content:
     return content
@@ -137,13 +159,15 @@ def insert_after_detail(content, metadata, title, new_element):
     return content
   if isinstance(new_element, str):
     new_element = BeautifulSoup(new_element, 'html.parser')
+  if isinstance(new_element, Detail):
+    new_element = new_element.to_soup()
   details = soup.select("details")
   for detail in details:
     if detail.select_one("summary").text.strip() == title:
-      detail.insert_after("\n")
-      detail.insert_after(new_element)
-      detail.insert_after("\n")
-    detail.insert_after("\n")
+      inserter(detail, "\n")
+      inserter(detail, new_element)
+      inserter(detail, "\n")
+    # inserter(detail, "\n")
   return content_processor._make_content_from_soup(soup=soup)
 
 

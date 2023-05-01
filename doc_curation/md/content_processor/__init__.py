@@ -20,9 +20,9 @@ def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVA
     c = sanscript.SCHEMES[dest_script].dot_for_numeric_ids(c)
     c = c.replace("<<", "+++(").replace(">>", ")+++")
   if dest_script == sanscript.DEVANAGARI:
-    c = c.replace(":", "-")
-    c = c.replace("||", "॥")
-    c = c.replace("|", "।")
+    c = regex.sub("(?<=[ँ-९]):", "-", c)
+    c = regex.sub(r"\\?\| *\\?\|", "॥", c)
+    c = regex.sub("\\?\|", "।", c)
   return c
 
 

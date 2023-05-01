@@ -13,6 +13,10 @@ def markdownify_newlines(text):
   return text
 
 
+def dehyphenate_interline_words(text):
+  text = regex.sub("(ाह)-", r"\1 - ", text)
+  text = regex.sub(r"(?<=[ँ-९])\- (?=[क-९])", "", text)
+
 def make_md_verse_lines(text):
   """
   

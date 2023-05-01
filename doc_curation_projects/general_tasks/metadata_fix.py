@@ -13,7 +13,7 @@ from indic_transliteration import sanscript
 def title_fix():
   ## DEVANAGARI
   # library.apply_function(dir_path="/home/vvasuki/vvasuki-git/pALi/content", fn=MdFile.ensure_ordinal_in_title, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
-  # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/shAktam/devI-bhAgavatam", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
+  # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/kriyA/hari-bhakti-vilAsaH/sarva-prastutiH", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
   
   ##### General
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/notes-hugo/content/sapiens/branches/Trans-eurasian/japan/spirituality/hagakure/wilson-translation", fn=metadata_helper.strip_index_from_title, dry_run=False)
@@ -29,7 +29,7 @@ def title_fix():
 
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/bhAgavatam", fn=metadata_helper.remove_adhyaaya_word_from_title, dry_run=False)
 
-  library.apply_function(fn=metadata_helper.set_title_from_content, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/parameshvara-saMhitA", title_extractor=metadata_helper.iti_naama_title_extractor)
+  # library.apply_function(fn=metadata_helper.set_title_from_content, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/parameshvara-saMhitA", title_extractor=metadata_helper.iti_naama_title_extractor)
 
 
   ## KANNADA
@@ -38,7 +38,7 @@ def title_fix():
 
 
 if __name__ == '__main__':
-  # title_fix()
+  title_fix()
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnakara-darshanam/prakaraNa-granthaH", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
   # arrangement.shift_indices(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/gopAla-deshikaH/Ahnikam_AhnikArtha-prakAshikA/", start_index=21, new_index_offset=-18)
 
