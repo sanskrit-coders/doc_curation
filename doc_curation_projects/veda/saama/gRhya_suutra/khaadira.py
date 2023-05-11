@@ -1,21 +1,14 @@
 import os
-import shutil
 
 import regex
-from bs4 import BeautifulSoup
 
-import doc_curation.md.library.arrangement
-import doc_curation.scraping.sacred_texts
-from doc_curation_projects import veda
-from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper, section_helper
+from doc_curation.md import library
+from doc_curation.md.content_processor import include_helper
 from doc_curation.md.file import MdFile
-from doc_curation.md.library import metadata_helper
-from doc_curation.scraping.html_scraper import souper
+from doc_curation.md.library import metadata_helper, arrangement, combination
 from doc_curation.scraping.sacred_texts import para_translation
-from indic_transliteration import sanscript
 
-content_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH/content/sAma/kauthumam/sUtram/drAhyAyaNaH/khAdira-gRhyam"
+content_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_sAma/content/kauthumam/sUtram/drAhyAyaNaH/khAdira-gRhyam"
 static_dir_base = content_dir_base.replace("content", "static")
 ref_dir = os.path.join(static_dir_base, "mUlam")
 
@@ -112,13 +105,21 @@ def fix_oldenberg():
 def fix_includes():
   md_files = arrangement.get_md_files_from_path(dir_path=os.path.join(content_dir_base, "sarva-prastutiH"), file_pattern="**/[0-9]*.md")
 
-  def include_fixer(match):
-    return include_helper.alt_include_adder(match=match, source_dir="vishvAsa-prastutiH", alt_dirs=["oldenberg"])
+  def include_fixer(x, current_file_path, *args):
+    return include_helper.alt_include_adder(x, current_file_path, source_dir="vishvAsa-prastutiH", alt_dirs=["sarvASh_TIkAH"])
+
+  library.apply_function(fn=MdFile.transform, dir_path=content_dir_base, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_helper.old_include_remover))
+  library.apply_function(fn=MdFile.transform, dir_path=content_dir_base, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_fixer))
 
   for md_file in md_files:
-    include_helper.transform_include_lines(md_file=md_file, transformer=include_helper.old_include_remover)
-    include_helper.transform_include_lines(md_file=md_file, transformer=include_fixer)
     md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
+
+
+def combine():
+  subpaths = ["mUlam", "oldenberg", ]
+  subpaths = [os.path.join(static_dir_base, subpath) for subpath in subpaths]
+
+  combination.combine_to_details(source_paths_or_content=subpaths, dest_path=os.path.join(static_dir_base, "sarvASh_TIkAH"), dry_run=False)
 
 
 if __name__ == '__main__':
@@ -127,4 +128,5 @@ if __name__ == '__main__':
   # fix_oldenberg()
   fix_includes()
   # fix_filenames()
+  # combine()
   pass

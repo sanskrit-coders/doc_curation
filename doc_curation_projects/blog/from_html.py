@@ -46,7 +46,7 @@ def dump_wordpress_monthly():
   init_year_month_str = "2023/04"
 
   wordpress.scrape_monthly_indexes(url="https://suganyasmusingsscribblings.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/suganya", init_year_month_str=init_year_month_str, dry_run=False)
-  wordpress.scrape_monthly_indexes(url="https://westhunt.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/westhunt", init_year_month_str=init_year_month_str, dry_run=False)
+  wordpress.scrape_monthly_indexes(url="https://westhunt.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/non-hindu/westhunt", init_year_month_str=init_year_month_str, dry_run=False)
   wordpress.scrape_monthly_indexes(url="https://pradyaus.wordpress.com/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/pradyaus")
   wordpress.scrape_monthly_indexes(url="https://indianphilosophyblog.org/", dir_path=f"{BASE_PATH}/weblogs/indianphilosophyblog", init_year_month_str=init_year_month_str, dry_run=False)
   wordpress.scrape_monthly_indexes(url="https://animeshnagarblog.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/animeshnagarblog", init_year_month_str=init_year_month_str, dry_run=False)
@@ -55,7 +55,7 @@ def dump_wordpress_monthly():
 
   wordpress.scrape_monthly_indexes(url="https://vajrin.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/vajrin", init_year_month_str=init_year_month_str, dry_run=False)
 
-  wordpress.scrape_monthly_indexes(url="https://www.gnxp.com/WordPress/", dir_path=f"{BASE_PATH}/weblogs/gnxp_razib", init_year_month_str=init_year_month_str, dry_run=False, delay=30, reverse=False)
+  wordpress.scrape_monthly_indexes(url="https://www.gnxp.com/WordPress/", dir_path=f"{BASE_PATH}/weblogs/non-hindu/gnxp_razib", init_year_month_str=init_year_month_str, dry_run=False, delay=30, reverse=False)
 
 
   # NOn-updated. One-time-dump done.
@@ -72,13 +72,14 @@ def dump_wordpress_monthly():
 def dump_substack():
   substack.scrape_free_articles_from_index_anchors(url="https://vikramdialogues.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/vikramdialogues", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://eruditus.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/eruditus", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/razib", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/non-hindu/razib", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://hindoohistory.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/hindoohistory", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://nemets.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/nemets", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://nemets.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/non-hindu/nemets", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://rasajournal.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/rasajournal", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://ekavali.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/ekavali", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://bharadvajatmaja.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/bharadvajatmata", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://machiavellianhindu.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/machiavellianhindu", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://newsletter.smallbets.co/archive", dir_path=f"{BASE_PATH}/weblogs/non-hindu/smallbets", dry_run=False)
   pass
 
 
