@@ -2,6 +2,7 @@ import codecs
 import logging
 import os
 
+from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.remote_connection import LOGGER
 
 from curation_utils import scraping

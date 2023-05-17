@@ -6,7 +6,10 @@ import regex
 import doc_curation.md.content_processor.include_helper
 import doc_curation.md.library.arrangement
 from doc_curation.md import library
-from doc_curation_projects.iitk import bhagavadgiitaa
+from doc_curation.md.content_processor import include_helper
+
+from doc_curation.md.library import arrangement
+from doc_curation_projects.sites.iitk import bhagavadgiitaa
 from indic_transliteration import sanscript
 
 
@@ -31,7 +34,7 @@ def title_from_folder_path(folder_path):
 
 def make_content_files(base_dir):
   static_dir_base = base_dir.replace("/content/", "/static/")
-  md_files = arrangement.get_md_files_from_path(dir_path=base_dir, file_pattern="**/*.md", file_name_filter=lambda x: regex.match("^\\d\\d_", os.path.basename(x)) is not None)
+  md_files = arrangement.get_md_files_from_path(dir_path=base_dir, file_pattern="**/*.md")
   for md_file in md_files:
     content = ""
     file_path = md_file.file_path
@@ -43,21 +46,26 @@ def make_content_files(base_dir):
       title = title_from_folder_path(folder_path=folder_path)
       logging.info("%s %s", title, folder_path)
       
-      url = str(file_path).replace(base_dir, "/purANam/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva/sarva-prastutiH")
+      url = str(file_path).replace(base_dir, "/purANam_vaiShNavam/mahAbhAratam/06-bhIShma-parva/03-bhagavad-gItA-parva/sarva-prastutiH")
       url = url.replace("sarva-prastutiH", folder_path).replace("//", "/")
-      included_file_path = url.replace("/purANam", "/home/vvasuki/gitland/vishvAsa/purANam/static")
+      included_file_path = url.replace("/purANam_vaiShNavam", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static")
       if "vishvAsa-prastutiH" in included_file_path:
         classes = []
         h1_level = 2 
       else:
         classes = ["collapsed"]
         h1_level = 3
+        
+        
       if os.path.exists(included_file_path):
         content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(field_names=None, classes=classes, title=title, url=url, h1_level=h1_level)
-    
+    content = regex.sub("(?<=\n)____+\n##[^\n]+\s+(?=____+|$)", "", content)
     md_file.replace_content_metadata(new_content=content, dry_run=False)
+  include_helper.prefill_includes(dir_path=base_dir)
+
+
 
 if __name__ == '__main__':
-  base_dir = "/home/vvasuki/gitland/vishvAsa/purANam/content/mahAbhAratam/06-bhIShma-parva/02-bhagavad-gItA-parva/sarva-prastutiH"
+  base_dir = "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/mahAbhAratam/shlokashaH/bhagavad-gItA-parva/sarva-prastutiH"
   make_content_files(base_dir=base_dir)
   # library.fix_index_files(dir_path=base_dir, dry_run=False)

@@ -111,7 +111,7 @@ def empty_tag(tag):
       a.extract()
 
 
-def dump_text_from_element(url, outfile_path, text_css_selector, title_maker, title_prefix="", html_fixer=None, footnote_definier=None, md_fixer=None, overwrite=False, dry_run=False):
+def dump_text_from_element(url, outfile_path, text_css_selector, title_maker=lambda x, y: y, title_prefix="", html_fixer=None, footnote_definier=None, md_fixer=None, overwrite=False, dry_run=False):
   if callable(outfile_path):
     outfile_path = outfile_path(url)
   if os.path.exists(outfile_path) and not overwrite:
