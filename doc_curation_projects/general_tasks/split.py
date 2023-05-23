@@ -32,5 +32,5 @@ if __name__ == '__main__':
   ## None Script
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/power/sustainability/energy_human-ambitions_finite-planet/0.md", dry_run=False, source_script=None, start_index=1)
 
-  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/power/sustainability/energy_human-ambitions_finite-planet/0/_index.md", dry_run=False, source_script=None,  title_index_pattern=None)
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/power/sustainability/energy_human-ambitions_finite-planet", dry_run=False, source_script=None,  title_index_pattern=None)
   

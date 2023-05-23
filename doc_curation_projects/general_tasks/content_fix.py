@@ -82,14 +82,6 @@ def shloka_formatting():
 
 def details_fix():
 
-  # details_helper.dump_detail_content(source_md=MdFile(file_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1.md"), dest_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1_prabhAvalI.md", titles=["प्रभावली"])
-  # details_helper.dump_detail_content(source_md=MdFile(file_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1.md"), dest_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1_mUlam.md", titles=["मूलम्"])
-
-
-  # Interleave from file
-  # library.apply_function(fn=details_helper.interleave_from_file, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1_mUlam.md", source_file=lambda x: x.replace("_mUlam", "_prabhAvalI"), detail_title=None, dest_pattern= "<details.+?summary>मूलम् *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>प्रभावलिः *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
-  # library.apply_function(fn=details_helper.interleave_from_file, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1_mUlam.md", source_file=lambda x: x.replace("_mUlam", "_prabhAvilAsa"), detail_title=None, dest_pattern= "<details.+?summary>प्रभावलिः *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>प्रभाविलासः *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
-
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/mudgala-purANam/5_lambodara-charitam/25.md", content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c))
 
@@ -154,6 +146,6 @@ if __name__ == '__main__':
   # add_init_words_to_includes()
   # md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH", file_pattern="**/_index.md")  
   # devanaagarify()
-  # fix_footnotes(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1.md")
+  # fix_footnotes(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/02.md")
 
   # fix_footnotes("/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/champUH/vishva-guNAdarshaH.md")

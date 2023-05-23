@@ -206,6 +206,7 @@ def get_detail_content(content, titles, metadata=None):
 
 def dump_detail_content(source_md, dest_path, titles, dry_run=False):
   (metadata, content) = source_md.read()
+  metadata["_file_path"] = source_md.file_path
   detail_content = get_detail_content(content=content, metadata=metadata, titles=titles)
   dest_md = MdFile(file_path=dest_path)
   dest_md.dump_to_file(metadata={"title": " ".join(titles)}, content=detail_content, dry_run=dry_run)
