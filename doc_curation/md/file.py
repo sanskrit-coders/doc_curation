@@ -32,8 +32,10 @@ class MdFile(object):
     self.file_path = str(file_path)
     self.frontmatter_type = frontmatter_type
 
-  def __str__(self):
+  def __repr__(self):
     return str(self.file_path)
+  
+
 
   def _read_yml_md_file(self) -> Tuple[Dict, str]:
     metadata = {}

@@ -70,14 +70,21 @@ def set_filename_from_title(md_file, source_script=None, mixed_languages_in_titl
   else:
     title_in_file_name = title
 
+  move_file(md_file=md_file, new_file_name=title_in_file_name, dry_run=dry_run)
+
+
+def move_file(md_file, new_file_name, dry_run):
   if os.path.basename(md_file.file_path) == "_index.md":
     current_path = os.path.dirname(md_file.file_path)
     extension = ""
   else:
     current_path = md_file.file_path
     extension = ".md"
-  file_name = file_helper.clean_file_path("%s%s" % (title_in_file_name, extension))
-  file_path = os.path.join(os.path.dirname(current_path), file_name)
+  file_name = file_helper.clean_file_path("%s%s" % (new_file_name, extension))
+  if file_name.startswith("/"):
+    file_path = file_name
+  else:
+    file_path = os.path.join(os.path.dirname(current_path), file_name)
   if str(current_path) != file_path:
     logging.info("Renaming %s to %s", current_path, file_path)
     if not dry_run:
@@ -262,16 +269,16 @@ def copy_metadata_and_filename(dest_dir, ref_dir, insert_missing_ref_files=False
         logging.warning(fr"Inserting missing ref: {sub_path_id}. Fix and rerun.")
         shutil.copy(md_file.file_path, target_path)
         continue
+      else:
+        logging.warning("Could not find %s in ref_dir. Skipping", sub_path_id)
+        continue
     ref_md = sub_path_to_reference[sub_path_id]
-    sub_file_path_ref = str(ref_md.file_path).replace(ref_dir, "")
+    sub_file_path_ref = str(ref_md.file_path).replace(ref_dir, "").replace("_index.md", "").replace(".md", "")
     (ref_metadata, _) = ref_md.read()
     md_file.replace_content_metadata(new_metadata=ref_metadata, dry_run=dry_run, silent=True)
     target_path = os.path.abspath("%s/%s" % (dest_dir, sub_file_path_ref))
-    if dry_run:
-      logging.info("Moving %s to %s", md_file.file_path, target_path)
-    else:
-      os.makedirs(os.path.dirname(target_path), exist_ok=True)
-      shutil.move(md_file.file_path, target_path)
+    
+    move_file(md_file=md_file, new_file_name=target_path, dry_run=dry_run)
 
 
 def add_value_to_field(metadata, field, value): 

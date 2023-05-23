@@ -104,7 +104,8 @@ def get_sub_path_id(sub_path, basename_id_pattern=r"(.+?)(?=[_\.]|$)"):
     if name == "":
       continue
     elif name == "_index.md":
-      id_parts.append(name)
+      # id_parts.append(name)
+      pass
     else:
       base_id_match = regex.search(basename_id_pattern, name)
       if base_id_match is None:

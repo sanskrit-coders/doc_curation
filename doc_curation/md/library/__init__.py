@@ -8,6 +8,7 @@ from curation_utils import file_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from doc_curation.md.library.arrangement import get_md_files_from_path, migrate, fix_index_files
+from doc_curation.utils import text_utils
 from indic_transliteration import sanscript
 
 
@@ -106,7 +107,7 @@ def dump_word_cloud(src_path, dest_path, stop_words=None, font_path='siddhanta')
     stop_words = set(stop_words)
     stop_words.update(STOPWORDS)
   wc = WordCloud(width=1600, height=800, font_path=font_path, stopwords=stop_words, regexp=patterns.DEVANAGARI_OR_LATIN_WORD)
-  counts_map = apply_function(fn=doc_curation.text_utils.get_word_count, dir_path=src_path, wc=wc)
+  counts_map = apply_function(fn=text_utils.get_word_count, dir_path=src_path, wc=wc)
   counts = Counter()
   for file_path, file_counts in counts_map.items():
     counts.update(file_counts)
