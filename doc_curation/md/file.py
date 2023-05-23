@@ -16,8 +16,6 @@ from indic_transliteration import sanscript
 from curation_utils import file_helper
 import regex
 
-from doc_curation.md.library import arrangement
-
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)
 logging.basicConfig(
@@ -145,7 +143,7 @@ class MdFile(object):
     if ref_dir_for_ancestral_title is not None:
       while ref_dir_for_ancestral_title.endswith("/"):
         ref_dir_for_ancestral_title = ref_dir_for_ancestral_title[:-1]
-      import doc_curation.md.library.arrangement
+      from doc_curation.md.library import arrangement
       parent_md = arrangement.get_parent_md(md_file=self)
       if parent_md is not None:
         parent_dir = os.path.dirname(parent_md.file_path)
