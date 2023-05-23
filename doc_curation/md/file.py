@@ -16,6 +16,8 @@ from indic_transliteration import sanscript
 from curation_utils import file_helper
 import regex
 
+from doc_curation.md.library import arrangement
+
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)
 logging.basicConfig(
@@ -169,7 +171,7 @@ class MdFile(object):
       outpath = self.file_path.replace(".md", ".wiki")
     if not dry_run:
       with codecs.open(outpath, "w", 'utf-8') as out_file_obj:
-        chunks = [dump[i:i+CHUNK_SIZE] for i in range(0, len(dump), CHUNK_SIZE)]
+        chunks = [output[i:i+CHUNK_SIZE] for i in range(0, len(output), CHUNK_SIZE)]
         for chunk in chunks:
           out_file_obj.write(chunk)
     else:
