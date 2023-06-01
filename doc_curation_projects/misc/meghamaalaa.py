@@ -36,30 +36,34 @@ def upanishat():
 
 
 def shriibhaashya():
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasya-upanyasa/श्रीभाष्योपन्यासः-adhyaya-01/", "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/rAmAnujaH/mahAchArya-upanyAsaH")
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasya-upanyasa/श्रीभाष्योपन्यासः-adhyaya-01/", "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/rAmAnujaH/mahAchArya-upanyAsaH")
+  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/vachasudha-vicharaha/%e0%a4%b5%e0%a4%9a%e0%a4%b8%e0%a5%8d%e0%a4%b8%e0%a5%81%e0%a4%a7%e0%a4%be%e0%a4%b5%e0%a4%bf%e0%a4%9a%e0%a4%be%e0%a4%b0%e0%a4%83/", "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/rAmAnujaH/shrI-bhAShyam/vachas-sudhA-vichAraH.md")
+  pass
+
 
 def misc():
   # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/rahasyatraya-kaarikaavazhi/rahasyatraya-kaarikaavazhi/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/venkaTanAthaH/rahasya-traya-sAraH/kArikAvalI.md")
   # 
   # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/adyatmacintaa/अध्यात्मचिन्ता/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/sundara-jAmAtR-adhyAtma-chintA.md")
 
-  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/sarana-sabdaartha-vicharaha/शरणशब्दार्थविचारः/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/sharaNa-shabdArtha-vichAraH.md")
-
-  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/prapatti-anupayatva-vicharaha/प्रपत्त्यनुपायत्व-विचार", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/prapatty-anupAyatva-vichAraH.md")
-
-  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/mukthipada-sakthivada/मुक्तिपदशक्तिवादः/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/mukti-pada-shakti-vAdaH.md")
-
-  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/brahma-pada-sakti-vadaha/ब्रह्मपदशक्तिवादः/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/brahma-pada-shakti-vAdaH.md")
-
-  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/siddantha-toolika/सिद्धान्ततूलिका/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/siddhAnta-tUlikA.md")
-
-  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/kaivalya-satadooshani/कैवल्यशतदूषणी/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/kaivaly-shata-dUShaNI.md")
-
-  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/saaaraniskarsa-tippani/सारनिष्कर्षटिप्पणी/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/sAra-niShkarSha-TippanI.md")
-
-  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/naayamatmaa-bhasyam/नायमात्मा-भाष्यम्/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/nAyam-AtmA-bhAShyam.md")
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/sarana-sabdaartha-vicharaha/शरणशब्दार्थविचारः/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/sharaNa-shabdArtha-vichAraH.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/prapatti-anupayatva-vicharaha/प्रपत्त्यनुपायत्व-विचार", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/prapatty-anupAyatva-vichAraH.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/mukthipada-sakthivada/मुक्तिपदशक्तिवादः/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/mukti-pada-shakti-vAdaH.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/brahma-pada-sakti-vadaha/ब्रह्मपदशक्तिवादः/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/brahma-pada-shakti-vAdaH.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/siddantha-toolika/सिद्धान्ततूलिका/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/siddhAnta-tUlikA.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/kaivalya-satadooshani/कैवल्यशतदूषणी/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/kaivaly-shata-dUShaNI.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/saaaraniskarsa-tippani/सारनिष्कर्षटिप्पणी/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/sAra-niShkarSha-TippanI.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/naayamatmaa-bhasyam/नायमात्मा-भाष्यम्/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/nAyam-AtmA-bhAShyam.md")
 
   # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/astasloki-content/astasloki/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/parAshra-bhaTTa-aShTashlokI.md")
+  pass
 
 
 def puraaNam():
@@ -92,7 +96,7 @@ def rahasya():
 if __name__ == '__main__':
   pass
   # upanishat()
-  # shriibhaashya()
+  shriibhaashya()
   # misc()
   # puraaNam()
-  rahasya()
+  # rahasya()

@@ -75,7 +75,7 @@ def prefill_vishvAsa_includes():
 
 def shloka_formatting():
   pass
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/skanda-purANam/8_ambikA-khaNDaH", content_transformer=lambda c, m: doc_curation.md.content_processor.line_helper.make_md_verse_lines(text=c))
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/skanda-purANam/8_ambikA-khaNDaH", content_transformer=lambda c, m: line_helper.make_md_verse_lines(text=c))
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA", content_transformer=lambda x, y: content_processor.numerify_shloka_numbering(x))
 

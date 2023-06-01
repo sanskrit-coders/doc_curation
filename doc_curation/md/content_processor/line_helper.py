@@ -2,10 +2,29 @@ import regex
 from indic_transliteration import sanscript
 
 
-def remove_fake_linebreaks(text):
-  text = regex.sub(r"(?<=\n|^)([^#-*!<\s][^\n]+\S)\n(?=[^#-*\s>!<])", r"\1 ", text)
-  text = regex.sub(r"(?<=\n|^)(>[^\n]+\S)\n(?=>)", r"\1 ", text)
-  return text
+def remove_fake_linebreaks(content, *args, **kwargs):
+  """ Remove linebreaks which are treated as space within a paragraph when markdown is converted to html
+  
+  :param content: 
+  :param args: 
+  :param kwargs: 
+  :return: 
+  """
+  content = regex.sub(r"(?<=\n|^)([^#-*!<\s][^\n]+\S)\n(?=[^#-*\s>!<])", r"\1 ", content)
+  # Join markdown quotation lines
+  content = regex.sub(r"(?<=\n|^)(>[^\n]+\S)\n(?=>)", r"\1 ", content)
+  return content
+
+
+def fix_indented_quotations(content, *args, **kwargs):
+  from doc_curation.md.content_processor import footnote_helper
+  # Footnote definitions use indentations - so better to extract those beforehand.
+  content, definitions = footnote_helper.extract_definitions(content=content)
+  content = regex.sub(r"(?<=\n|^)[ \t]+", r"> ", content)
+  # Join the quotation lines
+  content = regex.sub(r"(?<=\n|^)(>[^\n]+)\s*\n\n+(?=>)", r"\1  \n", content)
+  content = footnote_helper.insert_definitions_near_use(content=content, definitions=definitions)
+  return content
 
 
 def markdownify_newlines(text):
@@ -16,6 +35,8 @@ def markdownify_newlines(text):
 def dehyphenate_interline_words(text):
   text = regex.sub("(ाह)-", r"\1 - ", text)
   text = regex.sub(r"(?<=[ँ-९])\- (?=[क-९])", "", text)
+  return text
+
 
 def make_md_verse_lines(text):
   """
@@ -28,7 +49,9 @@ def make_md_verse_lines(text):
   :return: 
   """
   text = regex.sub(r"(?<=\n|^)([^#-*!<\[>\s][^\n]+\S) *\n+(?=[^#-*\s>!<\[>])", r"\1  \n", text)
-  text = regex.sub(r"॥ *(?=\n|$)", r"॥\n", text)
+  
+  # An empty line separating each verse. (But don't mess with quotations)
+  text = regex.sub(r"॥ *(?=\n[^>]|$)", r"॥\n", text)
   text = regex.sub("\n\n\n+", "\n\n", text) ## Be careful not to mess with two new lines after detail tag opening.
   return text
 
