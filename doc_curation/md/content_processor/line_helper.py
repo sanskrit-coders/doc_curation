@@ -122,3 +122,16 @@ def make_paras(content, *args, **kwargs):
         else:
           lines_out.append(line)
   return "\n".join(lines_out)
+
+
+def empty_line_around_quotes(content, after_too=False):
+  """
+  
+  :param content: 
+  :param after_too: Boolean. Valid markdown quote para lines (non-initial) may not start with >.
+  :return: 
+  """
+  content = regex.sub("((\n|^)[^^>\n].+\n)>", "\\1\n\n>", content)
+  if after_too:
+    content = regex.sub("(>.+\n)(?=[^^>\n])", "\\1\n\n", content)
+  return content

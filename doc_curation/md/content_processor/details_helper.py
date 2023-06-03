@@ -255,10 +255,10 @@ def vishvAsa_sanskrit_transformer(detail_tag):
 
 
 def shlokas_to_muula_viprastuti_details(content, pattern=None):
+  from doc_curation.utils import patterns
   if "विश्वास-प्रस्तुतिः" in content:
     return content
   if pattern is None:
-    from doc_curation.utils import patterns
     pattern = patterns.PATTERN_2LINE_SHLOKA
   def detail_maker(match):
     shloka = match.group()
@@ -266,6 +266,9 @@ def shlokas_to_muula_viprastuti_details(content, pattern=None):
     detail_muula = Detail(type="मूलम्", content=shloka)
     return f"\n{detail_vishvaasa.to_md_html()}\n\n{detail_muula.to_md_html()}" 
   content = regex.sub(pattern, detail_maker, content)
+  if pattern == patterns.PATTERN_BOLDED_QUOTED_SHLOKA:
+    content = content.replace("**", "")
+    content = regex.sub("\n> *", "\n", content)
   return content
 
 def wrap_into_detail(content, title):

@@ -12,20 +12,21 @@ from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
 
-BASE_DIR = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/sarva-prastutiH"
 
-def fix_all(dir_path=BASE_DIR):
+def fix_all(dir_path):
   pass
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: content_processor.fix_special_tags(content=c))
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: line_helper.fix_indented_quotations(content=c))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: content_processor.fix_special_tags(content=c))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: line_helper.fix_indented_quotations(content=c))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: line_helper.empty_line_around_quotes(c, after_too=True), dry_run=False)
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.define_footnotes_near_use(c), dry_run=False)
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.fix_intra_word_footnotes(c), dry_run=False)
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: content_processor.transliterate(c, source_script="iast_iso_m"), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: content_processor.transliterate(c, source_script="iast_iso_m"), dry_run=False)
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: content_processor.fix_bold_italics(c), dry_run=False)
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: line_helper.make_md_verse_lines(c), dry_run=False)
-
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: line_helper.make_md_verse_lines(c), dry_run=False)
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(c, pattern=patterns.PATTERN_BOLDED_QUOTED_SHLOKA), dry_run=False)
 
 if __name__ == '__main__':
-  fix_all()
+  # fix_all("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/sarva-prastutiH")
+  fix_all("/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/bhAgavatam/gauDIya-prastutiH/10/34-49.md")
   pass
 

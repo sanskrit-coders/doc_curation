@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import shutil
 import time
 import urllib
 from urllib.parse import urlsplit, urljoin, unquote
@@ -98,23 +99,24 @@ def fix_special_markup(content):
 
 
 def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entry_css_list=None):
-
+  logging.debug(f"Scraping {url}")
   (title, post_html, date_obj) = (None, None, None)
   
   if regex.search("/(\d\d\d\d)/(\d\d)/", url):
     file_name = file_name_from_url(url=url, max_title_length=max_title_length)
     result = regex.search("(\d\d\d\d)/(\d\d)/(\d\d)?", url)
-    date_obj = parser.parse(result.group().replace("/", "-"), fuzzy=True)
+    if not result:
+      date_obj = parser.parse(result.group().replace("/", "-") + "01", fuzzy=True)
+      # This provisional date_obj may be revised after the post is read.
+    else:
+      date_obj = parser.parse(result.group().replace("/", "-"), fuzzy=True)
     post_parsed = False
   else:
     ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list)
     date_obj, title = get_post_metadata(soup)
     file_name = "%s.md" % get_storage_name(text=title, max_length=max_title_length)
 
-  if date_obj is None:
-    file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, "undated", file_name))
-  else:
-    file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, datetime.datetime.strftime(date_obj, "%Y/%m/%Y-%m-%d_") + file_name))
+  file_path = get_file_path(date_obj, dir_path, file_name)
 
   if os.path.exists(file_path):
     logging.warning("Skipping %s : exists", file_name)
@@ -126,6 +128,12 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
     date_obj_alt, title = get_post_metadata(soup)
     if date_obj_alt is not None:
       date_obj = date_obj_alt
+      file_path = get_file_path(date_obj, dir_path, file_name)
+
+  # Date may have been determined after get_post_html() . So, rechecking.
+  if os.path.exists(file_path):
+    logging.warning("Skipping %s : exists", file_name)
+    return post_html is not None
 
   short_title = text_utils.title_from_text(text=title, num_words=5)
   full_title = text_utils.title_from_text(text=title, num_words=50, target_title_length=200)
@@ -140,6 +148,16 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
   content = "Source: [here](%s).\n\n%s\n\n%s" % (url, title, content)
   md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
   return post_html is not None
+
+
+def get_file_path(date_obj, dir_path, file_name):
+  if date_obj is None:
+    file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, "undated", file_name))
+  else:
+    file_path = file_helper.clean_file_path(
+      file_path=os.path.join(dir_path, datetime.datetime.strftime(date_obj, "%Y/%m/%Y-%m-%d_") + file_name))
+  return file_path
+
 
 def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, browser=None, entry_css_list=None, anchor_css="a[href]", anchor_filter=lambda x: True, urlpattern=None, delay=None, dry_run=False):
   # standardize lengths of preexisting files to avoid duplication.
@@ -175,3 +193,18 @@ def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdow
       time.sleep(delay)
       logging.info(f'Waited for {delay} secs.')
     scrape_index_from_anchors(url=prev_page_anchor["href"], dir_path=dir_path, article_scraper=article_scraper, browser=browser, anchor_css=anchor_css, anchor_filter=anchor_filter, urlpattern=urlpattern, dry_run=dry_run, delay=delay)
+
+
+def organize_by_date(dir_path, dry_run=False):
+  md_files = library.get_md_files_from_path(dir_path=dir_path)
+  for md_file in md_files:
+    (metadata, content) = md_file.read()
+    if 'date' in metadata:
+      sub_path = "/".join(metadata['date'].split("-")[:-1])
+      new_path = os.path.join(dir_path, sub_path, metadata['date'] + "_" + os.path.basename(md_file.file_path))
+      if new_path == md_file.file_path:
+        continue
+      logging.info(f"Moving {md_file.file_path} to {new_path}")
+      if not dry_run:
+        os.makedirs(os.path.dirname(new_path), exist_ok=True)
+        shutil.move(md_file.file_path, new_path)

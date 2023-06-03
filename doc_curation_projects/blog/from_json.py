@@ -5,6 +5,7 @@ import os
 import doc_curation.md.library.arrangement
 from doc_curation.blog import json_importer
 from doc_curation.md import library
+from doc_curation.md.library import arrangement
 
 
 def dump_svaasthya_posts(sheet_index, sheet_title_optitrans):

@@ -3,6 +3,7 @@ from indic_transliteration.sanscript.schemes.brahmic import accent
 
 PATTERN_SHLOKA = r"(?<=\n)([^#\s<>\[\(][\s\S]+?)॥\s*([०-९\d\.]+)\s*॥.*?(?=\n|$)"
 PATTERN_2LINE_SHLOKA = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।  +\n([^#\s<>\[\(][ \S]+?)॥\s*([०-९\d\.]+)\s*॥.*?(?=\n|$)"
+PATTERN_BOLDED_QUOTED_SHLOKA = r"(?<=\n\n|^)\> \*\*([\s\S]+?[०-९ ]+॥.*)(?=\n\n)"
 
 FOOTNOTE_DEFINITION = r"\n(\[\^.+?\]):[\s\S]+?(?=[\n\[])"
 SUMMARY = r"<summary>.+?</summary>"
