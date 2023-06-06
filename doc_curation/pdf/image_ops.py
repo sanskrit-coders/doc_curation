@@ -3,6 +3,7 @@
 Modify contrast of pdf
 
 """
+import os
 from argparse import ArgumentParser
 import io
 
@@ -58,3 +59,15 @@ def fix_images(input_file: str, output_file: str, fixer, *args, **kwargs):
   with open(output_file, "wb") as outf:
     img2pdf.convert(*output_images, outputstream=outf)
 
+
+def save_pdf(image_dir, pdf_path):
+
+  images = [
+    Image.open(os.path.join(image_dir, f))
+    for f in os.listdir(image_dir)
+    if os.path.splitext(f)[-1] in ["jpg", "png", "jpeg"]
+  ]
+
+  images[0].save(
+      pdf_path, "PDF" ,resolution=100.0, save_all=True, append_images=images[1:]
+  )
