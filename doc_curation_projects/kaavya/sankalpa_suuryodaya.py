@@ -14,9 +14,14 @@ def fix_footnotes(dir_path):
 
 
 def match_muula_commentary():
-  base_file = "/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/02.md"
-  # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=["|"], replacement="।")
+  base_file = "/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/03_mukty-upAyArambhaH.md"
+  # TODO: MANUAL: Insert a EEEEE in the end; also ensure that the final text + commentary have a verse number.
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=[r"\|"], replacement="।")
   # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=["। *।"], replacement="॥")
+
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=[r"EEE+\s*([\S\s]+?)\s*(?=WWW+|QQQ+)"], replacement=r"\nEEEEE\n\n<details><summary>मूलम्</summary>\n\n\1\n</details>\n\n")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=[r"WWW+\s*(प्रभाविलासः)?\s*([\S\s]+?)\s*(?=WWW+|QQQ+|EEE+)"], replacement=r"\nWWWWW\n\n<details><summary>प्रभाविलासः</summary>\n\n\2\n</details>\n\n")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=[r"QQQ+\s*(प्रभावली)?\s*([\S\s]+?)\s*(?=WWW+|QQQ+|EEE+)"], replacement=r"\nWWWWW\n\n<details><summary>प्रभावली</summary>\n\n\2\n</details>\n\n")
 
   tmp_dir = os.path.join(os.path.dirname(base_file), "tmp")
   muula_1 = os.path.join(tmp_dir, "mUlam.md")
@@ -37,8 +42,10 @@ def match_muula_commentary():
   ## Interleave from file
   # library.apply_function(fn=details_helper.interleave_from_file, dir_path=muula_1, source_file=lambda x: x.replace("mUlam", "prabhAvalI"), detail_title=None, dest_pattern= "<details.+?summary>मूलम् *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>प्रभावली *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
   # library.apply_function(fn=details_helper.interleave_from_file, dir_path=muula_1, source_file=lambda x: x.replace("mUlam", "prabhAvilAsa"), detail_title=None, dest_pattern= "<details.+?summary>प्रभावली *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>प्रभाविलासः *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
+  
+  # TODO: Manually copy over to base file, above footnotes.
   # fix_footnotes(dir_path=base_file)
-  library.apply_function(dir_path=os.path.dirname(base_file), fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
+  # library.apply_function(dir_path=os.path.dirname(base_file), fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
 
 
 if __name__ == '__main__':
