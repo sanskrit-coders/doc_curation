@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup, NavigableString
 import regex
 
 from indic_transliteration import sanscript
-
+from doc_curation.utils import patterns
 
 def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVANAGARI, aksharamukha_pre_options=[], aksharamukha_post_options=[], *args, **kwargs):
   if source_script.lower() == "tamil":
@@ -26,11 +26,15 @@ def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVA
     c = c.replace("{{", "").replace("}}", "")
     c = c.replace("≫", ">")
   if dest_script == sanscript.DEVANAGARI:
-    c = regex.sub("(?<=[ँ-९]):", "-", c)
-    c = regex.sub(r"\\?\| *\\?\|", "॥", c)
-    c = regex.sub("\\?\|", "।", c)
+    c = regex.sub("(?<=[ँ-ॿ]):", "-", c)
+    c = regex.sub(r"\\?[\|।] *\\?[\|।]", "॥", c)
+    c = regex.sub(r"\\?[\|।]", "।", c)
   return c
 
+
+def separate_parts(content, exclusion_pattern, inclusion_pattern=patterns.DEVANAGARI, replacement=r"\1\n\n<details><summary>मूलम्</summary>\n\n\2\n</details>\n\n"):
+  content = regex.sub(rf"({exclusion_pattern})\s*({inclusion_pattern}[\s\S]+?)\s*(?={exclusion_pattern})", replacement, content)
+  return content
 
 def replace_texts(md_file, patterns, replacement, dry_run=False):
   logging.info("Processing %s", md_file.file_path)

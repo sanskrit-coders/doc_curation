@@ -24,7 +24,11 @@ DEVANAGARI_DANDAS = "[।॥]"
 LOWER_CASE_ISO = "[a-zāīūṛr̥ēōṅñṇṭḍṣśḷṁṃḥḻṉṟäü]"
 UPPER_CASE_ISO = "[A-ZĀĪŪṚR̥ĒŌṄÑṆṬḌṢŚḶṀṂḤḺṈṞÜ]"
 ACCENTS = accent.ACCENTS_PATTERN
-PUNCT = r"[।॥\.\(\)\[\],;+\*_\-:]"
+NON_DEV_PUNCT = r"[\.\(\)\[\],;+\*_\-:]"
+PUNCT = rf"[।॥{NON_DEV_PUNCT}]"
+
+TAMIL = "[ஂ-௺]"
+TAMIL_ENG_DIGITS = "[ஂ-௺\d]"
 
 DEVANAGARI_MANIPRAVALA_MID_K_L = f"(?<=[^\\s्])क(?={DEVANAGARI_MATRA}?ळ)"
 
