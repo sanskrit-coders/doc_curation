@@ -8,7 +8,7 @@ from doc_curation.md.content_processor import include_helper, section_helper, de
 from doc_curation.utils import patterns
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
-from indic_transliteration import sanscript
+from indic_transliteration import sanscript, aksharamukha_helper
 
 
 def migrate_and_include_shlokas():
@@ -54,7 +54,9 @@ def devanaagarify(dir_path, source_script):
     content_transformer=content_transformer,
     metadata_transformer=None,
   dry_run=False)
-  
+
+  if source_script == sanscript.TAMIL:
+    library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
 
 
 def fix_audio_tags():
@@ -153,4 +155,6 @@ if __name__ == '__main__':
   # devanaagarify()
   # fix_footnotes(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/02.md")
 
-  fix_footnotes("/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/sarit-markdown")
+  # fix_footnotes("/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/sarit-markdown")
+
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/articles/sons_of_sarasvatI", content_transformer=lambda x, y: ocr_helper.fix_iast_for_pdfs(x), dry_run=False)

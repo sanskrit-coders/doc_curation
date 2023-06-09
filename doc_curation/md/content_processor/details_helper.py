@@ -119,6 +119,17 @@ def transform_details_with_soup(content, metadata, transformer, title=None, *arg
   return content_processor._make_content_from_soup(soup=soup)
 
 
+def transliterate_details(content, source_script, dest_script=sanscript.DEVANAGARI, title=None):
+  def transformer(detail_tag):
+    detail = Detail.from_soup_tag(detail_tag=detail_tag)
+    new_text = content_processor.transliterate(text=detail.content, source_script=source_script, dest_script=dest_script)
+    new_text = f"\n\n{new_text}\n"
+    for child in list(detail_tag.children)[1:]:
+      child.extract()
+    list(detail_tag.children)[0].insert_after(new_text)
+
+  return transform_details_with_soup(content=content, metadata=None, title=title, transformer=transformer)
+
 def insert_duplicate_before(content, metadata, old_title_pattern="मूलम्.*", new_title="विश्वास-प्रस्तुतिः"):
   if new_title in content:
     logging.error(f"{new_title} already present. returning")
@@ -276,3 +287,8 @@ def wrap_into_detail(content, title):
   if content_out == "":
     return content
   return Detail(type=title, content=content.strip()).to_md_html()
+
+
+def non_detail_parts_to_detail(content, title):
+  content = regex.sub(r"(?<=/details>|^)\s*([^<]+?)\s*(?=<details|$)", rf"\n\n<details><summary>{title}</summary>\n\n\1\n</details>\n\n", content)
+  return content
