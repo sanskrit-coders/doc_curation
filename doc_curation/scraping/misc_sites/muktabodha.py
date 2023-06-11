@@ -36,12 +36,18 @@ def get_author(author_iast_in):
   return author_iast
 
 
-def get_file_path(out_dir, title_iast, author_iast="", catalog_number=""):
+def get_file_path(out_dir, title_iast, author_iast=None, catalog_number=None):
   title_optitrans = sanscript.transliterate(data=title_iast, _from=sanscript.IAST, _to=sanscript.OPTITRANS)
-  author_optitrans = sanscript.transliterate(data=author_iast, _from=sanscript.IAST, _to=sanscript.OPTITRANS)
-  file_path = "%s_%s_%s.md" % (title_optitrans, author_optitrans, catalog_number.strip())
+  if author_iast is None:
+    author_dir = "unknown"
+  else:
+    author_dir = sanscript.transliterate(data=author_iast, _from=sanscript.IAST, _to=sanscript.OPTITRANS)
+  file_path = title_optitrans
+  if catalog_number is not None:
+    file_path = f"{title_optitrans}__{catalog_number.strip()}"
+  file_path = f"{file_path}.md"
   file_path = file_helper.clean_file_path(file_path=file_path)
-  file_path = os.path.join(out_dir, file_path)
+  file_path = os.path.join(out_dir, file_helper.clean_file_path(file_path=author_dir), file_path)
   return file_path
 
 
@@ -109,8 +115,8 @@ def process_catalog_page_selenium(url, out_dir):
   logging.info(metadata)
 
   dest_file_path = get_file_path(out_dir=out_dir, title_iast=metadata["title_iast"],
-                                 author_iast=metadata.get("author_iast", ""),
-                                 catalog_number=metadata.get("Catalog number", ""))
+                                 author_iast=metadata.get("author_iast", None),
+                                 catalog_number=metadata.get("Catalog number", None))
   if os.path.exists(dest_file_path):
     logging.warning("Skipping %s - already exists.", dest_file_path)
     return
@@ -118,8 +124,7 @@ def process_catalog_page_selenium(url, out_dir):
   text_url = text_links[0].get_attribute("href")
   file = MdFile(file_path=dest_file_path, frontmatter_type="toml")
   text = get_iast_text(url=text_url)
-  text = doc_curation.utils.sanskrit_helper.fix_lazy_anusvaara(data_in=text, omit_sam=False, omit_yrl=True,
-                                                               ignore_padaanta=True)
+  text = doc_curation.utils.sanskrit_helper.fix_lazy_anusvaara(text=text)
   text = text.replace("\n", "  \n")
   file.dump_to_file(metadata=metadata, content=text, dry_run=False)
 
