@@ -25,7 +25,7 @@ browser.implicitly_wait(6)
 
 
 def dump_text(base_dir):
-    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/vAjasaneyi/samhitA.json")
+    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/vedaH/vAjasaneyi/samhitA.json")
 
     for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
         logging.info("adhyAya %d", kaanda_index)

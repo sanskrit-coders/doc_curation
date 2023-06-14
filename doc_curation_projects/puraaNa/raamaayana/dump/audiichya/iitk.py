@@ -9,7 +9,7 @@ from tqdm import tqdm
 from doc_curation import book_data
 from doc_curation.md import get_md_with_pandoc
 from doc_curation.md.file import MdFile
-from doc_curation.scraping import iitk
+from doc_curation.scraping.misc_sites import iitk
 from doc_curation.scraping.html_scraper import souper
 from indic_transliteration import sanscript
 
@@ -20,7 +20,7 @@ logging.basicConfig(
   level=logging.DEBUG,
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
-unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "raamaayanam/andhra.json")
+unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/raamaayanam/andhra.json")
 
 
 def dump_sarga(url, out_path, sarga_id, dry_run=False):

@@ -69,7 +69,7 @@ def get_Rk_comment(tags):
 
 
 def dump_Rk_info(dest_dir):
-  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/shaunaka/samhitA.json")
+  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/vedaH/shaunaka/samhitA.json")
   for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
     subunit_list = book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index], length_fields=["length_whitney", "length"])
     for subunit_index in subunit_list:
@@ -116,7 +116,7 @@ def dump_Rk_info(dest_dir):
 
 
 def dump_kaanda_info(dest_dir):
-  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/shaunaka/samhitA.json")
+  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/vedaH/shaunaka/samhitA.json")
   for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
     kaanda_str = roman_numerals.roman_to_ascii(roman_numerals.convert_to_numeral(kaanda_index))
     url =  "https://en.wikisource.org/wiki/Atharva-Veda_Samhita/Book_%s" % (kaanda_str)
@@ -135,7 +135,7 @@ def dump_kaanda_info(dest_dir):
 
 
 def dump_suukta_info(dest_dir):
-  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/shaunaka/samhitA.json")
+  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/vedaH/shaunaka/samhitA.json")
   missing_anukramaNI = ["02/021", "02/022", "02/023",]
   for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
     subunit_list = book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index], length_fields=["length_whitney", "length"])
@@ -164,7 +164,7 @@ def dump_suukta_info(dest_dir):
 
 
 def dump_anukramaNii(dest_dir):
-  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/shaunaka/samhitA.json")
+  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/vedaH/shaunaka/samhitA.json")
   missing_anukramaNI = ["02/020.md", "02/021.md", "02/022.md", "02/023.md",]
   for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
     subunit_list = book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index], length_fields=["length_whitney", "length"])

@@ -30,7 +30,7 @@ def dump_text(base_dir):
   opts.headless = False
   browser = webdriver.Chrome(options=opts)
   browser.implicitly_wait(6)
-  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/shaunaka/samhitA.json")
+  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/vedaH/shaunaka/samhitA.json")
 
   for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
     subunit_list = book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index])

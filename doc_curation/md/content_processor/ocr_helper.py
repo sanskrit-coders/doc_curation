@@ -105,7 +105,20 @@ def fix_google_ocr_iast_iso(text):
   text = regex.sub("Ç", "Ś", text)
   text = regex.sub("ç", "ś", text)
   text = regex.sub("ḑ", "ḍ", text)
-  text = regex.sub("ä|ă", "ā", text)
+  text = regex.sub("ä|ă|å", "ā", text)
+  text = regex.sub("ä|ă|å|Ã".upper(), "ā".upper(), text)
   text = regex.sub("ü", "ū", text)
+  text = regex.sub("Ï", "Ī", text)
   text = regex.sub("(?<=[a-z])\- +(?=[a-z])", "", text)
+  return text
+
+
+def fix_typos(text):
+  import doc_curation
+  typos_df = pandas.read_csv(os.path.join(os.path.dirname(doc_curation.__file__), "data/ocr_typos/sa/iast/manual.tsv"), sep="\t")
+  typos_df = typos_df.set_index("correct")
+  for typo in tqdm.tqdm(typos_df.index):
+    ta_words = typos_df.loc[typo, "typo"].split(",")
+    for ta_word in ta_words:
+      text = text.replace(ta_word, sa_word)
   return text

@@ -13,13 +13,13 @@ logging.basicConfig(
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 def get_text(text_id, base_dir):
-    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "mahaabhaaratam/kumbhakonam.json")
+    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/mahaabhaaratam/kumbhakonam.json")
     if text_id == "BORI":
-        unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "mahaabhaaratam/bori.json")
+        unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/mahaabhaaratam/bori.json")
     elif text_id == "KK":
-        unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "mahaabhaaratam/kumbhakonam.json")
+        unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/mahaabhaaratam/kumbhakonam.json")
     elif text_id == "SV":
-        unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "mahaabhaaratam/vAvilla.json")
+        unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/mahaabhaaratam/vAvilla.json")
 
     for book_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
         book_index = "%02d" % book_index

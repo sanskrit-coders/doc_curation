@@ -11,12 +11,13 @@
 import logging
 import os
 
-from doc_curation import titus, book_data
+from doc_curation import book_data
+from doc_curation.scraping.misc_sites import titus
 
 browser = titus.browser
 
 def dump_text(base_dir, do_transliteration=False):
-    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/vAjasaneyi/samhitA.json")
+    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/vedaH/vAjasaneyi/samhitA.json")
 
     titus_url = "http://titus.uni-frankfurt.de/texte/etcd/ind/aind/ved/yvw/vs/vs.htm"
     for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):

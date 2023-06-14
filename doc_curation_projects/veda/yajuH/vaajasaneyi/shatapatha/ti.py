@@ -53,7 +53,7 @@ def fix_text(text):
 
 
 def dump_text(base_dir, do_transliteration=False):
-  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "vedaH/vAjasaneyi/shatapatha.json")
+  unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/vedaH/vAjasaneyi/shatapatha.json")
   
   titus_url = "http://titus.uni-frankfurt.de/texte/etcs/ind/aind/ved/yvw/sbm/sbm.htm"
   for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):

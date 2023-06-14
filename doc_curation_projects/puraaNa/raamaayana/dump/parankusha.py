@@ -1,18 +1,18 @@
 import logging
 import os
 
-from doc_curation.scraping import parankusha
 from doc_curation import book_data
+from doc_curation.scraping.misc_sites import parankusha
 
 
 def get_ramayana_text(browser, text_id, base_dir):
     browser.find_element_by_link_text(text_id).click()
     # browser.implicitly_wait(2)
-    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "raamaayana/andhra.json")
+    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/raamaayana/andhra.json")
     if text_id == "रामायणम्-नव्यपाठः":
-        unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "raamaayana/baroda.json")
+        unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/raamaayana/baroda.json")
     else:
-        unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "raamaayana/kumbhakonam.json")
+        unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/raamaayana/kumbhakonam.json")
 
     for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
         kaanda_element = browser.find_element_by_link_text("Kanda-%d" % kaanda_index)
