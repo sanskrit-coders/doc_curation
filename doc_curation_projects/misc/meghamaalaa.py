@@ -1,5 +1,7 @@
 import logging
 import os.path
+
+import regex
 from doc_curation.md.library import metadata_helper
 from curation_utils.file_helper import get_storage_name
 
@@ -11,6 +13,7 @@ from doc_curation.scraping.misc_sites import meghamaalaa
 
 
 def upanishat():
+  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/naayamatmaa-bhasyam/नायमात्मा-भाष्यम्/", "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/AraNyakam/kaThopaniShat/varadAchAryaH.md")
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/upanishads/katopanishat-content/%e0%a4%95%e0%a4%a0%e0%a5%8b%e0%a4%aa%e0%a4%a8%e0%a4%bf%e0%a4%b7%e0%a4%a4%e0%a5%8d-%e0%a4%aa%e0%a5%8d%e0%a4%b0%e0%a4%a5%e0%a4%ae%e0%a4%be-%e0%a4%b5%e0%a4%b2%e0%a5%8d%e0%a4%b2%e0%a5%80/", "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/AraNyakam/kaThopaniShat/rangarAmAnujaH")
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/upanishads/maandookyapanishat-content/%e0%a4%ae%e0%a4%be%e0%a4%a3%e0%a5%8d%e0%a4%a1%e0%a5%82%e0%a4%95%e0%a5%8d%e0%a4%af%e0%a5%8b%e0%a4%aa%e0%a4%a8%e0%a4%bf%e0%a4%b7%e0%a4%a4%e0%a5%8d%e0%a4%95%e0%a4%be%e0%a4%b0%e0%a4%bf%e0%a4%95%e0%a4%be/", "/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/mANDukyopaniShat/shrI-sampradAyaH")
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/upanishads/chandogya-upanishat-content/%e0%a4%9b%e0%a4%be%e0%a4%a8%e0%a5%8d%e0%a4%a6%e0%a5%8b%e0%a4%97%e0%a5%8d%e0%a4%af%e0%a5%8b%e0%a4%aa%e0%a4%a8%e0%a4%bf%e0%a4%b7%e0%a4%a4%e0%a5%8d-%e0%a4%aa%e0%a5%8d%e0%a4%b0%e0%a4%a5%e0%a4%ae%e0%a4%83/", "/home/vvasuki/gitland/vishvAsa/vedAH_sAma/content/tANDyam/ChAndogyopaniShat/rangarAmAnujaH")
@@ -18,7 +21,7 @@ def upanishat():
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/upanishads/mundakopanishat-content/%e0%a4%ae%e0%a5%81%e0%a4%a3%e0%a5%8d%e0%a4%a1%e0%a4%95%e0%a5%8b%e0%a4%aa%e0%a4%a8%e0%a4%bf%e0%a4%b7%e0%a4%a4%e0%a5%8d-%e0%a4%aa%e0%a5%8d%e0%a4%b0%e0%a4%a5%e0%a4%ae%e0%a4%ae%e0%a5%81%e0%a4%a3%e0%a5%8d/", "/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/prashnopaniShat/rangarAmAnujaH")
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/upanishads/kena-upamishat-content/केनोपनिषत्/", "/home/vvasuki/gitland/vishvAsa/vedAH_sAma/content/jaiminIyam/brAhmaNam/jaiminiya-upaniShad-brAhmaNam/04/rangarAmAnujaH")
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/upanishads/brihadaaranyaka-upanishat-content/%e0%a4%ac%e0%a5%83%e0%a4%b9%e0%a4%a6%e0%a4%be%e0%a4%b0%e0%a4%a3%e0%a5%8d%e0%a4%af%e0%a4%95%e0%a5%8b%e0%a4%aa%e0%a4%a8%e0%a4%bf%e0%a4%b7%e0%a4%a4%e0%a5%8d-%e0%a4%85%e0%a4%b7%e0%a5%8d%e0%a4%9f-2/", "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/bRhadAraNyakopaniShat/rangarAmAnujaH")
-  library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/bRhadAraNyakopaniShat/rangarAmAnujaH", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
+  # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/bRhadAraNyakopaniShat/rangarAmAnujaH", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
 
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/upanishads/subalopanishat-content/सुबालोपनिषत्-षष्ठः-खण्डः/", "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/subAlopaniShat/rangarAmAnujaH")
   # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/upanishads/subalopanishat-content/सुबालोपनिषत्-खण्डः/", "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/subAlopaniShat/rangarAmAnujaH/02.md")
@@ -63,22 +66,30 @@ def misc():
   # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/naayamatmaa-bhasyam/नायमात्मा-भाष्यम्/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/nAyam-AtmA-bhAShyam.md")
 
   # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/astasloki-content/astasloki/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/parAshra-bhaTTa-aShTashlokI.md")
+
   pass
 
 
+def kaavyam():
+  pass
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/stotras/parasara-bhattar/sri-gunaratnakosaha/श्रीगुणरत्नकोशः-व्याख्-2/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/mahAbhAratam/goraxapura-pAThaH/hindy-anuvAdaH/13_anushAsanaparva/01_dAna-dharma-parva/149_viShNu-sahasra-nAma-stotram/TIkA/parAshara-bhaTTaH/shrI-vatsa-vIra-rAghavaH", start_index=1, filename_from_title=True)
+
+
 def puraaNam():
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/sriranga-mahatmyam-content/श्रीरङ्गमाहात्म्यम्-part-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/garuDa-purANam/shrIranga-mAhAtmyam", start_index=4, filename_from_title=False)
+  pass
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/sriranga-mahatmyam-content/श्रीरङ्गमाहात्म्यम्-part-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/garuDa-purANam/shrIranga-mAhAtmyam", start_index=4, filename_from_title=False)
+  # 
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/sri-yadavadri-mahatmyam-content/%e0%a4%af%e0%a4%be%e0%a4%a6%e0%a4%b5%e0%a4%be%e0%a4%a6%e0%a5%8d%e0%a4%b0%e0%a4%bf%e0%a4%a6%e0%a4%b0%e0%a5%8d%e0%a4%b6%e0%a4%a8%e0%a4%ae%e0%a5%8d-part-1/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/yAdavAdri-darshanam", filename_from_title=False)
+  # 
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/sri-kurukkoor-mahatmyam/नवतिरुप्पति-माहात्मियम्/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/kurukkUr-nava-tirupadi-nidhi-vana-xetra-mAhAtmyam", start_index=2, filename_from_title=False)
+  # 
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/sri-bootapuri-mahatmyam/श्रीमद्-भूतपुरीमाहात्म्/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/bhUta-purI-mAhAtmyam", start_index=2, filename_from_title=False)
+  # 
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/sri-brindaranya-mahatmyam/श्रीबृन्दारण्यक्षेत्रम/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/bRndAraNya-xetra-mAhAtmyam", start_index=2, filename_from_title=False)
+  # 
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/srimad-ahobila-mahatmyam/श्रीमदहोबिलमाहात्म्यं-part-1/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/ahobila-mAhAtmyam", start_index=3, filename_from_title=False)
 
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/sri-yadavadri-mahatmyam-content/%e0%a4%af%e0%a4%be%e0%a4%a6%e0%a4%b5%e0%a4%be%e0%a4%a6%e0%a5%8d%e0%a4%b0%e0%a4%bf%e0%a4%a6%e0%a4%b0%e0%a5%8d%e0%a4%b6%e0%a4%a8%e0%a4%ae%e0%a5%8d-part-1/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/yAdavAdri-darshanam", filename_from_title=False)
-
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/sri-kurukkoor-mahatmyam/नवतिरुप्पति-माहात्मियम्/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/kurukkUr-nava-tirupadi-nidhi-vana-xetra-mAhAtmyam", start_index=2, filename_from_title=False)
-
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/sri-bootapuri-mahatmyam/श्रीमद्-भूतपुरीमाहात्म्/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/bhUta-purI-mAhAtmyam", start_index=2, filename_from_title=False)
-
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/sri-brindaranya-mahatmyam/श्रीबृन्दारण्यक्षेत्रम/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/bRndAraNya-xetra-mAhAtmyam", start_index=2, filename_from_title=False)
-
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/srimad-ahobila-mahatmyam/श्रीमदहोबिलमाहात्म्यं-part-1/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/ahobila-mAhAtmyam", start_index=3, filename_from_title=False)
-
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-01/श्रीविष्णुपुराणम्-amsa-01-ady-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/01/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
 
 def rahasya():
   base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/rahasya-granthaH/"
@@ -95,8 +106,8 @@ def rahasya():
 
 if __name__ == '__main__':
   pass
-  # upanishat()
-  shriibhaashya()
-  # misc()
-  # puraaNam()
+  upanishat()
+  # shriibhaashya()
+  misc()
+  puraaNam()
   # rahasya()
