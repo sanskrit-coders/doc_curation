@@ -53,10 +53,10 @@ def get_post_html(url, entry_css_list=None, browser=None):
 
 
 def get_post_metadata(soup):
-  title_css_list = [".post-title", ".entry-title", ".card-header", "h1", "h2", "h3", "h4"]
+  title_css_list = [".post-title", ".entry-title", "h1", "h2", ".card-header", "h3", "h4"]
   title_tags = get_tags_matching_css(soup=soup, css_selector_list=title_css_list)
   title = title_tags[0].text.replace('\xa0', ' ')
-  time_css_list = [".entry-date", ".post-date", ".published", "div.card-body>center", "time"]
+  time_css_list = ["time", ".entry-date", ".post-date", ".published", "div.card-body>center"]
   time_tags = get_tags_matching_css(soup=soup, css_selector_list=time_css_list)
   date = None
 
@@ -167,15 +167,21 @@ def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdow
   if anchor_css is not None:
     if post_html is not None:
       soup = BeautifulSoup(post_html, 'lxml')
-    post_anchors = soup.select(anchor_css)
+    post_anchors = get_tags_matching_css(soup=soup, css_selector_list=anchor_css)
   else:
-    css_list = [".entry-title a", "h1.title a", "h3 a"]
-    post_anchors = get_tags_matching_css(soup=soup, css_selector_list=css_list)
+    anchor_css = [".entry-title a", "h1.title a", "h3 a",]
+    post_anchors = get_tags_matching_css(soup=soup, css_selector_list=anchor_css)
 
+  post_anchors = [x for x in post_anchors if "href" in x.attrs]
   if urlpattern is not None:
     post_anchors = [anchor for anchor in post_anchors if regex.match(urlpattern, anchor["href"])]
+  processed_urls = []
   for anchor in post_anchors:
     post_url = urljoin(url, anchor["href"])
+    if post_url in processed_urls:
+      continue
+    else:
+      processed_urls.append(post_url)
     if not anchor_filter(anchor):
       logging.info('Skipping %s', anchor["href"])
       continue

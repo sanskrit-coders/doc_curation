@@ -71,6 +71,9 @@ def dump_wordpress_monthly():
 
 
 def dump_substack():
+  substack.scrape_free_articles_from_index_anchors(url="https://thedharmadispatch.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/dharma-dispatch", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://newsletter.smallbets.co/archive", dir_path=f"{BASE_PATH}/weblogs/non-hindu/smallbets", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://machiavellianhindu.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/machiavellianhindu", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://vikramdialogues.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/vikramdialogues", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://eruditus.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/eruditus", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/non-hindu/razib", dry_run=False)
@@ -79,9 +82,6 @@ def dump_substack():
   substack.scrape_free_articles_from_index_anchors(url="https://rasajournal.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/rasajournal", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://ekavali.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/ekavali", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://bharadvajatmaja.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/bharadvajatmata", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://machiavellianhindu.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/machiavellianhindu", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://thedharmadispatch.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/non-hindu/dharma-dispatch", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://newsletter.smallbets.co/archive", dir_path=f"{BASE_PATH}/weblogs/non-hindu/smallbets", dry_run=False)
   pass
 
 

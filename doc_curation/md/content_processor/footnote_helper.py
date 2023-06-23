@@ -51,8 +51,12 @@ def fix_plain_footnotes(content, def_pattern="(?<=\n)(\d+)\.?(?= )", def_replace
   :param def_pattern: 
   :return: 
   """
-  content = regex.sub(def_pattern, def_replacement_pattern, content)
-  content = regex.sub(ref_pattern, r"[^\1]", content)
+  if def_pattern is not None:
+    logging.info(f"Replacing definitions of pattern {def_pattern}")
+    content = regex.sub(def_pattern, def_replacement_pattern, content)
+  if ref_pattern is not None:
+    logging.info(f"Replacing references of pattern {ref_pattern}")
+    content = regex.sub(ref_pattern, r"[^\1]", content)
   return content
 
 def comments_to_footnotes(content):
@@ -66,4 +70,19 @@ def comments_to_footnotes(content):
     content = content.replace(f"+++({definition})+++", f"[^{index+ 1}]")
   for index, definition in enumerate(definitions):
     content += f"\n\n[^{index + 1}]: {definition}"
+  return content
+
+
+def split_clean_definition_group(content, def_group_pattern=r"(?<=\n|^)\s*\[\^", def_pattern=r"(\[^.+?\])[\.\s:]*", def_replacement_pattern=r"\n\n\1: "):
+  # Handle lines like  
+  # [^1]. इह च अ । [^2] कैङ्कर्य - आ । [^3] कैङ्कर्य - आ । [^4] नितराम् - अ ।
+  # TODO: complete
+  
+  content = regex.sub(def_group_pattern, lambda x: fix_plain_footnotes(content=x, def_pattern=def_pattern, def_replacement_pattern=def_replacement_pattern, ref_pattern=None), content)
+
+  return content
+
+
+def fix_ambuda_footnote_definition_groups(content):
+  content = split_clean_definition_group(content, def_group_pattern=r"(?<=\n|^)\s*\[\^", def_pattern=r"(\[^.+?\])[\.\s:]*", def_replacement_pattern=r"\n\n\1: ")
   return content

@@ -1,0 +1,17 @@
+from doc_curation.md import library
+from doc_curation.md.content_processor import include_helper
+from doc_curation.md.file import MdFile
+from doc_curation.md.library import metadata_helper
+
+
+def migrate_and_include_shlokas():
+
+  library.apply_function(fn=include_helper.migrate_and_replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/manuH/12.md",
+                         title_maker=lambda text, index: metadata_helper.shloka_title_maker(text=text), title_before_include="### %s", dry_run=False)
+
+
+def shloka_formatting():
+  pass
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/skanda-purANam/8_ambikA-khaNDaH", content_transformer=lambda c, m: line_helper.make_md_verse_lines(text=c))
+
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA", content_transformer=lambda x, y: content_processor.numerify_shloka_numbering(x))
