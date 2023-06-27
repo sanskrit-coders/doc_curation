@@ -2,9 +2,16 @@ import regex
 from indic_transliteration import sanscript
 
 
+def deduce_root(text):
+  root = regex.sub(r"([^ा]+)(ः|ं|म्)$", r"\1", text)
+  root = regex.sub(r"(.+)(श्रव|मन)ाः$", r"\1\2स्", root)
+  root = regex.sub(r"(.+)(त्म|शर्म)ा$", r"\1\2न्", root)
+  return root
+
+
 def fix_bad_anunaasikas(text):
   # Beware of निम्न नृम्ण etc..
-  replacements = {r"म्([च-ञ])": r"ञ्\1", r"म्([क-ङ])": r"ङ्\1", r"म्([ट-ढ])": r"ण्\1", r"म्([त-ध])": r"न्\1"}
+  replacements = {r"म्([च-ञ])": r"ञ्\1", r"म्([क-ङ])": r"ङ्\1", r"म्([ट-ढ])": r"ण्\1", r"म्([त-ध])": r"न्\1", r"ं$": "म्"}
   c = text
   for pattern, replacement in replacements.items():
     c = regex.sub(pattern, replacement, c)
