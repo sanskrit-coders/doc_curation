@@ -1,7 +1,15 @@
+import os
+
 import doc_curation.utils.sanskrit_helper
+import regex
 
 from doc_curation.md import library, content_processor
+from doc_curation.md.content_processor import include_helper, section_helper, details_helper, ocr_helper, footnote_helper
+from doc_curation.utils import patterns
 from doc_curation.md.file import MdFile
+from doc_curation.md.library import metadata_helper
+from indic_transliteration import sanscript, aksharamukha_helper
+
 
 
 def fix_audio_tags():
@@ -11,7 +19,7 @@ def fix_audio_tags():
 def details_fix():
 
 
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/mudgala-purANam/5_lambodara-charitam/25.md", content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c))
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/kUrma-purANam", content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c))
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1.md", content_transformer=details_helper.insert_duplicate_before)
 
@@ -49,9 +57,8 @@ if __name__ == '__main__':
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/paramparA/articles/kalai-quarrel/tenkalai-tAtAchArya-diatribe.md", source_script="tamil")
   # fix_audio_tags()
   # prefill_vishvAsa_includes()
-  # shloka_formatting()
   # section_fix()
-  # details_fix()
+  details_fix()
 
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/pAdma-saMhitA/", content_transformer=lambda x, y: ocr_helper.fix_mid_shloka_empty_lines(x))

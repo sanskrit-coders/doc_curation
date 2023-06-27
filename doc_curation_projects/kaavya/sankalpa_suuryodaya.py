@@ -14,7 +14,7 @@ def fix_footnotes(dir_path):
 
 
 def match_muula_commentary():
-  base_file = "/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/03_mukty-upAyArambhaH.md"
+  base_file = "/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/04_kAmAdi-vyUha-vighaTanam.md"
   # TODO: MANUAL: Insert a EEEEE in the end; also ensure that the final text + commentary have a verse number.
   # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=[r"\|"], replacement="।")
   # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=["। *।"], replacement="॥")
@@ -37,7 +37,7 @@ def match_muula_commentary():
   # library.apply_function(fn=content_processor.replace_texts, dir_path=comment_1, patterns=["(?<=^|॥[ ०-९]+॥)\s*(\S[\S\s]+?॥ *([०-९]+) *॥)"], replacement="\n\n<details><summary>प्रभावली - \\2</summary>\n\n\\1\n</details>\n\n")
   # library.apply_function(fn=content_processor.replace_texts, dir_path=comment_2, patterns=["(?<=^|॥[ ०-९]+॥)\s*(\S[\S\s]+?॥ *([०-९]+) *॥)"], replacement="\n\n<details><summary>प्रभाविलासः - \\2</summary>\n\n\\1\n</details>\n\n")
 
-  # library.apply_function(fn=content_processor.replace_texts, dir_path=tmp_dir, patterns=["\n\n\n+"], replacement="\n\n")
+  library.apply_function(fn=content_processor.replace_texts, dir_path=tmp_dir, patterns=["\n\n\n+"], replacement="\n\n")
 
   ## Interleave from file
   # library.apply_function(fn=details_helper.interleave_from_file, dir_path=muula_1, source_file=lambda x: x.replace("mUlam", "prabhAvalI"), detail_title=None, dest_pattern= "<details.+?summary>मूलम् *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>प्रभावली *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)

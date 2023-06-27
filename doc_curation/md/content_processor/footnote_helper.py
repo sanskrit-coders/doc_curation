@@ -1,8 +1,9 @@
 import regex
+import logging
+from collections import defaultdict
 
-
-DEFINITION_PATTERN = r"\n(\[\^.+?\]):[\s\S]+?(?=$|\n\[\^)"
-
+DEFINITION_PATTERN = r"\n(\[\^(.+?)\]):([\s\S]+?)(?=$|\n\[\^|\n<|\n#)"
+REF_PATTERN = r"\[\^(.+?)\]"
 
 def transform_footnote_marks(content, transformer):
   content = regex.sub(r"\[\^(.+?)\]", transformer, content)
@@ -23,8 +24,12 @@ def define_footnotes_near_use(content, *args, **kwargs):
 def insert_definitions_near_use(content, definitions):
   definitions.reverse()
   for definition in definitions:
-    content = regex.sub(r"(%s[\s\S]+?\n)(\n|</details)" % regex.escape(definition.group(1)),
+    old_content = content
+    content = regex.sub(r"(%s[\s\S]+?\n)(\n|</details|#)" % regex.escape(definition.group(1)),
                         r"\g<1>%s\n\g<2>" % definition.group(0), content)
+    if old_content == content:
+      logging.warning(f"Could not find {definition.group(1)}")
+      content += "\n\n" + definition.group(0)
   return content
 
 
@@ -78,11 +83,62 @@ def split_clean_definition_group(content, def_group_pattern=r"(?<=\n|^)\s*\[\^",
   # [^1]. इह च अ । [^2] कैङ्कर्य - आ । [^3] कैङ्कर्य - आ । [^4] नितराम् - अ ।
   # TODO: complete
   
-  content = regex.sub(def_group_pattern, lambda x: fix_plain_footnotes(content=x, def_pattern=def_pattern, def_replacement_pattern=def_replacement_pattern, ref_pattern=None), content)
+  content = regex.sub(def_group_pattern, lambda x: fix_plain_footnotes(content=x.group(0), def_pattern=def_pattern, def_replacement_pattern=def_replacement_pattern, ref_pattern=None), content)
 
   return content
 
 
 def fix_ambuda_footnote_definition_groups(content):
-  content = split_clean_definition_group(content, def_group_pattern=r"(?<=\n|^)\s*\[\^", def_pattern=r"(\[^.+?\])[\.\s:]*", def_replacement_pattern=r"\n\n\1: ")
+  content = split_clean_definition_group(content, def_group_pattern=r"(?<=\n|^)\s*\[\^.+?(?=\n|$)", def_pattern=r"(\[\^.+?\])[\.\s:]*", def_replacement_pattern=r"\n\n\1: ")
+  return content
+
+
+def insert_page_breaks(content):
+  DEFINITION_GROUP_PATTERN = r"\n(\[\^(.+?)\]:.+)\n*(\[\^(.+?)\]:.+|\n|  .+)*(?=\n*[^\[ ])"
+  definition_groups = list(regex.finditer(DEFINITION_GROUP_PATTERN, content))
+  for index, def_group in enumerate(definition_groups):
+    content = regex.sub(regex.escape(def_group.group(0)), f"{def_group.group(0)}\n\n<dg {index+1}/>\n\n", content)
+  content = regex.sub("\n\n+", "\n\n", content)
+  return content
+
+
+def add_page_id_to_ref_ids(content, page_pattern="[\s\S]+?<dg (\d+)/>"):
+  pages = list(regex.finditer(page_pattern, content))
+  if len(pages) == 0:
+    content = insert_page_breaks(content)
+    pages = list(regex.finditer(page_pattern, content))
+
+  for page in pages:
+    page_id = page.group(1)
+    page_text = page.group(0)
+    page_text_fixed = regex.sub(REF_PATTERN, fr"[^\1_pg{page_id}]", page_text)
+    content = regex.sub(regex.escape(page_text), page_text_fixed, content)
+  return content
+
+def make_ids_unique_to_be_fixed(content):
+  # TODO - fix this.
+  content, definitions = extract_definitions(content=content)
+  definitions_map = defaultdict(list)
+  for definition in definitions:
+    definitions_map[definition.group(2)].append(definition)
+
+  references = list(regex.finditer(REF_PATTERN, content))
+  ref_ids = list(set([x.group(1) for x in references]))
+  ref_id_count = {id: ref_ids.count(id) for id in ref_ids}
+
+  unmatched_ids = []
+  for ref_id, count in ref_id_count.items():
+    if count != len(definitions_map[ref_id]):
+      unmatched_ids.append(ref_id)
+    else:
+      for i in range (1, count+1):
+        content = regex.sub(fr"\[\^{ref_id}\]", f"[^{ref_id}__{i}]", content, count=1)
+        definition = definitions_map[ref_id].pop(0)
+        content = f"{content}\n\n[^{definition.group(2)}__{i}]: {definition.group(3)}"
+
+  if len(unmatched_ids) > 0:
+    logging.warning(f"Unmatched ids: {unmatched_ids}")
+    for ref_id in unmatched_ids:
+      content = f"{content}\n\n[//]: # (ALERT!! UNMATCHED FOOTNOTE IDS.)\n\n" + "\n\n".join([definition.group(0) for definition in definitions_map[ref_id]])
+  
   return content

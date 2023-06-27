@@ -42,8 +42,7 @@ def dump(dry_run, start_id=None):
                                          file_name_optitrans=file_name_optitrans, h1_level=3)
       rk_details += "\n%s" % get_include("mUlam", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
                                          classes=["collapsed"], h1_level=3)
-      rk_details += "\n%s" % get_include("sarvASh_TIkAH", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans,
-                                         field_names=["devataa", "RShiH", "ChandaH"], classes=["collapsed"], h1_level=3)
+      rk_details += "\n%s" % get_include("sarvASh_TIkAH", suukta_id=suukta_id, file_name_optitrans=file_name_optitrans, h1_level=3)
 
       # dump_content(metadata=title_only_metadata, content=rk_details, suukta_id=suukta_id, rk_id=rk_id, base_dir=content_dir_base, destination_dir="sarva-prastutiH", dry_run=dry_run)
 
@@ -59,7 +58,7 @@ def get_include(include_type, suukta_id, file_name_optitrans, h1_level, field_na
   file_path = os.path.join(static_dir_base, include_type, suukta_id, file_name_optitrans)
   if not os.path.exists(file_path):
     return ""
-  return doc_curation.md.content_processor.include_helper.get_include(field_names=field_names, classes=classes, title=title,
+  return include_helper.get_include(field_names=field_names, classes=classes, title=title,
                                                                       url=os.path.join("/vedAH_Rk/shAkalam/saMhitA/", include_type, suukta_id,
                                               file_name_optitrans), h1_level=h1_level)
 

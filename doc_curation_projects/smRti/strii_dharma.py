@@ -41,5 +41,5 @@ def sarva_prastuti():
 
 
 if __name__ == '__main__':
-  leslie()
+  # leslie()
   sarva_prastuti()

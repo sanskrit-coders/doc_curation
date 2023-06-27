@@ -23,7 +23,11 @@ def fix_footnotes(dir_path):
   pass
 
 def fix_footnotes_ambuda(dir_path):
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.fix_ambuda_footnote_definition_groups(c), dry_run=False)
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.fix_ambuda_footnote_definition_groups(c), dry_run=False)
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.add_page_id_to_ref_ids(c), dry_run=False)
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.define_footnotes_near_use(c), dry_run=False)
 
 
+if __name__ == '__main__':
+  pass
+  fix_footnotes_ambuda(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/gadyam/rAmAnujaH/TIkA/yadugiri-prakAshitam/")

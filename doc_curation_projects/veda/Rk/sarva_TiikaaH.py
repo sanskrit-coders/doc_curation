@@ -56,7 +56,23 @@ def update_commentary(commentary_dir, commentary_name, dry_run=False):
     md_file.transform(content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title=commentary_name, new_text=content), dry_run=dry_run)
 
 
+def sanaatana_adhimantra():
+  dest_paths = sorted(Path(TIKA_BASE).glob("**/*.md"))
+  dest_paths = [str(f) for f in dest_paths if regex.match(".+/\d\d_.+\.md$", str(f))]
+  # rk_id_to_name = Rk.get_Rk_id_to_name_map_from_muulam()
+  for dest_path in dest_paths:
+    md_file = MdFile(file_path=dest_path)
+    (metadata, content) = md_file.read()
+    detail_content = "\n- देवता - " + metadata["devataa"]
+    detail_content += "\n- ऋषिः - " + metadata["RShiH"]
+    detail_content += "\n- छन्दः - " + metadata["ChandaH"]
+    detail = details_helper.Detail(type="अधिमन्त्रम् - sa", content=detail_content)
+    content = f"{detail.to_md_html()}\n\n{content}"
+    md_file.dump_to_file(metadata=metadata, content=content, dry_run=False)
+
+
 if __name__ == '__main__':
   pass
-  update_commentary(commentary_dir="vedaweb_annotation", commentary_name="Vedaweb annotation")
+  # update_commentary(commentary_dir="vedaweb_annotation", commentary_name="Vedaweb annotation")
+  sanaatana_adhimantra()
   # fix_bare_Rk_files()
