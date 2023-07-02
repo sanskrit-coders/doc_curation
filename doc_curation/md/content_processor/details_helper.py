@@ -6,8 +6,8 @@ import textwrap
 from bs4.element import PageElement
 import doc_curation.md.content_processor.line_helper
 import regex
-from bs4 import NavigableString
 
+from doc_curation.md.content_processor import get_quasi_section_int_map
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 from doc_curation.md import content_processor
@@ -68,15 +68,8 @@ def interleave_from_file(md_file, source_file, dest_pattern="[^\d०-९೦-೯]
   source_md = MdFile(file_path=source_file)
   (_, source_content) = source_md.read()
   dest_matches = list(regex.finditer(dest_pattern, dest_content))
-  source_matches = list(regex.finditer(source_pattern, source_content))
-  logging.info(f"Got {len(dest_matches)} dest matches and {len(source_matches)} source matches ")
-  source_match_map = {}
-  for source_match in source_matches:
-    index_str = sanscript.transliterate(source_match.group(1), _to=sanscript.IAST)
-    if index_str.isnumeric():
-      source_match_map[int(index_str)] = source_match
-    else:
-      logging.warning("Could not get index for: %s", source_match.group())
+  source_match_map = get_quasi_section_int_map(source_content, source_pattern)
+  logging.info(f"Got {len(dest_matches)} dest matches and {len(source_match_map)} source matches ")
   for dest_match in dest_matches:
     index_str = sanscript.transliterate(dest_match.group(1), _to=sanscript.IAST)
     if not index_str.isnumeric():
@@ -281,6 +274,7 @@ def shlokas_to_muula_viprastuti_details(content, pattern=None):
     content = content.replace("**", "")
     content = regex.sub("\n> *", "\n", content)
   return content
+
 
 def wrap_into_detail(content, title):
   content_out = content.strip()

@@ -3,6 +3,7 @@ import regex
 from doc_curation.md import content_processor, library
 from doc_curation.md.content_processor import footnote_helper
 from doc_curation.md.file import MdFile
+from doc_curation.utils import sanskrit_helper
 from indic_transliteration import sanscript, aksharamukha_helper
 
 
@@ -29,9 +30,13 @@ def devanaagarify(dir_path, source_script):
 
 
 def fix_anunaasikas(dir_path):
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: "documentation-theme" not in str(x))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=False)
+
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/sanskrit/", content_transformer=lambda x, y: content_processor.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=True, file_name_filter=lambda x: False not in [y not in str(x) for y in ["sarit", "gitasupersite", "wellcome", "dhaval", "wikisource", "vishvAsa"]])
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/sage-bloodlines/vishvAmitraH/venkaTanAtha-vedAnta-deshikaH", content_transformer=lambda x, y: sanscript.SCHEMES[sanscript.DEVANAGARI].fix_lazy_anusvaara(x, ignore_padaanta=True, omit_yrl=True), dry_run=False)
 
   pass
+
+if __name__ == '__main__':
+  fix_anunaasikas(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/gadyam/rAmAnujaH/TIkA/yadugiri-prakAshitam")

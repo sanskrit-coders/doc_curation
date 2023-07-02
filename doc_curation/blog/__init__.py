@@ -104,8 +104,9 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
   
   if regex.search("/(\d\d\d\d)/(\d\d)/", url):
     file_name = file_name_from_url(url=url, max_title_length=max_title_length)
-    result = regex.search("(\d\d\d\d)/(\d\d)/(\d\d)?", url)
-    if not result:
+    result = regex.search("(\d\d\d\d)/(\d\d)/(\d\d)", url)
+    if result is None:
+      result = regex.search("(\d\d\d\d)/(\d\d)/", url)
       date_obj = parser.parse(result.group().replace("/", "-") + "01", fuzzy=True)
       # This provisional date_obj may be revised after the post is read.
     else:

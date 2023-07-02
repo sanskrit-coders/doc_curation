@@ -4,7 +4,7 @@ import doc_curation.utils.sanskrit_helper
 import regex
 
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper, section_helper, details_helper, ocr_helper, footnote_helper
+from doc_curation.md.content_processor import include_helper, section_helper, details_helper, ocr_helper, footnote_helper, line_helper
 from doc_curation.utils import patterns
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
@@ -30,9 +30,11 @@ def details_fix():
 
 
 def fix_whitespaces(dir_path):
-  # library.apply_function(fn=MdFile.transform, content_transformer=content_processor.make_paras, dir_path="/home/vvasuki/hindu-comm/weblogs/aryaakasha")
+  # library.apply_function(fn=MdFile.transform, content_transformer=content_processor.make_paras, dir_path=dir())
 
-  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:content_processor.markdownify_newlines(c), dir_path="/home/vvasuki/sanskrit/raw_etexts/vedaH/yajur/taittirIya/sAyaNa")
+  library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:line_helper.remove_fake_linebreaks(c), dir_path=dir_path)
+
+  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:line_helper.markdownify_newlines(c), dir_path=dir_path)
 
 
   pass
@@ -58,7 +60,8 @@ if __name__ == '__main__':
   # fix_audio_tags()
   # prefill_vishvAsa_includes()
   # section_fix()
-  details_fix()
+  # details_fix()
+  # fix_whitespaces("/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/india/4_post-brit/politics/id/hindutva/articles/goel_sitArAm")
 
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/pAdma-saMhitA/", content_transformer=lambda x, y: ocr_helper.fix_mid_shloka_empty_lines(x))

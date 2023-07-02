@@ -92,23 +92,24 @@ def misc_sanskrit_typos(text):
   text = regex.sub("[ञनङ](्[प-म])\n", r"म्\1", text)
   return text
 
+def replace_casewise(text, pattern, replacement):
+  text = regex.sub(pattern.lower(), replacement.lower(), text)
+  text = regex.sub(pattern.upper(), replacement.upper(), text)
+  return text
+
+
 def fix_google_ocr_iast_iso(text):
-  text = regex.sub("ş", "ṣ", text)
+  text = replace_casewise(text, "ş", "ṣ")
   text = regex.sub("ń(?=[kg])", "ṅ", text)
   text = regex.sub("ń(?=[cj])", "ñ", text)
-  text = regex.sub("ņ", "ṇ", text)
-  text = regex.sub("Š", "Ś", text)
-  text = regex.sub("Ş", "Ṣ", text)
-  text = regex.sub("š", "ś", text)
-  text = regex.sub("ș", "ṣ", text)
-  text = regex.sub("ț|ṱ", "ṭ", text)
-  text = regex.sub("Ç", "Ś", text)
-  text = regex.sub("ç", "ś", text)
-  text = regex.sub("ḑ", "ḍ", text)
-  text = regex.sub("ä|ă|å", "ā", text)
-  text = regex.sub("ä|ă|å|Ã".upper(), "ā".upper(), text)
-  text = regex.sub("ü", "ū", text)
-  text = regex.sub("Ï", "Ī", text)
+  text = replace_casewise(text, "ņ", "ṇ")
+  text = replace_casewise(text, "Š|Ç", "Ś")
+  text = replace_casewise(text, "Ş|ș", "Ṣ")
+  text = replace_casewise(text, "ț|ṱ", "ṭ")
+  text = replace_casewise(text, "ḑ", "ḍ")
+  text = replace_casewise(text, "ä|ă|å|Ã", "ā")
+  text = replace_casewise(text, "ü|û", "ū")
+  text = replace_casewise(text, "Ï|ī|î", "Ī")
   text = regex.sub("(?<=[a-z])\- +(?=[a-z])", "", text)
   return text
 

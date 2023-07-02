@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup, NavigableString
 import regex
 
 from indic_transliteration import sanscript
-from doc_curation.utils import patterns
+
 
 def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVANAGARI, aksharamukha_pre_options=[], aksharamukha_post_options=[], *args, **kwargs):
   if source_script.lower() == "tamil":
@@ -31,10 +31,6 @@ def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVA
     c = regex.sub(r"\\?[\|।]", "।", c)
   return c
 
-
-def separate_parts(content, exclusion_pattern, inclusion_pattern=patterns.DEVANAGARI, replacement=r"\1\n\n<details><summary>मूलम्</summary>\n\n\2\n</details>\n\n"):
-  content = regex.sub(rf"({exclusion_pattern})\s*({inclusion_pattern}[\s\S]+?)\s*(?={exclusion_pattern})", replacement, content)
-  return content
 
 def replace_texts(md_file, patterns, replacement, dry_run=False):
   logging.info("Processing %s", md_file.file_path)
@@ -95,3 +91,23 @@ def fix_bold_italics(content):
   content = regex.sub(r"(?<=^|\n)\* ", "- ", content)
   content = _fix_markup(content=content, toggler_pattern="r(?<=[^\*_]|^)(\*|_)(?=[^\*_]|$)", uniform_markup="_")
   return content
+
+
+def get_quasi_section_int_map(content, pattern):
+  """
+  
+  :param content: 
+  :param pattern: Pattern to find with an int id. Common patterns:
+      (?<=\n|^)([\d०-९೦-೯]+).+\n
+  :return: 
+  """
+  source_matches = list(regex.finditer(pattern, content))
+  source_match_map = {}
+  for source_match in source_matches:
+    index_str = sanscript.transliterate(source_match.group(1), _to=sanscript.IAST)
+    if index_str.isnumeric():
+      source_match_map[int(index_str)] = source_match
+    else:
+      logging.warning("Could not get index for: %s", source_match.group())
+  logging.info(f"Got {len(source_match_map)} source matches ")
+  return source_match_map

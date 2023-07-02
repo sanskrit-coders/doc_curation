@@ -3,6 +3,10 @@ import itertools
 import logging
 import os
 import shutil
+from datetime import datetime
+
+import dateutil.parser as parser
+from dateutil.relativedelta import relativedelta
 
 from doc_curation import blog
 from doc_curation.blog import scrape_index_from_anchors
@@ -60,7 +64,7 @@ def get_month_urls(url, reverse=True, init_year_month_str=None):
   return urls
 
 
-def scrape_monthly_indexes(url, dir_path, reverse=True, init_year_month_str=None, delay=None, dry_run=False):
+def scrape_monthly_indexes(url, dir_path, reverse=True, init_year_month_str=None, final_year_month_str=None, delay=None, dry_run=False):
   """
   
   :param url: 
@@ -70,6 +74,18 @@ def scrape_monthly_indexes(url, dir_path, reverse=True, init_year_month_str=None
   :param dry_run: 
   :return: 
   """
-  month_urls = get_month_urls(url, init_year_month_str=init_year_month_str, reverse=reverse)
+  if final_year_month_str is not None:
+    month_urls = []
+    init_date = parser.parse(f"{init_year_month_str}/01", fuzzy=True)
+    if final_year_month_str == "current":
+      final_date = datetime.now()
+    else:
+      final_date = parser.parse(f"{final_year_month_str}/01", fuzzy=True)
+    date = init_date
+    while date <= final_date:
+      month_urls.append(f"{url}/{date.year}/{date.month}")
+      date = date + relativedelta(months=+1)
+  else:
+    month_urls = get_month_urls(url, init_year_month_str=init_year_month_str, reverse=reverse)
   for month_url in month_urls:
     scrape_index_from_anchors(url=month_url, dir_path=dir_path, anchor_css=None, dry_run=dry_run, delay=delay)
