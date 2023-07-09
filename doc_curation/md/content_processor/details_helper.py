@@ -259,9 +259,10 @@ def vishvAsa_sanskrit_transformer(detail_tag):
 
 
 def shlokas_to_muula_viprastuti_details(content, pattern=None):
-  from doc_curation.utils import patterns
   if "विश्वास-प्रस्तुतिः" in content:
     return content
+  from doc_curation.utils import patterns, sanskrit_helper
+  content = sanskrit_helper.seperate_uvaacha(text=content)
   if pattern is None:
     pattern = patterns.PATTERN_2LINE_SHLOKA
   def detail_maker(match):

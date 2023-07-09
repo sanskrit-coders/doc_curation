@@ -11,7 +11,7 @@ def deduce_root(text):
 
 def fix_bad_anunaasikas(text):
   # Beware of निम्न नृम्ण etc..
-  replacements = {r"म्([च-ञ])": r"ञ्\1", r"म्([क-ङ])": r"ङ्\1", r"म्([ट-ढ])": r"ण्\1", r"म्([त-ध])": r"न्\1", r"ं$": "म्", r"ं(\s+[अ-औ])": r"म्\1", }
+  replacements = {r"म्([च-ञ])": r"ञ्\1", r"म्([क-ङ])": r"ङ्\1", r"म्([ट-ढ])": r"ण्\1", r"म्([त-ध])": r"न्\1", r"ं$": "म्", r"ं(\s+[अ-औ।॥])": r"म्\1", }
   c = text
   for pattern, replacement in replacements.items():
     c = regex.sub(pattern, replacement, c)
@@ -40,5 +40,27 @@ def undo_gretil_analysis(text):
   :return: 
   """
   text = text.replace("ंल्", "ल्ँ")
-  text = regex.sub("म्[\. ]+(?=[अ-औ])")
+  text = regex.sub("म्[\. ]+(?=[अ-औ])", text)
   return text
+
+
+def seperate_uvaacha(text):
+  text = regex.sub("वाच॥\s*", "वाच॥\n\n", text)
+  return text
+
+
+def fix_repha_duplication(text):
+  text = regex.sub("र्क्ख्", "र्ख्", text)
+  text = regex.sub("र्ग्घ्", "र्घ्", text)
+  text = regex.sub("र्च्छ्", "र्छ्", text)
+  text = regex.sub("र्ज्झ्", "र्झ्", text)
+  text = regex.sub("र्त्थ्", "र्थ्", text)
+  text = regex.sub("र्द्ध्", "र्ध्", text)
+  text = regex.sub("र्ड्ढ्", "र्ढ्", text)
+  text = regex.sub("र्प्फ्", "र्फ्", text)
+  text = regex.sub("र्ब्भ्", "र्भ्", text)
+  text = regex.sub("र्व्व", "र्व", text)
+  text = regex.sub("र्य्य", "र्य", text)
+  text = regex.sub(r"र्([ङञणनमयवशषसहल])्\1", r"र्\1", text)
+  return text
+  
