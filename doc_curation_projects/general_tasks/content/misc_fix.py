@@ -19,12 +19,12 @@ def fix_audio_tags():
 def details_fix():
 
 
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/kUrma-purANam", content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c))
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/kUrma-purANam", content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c))
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1.md", content_transformer=details_helper.insert_duplicate_before)
 
 
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/mahAbhAratam/goraxapura-pAThaH/01_Adiparva/01_anukramaNikAparva/001_anukramaNikAparva.md", content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.vishvAsa_sanskrit_transformer))
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH", content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.sanskrit_tag_transformer, type_pattern="विश्वास.*|मूल.*"))
 
   pass
 
@@ -60,7 +60,7 @@ if __name__ == '__main__':
   # fix_audio_tags()
   # prefill_vishvAsa_includes()
   # section_fix()
-  # details_fix()
+  details_fix()
   # fix_whitespaces("/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/india/4_post-brit/politics/id/hindutva/articles/goel_sitArAm")
 
   pass

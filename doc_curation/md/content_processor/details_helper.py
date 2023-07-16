@@ -12,6 +12,7 @@ from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 from doc_curation.md import content_processor
 from bs4 import BeautifulSoup, NavigableString
+from doc_curation.utils import sanskrit_helper
 
 
 class Detail(object):
@@ -250,12 +251,20 @@ def detail_content_replacer_soup(detail_tag, replacement):
   summary.insert_after(f"\n\n{replacement}\n")
 
 
-def vishvAsa_sanskrit_transformer(detail_tag):
-  if detail_tag.select_one("summary").text != "विश्वास-प्रस्तुतिः":
+def transform_tag_strings(detail_tag, transformer, type_pattern=None):
+  if type_pattern is not None and not regex.fullmatch(type_pattern, detail_tag.select_one("summary").text):
     return
   for x in detail_tag.contents:
     if isinstance(x, NavigableString):
-      x.replace_with(doc_curation.md.content_processor.line_helper.rehyphenate_sanskrit_line_endings(x))
+      x.replace_with(transformer(x))
+
+
+def sanskrit_tag_transformer(detail_tag, type_pattern):
+  def transformer(x):
+    # x = doc_curation.md.content_processor.line_helper.dehyphenate_sanskrit_line_endings(x)
+    x = sanskrit_helper.fix_lazy_anusvaara(x)
+    return x
+  transform_tag_strings(detail_tag=detail_tag, transformer=transformer, type_pattern=type_pattern)
 
 
 def shlokas_to_muula_viprastuti_details(content, pattern=None):

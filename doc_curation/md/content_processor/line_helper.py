@@ -80,7 +80,7 @@ def make_lines_end_with_pattern(content, full_line_pattern):
   return "  \n".join(lines_out)
 
 
-def rehyphenate_sanskrit_line_endings(content, script=sanscript.DEVANAGARI):
+def dehyphenate_sanskrit_line_endings(content, script=sanscript.DEVANAGARI):
   text = sanscript.transliterate(content, _from=script, _to=sanscript.DEVANAGARI)
   dev_scheme = sanscript.SCHEMES[sanscript.DEVANAGARI]
   def nn_replacer(match):

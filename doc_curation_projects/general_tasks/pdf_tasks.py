@@ -24,7 +24,7 @@ if __name__ == '__main__':
     #     drive_ocr.split_and_ocr_on_drive(pdf_path="/run/media/vvasuki/vData/text/granthasangrahaH/history/New-History-Of-The-Marathas-Vol%d.pdf" % i,  small_pdf_pages=10, start_page=1, detext=False)
     # drive_ocr.split_and_ocr_on_drive(pdf_path="/run/media/vvasuki/vData/text/granthasangrahaH/koshaH/upasarga-artha-candrika. vol. 1 (pra-sam).pdf", small_pdf_pages=10, detext=True, end_page=71)
     # drive_ocr.split_and_ocr_all(dir_path="/run/media/vvasuki/vData/text/granthasangrahaH/koshaH/upasarga-artha-candrika. vol. 1 (pra-sam).pdf", small_pdf_pages=10, detext=False)
-    drive_ocr.split_and_ocr_all( dir_path="/run/media/vvasuki/vData/text/granthasangrahaH/kAvyam/shrIvaiShNavakRtam/4000-divya-prabandham/aNNangarAchArya-1k-skt.pdf", small_pdf_pages=10, detext=True, )
+    drive_ocr.split_and_ocr_all( dir_path="/run/media/vvasuki/vData/text/granthasangrahaH/AgamaH/shrIvaiShNavaH/venkaTanAtha", small_pdf_pages=10, detext=False, )
     # drive_ocr.split_and_ocr_all(dir_path="/run/media/vvasuki/vData/text/granthasangrahaH/kalpaH", small_pdf_pages=5, detext=False)
 
 
