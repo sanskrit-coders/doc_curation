@@ -26,7 +26,7 @@ def get_two_page_md(two_page_div):
     logging.debug(f"Text snippet  : {md_content[:30]}")
     comment_md = f"{md_content}\n\n{comment_md}".strip()
 
-  comment_detail = details_helper.Detail(type="Broo", content=comment_md)
+  comment_detail = details_helper.Detail(title="Broo", content=comment_md)
   core_md = get_devanaagarii_page_md(core_page, comment_detail=comment_detail)
   footnote_def_md = get_footnote_def_md(two_page_div)
 

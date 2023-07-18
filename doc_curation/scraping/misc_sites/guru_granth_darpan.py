@@ -16,7 +16,7 @@ def _add_detail(type, content, details):
   if len(details) > 0 and details[-1].type == type:
     details[-1].content += "  \n" + content
   else:
-    details.append(details_helper.Detail(type=type, content=content))
+    details.append(details_helper.Detail(title=type, content=content))
 
 def parse_page(soup):
   """

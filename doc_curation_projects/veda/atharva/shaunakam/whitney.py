@@ -198,7 +198,7 @@ def dump_anukramaNii(dest_dir):
 def title_to_content_detail(md_file, dry_run=False):
   [metadata, content] = md_file.read()
   if 'title_whitney' in metadata:
-    detail = details_helper.Detail(type="Whitney subject", content=metadata['title_whitney'])
+    detail = details_helper.Detail(title="Whitney subject", content=metadata['title_whitney'])
     new_content = f"{detail.to_md_html(attributes_str='open')}\n\n{content}"
     md_file.dump_to_file(metadata=metadata, content=new_content, dry_run=dry_run)
 

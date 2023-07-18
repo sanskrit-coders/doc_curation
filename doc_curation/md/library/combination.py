@@ -60,7 +60,7 @@ def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=
       if content.strip() != "":
         if ready_content is not None:
           final_content_map[subpath] += f"\n{ready_content}\n"
-        detail = details_helper.Detail(type=title, content=content)
+        detail = details_helper.Detail(title=title, content=content)
         final_content_map[subpath] += f"\n{detail.to_md_html()}\n"
       for key, value in metadata.items():
         final_metadata = final_metadata_map[subpath]

@@ -16,8 +16,8 @@ from doc_curation.utils import sanskrit_helper
 
 
 class Detail(object):
-  def __init__(self, type, content):
-    self.type = type
+  def __init__(self, title, content):
+    self.type = title
     self.content = content
 
   def to_md_html(self, attributes_str=None):
@@ -42,7 +42,7 @@ class Detail(object):
   def from_soup_tag(cls, detail_tag):
     title = detail_tag.select_one("summary").text.strip()
     detail_text = "".join([x.text for x in list(detail_tag.children)[1:]]).strip()
-    return Detail(type=title, content=detail_text)
+    return Detail(title=title, content=detail_text)
 
 
 def interleave_from_file(md_file, source_file, dest_pattern="[^\d०-९೦-೯]([\d०-९೦-೯]+) *॥.*(?=\n|$)", source_pattern="(?<=\n|^)([\d०-९೦-೯]+).+\n", detail_title="English", dry_run=False):
@@ -276,8 +276,8 @@ def shlokas_to_muula_viprastuti_details(content, pattern=None):
     pattern = patterns.PATTERN_2LINE_SHLOKA
   def detail_maker(match):
     shloka = match.group()
-    detail_vishvaasa = Detail(type="विश्वास-प्रस्तुतिः", content=shloka)
-    detail_muula = Detail(type="मूलम्", content=shloka)
+    detail_vishvaasa = Detail(title="विश्वास-प्रस्तुतिः", content=shloka)
+    detail_muula = Detail(title="मूलम्", content=shloka)
     return f"\n{detail_vishvaasa.to_md_html()}\n\n{detail_muula.to_md_html()}" 
   content = regex.sub(pattern, detail_maker, content)
   if pattern == patterns.PATTERN_BOLDED_QUOTED_SHLOKA:
@@ -290,7 +290,7 @@ def wrap_into_detail(content, title):
   content_out = content.strip()
   if content_out == "":
     return content
-  return Detail(type=title, content=content.strip()).to_md_html()
+  return Detail(title=title, content=content.strip()).to_md_html()
 
 
 def non_detail_parts_to_detail(content, title):

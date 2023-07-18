@@ -59,7 +59,7 @@ def update_from_spreadsheet_data(doc_data, base_dir, dry_run=False):
     if "<summary>वाचनम्</summary>" not in content:
       audio_url = doc_data.get_value(id=adhyaaya_id, column_name="Audio url")
       audio_tag = '<div class="audioEmbed"  caption="श्रीराम-हरिसीताराममूर्ति-घनपाठिभ्यां वचनम्" src="%s"></div>' % (audio_url)
-      audio_detail = Detail(type="वाचनम्", content=audio_tag)
+      audio_detail = Detail(title="वाचनम्", content=audio_tag)
       content = f"{audio_detail.to_md_html(attributes_str='open')}\n\n{content}"
     md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
     metadata_helper.set_filename_from_title(md_file=md_file, dry_run=dry_run)

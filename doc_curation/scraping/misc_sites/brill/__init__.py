@@ -46,8 +46,8 @@ def get_devanaagarii_page_md(core_page, comment_detail):
   md_content = md_content.replace("\[", "[").replace("\]", "]").replace("\|", "|")
   md_content = sanscript.transliterate(md_content, _from=sanscript.IAST, _to=sanscript.DEVANAGARI, suspend_on= set(['<', '[^']), suspend_off = set(['>', ']']))
   md_content = md_content.replace("।।", "॥")
-  prastuti_detail = details_helper.Detail(type="विश्वास-प्रस्तुतिः", content=md_content)
-  core_detail = details_helper.Detail(type="मूलम्", content=md_content)
+  prastuti_detail = details_helper.Detail(title="विश्वास-प्रस्तुतिः", content=md_content)
+  core_detail = details_helper.Detail(title="मूलम्", content=md_content)
   md_content = f"{prastuti_detail.to_md_html()}\n\n{comment_detail.to_md_html()}\n\n{core_detail.to_md_html()}"
   return md_content
 

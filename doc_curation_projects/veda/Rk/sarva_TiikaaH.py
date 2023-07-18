@@ -66,7 +66,7 @@ def sanaatana_adhimantra():
     detail_content = "\n- देवता - " + metadata["devataa"]
     detail_content += "\n- ऋषिः - " + metadata["RShiH"]
     detail_content += "\n- छन्दः - " + metadata["ChandaH"]
-    detail = details_helper.Detail(type="अधिमन्त्रम् - sa", content=detail_content)
+    detail = details_helper.Detail(title="अधिमन्त्रम् - sa", content=detail_content)
     content = f"{detail.to_md_html()}\n\n{content}"
     md_file.dump_to_file(metadata=metadata, content=content, dry_run=False)
 

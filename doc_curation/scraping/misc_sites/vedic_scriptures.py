@@ -121,11 +121,11 @@ def dump_mantra_details(dest_path, url, commentaries_needed, mode=ForceMode.NONE
 def update_muula(dest_path, mantra_svara, insertion_mode="add_detail"):
   md_mantra = MdFile(file_path=dest_path.replace("sarvASh_TIkAH", "mUlam"))
   (metadata, content) = md_mantra.read()
-  detail = details_helper.Detail(type="मूलम् (VS)", content=mantra_svara)
+  detail = details_helper.Detail(title="मूलम् (VS)", content=mantra_svara)
   if insertion_mode=="add_detail" and "मूलम् (VS)" not in content:
     content = f"{content}\n\n{detail.to_md_html()}"
   elif insertion_mode == "all_detail":
-    old_detail = details_helper.Detail(type="मूलम् (VC)", content=content)
+    old_detail = details_helper.Detail(title="मूलम् (VC)", content=content)
     content = f"{old_detail.to_md_html()}\n\n{detail.to_md_html()}"
   elif insertion_mode == "replace":
     content = detail.to_md_html()
@@ -151,7 +151,7 @@ def comments_from_div(div, commentaries_needed):
   def append_detail_if_present(css, appendix):
     tag = body_div.select_one(css)
     if tag is not None:
-      comment_details.append(details_helper.Detail(type=f"{title} - {appendix}", content=tag.text))
+      comment_details.append(details_helper.Detail(title=f"{title} - {appendix}", content=tag.text))
   append_detail_if_present(css=".alert p.mb-0", appendix="विषयः")
   append_detail_if_present(css='div[style*="font-size: 1.1rem;"]', appendix="विषयः")
   return comment_details

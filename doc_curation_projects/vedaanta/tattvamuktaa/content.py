@@ -28,13 +28,14 @@ def migrate_and_include_shlokas():
 
   def replacement_maker(text_matched, dest_path):
     inc = include_helper.vishvAsa_include_maker(dest_path, h1_level=3, title="FILE_TITLE")
-    detail = details_helper.Detail(type="विश्वास-प्रस्तुतिः", content=text_matched)
+    detail = details_helper.Detail(title="विश्वास-प्रस्तुतिः", content=text_matched)
     return f"{detail.to_md_html()}\n\n{inc}"
 
   def destination_path_maker(title, original_path):
     return include_helper.static_include_path_maker(title, original_path, path_replacements={"content": "static", ".md": "", "mUlam": "sarvASh_TIkAH"}, use_preexisting_file_with_prefix=False)
 
-  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[patterns.PATTERN_SHLOKA], dir_path=CONTENT_DIR, destination_path_maker=destination_path_maker, title_maker=title_maker, migrated_text_processor=lambda x: details_helper.Detail(type="मूलम्", content=x).to_md_html(), replacement_maker=replacement_maker, dry_run=False)
+  library.apply_function(fn=include_helper.migrate_and_replace_texts, text_patterns=[patterns.PATTERN_SHLOKA], dir_path=CONTENT_DIR, destination_path_maker=destination_path_maker, title_maker=title_maker, migrated_text_processor=lambda x: details_helper.Detail(
+    title="मूलम्", content=x).to_md_html(), replacement_maker=replacement_maker, dry_run=False)
 
 
 if __name__ == '__main__':

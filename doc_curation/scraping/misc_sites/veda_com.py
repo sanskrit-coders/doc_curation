@@ -110,10 +110,10 @@ def dump_mantra_details(dest_path, url, comment_detection_str, mode=ForceMode.NO
     pada_paaTha = soup.select_one("div.block-pad p").text
     pada_paaTha = regex.sub(" *[।॥] *", "। ", pada_paaTha).replace(":", "ः")
     pada_paaTha = fix_jaatya_svarita(text=pada_paaTha)
-    comment_details.append(details_helper.Detail(type="पदपाठः", content=pada_paaTha))
+    comment_details.append(details_helper.Detail(title="पदपाठः", content=pada_paaTha))
 
   annotations = [x.text.strip() for x in soup.select("div.mantra-bhag>.alert a") if x.text.strip() != ""]
-  comment_details.append(details_helper.Detail(type=f"अधिमन्त्रम् (VC)", content="- " + "\n- ".join(annotations)))
+  comment_details.append(details_helper.Detail(title=f"अधिमन्त्रम् (VC)", content="- " + "\n- ".join(annotations)))
 
   audio_saver(soup=soup, dest_path=dest_path)
 
@@ -143,10 +143,10 @@ def update_muula(dest_path, mantra, mantra_svara, visvara_only=False):
   (metadata, content) = md_mantra.read()
   if "मूलम् (VC)" not in content:
     if not visvara_only:
-      detail = details_helper.Detail(type="मूलम् (VC)", content=mantra_svara)
+      detail = details_helper.Detail(title="मूलम् (VC)", content=mantra_svara)
       content = f"{content}\n\n{detail.to_md_html()}"
     if mantra_svara != mantra:
-      detail = details_helper.Detail(type="विस्वर-मूलम् (VC)", content=mantra)
+      detail = details_helper.Detail(title="विस्वर-मूलम् (VC)", content=mantra)
       content = f"{content}\n\n{detail.to_md_html()}"
     md_mantra.replace_content_metadata(new_content=content)
 
@@ -171,7 +171,7 @@ def comments_from_div(div, titles):
     def append_detail_if_present(div, css, appendix):
       tag = div.select_one(css)
       if tag is not None:
-        comment_details.append(details_helper.Detail(type=f"{title} - {appendix}", content=tag.text))
+        comment_details.append(details_helper.Detail(title=f"{title} - {appendix}", content=tag.text))
 
     append_detail_if_present(div=div, css="div.anavay", appendix="अन्वयः")
     append_detail_if_present(div=div, css="div.mb_subject", appendix="विषयः")

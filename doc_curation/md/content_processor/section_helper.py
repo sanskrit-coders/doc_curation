@@ -5,7 +5,6 @@ import regex
 from more_itertools import peekable
 from curation_utils.list_helper import OrderedDefaultDict
 
-from doc_curation.md import file
 
 from doc_curation.md import content_processor
 from indic_transliteration import sanscript
@@ -26,6 +25,13 @@ def reduce_section_depth(lines_in, hashes_to_reduce):
       yield line
 
 
+def get_sections(content):
+  lines = content.splitlines(keepends=False)
+  (lines_till_section, remaining) = get_lines_till_section(lines)
+  sections = split_to_sections(remaining)
+  return (lines_till_section, sections)
+
+
 class Section(object):
   def __init__(self, title, header_prefix, lines=[]):
     self.title = title
@@ -34,6 +40,11 @@ class Section(object):
 
   def __repr__(self):
     return f"{self.header_prefix} {self.title} ({len(self.lines)})"
+
+  def to_md(self):
+    text = "\n".join(self.lines)
+    return f"\n\n{self.header_prefix} {self.title}\n{text}"
+    
 
 def get_section(lines_in):
   """
@@ -221,7 +232,8 @@ def merge_sections(md_files, out_path=None, section_hasher=lambda x: x, dry_run=
   content = ""
   section_map = OrderedDefaultDict(list)
   for md_file in md_files:
-    (lines_till_section, sections) = md_file.get_sections()
+    (metadata, md_content) = self.read()
+    (lines_till_section, sections) = get_sections(content=md_content)
     content += f"{lines_till_section}\n\n"
     for section in sections:
       title = section_hasher(section)
@@ -241,5 +253,26 @@ def merge_sections(md_files, out_path=None, section_hasher=lambda x: x, dry_run=
   (metadata_out, _) = md_files[0].read()
   if out_path is None:
     out_path = md_files[0].file_path
+  from doc_curation.md import file
   md_file = file.MdFile(file_path=out_path)
   md_file.dump_to_file(metadata=metadata_out, content=content, dry_run=dry_run)
+
+
+def section_contents_to_details(content, title):
+  from doc_curation.md.content_processor import details_helper
+  (lines_till_section, sections) = get_sections(content=content)
+
+  def _make_detail(lines):
+    text = "\n".join(lines).strip()
+    if text == "":
+      return ""
+    else:
+      return details_helper.Detail(title=title, content=text).to_md_html()
+  
+  new_content = _make_detail(lines_till_section)
+  
+  for section in sections:
+    section.lines = [_make_detail(section.lines)]
+    new_content += section.to_md()
+
+  return new_content
