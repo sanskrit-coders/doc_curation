@@ -119,15 +119,20 @@ def dump_word_cloud(src_path, dest_path, stop_words=None, font_path='siddhanta')
   return counts
 
 
-def list_matching_files(dir_path, content_condition, file_pattern="**/*.md", file_name_filter=None):
+def list_matching_files(dir_path, content_condition=None, file_pattern="**/*.md", file_name_filter=None):
   md_files = get_md_files_from_path(dir_path=dir_path, file_pattern=file_pattern,
                                     file_name_filter=file_name_filter)
   matches = []
   for md_file in md_files:
     (metadata, content) = md_file.read()
-    if content_condition(content):
+    if content_condition is None or content_condition(content):
       matches.append(md_file)
       
   matches = [x.file_path.replace(dir_path, "") for x in matches]
   logging.info(f"Got {len(matches)} matches:\n" + "\", \"".join(matches))
   return matches
+
+
+def dump_matching_files(dir_path, content_condition=None, file_pattern="**/*.md", file_name_filter=None):
+  matches = list_matching_files(dir_path=dir_path, content_condition=content_condition, file_pattern=file_pattern, file_name_filter=file_name_filter)
+  MdFile(file_path=os.path.join(dir_path, "file_list.md")).dump_to_file(metadata={"title": "File list"}, content="\n".join(matches), dry_run=False)

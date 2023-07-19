@@ -15,12 +15,22 @@ from doc_curation.md.library import metadata_helper, arrangement
 from doc_curation.scraping.html_scraper import souper
 
 
-def footnote_extractor(footnote_div):
-  footnote_elements = footnote_div.findChildren('p',recursive=False)
+def get_footnote_def_text(footnote_div):
+  definitions = get_footnote_definitions(footnote_div)
+
+  content_out = ""
+  for footnote_id, definition in definitions.items():
+    content_out += "\n\n[^%s]: %s" % (footnote_id, definition)
+  content_out = content_out.replace("", " - ")
+  return content_out
+
+
+def get_footnote_definitions(footnote_div):
+  footnote_elements = footnote_div.findChildren('p', recursive=False)
   definitions = {}
   prev_footnote = None
   for tag in footnote_elements:
-    anchors = tag.findChildren('a',recursive=False)
+    anchors = tag.findChildren('a', recursive=False)
     if len(anchors) < 2:
       continue
     footnote_id = anchors[0].get('name')
@@ -32,16 +42,11 @@ def footnote_extractor(footnote_div):
       footnote_id = footnote_id.strip()
     definitions[footnote_id] = definition
     prev_footnote = footnote_id
-
-  content_out = ""
-  for footnote_id, definition in definitions.items():
-    content_out += "\n\n[^%s]: %s" % (footnote_id, definition)
-  content_out = content_out.replace("", " - ")
-  return content_out
+  return definitions
 
 
 def decode_italicized_text(text):
-  replacements = {"n": "ṇ", "t": "ṭ", "d": "ḍ", "m": "ṁ", "h": "ḥ", "ri": "r̥", "k": "c", "g": "j", "s": "ś"} # sh not intalicized is ṣ
+  replacements = {"n": "ṇ", "t": "ṭ", "d": "ḍ", "m": "ṁ", "kh": "ch", "h": "ḥ", "ri": "r̥", "k": "c", "g": "j", "s": "ś"} # sh not intalicized is ṣ
   for x, y in replacements.items():
     text = text.replace(x, y)
     text = text.replace(x.capitalize(), y.capitalize())
@@ -76,13 +81,18 @@ def get_content_divs(soup):
   partitions = soup.select("div.fake_partition_div")
   main_content_tag = None
   footnote_content_tag = None
-  for partition in partitions:
+  for index, partition in enumerate(partitions):
     footnote_tags = [x for x in partition.select("*") if x.text.startswith("Footnote")]
     if len(footnote_tags) > 0:
       footnote_content_tag = partition
+      main_content_tag = partitions[index-1]
       break
-    elif main_content_tag is None:
-      main_content_tag = partition
+  if main_content_tag is None:
+    if len(partitions) > 1:
+      # Last partition likely to be a link to next page, as in https://www.sacred-texts.com/hin/sbr/sbe43/sbe4321.htm
+      main_content_tag = partitions[-2]
+    else:
+      main_content_tag = partitions[-1]
   return (main_content_tag, footnote_content_tag)
 
 
@@ -112,12 +122,10 @@ def get_content(soup, main_content_extractor=get_main_content):
   (main_div, footnote_div) = get_content_divs(soup=soup)
   content_out = main_content_extractor(main_div)
   if footnote_div is not None:
-    content_out += footnote_extractor(footnote_div)
+    content_out += get_footnote_def_text(footnote_div)
   content_out = doc_curation.md.content_processor.footnote_helper.define_footnotes_near_use(content=content_out)
   content_out = regex.sub("\n\n+", "\n\n", content_out)
   return content_out
-
-
 
 
 def dump(url, outfile_path, main_content_extractor=get_main_content, dry_run=False, overwrite=False):
@@ -147,6 +155,7 @@ def dump(url, outfile_path, main_content_extractor=get_main_content, dry_run=Fal
   metadata_helper.prepend_file_index_to_title(md_file=md_file, dry_run=dry_run)
   return soup
 
+
 def title_from_element(soup, title_css_selector=None, title_prefix=""):
   title_elements = soup.select(title_css_selector)
   titles = [get_text(title_element) for title_element in title_elements]
@@ -161,12 +170,14 @@ def title_from_element(soup, title_css_selector=None, title_prefix=""):
   return title
 
 
-def dump_serially(start_url, base_dir, dest_path_maker, dry_run=False):
+def dump_serially(start_url, base_dir, dest_path_maker,max_items=9999, dry_run=False):
   next_url_getter = lambda soup, base_url: souper.anchor_url_from_soup_css(soup=soup, css="center a", base_url=base_url, pattern="Next:")
 
   next_url = start_url
-  while next_url:
+  num_items = 0
+  while next_url and num_items < max_items:
     from doc_curation.scraping.sacred_texts import para_translation
+    num_items = num_items + 1
     soup = dump(url=next_url, outfile_path=lambda x: dest_path_maker(x, base_dir=base_dir), dry_run=dry_run, main_content_extractor=para_translation.get_main_content)
     if soup is None:
       html = souper.get_html(url=next_url)
@@ -180,3 +191,11 @@ def dump_meta_article(url, outfile_path):
   dump(url=url, outfile_path=outfile_path, overwrite=True)
   arrangement.fix_index_files(os.path.dirname(outfile_path), transliteration_target=None)
   metadata_helper.set_title_from_filename(md_file=MdFile(file_path=outfile_path), dry_run=False, transliteration_target=None)
+
+
+def get_cross_page_footnote(url, footnote_id):
+  soup = scraping.get_soup(url, "html.parser")
+  souper.insert_divs_between_tags(soup, "hr")
+  (main_div, footnote_div) = get_content_divs(soup=soup)
+  definitions = get_footnote_definitions(footnote_div)
+  return definitions.get(footnote_id, None)

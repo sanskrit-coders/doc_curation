@@ -228,19 +228,29 @@ def section_hash_by_index(section):
   else:
     return 999999
 
-def merge_sections(md_files, out_path=None, section_hasher=lambda x: x, dry_run=False):
+
+def merge_sections(md_file, md_files, out_path=None, section_hasher=lambda x: sanscript.transliterate(x.title, _to=sanscript.DEVANAGARI), dry_run=False):
+  from doc_curation.md import file
+
   content = ""
   section_map = OrderedDefaultDict(list)
-  for md_file in md_files:
-    (metadata, md_content) = self.read()
+  if callable(md_files):
+    md_files = md_files(md_file.file_path)
+  if isinstance(md_files[0], str):
+    md_files = [file.MdFile(x) for x in md_files]
+  for md_to_merge in [md_file] + md_files:
+    (metadata, md_content) = md_to_merge.read()
     (lines_till_section, sections) = get_sections(content=md_content)
-    content += f"{lines_till_section}\n\n"
+    para = "\n".join(lines_till_section)
+    content += f"{para}\n\n"
     for section in sections:
       title = section_hasher(section)
       section_map[title].append(section)
 
   sections_final = []
   for id, sections in section_map.items():
+    if len(sections) != len(md_files) + 1:
+      logging.warning(f"{md_file.file_path} - {id} - only {len(sections)} sections vs {len(md_files)}")
     section_final = Section(title=sections[0].title, header_prefix=sections[0].header_prefix, lines=list(sections[0].lines))
     for section in sections[1:]:
       section_final.lines.extend(list(section.lines))
@@ -250,11 +260,11 @@ def merge_sections(md_files, out_path=None, section_hasher=lambda x: x, dry_run=
     lines = "\n".join(section.lines)
     content += f"{section.header_prefix} {section.title}\n{lines}\n\n"
 
-  (metadata_out, _) = md_files[0].read()
-  if out_path is None:
-    out_path = md_files[0].file_path
-  from doc_curation.md import file
-  md_file = file.MdFile(file_path=out_path)
+  (metadata_out, _) = md_file.read()
+  if out_path is not None:
+    out_path = md_files.file_path
+    md_file = file.MdFile(file_path=out_path)
+  content = regex.sub("\n\n+", "\n\n", content)
   md_file.dump_to_file(metadata=metadata_out, content=content, dry_run=dry_run)
 
 

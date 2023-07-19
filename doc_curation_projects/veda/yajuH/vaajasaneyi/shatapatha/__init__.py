@@ -1,6 +1,7 @@
 import csv
 import os.path
 
+from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 from tqdm import tqdm
 
@@ -34,8 +35,3 @@ def to_tsv(dir_path, out_path):
       for section in sections:
         tsv_writer.writerow([f"{file_id_base}.{sanscript.transliterate(section.title, _to=sanscript.IAST)}", "    ".join(section.lines)])
   pass
-
-
-if __name__ == '__main__':
-  # fix_anunaasika(os.path.join(CONTENT_BASE, "weber-srotaH/sasvaram"))
-  to_tsv(dir_path=os.path.join(CONTENT_BASE, "weber-srotaH/sasvaram/12"), out_path=os.path.join(os.path.join(CONTENT_BASE, "weber-srotaH/tsv/")))

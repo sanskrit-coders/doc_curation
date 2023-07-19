@@ -2,7 +2,9 @@ import regex
 import logging
 from collections import defaultdict
 
-DEFINITION_PATTERN = r"\n(\[\^(.+?)\]):([\s\S]+?)(?=$|\n\[\^|\n<|\n#)"
+DEFINITION_PATTERN_SINGLE_LINE = r"\n(\[\^(.+?)\]):(\s*\S[\s\S]+?(?=$|\n\[\^|\n<|\n#|\n\n)"
+DEFINITION_PATTERN_MULTI_LINE = r"\n(\[\^(.+?)\]): *\n(   .*|\n)+?(?=$|\n\[\^|\n<|\n#))"
+DEFINITION_PATTERN = r"\n(\[\^(.+?)\]):(\s*\S[\s\S]+?(?=$|\n\[\^|\n<|\n#|\n\n)| *\n(   .*|\n)+?(?=$|\n\[\^|\n<|\n#))"
 REF_PATTERN = r"\[\^(.+?)\]"
 
 def transform_footnote_marks(content, transformer):
