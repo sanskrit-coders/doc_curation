@@ -12,11 +12,13 @@ def devanaagarify(dir_path, source_script):
     c = footnote_helper.define_footnotes_near_use(c)
     c = content_processor.transliterate(text=c, source_script=source_script)
     c = doc_curation.utils.sanskrit_helper.fix_lazy_anusvaara(c)
-    c = regex.sub(r"\n\*\*(\s+)", "\n\\1**", c)
-    c = regex.sub(r"\*\* *(\n+)\*\*", "  \n", c)
-    c = regex.sub(r"(?<=[^:])\n+[\t	 ]+", "\n> ", c)
-    for x in range(1, 20):
-      c = regex.sub("\n(>.+)\n\n+>", "\n\\1  \n>", c)
+    c = regex.sub(r"\|\|", "॥", c)
+    c = regex.sub(r"\|", "।", c)
+    # c = regex.sub(r"\n\*\*(\s+)", "\n\\1**", c)
+    # c = regex.sub(r"\*\* *(\n+)\*\*", "  \n", c)
+    # c = regex.sub(r"(?<=[^:])\n+[\t	 ]+", "\n> ", c)
+    # for x in range(1, 20):
+    #   c = regex.sub("\n(>.+)\n\n+>", "\n\\1  \n>", c)
     return c
   
   library.apply_function(
@@ -37,5 +39,6 @@ def fix_anunaasikas(dir_path):
 
 if __name__ == '__main__':
   pass
-  fix_anunaasikas(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/vaMshIdhara-pAThaH/meta")
+  # fix_anunaasikas(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/tattvam/mantraH/articles/mantra-rahasya.md")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/vAyu-purANam/dvi-khaNDa-saMskaraNam", content_transformer=lambda x, y: sanskrit_helper.fix_repha_duplication(x), dry_run=False, silent_iteration=False)
+  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/kriyA/madhva-tantra-sAra-sangrahaH/TIkA/vasudhendra-varadendra-vedavyAsAH.md", source_script="kannada")

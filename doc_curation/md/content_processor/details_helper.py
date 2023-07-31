@@ -17,17 +17,17 @@ from doc_curation.utils import sanskrit_helper
 
 class Detail(object):
   def __init__(self, title, content):
-    self.type = title
+    self.title = title
     self.content = content
 
   def to_md_html(self, attributes_str=None):
-    if self.type is None:
+    if self.title is None:
       title = "Misc Detail"
       logging.warning(f"Unknown detail type for: {self.content}")
     else:
-      title = self.type
+      title = self.title
     if attributes_str is None:
-      if self.type in ["विश्वास-प्रस्तुतिः", "मूलम् (वचनम्)"]:
+      if self.title in ["विश्वास-प्रस्तुतिः", "मूलम् (वचनम्)"]:
         attributes_str = "open"
       else:
         attributes_str = ""
@@ -107,7 +107,7 @@ def transform_details_with_soup(content, metadata, transformer, title=None, *arg
   details = soup.select("body>details")
   for detail_tag in details:
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
-    if title is None or regex.fullmatch(title, detail.type):
+    if title is None or regex.fullmatch(title, detail.title):
       transformer(detail_tag, *args, **kwargs)
     detail_tag.insert_after("\n")
   return content_processor._make_content_from_soup(soup=soup)
@@ -130,7 +130,7 @@ def insert_duplicate_before(content, metadata, old_title_pattern="मूलम�
     return content
   def transformer(detail_tag):
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
-    detail.type = new_title
+    detail.title = new_title
     if new_title == "विश्वास-प्रस्तुतिः":
       attribute_str = "open"
     detail_tag.insert_before("\n\n")
@@ -187,7 +187,7 @@ def get_details(content, title, metadata=None):
   result = []
   for detail_tag in details:
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
-    if detail.type == title:
+    if detail.title == title:
       result.append((detail_tag, detail))
   return result
 

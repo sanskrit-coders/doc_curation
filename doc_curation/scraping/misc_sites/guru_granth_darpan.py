@@ -13,7 +13,7 @@ from curation_utils import scraping, file_helper
 
 
 def _add_detail(type, content, details):
-  if len(details) > 0 and details[-1].type == type:
+  if len(details) > 0 and details[-1].title == type:
     details[-1].content += "  \n" + content
   else:
     details.append(details_helper.Detail(title=type, content=content))

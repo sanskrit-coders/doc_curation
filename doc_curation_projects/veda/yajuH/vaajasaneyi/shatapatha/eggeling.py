@@ -74,9 +74,9 @@ def fix_corss_page_footnotes(dry_run=False):
     for match in matches:
       url = f"https://www.sacred-texts.com/hin/sbr/sbe{match.group(1)}/sbe{match.group(1)}{match.group(2)}"
       definition = sacred_texts.get_cross_page_footnote(url=url, footnote_id=f"fn_{match.group(3)}")
-      if definition is None:
-        logging.info(f"{url} not found!")
-        continue
+      #  if definition is None:
+      logging.info(f"{url} not found!")
+      continue
       content += f"\n\n[^egg_{match.group(3)}]: {definition}"
     if old_content.strip() == content.strip():
       continue

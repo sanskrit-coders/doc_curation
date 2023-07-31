@@ -56,12 +56,11 @@ def misc_typos(dir_path):
 
 
 if __name__ == '__main__':
-  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/paramparA/articles/kalai-quarrel/tenkalai-tAtAchArya-diatribe.md", source_script="tamil")
   # fix_audio_tags()
-  # prefill_vishvAsa_includes()
+  fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/mahAbhAratam/06-bhIShma-parva/03-bhagavad-gItA-parva/saMskRtam/rAmAnujaH/english/AdidevAnandaH")
   # section_fix()
-  details_fix()
-  # fix_whitespaces("/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/india/4_post-brit/politics/id/hindutva/articles/goel_sitArAm")
+  # details_fix()
+
 
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/pAdma-saMhitA/", content_transformer=lambda x, y: ocr_helper.fix_mid_shloka_empty_lines(x))

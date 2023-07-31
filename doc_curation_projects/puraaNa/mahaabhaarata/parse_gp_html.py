@@ -88,14 +88,14 @@ def fix_tags(soup):
 def content_from_details(details):
   content = ""
   for detail in details:
-    if detail.type == "footnote_definition":
+    if detail.title == "footnote_definition":
       content += "\n" + detail.content.replace("]:. ", "]:") + "\n"
-    elif detail.type == "caption":
+    elif detail.title == "caption":
       continue
     else:
-      if detail.type == "मूलम्":
+      if detail.title == "मूलम्":
         detail_vishvaasa = copy(detail)
-        detail_vishvaasa.type = "विश्वास-प्रस्तुतिः"
+        detail_vishvaasa.title = "विश्वास-प्रस्तुतिः"
         content += "\n" + detail_vishvaasa.to_md_html() + "\n"
       content += "\n" + detail.to_md_html() + "\n"
   return content

@@ -17,7 +17,7 @@ from indic_transliteration import sanscript
 def static_include_path_maker(title, original_path, path_replacements={"content": "static", ".md": ""}, use_preexisting_file_with_prefix=True):
   include_path = str(original_path)
   for key, value in path_replacements.items():
-    include_path = include_path.replace(key, value)
+    include_path = regex.sub(key, value, include_path)
   if include_path.endswith(".md"):
     return include_path
   else:
@@ -34,7 +34,6 @@ def vishvAsa_include_maker(file_path, h1_level=4, classes=None, title=None, ):
     logging.info(f"Does not exist - {file_path} . Skipping")
     return 
   url = file_path.replace("/home/vvasuki/gitland/vishvAsa/", "/").replace("/static/", "/")
-  from doc_curation.md import library
   return get_include(url=url, h1_level=h1_level, classes=classes, title=title)
 
 

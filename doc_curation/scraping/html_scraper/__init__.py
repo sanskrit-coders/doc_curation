@@ -45,7 +45,7 @@ def soup_to_details(soup, css_selector, get_detail_type):
     detail_type = get_detail_type(tag_classes=tag["class"])
     if detail_type is None:
       logging.warning(f"Detail type confusion - {str(tag)}")
-    if len(details) > 0 and details[-1].type == detail_type:
+    if len(details) > 0 and details[-1].title == detail_type:
       details[-1].content = f"{details[-1].content.strip()}  \n{tag.text.strip()}\n"
     else:
       from doc_curation.md.content_processor.details_helper import Detail
@@ -56,14 +56,14 @@ def soup_to_details(soup, css_selector, get_detail_type):
 def content_from_details(details, format_map):
   content = ""
   for detail in details:
-    if detail.type == "SKIP":
+    if detail.title == "SKIP":
       continue
-    elif detail.type in format_map:
-      content += detail.type % detail.content
+    elif detail.title in format_map:
+      content += detail.title % detail.content
     else:
-      if detail.type is not None and detail.type.startswith("मूल"):
+      if detail.title is not None and detail.title.startswith("मूल"):
         detail_vishvaasa = copy(detail)
-        detail_vishvaasa.type = "विश्वास-प्रस्तुतिः"
+        detail_vishvaasa.title = "विश्वास-प्रस्तुतिः"
         content += "\n" + detail_vishvaasa.to_md_html() + "\n"
       content += "\n" + detail.to_md_html() + "\n"
   return content
