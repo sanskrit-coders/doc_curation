@@ -27,21 +27,23 @@ def get_browser():
   opts.headless = False
   browser = webdriver.Chrome(options=opts)
   browser.implicitly_wait(2)
+  return browser
 
 def get_soup(x):
-  if hasattr(x, page_source):
+  browser = get_browser()
+  if hasattr(x, "page_source"):
     return BeautifulSoup(browser.page_source, features="html.parser")
   else:
     elementHTML = x.get_attribute('outerHTML')
     return BeautifulSoup(elementHTML,'html.parser')
 
 def get_text(browser, text_css_selector):
-  text_elements = browser.find_elements_by_css_selector(text_css_selector)
+  text_elements = browser.find_elements(by=By.CSS_SELECTOR, value=text_css_selector)
   texts = [text_element.text for text_element in text_elements]
   return "\n\n".join(texts)
 
-def dump_text_from_element(url, outfile_path, text_css_selector, title_css_selector=None, heading_class=None):
-  if os.path.exists(outfile_path):
+def dump_text_from_element(url, outfile_path, text_css_selector, title_css_selector=None, heading_class=None, skip_existing=True):
+  if os.path.exists(outfile_path) and skip_existing:
     logging.info("Skipping dumping: %s to %s", url, outfile_path)
     return
   logging.info("Dumping: %s to %s", url, outfile_path)
@@ -49,7 +51,7 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_css_selec
   browser.get(url)
   os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
   with open(outfile_path, "w") as outfile:
-    text_elements = browser.find_elements_by_css_selector(text_css_selector)
+    text_elements = browser.find_elements(by=By.CSS_SELECTOR, value=text_css_selector)
     for text_element in text_elements:
       text = text_element.text + "\n"
       if heading_class is not None and text_element.get_attribute("class") == heading_class:
@@ -70,15 +72,15 @@ def get_title(title_css_selector):
     return "UNKNOWN_TITLE"
   try:
     browser = get_browser()
-    title_element = browser.find_element(title_css_selector, by=By.CSS_SELECTOR)
+    title_element = browser.find_element(value=title_css_selector, by=By.CSS_SELECTOR)
     title = title_element.text.strip()
   except NoSuchElementException:
     title = "UNKNOWN_TITLE"
   return title
 
 
-def dump_pages(url, out_path, next_button_css, content_css, page_id_css_selector=None, wait_between_requests=2):
-  if os.path.exists(out_path):
+def dump_pages(url, out_path, next_button_css, content_css, page_id_css_selector=None, wait_between_requests=2, skip_existing=True):
+  if os.path.exists(out_path) and skip_existing:
     return 
   logging.info("Dumping: %s to %s", url, out_path)
   browser = get_browser()
@@ -89,7 +91,7 @@ def dump_pages(url, out_path, next_button_css, content_css, page_id_css_selector
   with open(out_path, "w") as outfile:
     while True:
       if page_id_css_selector is not None:
-        element = browser.find_element(page_id_css_selector, by=By.CSS_SELECTOR)
+        element = browser.find_element(value=page_id_css_selector, by=By.CSS_SELECTOR)
         if element.tag_name.lower() == "input":
           page_id = element.get_attribute('value')
         else:
@@ -101,7 +103,7 @@ def dump_pages(url, out_path, next_button_css, content_css, page_id_css_selector
       logging.info("page_id: %s", page_id)
       text = get_text(browser=browser, text_css_selector=content_css)
       outfile.write(f"[[{page_id}]]\n\n{text}\n\n")
-      next_button = browser.find_element(next_button_css, by=By.CSS_SELECTOR)
+      next_button = browser.find_element(value=next_button_css, by=By.CSS_SELECTOR)
       if next_button is None or next_button.get_attribute("disabled") == "true":
         break
       else:

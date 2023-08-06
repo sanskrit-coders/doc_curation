@@ -34,7 +34,7 @@ def select_part(browser, veda, shaakhaa, text, division=None, chapter=None, para
 
 
 def get_page_text(browser):
-  rows = browser.find_elements_by_css_selector("table#example tbody tr")
+  rows = browser.find_elements(by=By.CSS_SELECTOR, value="table#example tbody tr")
   text_segments = [row.text.strip().replace("\n", "  \n") for row in rows]
   text = "\n\n".join(text_segments)
   text = replace_private_space_characters(text=text)

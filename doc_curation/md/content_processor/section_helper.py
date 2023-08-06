@@ -170,8 +170,9 @@ def add_init_words_to_section_titles(md_file, num_words=2, title_post_processor=
 
   lines_out = list(lines_till_section)
   for section_index, section in enumerate(sections_out):
+    title = section.title
     if title_post_processor is not None:
-      title = title_post_processor(section.title)
+      title = title_post_processor(title)
     lines_out.append("\n%s%s" % (section.header_prefix, title))
     lines_out.extend(section.lines)
   content = "\n".join(lines_out)

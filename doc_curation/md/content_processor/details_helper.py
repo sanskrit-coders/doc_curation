@@ -7,6 +7,7 @@ from bs4.element import PageElement
 import doc_curation.md.content_processor.line_helper
 import regex
 
+from doc_curation.utils import patterns
 from doc_curation.md.content_processor import get_quasi_section_int_map
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
@@ -236,6 +237,70 @@ def rearrange_details(content, metadata, titles, *args, **kwargs):
     detail.insert_after(final_details[index])
     detail.decompose()
   return content_processor._make_content_from_soup(soup=soup)
+
+
+def merge_successive(content, title_filter=".*"):
+  # Stray usage of < can fool the soup parser. Hence the below.
+  if "details" not in content:
+    return content
+  soup = content_processor._soup_from_content(content=content)
+  if soup is None:
+    return content
+  details = soup.select("details")
+  final_details = []
+  prev_detail = None
+  prev_detail_tag = None
+  for index, detail_tag in enumerate(details):
+    detail = Detail.from_soup_tag(detail_tag=detail_tag)
+    title = _denumerify(detail.title)
+    if prev_detail is not None:
+      prev_title = _denumerify(prev_detail.title)
+    if prev_detail is not None and title == prev_title and regex.fullmatch(title_filter, prev_title):
+      prev_detail_tag.append(f"\n{detail.content}\n")
+      detail_tag.decompose()
+    prev_detail = detail
+    prev_detail_tag = detail_tag
+  content = content_processor._make_content_from_soup(soup=soup)
+  content = _normalize_spaces(content)
+  return content
+
+
+def autonumber_details(content, title_filter=".*", script = sanscript.DEVANAGARI):
+  # Stray usage of < can fool the soup parser. Hence the below.
+  if "details" not in content:
+    return content
+  soup = content_processor._soup_from_content(content=content)
+  if soup is None:
+    return content
+  details = soup.select("details")
+  import collections
+  detail_counts = {}
+  prev_detail = None
+  prev_detail_tag = None
+  for index, detail_tag in enumerate(details):
+    detail = Detail.from_soup_tag(detail_tag=detail_tag)
+    title  = detail.title
+    title = _denumerify(title)
+    title_index = detail_counts.get(title, 0) + 1
+    detail_counts[title] = title_index
+    index_str = "%02d" % title_index
+    index_str = sanscript.transliterate(index_str, _to=script)
+    list(detail_tag.children)[0].string = f"{title} - {index_str}"
+  content = content_processor._make_content_from_soup(soup=soup)
+  content = _normalize_spaces(content)
+  return content
+
+
+def _denumerify(title):
+  title = regex.sub(patterns.ALL_DIGITS, "", title)
+  title = regex.sub("[ -]*$", "", title)
+  return title
+
+
+def _normalize_spaces(content):
+  content = regex.sub("(?<=\n)(<\w+)", r"\n\n\1", content)
+  content = regex.sub("\n\n\n+", "\n\n", content)
+  return content
 
 
 def detail_content_replacer_soup(detail_tag, replacement):

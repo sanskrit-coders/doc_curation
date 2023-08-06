@@ -9,6 +9,7 @@ from dateutil import parser
 import regex
 from bs4 import BeautifulSoup
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.remote_connection import LOGGER
 
 from curation_utils import scraping, file_helper
@@ -53,7 +54,7 @@ def get_thread_messages_selenium(url, browser=thread_browser):
   except NoSuchElementException:
     pass
   subject = browser.find_element(value="h1", by=By.CSS_SELECTOR).text
-  section_tags = browser.find_elements_by_css_selector("section")
+  section_tags = browser.find_elements(by=By.CSS_SELECTOR, value="section")
   thread_dir = None
   messages = []
   for index, section in enumerate(section_tags):
@@ -117,7 +118,7 @@ def scrape_threads(url, dest_dir, start_url=None, dumper=dump_messages_to_files,
   page_count = 0
   while(True):
     logging.info(f"Processing page -{page_count}. {thread_count} threads done.")
-    thread_tags = browser.find_elements_by_css_selector('[role="row"]')
+    thread_tags = browser.find_elements(by=By.CSS_SELECTOR, value='[role="row"]')
     page_count = page_count + 1
     for thread_tag in thread_tags:
       soup = BeautifulSoup(thread_tag.get_attribute('innerHTML'), features="lxml")
@@ -134,7 +135,7 @@ def scrape_threads(url, dest_dir, start_url=None, dumper=dump_messages_to_files,
           start_url = None
       (messages, subject) = get_thread_messages_selenium(url=thread_url)
       dumper(messages=messages, subject=subject, dest_dir=dest_dir, url=thread_url, dry_run=dry_run)
-    next_url_tag = browser.find_element('[aria-label="Next page"]', by=By.CSS_SELECTOR)
+    next_url_tag = browser.find_element(value='[aria-label="Next page"]', by=By.CSS_SELECTOR)
     if next_url_tag.get_attribute("aria-disabled") is not None:
       # TODO: The above is not working properly.
       break

@@ -1,6 +1,8 @@
 import logging
 import os
 
+from selenium.webdriver.common.by import By
+
 from doc_curation import book_data
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
@@ -46,9 +48,9 @@ def dump_text(base_dir):
       kaanda_index, subunit_index)
       logging.info("url %s to %s", url, outfile_path)
       browser.get(url=url)
-      text = browser.find_element_by_id("videotext").text
+      text = browser.find_element(By.ID, "videotext").text
       text = text.replace("\n", "  \n")
-      title_tags = browser.find_elements_by_css_selector("#videotext  strong")
+      title_tags = browser.find_elements(by=By.CSS_SELECTOR, value="#videotext  strong")
       title = "%03d" % subunit_index
       if len(title_tags) > 0:
         title = "%03d %s" % (subunit_index, title_tags[0].text)

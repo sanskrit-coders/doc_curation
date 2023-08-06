@@ -52,8 +52,10 @@ def _make_content_from_soup(soup):
 def _soup_from_content(content, metadata=None):
   strange_lt_sign = regex.search("<(?! *[/dsiahfu])", content)
   if strange_lt_sign is not None:
-    if metadata is not None:
-      logging.warning(f"Not confident about content in {metadata['_file_path']} at {strange_lt_sign.start()}, before {content[strange_lt_sign.start():strange_lt_sign.start()+16]} - returning")
+    if metadata is None:
+      metadata = {}
+      metadata['_file_path'] = "UNK"
+    logging.warning(f"Not confident about content in {metadata['_file_path']} at {strange_lt_sign.start()}, before {content[strange_lt_sign.start():strange_lt_sign.start()+16]} - returning")
     return None
   soup = BeautifulSoup(f"<body>{content}</body>", features="html.parser")
   return soup

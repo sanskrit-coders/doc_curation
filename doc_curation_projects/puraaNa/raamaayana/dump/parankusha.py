@@ -28,7 +28,7 @@ def get_ramayana_text(browser, text_id, base_dir):
                 logging.info("Skipping " + outfile_path)
                 continue
             browser.find_element_by_link_text("Sarga-%d" % sarga_index).click()
-            text_spans = browser.find_element_by_id("divResults").find_elements_by_tag_name("span")
+            text_spans = browser.find_element("divResults").find_elements_by_tag_name("span")
             lines = ["\n", "\n"]
             for span in text_spans:
                 shloka = span.text

@@ -25,7 +25,7 @@ def get_file(outdir, url):
     outfile_path = os.path.join(outdir, basename.replace(".", "_").replace("_xml", ".md"))
     import regex
     outfile_path = regex.sub("(mul|att|nrf|tik)(\\d)\\.", "\\g<1>0\\2.", outfile_path)
-    html.dump_text_from_element(url=url, outfile_path=outfile_path, title_css_selector=".chapter", text_css_selector="p", heading_class="subhead")
+    html.dump_text_from_element(url=url, outfile_path=outfile_path, title_css_selector=".chapter", text_css_selector="p", heading_class="subhead", skip_existing=False)
 
 def makedirs():
     tree = dir_helper.tree_from_file("/home/vvasuki/sanskrit-coders/doc_curation/curation_projects/tipiTikA/dirs.txt")

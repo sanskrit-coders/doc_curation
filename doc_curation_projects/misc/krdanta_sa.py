@@ -29,7 +29,7 @@ def get_item(item_url):
     if "error" in root:
         logging.error("Could not retrieve: " + item_url)
         raise IOError(item_url)
-    data_rows = item_browser.find_element(value=".declension", by=By.CSS_SELECTOR).find_elements_by_css_selector(".row")
+    data_rows = item_browser.find_element(value=".declension", by=By.CSS_SELECTOR).find_elements(by=By.CSS_SELECTOR, value=".row")
     body_data = [root]
     headwords = [root]
     for row in data_rows:
@@ -45,7 +45,7 @@ def get_item(item_url):
 def get_entries_from_list(list_id, outfile):
     list_url = "http://sanskritabhyas.in/hi/Kridanta/List/%d" % (list_id)
     browser.get(list_url)
-    item_elements = browser.find_elements_by_css_selector(".listWord")
+    item_elements = browser.find_elements(by=By.CSS_SELECTOR, value=".listWord")
     items = []
     for item_element in item_elements:
         item_url = item_element.get_attribute("href")

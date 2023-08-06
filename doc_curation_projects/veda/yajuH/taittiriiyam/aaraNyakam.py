@@ -9,4 +9,4 @@ def migrate_and_include_mantras(dir_path):
   include_helper.prefill_includes(dir_path=dir_path)
 
 if __name__ == '__main__':
-  migrate_and_include_mantras(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/AraNyakam/sarva-prastutiH/06_mahA-nArAyaNopaniShat/48-50_brahmam_etu_trisuparNAH.md")
+  migrate_and_include_mantras(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/AraNyakam/sarva-prastutiH/06_mahA-nArAyaNopaniShat/39_medhA_devI.md")

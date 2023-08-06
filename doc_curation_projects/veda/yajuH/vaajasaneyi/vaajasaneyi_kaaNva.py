@@ -39,7 +39,7 @@ def dump_text(base_dir):
         logging.info("url %s to %s", url, outfile_path)
         browser.get(url=url)
         try:
-            text = browser.find_element_by_id("videotext").text
+            text = browser.find_element(By.ID, "videotext").text
             text = text.replace("\n", "  \n")
             title = "%02d" % kaanda_index
             title = sanscript.transliterate(title, sanscript.HK, sanscript.DEVANAGARI)

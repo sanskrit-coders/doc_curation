@@ -21,7 +21,7 @@ def migrate_and_include_Rk_details(md_file, rk_title_pattern="विश्वा
   rk_text_path = None
   for index, detail_tag in enumerate(details):
     detail = details_helper.Detail.from_soup_tag(detail_tag=detail_tag)
-    if regex.match(rk_title_pattern, detail.title):
+    if regex.fullmatch(rk_title_pattern, detail.title):
       rk_title = include_helper.init_word_title_maker(text_matched=detail.content, index=index, file_title=metadata["title"])
       rk_text_path = include_helper.static_include_path_maker(rk_title, md_file.file_path, path_replacements={"content": "static","(brAhmaNam|saMhitA|AraNyakam|kAThakam)/sarva-prastutiH":r"\1/Rk/vishvAsa-prastutiH", ".md": ""},)
       from doc_curation.md.file import MdFile
