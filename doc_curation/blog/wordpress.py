@@ -30,7 +30,7 @@ def scrape_index(url, dir_path, dry_run=False):
   :param dry_run: 
   :return: 
   """
-  scrape_index_from_anchors(url=url, dir_path=dir_path, anchor_css="ul li a", dry_run=dry_run)
+  scrape_index_from_anchors(url=url, dir_path=dir_path, anchor_css_list=["ul li a"], dry_run=dry_run)
 
 
 def month_str_from_url(url):
@@ -88,4 +88,4 @@ def scrape_monthly_indexes(url, dir_path, reverse=True, init_year_month_str=None
   else:
     month_urls = get_month_urls(url, init_year_month_str=init_year_month_str, reverse=reverse)
   for month_url in month_urls:
-    scrape_index_from_anchors(url=month_url, dir_path=dir_path, anchor_css=None, dry_run=dry_run, delay=delay)
+    scrape_index_from_anchors(url=month_url, dir_path=dir_path, anchor_css_list=None, dry_run=dry_run, delay=delay)

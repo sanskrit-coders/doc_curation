@@ -41,4 +41,4 @@ if __name__ == '__main__':
   pass
   # fix_anunaasikas(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/tattvam/mantraH/articles/mantra-rahasya.md")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/vAyu-purANam/dvi-khaNDa-saMskaraNam", content_transformer=lambda x, y: sanskrit_helper.fix_repha_duplication(x), dry_run=False, silent_iteration=False)
-  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/kriyA/madhva-tantra-sAra-sangrahaH/TIkA/vasudhendra-varadendra-vedavyAsAH.md", source_script="kannada")
+  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/bhagavad-archA-prakaraNam.md", source_script="telugu")

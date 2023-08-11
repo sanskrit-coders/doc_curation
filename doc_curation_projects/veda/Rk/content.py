@@ -58,9 +58,9 @@ def get_include(include_type, suukta_id, file_name_optitrans, h1_level, field_na
   file_path = os.path.join(static_dir_base, include_type, suukta_id, file_name_optitrans)
   if not os.path.exists(file_path):
     return ""
-  return include_helper.get_include(field_names=field_names, classes=classes, title=title,
+  return include_helper.Include(field_names=field_names, classes=classes, title=title,
                                                                       url=os.path.join("/vedAH_Rk/shAkalam/saMhitA/", include_type, suukta_id,
-                                              file_name_optitrans), h1_level=h1_level)
+                                              file_name_optitrans), h1_level=h1_level).to_html_str()
 
 
 if __name__ == '__main__':

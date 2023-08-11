@@ -12,7 +12,33 @@ from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper import souper
 from indic_transliteration import sanscript
 
+class Include(object):
+  def __init__(self, url, field_names=None, classes=None, title=None, h1_level=2, extra_attributes=""):
+    self.url = url
+    self.field_names=field_names
+    self.classes = classes
+    self.title = title
+    self.h1_level = h1_level
+    self.extra_attributes = extra_attributes
 
+
+  def to_html_str(self):
+    field_names_str = ""
+    if self.field_names is not None:
+      field_names_str = "fieldNames=\"%s\"" % (",".join(self.field_names))
+    classes_str = ""
+    if self.classes is not None:
+      classes_str = " ".join(self.classes)
+    extra_attributes =  "%s %s" % (self.extra_attributes, " ".join([field_names_str]))
+    if self.title == "FILE_TITLE":
+      title_str = 'includeTitle="true"'
+    elif title is not None:
+      title_str = "title=\"%s\"" % self.title
+    else:
+      title_str = None
+    if title_str is not None:
+      extra_attributes = "%s %s" % (title_str, extra_attributes)
+    return """<div class="js_include %s" url="%s"  newLevelForH1="%d" %s> </div>"""  % (classes_str,url, self.h1_level, extra_attributes)
 
 def static_include_path_maker(title, original_path, path_replacements={"content": "static", ".md": ""}, use_preexisting_file_with_prefix=True):
   include_path = str(original_path)
@@ -34,7 +60,7 @@ def vishvAsa_include_maker(file_path, h1_level=4, classes=None, title=None, ):
     logging.info(f"Does not exist - {file_path} . Skipping")
     return 
   url = file_path.replace("/home/vvasuki/gitland/vishvAsa/", "/").replace("/static/", "/")
-  return get_include(url=url, h1_level=h1_level, classes=classes, title=title)
+  return include_helper.Include(url=url, h1_level=h1_level, classes=classes, title=title).to_html_str()
 
 
 def init_word_title_maker(text_matched, index, file_title):
@@ -89,6 +115,9 @@ def transform_include_lines(md_file, transformer, dry_run=False):
 
 def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs):
   # Stray usage of < can fool the soup parser. Hence the below.
+  # This will still pass through md files with non js_inclde tags which can be messed up, like  
+  # {{< figure src="images/vaidika-puM-deva-jAlam.jpg" title="" class="thumbnail">}}  
+    # but that will be fixed later.
   if "js_include" not in content:
     return content
   soup = content_processor._soup_from_content(content=content, metadata=metadata)
@@ -108,7 +137,9 @@ def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs
         break
     if top_level_include:
       transformer(inc, metadata["_file_path"], *args, **kwargs)
-  return content_processor._make_content_from_soup(soup=soup)
+  content = content_processor._make_content_from_soup(soup=soup)
+  content = content.replace("{{&lt;", "{{<").replace("&gt;}}", ">}}")
+  return  content
 
 
 def old_include_remover(inc, *args, **kwargs):
@@ -134,7 +165,7 @@ def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=[
     else:
       title = sanscript.transliterate(target_dir, sanscript.OPTITRANS, sanscript.DEVANAGARI)
   if os.path.exists(alt_file_path):
-    html = get_include(url=alt_url, h1_level=h1_level, classes=classes, title=title)
+    html = include_helper.Include(url=alt_url, h1_level=h1_level, classes=classes, title=title).to_html_str()
     html = f"<body>{html}</body>"
     return BeautifulSoup(html, 'html.parser').select_one("div")
   else:
@@ -158,7 +189,22 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   url = inc["url"]
   file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
   if file_path is None:
-    return 
+    if url.endswith(".md"):
+      new_url = url[:-3]
+    elif url.endswith(".md/"):
+      new_url = url[:-1]
+    else:
+      new_url = regex.sub("/$", "", url) + ".md"
+    url = new_url.replace("/content/", "/").replace("/static/", "/")
+    file_path = file_path_from_url(url=new_url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
+    if file_path is None:
+      if not url.startswith(".."):
+        logging.warning(f"Could not fix: {url} in {container_file_path}")
+      return 
+    else:
+      logging.info(f"Corrected url to: {new_url} in {container_file_path}")
+      url = new_url
+      inc["url"] = url
   md_file = MdFile(file_path=file_path)
   (metadata, content) = md_file.read()
   metadata["_file_path"] = file_path
@@ -227,7 +273,8 @@ def file_path_from_url(url, hugo_base_dir, current_file_path):
     file_path = regex.sub("//+", "/", file_path)
     if os.path.exists(file_path):
       return file_path
-    logging.warning(f"Could not find: {file_path} in {current_file_path}")
+    # logging.debug(f"Could not find: {file_path} in {current_file_path}")
+    return None
 
 
 def include_basename_fixer(inc, ref_dir):
@@ -254,21 +301,3 @@ def include_core_with_commentaries(dir_path, alt_dirs, file_pattern="**/*.md", s
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, file_pattern=file_pattern, content_transformer=lambda x, y: transform_includes_with_soup(x, y,transformer=include_fixer))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, file_pattern=file_pattern, content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
 
-
-def get_include(url, field_names=None, classes=None, title=None, h1_level=2, extra_attributes=""):
-  field_names_str = ""
-  if field_names is not None:
-    field_names_str = "fieldNames=\"%s\"" % (",".join(field_names))
-  classes_str = ""
-  if classes is not None:
-    classes_str = " ".join(classes)
-  extra_attributes =  "%s %s" % (extra_attributes, " ".join([field_names_str]))
-  if title == "FILE_TITLE":
-    title_str = 'includeTitle="true"'
-  elif title is not None:
-    title_str = "title=\"%s\"" % title
-  else:
-    title_str = None
-  if title_str is not None:
-    extra_attributes = "%s %s" % (title_str, extra_attributes)
-  return """<div class="js_include %s" url="%s"  newLevelForH1="%d" %s> </div>"""  % (classes_str,url, h1_level, extra_attributes)

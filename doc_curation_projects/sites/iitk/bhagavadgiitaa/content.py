@@ -58,7 +58,7 @@ def make_content_files(base_dir):
         
         
       if os.path.exists(included_file_path):
-        content += "%s\n" % doc_curation.md.content_processor.include_helper.get_include(field_names=None, classes=classes, title=title, url=url, h1_level=h1_level)
+        content += "%s\n" % include_helper.Include(field_names=None, classes=classes, title=title, url=url, h1_level=h1_level).to_html_str()
     content = regex.sub("(?<=\n)____+\n##[^\n]+\s+(?=____+|$)", "", content)
     md_file.replace_content_metadata(new_content=content, dry_run=False)
   include_helper.prefill_includes(dir_path=base_dir)

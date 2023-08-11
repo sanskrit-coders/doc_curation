@@ -25,3 +25,9 @@ def prefill_vishvAsa_includes():
     dir_path = os.path.join("/home/vvasuki/gitland/vishvAsa/", dir)
     include_helper.prefill_includes(dir_path=os.path.join(dir_path, "static"))
     include_helper.prefill_includes(dir_path=os.path.join(dir_path, "content"))
+
+
+if __name__ == '__main__':
+  pass
+  # prefill_vishvAsa_includes()
+  include_helper.prefill_includes(dir_path="/home/vvasuki/gitland/vishvAsa/devaH/content")

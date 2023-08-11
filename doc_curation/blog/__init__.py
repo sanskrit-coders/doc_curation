@@ -160,15 +160,15 @@ def get_file_path(date_obj, dir_path, file_name):
   return file_path
 
 
-def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, browser=None, entry_css_list=None, anchor_css="a[href]", anchor_filter=lambda x: True, urlpattern=None, delay=None, dry_run=False):
+def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdown, browser=None, entry_css_list=None, anchor_css_list=["a[href]"], anchor_filter=lambda x: True, urlpattern=None, delay=None, dry_run=False):
   # standardize lengths of preexisting files to avoid duplication.
   from doc_curation.md.library import metadata_helper
   library.apply_function(fn=metadata_helper.truncate_file_name, max_length=50 + len("2020-02-10_"), dry_run=dry_run, dir_path=dir_path)
   ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list, browser=browser)
-  if anchor_css is not None:
+  if anchor_css_list is not None:
     if post_html is not None:
       soup = BeautifulSoup(post_html, 'lxml')
-    post_anchors = get_tags_matching_css(soup=soup, css_selector_list=anchor_css)
+    post_anchors = get_tags_matching_css(soup=soup, css_selector_list=anchor_css_list)
   else:
     anchor_css = [".entry-title a", "h1.title a", "h3 a",]
     post_anchors = get_tags_matching_css(soup=soup, css_selector_list=anchor_css)

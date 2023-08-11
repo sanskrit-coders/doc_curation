@@ -61,7 +61,7 @@ def link_rv_texts():
     metadata["edit_distance_to_rv"] = score
     (_, dest_content) = muula_md.read()
     dest_content = regex.sub("<div[\s\S]]+</div>", "", dest_content)
-    content = "%s\n\n%s" % (dest_content, doc_curation.md.content_processor.include_helper.get_include(url=rv_url, h1_level=2, classes=None, title="विश्वास-शाकल-प्रस्तुतिः"))
+    content = "%s\n\n%s" % (dest_content, include_helper.Include(url=rv_url, h1_level=2, classes=None, title="विश्वास-शाकल-प्रस्तुतिः").to_html_str())
     dest_md.dump_to_file(metadata=metadata, content=content, dry_run=False)
 
   unmatched_files_md = MdFile(file_path=os.path.join(os.path.dirname(saama_muula), "vishvAsa-prastutiH/unmatched.md"))

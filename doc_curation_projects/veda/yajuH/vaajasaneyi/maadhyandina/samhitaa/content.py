@@ -34,7 +34,7 @@ def dump(dry_run, start_id=None):
       mantra_details += "\n%s" % get_include("vishvAsa-prastutiH", chapter_id=chapter_id,                                         ref_file_path=mantra_path, h1_level=3)
       mantra_details += "\n%s" % get_include("mUlam", chapter_id=chapter_id, ref_file_path=mantra_path,
                                          classes=["collapsed"], h1_level=3)
-      mantra_details += "\n%s" % get_include("sarvASh_TIkAH", chapter_id=chapter_id, ref_file_path=mantra_path, classes=["collapsed"], h1_level=3)
+      mantra_details += "\n%s" % Include("sarvASh_TIkAH", chapter_id=chapter_id, ref_file_path=mantra_path, classes=["collapsed"], h1_level=3).to_html_str()
 
       # dump_content(metadata=title_only_metadata, content=mantra_details, chapter_id=chapter_id, mantra_id=mantra_id, base_dir=content_dir_base, destination_dir="sarva-prastutiH", dry_run=dry_run)
 
@@ -50,8 +50,8 @@ def get_include(include_type, chapter_id, ref_file_path, h1_level, field_names=N
     title = sanscript.transliterate(include_type.replace("_", " "), _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI)
   if not os.path.exists(ref_file_path):
     return ""
-  return doc_curation.md.content_processor.include_helper.get_include(field_names=field_names, classes=classes, title=title,
-                                                                      url=os.path.join("/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/", include_type, f"{chapter_id:02d}", os.path.basename(ref_file_path)), h1_level=h1_level)
+  return include_helper.Include(field_names=field_names, classes=classes, title=title,
+                                                                      url=os.path.join("/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/", include_type, f"{chapter_id:02d}", os.path.basename(ref_file_path).to_html_str()), h1_level=h1_level)
 
 
 if __name__ == '__main__':

@@ -50,7 +50,7 @@ def add_includes_to_content(content, metadata):
     sutra_num_dev = match.group(1)
     sutra_num = int(sanscript.transliterate(sutra_num_dev, sanscript.DEVANAGARI, sanscript.IAST))
     url = "/kAvyam/TIkA/padyam/kAlidAsaH/raghuvaMsham/mallinAthaH/%s/%02d.md" % (chapter_id, sutra_num)
-    include_line = doc_curation.md.content_processor.include_helper.get_include(url=url, h1_level=4, classes=["collapsed"], title="मल्लिनाथः")
+    include_line = include_helper.Include(url=url, h1_level=4, classes=["collapsed"], title="मल्लिनाथः").to_html_str()
     return "%s  \n%s\n" % (match.group(0), include_line)
   content = regex.sub("॥ *([०-९]+) *॥.*?(?=\n|$)", transformer, content)
   return content
