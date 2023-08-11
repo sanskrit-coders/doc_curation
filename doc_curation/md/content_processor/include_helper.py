@@ -139,6 +139,7 @@ def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs
       transformer(inc, metadata["_file_path"], *args, **kwargs)
   content = content_processor._make_content_from_soup(soup=soup)
   content = content.replace("{{&lt;", "{{<").replace("&gt;}}", ">}}")
+  content = regex.sub("(?<=\s)&gt;", ">", content)
   return  content
 
 
@@ -187,6 +188,10 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   souper.empty_tag(inc)
 
   url = inc["url"]
+  if not url.startswith("/"):
+    # TODO: fix this.
+    logging.info(f"Skipping relative path in {container_file_path}")
+    return 
   file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
   if file_path is None:
     if url.endswith(".md"):
@@ -198,8 +203,7 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
     url = new_url.replace("/content/", "/").replace("/static/", "/")
     file_path = file_path_from_url(url=new_url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
     if file_path is None:
-      if not url.startswith(".."):
-        logging.warning(f"Could not fix: {url} in {container_file_path}")
+      logging.warning(f"Could not fix: {url} in {container_file_path}")
       return 
     else:
       logging.info(f"Corrected url to: {new_url} in {container_file_path}")
