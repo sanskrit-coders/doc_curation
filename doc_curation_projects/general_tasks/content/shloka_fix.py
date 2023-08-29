@@ -32,5 +32,6 @@ def details_fix(dir_path):
 
 
 if __name__ == '__main__':
+  pass
   # shloka_formatting()
-  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/mImAMsA/content/shrI-sampradAyaH/mImAMsA-pAdukA/sarva-prastutiH")
+  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/kriyA/bhUta-shuddhi-tantram")

@@ -7,7 +7,10 @@ import doc_curation.utils.sanskrit_helper
 import regex
 from bs4 import BeautifulSoup, Tag
 from curation_utils import scraping, file_helper
+from doc_curation.md import library, content_processor
+from doc_curation.md.content_processor import line_helper, footnote_helper
 from doc_curation.md.file import MdFile
+from doc_curation.utils import sanskrit_helper
 from indic_transliteration import sanscript
 
 for handler in logging.root.handlers[:]:
@@ -51,6 +54,7 @@ def get_file_path(out_dir, title_iast, author_iast=None, catalog_number=None):
   return file_path
 
 
+
 def get_text(url):
   logging.info("Processing %s", url)
   soup = scraping.get_soup(url=url)
@@ -62,9 +66,10 @@ def get_text(url):
   return content
 
 
-def get_iast_text(url):
+def from_iast_text(url):
   content = get_text(url=url)
   content = sanscript.transliterate(data=content, _from=sanscript.IAST, _to=sanscript.DEVANAGARI, togglers={}, suspend_on={}, suspend_off={})
+  content = content.replace("\"न\्", "ङ्")
   return content
 
 
@@ -123,8 +128,10 @@ def process_catalog_page_selenium(url, out_dir):
 
   text_url = text_links[0].get_attribute("href")
   file = MdFile(file_path=dest_file_path, frontmatter_type="toml")
-  text = get_iast_text(url=text_url)
-  text = doc_curation.utils.sanskrit_helper.fix_lazy_anusvaara(text=text)
+  text = from_iast_text(url=text_url)
+  text = sanskrit_helper.fix_lazy_anusvaara(text=text)
+  text = sanskrit_helper.fix_bad_anunaasikas(text)
+  text = regex.sub("ए-तेxत्स् मय् बे विएwएद् ओन्ल्य् ओन्लिने ओर् दोwन्लोअदेद् फ़ोर् प्रिवते स्तुद्य्। *", "", text)
   text = text.replace("\n", "  \n")
   file.dump_to_file(metadata=metadata, content=text, dry_run=False)
 
@@ -143,6 +150,21 @@ def get_docs(out_dir):
     process_catalog_page_selenium(url=url, out_dir=out_dir)
     # exit()
 
+def fix_footnotes(dir_path):
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.inline_comments_to_footnotes(c), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.fix_intra_word_footnotes(c), dry_run=False)
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.define_footnotes_near_use(c), dry_run=False)
+
+
+
+def fix_lines(dir_path):
+  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\n|^)प् *।.+\) *"], replacement="")
+  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\n)[ \t]+"], replacement="")
+
+  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=[\S]) *\n(?=\S)"], replacement=r" ")
+  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=[।॥]) *(?=[^०-९\s])"], replacement=r"  \n")
+  
+
 
 if __name__ == '__main__':
-  text = get_iast_text(url="https://%s@muktalib7.com/DL_CATALOG_ROOT/DL_CATALOG/DL_CATALOG_USER_INTERFACE/dl_user_interface_create_utf8_text.php?hk_file_url=..%%2FTEXTS%%2FETEXTS%%2FmaliniivijayottaraHK.txt&miri_catalog_number=M00160" % creds)
+  text = from_iast_text(url="https://%s@muktalib7.com/DL_CATALOG_ROOT/DL_CATALOG/DL_CATALOG_USER_INTERFACE/dl_user_interface_create_utf8_text.php?hk_file_url=..%%2FTEXTS%%2FETEXTS%%2FmaliniivijayottaraHK.txt&miri_catalog_number=M00160" % creds)

@@ -1,3 +1,5 @@
+import textwrap
+
 import regex
 import logging
 from collections import defaultdict
@@ -6,6 +8,29 @@ DEFINITION_PATTERN_SINGLE_LINE = r"\n(\[\^(.+?)\]):(\s*\S[\s\S]+?(?=$|\n\[\^|\n<
 DEFINITION_PATTERN_MULTI_LINE = r"\n(\[\^(.+?)\]): *\n(   .*|\n)+?(?=$|\n\[\^|\n<|\n#))"
 DEFINITION_PATTERN = r"\n(\[\^(.+?)\]):(\s*\S[\s\S]+?(?=$|\n\[\^|\n<|\n#|\n\n)| *\n(   .*|\n)+?(?=$|\n\[\^|\n<|\n#))"
 REF_PATTERN = r"\[\^(.+?)\]"
+
+
+class Footnote(object):
+  def __init__(self, id_str, content):
+    self.id_str = id_str
+    self.content = content.strip()
+
+  def to_single_line_definition(self):
+    return f"\n{self.get_reference()}: {self.content}\n"
+
+  def to_multi_line_definition(self):
+    content = textwrap.indent(self.content.strip(), prefix="    ")
+    return f"\n{self.get_reference()}:\n\n{content}\n\n"
+
+  def to_definition(self):
+    if "\n" in self.content:
+      return self.to_multi_line_definition()
+    else:
+      return self.to_single_line_definition()
+
+  def get_reference(self):
+    return f"[^{self.id_str}]"
+
 
 def transform_footnote_marks(content, transformer):
   content = regex.sub(r"\[\^(.+?)\]", transformer, content)
@@ -66,17 +91,29 @@ def fix_plain_footnotes(content, def_pattern="(?<=\n)(\d+)\.?(?= )", def_replace
     content = regex.sub(ref_pattern, r"[^\1]", content)
   return content
 
-def comments_to_footnotes(content):
-  definitions_unfiltered = [x.group(1) for x in regex.finditer(r"\+\+\+\(([\s\S]+?)\)\+\+\+", content)]
+
+def inline_comments_to_footnotes(content, pattern=r"\[([^\^][^\]]+)?\]"):
+  definitions_unfiltered = regex.finditer(pattern, content)
   definitions = []
   for definition in definitions_unfiltered:
     if definition not in definitions:
       definitions.append(definition)
 
+  footnotes = {}
   for index, definition in enumerate(definitions):
-    content = content.replace(f"+++({definition})+++", f"[^{index+ 1}]")
+    footnote = Footnote(id_str=f"{index + 1}", content=definition.group(1))
+    footnotes[index] = footnote
+
   for index, definition in enumerate(definitions):
-    content += f"\n\n[^{index + 1}]: {definition}"
+    footnote = footnotes[index]
+    content = content.replace(f"{definition.group(0)}", footnote.get_reference())
+  for index, footnote in footnotes.items():
+    content += footnote.to_definition()
+  return content
+
+
+def comments_to_footnotes(content):
+  content = inline_comments_to_footnotes(content=content, pattern=r"\+\+\+\(([\s\S]+?)\)\+\+\+")
   return content
 
 

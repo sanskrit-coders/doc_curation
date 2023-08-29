@@ -31,12 +31,19 @@ def _undo_structuring(dir_path):
   
 
 def from_garani(dir_path):
-  _undo_structuring(dir_path)
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.merge_successive(content=c,  title_filter="गरणि.*"))
+
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["(?<=\n|^)## "], replacement="### ")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["(?<=\n|^)### ०१"], replacement="## \n### ०१")
+
+  # library.apply_function(fn=section_helper.autonumber, dir_path=dir_path, start_index=1)
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.autonumber_details(content=c))
-  # return 
-  
-  # TODO: Manually ensure stray &.t, < and > characters don't exist, lest the mess with details tag processing.
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path=dir_path, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, title_index_pattern=None) # 
+  # library.apply_function(fn=section_helper.add_init_words_to_section_titles, dir_path=dir_path, dry_run=False, num_words=2)
+
+  # return
+
+# TODO: Manually ensure stray &.t, < and > characters don't exist, lest the mess with details tag processing.
   
   
   # devanaagarify(dir_path, source_script=sanscript.KANNADA)
@@ -47,6 +54,8 @@ def from_garani(dir_path):
   ## TODO - Manually section - using the below?
   # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["^ತಿರುವಾಯ್.+(ೞಿ|ಳಿ)\s*$"], replacement="")
   # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\n)\\\*\\\*\\\*\\\*.+"], replacement="## ")
+  # Check shataka separation manually TODO
+  library.apply_function(fn=MdFile.split_to_bits, dir_path=dir_path, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, title_index_pattern=None) # 
 
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["(?<=\n)[०-९]+\..+\n+(?=[०-९]+\.)"], replacement="")
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[" (ऱ|न्द)"], replacement=r"\1")
@@ -54,13 +63,14 @@ def from_garani(dir_path):
 
   # return
 
-  # Check shataka separation manually TODO
-  library.apply_function(fn=MdFile.split_to_bits, dir_path=dir_path, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI) # 
+  _undo_structuring(dir_path)
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["(?<=\n)(.+=.+)(?=\n)"], replacement=r"\n<details><summary>गरणि-प्रतिपदार्थः</summary>\n\n\1\n</details>\n")
   # TODO: Note that the above will fail in case of lines split by page breaks. That will need to be resolved manually.
   
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=</details>\n)\s*(\S.+?)(?=\n|$)"], replacement=r"\n<details><summary>गरणि-गद्यानुवादः</summary>\n\n\1\n</details>\n\n")
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["(?<=</details>\n)\s*(\S[^<#]+?)\s*(?=\n[०-९]+\.|$|\nअडिय *नड)"], replacement=r"\n<details><summary>गरणि-विस्तारः</summary>\n\n\1\n</details>\n\n")
+  # TODO: Look for गरणि-विस्तारः.+[^<]+?\\\([०-१\d] to find missing/ misplaced गरणि-गद्यानुवादः sections?
+
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["(?<=\n)अडिय *नडॆ[ \-]+(.+)(?=\n)"], replacement=r"\n<details><summary>गरणि-अडियनडे</summary>\n\n\1\n</details>\n")
 
   def _make_viprastuti(match):
@@ -94,4 +104,4 @@ def insert_garani(dir_path):
 if __name__ == '__main__':
   pass
   # insert_garani("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/4k-divya-prabandha/sarva-prastutiH/02_tiruppAvai_aNDaL_474_-503/_index.md")
-  from_garani("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/4k-divya-prabandha/sarva-prastutiH/01_tiruppallaNDu_tirumoLHi_pEriyaLHvar_1-473/00_tiru-pallANDu.md")
+  from_garani("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/4k-divya-prabandha/sarva-prastutiH/20_tiruveLHuku.Rh.Rhirukkai_tirumangai-ALHvAr_2672")

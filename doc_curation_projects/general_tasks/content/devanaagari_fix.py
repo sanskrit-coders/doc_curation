@@ -39,6 +39,6 @@ def fix_anunaasikas(dir_path):
 
 if __name__ == '__main__':
   pass
-  # fix_anunaasikas(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/tattvam/mantraH/articles/mantra-rahasya.md")
+  # fix_anunaasikas(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/AgamaH")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/vAyu-purANam/dvi-khaNDa-saMskaraNam", content_transformer=lambda x, y: sanskrit_helper.fix_repha_duplication(x), dry_run=False, silent_iteration=False)
-  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/bhagavad-archA-prakaraNam.md", source_script="telugu")
+  devanaagarify(dir_path="/home/vvasuki/gitland/sanskrit/raw_etexts_private/mixed/mukta/unknown/shivajnAnasiddhisvapaxadRShTAntasangraha_saptalaxana_samAnasandhivyAkhyAdi__I00010.md", source_script="iast")
