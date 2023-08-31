@@ -17,15 +17,15 @@ def match_muula_commentary():
   base_file = "/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/08_mohAdi-parAjayaH.md"
   # TODO: MANUAL: Insert a EEEEE in the end; also ensure that the final text + commentary have a verse number.
   # TODO: Remove all html tags/ comments.
-  # 
+  
   # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=[r"\|"], replacement="।")
   # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=["। *।"], replacement="॥")
   # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=["(?<=[ँ-९])\:"], replacement="ः")
-  # 
+  
   # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=[r"EEE+\s*([\S\s]+?)\s*(?=WWW+|QQQ+)"], replacement=r"\nEEEEE\n\n<details><summary>मूलम्</summary>\n\n\1\n</details>\n\n")
   # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=[r"WWW+\s*(प्रभाविलासः)?\s*([\S\s]+?)\s*(?=WWW+|QQQ+|EEE+)"], replacement=r"\nWWWWW\n\n<details><summary>प्रभाविलासः</summary>\n\n\2\n</details>\n\n")
   # library.apply_function(fn=content_processor.replace_texts, dir_path=base_file, patterns=[r"QQQ+\s*(प्रभावली)?\s*([\S\s]+?)\s*(?=WWW+|QQQ+|EEE+)"], replacement=r"\nQQQQQ\n\n<details><summary>प्रभावली</summary>\n\n\2\n</details>\n\n")
-  # 
+  
   tmp_dir = os.path.join(os.path.dirname(base_file), "tmp")
   muula_1 = os.path.join(tmp_dir, "mUlam.md")
   comment_1 = os.path.join(tmp_dir, "prabhAvalI.md")
