@@ -344,7 +344,11 @@ def shlokas_to_muula_viprastuti_details(content, pattern=None):
     detail_vishvaasa = Detail(title="विश्वास-प्रस्तुतिः", content=shloka)
     detail_muula = Detail(title="मूलम्", content=shloka)
     return f"\n{detail_vishvaasa.to_md_html()}\n\n{detail_muula.to_md_html()}" 
-  content = regex.sub(pattern, detail_maker, content)
+  try:
+    content = regex.sub(pattern, detail_maker, content, timeout=2)
+  except TimeoutError as x:
+    print(x)
+    logging.fatal(f"pattern: {pattern}")
   if pattern == patterns.PATTERN_BOLDED_QUOTED_SHLOKA:
     content = content.replace("**", "")
     content = regex.sub("\n> *", "\n", content)

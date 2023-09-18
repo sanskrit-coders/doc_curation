@@ -103,6 +103,9 @@ def deshika_misc(browser):
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "मीमांसापादुका", "expand:मीमांसापादुका", "धर्मजिज्ञासाधिकरणम्"], outdir="/home/vvasuki/gitland/vishvAsa/mImAMsA/content/mImAMsA-pAdukA/mUlam/", sequence_start=1, has_comment=False)
   # library.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/mImAMsA/content/mImAMsA-pAdukA/", overwrite=False, dry_run=False)
 
+  parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "सङ्कल्पसूर्योदयः", "expand:सङ्कल्पसूर्योदयः", "प्रथमोऽङ्कः"], outdir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/mUlam", has_comment=False)
+
+
 def deshika_tattvamuktaakalaapa():
   base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/venkaTanAthaH/tattva-muktA-kalApaH"
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "तत्त्वमुक्ताकलापः", "expand:तत्त्वमुक्ताकलापः", "जडद्रव्यसरः"], outdir=os.path.join(base_dir, "mUlam"), sequence_start=1, has_comment=False)
@@ -157,10 +160,10 @@ if __name__ == '__main__':
   # shriibhaashyam(browser=browser)
   # yaamuna_siddhitraya(browser)
   # raamaanuja_misc(browser)
-  # deshika_misc(browser)
+  deshika_misc(browser)
   # stotra_misc()
   # deshika_rts(browser=browser)
   # tattva_misc(browser=browser)
   # deshika_nyAyasiddhAnjanam()
-  upanishat(browser=browser)
+  # upanishat(browser=browser)
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "निक्षेप-रक्षा", "expand:निक्षेप-रक्षा", "expand:उपोद्घातः", "उपोद्घातः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaiShNavaH/shrI-sampradAyaH/venkaTanAthaH/nixepa-raxA")

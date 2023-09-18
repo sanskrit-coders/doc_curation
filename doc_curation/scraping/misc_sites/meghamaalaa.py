@@ -23,7 +23,7 @@ def get_text(url, source_script=sanscript.DEVANAGARI):
     content = regex.sub("ळ", "ल", content)
     content = regex.sub(":", "ः", content)
     content = regex.sub("s", "ऽ", content)
-  elif source_script == "ta":
+  elif source_script.startswith(sanscript.TAMIL):
     content = content_processor.transliterate(text=content, source_script=source_script)
   content = regex.sub("\n.+?Audio Archive.+?\n", "", content)
   logging.info(f"Got {title} from {url}")
