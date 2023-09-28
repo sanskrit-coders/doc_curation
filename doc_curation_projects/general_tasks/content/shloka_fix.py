@@ -34,4 +34,4 @@ def details_fix(dir_path):
 if __name__ == '__main__':
   pass
   # shloka_formatting()
-  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/shAktam/kAlikA-purANam")
+  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/agni-purANam")

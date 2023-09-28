@@ -4,7 +4,10 @@ from indic_transliteration.sanscript.schemes.brahmic import accent
 PATTERN_SHLOKA = r"(?<=\n)([^#\s<>\[\(][^#<>]+?)॥\s*([०-९\d\.]+)\s*॥.*?(?=\n|$)"
 PATTERN_2LINE_SHLOKA = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।  +\n([^#\s<>\[\(][ \S]+?)॥\s*([०-९\d\.]+)\s*॥.*?(?=\n|$)"
 PATTERN_MULTI_LINE_SHLOKA = r"(?<=\n|^)(([^#\s<>\[\(][ \S]+?)।  +\n)+([^#\s<>\[\(][ \S]+?)॥\s*([०-९\d\.]+)\s*॥.*?(?=\n|$)"
-PATTERN_DANDA_END_SHLOKA = r"([^#\s<>\[\(][ \S]+?[^॥\s]\s*)*?॥\s*([०-९\d\.]+)\s*॥"
+
+## * instead of {1,4} would lead to timeouts.
+PATTERN_DANDA_END_SHLOKA = r"(?<=\n|^)([^#\s<>\[\(][ \S।॥]+?[।॥\s]*){1,4}॥\s*([०-९\d\.]+)\s*॥"
+
 PATTERN_BOLDED_QUOTED_SHLOKA = r"(?<=\n\n|^)\> \*\*([\s\S]+?[०-९ ]+॥.*)(?=\n\n)"
 
 FOOTNOTE_DEFINITION = r"\n(\[\^.+?\]):[\s\S]+?(?=[\n\[])"
