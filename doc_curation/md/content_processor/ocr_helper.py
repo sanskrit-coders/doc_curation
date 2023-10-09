@@ -123,3 +123,12 @@ def fix_typos(text):
     for ta_word in ta_words:
       text = text.replace(ta_word, sa_word)
   return text
+
+
+def fix_foxit(text):
+  text = regex.sub(r"(\S) ᐀्", r"र्\1", text)
+  return text
+
+def fix_dangling_maatraas(text):
+  text = regex.sub(r"(\*+)(\s+)([ऀ-ःऺ-ॏ])", r"\3\1", text)
+  return text

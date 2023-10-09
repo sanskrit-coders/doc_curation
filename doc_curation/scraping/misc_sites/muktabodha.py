@@ -8,7 +8,7 @@ import regex
 from bs4 import BeautifulSoup, Tag
 from curation_utils import scraping, file_helper
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import line_helper, footnote_helper
+from doc_curation.md.content_processor import space_helper, footnote_helper
 from doc_curation.md.file import MdFile
 from doc_curation.utils import sanskrit_helper
 from indic_transliteration import sanscript

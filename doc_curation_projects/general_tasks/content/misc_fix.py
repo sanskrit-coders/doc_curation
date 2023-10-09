@@ -4,12 +4,11 @@ import doc_curation.utils.sanskrit_helper
 import regex
 
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper, section_helper, details_helper, ocr_helper, footnote_helper, line_helper
+from doc_curation.md.content_processor import include_helper, section_helper, details_helper, ocr_helper, footnote_helper, space_helper
 from doc_curation.utils import patterns
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript, aksharamukha_helper
-
 
 
 def fix_audio_tags():
@@ -32,9 +31,9 @@ def details_fix():
 def fix_whitespaces(dir_path):
   # library.apply_function(fn=MdFile.transform, content_transformer=content_processor.make_paras, dir_path=dir())
 
-  library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:line_helper.remove_fake_linebreaks(c), dir_path=dir_path)
+  library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.remove_fake_linebreaks(c), dir_path=dir_path)
 
-  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:line_helper.markdownify_newlines(c), dir_path=dir_path)
+  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.markdownify_newlines(c), dir_path=dir_path)
 
 
   pass

@@ -45,6 +45,7 @@ def shriibhaashya():
 
 
 def misc():
+  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/vedanta-kaarikaavazhi/vedanta-kaarikaavazhi/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/parichaya-sanxepAH/vedAnta-kArikAvalI/mUlam.md")
   # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/rahasyatraya-kaarikaavazhi/rahasyatraya-kaarikaavazhi/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/venkaTanAthaH/rahasya-traya-sAraH/kArikAvalI.md")
   # 
   # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/adyatmacintaa/अध्यात्मचिन्ता/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/sundara-jAmAtR-adhyAtma-chintA.md")
@@ -110,18 +111,18 @@ def bhagavad_vishayam():
   base_url = "https://srivaishnavan.com/publications/meghamala/bhagavad-visayam/"
   # meghamaalaa.dump_series(base_url + "6000-padi", os.path.join(base_dir, "6k") , start_index=None, source_script=sanscript.TAMIL_SUB)
   # meghamaalaa.dump_series(base_url + "9000-padi", os.path.join(base_dir, "9k") , start_index=None, source_script=sanscript.TAMIL_SUB)
-  meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-01/01-01-12000-36000-padi/", os.path.join(base_dir, "12k/01") , start_index=None, source_script=sanscript.TAMIL_SUB)
-  meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-02/02-01-12000-36000-padi/", os.path.join(base_dir, "12k/02") , start_index=None, source_script=sanscript.TAMIL_SUB)
-  meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-03/03-01-12000-36000-padi/", os.path.join(base_dir, "12k/03") , start_index=None, source_script=sanscript.TAMIL_SUB)
-  meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-04/04-01-12000-36000-padi/", os.path.join(base_dir, "12k/04") , start_index=None, source_script=sanscript.TAMIL_SUB)
+  # meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-01/01-01-12000-36000-padi/", os.path.join(base_dir, "12k/01") , start_index=None, source_script=sanscript.TAMIL_SUB)
+  # meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-02/02-01-12000-36000-padi/", os.path.join(base_dir, "12k/02") , start_index=None, source_script=sanscript.TAMIL_SUB)
+  # meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-03/03-01-12000-36000-padi/", os.path.join(base_dir, "12k/03") , start_index=None, source_script=sanscript.TAMIL_SUB)
+  # meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-04/04-01-12000-36000-padi/", os.path.join(base_dir, "12k/04") , start_index=None, source_script=sanscript.TAMIL_SUB)
   # library.apply_function(dir_path=base_dir, fn=metadata_helper.set_filename_from_title, dry_run=False)
 
 
 if __name__ == '__main__':
   pass
-  bhagavad_vishayam()
+  # bhagavad_vishayam()
   # upanishat()
   # shriibhaashya()
-  # misc()
+  misc()
   # puraaNam()
   # rahasya()

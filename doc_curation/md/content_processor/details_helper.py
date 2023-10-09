@@ -4,7 +4,7 @@ import os
 import textwrap
 
 from bs4.element import PageElement
-import doc_curation.md.content_processor.line_helper
+import doc_curation.md.content_processor.space_helper
 import regex
 
 from doc_curation.utils import patterns
@@ -326,7 +326,7 @@ def transform_tag_strings(detail_tag, transformer, type_pattern=None):
 
 def sanskrit_tag_transformer(detail_tag, type_pattern):
   def transformer(x):
-    # x = doc_curation.md.content_processor.line_helper.dehyphenate_sanskrit_line_endings(x)
+    # x = doc_curation.md.content_processor.space_helper.dehyphenate_sanskrit_line_endings(x)
     x = sanskrit_helper.fix_lazy_anusvaara(x)
     return x
   transform_tag_strings(detail_tag=detail_tag, transformer=transformer, type_pattern=type_pattern)

@@ -124,6 +124,12 @@ def make_paras(content, *args, **kwargs):
   return "\n".join(lines_out)
 
 
+def fix_markup(text):
+  text = regex.sub(r"\*\*([^*\n]+?) *\*\*", r"**\1** ", text)
+  return text
+
+
+
 def empty_line_around_quotes(content, after_too=False):
   """
   
