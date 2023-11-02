@@ -90,6 +90,7 @@ def misc_sanskrit_typos(text):
   text = regex.sub("[ङनम](्[च-झ])\n", r"ञ\1", text)
   text = regex.sub("[ञङम](्[त-न])\n", r"न\1", text)
   text = regex.sub("[ञनङ](्[प-म])\n", r"म्\1", text)
+  text = regex.sub("(?<=[ँ-९]):", "ः", text)
   return text
 
 def replace_casewise(text, pattern, replacement):

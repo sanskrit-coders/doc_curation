@@ -50,7 +50,10 @@ def dump_wordpress_monthly():
 
   wordpress.scrape_monthly_indexes(url="https://suganyasmusingsscribblings.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/suganya", init_year_month_str=init_year_month_str, dry_run=False)
   wordpress.scrape_monthly_indexes(url="https://westhunt.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/non-hindu/westhunt", init_year_month_str=init_year_month_str, dry_run=False)
-  wordpress.scrape_monthly_indexes(url="https://pradyaus.wordpress.com/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/pradyaus")
+  
+  # Gone private
+  #wordpress.scrape_monthly_indexes(url="https://pradyaus.wordpress.com/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/pradyaus")
+  
   wordpress.scrape_monthly_indexes(url="https://indianphilosophyblog.org/", dir_path=f"{BASE_PATH}/weblogs/indianphilosophyblog", init_year_month_str=init_year_month_str, dry_run=False)
   wordpress.scrape_monthly_indexes(url="https://animeshnagarblog.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/animeshnagarblog", init_year_month_str=init_year_month_str, dry_run=False)
   wordpress.scrape_monthly_indexes(url="https://aryanthought.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/aryanthought", init_year_month_str=init_year_month_str, dry_run=False)

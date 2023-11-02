@@ -24,21 +24,27 @@ def get_text(url, source_script=sanscript.DEVANAGARI):
     content = regex.sub(":", "ः", content)
     content = regex.sub("s", "ऽ", content)
   elif source_script.startswith(sanscript.TAMIL):
+    content = regex.sub(r"\*\*([²³⁴₂₃₄])\*\*", "$1", content)
+    content = regex.sub(r"\*\* \*\*", " ", content)
+    content = regex.sub("श्रिय:", "श्रियः", content)
+    content = regex.sub(":", "-", content)
+    content = regex.sub("&nbsp;", "", content)
+    content = regex.sub("[sS]", "ऽ", content)
     content = content_processor.transliterate(text=content, source_script=source_script)
   content = regex.sub("\n.+?Audio Archive.+?\n", "", content)
   logging.info(f"Got {title} from {url}")
   return (title, content)
 
 
-def dump_text(url, dest_path, source_script=sanscript.DEVANAGARI, dry_run=False):
-  if os.path.exists(dest_path):
+def dump_text(url, dest_path, source_script=sanscript.DEVANAGARI, overwrite=False, dry_run=False):
+  if os.path.exists(dest_path) and not overwrite:
     logging.info(f"Skipping {dest_path}")
     return 
   (title, content) = get_text(url=url, source_script=source_script)
   md_file = MdFile(file_path=dest_path)
   md_file.dump_to_file(metadata={"title": title}, content=content, dry_run=dry_run)
 
-def dump_series(url, dest_path, start_index=None, filename_from_title=None, source_script=sanscript.DEVANAGARI):
+def dump_series(url, dest_path, start_index=None, filename_from_title=None, source_script=sanscript.DEVANAGARI, overwrite=False):
   soup = scraping.get_soup(url=url)
   logging.info(f"Dumping series starting {url}")
   parts_tag = soup.select_one("#chapter-content").find_previous_sibling('div')
@@ -54,6 +60,6 @@ def dump_series(url, dest_path, start_index=None, filename_from_title=None, sour
       file_name = f"{index + 1:02d}_{file_name}"
     file_name = file_name.replace("_.", ".")
     dest_subpath = os.path.join(dest_path, file_name)
-    dump_text(url=link["href"], dest_path=dest_subpath, source_script=source_script)
+    dump_text(url=link["href"], dest_path=dest_subpath, source_script=source_script, overwrite=overwrite)
   library.fix_index_files(dir_path=os.path.dirname(dest_path), overwrite=False, dry_run=False)
   

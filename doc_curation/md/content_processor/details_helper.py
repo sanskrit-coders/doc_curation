@@ -355,11 +355,11 @@ def shlokas_to_muula_viprastuti_details(content, pattern=None):
   return content
 
 
-def wrap_into_detail(content, title):
+def wrap_into_detail(content, title, attributes_str=None):
   content_out = content.strip()
   if content_out == "":
     return content
-  return Detail(title=title, content=content.strip()).to_md_html()
+  return Detail(title=title, content=content.strip()).to_md_html(attributes_str=attributes_str)
 
 
 def non_detail_parts_to_detail(content, title):

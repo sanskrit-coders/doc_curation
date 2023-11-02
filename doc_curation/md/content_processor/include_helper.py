@@ -32,13 +32,13 @@ class Include(object):
     extra_attributes =  "%s %s" % (self.extra_attributes, " ".join([field_names_str]))
     if self.title == "FILE_TITLE":
       title_str = 'includeTitle="true"'
-    elif title is not None:
+    elif self.title is not None:
       title_str = "title=\"%s\"" % self.title
     else:
       title_str = None
     if title_str is not None:
       extra_attributes = "%s %s" % (title_str, extra_attributes)
-    return """<div class="js_include %s" url="%s"  newLevelForH1="%d" %s> </div>"""  % (classes_str,url, self.h1_level, extra_attributes)
+    return """<div class="js_include %s" url="%s"  newLevelForH1="%d" %s> </div>"""  % (classes_str,self.url, self.h1_level, extra_attributes)
 
 def static_include_path_maker(title, original_path, path_replacements={"content": "static", ".md": ""}, use_preexisting_file_with_prefix=True):
   include_path = str(original_path)
@@ -55,12 +55,12 @@ def static_include_path_maker(title, original_path, path_replacements={"content"
     return os.path.join(include_path, "%s.md" % dest_basename)
 
 
-def vishvAsa_include_maker(file_path, h1_level=4, classes=None, title=None, ):
+def vishvAsa_include_maker(file_path, h1_level=4, classes=None, title=None, extra_attributes=None):
   if not os.path.exists(file_path):
     logging.info(f"Does not exist - {file_path} . Skipping")
     return 
   url = file_path.replace("/home/vvasuki/gitland/vishvAsa/", "/").replace("/static/", "/")
-  return include_helper.Include(url=url, h1_level=h1_level, classes=classes, title=title).to_html_str()
+  return Include(url=url, h1_level=h1_level, classes=classes, title=title, extra_attributes=extra_attributes).to_html_str()
 
 
 def init_word_title_maker(text_matched, index, file_title):

@@ -3,17 +3,15 @@ from bs4 import BeautifulSoup, NavigableString
 
 import regex
 
-from indic_transliteration import sanscript
+from indic_transliteration import sanscript, aksharamukha_helper
 
 
 def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVANAGARI, aksharamukha_pre_options=[], aksharamukha_post_options=[], *args, **kwargs):
-  if source_script.lower() == "tamil":
-    source_script = source_script.capitalize()
+  if source_script.lower().startswith("tamil"):
+    if source_script.lower() == sanscript.TAMIL_SUB:
+      text = sanscript.SCHEMES[sanscript.TAMIL].transliterate_subscripted(text=text, _to=dest_script)
     dest_script = dest_script.capitalize()
-    aksharamukha_pre_options = ["TamilTranscribe"]
-  if len(aksharamukha_pre_options) + len(aksharamukha_post_options) > 0:
-    import aksharamukha.transliterate
-    c = aksharamukha.transliterate.process(src=source_script, tgt=dest_script, txt=text, nativize = True, pre_options = aksharamukha_pre_options, post_options = aksharamukha_post_options)
+    c = aksharamukha_helper.transliterate_tamil(text=text, dest_script=dest_script)
   else:
     text = regex.sub(r"(?<=\+\+\+\()(.+?)(?=\)\+\+\+)", r"{{\1}}", text)
     # Quotes should not be mistaken for transliteration togglers. 

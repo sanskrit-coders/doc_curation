@@ -10,8 +10,8 @@ def deduce_root(text):
 
 
 def fix_bad_anunaasikas(text):
-  # Beware of निम्न नृम्ण etc..
-  replacements = {r"म्([च-ञ])": r"ञ्\1", r"म्([क-ङ])": r"ङ्\1", r"म्([ट-ढ])": r"ण्\1", r"म्([त-ध])": r"न्\1", r"ं$": "म्", r"ं(\s+[अ-औ।॥])": r"म्\1", }
+  # Beware of निम्न नृम्ण, गम्यते etc..
+  replacements = {r"म्([च-ञ])": r"ञ्\1", r"म्([क-ङ])": r"ङ्\1", r"म्([ट-ढ])": r"ण्\1", r"म्([त-ध])": r"न्\1", r"म्([श])": r"ं\1", r"ं$": "म्", r"ं(\**\s+[अ-औ।॥])": r"म्\1", r"म्(\**\s+[क-नय-ह])": r"ं\1"}
   c = text
   for pattern, replacement in replacements.items():
     c = regex.sub(pattern, replacement, c)
