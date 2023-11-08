@@ -126,6 +126,8 @@ def make_paras(content, *args, **kwargs):
 
 
 def fix_markup(text):
+  text = text.replace("** **", " ")
+  text = text.replace("* *", " ")
   text = regex.sub(r"\*\*([^*\n]+?) *\*\*", r"**\1** ", text)
   return text
 
