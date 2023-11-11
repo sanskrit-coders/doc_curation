@@ -113,11 +113,11 @@ def make_paras(content, *args, **kwargs):
         lines_out.append("")
       lines_out.append(line)
     else:
-      if regex.fullmatch(r".+\.",  previous_line):
+      if regex.fullmatch(r".+[\.।॥]",  previous_line):
         lines_out.append("")
         lines_out.append(line)
       else:
-        if not regex.fullmatch(r"^[#>\-\*].+[^.]",  previous_line) and previous_line.strip() != "":
+        if not regex.fullmatch(r"^[#>\-\*].+",  previous_line) and not regex.fullmatch(r".+[.।॥] *", previous_line) and previous_line.strip() != "":
           lines_out[-1] = "%s %s" % (previous_line, line)
           lines_out[-1] = lines_out[-1].strip()
         else:

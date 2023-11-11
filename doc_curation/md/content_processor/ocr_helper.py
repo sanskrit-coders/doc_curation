@@ -93,6 +93,11 @@ def misc_sanskrit_typos(text):
   text = regex.sub("(?<=[ँ-९]):", "ः", text)
   return text
 
+def fix_avagraha_quotations(text):
+  text = regex.sub("(?<=\s)ऽ", "\"", text)
+  text = regex.sub("ऽ(?=\s)", "\"", text)
+  return text
+
 def replace_casewise(text, pattern, replacement):
   text = regex.sub(pattern.lower(), replacement.lower(), text)
   text = regex.sub(pattern.upper(), replacement.upper(), text)
