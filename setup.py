@@ -37,6 +37,9 @@ with open('extras.txt', 'r') as f:
         ] if s != ''
     ]
 
+install_all = install_reqs + install_extras
+
+
 setup(
     name='doc_curation',
 
@@ -76,7 +79,7 @@ setup(
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
 
     # What does your project relate to?
@@ -103,6 +106,7 @@ setup(
     extras_require={
         # 'dev': ['check-manifest'],
         'test': ['pytest'],
+        'all': install_all,
         'extras': install_extras,
     },
 

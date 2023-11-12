@@ -7,7 +7,7 @@ from collections import defaultdict
 DEFINITION_PATTERN_SINGLE_LINE = r"\n(\[\^(.+?)\]):(\s*\S[\s\S]+?(?=$|\n\[\^|\n<|\n#|\n\n)"
 DEFINITION_PATTERN_MULTI_LINE = r"\n(\[\^(.+?)\]): *\n(   .*|\n)+?(?=$|\n\[\^|\n<|\n#))"
 DEFINITION_PATTERN = r"\n(\[\^(.+?)\]):(\s*\S[\s\S]+?(?=$|\n\[\^|\n<|\n#|\n\n)| *\n(   .*|\n)+?(?=$|\n\[\^|\n<|\n#))"
-REF_PATTERN = r"\[\^(.+?)\]"
+REF_PATTERN = r"\[\^(.+?) *\]"
 
 
 class Footnote(object):
@@ -142,6 +142,12 @@ def insert_page_breaks(content):
 
 
 def add_page_id_to_ref_ids(content, page_pattern="[\s\S]+?<dg (\d+)/>"):
+  """
+  
+  :param content: 
+  :param page_pattern: Other common patterns r"[\s\S]+?\[\[([\d०-९]+)\]\]"
+  :return: 
+  """
   pages = list(regex.finditer(page_pattern, content))
   if len(pages) == 0:
     content = insert_page_breaks(content)

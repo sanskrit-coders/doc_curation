@@ -15,7 +15,7 @@ A package for curating doc file collections. Prominent features:
 * For detailed examples and help, please see individual module files in this package.
 
 
-## Installation or upgrade:
+## Installation or upgrade
 * For stable version `pip install doc_curation -U`
 * For latest code `pip install git+https://github.com/sanskrit-coders/doc_curation/@master -U`
 * [Web](https://pypi.python.org/pypi/doc_curation).
@@ -25,10 +25,10 @@ A package for curating doc file collections. Prominent features:
 - Enable Google Drive API and download service account key file having Google Driver API access. (See details in split_and_ocr_on_drive function documentation (eg. [github source](https://github.com/sanskrit-coders/doc_curation/blob/master/doc_curation/pdf/drive_ocr.py#L23)).)
 
 ```python
-from doc_curation import pdf
+from doc_curation.pdf import drive_ocr
 pdf_file = '/home/file.pdf'
 key_file = '/home/key.json'
-pdf.drive_ocr.split_and_ocr_on_drive(pdf_path=pdf_file, google_key=key_file, small_pdf_pages=5)
+drive_ocr.split_and_ocr_on_drive(pdf_path=pdf_file, google_key=key_file, small_pdf_pages=5)
 ```
 
 Command line invocation:
