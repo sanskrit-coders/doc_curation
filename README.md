@@ -16,8 +16,8 @@ A package for curating doc file collections. Prominent features:
 
 
 ## Installation or upgrade
-* For stable version `pip install doc_curation -U`
-* For latest code `pip install git+https://github.com/sanskrit-coders/doc_curation/@master -U`
+* For stable version `pip install doc_curation -U -e.[all]`
+* For latest code `pip install git+https://github.com/sanskrit-coders/doc_curation/@master -U -e.[all]`
 * [Web](https://pypi.python.org/pypi/doc_curation).
 
 ## Usage

@@ -1,1 +1,8 @@
 editdistance # Installation failed on WIndows in 2022 with an error requiring visual basic.
+selenium # Not needed for github action runs
+google-cloud-vision
+kraken
+kraken[pdf]
+pikepdf
+pdf2image
+img2pdf

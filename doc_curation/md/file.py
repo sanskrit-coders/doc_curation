@@ -310,7 +310,7 @@ class MdFile(object):
       if source_script is not None:
         title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script, maybe_use_dravidian_variant=maybe_use_dravidian_variant, mixed_languages_in_titles=mixed_languages_in_titles, max_length=max_length)
       if title_in_file_name == "":
-        raise ValueError(title_in_file_name)
+        raise ValueError(f"title: {title_in_file_name}")
       file_name = file_helper.clean_file_path("%s.md" % title_in_file_name)
       file_path = os.path.join(out_dir, file_name)
       if bits_dir_url is not None:
