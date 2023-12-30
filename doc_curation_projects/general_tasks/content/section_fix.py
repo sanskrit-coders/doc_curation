@@ -1,14 +1,7 @@
-import os
-
-import doc_curation.utils.sanskrit_helper
 import regex
 
-from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper, section_helper, details_helper, ocr_helper, footnote_helper
-from doc_curation.utils import patterns
-from doc_curation.md.file import MdFile
-from doc_curation.md.library import metadata_helper
-from indic_transliteration import sanscript, aksharamukha_helper
+from doc_curation.md import library
+from doc_curation.md.content_processor import include_helper
 
 
 def migrate_and_include_sections():

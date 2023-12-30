@@ -8,7 +8,7 @@ from doc_curation.md.content_processor import include_helper, section_helper, de
 from doc_curation.utils import patterns
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
-from indic_transliteration import sanscript, aksharamukha_helper
+from indic_transliteration import sanscript
 
 def ocr_fix(dir_path):
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))

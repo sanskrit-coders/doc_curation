@@ -4,7 +4,7 @@ from doc_curation.md import content_processor, library
 from doc_curation.md.content_processor import footnote_helper
 from doc_curation.md.file import MdFile
 from doc_curation.utils import sanskrit_helper
-from indic_transliteration import sanscript, aksharamukha_helper
+from indic_transliteration import sanscript
 
 # 
 def devanaagarify(dir_path, source_script):
@@ -28,6 +28,7 @@ def devanaagarify(dir_path, source_script):
   dry_run=False)
 
   if source_script == sanscript.TAMIL:
+    from indic_transliteration import aksharamukha_helper
     library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
 
 
