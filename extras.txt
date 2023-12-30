@@ -6,3 +6,4 @@ kraken[pdf]
 pikepdf
 pdf2image
 img2pdf
+lxml

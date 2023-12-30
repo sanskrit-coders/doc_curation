@@ -6,7 +6,6 @@ urllib3
 regex
 pandas
 requests
-lxml
 pytest
 pypandoc
 setuptools
