@@ -18,7 +18,7 @@ def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVA
     text = regex.sub("(?<=\n|^)>", r"≫", text)
 
     if sanscript.SCHEMES[source_script].is_roman:
-      text = regex.sub("(?<=<details><summary>)(.*Eng.*)</summary>([\s\S]+?)(?=</details>)", r"{{\1}}</summary>{{\2}}", text)
+      text = regex.sub(r"(?<=<details><summary>)(.*Eng.*)</summary>([\s\S]+?)(?=</details>)", r"{{\1}}</summary>{{\2}}", text)
     c = sanscript.transliterate(text, source_script, dest_script, suspend_on=set(("<", "{{")), suspend_off=set((">", "}}")))
     c = sanscript.SCHEMES[dest_script].dot_for_numeric_ids(c)
     c = c.replace("{{", "").replace("}}", "")
@@ -85,11 +85,11 @@ def fix_bold_italics(content):
     content = regex.sub(r"(\s*)≽", rf"{uniform_markup}\1", content)
     content = regex.sub(r"≼(\s*)", rf"\1{uniform_markup}", content)
     return content
-  content = _fix_markup(content=content, toggler_pattern="\*\*|__", uniform_markup="**")
+  content = _fix_markup(content=content, toggler_pattern=r"\*\*|__", uniform_markup="**")
   
   # Fix lists and italics
   content = regex.sub(r"(?<=^|\n)\* ", "- ", content)
-  content = _fix_markup(content=content, toggler_pattern="r(?<=[^\*_]|^)(\*|_)(?=[^\*_]|$)", uniform_markup="_")
+  content = _fix_markup(content=content, toggler_pattern=r"(?<=[^\*_]|^)(\*|_)(?=[^\*_]|$)", uniform_markup="_")
   return content
 
 

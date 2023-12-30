@@ -1,15 +1,11 @@
-import logging
 import os.path
 
-import regex
-from doc_curation.md.library import metadata_helper
 from curation_utils.file_helper import get_storage_name
-
-from doc_curation.md import library, content_processor
+from doc_curation.md import library
 from doc_curation.md.file import MdFile
-from indic_transliteration import sanscript, aksharamukha_helper
-
+from doc_curation.md.library import metadata_helper
 from doc_curation.scraping.misc_sites import meghamaalaa
+from indic_transliteration import sanscript, aksharamukha_helper
 
 
 def upanishat():
