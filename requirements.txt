@@ -1,6 +1,5 @@
 curation_utils
 indic_transliteration
-aksharamukha
 wordcloud
 urllib3
 regex
