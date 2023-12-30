@@ -25,7 +25,7 @@ def title_fix():
   
   # md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/TIkA", file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d_\\d\\d", os.path.basename(x))) > 0)
   # library.metadata_helper.add_init_words_to_title(md_files=md_files, target_title_length=30, dry_run=False)
-  library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/abheda-darshanam/praty-abhijnA/utpaladevaH_Ishvara-pratyabhiJNA-kArikA/vRttiH/abhinava-gupta-vivRti-vimarshinI", fn=metadata_helper.set_filename_from_title, dry_run=False)
+  library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/parichaya-sanxepAH/yatIndra-mata-dIpikA/sarva-prastutiH", fn=metadata_helper.set_filename_from_title, dry_run=False)
 
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/bhAgavatam", fn=metadata_helper.remove_adhyaaya_word_from_title, dry_run=False)
 

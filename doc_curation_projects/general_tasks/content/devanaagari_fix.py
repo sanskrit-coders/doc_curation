@@ -6,7 +6,7 @@ from doc_curation.md.file import MdFile
 from doc_curation.utils import sanskrit_helper
 from indic_transliteration import sanscript, aksharamukha_helper
 
-
+# 
 def devanaagarify(dir_path, source_script):
   def content_transformer(c, m):
     c = footnote_helper.define_footnotes_near_use(c)
@@ -39,6 +39,6 @@ def fix_anunaasikas(dir_path):
 
 if __name__ == '__main__':
   pass
-  fix_anunaasikas(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/venkaTanAthaH/AhAra-niyamaH.md")
+  fix_anunaasikas(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/gadyam/shrI-vaiShNava-kRtam/nuggehaLLi-janArdanAchAryaH/bhagavat-pAdAdi-keshAnta-stutiH.md")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/vAyu-purANam/dvi-khaNDa-saMskaraNam", content_transformer=lambda x, y: sanskrit_helper.fix_repha_duplication(x), dry_run=False, silent_iteration=False)
-  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/mADabhUShi-vIrarAghava-sachcharitra-sudhA-nidhiH.md", source_script="telugu")
+  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/venkaTanAthaH/deshika-prabandham_1894.md", source_script="tamil")
