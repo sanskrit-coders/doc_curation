@@ -1,13 +1,13 @@
 import logging
-from bs4 import BeautifulSoup, NavigableString
 
 import regex
-
-from indic_transliteration import sanscript, aksharamukha_helper
+from bs4 import BeautifulSoup, NavigableString
+from indic_transliteration import sanscript
 
 
 def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVANAGARI, aksharamukha_pre_options=[], aksharamukha_post_options=[], *args, **kwargs):
   if source_script.lower().startswith("tamil"):
+    from indic_transliteration import aksharamukha_helper
     if source_script.lower() == sanscript.TAMIL_SUB:
       text = sanscript.SCHEMES[sanscript.TAMIL].transliterate_subscripted(text=text, _to=dest_script)
     dest_script = dest_script.capitalize()
