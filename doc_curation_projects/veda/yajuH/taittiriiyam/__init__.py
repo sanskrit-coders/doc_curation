@@ -20,6 +20,9 @@ def migrate_and_include_Rk_details(md_file, rk_title_pattern="विश्वा
   rk_title = None
   rk_text_path = None
   for index, detail_tag in enumerate(details):
+    if detail_tag.parent.name == "div":
+      # Likely to already be an include
+      continue
     detail = details_helper.Detail.from_soup_tag(detail_tag=detail_tag)
     if regex.fullmatch(rk_title_pattern, detail.title):
       rk_title = include_helper.init_word_title_maker(text_matched=detail.content, index=index, file_title=metadata["title"])

@@ -22,6 +22,7 @@ def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True,
     text = devanaaagari_scheme.remove_punctuation(in_string=text)
   text = remove_parenthized_text(text)
   text = fix_lazy_anusvaara(text=text, script=script)
+  text = regex.sub(r"[*_\-]", "", text)
   init_words = text.split()[0:num_words]
   title = None
   if len(init_words) > 0:

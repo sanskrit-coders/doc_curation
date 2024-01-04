@@ -149,7 +149,13 @@ def old_include_remover(inc, *args, **kwargs):
   :param inc: 
   :return: 
   """
-  if not "includetitle" in inc.attrs:
+  if "title_to_exclude" in kwargs:
+    if not inc.attrs["title"] == kwargs["title_to_exclude"]:
+      return inc.decompose()
+  elif "url_to_exclude" in kwargs:
+    if not regex.fullmatch(kwargs["url_to_exclude"], inc.attrs["url"]):
+      return inc.decompose()
+  elif not "includetitle" in inc.attrs:
     return inc.decompose()
 
 
@@ -166,7 +172,7 @@ def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=[
     else:
       title = sanscript.transliterate(target_dir, sanscript.OPTITRANS, sanscript.DEVANAGARI)
   if os.path.exists(alt_file_path):
-    html = include_helper.Include(url=alt_url, h1_level=h1_level, classes=classes, title=title).to_html_str()
+    html = Include(url=alt_url, h1_level=h1_level, classes=classes, title=title).to_html_str()
     html = f"<body>{html}</body>"
     return BeautifulSoup(html, 'html.parser').select_one("div")
   else:
@@ -252,6 +258,8 @@ def alt_include_adder(inc, current_file_path, source_dir, alt_dirs, hugo_base_di
   h1_level = inc["newlevelforh1"]
   h1_level = int(h1_level) + 1
   for x in alt_dirs:
+    if x in ["mUlam"] and regex.fullmatch(".+vedAH_yajuH.+(Rk|ekAgni).+", file_path):
+      continue
     new_include = make_alt_include(url=url, source_dir=source_dir, file_path=file_path, h1_level=h1_level, target_dir=x)
     inc.insert_after("\n\n", new_include, "\n\n")
 
