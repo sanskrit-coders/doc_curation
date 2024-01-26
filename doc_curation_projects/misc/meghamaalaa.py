@@ -1,4 +1,4 @@
-import os.path
+import os.path, regex
 
 from curation_utils.file_helper import get_storage_name
 from doc_curation.md import library
@@ -88,6 +88,25 @@ def puraaNam():
 
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-01/श्रीविष्णुपुराणम्-amsa-01-ady-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/01/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
 
+
+def raamaayaNam():
+  pass
+  sarga_detector = lambda x: regex.match("\D*(\d\d+) *S.+rga", x).group(1)
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-ramayanam-content/srimad-ramayanam-baala-kaanda-sarga-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/1_bAlakANDam", start_index=1, filename_from_title=sarga_detector)
+
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-ayodhya-kaanda/01-sarga-अयोध्याकाण्डम्/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/2_ayodhyAkANDam", start_index=66, filename_from_title=sarga_detector)
+
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-aranya-kaanda/01-sarga-%E0%A4%85%E0%A4%AF%E0%A5%8B%E0%A4%A7%E0%A5%8D%E0%A4%AF%E0%A4%BE%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%AE%E0%A5%8D-2/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/3_araNyakANDam", start_index=1, filename_from_title=sarga_detector)
+
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-kishkinda-kanda/01-sarga-%E0%A4%95%E0%A4%BF%E0%A4%B7%E0%A5%8D%E0%A4%95%E0%A4%BF%E0%A4%A8%E0%A5%8D%E0%A4%A7%E0%A4%BE%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/4_kiShkindhAkANDam", start_index=1, filename_from_title=sarga_detector)
+
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-ramayan-sundara-kaanda/01-sarga-%E0%A4%B8%E0%A5%81%E0%A4%A8%E0%A5%8D%E0%A4%A6%E0%A4%B0%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/5_sundarakANDam", start_index=1, filename_from_title=sarga_detector)
+
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-yuddha-kaanda/01-sarga-%E0%A4%AF%E0%A5%81%E0%A4%A6%E0%A5%8D%E0%A4%A7%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/6_yuddhakANDam", start_index=1, filename_from_title=sarga_detector)
+
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-uttara-kaanda/01-sarga-%E0%A4%89%E0%A4%A4%E0%A5%8D%E0%A4%A4%E0%A4%B0%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/7_uttarakANDam", start_index=1, filename_from_title=sarga_detector)
+
+
 def rahasya():
   base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/rahasya-granthaH/"
   base_url = "https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/"
@@ -112,13 +131,14 @@ def bhagavad_vishayam():
   # meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-03/03-01-12000-36000-padi/", os.path.join(base_dir, "12k/03") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
   # meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-04/04-01-12000-36000-padi/", os.path.join(base_dir, "12k/04") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
 
-  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
+  # library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
   # library.apply_function(dir_path=base_dir, fn=metadata_helper.set_filename_from_title, dry_run=False)
 
 
 if __name__ == '__main__':
   pass
-  bhagavad_vishayam()
+  raamaayaNam()
+  # bhagavad_vishayam()
   # upanishat()
   # shriibhaashya()
   # misc()

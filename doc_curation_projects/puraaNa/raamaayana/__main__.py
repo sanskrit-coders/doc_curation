@@ -2,7 +2,7 @@ import logging
 
 import regex
 
-from doc_curation_projects import raamaayana
+from doc_curation_projects.puraaNa import raamaayana
 from doc_curation_projects.puraaNa.raamaayana import  content
 from doc_curation.md.file import MdFile
 from doc_curation.md import library
@@ -54,4 +54,6 @@ def get_numbers():
 # library.devanaagarify_titles(md_files=raamaayana.get_adhyaaya_md_files(md_file_path), dry_run=False)
 
 
-content.update()
+
+# content.update()
+

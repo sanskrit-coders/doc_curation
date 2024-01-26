@@ -190,11 +190,11 @@ def remove_adhyaaya_word_from_title(md_file, adhyaaya_pattern="([अऽ]ध्�
     removal_allower=lambda x: len(list(regex.finditer(adhyaaya_pattern, x))) > 0, 
     set_in_content=set_in_content, rename=rename, dry_run=dry_run)
   
-def set_title_from_content(md_file, title_extractor, rename=True, log_level=logging.INFO, dry_run=False):
+def set_title_from_content(md_file, title_extractor, rename=True, log_level=logging.INFO, dry_run=False, *args, **kwargs):
   [metadata, content] = md_file.read()
   title = metadata["title"]
   if regex.fullmatch(r"[\d०-९೦-೯\- ]+", title):
-    title_extracted = title_extractor(content)
+    title_extracted = title_extractor(content, *args, **kwargs)
     if title_extracted is not None:
       title = f"{title.strip()} {title_extracted}"
       md_file.set_title(title=title, dry_run=dry_run)

@@ -14,8 +14,12 @@ import aksharamukha
 
 def get_text(url, source_script=sanscript.DEVANAGARI):
   soup = scraping.get_soup(url=url)
-  title = soup.select_one("h1.entry-title").text
-  content_tag = soup.select_one("#chapter-content")
+  title_tag = soup.select_one("h1.elementor-heading-title")
+  if title_tag is not None:
+    title = title_tag.text
+  else:
+    logging.fatal("Can't grok title.")
+  content_tag = soup.select_one(".elementor-widget-theme-post-content")
   content = md.get_md_with_pandoc(content_in=str(content_tag), source_format="html")
   content = content.replace("\|", "।")
   content = regex.sub("।।+", "॥", content)
@@ -47,17 +51,18 @@ def dump_text(url, dest_path, source_script=sanscript.DEVANAGARI, overwrite=Fals
 def dump_series(url, dest_path, start_index=None, filename_from_title=None, source_script=sanscript.DEVANAGARI, overwrite=False):
   soup = scraping.get_soup(url=url)
   logging.info(f"Dumping series starting {url}")
-  parts_tag = soup.select_one("#chapter-content").find_previous_sibling('div')
+  parts_tag = soup.select_one(".related-posts-meghamala")
   links = list(parts_tag.select("a"))
   for index, link in enumerate(links):
     if filename_from_title is not None:
       file_name = f"{get_storage_name(text=filename_from_title(link.text), max_length=20, source_script=source_script)}.md"
     else:
       file_name = ".md"
-    if not start_index is None:
-      file_name = f"{start_index - index :02d}_{file_name}"
-    else:
-      file_name = f"{index + 1:02d}_{file_name}"
+    if not regex.match("\d+", file_name):
+      if not start_index is None:
+        file_name = f"{start_index - index :02d}_{file_name}"
+      else:
+        file_name = f"{index + 1:02d}_{file_name}"
     file_name = file_name.replace("_.", ".")
     dest_subpath = os.path.join(dest_path, file_name)
     dump_text(url=link["href"], dest_path=dest_subpath, source_script=source_script, overwrite=overwrite)

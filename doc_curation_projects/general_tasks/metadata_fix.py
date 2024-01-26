@@ -25,11 +25,12 @@ def title_fix():
   
   # md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH/content/yajuH/taittirIyam/sUtram/ApastambaH/gRhyam/TIkA", file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d_\\d\\d", os.path.basename(x))) > 0)
   # library.metadata_helper.add_init_words_to_title(md_files=md_files, target_title_length=30, dry_run=False)
-  library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/parichaya-sanxepAH/yatIndra-mata-dIpikA/sarva-prastutiH", fn=metadata_helper.set_filename_from_title, dry_run=False)
+  # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/parichaya-sanxepAH/yatIndra-mata-dIpikA/sarva-prastutiH", fn=metadata_helper.set_filename_from_title, dry_run=False)
 
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/bhAgavatam", fn=metadata_helper.remove_adhyaaya_word_from_title, dry_run=False)
 
   # library.apply_function(fn=metadata_helper.set_title_from_content, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/parameshvara-saMhitA", title_extractor=metadata_helper.iti_naama_title_extractor)
+  # library.apply_function(fn=metadata_helper.set_title_from_content, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/sampradAyaH/vIra-shaivaH/tattvam/siddhAnta-shikhA-maNiH", title_extractor=metadata_helper.iti_naama_title_extractor, conclusion_pattern=".+\n?.+परिच्छेदः")
 
 
   ## KANNADA
@@ -38,8 +39,8 @@ def title_fix():
 
 
 if __name__ == '__main__':
-  title_fix()
-  # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnakara-darshanam/prakaraNa-granthaH", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
+  # title_fix()
+  library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/brAhmaNam/sarva-prastutiH/3/1", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
   # arrangement.shift_indices(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/gopAla-deshikaH/Ahnikam_AhnikArtha-prakAshikA/", start_index=21, new_index_offset=-18)
 
   # library.apply_function(

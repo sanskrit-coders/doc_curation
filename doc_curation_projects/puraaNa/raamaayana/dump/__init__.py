@@ -31,7 +31,7 @@ def fix_metadata_and_paths(base_dir, base_dir_ref, sarga_identifier=get_adhyaaya
     sarga_id = sarga_identifier(p)
     ref_md_path = sarga_id_to_path.get(sarga_id, None)
     if ref_md_path is None:
-      logging.info(f"Could not find ref for {p}")
+      logging.info(f"Could not find ref for {p}, with id {sarga_id}")
       continue
     dest_path = ref_md_path.replace(base_dir_ref, base_dir)
     logging.info("Moving to %s from %s", dest_path, p)

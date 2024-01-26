@@ -12,7 +12,8 @@ def fix_audio_tags():
 def details_fix(dir_path):
 
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_MULTI_LINE_SHLOKA_DOUBLE_DANDA))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_MULTI_LINE_SHLOKA_DOUBLE_DANDA))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_2LINE_SHLOKA_NO_NUM))
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/1.md", content_transformer=details_helper.insert_duplicate_before)
 
@@ -51,9 +52,9 @@ def misc_typos(dir_path):
 if __name__ == '__main__':
   # fix_audio_tags()
   # misc_typos("/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/sage-bloodlines/AngIrasaH/prajAH_khyAtyAH/bharadvAjaH/bhAradvAjaH/bannanje-kulam/articles/govindAlokaH")
-  # fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/jyotiSham/content/observation/history/hindu/articles/RNI/equinoctial-full-moon_brahmANDa-purANa_summer-solstice_maghA.md")
+  # fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/gadyam/shrI-vaiShNava-kRtam/venkaTanAthaH/TIkA/shaThakopa_on_raghuvIra.md")
   # section_fix()
-  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/jayAkhya-saMhitA")
+  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/AraNyakam/sarva-prastutiH/04_pitR-medhAdi/11_yama-yaJNaH.md")
 
 
   pass

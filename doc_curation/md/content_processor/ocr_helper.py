@@ -135,6 +135,21 @@ def fix_foxit(text):
   text = regex.sub(r"(\S) ᐀्", r"र्\1", text)
   return text
 
+def fix_poppler_ocular(text):
+  text = regex.sub(r"([ \-])\�(([क-ह]्)*([क-ह]))(?<![ा-ॏ])", r"\1\2ि", text)
+  text = regex.sub("(([क-ह]्)*([क-ह][ा-ॏ]?))\�(?=[ \-])", r"र्\1", text)
+  return text
+
 def fix_dangling_maatraas(text):
   text = regex.sub(r"(\*+)(\s+)([ऀ-ःऺ-ॏ])", r"\3\1", text)
+  return text
+
+def fix_pandoc_md(text):
+  text = regex.sub(r" ", r" ", text)
+  text = regex.sub(r"\\\*", r"_", text)
+  text = regex.sub(r"\\_", r"_", text)
+  text = regex.sub("(?<=\n) +", "", text)
+  text = regex.sub("\*\*\*\*", "", text)
+  from doc_curation.md.content_processor import space_helper
+  text = space_helper.fix_markup(text=text)
   return text

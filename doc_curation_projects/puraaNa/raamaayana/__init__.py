@@ -4,6 +4,7 @@ import regex
 import doc_curation.md.library.arrangement
 from doc_curation.md.file import MdFile
 from doc_curation.md import library
+from doc_curation.md.library import arrangement
 
 
 def get_adhyaaya_md_files(md_file_path):
@@ -14,9 +15,12 @@ def get_adhyaaya_md_files(md_file_path):
 def get_adhyaaya_id(p):
     p = str(p)
     kaanda_index_match = regex.search("/0?(\d)_", p)
-    sarga_index_match = regex.search("(\d\d\d)", p)
+    sarga_index_match = regex.search(r"/(\d+)\.md", p)
+    if sarga_index_match is None:
+        sarga_index_match = regex.search(r"/(\d\d\d)", p)
     if kaanda_index_match is not None and sarga_index_match is not None:
-        sarga_id = "%s-%s" % (kaanda_index_match.group(1), sarga_index_match.group(1))
+        sarga_id = "%03d" % int(sarga_index_match.group(1))
+        sarga_id = "%s-%s" % (kaanda_index_match.group(1), sarga_id)
         return sarga_id
     return None
 
