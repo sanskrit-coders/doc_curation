@@ -13,7 +13,7 @@ from indic_transliteration import sanscript
 def title_fix():
   ## DEVANAGARI
   # library.apply_function(dir_path="/home/vvasuki/vvasuki-git/pALi/content", fn=MdFile.ensure_ordinal_in_title, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
-  # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/shrautam/sarva-prastutiH", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
+  library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/drAviDa-pAThaH/govindarAja-bhUShaNam/7_uttarakANDam", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, overwrite=True, dry_run=False)
   
   ##### General
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/notes-hugo/content/sapiens/branches/Trans-eurasian/japan/spirituality/hagakure/wilson-translation", fn=metadata_helper.strip_index_from_title, dry_run=False)
@@ -39,8 +39,8 @@ def title_fix():
 
 
 if __name__ == '__main__':
-  # title_fix()
-  library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/brAhmaNam/sarva-prastutiH/3/1", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
+  title_fix()
+  # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/brAhmaNam/sarva-prastutiH/3/1", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False)
   # arrangement.shift_indices(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/gopAla-deshikaH/Ahnikam_AhnikArtha-prakAshikA/", start_index=21, new_index_offset=-18)
 
   # library.apply_function(

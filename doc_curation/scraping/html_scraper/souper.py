@@ -173,7 +173,7 @@ def dump_series(start_url, out_path, dumper, next_url_getter, end_url=None, inde
     assert soup is not None, "Dumper returning None soup"
     if next_url == end_url:
       break
-    next_url = next_url_getter(soup)
+    next_url = next_url_getter(soup, url=next_url)
     index = index + 1
     # break # For testing
   library.fix_index_files(dir_path=out_path, dry_run=dry_run)

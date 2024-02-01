@@ -116,10 +116,10 @@ def get_title_from_filename(file_path, transliteration_target, maybe_use_dravidi
     title = title.capitalize()
   return title
 
-def set_title_from_filename(md_file, transliteration_target=sanscript.DEVANAGARI, dry_run=False, maybe_use_dravidian_variant=None):
+def set_title_from_filename(md_file, transliteration_target=sanscript.DEVANAGARI, overwrite=True, dry_run=False, maybe_use_dravidian_variant=None):
   # logging.debug(md_file.file_path)
   title = get_title_from_filename(file_path=md_file.file_path, transliteration_target=transliteration_target, maybe_use_dravidian_variant=maybe_use_dravidian_variant)
-  md_file.set_title(dry_run=dry_run, title=title)
+  md_file.set_title(dry_run=dry_run, overwrite=overwrite, title=title)
 
 
 def prepend_file_index_to_title(md_file, dry_run):
@@ -228,7 +228,7 @@ def fix_field_values(md_files,
       if post_process_fn is not None:
         value = post_process_fn(value)
       if value != None:
-        md_file.set_frontmatter_field_value(field_name=md_frontmatter_field_name, value=value, dry_run=dry_run)
+        md_file.set_frontmatter_field_value(field_name=md_frontmatter_field_name, value=value, overwrite=True, dry_run=dry_run)
 
 
 

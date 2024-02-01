@@ -1,4 +1,5 @@
 from indic_transliteration import sanscript
+from collections import OrderedDict
 
 from curation_utils import scraping
 from urllib.parse import urljoin
@@ -53,16 +54,20 @@ def dump_series(url, dest_path, start_index=None, filename_from_title=None, sour
   logging.info(f"Dumping series starting {url}")
   parts_tag = soup.select_one(".related-posts-meghamala")
   links = list(parts_tag.select("a"))
+  index_to_link = OrderedDict()
   for index, link in enumerate(links):
+    index_to_link[index + 1] = link
+  if start_index is not None:
+    for index in [x for x in index_to_link.keys()]:
+      if index < start_index:
+        index_to_link.pop(index)
+  for index, link in index_to_link.items():
     if filename_from_title is not None:
       file_name = f"{get_storage_name(text=filename_from_title(link.text), max_length=20, source_script=source_script)}.md"
     else:
       file_name = ".md"
     if not regex.match("\d+", file_name):
-      if not start_index is None:
-        file_name = f"{start_index - index :02d}_{file_name}"
-      else:
-        file_name = f"{index + 1:02d}_{file_name}"
+      file_name = f"{index-1:02d}b_{file_name}"
     file_name = file_name.replace("_.", ".")
     dest_subpath = os.path.join(dest_path, file_name)
     dump_text(url=link["href"], dest_path=dest_subpath, source_script=source_script, overwrite=overwrite)

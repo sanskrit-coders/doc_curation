@@ -91,6 +91,7 @@ def misc_sanskrit_typos(text):
   text = regex.sub("[ञङम](्[त-न])\n", r"न\1", text)
   text = regex.sub("[ञनङ](्[प-म])\n", r"म्\1", text)
   text = regex.sub("(?<=[ँ-९]):", "ः", text)
+  text = regex.sub("ळ", "ल", text)
   return text
 
 def fix_avagraha_quotations(text):

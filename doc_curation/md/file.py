@@ -228,13 +228,16 @@ class MdFile(object):
               for chunk in chunks:
                 out_file_obj.write(chunk)
 
-  def set_title(self, title, dry_run):
-    self.set_frontmatter_field_value(field_name="title", value=title, dry_run=dry_run)
+  def set_title(self, title, overwrite=True, dry_run=False):
+    self.set_frontmatter_field_value(field_name="title", value=title, overwrite=overwrite, dry_run=dry_run)
     
-  def set_frontmatter_field_value(self, field_name, value, dry_run):
+  def set_frontmatter_field_value(self, field_name, value, overwrite=True, dry_run=False):
     metadata, content = self.read()
-    if field_name in metadata and metadata[field_name] == value:
-      return 
+    if field_name in metadata: 
+      if metadata[field_name] == value:
+        return 
+      elif not overwrite:
+        return 
     logging.info(f"Setting %s: %s (← %s) of {self.file_path}", field_name, value, metadata.get(field_name, "None"))
     if not dry_run:
       metadata[field_name] = value

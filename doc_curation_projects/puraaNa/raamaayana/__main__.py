@@ -17,7 +17,7 @@ logging.basicConfig(
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 
-md_file_path = "/home/vvasuki/gitland/vishvAsa/purANam/content/rAmAyaNam"
+md_file_path = "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/rAmAyaNam"
 
 def get_titles_english():
   titles_english = MdFile.get_metadata_field_values(md_files=raamaayana.get_adhyaaya_md_files(md_file_path), field_name="title_english")
@@ -49,7 +49,6 @@ def get_numbers():
 #   post_process_fn=lambda x: sanscript.transliterate(x, sanscript.OPTITRANS, sanscript.DEVANAGARI), md_frontmatter_field_name="title", dry_run=False
 # )
 # library.set_filenames_from_titles(dir_path=md_file_path, source_script=sanscript.DEVANAGARI, file_name_filter=lambda x: regex.match("^\\d\\d\\d_", os.path.basename(x)) is not None, dry_run=False)
-
 
 # library.devanaagarify_titles(md_files=raamaayana.get_adhyaaya_md_files(md_file_path), dry_run=False)
 
