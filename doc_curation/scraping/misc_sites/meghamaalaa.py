@@ -49,7 +49,7 @@ def dump_text(url, dest_path, source_script=sanscript.DEVANAGARI, overwrite=Fals
   md_file = MdFile(file_path=dest_path)
   md_file.dump_to_file(metadata={"title": title}, content=content, dry_run=dry_run)
 
-def dump_series(url, dest_path, start_index=None, filename_from_title=None, source_script=sanscript.DEVANAGARI, overwrite=False):
+def dump_series(url, dest_path, start_index=None, end_index=None, filename_from_title=None, source_script=sanscript.DEVANAGARI, overwrite=False):
   soup = scraping.get_soup(url=url)
   logging.info(f"Dumping series starting {url}")
   parts_tag = soup.select_one(".related-posts-meghamala")
@@ -60,6 +60,10 @@ def dump_series(url, dest_path, start_index=None, filename_from_title=None, sour
   if start_index is not None:
     for index in [x for x in index_to_link.keys()]:
       if index < start_index:
+        index_to_link.pop(index)
+  if end_index is not None:
+    for index in [x for x in index_to_link.keys()]:
+      if index > end_index:
         index_to_link.pop(index)
   for index, link in index_to_link.items():
     if filename_from_title is not None:

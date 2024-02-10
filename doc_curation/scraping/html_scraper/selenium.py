@@ -29,12 +29,11 @@ def get_browser():
   browser.implicitly_wait(2)
   return browser
 
-def get_soup(x):
-  browser = get_browser()
-  if hasattr(x, "page_source"):
+def get_soup(browser):
+  if hasattr(browser, "page_source"):
     return BeautifulSoup(browser.page_source, features="html.parser")
   else:
-    elementHTML = x.get_attribute('outerHTML')
+    elementHTML = browser.get_attribute('outerHTML')
     return BeautifulSoup(elementHTML,'html.parser')
 
 def get_text(browser, text_css_selector):

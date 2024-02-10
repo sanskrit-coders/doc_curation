@@ -15,9 +15,7 @@ def get_adhyaaya_md_files(md_file_path):
 def get_adhyaaya_id(p):
     p = str(p)
     kaanda_index_match = regex.search("/0?(\d)_", p)
-    sarga_index_match = regex.search(r"/(\d+)([a-z]?)\.md", p)
-    if sarga_index_match is None:
-        sarga_index_match = regex.search(r"/(\d\d\d)([a-z]?)", p)
+    sarga_index_match = regex.search(r"/(\d\d\d)([a-z]?)", p)
     if kaanda_index_match is not None and sarga_index_match is not None:
         sarga_id = f"{int(sarga_index_match.group(1)):03}{sarga_index_match.group(2)}"
         sarga_id = "%s-%s" % (kaanda_index_match.group(1), sarga_id)

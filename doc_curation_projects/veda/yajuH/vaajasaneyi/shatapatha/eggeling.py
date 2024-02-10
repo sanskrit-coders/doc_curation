@@ -41,20 +41,21 @@ def dest_path_maker(url, base_dir, *args, **kwargs):
 
 
 def special_pages():
-  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe12/sbe1202.htm", outfile_path=os.path.join(base_dir, "meta/", "intros/_index.md"))
-  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe26/sbe2602.htm", outfile_path=os.path.join(base_dir, "meta/", "intros/v2.md"))
-  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe41/sbe4102.htm", outfile_path=os.path.join(base_dir, "meta/", "indices/v3.md"))
-  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe43/sbe4302.htm", outfile_path=os.path.join(base_dir, "meta/", "indices/v4.md"))
-  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe44/sbe44002.htm", outfile_path=os.path.join(base_dir, "meta/", "indices/v5.md"))
+  base_dir = os.path.join(os.path.dirname(base_dir), "meta", "eggeling")
+  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe12/sbe1202.htm", outfile_path=os.path.join(base_dir, "intros/_index.md"))
+  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe26/sbe2602.htm", outfile_path=os.path.join(base_dir, "intros/v2.md"))
+  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe41/sbe4102.htm", outfile_path=os.path.join(base_dir, "intros/v3.md"))
+  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe43/sbe4302.htm", outfile_path=os.path.join(base_dir, "intros/v4.md"))
+  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe44/sbe44002.htm", outfile_path=os.path.join(base_dir, "intros/v5.md"))
 
-  doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe26/sbe2679.htm", outfile_path=os.path.join(base_dir, "meta/", "indices/v2.md"))
-  doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe44/sbe44125.htm", outfile_path=os.path.join(base_dir, "meta/", "indices/v5.md"))
+  doc_curation.scraping.sacred_texts.dump_meta_article(url="https://sacred-texts.com/hin/sbr/sbe26/sbe2679.htm", outfile_path=os.path.join(base_dir, "indices/v2.md"))
+  doc_curation.scraping.sacred_texts.dump_meta_article(url="https://sacred-texts.com/hin/sbr/sbe44/sbe44125.htm", outfile_path=os.path.join(base_dir, "indices/v5.md"))
 
-  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe12/sbe1264.htm", outfile_path=os.path.join(base_dir, "meta/", "errata/v1.md"))
-  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe26/sbe2680.htm", outfile_path=os.path.join(base_dir, "meta/", "errata/v2.md"))
-  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe41/sbe4167.htm", outfile_path=os.path.join(base_dir, "meta/", "errata/v3.md"))
-  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe43/sbe4376.htm", outfile_path=os.path.join(base_dir, "meta/", "errata/v4.md"))
-  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe44/sbe44126.htm", outfile_path=os.path.join(base_dir, "meta/", "errata/v5.md"))
+  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe12/sbe1264.htm", outfile_path=os.path.join(base_dir, "errata/v1.md"))
+  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe26/sbe2680.htm", outfile_path=os.path.join(base_dir, "errata/v2.md"))
+  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe41/sbe4167.htm", outfile_path=os.path.join(base_dir, "errata/v3.md"))
+  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe43/sbe4376.htm", outfile_path=os.path.join(base_dir, "errata/v4.md"))
+  # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbr/sbe44/sbe44126.htm", outfile_path=os.path.join(base_dir, "errata/v5.md"))
 
 def missing_pages():
   # sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbr/sbe41/sbe4139.htm", max_items=1, base_dir=base_dir, dest_path_maker=dest_path_maker)
@@ -62,7 +63,7 @@ def missing_pages():
   sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbr/sbe43/sbe4347.htm", max_items=1, base_dir=base_dir, dest_path_maker=dest_path_maker)
 
 
-def fix_corss_page_footnotes(dry_run=False):
+def fix_cross_page_footnotes(dry_run=False):
   md_files = arrangement.get_md_files_from_path(dir_path=base_dir)
   for md_file in md_files:
     (metadata, old_content) = md_file.read()
@@ -88,9 +89,9 @@ def fix_corss_page_footnotes(dry_run=False):
 
 if __name__ == '__main__':
   pass
-  fix_corss_page_footnotes()
+  # fix_cross_page_footnotes()
   # missing_pages()
-  # special_pages()
+  special_pages()
   # sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbr/sbe12/sbe1203.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)
   # sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbr/sbe26/sbe2603.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)
   # sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbr/sbe41/sbe4103.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)

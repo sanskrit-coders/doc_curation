@@ -131,6 +131,10 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
       date_obj = date_obj_alt
       file_path = get_file_path(date_obj, dir_path, file_name)
 
+  if post_html is None:
+    logging.warning(f"Could not get post html : {url}")
+    return False
+
   # Date may have been determined after get_post_html() . So, rechecking.
   if os.path.exists(file_path):
     logging.warning("Skipping %s : exists", file_name)

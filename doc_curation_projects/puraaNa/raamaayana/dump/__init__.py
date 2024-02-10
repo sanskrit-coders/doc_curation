@@ -1,4 +1,5 @@
 import glob
+import regex
 import logging
 import os
 import shutil
@@ -26,6 +27,7 @@ def fix_metadata_and_paths(base_dir, base_dir_ref, sarga_identifier=get_adhyaaya
 
   paths = sorted(glob.glob(base_dir + "/**/*.md", recursive=True))
   paths = [path for path in paths if os.path.basename(path) != "_index.md" and "0/" not in path]
+  paths = [path for path in paths if regex.match("\d\d\d[_.]", os.path.basename(path))]
   sarga_id_to_path = get_sarga_id_to_path(base_dir_ref=base_dir_ref, sarga_identifier=sarga_identifier)
   for p in paths:
     sarga_id = sarga_identifier(p)
@@ -34,6 +36,8 @@ def fix_metadata_and_paths(base_dir, base_dir_ref, sarga_identifier=get_adhyaaya
       logging.info(f"Could not find ref for {p}, with id {sarga_id}")
       continue
     dest_path = ref_md_path.replace(base_dir_ref, base_dir)
+    if dest_path == p:
+      return 
     logging.info("Moving to %s from %s", dest_path, p)
     if not dry_run:
       os.makedirs(os.path.dirname(dest_path), exist_ok=True)

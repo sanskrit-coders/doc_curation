@@ -230,7 +230,7 @@ def section_hash_by_index(section):
     return 999999
 
 
-def merge_sections(md_file, md_files, out_path=None, section_hasher=lambda x: sanscript.transliterate(x.title, _to=sanscript.DEVANAGARI), dry_run=False):
+def merge_sections(md_file, md_files, out_path=None, section_hasher=lambda x: sanscript.transliterate(x.title, _to=sanscript.DEVANAGARI).strip(), prepend=False, dry_run=False):
   from doc_curation.md import file
 
   content = ""
@@ -239,7 +239,10 @@ def merge_sections(md_file, md_files, out_path=None, section_hasher=lambda x: sa
     md_files = md_files(md_file.file_path)
   if isinstance(md_files[0], str):
     md_files = [file.MdFile(x) for x in md_files]
-  for md_to_merge in [md_file] + md_files:
+  final_md_files = [md_file] + md_files
+  if prepend:
+    final_md_files = md_files + [md_file]
+  for md_to_merge in final_md_files:
     (metadata, md_content) = md_to_merge.read()
     (lines_till_section, sections) = get_sections(content=md_content)
     para = "\n".join(lines_till_section)

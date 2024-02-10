@@ -1,4 +1,4 @@
-from doc_curation.scraping import satsangadhaaraa
+from doc_curation.scraping.misc_sites import satsangadhaaraa
 
 if __name__ == '__main__':
     # satsangadhaaraa.dump_book(init_url="http://satsangdhara.net/devi/intro-devi.htm", out_path="/home/vvasuki/sanskrit/raw_etexts/purANam/devI-mahApurANam/", overwrite=False)
@@ -11,4 +11,5 @@ if __name__ == '__main__':
     # satsangadhaaraa.dump_book(init_url="http://satsangdhara.net/upa/intro-shakta.htm", out_path="/home/vvasuki/sanskrit/raw_etexts/veda/misc/upaniShat/shAktA", overwrite=False)
     # satsangadhaaraa.dump_book(init_url="http://satsangdhara.net/upa/intro-samanya.htm", out_path="/home/vvasuki/sanskrit/raw_etexts/veda/misc/upaniShat/sAmAnyA", overwrite=False)
     # satsangadhaaraa.dump_book(init_url="http://satsangdhara.net/upa/intro-sanyasa.htm", out_path="/home/vvasuki/sanskrit/raw_etexts/veda/misc/upaniShat/saMnyAsI", overwrite=False)
-    satsangadhaaraa.dump_book(init_url="http://satsangdhara.net/upa/intro-yogo.htm", out_path="/home/vvasuki/sanskrit/raw_etexts/veda/misc/upaniShat/yaugikI", overwrite=False)
+    # satsangadhaaraa.dump_book(init_url="http://satsangdhara.net/upa/intro-yogo.htm", out_path="/home/vvasuki/sanskrit/raw_etexts/veda/misc/upaniShat/yaugikI", overwrite=False)
+    satsangadhaaraa.dump_book(init_url="https://satsangdhara.net/nbs/nbs.htm", out_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/nArada-bhakti-sUtrANi/marAThI_ss", overwrite=False)

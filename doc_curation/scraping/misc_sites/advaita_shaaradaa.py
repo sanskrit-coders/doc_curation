@@ -11,6 +11,8 @@ from selenium.webdriver.support.expected_conditions import presence_of_element_l
 from selenium.webdriver.support.wait import WebDriverWait
 
 from curation_utils import scraping
+from doc_curation.md.file import MdFile
+from doc_curation.md.library import metadata_helper
 
 LOGGER.setLevel(logging.WARNING)
 from urllib3.connectionpool import log as urllibLogger
@@ -74,6 +76,7 @@ def get_text(url):
         chapter_html = regex.sub("</div[^>]+>", "</p>", chapter_html)
         chapter_md = pypandoc.convert_text(source=chapter_html, to="gfm", format='html', extra_args=['--markdown-headings=atx'])
         text_md = "%s\n\n%s" % (text_md, chapter_md)
+    text_md = text_md.replace(" ", "")
     return text_md
 
 
@@ -87,8 +90,9 @@ def dump_text(url, dest_path):
         logging.warning("No content. Skipping %s.", url)
         return 
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-    with codecs.open(dest_path, "w", 'utf-8') as file_out:
-        file_out.write(md)
+    md_file = MdFile(file_path=dest_path)
+    md_file.dump_to_file(metadata={}, content=md, dry_run=False)
+    metadata_helper.set_title_from_filename(md_file=md_file, dry_run=False)
 
 
 def dump_texts(dest_dir):

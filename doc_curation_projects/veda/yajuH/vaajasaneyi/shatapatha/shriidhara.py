@@ -23,5 +23,5 @@ devanagari = sanscript.SCHEMES[sanscript.DEVANAGARI]
 
 
 if __name__ == '__main__':
-  library.apply_function(fn=content_processor.replace_texts, dir_path=base_dir, patterns=[f"[{WEBER_EXTRA_ACCENTS}]+"], replacement="᳘")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=base_dir, patterns=[f"[{WEBER_EXTRA_ACCENTS}]+"], replacement="᳘")
   pass

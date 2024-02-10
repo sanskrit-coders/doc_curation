@@ -344,16 +344,16 @@ class MdFile(object):
       if not dry_run and remainder_file_path != self.file_path:
         os.remove(path=self.file_path)
 
-  def transform(self, content_transformer=None, metadata_transformer=None, dry_run=False):
+  def transform(self, content_transformer=None, metadata_transformer=None, dry_run=False, *args, **kwargs):
     [metadata, content] = self.read()
     metadata["_file_path"] = self.file_path
     update_needed = False
     if content_transformer is not None:
-      content_new = content_transformer(content, metadata)
+      content_new = content_transformer(content, metadata, *args, **kwargs)
       update_needed |= content.strip() != content_new.strip()
       content = content_new
     if metadata_transformer is not None:
-      metadata_new = metadata_transformer(content, metadata.copy())
+      metadata_new = metadata_transformer(content, metadata.copy(), *args, **kwargs)
       update_needed |= metadata != metadata_new
       metadata = metadata_new
     del metadata["_file_path"]

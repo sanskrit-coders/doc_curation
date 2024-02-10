@@ -23,7 +23,7 @@ from doc_curation.md.library import metadata_helper
 from doc_curation import book_data
 from doc_curation.md.file import MdFile
 
-base_dir = os.path.join(shatapatha.CONTENT_BASE, "weber-srotaH/sasvaram")
+base_dir = os.path.join(shatapatha.CONTENT_BASE, "vishvAsa-prastutiH/")
 devanagari = sanscript.SCHEMES[sanscript.DEVANAGARI]
 
 
@@ -57,6 +57,8 @@ def dump_text(base_dir, do_transliteration=False):
   
   titus_url = "http://titus.uni-frankfurt.de/texte/etcs/ind/aind/ved/yvw/sbm/sbm.htm"
   for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
+    if kaanda_index != 12:
+      continue
     sarga_list = book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[kaanda_index])
     for sarga_index in sarga_list:
       logging.info("kaanDa %d adhyaaya %d", kaanda_index, sarga_index)
@@ -79,7 +81,7 @@ def dump_text(base_dir, do_transliteration=False):
             sentence = sanscript.transliterate(sentence, sanscript.TITUS, sanscript.DEVANAGARI)
           sentence += "  "
         lines.append(sentence)
-      fix_accents(lines)  
+      # fix_accents(lines)  
       md_file = MdFile(file_path=outfile_path)
       md_file.dump_to_file(metadata={"title": "%02d" % sarga_index}, content="\n".join(lines), dry_run=False)
 
@@ -87,9 +89,18 @@ def dump_text(base_dir, do_transliteration=False):
   library.apply_function(fn=metadata_helper.set_title_from_filename, dir_path=base_dir, frontmatter_type=MdFile.TOML, dry_run=False, transliteration_target=sanscript.DEVANAGARI) # 
 
 
+def fix_fushimi():
+  base_dir = os.path.join(shatapatha.CONTENT_BASE, "makoto-fushimi/12")
+  library.apply_function(fn=content_processor.replace_texts, dir_path=base_dir, patterns=["## +(?=[०-९]\n)"], replacement="## ०")
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path=base_dir, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, title_index_pattern=None) # 
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=base_dir, patterns=["व्र्̥꣡̄"], replacement="वृ꣡")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=base_dir, patterns=["्र्̥꣡̄"], replacement="ृ꣡")
+
+
 if __name__ == '__main__':
+  fix_fushimi()
   # dump_text(base_dir=base_dir, do_transliteration=True)
   # library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: fix_text(c))
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=base_dir, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, title_index_pattern=None) # 
-  library.apply_function(fn=content_processor.replace_texts, dir_path=base_dir, patterns=["(?<=## )(?=[०-९]\n)"], replacement="०")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=base_dir, patterns=["(?<=## )(?=[०-९]\n)"], replacement="०")
   pass

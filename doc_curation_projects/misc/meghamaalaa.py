@@ -101,19 +101,19 @@ def raamaayaNam():
     else:
       logging.warning(f"No sarga detected in {x}")
       return x
-  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-ramayanam-content/srimad-ramayanam-baala-kaanda-sarga-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/1_bAlakANDam", start_index=1, filename_from_title=sarga_detector)
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-ramayanam-content/srimad-ramayanam-baala-kaanda-sarga-01/", "/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/drAviDa-pAThaH/govindarAja-bhUShaNam/1_bAlakANDam", start_index=1, filename_from_title=sarga_detector)
 
-  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-ayodhya-kaanda/01-sarga-अयोध्याकाण्डम्/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/2_ayodhyAkANDam", start_index=66, filename_from_title=sarga_detector)
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-ayodhya-kaanda/01-sarga-अयोध्याकाण्डम्/", "/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/drAviDa-pAThaH/govindarAja-bhUShaNam/2_ayodhyAkANDam", start_index=66, filename_from_title=sarga_detector)
 
-  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-aranya-kaanda/01-sarga-%E0%A4%85%E0%A4%AF%E0%A5%8B%E0%A4%A7%E0%A5%8D%E0%A4%AF%E0%A4%BE%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%AE%E0%A5%8D-2/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/3_araNyakANDam", start_index=1, filename_from_title=sarga_detector)
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-aranya-kaanda/01-sarga-%E0%A4%85%E0%A4%AF%E0%A5%8B%E0%A4%A7%E0%A5%8D%E0%A4%AF%E0%A4%BE%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%AE%E0%A5%8D-2/", "/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/drAviDa-pAThaH/govindarAja-bhUShaNam/3_araNyakANDam", start_index=1, filename_from_title=sarga_detector)
 
-  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-kishkinda-kanda/01-sarga-%E0%A4%95%E0%A4%BF%E0%A4%B7%E0%A5%8D%E0%A4%95%E0%A4%BF%E0%A4%A8%E0%A5%8D%E0%A4%A7%E0%A4%BE%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/4_kiShkindhAkANDam", start_index=1, filename_from_title=sarga_detector)
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-kishkinda-kanda/01-sarga-%E0%A4%95%E0%A4%BF%E0%A4%B7%E0%A5%8D%E0%A4%95%E0%A4%BF%E0%A4%A8%E0%A5%8D%E0%A4%A7%E0%A4%BE%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/drAviDa-pAThaH/govindarAja-bhUShaNam/4_kiShkindhAkANDam", start_index=1, filename_from_title=sarga_detector)
 
-  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-ramayan-sundara-kaanda/01-sarga-%E0%A4%B8%E0%A5%81%E0%A4%A8%E0%A5%8D%E0%A4%A6%E0%A4%B0%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/5_sundarakANDam", start_index=1, filename_from_title=sarga_detector)
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-ramayan-sundara-kaanda/01-sarga-%E0%A4%B8%E0%A5%81%E0%A4%A8%E0%A5%8D%E0%A4%A6%E0%A4%B0%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/drAviDa-pAThaH/govindarAja-bhUShaNam/5_sundarakANDam", start_index=1, filename_from_title=sarga_detector)
 
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-yuddha-kaanda/01-sarga-%E0%A4%AF%E0%A5%81%E0%A4%A6%E0%A5%8D%E0%A4%A7%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/6_yuddhakANDam", start_index=91, filename_from_title=sarga_detector)
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-yuddha-kaanda/01-sarga-%E0%A4%AF%E0%A5%81%E0%A4%A6%E0%A5%8D%E0%A4%A7%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/drAviDa-pAThaH/govindarAja-bhUShaNam/6_yuddhakANDam", start_index=91, filename_from_title=sarga_detector)
 
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-uttara-kaanda/01-sarga-%E0%A4%89%E0%A4%A4%E0%A5%8D%E0%A4%A4%E0%A4%B0%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static/rAmAyaNam/audIchya-pAThaH/TIkA/bhUShaNam_sv/7_uttarakANDam", start_index=1, filename_from_title=sarga_detector)
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-uttara-kaanda/01-sarga-%E0%A4%89%E0%A4%A4%E0%A5%8D%E0%A4%A4%E0%A4%B0%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/drAviDa-pAThaH/govindarAja-bhUShaNam/7_uttarakANDam", start_index=9, end_index=9, filename_from_title=sarga_detector)
 
 
 def rahasya():
@@ -146,10 +146,10 @@ def bhagavad_vishayam():
 
 if __name__ == '__main__':
   pass
-  # raamaayaNam()
+  raamaayaNam()
   # bhagavad_vishayam()
   # upanishat()
   # shriibhaashya()
-  misc()
+  # misc()
   # puraaNam()
   # rahasya()
