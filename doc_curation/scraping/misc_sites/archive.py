@@ -76,4 +76,4 @@ def get_pdf(url, dest_path):
 
 
 if __name__ == '__main__':
-  get_pdf(url="https://archive.org/details/indianfreedomfig0000nair/", dest_path="/run/media/vvasuki/vData/text/granthasangrahaH/history/indian_freedom_japan_am_nair.pdf")
+  get_pdf(url="https://archive.org/details/indianfreedomfig0000nair/", dest_path="/media/vvasuki/vData/text/granthasangrahaH/history/indian_freedom_japan_am_nair.pdf")
