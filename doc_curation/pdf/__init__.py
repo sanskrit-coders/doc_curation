@@ -117,14 +117,14 @@ def detext_via_ps(input_file_path, output_file_path):
   subprocess.call(["ps2pdf", ps_path, output_file_path])
 
 
-def dump_images(input_file_path, output_path):
+def dump_images(input_file_path, output_path, poppler_path="/usr/bin"):
   from pdf2image import convert_from_path
   image_segments = [str(pdf_segment) for pdf_segment in Path(_get_ocr_dir(input_file_path, 1)).glob("*.jpg")]
   if len(image_segments) > 0:
     logging.info("%d images already exist! So not dumping afresh.", len(image_segments))
     return 
   logging.info("Splitting to images: %s to %s", input_file_path, output_path)
-  convert_from_path(input_file_path, fmt="jpeg", output_folder=output_path, output_file=os.path.splitext(os.path.basename(input_file_path))[0])
+  convert_from_path(input_file_path, fmt="jpeg", output_folder=output_path, output_file=os.path.splitext(os.path.basename(input_file_path))[0], poppler_path=poppler_path)
 
 
 def images_to_pdf(image_dir, output_path):
@@ -161,7 +161,7 @@ def detext_with_pdfimages(input_file_path, output_file_path):
   """
   image_directory = _get_ocr_dir(input_file_path, 1)
   os.makedirs(image_directory, exist_ok=True)
-  subprocess.call(["pdfimages", "-j", input_file_path, image_directory + "/page"])
+  subprocess.check_output(["/usr/bin/pdfimages", "-j", input_file_path, image_directory + "/page"], shell=True)
   # subprocess.call(["convert", input_file_path, image_directory  + "/page%04.jpg"])
-  subprocess.call(["convert", image_directory + "/*", output_file_path])
+  subprocess.check_output(["convert", image_directory + "/*", output_file_path], shell=True)
   shutil.rmtree(image_directory)

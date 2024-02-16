@@ -6,7 +6,8 @@ from pathlib import Path
 
 from curation_utils import file_helper
 from doc_curation import pdf
-from doc_curation.pdf import compress_with_gs, detext_via_jpg, split_into_small_pdfs, _get_ocr_dir
+from doc_curation.pdf import compress_with_gs, detext_via_jpg, split_into_small_pdfs, _get_ocr_dir, \
+  detext_with_pdfimages
 import argparse
 
 
@@ -73,7 +74,7 @@ def _prepare_pdf(detext, pdf_compression_power, pdf_path):
     logging.info("Detexting")
     altered_pdf_path = pdf_path.replace(".pdf", "_detexted.pdf")
     if not os.path.exists(altered_pdf_path):
-      # compress_with_pdfimages(input_file_path=pdf_path, output_file_path=compressed_pdf_path)
+      # detext_with_pdfimages(input_file_path=pdf_path, output_file_path=altered_pdf_path)
       detext_via_jpg(input_file_path=pdf_path, output_file_path=altered_pdf_path)
   return altered_pdf_path
 

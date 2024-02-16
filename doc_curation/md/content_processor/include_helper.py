@@ -120,6 +120,9 @@ def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs
     # but that will be fixed later.
   if "js_include" not in content:
     return content
+  
+  # Having divs within markdown list items can lead to this function producing the closing tag outside the list item. This can then lead to mangled html, which can then cause page inclusion javascript calls to fail. 
+  content = regex.replace(r"(?=\n|^ *)([-*] .+)<div", "\n\n<div", content)
   soup = content_processor._soup_from_content(content=content, metadata=metadata)
   if soup is None:
     return content
@@ -221,7 +224,8 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   h1_level = h1_level_offset + int(inc.get("newlevelforh1", 2))
   if "newlevelforh1" not in inc.attrs:
     logging.warning(f"No newlevelforh1 for {file_path} in {container_file_path}")
-  content = regex.sub("^#", f"{'#' * h1_level}", content)
+
+  content = regex.sub("(?<=\n|^)#", f"{'#' * h1_level}", content)
   content = regex.sub("\n#", f"\n{'#' * h1_level}", content)
   # TODO: Handle images, spreadsheets, relative urls in includes
   if file_path == container_file_path:

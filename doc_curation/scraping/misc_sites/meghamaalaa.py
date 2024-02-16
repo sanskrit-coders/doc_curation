@@ -32,7 +32,7 @@ def get_text(url, source_script=sanscript.DEVANAGARI):
     content = regex.sub(r"\*\*([²³⁴₂₃₄])\*\*", "$1", content)
     content = regex.sub(r"\*\* \*\*", " ", content)
     content = regex.sub("श्रिय:", "श्रियः", content)
-    content = regex.sub(":", "-", content)
+    # content = regex.sub(":", "-", content) - fails with sanskrit parts of maNipravALa!
     content = regex.sub("&nbsp;", "", content)
     content = regex.sub("[sS]", "ऽ", content)
     content = content_processor.transliterate(text=content, source_script=source_script)
