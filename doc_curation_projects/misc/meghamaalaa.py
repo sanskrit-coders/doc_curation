@@ -140,14 +140,14 @@ def bhagavad_vishayam():
   # meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-03/03-01-12000-36000-padi/", os.path.join(base_dir, "12k/03") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
   # meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-04/04-01-12000-36000-padi/", os.path.join(base_dir, "12k/04") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
 
-  # library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
   # library.apply_function(dir_path=base_dir, fn=metadata_helper.set_filename_from_title, dry_run=False)
 
 
 if __name__ == '__main__':
   pass
-  raamaayaNam()
-  # bhagavad_vishayam()
+  # raamaayaNam()
+  bhagavad_vishayam()
   # upanishat()
   # shriibhaashya()
   # misc()

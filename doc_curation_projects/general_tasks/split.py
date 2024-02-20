@@ -15,9 +15,9 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/venkaTanAthaH/deshika-prabandhAH/gopAlAchArya_kn_sa/1960/v1/_index.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.KANNADA, start_index=1) # 
 
   # देवनागरी
-  # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/shrIdhara-pAThaH/sasvaram/14/07/1.md", start_index=1)
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/rAmAyaNam/drAviDa-pAThaH/govindarAja-bhUShaNam/7_uttarakANDam/060p.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None) # 
-  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/strI-dharma-paddhatiH/sarva-prastutiH/", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, start_index=1) # 
+  # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shrutadIpikA_shrIbhAShyavyAkhyA.md", start_index=1)
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shrutadIpikA_shrIbhAShyavyAkhyA", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None) # 
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shrutadIpikA_shrIbhAShyavyAkhyA.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, start_index=1) # 
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/champUH/nItiH/pancha-tantram/gokuladAsaH_hindI.md", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, start_index=0) # 
   # 
   # IAST

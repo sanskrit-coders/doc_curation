@@ -122,7 +122,7 @@ def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs
     return content
   
   # Having divs within markdown list items can lead to this function producing the closing tag outside the list item. This can then lead to mangled html, which can then cause page inclusion javascript calls to fail. 
-  content = regex.replace(r"(?=\n|^ *)([-*] .+)<div", "\n\n<div", content)
+  content = regex.sub(r"(?=\n|^)( *[-*] .+)<div", "$1\n\n<div", content)
   soup = content_processor._soup_from_content(content=content, metadata=metadata)
   if soup is None:
     return content
