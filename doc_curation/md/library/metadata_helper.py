@@ -53,7 +53,7 @@ def pad_title_numbering(dir_path, dry_run):
       md_file.set_title(title=new_title, dry_run=dry_run)
 
 
-def set_filename_from_title(md_file, source_script=None, mixed_languages_in_titles=True, max_title_length=50, dry_run=False, skip_dirs=True, maybe_use_dravidian_variant="yes"):
+def set_filename_from_title(md_file, source_script=None, mixed_languages_in_titles=True, max_title_length=50, dry_run=False, skip_dirs=True, maybe_use_dravidian_variant="yes", overwrite=False):
   # logging.debug(md_file.file_path)
   if skip_dirs and str(md_file.file_path).endswith("_index.md"):
     logging.info("Special file %s. Skipping." % md_file.file_path)
@@ -69,6 +69,15 @@ def set_filename_from_title(md_file, source_script=None, mixed_languages_in_titl
     title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script, maybe_use_dravidian_variant=maybe_use_dravidian_variant, mixed_languages_in_titles=mixed_languages_in_titles, max_length=max_title_length)
   else:
     title_in_file_name = title
+
+  if str(md_file.file_path).endswith("_index.md"):
+    current_file_name = os.path.basename(os.path.dirname(md_file.file_path))
+  else:
+    current_file_name = os.path.basename(md_file.file_path).replace(".md", "")
+  current_file_name = regex.sub(r"^\d+_+", "", current_file_name)
+
+  if not overwrite and current_file_name != "":
+    return 
 
   move_file(md_file=md_file, new_file_name=title_in_file_name, dry_run=dry_run)
 

@@ -54,7 +54,7 @@ if __name__ == '__main__':
   # misc_typos("/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/sage-bloodlines/AngIrasaH/prajAH_khyAtyAH/bharadvAjaH/bhAradvAjaH/bannanje-kulam/articles/govindAlokaH")
   # fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/gadyam/shrI-vaiShNava-kRtam/venkaTanAthaH/TIkA/shaThakopa_on_raghuvIra.md")
   # section_fix()
-  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/stotram/hari-hara-subhAShitam")
+  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/shrIvaiShNava-kRtam/laxmI-kumAra-tAta-deshika-stotram.md")
 
 
   pass

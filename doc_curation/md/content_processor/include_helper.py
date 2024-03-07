@@ -11,6 +11,7 @@ from doc_curation.md import content_processor, library
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper import souper
 from indic_transliteration import sanscript
+from urllib.parse import urljoin
 
 class Include(object):
   def __init__(self, url, field_names=None, classes=None, title=None, h1_level=2, extra_attributes=""):
@@ -140,10 +141,20 @@ def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs
         break
     if top_level_include:
       transformer(inc, metadata["_file_path"], *args, **kwargs)
-  content = content_processor._make_content_from_soup(soup=soup)
-  content = content.replace("{{&lt;", "{{<").replace("&gt;}}", ">}}")
-  content = regex.sub("(?<=\s)&gt;", ">", content)
-  return  content
+  new_content = content_processor._make_content_from_soup(soup=soup)
+
+  # The below is for hugo shortcuts. Eg.
+  # {{< figure src="images/vaidika-puM-deva-jAlam.jpg" title="" class="thumbnail">}}  
+  new_content = new_content.replace("{{&lt;", "{{<").replace("&gt;}}", ">}}")
+
+  # Fix quotation symbols in markdown
+  new_content = regex.sub("(?<=\s)&gt;", ">", new_content)
+
+  html_escapes = list(regex.findall("&[lg]t;(?=/?d(iv|etails))", new_content))
+  if len(html_escapes) > 0:
+    logging.warning(f"Somehow < or > was replaced in " + metadata["_file_path"])
+    return content
+  return  new_content
 
 
 def old_include_remover(inc, *args, **kwargs):
@@ -197,10 +208,7 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   souper.empty_tag(inc)
 
   url = inc["url"]
-  if not url.startswith("/"):
-    # TODO: fix this.
-    logging.info(f"Skipping relative path in {container_file_path}")
-    return 
+
   file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
   if file_path is None:
     if url.endswith(".md"):
@@ -209,7 +217,10 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
       new_url = url[:-1]
     else:
       new_url = regex.sub("/$", "", url) + ".md"
-    url = new_url.replace("/content/", "/").replace("/static/", "/")
+
+    # Neither of the below should appear in a valid url.
+    url = new_url.replace("/content/", "/").replace("/static/", "/").replace("//", "/")
+
     file_path = file_path_from_url(url=new_url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
     if file_path is None:
       logging.warning(f"Could not fix: {url} in {container_file_path}")
@@ -225,8 +236,8 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   if "newlevelforh1" not in inc.attrs:
     logging.warning(f"No newlevelforh1 for {file_path} in {container_file_path}")
 
-  content = regex.sub("(?<=\n|^)#", f"{'#' * h1_level}", content)
-  content = regex.sub("\n#", f"\n{'#' * h1_level}", content)
+  content = regex.sub(r"(?<=\n|^)#", f"{'#' * h1_level}", content)
+  content = regex.sub(rf"(?<=\n|^)#######+", f"{'#' * 6}", content)
   # TODO: Handle images, spreadsheets, relative urls in includes
   if file_path == container_file_path:
     logging.fatal(f"Circular include in {container_file_path}")
@@ -282,11 +293,19 @@ def file_path_from_url(url, hugo_base_dir, current_file_path):
         file_path = regex.sub(r"(/.+?)(/.+)/?", f"{hugo_base_dir}\\1/content\\2/_index.md", url)
   else:
     # relative path
-    # TODO: Handle this
-    logging.warning(f"Skipping relative path {url} in {current_file_path}")
-    pass
+    if os.path.basename(current_file_path) == "_index.md":
+      file_path = urljoin(current_file_path, url)
+    else:
+      file_path = urljoin(current_file_path + "/", url)
+    if file_path.endswith(".md"):
+      if "/content/" in file_path:
+        file_path = file_path.replace("/content/", "/static/")
+    else:
+      file_path = regex.sub("(?<=[^/])/*(?=$)", ".md", file_path)
   if file_path is not None:
     file_path = regex.sub("//+", "/", file_path)
+    if not os.path.exists(file_path) and "/content/" in file_path and os.path.basename(current_file_path) != "_index.md":
+      file_path = regex.sub(r".md", f"/_index.md", file_path)
     if os.path.exists(file_path):
       return file_path
     # logging.debug(f"Could not find: {file_path} in {current_file_path}")

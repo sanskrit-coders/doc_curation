@@ -121,7 +121,7 @@ class MdFile(object):
     if self.frontmatter_type is None:
       self.frontmatter_type = actual_frontmatter_type
     elif self.frontmatter_type != actual_frontmatter_type:
-      logging.warning(
+      logging.info(
         "Frontmatter type mismatch: field value %s vs actual %s. Using the latter, but not updating field value.",
         self.frontmatter_type, actual_frontmatter_type)
     if actual_frontmatter_type == MdFile.YAML:
@@ -235,8 +235,11 @@ class MdFile(object):
     metadata, content = self.read()
     if field_name in metadata: 
       if metadata[field_name] == value:
-        return 
-      elif not overwrite:
+        return
+      current_value = metadata[field_name]
+      if field_name == "title":
+        current_value = regex.sub(r"^\+?[\d ०-९೦-೯]", "", current_value)
+      elif current_value != "" and not overwrite:
         return 
     logging.info(f"Setting %s: %s (← %s) of {self.file_path}", field_name, value, metadata.get(field_name, "None"))
     if not dry_run:

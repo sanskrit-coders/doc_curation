@@ -5,6 +5,7 @@ from collections import defaultdict
 import regex
 from tqdm import tqdm
 
+from doc_curation.md.content_processor import include_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import get_md_files_from_path
 from indic_transliteration import sanscript
@@ -114,11 +115,14 @@ def make_full_text_md(source_dir, dry_run=False):
 
     num_md_files = num_md_files + 1
     rel_url = os.path.join("..", regex.sub("\.md", "/", sub_md_file_path))
-    content = "%s\n%s" % (content, """<div class="js_include" url="%s"  newLevelForH1="1" includeTitle="true"> </div>""" % (rel_url).strip())
+    content = "%s\n%s" % (content, """<div class="js_include" url="%s"  newLevelForH1="2" includeTitle="true"> </div>""" % (rel_url).strip())
   
   if num_md_files > 0:
     full_md_path = os.path.join(source_dir, "full.md")
     full_md = MdFile(file_path=full_md_path)
     full_md.dump_to_file(content=content, metadata={"title": title}, dry_run=dry_run)
+    include_helper.prefill_includes(dir_path=os.path.dirname(full_md_path))
+    include_helper.prefill_includes(dir_path=full_md_path)
+
   else:
     logging.info("No md files found in %s. Skipping.", source_dir)

@@ -39,7 +39,7 @@ def split_and_ocr_on_drive(pdf_path,
   Still, sometimes, the operation may time out, or you might get an Internal service error. In that case, try reducing small_pdf_pages or increasing the compression power.
   
   :param pdf_path:
-  :param google_key: A json key which can be obtained from https://console.cloud.google.com/iam-admin/serviceaccounts (create a project, generate a key via "Actions" column, enable Drive API and perhaps Vision APIs.). PS: Google drive takes some time (few hours?) before you can use it for the first time in a project - till then you will get an error.
+  :param google_key: A json key which can be obtained from https://console.cloud.google.com/iam-admin/serviceaccounts (create a project, a service account, then generate a key via "Actions" column.). Then enable Drive API and perhaps Vision APIs for the project (In case of insufficient API permissions - You may be shown an error message pointing to the webpage where the permissions are to be enabled). PS: Google drive takes some time (few hours?) before you can use it for the first time in a project - till then you will get an error.
   :param small_pdf_pages: Number of pages per segment - an argument used for splitting the pdf into small bits for OCR-ing. 
   :param pdf_compression_power: 0,1,2,3,4
   :return: 
