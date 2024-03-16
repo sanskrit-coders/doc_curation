@@ -20,7 +20,7 @@ def fix_includes(dir_path):
 
 if __name__ == '__main__':
   # fix_includes(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/brAhmaNam/sarva-prastutiH/1/5/08_atharva-shira-iShTakAH_indro_dadhIcho.md")
-  # migrate_and_include_mantras(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/saMhitA/sarva-prastutiH/3/4/04_jayahomamantrAH_tatprashaMsA_cha.md")
+  # migrate_and_include_mantras(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/saMhitA/sarva-prastutiH/4/1/06_ukhAsaMskAraH.md")
 
-  include_helper.prefill_includes(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/paddhatiH/shrIvaiShNavaH/shrInivAsa-deshikaH/01_pUrva-prayogaH/01_angAni/02_udakashAntiH/06_japaH.md")
+  include_helper.prefill_includes(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/paddhatiH/vishvAsaH/sandhyA-vandanAdi-mantra-sangrahaH.md")
   pass

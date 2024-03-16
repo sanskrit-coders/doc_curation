@@ -38,6 +38,29 @@ def upanishat():
 def shriibhaashya():
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasya-upanyasa/श्रीभाष्योपन्यासः-adhyaya-01/", "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/rAmAnujaH/mahAchArya-upanyAsaH")
   # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/vachasudha-vicharaha/%e0%a4%b5%e0%a4%9a%e0%a4%b8%e0%a5%8d%e0%a4%b8%e0%a5%81%e0%a4%a7%e0%a4%be%e0%a4%b5%e0%a4%bf%e0%a4%9a%e0%a4%be%e0%a4%b0%e0%a4%83/", "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/rAmAnujaH/shrI-bhAShyam/vachas-sudhA-vichAraH.md")
+
+  adhyaaya_map = {
+    (1,1): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-1-sribhasyam-content/pada-1-adhyaya-1-sribhasyam-content/sribhasya-01-01-01/",
+    (1,2): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-1-sribhasyam-content/pada-2-adhyaya-1-sribhasyam-content/01-02-12-%E0%A4%B8%E0%A4%B0%E0%A5%8D%E0%A4%B5%E0%A4%A4%E0%A5%8D%E0%A4%B0%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%B8%E0%A4%BF%E0%A4%A6%E0%A5%8D%E0%A4%A7%E0%A5%8D%E0%A4%AF%E0%A4%A7%E0%A4%BF%E0%A4%95%E0%A4%B0/",
+    (1,3): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-1-sribhasyam-content/pada-3-adhyaya-1-sribhasyam-content/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-01-03-18-%E0%A4%A6%E0%A5%8D%E0%A4%AF%E0%A5%81%E0%A4%AD%E0%A5%8D%E0%A4%B5%E0%A4%BE%E0%A4%A6%E0%A5%8D/",
+    (1,4): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-1-sribhasyam-content/pada-4-adhyaya-1-sribhasyam-content/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-01-04-28-%E0%A4%86%E0%A4%A8%E0%A5%81%E0%A4%AE%E0%A4%BE%E0%A4%A8%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%A7/",
+    (2,1): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-2-sribhasyam-content/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-02-01-01-%E0%A4%B8%E0%A5%8D%E0%A4%AE%E0%A5%83%E0%A4%A4%E0%A5%8D%E0%A4%AF%E0%A4%A7%E0%A4%BF%E0%A4%95/",
+    (2,2): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-2-sribhasyam-content/pada-2-adhyaya-2-sribhasyam-content/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-02-02-01-%E0%A4%B0%E0%A4%9A%E0%A4%A8%E0%A4%BE%E0%A4%A8%E0%A5%81%E0%A4%AA%E0%A4%AA%E0%A4%A4%E0%A5%8D/",
+    (2,3): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-2-sribhasyam-content/pada-3-adhyaya-2-sribhasyam-content/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-02-03-01-%E0%A4%B5%E0%A4%BF%E0%A4%AF%E0%A4%A6%E0%A4%A7%E0%A4%BF%E0%A4%95%E0%A4%B0%E0%A4%A3%E0%A4%AE/",
+    (2,4): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-2-sribhasyam-content/pada-4-adhyaya-2-sribhasyam-content/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-02-04-01-%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%BE%E0%A4%A3%E0%A5%8B%E0%A4%A4%E0%A5%8D%E0%A4%AA%E0%A4%A4/",
+    (3,1): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-3-sribhasyam-content/pada-1-adhyaya-3-sribhasyam-content/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-03-01-01-%E0%A4%A4%E0%A4%A6%E0%A4%A8%E0%A5%8D%E0%A4%A4%E0%A4%B0%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%A4/",
+    (3,2): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-3-sribhasyam-content/pada-2-adhyaya-3-sribhasyam-content/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-03-02-01-%E0%A4%B8%E0%A4%A8%E0%A5%8D%E0%A4%A7%E0%A5%8D%E0%A4%AF%E0%A4%BE%E0%A4%A7%E0%A4%BF%E0%A4%95/",
+    (3,3): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-3-sribhasyam-content/pada-3-adhyaya-3-sribhasyam-content/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-03-03-01-%E0%A4%B8%E0%A4%B0%E0%A5%8D%E0%A4%B5%E0%A4%B5%E0%A5%87%E0%A4%A6%E0%A4%BE%E0%A4%A8%E0%A5%8D/",
+    (3,4): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-3-sribhasyam-content/pada-4-adhyaya-3-sribhasyam-content/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-03-04-01-%E0%A4%AA%E0%A5%81%E0%A4%B0%E0%A5%81%E0%A4%B7%E0%A4%BE%E0%A4%B0%E0%A5%8D%E0%A4%A5%E0%A4%BE/",
+    (4,1): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-4/pada-1-adhyaya-4/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-04-01-11-%E0%A4%86%E0%A4%B5%E0%A5%83%E0%A4%A4%E0%A5%8D%E0%A4%A4%E0%A5%8D%E0%A4%AF%E0%A4%A7%E0%A4%BF/",
+    (4,2): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-4/pada-2-adhyaya-4/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-04-02-01-%E0%A4%B5%E0%A4%BE%E0%A4%97%E0%A4%A7%E0%A4%BF%E0%A4%95%E0%A4%B0%E0%A4%A3%E0%A4%AE%E0%A5%8D/",
+    (4,3): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-4/pada-3-adhyaya-4/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-04-03-01-%E0%A4%85%E0%A4%B0%E0%A5%8D%E0%A4%9A%E0%A4%BF%E0%A4%B0%E0%A4%BE%E0%A4%A6%E0%A5%8D%E0%A4%AF/",
+    (4,4): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-4/pada-4-adhyaya-4/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-04-04-01-%E0%A4%B8%E0%A4%AE%E0%A5%8D%E0%A4%AA%E0%A4%A6%E0%A5%8D%E0%A4%AF%E0%A4%BE%E0%A4%B5%E0%A4%BF/",
+  }
+  for adhyaaya in range(1,5):
+    for paada in range(1,5):
+      meghamaalaa.dump_series(adhyaaya_map[(adhyaaya, paada)], f"/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/ma/{adhyaaya}/{paada}/", filename_from_title=lambda x: regex.match(".+?-(\d\d[A-Z]? .+$)", x).group(1))
+  library.fix_index_files("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/")
   pass
 
 
@@ -144,12 +167,17 @@ def bhagavad_vishayam():
   # library.apply_function(dir_path=base_dir, fn=metadata_helper.set_filename_from_title, dry_run=False)
 
 
+def fix_text(dir_path):
+  pass
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: meghamaalaa.fix_text(x, source_script=sanscript.DEVANAGARI), dry_run=False, silent_iteration=False)
+
 if __name__ == '__main__':
   pass
   # raamaayaNam()
-  bhagavad_vishayam()
+  # bhagavad_vishayam()
   # upanishat()
   # shriibhaashya()
+  fix_text("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/ma")
   # misc()
   # puraaNam()
   # rahasya()

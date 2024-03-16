@@ -5,6 +5,7 @@ from curation_utils import scraping
 from urllib.parse import urljoin
 from doc_curation import md
 from doc_curation.md import library, content_processor
+from doc_curation.md.content_processor import space_helper
 from curation_utils.file_helper import get_storage_name
 from doc_curation.utils import text_utils
 
@@ -20,25 +21,33 @@ def get_text(url, source_script=sanscript.DEVANAGARI):
     title = title_tag.text
   else:
     logging.fatal("Can't grok title.")
-  content_tag = soup.select_one(".elementor-widget-theme-post-content")
+  content_tag = soup.select_one(".elementor-widget-theme-post-content .elementor-widget-container")
   content = md.get_md_with_pandoc(content_in=str(content_tag), source_format="html")
-  content = content.replace("\|", "।")
-  content = regex.sub("।।+", "॥", content)
-  if source_script == sanscript.DEVANAGARI:
-    content = regex.sub("ळ", "ल", content)
-    content = regex.sub(":", "ः", content)
-    content = regex.sub("s", "ऽ", content)
-  elif source_script.startswith(sanscript.TAMIL):
-    content = regex.sub(r"\*\*([²³⁴₂₃₄])\*\*", "$1", content)
-    content = regex.sub(r"\*\* \*\*", " ", content)
-    content = regex.sub("श्रिय:", "श्रियः", content)
-    # content = regex.sub(":", "-", content) - fails with sanskrit parts of maNipravALa!
-    content = regex.sub("&nbsp;", "", content)
-    content = regex.sub("[sS]", "ऽ", content)
-    content = content_processor.transliterate(text=content, source_script=source_script)
-  content = regex.sub("\n.+?Audio Archive.+?\n", "", content)
+  content = fix_text(content, source_script)
   logging.info(f"Got {title} from {url}")
   return (title, content)
+
+
+def fix_text(text, source_script):
+  text = text.replace("\|", "।")
+  text = regex.sub("।।+", "॥", text)
+  if source_script == sanscript.DEVANAGARI:
+    text = regex.sub("ळ", "ल", text)
+    text = regex.sub(":", "ः", text)
+    text = regex.sub("s", "ऽ", text)
+  elif source_script.startswith(sanscript.TAMIL):
+    text = regex.sub(r"\*\*([²³⁴₂₃₄])\*\*", r"\1", text)
+    text = regex.sub("श्रिय:", "श्रियः", text)
+    # content = regex.sub(":", "-", content) - fails with sanskrit parts of maNipravALa!
+    text = regex.sub("&nbsp;", "", text)
+    text = regex.sub("[sS]", "ऽ", text)
+    text = content_processor.transliterate(text=text, source_script=source_script)
+  text = regex.sub(r"\*\*ः", "ः**", text)
+  text = regex.sub(r"(\*{1,2})ः\1", "ः", text)
+  text = regex.sub(r"(?<=^|\n)\*\*\((.+?)\)\*\*(?=$|\n)", r"## \1", text)
+  text = space_helper.fix_markup(text)
+  text = regex.sub("\n.+?Audio Archive.+?\n", "", text)
+  return text
 
 
 def dump_text(url, dest_path, source_script=sanscript.DEVANAGARI, overwrite=False, dry_run=False):
@@ -71,7 +80,7 @@ def dump_series(url, dest_path, start_index=None, end_index=None, filename_from_
     else:
       file_name = ".md"
     if not regex.match("\d+", file_name):
-      file_name = f"{index-1:02d}b_{file_name}"
+      file_name = f"{index:02d}b_{file_name}"
     file_name = file_name.replace("_.", ".")
     dest_subpath = os.path.join(dest_path, file_name)
     dump_text(url=link["href"], dest_path=dest_subpath, source_script=source_script, overwrite=overwrite)
