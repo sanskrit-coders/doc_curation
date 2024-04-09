@@ -232,6 +232,12 @@ class MdFile(object):
     self.set_frontmatter_field_value(field_name="title", value=title, overwrite=overwrite, dry_run=dry_run)
     
   def set_frontmatter_field_value(self, field_name, value, overwrite=True, dry_run=False):
+    if not os.path.exists(self.file_path):
+      if not dry_run:
+        self.dump_to_file(metadata={field_name: value}, content="", dry_run=dry_run)
+      else:
+        logging.info(f"Setting %s: %s of {self.file_path}", field_name)
+      return
     metadata, content = self.read()
     if field_name in metadata: 
       if metadata[field_name] == value:

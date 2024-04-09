@@ -11,13 +11,31 @@ from doc_curation.md.library import get_md_files_from_path
 from indic_transliteration import sanscript
 
 
-def combine_select_files_in_dir(md_file, source_fname_list, title_format="## %s\n", dry_run=False):
+def combine_select_files_in_dir(md_file, source_fnames, title_format="## %s\n", dry_run=False):
   dir_path = os.path.dirname(md_file.file_path)
-  source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in source_fname_list if x in os.listdir(dir_path)]
+  if isinstance(source_fnames, list):
+    source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in source_fnames if x in os.listdir(dir_path)]
+  elif isinstance(source_fnames, str):
+    source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in regex.fullmatch(source_fnames, x) if x in os.listdir(dir_path)]
+  title = source_mds[-1].get_title()
+  title = regex.sub("[Pp]art.+$", "", title)
+  md_file.set_title(title=title)
   md_file.append_content_from_mds(source_mds=source_mds, title_format=title_format, dry_run=dry_run)
   if not dry_run:
     for source_md in source_mds:
       os.remove(source_md.file_path)
+
+
+def combine_parts(dir_path, dry_run=False):
+  from collections import defaultdict
+  file_to_parts = defaultdict(dict)
+  for fname in os.listdir(dir_path):
+    match = regex.match("(.+?)[-_]*part[-_]*(\d+).md", fname)
+    if match is not None:
+      file_to_parts[match.group(1)][int(match.group(2))] = fname
+  for base_fname, part_dict in file_to_parts.items():
+    fnames = [part_dict[k] for k in sorted(part_dict.keys()) ]
+    combine_select_files_in_dir(md_file=MdFile(file_path=os.path.join(dir_path, base_fname + ".md")), source_fnames=fnames, dry_run=dry_run)
 
 
 def combine_files_in_dir(md_file, title_format="## %s\n", dry_run=False):

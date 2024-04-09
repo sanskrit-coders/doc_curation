@@ -55,7 +55,9 @@ def get_text(url):
     browser.get(url=url)
     chapter_links = browser.find_elements(By.CSS_SELECTOR, "ul#sidebar > li:not(.special) > a")
     for chapter_link in chapter_links:
-        target = chapter_link.get_attribute("href").replace(url, "").replace("/", "")
+        target = chapter_link.get_attribute("href").replace(url, "")
+        if "#" in target:
+            target = regex.sub(r".+(?=#)", "", target)
         if chapter_link.text.strip() == "" or target == "#":
             continue
         logging.debug("Clicking %s, waiting for %s", chapter_link.text, target)
@@ -80,8 +82,8 @@ def get_text(url):
     return text_md
 
 
-def dump_text(url, dest_path):
-    if os.path.exists(dest_path):
+def dump_text(url, dest_path, overwrite=False):
+    if os.path.exists(dest_path) and not overwrite:
         logging.warning("Skipping %s", dest_path)
         return
     logging.info("Dumping %s to %s", url, dest_path)

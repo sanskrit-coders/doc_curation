@@ -74,7 +74,7 @@ def set_filename_from_title(md_file, source_script=None, mixed_languages_in_titl
     current_file_name = os.path.basename(os.path.dirname(md_file.file_path))
   else:
     current_file_name = os.path.basename(md_file.file_path).replace(".md", "")
-  current_file_name = regex.sub(r"^\d+_+", "", current_file_name)
+  current_file_name = regex.sub(r"^\d+_*", "", current_file_name)
 
   if not overwrite and current_file_name != "":
     return 

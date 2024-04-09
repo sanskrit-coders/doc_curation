@@ -14,7 +14,7 @@ from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation
 from indic_transliteration import sanscript
 
-base_dir = os.path.join("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/brahma-sUtrANi/thibaut/")
+base_dir = os.path.join("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/shankaraH/brahma-sUtrANi/thibaut")
 
 current_adhyaaya = 1
 current_paada = 1
@@ -33,17 +33,19 @@ def dest_path_maker(url, base_dir):
   html = souper.get_html(url=url)
   soup = BeautifulSoup(html, 'html.parser')
 
-  headings = soup.select("h1, h2")
+  headings = soup.select("h1, h2, h3")
   if len(headings) > 0:
     texts = [sacred_texts.get_text(x).lower().strip() for x in headings]
     texts = [text for text in texts if "adhyāya" in text or "pāda" in text]
     text = " ".join(texts)
-    id = text.split(" ")[0].lower()
-    if "adhyāya" in text:
-      current_adhyaaya = ordinal_to_number[id]
+    matches = regex.findall("(?<= |^)(\S+) adhyāya", text)
+    if matches:
+      current_adhyaaya = ordinal_to_number[matches[0]]
       current_paada = 1
-    elif "pāda" in text:
-      current_paada = ordinal_to_number[id]
+
+    matches = regex.findall("(?<= |^)(\S+) pāda", text)
+    if "pāda" in text:
+      current_paada = ordinal_to_number[matches[0]]
 
   sacred_texts.remove_superfluous_tags(soup=soup)
   text = "".join([x.text for x in soup.select("p")]).strip()
@@ -69,10 +71,14 @@ def dest_path_maker(url, base_dir):
 
 
 def special_pages():
-  doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe48/sbe48002.htm", outfile_path=os.path.join(base_dir, "0/", "intro.md"))
+  doc_curation.scraping.sacred_texts.dump_meta_article(url="https://sacred-texts.com/hin/sbe34/sbe34002.htm", outfile_path=os.path.join(base_dir, "0/", "intro.md"))
 
 
 if __name__ == '__main__':
-  special_pages()
-  sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbe34/sbe34007.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)
+  pass
+  # special_pages()
+  # sacred_texts.dump_serially(start_url="https://sacred-texts.com/hin/sbe34/sbe34038.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)
+  current_adhyaaya = 3
+  current_paada = 3
+  sacred_texts.dump_serially(start_url="https://sacred-texts.com/hin/sbe38/sbe38166.htm", base_dir=base_dir, dest_path_maker=dest_path_maker)
   

@@ -54,7 +54,7 @@ def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_pag
         os.makedirs(os.path.dirname(dest_pdf_path), exist_ok=True)
         dest_pdf.save(filename_or_stream=dest_pdf_path)
       else:
-        logging.warning("%s exists", dest_pdf_path)
+        logging.debug("%s exists", dest_pdf_path)
       dest_pdfs.append(dest_pdf_path)
   return dest_pdfs
 

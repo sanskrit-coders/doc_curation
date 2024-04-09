@@ -12,7 +12,7 @@ from indic_transliteration import sanscript, aksharamukha_helper
 def upanishat():
   meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/naayamatmaa-bhasyam/नायमात्मा-भाष्यम्/", "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/AraNyakam/kaThopaniShat/varadAchAryaH.md")
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/upanishads/katopanishat-content/%e0%a4%95%e0%a4%a0%e0%a5%8b%e0%a4%aa%e0%a4%a8%e0%a4%bf%e0%a4%b7%e0%a4%a4%e0%a5%8d-%e0%a4%aa%e0%a5%8d%e0%a4%b0%e0%a4%a5%e0%a4%ae%e0%a4%be-%e0%a4%b5%e0%a4%b2%e0%a5%8d%e0%a4%b2%e0%a5%80/", "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/AraNyakam/kaThopaniShat/rangarAmAnujaH")
-  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/upanishads/maandookyapanishat-content/%e0%a4%ae%e0%a4%be%e0%a4%a3%e0%a5%8d%e0%a4%a1%e0%a5%82%e0%a4%95%e0%a5%8d%e0%a4%af%e0%a5%8b%e0%a4%aa%e0%a4%a8%e0%a4%bf%e0%a4%b7%e0%a4%a4%e0%a5%8d%e0%a4%95%e0%a4%be%e0%a4%b0%e0%a4%bf%e0%a4%95%e0%a4%be/", "/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/mANDukyopaniShat/shrI-sampradAyaH")
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/upanishads/maandookyapanishat-content/%e0%a4%ae%e0%a4%be%e0%a4%a3%e0%a5%8d%e0%a4%a1%e0%a5%82%e0%a4%95%e0%a5%8d%e0%a4%af%e0%a5%8b%e0%a4%aa%e0%a4%a8%e0%a4%bf%e0%a4%b7%e0%a4%a4%e0%a5%8d%e0%a4%95%e0%a4%be%e0%a4%b0%e0%a4%bf%e0%a4%95%e0%a4%be/", "/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/mANDukyopaniShat/rAmAnuja-sampradAyaH")
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/upanishads/chandogya-upanishat-content/%e0%a4%9b%e0%a4%be%e0%a4%a8%e0%a5%8d%e0%a4%a6%e0%a5%8b%e0%a4%97%e0%a5%8d%e0%a4%af%e0%a5%8b%e0%a4%aa%e0%a4%a8%e0%a4%bf%e0%a4%b7%e0%a4%a4%e0%a5%8d-%e0%a4%aa%e0%a5%8d%e0%a4%b0%e0%a4%a5%e0%a4%ae%e0%a4%83/", "/home/vvasuki/gitland/vishvAsa/vedAH_sAma/content/tANDyam/ChAndogyopaniShat/rangarAmAnujaH")
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/upanishads/mundakopanishat-content/%e0%a4%ae%e0%a5%81%e0%a4%a3%e0%a5%8d%e0%a4%a1%e0%a4%95%e0%a5%8b%e0%a4%aa%e0%a4%a8%e0%a4%bf%e0%a4%b7%e0%a4%a4%e0%a5%8d-%e0%a4%aa%e0%a5%8d%e0%a4%b0%e0%a4%a5%e0%a4%ae%e0%a4%ae%e0%a5%81%e0%a4%a3%e0%a5%8d/", "/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/paippalAdam/muNDakopaniShat/rangarAmAnujaH")
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/upanishads/mundakopanishat-content/%e0%a4%ae%e0%a5%81%e0%a4%a3%e0%a5%8d%e0%a4%a1%e0%a4%95%e0%a5%8b%e0%a4%aa%e0%a4%a8%e0%a4%bf%e0%a4%b7%e0%a4%a4%e0%a5%8d-%e0%a4%aa%e0%a5%8d%e0%a4%b0%e0%a4%a5%e0%a4%ae%e0%a4%ae%e0%a5%81%e0%a4%a3%e0%a5%8d/", "/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/prashnopaniShat/rangarAmAnujaH")
@@ -36,8 +36,8 @@ def upanishat():
 
 
 def shriibhaashya():
-  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasya-upanyasa/श्रीभाष्योपन्यासः-adhyaya-01/", "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/rAmAnujaH/mahAchArya-upanyAsaH")
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/vachasudha-vicharaha/%e0%a4%b5%e0%a4%9a%e0%a4%b8%e0%a5%8d%e0%a4%b8%e0%a5%81%e0%a4%a7%e0%a4%be%e0%a4%b5%e0%a4%bf%e0%a4%9a%e0%a4%be%e0%a4%b0%e0%a4%83/", "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/rAmAnujaH/shrI-bhAShyam/vachas-sudhA-vichAraH.md")
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasya-upanyasa/श्रीभाष्योपन्यासः-adhyaya-01/", "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/mahAchArya-upanyAsaH")
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/vachasudha-vicharaha/%e0%a4%b5%e0%a4%9a%e0%a4%b8%e0%a5%8d%e0%a4%b8%e0%a5%81%e0%a4%a7%e0%a4%be%e0%a4%b5%e0%a4%bf%e0%a4%9a%e0%a4%be%e0%a4%b0%e0%a4%83/", "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/vachas-sudhA-vichAraH.md")
 
   adhyaaya_map = {
     (1,1): "https://srivaishnavan.com/publications/meghamala/brahma-sutras/sribhasyam-content/adhyaya-1-sribhasyam-content/pada-1-adhyaya-1-sribhasyam-content/sribhasya-01-01-01/",
@@ -65,30 +65,38 @@ def shriibhaashya():
 
 
 def misc():
-  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/stotras/jitante-shat/%E0%A4%9C%E0%A4%BF%E0%A4%A4%E0%A4%A4%E0%A4%A8%E0%A5%8D%E0%A4%A4%E0%A4%BE-%E0%A4%B8%E0%A5%8D%E0%A4%A4%E0%A5%8B%E0%A4%A4%E0%A5%8D%E0%A4%B0%E0%A4%BE%E0%A4%A3%E0%A4%BF-%E0%A4%B7%E0%A4%9F%E0%A5%8D/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/jitan-te-stotram/_index.md")
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/stotras/jitante-shat/%E0%A4%9C%E0%A4%BF%E0%A4%A4%E0%A4%A4%E0%A4%A8%E0%A5%8D%E0%A4%A4%E0%A4%BE-%E0%A4%B8%E0%A5%8D%E0%A4%A4%E0%A5%8B%E0%A4%A4%E0%A5%8D%E0%A4%B0%E0%A4%BE%E0%A4%A3%E0%A4%BF-%E0%A4%B7%E0%A4%9F%E0%A5%8D/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/jitan-te-stotram/_index.md")
 
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/vedanta-kaarikaavazhi/vedanta-kaarikaavazhi/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/parichaya-sanxepAH/vedAnta-kArikAvalI/mUlam.md")
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/rahasyatraya-kaarikaavazhi/rahasyatraya-kaarikaavazhi/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/venkaTanAthaH/rahasya-traya-sAraH/kArikAvalI.md")
-  # 
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/adyatmacintaa/अध्यात्मचिन्ता/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/sundara-jAmAtR-adhyAtma-chintA.md")
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/other-titles/siddantha-siddanjanam-content/%E0%A4%B8%E0%A4%BF%E0%A4%A6%E0%A5%8D%E0%A4%A7%E0%A4%BE%E0%A4%A8%E0%A5%8D%E0%A4%A4%E0%A4%B8%E0%A4%BF%E0%A4%A6%E0%A5%8D%E0%A4%A7%E0%A4%BE%E0%A4%9E%E0%A5%8D%E0%A4%9C%E0%A4%A8%E0%A4%AE%E0%A5%8D-3/", f"/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/anantAryaH/siddhAnta-siddhAnjanam")
+  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/siddadharma-vijayamangala-dipika/%E0%A4%B8%E0%A4%BF%E0%A4%A6%E0%A5%8D%E0%A4%A7%E0%A4%A7%E0%A4%B0%E0%A5%8D%E0%A4%AE%E0%A4%B5%E0%A4%BF%E0%A4%9C%E0%A4%AF%E0%A4%AE%E0%A4%99%E0%A5%8D%E0%A4%97%E0%A4%B2%E0%A4%A6%E0%A5%80%E0%A4%AA%E0%A4%BF/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/vAdhUla-shrInivAsa-siddha-dharma-vijaya-mangala-dIpikA.md")
+  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/mukthipada-sakthivada/%E0%A4%AE%E0%A5%81%E0%A4%95%E0%A5%8D%E0%A4%A4%E0%A4%BF%E0%A4%AA%E0%A4%A6%E0%A4%B6%E0%A4%95%E0%A5%8D%E0%A4%A4%E0%A4%BF%E0%A4%B5%E0%A4%BE%E0%A4%A6%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/vAdAH/venkaTa-laxmaNa-yati-mukti-pada-shakti-vAdaH.md")
 
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/sarana-sabdaartha-vicharaha/शरणशब्दार्थविचारः/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/sharaNa-shabdArtha-vichAraH.md")
-  # 
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/prapatti-anupayatva-vicharaha/प्रपत्त्यनुपायत्व-विचार", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/prapatty-anupAyatva-vichAraH.md")
-  # 
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/mukthipada-sakthivada/मुक्तिपदशक्तिवादः/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/mukti-pada-shakti-vAdaH.md")
-  # 
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/brahma-pada-sakti-vadaha/ब्रह्मपदशक्तिवादः/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/brahma-pada-shakti-vAdaH.md")
-  # 
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/siddantha-toolika/सिद्धान्ततूलिका/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/siddhAnta-tUlikA.md")
-  # 
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/kaivalya-satadooshani/कैवल्यशतदूषणी/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/kaivaly-shata-dUShaNI.md")
-  # 
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/saaaraniskarsa-tippani/सारनिष्कर्षटिप्पणी/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/sAra-niShkarSha-TippanI.md")
-  # 
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/naayamatmaa-bhasyam/नायमात्मा-भाष्यम्/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/nAyam-AtmA-bhAShyam.md")
+  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/dashamatha-darsini/%E0%AE%A4%E0%AE%B6%E0%AE%AE%E0%AE%A4-%E0%AE%A4%E0%AE%B0%E0%AF%8D%E0%AE%B6%E0%AE%BF%E0%AE%A8%E0%AF%80/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/dasha-mata-darshinI.md", source_script=sanscript.TAMIL)
 
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/astasloki-content/astasloki/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/parAshra-bhaTTa-aShTashlokI.md")
+  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/boogola-kagola-nirnayam/%E0%AE%AA%E0%AF%82%E0%AE%95%E0%AF%8B%E0%AE%B3%E0%AE%95%E0%AE%95%E0%AF%8B%E0%AE%B3-%E0%AE%B5%E0%AE%BF%E0%AE%B7%E0%AE%AF%E0%AE%AE%E0%AF%8D/", "/home/vvasuki/gitland/vishvAsa/jyotiSham/content/astrophysics/history/paurANika-darshanam/bhUgola-khagola-nirNayam.md", source_script=sanscript.TAMIL)
+
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/vedanta-kaarikaavazhi/vedanta-kaarikaavazhi/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/parichaya-sanxepAH/vedAnta-kArikAvalI/mUlam.md")
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/rahasyatraya-kaarikaavazhi/rahasyatraya-kaarikaavazhi/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTanAthaH/rahasya-traya-sAraH/kArikAvalI.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/adyatmacintaa/अध्यात्मचिन्ता/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/sundara-jAmAtR-adhyAtma-chintA.md")
+
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/sarana-sabdaartha-vicharaha/शरणशब्दार्थविचारः/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/sharaNa-shabdArtha-vichAraH.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/prapatti-anupayatva-vicharaha/प्रपत्त्यनुपायत्व-विचार", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/prapatty-anupAyatva-vichAraH.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/mukthipada-sakthivada/मुक्तिपदशक्तिवादः/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/mukti-pada-shakti-vAdaH.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/brahma-pada-sakti-vadaha/ब्रह्मपदशक्तिवादः/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/brahma-pada-shakti-vAdaH.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/siddantha-toolika/सिद्धान्ततूलिका/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/siddhAnta-tUlikA.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/kaivalya-satadooshani/कैवल्यशतदूषणी/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/kaivaly-shata-dUShaNI.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/saaaraniskarsa-tippani/सारनिष्कर्षटिप्पणी/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/sAra-niShkarSha-TippanI.md")
+  # 
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/other-titles/naayamatmaa-bhasyam/नायमात्मा-भाष्यम्/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/nAyam-AtmA-bhAShyam.md")
+
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/astasloki-content/astasloki/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/parAshra-bhaTTa-aShTashlokI.md")
 
   pass
 
@@ -113,6 +121,10 @@ def puraaNam():
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/srimad-ahobila-mahatmyam/श्रीमदहोबिलमाहात्म्यं-part-1/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/ahobila-mAhAtmyam", start_index=3, filename_from_title=False)
 
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-01/श्रीविष्णुपुराणम्-amsa-01-ady-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/01/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-02/amsa-02-ady-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/02/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)$", x).group(1))
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-03/श्रीविष्णुपुराणम्-amsa-03-ady-01-2/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/03/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-04/amsa-04-ady-01-10/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/04/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-05/श्रीविष्णुपुराणम्-amsa-05-ady-01-10/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/05/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
 
 
 def raamaayaNam():
@@ -140,7 +152,7 @@ def raamaayaNam():
 
 
 def rahasya():
-  base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/rahasya-granthaH/"
+  base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/rahasya-granthaH/"
   base_url = "https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/"
   def dump_series(x, start_index=None, filename_from_title=True):
     name = [x for x in x.split("/") if x != "" ][-1]
@@ -174,10 +186,10 @@ def fix_text(dir_path):
 if __name__ == '__main__':
   pass
   # raamaayaNam()
-  # bhagavad_vishayam()
+  bhagavad_vishayam()
   # upanishat()
   # shriibhaashya()
-  fix_text("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/ma")
+  # fix_text("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/ma")
   # misc()
   # puraaNam()
   # rahasya()
