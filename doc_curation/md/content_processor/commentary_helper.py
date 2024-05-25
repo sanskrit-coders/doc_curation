@@ -82,7 +82,7 @@ def move_detail_to_matching_file(dest_dir, source_file, dest_id_maker=None, dest
       if len(dest_matches) == 0:
         logging.warning(f"Could not get insertion point for: {index} in file {md_file.file_path}")
         continue
-      dest_match = dest_matches[0]
+      dest_match = dest_matches[-1]
       dest_content = dest_content.replace(dest_match.group(), "%s\n\n%s" % (dest_match.group(), inserted_html))
     md_file.replace_content_metadata(new_content=dest_content, dry_run=dry_run)
     source_content = source_content.replace(source_match_map[index].group(), "")
