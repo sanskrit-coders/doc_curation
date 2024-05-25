@@ -76,6 +76,7 @@ def fix_google_ocr(text):
   text = regex.sub(r"\|", "।", text)
   text = regex.sub(r"।।", "॥", text)
   text = regex.sub("(?<=\S ?)\n", "\n\n", text)
+  text = regex.sub("(?<=[ँ-ॣ]])\- +(?=[ँ-ॣ]])", "", text)
   return text
 
 def fix_mid_shloka_empty_lines(text):
@@ -90,8 +91,9 @@ def misc_sanskrit_typos(text):
   text = regex.sub("[ङनम](्[च-झ])\n", r"ञ\1", text)
   text = regex.sub("[ञङम](्[त-न])\n", r"न\1", text)
   text = regex.sub("[ञनङ](्[प-म])\n", r"म्\1", text)
-  text = regex.sub("(?<=[ँ-९]):", "ः", text)
+  text = regex.sub("(?<=[ँ-ॣ]):", "ः", text)
   text = regex.sub("ळ", "ल", text)
+  text = regex.sub("(?<=[ँ-ॣ])\- +(?=[ँ-ॣ])", "", text)
   return text
 
 def fix_avagraha_quotations(text):

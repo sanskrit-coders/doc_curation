@@ -21,7 +21,12 @@ def miimaamsaa():
   ebhaarati.dump_article(url="https://www.ebharatisampat.in/read_chapter?bookid=ODE0ODc3NjQxODAwNTA0", outfile_path="/home/vvasuki/gitland/vishvAsa/mImAMsA/content/dharmapurI-rAmAnujaH")
 
 
+def smrti():
+  ebhaarati.dump_article(url="https://www.ebharatisampat.in/readbook3?bookid=NDg4ODU5MDg4Mzk4MjY0&pageno=MjI0MjQyNjk5NTk=", outfile_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/hiraNyakeshI/gRhyam/paddhatiH/AchAra-bhUShaNam.md")
+  
+
 if __name__ == '__main__':
-  sv()
+  # sv()
+  smrti()
   # miimaamsaa()
   pass

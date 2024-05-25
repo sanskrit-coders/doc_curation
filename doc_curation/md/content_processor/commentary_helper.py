@@ -46,7 +46,7 @@ def transliterate_init_ids(content, id_pattern=r"॥ *([०-९]+) *॥", source
   return content
 
 
-def move_detail_to_matching_file(dest_dir, source_file, dest_id_maker=None, dest_pattern="<details.+?summary>मूलम्</summary>[\s\S]+?॥ *([०-९]+) *॥\s*</details>\n*", source_pattern="(?<=\n|^)([\d०-९೦-೯]+).+\n", dry_run=False):
+def move_detail_to_matching_file(dest_dir, source_file, dest_id_maker=None, dest_pattern="<details.+?summary>मूलम्</summary>[\s\S]+?॥ *([०-९]+) *॥\s*</details>\n*", source_pattern="(?<=\n|^)([\d०-९೦-೯]+).+\n", overwrite_pattern=None, overwrite_mode=None, dry_run=False):
   source_md = MdFile(file_path=source_file)
   (_, source_content) = source_md.read()
   source_match_map = content_processor.get_quasi_section_int_map(source_content, source_pattern)
@@ -64,14 +64,26 @@ def move_detail_to_matching_file(dest_dir, source_file, dest_id_maker=None, dest
     if index not in source_match_map:
       logging.warning(f"Could not get commentary for: {index} in file {md_file.file_path}")
       continue
-    (dest_metadata, dest_content) = md_file.read()
-    dest_matches = list(regex.finditer(dest_pattern, dest_content))
-    if len(dest_matches) == 0:
-      logging.warning(f"Could not get insertion point for: {index} in file {md_file.file_path}")
-      continue
-    dest_match = dest_matches[0]
     inserted_html = source_match_map[index].group()
-    dest_content = dest_content.replace(dest_match.group(), "%s\n\n%s" % (dest_match.group(), inserted_html))
+    (dest_metadata, dest_content) = md_file.read()
+    if overwrite_pattern is not None:
+      overwrite_matches = list(regex.finditer(overwrite_pattern, dest_content))
+      if len(overwrite_matches) > 0:
+        logging.warning(f"detail already exists: {index} in file {md_file.file_path}")
+        overwrite_match = overwrite_matches[0]
+        if overwrite_mode is None:
+          continue
+        elif overwrite_mode == "overwrite":
+          dest_content = dest_content.replace(overwrite_match.group(), inserted_html)
+        elif overwrite_mode == "append":
+          dest_content = dest_content.replace(overwrite_match.group(), "%s\n\n%s" % (overwrite_match.group(), inserted_html))
+    else:
+      dest_matches = list(regex.finditer(dest_pattern, dest_content))
+      if len(dest_matches) == 0:
+        logging.warning(f"Could not get insertion point for: {index} in file {md_file.file_path}")
+        continue
+      dest_match = dest_matches[0]
+      dest_content = dest_content.replace(dest_match.group(), "%s\n\n%s" % (dest_match.group(), inserted_html))
     md_file.replace_content_metadata(new_content=dest_content, dry_run=dry_run)
     source_content = source_content.replace(source_match_map[index].group(), "")
   source_md.replace_content_metadata(new_content=source_content, dry_run=dry_run)

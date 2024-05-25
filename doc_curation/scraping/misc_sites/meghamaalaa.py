@@ -42,6 +42,7 @@ def fix_text(text, source_script):
     text = regex.sub("&nbsp;", "", text)
     text = regex.sub("[sS]", "ऽ", text)
     text = content_processor.transliterate(text=text, source_script=source_script)
+  text = regex.sub(r"</?div.*?>", "", text)
   text = regex.sub(r"\*\*ः", "ः**", text)
   text = regex.sub(r"(\*{1,2})ः\1", "ः", text)
   text = regex.sub(r"(?<=^|\n)\*\*\((.+?)\)\*\*(?=$|\n)", r"## \1", text)

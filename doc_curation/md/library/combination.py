@@ -26,11 +26,11 @@ def combine_select_files_in_dir(md_file, source_fnames, title_format="## %s\n", 
       os.remove(source_md.file_path)
 
 
-def combine_parts(dir_path, dry_run=False):
+def combine_parts(dir_path, pattern="(.+?)[-_]*part[-_]*(\d+).md", dry_run=False):
   from collections import defaultdict
   file_to_parts = defaultdict(dict)
   for fname in os.listdir(dir_path):
-    match = regex.match("(.+?)[-_]*part[-_]*(\d+).md", fname)
+    match = regex.match(pattern, fname)
     if match is not None:
       file_to_parts[match.group(1)][int(match.group(2))] = fname
   for base_fname, part_dict in file_to_parts.items():
@@ -39,6 +39,8 @@ def combine_parts(dir_path, dry_run=False):
 
 
 def combine_files_in_dir(md_file, title_format="## %s\n", dry_run=False):
+  if not md_file.endswith(".md"):
+    md_file = os.path.join(md_file, "_index.md")
   dir_path = os.path.dirname(md_file.file_path)
   source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in sorted(os.listdir(dir_path)) if os.path.isfile(os.path.join(dir_path, x)) and x.endswith(".md") and x != os.path.basename(md_file.file_path) ]
   md_file.append_content_from_mds(source_mds=source_mds, title_format=title_format, dry_run=dry_run)

@@ -265,7 +265,7 @@ def merge_successive(content, title_filter=".*"):
   return content
 
 
-def autonumber_details(content, title_filter=".*", script = sanscript.DEVANAGARI):
+def autonumber_details(content, title_filter=".*", number_pattern=None, script = sanscript.DEVANAGARI):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
     return content
@@ -283,9 +283,16 @@ def autonumber_details(content, title_filter=".*", script = sanscript.DEVANAGARI
     title = _denumerify(title)
     title_index = detail_counts.get(title, 0) + 1
     detail_counts[title] = title_index
-    index_str = "%02d" % title_index
-    index_str = sanscript.transliterate(index_str, _to=script)
-    list(detail_tag.children)[0].string = f"{title} - {index_str}"
+    if number_pattern is not None:
+      matches = list(regex.finditer(number_pattern, detail.content))
+      if len(matches) == 0:
+        title_index = None
+      else:
+        title_index = sanscript.get_number(matches[-1].group(1))
+    if title_index is not None:
+      index_str = "%02d" % title_index
+      index_str = sanscript.transliterate(index_str, _to=script)
+      list(detail_tag.children)[0].string = f"{title} - {index_str}"
   content = content_processor._make_content_from_soup(soup=soup)
   content = _normalize_spaces(content)
   return content

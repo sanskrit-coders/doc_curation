@@ -25,7 +25,7 @@ if __name__ == '__main__':
     # drive_ocr.split_and_ocr_on_drive(pdf_path="/media/vvasuki/vData/text/granthasangrahaH/koshaH/upasarga-artha-candrika. vol. 1 (pra-sam).pdf", small_pdf_pages=10, detext=True, end_page=71)
     # drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/koshaH/upasarga-artha-candrika. vol. 1 (pra-sam).pdf", small_pdf_pages=10, detext=False)
     # drive_ocr.split_and_ocr_all( dir_path="/media/vvasuki/vData/text/granthasangrahaH/vedAH/sb", small_pdf_pages=10, detext=False, )
-    drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/svAmi-nArAyaNa-sampradAyaH/", small_pdf_pages=10, detext=True, file_pattern="[!_]*.pdf")
+    drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/", small_pdf_pages=10, detext=False, file_pattern="[!_]*.pdf")
 
  
     # image_ops.fix_images(input_file="/media/vvasuki/vData/text/granthasangrahaH/gaNitam/child-texts/dav/Mathematics class 2.pdf", output_file="/media/vvasuki/vData/text/granthasangrahaH/gaNitam/child-texts/dav/c2.pdf", fixer=image_ops.threshold_adaptive, threshold=60)

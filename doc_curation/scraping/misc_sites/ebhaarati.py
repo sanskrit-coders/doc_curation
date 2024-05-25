@@ -13,14 +13,14 @@ import logging
 import os, regex
 
 
-def get_article(url):
-  soup = scraping.scroll_and_get_soup(url=url, browser=None, scroll_pause=2)
+def get_article(url, scroll_pause=2):
+  soup = scraping.scroll_and_get_soup(url=url, browser=None, scroll_pause=scroll_pause, element_js="document.getElementById('content')")
   title = soup.select_one("li.title").text
   content_tag = soup.select("div.page-content")
   content = md.get_md_with_pandoc(content_in=str(content_tag), source_format="html")
   content = ocr_helper.misc_sanskrit_typos(content)
   content = regex.sub(r"\n +", r"\n", content)
-  content = regex.sub(r"ब्राहृ", r"ब्रह्म", content)
+  # content = regex.sub(r"ब्राहृ", r"ब्रह्म", content)
   content = regex.sub(r"\n(>[^\n]+)>(?=\n)", r"\n\1  ", content).replace(" > ", " ")
   
   
@@ -31,7 +31,7 @@ def get_article(url):
 
 
 def dump_article(url, outfile_path, title_prefix="", dry_run=False):
-  (page_content, page_title, soup) = get_article(url=url)
+  (page_content, page_title, soup) = get_article(url=url, scroll_pause=2)
   if outfile_path.endswith(".md"):
     file_path = outfile_path
   else:

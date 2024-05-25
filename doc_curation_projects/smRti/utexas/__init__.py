@@ -7,8 +7,8 @@ def general_fix(dir_path):
 
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=[ँ-९]):"], replacement=r"-", dry_run=False)
 
-
-  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\n)([^>\n].+)\n>"], replacement=r"\1\n\n>", dry_run=False)
+  # ALERT - This messes with footnotes! So use only with text without footnotes.
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\n)([^>\n].+)\n>"], replacement=r"\1\n\n>", dry_run=False)
   # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"\n+> (?=.{100})"], replacement=r"\n\n>", dry_run=False)
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\n)(\t+|   [ \t]+)(?=\S)"], replacement=r"> ", dry_run=False)
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\n)(.+\])\t+\*\*"], replacement=r"> \1** ", dry_run=False)

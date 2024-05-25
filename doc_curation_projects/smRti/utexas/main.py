@@ -1,13 +1,13 @@
 from doc_curation.md import library, content_processor
 from doc_curation_projects.smRti import utexas
 
-dir_path = "/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/parAsharaH/mAdhavIyam"
+# dir_path = "/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/parAsharaH/mAdhavIyam"
 
 
-def special_fix():
+def special_fix(dir_path):
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"\\\*"], replacement=r"*", dry_run=False)
 
 
 if __name__ == '__main__':
-  utexas.general_fix(dir_path=dir_path)
+  utexas.general_fix(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_sAma/content/sUtram/gautama-dharma-sUtram/maskarI.md")
   # special_fix()
