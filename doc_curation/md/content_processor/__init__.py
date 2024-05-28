@@ -41,10 +41,10 @@ def replace_texts(md_file, patterns, replacement, dry_run=False):
 def _make_content_from_soup(soup):
   new_content = ""
   for x in soup.select_one("body").contents:
-    if isinstance(x, NavigableString) and "<" in x:
+    if isinstance(x, NavigableString):
       x = str(x).replace("<", "&lt;")
     new_content = new_content + str(x)
-  new_content = new_content.replace("&amp;", "&").replace("open=\"\"", "open")
+  new_content = new_content.replace("&amp;", "&").replace("&gt;", ">").replace("open=\"\"", "open")
   return new_content
 
 def _soup_from_content(content, metadata=None):

@@ -15,7 +15,7 @@ CONTENT_DIR_BASE = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAm
 
 
 def raw_comment_to_details(source_dir, detail_title):
-  library.apply_function(fn=content_processor.replace_texts, dir_path=source_dir, patterns=["(?<=^|॥[ ०-९]+॥)\s*(\S[\S\s]+?॥ *([०-९]+) *॥)"], replacement=f"\n\n<details><summary>{detail_title} - \\2</summary>\n\n\\1\n</details>\n\n")
+  library.apply_function(fn=content_processor.replace_texts, dir_path=source_dir, patterns=["(?<=^|[।॥][ ०-९]+[।॥])\s*(\S[\S\s]+?[।॥] *([०-९]+) *[।॥])"], replacement=f"\n\n<details><summary>{detail_title} - \\2</summary>\n\n\\1\n</details>\n\n")
 
 
 def number_comments(source_dir):
@@ -25,11 +25,11 @@ def number_comments(source_dir):
   # library.apply_function(fn=content_processor.replace_texts, dir_path=source_dir, patterns=["(?<=^|॥[ ०-९]+॥)\s*(\S[\S\s]+?॥ *([०-९]+) *॥)"], replacement="\n\n<details><summary>सर्वाङ्कषा - \\2</summary>\n\n\\1\n</details>\n\n")
   
 
-def match_muula_commentary(source_dir, dest_pattern):
+def match_muula_commentary(source_dir, dest_pattern, overwrite_pattern=None):
   pass
   number_comments(source_dir=source_dir)
 
-  source_pattern = "<details.+?summary>.+? *- *(\S+)</summary>[\s\S]+?</details>\n"
+  source_pattern = "<details.+?summary>.+? *- *([०-९]+)</summary>[\s\S]+?</details>\n"
   # source_pattern = "<details.+?summary>.+?</summary>[\s\S]+?[॥।]? *([०-९]+) *[॥।]?\s*</details>\n"
   ## Interleave from file
   # for dir in ["1_jaDa-dravya-saraH"]:
@@ -43,14 +43,23 @@ def match_muula_commentary(source_dir, dest_pattern):
       continue
     source_file = source_file[0]
     source_file = os.path.join(source_dir, source_file)
-    commentary_helper.move_detail_to_matching_file(dest_dir=os.path.join(STATIC_DIR_BASE, dir), source_file=source_file, source_pattern= source_pattern, dest_pattern=dest_pattern, dry_run=False)
+    commentary_helper.move_detail_to_matching_file(dest_dir=os.path.join(STATIC_DIR_BASE, dir), source_file=source_file, source_pattern= source_pattern, dest_pattern=dest_pattern, overwrite_pattern=overwrite_pattern, overwrite_mode="overwrite", dry_run=False)
 
 
 if __name__ == '__main__':
   pass
-  # raw_comment_to_details(source_dir=os.path.join(CONTENT_DIR_BASE, "kottamangala-varadaH/subodhinI_kn/"), detail_title="ಕನ್ನಡ")
+  # raw_comment_to_details(source_dir=os.path.join(CONTENT_DIR_BASE, "kottamangala-varadaH/subodhinI_kn/1"), detail_title="ಕನ್ನಡ")
+  library.apply_function(fn=MdFile.transform, content_transformer=details_helper.rearrange_details,  titles=["मूलम्", "पाठाः (द्रष्टुं नोद्यम्)", "सर्वाङ्कषा", "सर्वाङ्कषा-पाठान्तरम्", "ಕನ್ನಡ", "सर्वार्थसिद्धिः", "नरसिंह-देवः आनन्ददायिनी", "उत्तमूरु-वीरराघवः अलभ्यलाभः", "वाधूल-श्रीनिवासः गूढार्थ-विवृतिः", "सौम्य-वरद-रामानुज-गूढार्थ-प्रकाशः"], dir_path=STATIC_DIR_BASE)
+  # match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "kottamangala-varadaH/subodhinI_kn/1"), dest_pattern= "<details.+?summary>.*?</summary>[\s\S]+?</details>\n")
   # number_comments(source_dir=os.path.join(CONTENT_DIR_BASE, "sarvArtha-siddhiH"))
-  # match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "sarvArtha-siddhiH"), dest_pattern= "<details.+?summary>सर्वाङ्कषा.*?</summary>[\s\S]+?</details>\n")
+
+  # match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "kottamangala-varadaH/sarvAnkaShA"), dest_pattern= "<details.+?summary>सर्वाङ्कषा.*?</summary>[\s\S]+?</details>\n")
+
+  # match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "uttaMUru-vIrarAghavaH_alabhya-lAbhaH"), dest_pattern= "<details.+?summary>सर्वाङ्कषा.*?</summary>[\s\S]+?</details>\n")
+
+  # match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "sarvArtha-siddhiH/saumya-varada-rAmAnuja_gUDhArtha-prakAshaH"), dest_pattern= "<details.+?summary>सर्वार्थसिद्धिः.*?</summary>[\s\S]+?</details>\n")
+  # match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "sarvArtha-siddhiH/vAdhUla-shrInivAsaH_gUDhArtha-vivRtiH"), dest_pattern= "<details.+?summary>सर्वार्थसिद्धिः.*?</summary>[\s\S]+?</details>\n")
+  # match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "sarvArtha-siddhiH/saumya-varada-rAmAnuja_gUDhArtha-prakAshaH"), dest_pattern= "<details.+?summary>सर्वार्थसिद्धिः.*?</summary>[\s\S]+?</details>\n")
 
   # match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "abhinava-ranganAthaH_bhAva-prakAshaH"), dest_pattern= "<details.+?summary>सर्वार्थसिद्धिः.*?</summary>[\s\S]+?</details>\n")
-  match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "narasiMha-devaH_AnandadAyinI"), dest_pattern= "<details.+?summary>सर्वार्थसिद्धिः.*?</summary>[\s\S]+?</details>\n")
+  # match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "narasiMha-devaH_AnandadAyinI"), dest_pattern= "<details.+?summary>सर्वार्थसिद्धिः.*?</summary>[\s\S]+?</details>\n")

@@ -1,4 +1,4 @@
-import copy
+import copy, collections
 import logging
 import os
 import textwrap
@@ -228,13 +228,27 @@ def rearrange_details(content, metadata, titles, *args, **kwargs):
     return content
   details = soup.select("details")
   final_details = []
-  title_to_detail = {detail.select_one("summary").text: detail for detail in details}
+  title_to_detail = collections.defaultdict(list)
+  for detail in details:
+    title = _denumerify(detail.select_one("summary").text)
+    if title in titles:
+      title_to_detail[title].append(detail)
+    else:
+      title_to_detail["unarranged"].append(detail)
   for title in titles:
     if title in title_to_detail:
-      final_details.append(copy.copy(title_to_detail[title]))
-  for index, detail in details.enumerate():
-    detail.insert_after("\n")
-    detail.insert_after(final_details[index])
+      for detail in title_to_detail[title]:
+        final_details.append(detail)
+    else:
+      for detail in title_to_detail["unarranged"]:
+        final_details.append(detail)
+  current_detail = final_details[0]
+  for index, detail in enumerate(final_details[1:]):
+    spacer = NavigableString("\n\n")
+    current_detail.insert_after(spacer)
+    spacer.insert_after(copy.copy(detail))
+    current_detail = detail
+  for index, detail in enumerate(final_details[1:]):
     detail.decompose()
   return content_processor._make_content_from_soup(soup=soup)
 

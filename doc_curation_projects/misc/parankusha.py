@@ -111,7 +111,7 @@ def deshika_tattvamuktaakalaapa():
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "तत्त्वमुक्ताकलापः", "expand:तत्त्वमुक्ताकलापः", "जडद्रव्यसरः"], outdir=os.path.join(base_dir, "mUlam"), ordinal_start=1, has_comment=False)
   
   # The below are incomplete as of 2023.
-  parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "K.S. வரதாசார்யர் ஸ்வாமி", "सर्वङ्कषा", "expand:सर्वङ्कषा", "जडद्रव्यसरः"], outdir=os.path.join(base_dir, "kottamangala-varadaH/sarvAnkaShA/tmp"), ordinal_start=1, has_comment=True)
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "K.S. வரதாசார்யர் ஸ்வாமி", "सर्वङ्कषा", "expand:सर्वङ्कषा", "जडद्रव्यसरः"], outdir=os.path.join(base_dir, "kottamangala-varadaH/sarvAnkaShA/tmp"), ordinal_start=1, has_comment=True)
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "K.S. வரதாசார்யர் ஸ்வாமி", "ಸುಬೋಧಿನೀ", "expand:ಸುಬೋಧಿನೀ", "जडद्रव्यसरः"], outdir=os.path.join(base_dir, "kottamangala-varadaH/subodhinI_kn/"), ordinal_start=1, has_comment=True)
   # alabhyAmAlA, bhAvaprakAsha
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "सर्वार्थसिद्धिः", "expand:सर्वार्थसिद्धिः", "जडद्रव्यसरः"], outdir=os.path.join(base_dir, "sarvArtha-siddhiH/tmp"), ordinal_start=1, has_comment=True)
@@ -119,9 +119,13 @@ def deshika_tattvamuktaakalaapa():
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "नरसिंहदेवः (नरसिंहराजः)", "आनन्ददायिनी", "expand:आनन्ददायिनी", "जडद्रव्यसरः"], outdir=os.path.join(base_dir, "narasiMha-devaH_AnandadAyinI/tmp"), ordinal_start=1, has_comment=True)
 
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "अभिनवरङ्गनाथब्रह्मतन्त्रपरकालमहादेशिकाः", "भावप्रकाशः", "expand:भावप्रकाशः", "जडद्रव्यसरः"], outdir=os.path.join(base_dir, "abhinava-ranganAthaH_bhAva-prakAshaH/tmp"), ordinal_start=1, has_comment=True)
+
   # SarvarthasiddhiGudarthavivruti
   # SarvarthasiddhiGudarthaprakasa
-  
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "உத்தமூர் வீரராகவாசார்யர்", "अलभ्यलाभः", "expand:अलभ्यलाभः", "जडद्रव्यसरः"], outdir=os.path.join(base_dir, "uttaMUru-vIrarAghavaH_alabhya-lAbhaH/"), ordinal_start=1, has_comment=True)
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "श्रीमत्सौम्यवरदरामानुजार्याः", "सर्वार्थसिद्धिगूढार्थप्रकाशः", "expand:सर्वार्थसिद्धिगूढार्थप्रकाशः", "जडद्रव्यसरः"], outdir=os.path.join(base_dir, "sarvArtha-siddhiH/saumya-varada-rAmAnuja_gUDhArtha-prakAshaH/"), ordinal_start=1, has_comment=True)
+
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "श्रीमद्वाधूलश्रीनिवासाचार्याः", "सर्वार्थसिद्धिगूढार्थविवृतिः", "expand:सर्वार्थसिद्धिगूढार्थविवृतिः", "जडद्रव्यसरः"], outdir=os.path.join(base_dir, "sarvArtha-siddhiH/vAdhUla-shrInivAsaH_gUDhArtha-vivRtiH/"), ordinal_start=1, has_comment=True)
 
   library.fix_index_files(dir_path=base_dir, overwrite=False, dry_run=False)
 
