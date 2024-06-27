@@ -106,7 +106,8 @@ def misc():
 
 def kaavyam():
   pass
-  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/stotras/parasara-bhattar/sri-gunaratnakosaha/श्रीगुणरत्नकोशः-व्याख्-2/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/mahAbhAratam/goraxapura-pAThaH/hindy-anuvAdaH/13_anushAsanaparva/01_dAna-dharma-parva/149_viShNu-sahasra-nAma-stotram/TIkA/parAshara-bhaTTaH/shrI-vatsa-vIra-rAghavaH", start_index=1, filename_from_title=True)
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/stotras/parasara-bhattar/sri-gunaratnakosaha/श्रीगुणरत्नकोशः-व्याख्-2/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/mahAbhAratam/goraxapura-pAThaH/hindy-anuvAdaH/13_anushAsanaparva/01_dAna-dharma-parva/149_viShNu-sahasra-nAma-stotram/TIkA/parAshara-bhaTTaH/shrI-vatsa-vIra-rAghavaH", start_index=1)
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/stotras/kooratazhwan/panchastavam/वरदराजस्तवव्याख्यानम्/", "/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/shrIvaiShNava-kRtam/kUresha-shrIvatsAnka-mishraH/TIkA/rAmAnujaH", start_index=1)
 
 
 def puraaNam():
@@ -157,7 +158,7 @@ def raamaayaNam():
 def rahasya():
   base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/rahasya-granthaH/"
   base_url = "https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/"
-  def dump_series(x, start_index=None, filename_from_title=True):
+  def dump_series(x, start_index=None):
     name = [x for x in x.split("/") if x != "" ][-1]
     meghamaalaa.dump_series(base_url + x, os.path.join(base_dir, f"{get_storage_name(text=name, max_length=20, source_script=sanscript.TAMIL)}") , start_index=start_index, filename_from_title=filename_from_title, source_script=sanscript.TAMIL)
   
@@ -190,6 +191,7 @@ if __name__ == '__main__':
   pass
   # raamaayaNam()
   bhagavad_vishayam()
+  # kaavyam()
   # upanishat()
   # shriibhaashya()
   # fix_text("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/ma")

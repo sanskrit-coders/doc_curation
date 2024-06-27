@@ -86,3 +86,9 @@ def fix_svara_duplicates(text):
 def svara_post_yogavaaha(text):
   text = regex.sub(f"({patterns.ACCENTS})({patterns.DEVANAGARI_YOGAVAHA}+)", r"\2\1", text)
   return text
+
+
+def google_translate(text, source_language="en", dest_language="es"):
+  from googletrans import Translator
+  translator = Translator()
+  return translator.translate(text, src=source_language, dst=dest_language)

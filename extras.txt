@@ -11,3 +11,6 @@ img2pdf
 lxml
 
 aksharamukha
+
+nltk
+googletrans-sw

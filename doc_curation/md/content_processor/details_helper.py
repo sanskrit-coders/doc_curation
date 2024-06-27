@@ -125,18 +125,19 @@ def transliterate_details(content, source_script, dest_script=sanscript.DEVANAGA
 
   return transform_details_with_soup(content=content, metadata=None, title=title, transformer=transformer)
 
-def insert_duplicate_before(content, metadata, old_title_pattern="मूलम्.*", new_title="विश्वास-प्रस्तुतिः"):
+def insert_duplicate_adjascent(content, metadata, old_title_pattern="मूलम्.*", new_title="विश्वास-प्रस्तुतिः", inserter=PageElement.insert_after, content_transformer=lambda x:x):
   if new_title in content:
     logging.error(f"{new_title} already present. returning")
     return content
   def transformer(detail_tag):
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
     detail.title = new_title
+    detail.content = content_transformer(detail.content)
     if new_title == "विश्वास-प्रस्तुतिः":
       attribute_str = "open"
-    detail_tag.insert_before("\n\n")
-    detail_tag.insert_before(detail.to_soup(attributes_str=attribute_str))
-    detail_tag.insert_before("\n\n")
+    inserter(detail_tag, "\n\n")
+    inserter(detail_tag, detail.to_soup(attributes_str=attribute_str))
+    inserter(detail_tag, "\n\n")
     if "open" in detail_tag and "मूलम्" in old_title_pattern:
       del detail_tag["open"]
   content = transform_details_with_soup(content=content, metadata=metadata, transformer=transformer, title=old_title_pattern)
@@ -226,7 +227,8 @@ def rearrange_details(content, metadata, titles, *args, **kwargs):
   soup = content_processor._soup_from_content(content=content, metadata=metadata)
   if soup is None:
     return content
-  details = soup.select("details")
+  # Don't pick up details within details.
+  details = soup.find_all(lambda x: x.name == 'details' and x.find_parent("details") is None)
   final_details = []
   title_to_detail = collections.defaultdict(list)
   for detail in details:
@@ -239,18 +241,18 @@ def rearrange_details(content, metadata, titles, *args, **kwargs):
     if title in title_to_detail:
       for detail in title_to_detail[title]:
         final_details.append(detail)
-    else:
-      for detail in title_to_detail["unarranged"]:
-        final_details.append(detail)
+  for detail in title_to_detail["unarranged"]:
+    final_details.append(detail)
   current_detail = final_details[0]
   for index, detail in enumerate(final_details[1:]):
     spacer = NavigableString("\n\n")
     current_detail.insert_after(spacer)
-    spacer.insert_after(copy.copy(detail))
+    spacer.insert_after(detail)
     current_detail = detail
-  for index, detail in enumerate(final_details[1:]):
-    detail.decompose()
-  return content_processor._make_content_from_soup(soup=soup)
+  # for index, detail in enumerate(final_details[1:]):
+  #   detail.decompose()
+  content_out = content_processor._make_content_from_soup(soup=soup)
+  return content_out
 
 
 def merge_successive(content, title_filter=".*"):
@@ -373,6 +375,33 @@ def shlokas_to_muula_viprastuti_details(content, pattern=None):
   if pattern == patterns.PATTERN_BOLDED_QUOTED_SHLOKA:
     content = content.replace("**", "")
     content = regex.sub("\n> *", "\n", content)
+  return content
+
+
+def sentences_to_translated_details(content, source_language="en", dest_language="es"):
+  from nltk.tokenize import sent_tokenize
+  from doc_curation.utils import text_utils
+
+  soup = content_processor._soup_from_content(content=content)
+  if soup is None:
+    return content
+  for element in soup.select_one("body").children:
+    if isinstance(element, NavigableString):
+      sentences = sent_tokenize(element.text)
+      for sentence in sentences:
+        detail_muula = Detail(title = source_language, content=sentence)
+        translation = text_utils.google_translate(text=sentence, source_language=source_language, dest_language=dest_language)
+        detail_trans = Detail(title = dest_language, content=translation)
+        element.append(detail_trans.to_soup())
+        element.append(detail_muula.to_soup(attributes_str="open"))
+        element.extract()
+      if element.name == "details":
+        detail = Detail.from_soup_tag(detail_tag=element)
+        translation = text_utils.google_translate(text=detail.content, source_language=source_language, dest_language=dest_language)
+        detail_trans = Detail(title = f"{detail.title} {dest_language}", content=translation)
+        element.insert_after(detail_trans.to_soup())
+  content = content_processor._make_content_from_soup(soup=soup)
+  content = _normalize_spaces(content)
   return content
 
 

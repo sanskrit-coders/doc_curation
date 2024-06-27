@@ -43,7 +43,7 @@ def dump_wordpress():
 
 def dump_wordpress_monthly():
 
-  init_year_month_str = "2023/12"
+  init_year_month_str = "2024/05"
   wordpress.scrape_monthly_indexes(url="https://dothemath.ucsd.edu/", dir_path=f"{BASE_PATH}/weblogs/non-hindu/doTheMath", init_year_month_str=init_year_month_str, dry_run=False)
 
   # Slow scan
@@ -83,6 +83,7 @@ def dump_substack():
 
   substack.scrape_free_articles_from_index_anchors(url="https://thedharmadispatch.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/dharma-dispatch", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://jhalazalimsingh.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/jhalazalimsingh", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://williamjames17.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/williamjames17", dry_run=False)
 
   substack.scrape_free_articles_from_index_anchors(url="https://newsletter.smallbets.co/archive", dir_path=f"{BASE_PATH}/weblogs/non-hindu/smallbets", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://machiavellianhindu.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/machiavellianhindu", dry_run=False)
@@ -107,8 +108,8 @@ if __name__ == '__main__':
   # word_clouds()
   # dump_mags()
   # blog.organize_by_date(dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/sage-bloodlines/bhRguH/dvitIyajanmani_bhRguH/chyavanaH/ApnavAna/aurvaH/jamadagniH/MT_charitram")
-  # dump_substack()
-  dump_wordpress()
+  dump_substack()
+  # dump_wordpress()
   # dump_wordpress_monthly()
 
   # blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path=f"{BASE_PATH}/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)

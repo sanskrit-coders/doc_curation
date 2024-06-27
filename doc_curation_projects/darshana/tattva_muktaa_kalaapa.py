@@ -49,7 +49,7 @@ def match_muula_commentary(source_dir, dest_pattern, overwrite_pattern=None):
 if __name__ == '__main__':
   pass
   # raw_comment_to_details(source_dir=os.path.join(CONTENT_DIR_BASE, "kottamangala-varadaH/subodhinI_kn/1"), detail_title="ಕನ್ನಡ")
-  library.apply_function(fn=MdFile.transform, content_transformer=details_helper.rearrange_details,  titles=["मूलम्", "पाठाः (द्रष्टुं नोद्यम्)", "सर्वाङ्कषा", "सर्वाङ्कषा-पाठान्तरम्", "ಕನ್ನಡ", "सर्वार्थसिद्धिः", "नरसिंह-देवः आनन्ददायिनी", "उत्तमूरु-वीरराघवः अलभ्यलाभः", "वाधूल-श्रीनिवासः गूढार्थ-विवृतिः", "सौम्य-वरद-रामानुज-गूढार्थ-प्रकाशः"], dir_path=STATIC_DIR_BASE)
+  library.apply_function(fn=MdFile.transform, content_transformer=details_helper.rearrange_details,  titles=["मूलम्", "पाठाः (द्रष्टुं नोद्यम्)", "वरदार्य-सर्वाङ्कषा", "वरदार्य-सर्वाङ्कषा-पाठान्तरम्", "वरदार्य-सुबोधिनी (कन्नड)", "सर्वार्थसिद्धिः", "नरसिंह-देवः आनन्ददायिनी", "उत्तमूरु-वीरराघवः अलभ्यलाभः", "वाधूल-श्रीनिवासः गूढार्थ-विवृतिः", "सौम्य-वरद-रामानुज-गूढार्थ-प्रकाशः", "अभिनव-रङ्गनाथः भाव-प्रकाशः"], dir_path=STATIC_DIR_BASE)
   # match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "kottamangala-varadaH/subodhinI_kn/1"), dest_pattern= "<details.+?summary>.*?</summary>[\s\S]+?</details>\n")
   # number_comments(source_dir=os.path.join(CONTENT_DIR_BASE, "sarvArtha-siddhiH"))
 
