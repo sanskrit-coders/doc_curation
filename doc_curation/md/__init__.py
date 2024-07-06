@@ -32,5 +32,6 @@ def get_md_with_pandoc(content_in, source_format="html-native_divs-native_spans"
                                      filters=filters)
   # content = regex.sub(r"</?div[^>]*?>", "", content)
   content = regex.sub(r"\n\n+", "\n\n", content)
-  content = regex.sub(r"(\S)\n(\S)", r"\1 \2", content)
+  # Careful to exclude |-ending-lines in tables.
+  content = regex.sub(r"([^\s|])\n([^\-\s|])", r"\1 \2", content)
   return content

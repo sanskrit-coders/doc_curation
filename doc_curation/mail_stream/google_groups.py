@@ -13,6 +13,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.remote_connection import LOGGER
 
 from curation_utils import scraping, file_helper
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.wait import WebDriverWait
+
 from doc_curation import md
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper import souper
@@ -49,7 +52,7 @@ def get_thread_messages_selenium(url, browser=thread_browser):
   # Expanding threads forces us to click and trigger javascript loading. Hence we then use selenium, rather than soup.
   browser.get(url=url)
   try:
-    expand_link = browser.find_element_by_link_text("")
+    expand_link = browser.find_element(value="", by=By.LINK_TEXT)
     expand_link.click()
   except NoSuchElementException:
     pass
@@ -117,11 +120,18 @@ def scrape_threads(url, dest_dir, start_url=None, dumper=dump_messages_to_files,
   thread_count = 0
   page_count = 0
   while(True):
-    logging.info(f"Processing page -{page_count}. {thread_count} threads done.")
+    logging.info(f"Processing page -{page_count}. {thread_count} threads done. URL {url}")
     thread_tags = browser.find_elements(by=By.CSS_SELECTOR, value='[role="row"]')
     page_count = page_count + 1
     for thread_tag in thread_tags:
-      soup = BeautifulSoup(thread_tag.get_attribute('innerHTML'), features="lxml")
+      try:
+        soup = BeautifulSoup(thread_tag.get_attribute('innerHTML'), features="lxml")
+      except Exception as e:
+        logging.error(f"Exception {e}")
+        # input("Press Enter to continue...")
+        wait = WebDriverWait(browser, 10)
+        thread_tag = wait.until(expected_conditions.presence_of_element_located((By.ID, thread_tag.id)))
+        soup = BeautifulSoup(thread_tag.get_attribute('innerHTML'), features="lxml")
       thread_count = thread_count + 1
       anchor = soup.select_one("a")
       if not anchor:

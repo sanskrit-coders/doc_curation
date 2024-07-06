@@ -6,7 +6,7 @@ from doc_curation.scraping.misc_sites import parankusha
 
 
 def get_ramayana_text(browser, text_id, base_dir):
-    browser.find_element_by_link_text(text_id).click()
+    browser.find_element(text_id, by=By.LINK_TEXT).click()
     # browser.implicitly_wait(2)
     unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/raamaayana/andhra.json")
     if text_id == "रामायणम्-नव्यपाठः":
@@ -15,7 +15,7 @@ def get_ramayana_text(browser, text_id, base_dir):
         unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/raamaayana/kumbhakonam.json")
 
     for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
-        kaanda_element = browser.find_element_by_link_text("Kanda-%d" % kaanda_index)
+        kaanda_element = browser.find_element(value="Kanda-%d" % kaanda_index, by=By.LINK_TEXT)
         # kaanda_element.click()
         # Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen 
         browser.execute_script("arguments[0].click();", kaanda_element)
@@ -27,8 +27,8 @@ def get_ramayana_text(browser, text_id, base_dir):
             if os.path.exists(outfile_path):
                 logging.info("Skipping " + outfile_path)
                 continue
-            browser.find_element_by_link_text("Sarga-%d" % sarga_index).click()
-            text_spans = browser.find_element("divResults").find_elements_by_tag_name("span")
+            browser.find_element(value="Sarga-%d" % sarga_index, by=By.LINK_TEXT).click()
+            text_spans = browser.find_element(value="divResults").find_elements_by_tag_name("span")
             lines = ["\n", "\n"]
             for span in text_spans:
                 shloka = span.text
@@ -39,7 +39,7 @@ def get_ramayana_text(browser, text_id, base_dir):
             with open(outfile_path, "w") as outfile:
                 outfile.writelines(lines)
         # Close the kANDa - else the driver may pick sarga from this kANDa when it is to pick the sarga from the next kANDa?!
-        browser.find_element_by_link_text("Kanda-%d" % kaanda_index).click()
+        browser.find_element(value="Kanda-%d" % kaanda_index, by=By.LINK_TEXT).click()
 
 
 if __name__ == '__main__':
