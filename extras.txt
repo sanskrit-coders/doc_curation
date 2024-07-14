@@ -1,6 +1,7 @@
 editdistance # Installation failed on WIndows in 2022 with an error requiring visual basic.
 selenium # Not needed for github action runs
 google-cloud-vision
+google-api-python-client
 
 kraken
 kraken[pdf]

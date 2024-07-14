@@ -125,7 +125,7 @@ def transliterate_details(content, source_script, dest_script=sanscript.DEVANAGA
 
   return transform_details_with_soup(content=content, metadata=None, title=title, transformer=transformer)
 
-def insert_duplicate_adjascent(content, metadata, old_title_pattern="मूलम्.*", new_title="विश्वास-प्रस्तुतिः", inserter=PageElement.insert_after, content_transformer=lambda x:x):
+def insert_duplicate_adjascent(content, metadata, old_title_pattern="मूलम्.*", new_title="विश्वास-प्रस्तुतिः", inserter=PageElement.insert_before, content_transformer=lambda x:x):
   if new_title in content:
     logging.error(f"{new_title} already present. returning")
     return content
