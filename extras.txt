@@ -14,4 +14,4 @@ lxml
 aksharamukha
 
 nltk
-googletrans-sw
+translators

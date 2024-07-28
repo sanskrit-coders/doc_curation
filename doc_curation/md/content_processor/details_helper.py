@@ -390,16 +390,36 @@ def sentences_to_translated_details(content, source_language="en", dest_language
       sentences = sent_tokenize(element.text)
       for sentence in sentences:
         detail_muula = Detail(title = source_language, content=sentence)
-        translation = text_utils.google_translate(text=sentence, source_language=source_language, dest_language=dest_language)
+        translation = text_utils.translate(text=sentence, source_language=source_language, dest_language=dest_language)
         detail_trans = Detail(title = dest_language, content=translation)
         element.append(detail_trans.to_soup())
         element.append(detail_muula.to_soup(attributes_str="open"))
         element.extract()
       if element.name == "details":
         detail = Detail.from_soup_tag(detail_tag=element)
-        translation = text_utils.google_translate(text=detail.content, source_language=source_language, dest_language=dest_language)
+        translation = text_utils.translate(text=detail.content, source_language=source_language, dest_language=dest_language)
         detail_trans = Detail(title = f"{detail.title} {dest_language}", content=translation)
         element.insert_after(detail_trans.to_soup())
+        element.insert_after("\n\n")
+  content = content_processor._make_content_from_soup(soup=soup)
+  content = _normalize_spaces(content)
+  return content
+
+
+def add_translation(content, src_detail_pattern="English", source_language="en", dest_language="es"):
+  from doc_curation.utils import text_utils
+
+  soup = content_processor._soup_from_content(content=content)
+  if soup is None:
+    return content
+  for element in soup.select_one("body").children:
+    if element.name == "details":
+      detail = Detail.from_soup_tag(detail_tag=element)
+      if not regex.match(detail.title, src_detail_pattern):
+        continue
+      translation = text_utils.translate(text=detail.content, source_language=source_language, dest_language=dest_language)
+      detail_trans = Detail(title = f"{detail.title} {dest_language}", content=translation)
+      element.insert_after(detail_trans.to_soup())
   content = content_processor._make_content_from_soup(soup=soup)
   content = _normalize_spaces(content)
   return content

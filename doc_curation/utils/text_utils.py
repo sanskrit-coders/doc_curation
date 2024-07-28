@@ -88,7 +88,6 @@ def svara_post_yogavaaha(text):
   return text
 
 
-def google_translate(text, source_language="en", dest_language="es"):
-  from googletrans import Translator
-  translator = Translator()
-  return translator.translate(text, src=source_language, dst=dest_language)
+def translate(text, source_language="en", dest_language="es", translator="google"):
+  import translators
+  return translators.translate_text(text, from_language=source_language, to_language=dest_language, translator=translator)
