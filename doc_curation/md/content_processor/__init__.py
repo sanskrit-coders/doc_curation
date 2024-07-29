@@ -45,6 +45,7 @@ def _make_content_from_soup(soup):
       x = str(x).replace("<", "&lt;")
     new_content = new_content + str(x)
   new_content = new_content.replace("&amp;", "&").replace("&gt;", ">").replace("open=\"\"", "open")
+  new_content = new_content.replace("</details><details", "</details>\n\n<details")
   return new_content
 
 def _soup_from_content(content, metadata=None):

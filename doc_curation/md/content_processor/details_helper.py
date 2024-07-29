@@ -381,20 +381,28 @@ def shlokas_to_muula_viprastuti_details(content, pattern=None):
 def sentences_to_translated_details(content, source_language="en", dest_language="es"):
   from nltk.tokenize import sent_tokenize
   from doc_curation.utils import text_utils
-
+  if f"<details><summary>{dest_language}</summary>" in content:
+    logging.debug("Skipping translation because <summary>%s</summary>", dest_language)
+    return content
   soup = content_processor._soup_from_content(content=content)
   if soup is None:
     return content
   for element in soup.select_one("body").children:
     if isinstance(element, NavigableString):
-      sentences = sent_tokenize(element.text)
+      tokenizer_language = {"en": "english", "es": "spanish"}
+      sentences = sent_tokenize(element.text, language=tokenizer_language[source_language])
+      detail_pairs = []
       for sentence in sentences:
         detail_muula = Detail(title = source_language, content=sentence)
         translation = text_utils.translate(text=sentence, source_language=source_language, dest_language=dest_language)
         detail_trans = Detail(title = dest_language, content=translation)
-        element.append(detail_trans.to_soup())
-        element.append(detail_muula.to_soup(attributes_str="open"))
-        element.extract()
+        detail_pairs.append([detail_muula, detail_trans])
+      detail_pairs.reverse()
+      for [detail_muula, detail_trans] in detail_pairs:
+        element.insert_after(detail_trans.to_soup())
+        element.insert_after(NavigableString("\n\n"))
+        element.insert_after(detail_muula.to_soup(attributes_str="open"))
+      element.extract()
       if element.name == "details":
         detail = Detail.from_soup_tag(detail_tag=element)
         translation = text_utils.translate(text=detail.content, source_language=source_language, dest_language=dest_language)
@@ -418,7 +426,12 @@ def add_translation(content, src_detail_pattern="English", source_language="en",
       if not regex.match(detail.title, src_detail_pattern):
         continue
       translation = text_utils.translate(text=detail.content, source_language=source_language, dest_language=dest_language)
-      detail_trans = Detail(title = f"{detail.title} {dest_language}", content=translation)
+      translation = regex.sub(translation, r"\[^", fr"\[^{dest_language}")
+      translation = regex.sub(translation, r"(?<=\n|^) (\[^.+?\]:|>)", fr"\1")
+      title = f"{detail.title} {dest_language}"
+      if detail.title == "English":
+        title = "Español"
+      detail_trans = Detail(title=title, content=translation)
       element.insert_after(detail_trans.to_soup())
   content = content_processor._make_content_from_soup(soup=soup)
   content = _normalize_spaces(content)

@@ -32,7 +32,7 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.split_to_bits,  dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/meta/articles/sen-bAg_on_shulba-sUtras/", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.ISO, mixed_languages_in_titles=False, title_index_pattern=None, maybe_use_dravidian_variant="force", max_length=70) # 
 
   ## None Script
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content/shAkalam/saMhitA/meta/articles/haas_gAyatrI.md", dry_run=False, source_script=None, start_index=0)
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/castellano/rangapuri-rAmAyaNam/0_Meta/Apendices.md", dry_run=False, source_script=None, start_index=1)
 
-  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/economics/assets/real-estate.md", dry_run=False, source_script=None,  title_index_pattern=None)
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/castellano/rangapuri-rAmAyaNam/", dry_run=False, source_script=None,  title_index_pattern=None)
   
