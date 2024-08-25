@@ -46,4 +46,4 @@ if __name__ == '__main__':
   pass
   # fix_anunaasikas(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/shrIvaiShNava-kRtam/kUresha-shrIvatsAnka-mishraH")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/vAyu-purANam/dvi-khaNDa-saMskaraNam", content_transformer=lambda x, y: sanskrit_helper.fix_repha_duplication(x), dry_run=False, silent_iteration=False)
-  devanaagarify(dir_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation_projects/general_tasks/content/tmp.md", source_script="iast")
+  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/meta/articles/anchuvai_amudu.md", source_script="tamil")

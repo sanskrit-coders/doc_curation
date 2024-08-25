@@ -7,13 +7,13 @@ def combine_files(dir_path):
   pass
 
   # combination.make_full_text_md(source_dir="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/paddhatiH/shrIvaiShNavaH/mADabhUShi-vIrarAghavaH/01_pUrva-prayoga-chandrikA/02_angAni/02_udakashAntiH")
-  combination.combine_files_in_dir(dir_path=dir_path)
+  combination.combine_files_in_dir(md_file=dir_path)
   # arrangement.defolderify_single_md_dirs(dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA/", dry_run=False)
 
 
 if __name__ == '__main__':
   pass
-  combine_files("/home/vvasuki/gitland/vishvAsa/mImAMsA/content/karma-kANDam/granthAH/shloka-vArttikam/mUlam")
+  combine_files("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/nIlameghAnuvAdaH/alt")
 
   # library.defolderify(dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH /taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/haradatta-TIkA", dry_run=False)
   # library.make_full_text_md(source_dir="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/champUH/nItiH/hitopadeshaH")

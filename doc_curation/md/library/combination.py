@@ -41,6 +41,8 @@ def combine_parts(dir_path, pattern="(.+?)[-_]*part[-_]*(\d+).md", dry_run=False
 def combine_files_in_dir(md_file, title_format="## %s\n", dry_run=False):
   if not md_file.endswith(".md"):
     md_file = os.path.join(md_file, "_index.md")
+  if isinstance(md_file, str):
+    md_file = MdFile(file_path=md_file)
   dir_path = os.path.dirname(md_file.file_path)
   source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in sorted(os.listdir(dir_path)) if os.path.isfile(os.path.join(dir_path, x)) and x.endswith(".md") and x != os.path.basename(md_file.file_path) ]
   md_file.append_content_from_mds(source_mds=source_mds, title_format=title_format, dry_run=dry_run)

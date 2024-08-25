@@ -94,6 +94,16 @@ def fix_bold_italics(content):
   return content
 
 
+def fix_private_use_roman(content):
+  new_content = ""
+  for c in content:
+    if ord(c) >= ord("") and ord(c) <= ord("Z") - ord("A") + ord(""):
+      new_content += chr(ord(c)- ord("") + ord("A"))
+    else:
+      new_content += c
+  return new_content
+
+
 def get_quasi_section_int_map(content, pattern):
   """
   

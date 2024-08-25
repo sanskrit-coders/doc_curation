@@ -72,33 +72,36 @@ def fix_oldenberg():
   base_dir = ref_dir.replace("mUlam", "oldenberg")
   
   work_dir = os.path.join(base_dir, "1/2")
-  # library.shift_contents(work_dir, start_index=19, substitute_content_offset=1)
+  # arrangement.shift_contents(work_dir, start_index=19, substitute_content_offset=1)
   # library.remove_file_by_index(work_dir, [25])
 
+  work_dir = os.path.join(base_dir, "1/5")
+  arrangement.shift_contents(work_dir, start_index=18, substitute_content_offset=1)
+
   work_dir = os.path.join(base_dir, "3/1")
-  # library.shift_contents(work_dir, start_index=3, substitute_content_offset=1)
-  # library.shift_contents(work_dir, start_index=11, substitute_content_offset=1)
-  # library.shift_contents(work_dir, start_index=41, substitute_content_offset=1)
+  # arrangement.shift_contents(work_dir, start_index=3, substitute_content_offset=1)
+  # arrangement.shift_contents(work_dir, start_index=11, substitute_content_offset=1)
+  # arrangement.shift_contents(work_dir, start_index=41, substitute_content_offset=1)
 
   work_dir = os.path.join(base_dir, "3/2")
-  # library.shift_contents(work_dir, start_index=10, substitute_content_offset=1)
-  # library.shift_contents(work_dir, start_index=14, substitute_content_offset=1)
+  # arrangement.shift_contents(work_dir, start_index=10, substitute_content_offset=1)
+  # arrangement.shift_contents(work_dir, start_index=14, substitute_content_offset=1)
 
   work_dir = os.path.join(base_dir, "3/3")
-  # library.shift_contents(work_dir, start_index=23, substitute_content_offset=1)
+  # arrangement.shift_contents(work_dir, start_index=23, substitute_content_offset=1)
 
   work_dir = os.path.join(base_dir, "3/4")
-  # library.shift_contents(work_dir, start_index=17, substitute_content_offset=-1)
+  # arrangement.shift_contents(work_dir, start_index=17, substitute_content_offset=-1)
 
   work_dir = os.path.join(base_dir, "3/5")
-  # library.shift_contents(work_dir, start_index=16, substitute_content_offset=1)
-  # library.shift_contents(work_dir, start_index=28, substitute_content_offset=1)
+  # arrangement.shift_contents(work_dir, start_index=16, substitute_content_offset=1)
+  # arrangement.shift_contents(work_dir, start_index=28, substitute_content_offset=1)
 
   # work_dir = os.path.join(base_dir, "4/1")
-  # library.shift_contents(work_dir, start_index=13, substitute_content_offset=1)
+  # arrangement.shift_contents(work_dir, start_index=13, substitute_content_offset=1)
 
   work_dir = os.path.join(base_dir, "4/2")
-  # library.shift_contents(work_dir, start_index=13, substitute_content_offset=1)
+  # arrangement.shift_contents(work_dir, start_index=13, substitute_content_offset=1)
   pass
 
 
@@ -125,8 +128,8 @@ def combine():
 if __name__ == '__main__':
   # dump_muulam()
   # dump_oldenberg()
-  # fix_oldenberg()
-  fix_includes()
+  fix_oldenberg()
+  # fix_includes()
   # fix_filenames()
   # combine()
   pass

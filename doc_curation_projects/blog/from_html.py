@@ -108,7 +108,7 @@ if __name__ == '__main__':
   # word_clouds()
   # dump_mags()
   # blog.organize_by_date(dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/sage-bloodlines/bhRguH/dvitIyajanmani_bhRguH/chyavanaH/ApnavAna/aurvaH/jamadagniH/MT_charitram")
-  # dump_substack()
+  dump_substack()
   dump_wordpress()
   dump_wordpress_monthly()
 

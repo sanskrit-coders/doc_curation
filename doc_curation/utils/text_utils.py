@@ -90,6 +90,8 @@ def svara_post_yogavaaha(text):
 
 def translate(text, source_language="en", dest_language="es", translator="google"):
   import translators
+  if not regex.search(r"[^\d\s*&%\^$#@!~`';:\[\]{}\-]", text):
+    return text
   return translators.translate_text(text, from_language=source_language, to_language=dest_language, translator=translator)
 
 

@@ -11,11 +11,11 @@ def fix_audio_tags():
 
 def details_fix(dir_path):
 
-
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_MULTI_LINE_SHLOKA_DOUBLE_DANDA))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.non_detail_parts_to_detail(content=c, title="टीका"))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_MULTI_LINE_SHLOKA))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_2LINE_SHLOKA))
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=details_helper.insert_duplicate_adjascent)
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=details_helper.insert_duplicate_adjascent)
 
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH", content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.sanskrit_tag_transformer, title_pattern="विश्वास.*|मूल.*"))
@@ -54,7 +54,7 @@ if __name__ == '__main__':
   # misc_typos("/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/sage-bloodlines/AngIrasaH/prajAH_khyAtyAH/bharadvAjaH/bhAradvAjaH/bannanje-kulam/articles/govindAlokaH")
   # fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/gadyam/shrI-vaiShNava-kRtam/venkaTanAthaH/TIkA/shaThakopa_on_raghuvIra.md")
   # section_fix()
-  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/baudhAyanaH/shrautam/sarva-prastutiH")
+  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/subhAShitam/vairAgyam")
 
 
   pass
@@ -71,9 +71,10 @@ if __name__ == '__main__':
   # migrate_and_include_shlokas()
   # add_init_words_to_includes()
   # md_files = library.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH", file_pattern="**/_index.md")  
-  # devanaagarify()
   # fix_footnotes(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/02.md")
 
   # fix_footnotes("/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/sarit-markdown")
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/articles/sons_of_sarasvatI", content_transformer=lambda x, y: ocr_helper.fix_iast_for_pdfs(x), dry_run=False)
+
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/kentum/germanic/west-german/articles/outcastes.md", content_transformer=lambda x, y: content_processor.fix_private_use_roman(x), dry_run=False)

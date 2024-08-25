@@ -62,6 +62,14 @@ def shift_contents(dir_path, substitute_content_offset, start_index=None, end_in
         replacer(md_file, content)
 
 
+def shift_details(dir_path, substitute_content_offset, detail_title, start_index=None, end_index=None, index_position=0):
+  from doc_curation.md.content_processor import details_helper
+  def replacer(md_file, content):
+    detail = details_helper.get_detail(content=content, metadata={}, title=detail_title)
+    (metadata, md_content) = md_file.read()
+    
+
+
 def shift_indices(dir_path, new_index_offset, start_index=1, end_index=9999, index_position=0, dry_run=False):
   files = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
   files.sort()
