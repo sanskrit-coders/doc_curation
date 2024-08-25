@@ -62,12 +62,19 @@ def shift_contents(dir_path, substitute_content_offset, start_index=None, end_in
         replacer(md_file, content)
 
 
-def shift_details(dir_path, substitute_content_offset, detail_title, start_index=None, end_index=None, index_position=0):
+def shift_details(dir_path, substitute_content_offset, detail_title, start_index=None, end_index=None, index_position=0, dry_run=False):
   from doc_curation.md.content_processor import details_helper
   def replacer(md_file, content):
-    detail = details_helper.get_detail(content=content, metadata={}, title=detail_title)
+    (_, detail) = details_helper.get_detail(content=content, metadata={}, title=detail_title)
     (metadata, md_content) = md_file.read()
-    
+    (detail_tag, md_detail) = details_helper.get_detail(content=content, metadata={}, title=detail_title)
+    if md_detail is None:
+      md_detail.content = detail.content
+      md_file.transform(content_transformer=lambda c, m: f"{c}\n\n{md_detail.to_md_html()}", dry_run=dry_run)
+    else:
+      md_file.transform(content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title=detail_title, replacement=detail.content), dry_run=dry_run)
+
+  shift_contents(dir_path=dir_path, substitute_content_offset=substitute_content_offset, start_index=start_index, end_index=end_index, index_position=index_position, replacer=replacer)
 
 
 def shift_indices(dir_path, new_index_offset, start_index=1, end_index=9999, index_position=0, dry_run=False):

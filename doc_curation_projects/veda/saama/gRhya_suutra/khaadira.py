@@ -3,14 +3,15 @@ import os
 import regex
 
 from doc_curation.md import library
+
 from doc_curation.md.content_processor import include_helper
 from doc_curation.md.file import MdFile
-from doc_curation.md.library import metadata_helper, arrangement, combination
+from doc_curation.md.library import metadata_helper, arrangement, combination, content_helper
 from doc_curation.scraping.sacred_texts import para_translation
 
 content_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_sAma/content/kauthumam/sUtram/drAhyAyaNaH/khAdira-gRhyam"
 static_dir_base = content_dir_base.replace("content", "static")
-ref_dir = os.path.join(static_dir_base, "mUlam")
+ref_dir = os.path.join(static_dir_base, "sarvASh_TIkAH")
 
 
 def dump_muulam():
@@ -39,16 +40,15 @@ def fix_filenames():
 
 
 def fix_includes():
-  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH/content/sAma/kauthumam/sUtram/drAhyAyaNaH/khAdira-gRhyam/sarva-prastutiH/", file_pattern="**/[0-9][0-9]*.md")
-  md_files = [f for f in md_files if os.path.basename(f.file_path) ]
-  
-  def include_fixer(match):
-    return include_helper.alt_include_adder(match=match, source_dir="vishvAsa-prastutiH", alt_dirs=["haradattaH", "sudarshanaH", "oldenberg"])
+  dir_path = "/home/vvasuki/gitland/vishvAsa/vedAH/content/sAma/kauthumam/sUtram/drAhyAyaNaH/khAdira-gRhyam/sarva-prastutiH/"
 
-  for md_file in md_files:
-    include_helper.transform_include_lines(md_file=md_file, transformer=include_helper.old_include_remover)
-    include_helper.transform_include_lines(md_file=md_file, transformer=include_fixer)
-    md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
+  def include_fixer(inc, file_path):
+    return include_helper.alt_include_adder(inc=inc, current_file_path=file_path, source_dir="vishvAsa-prastutiH", alt_dirs=["sarvASh_TIkAH"])
+
+
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_helper.old_include_remover))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y, transformer=include_fixer))
+  include_helper.prefill_includes(dir_path=dir_path)
 
 
 def oldenberg_dest_path_maker(url, base_dir):
@@ -60,7 +60,7 @@ def oldenberg_dest_path_maker(url, base_dir):
 
 
 def dump_oldenberg():
-  base_dir = ref_dir.replace("mUlam", "oldenberg")
+  base_dir = ref_dir
   # doc_curation.scraping.sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe29/sbe29207.htm", outfile_path=os.path.join(content_dir_base, "meta", "oldenberg.md"))
   # 
   # doc_curation.scraping.sacred_texts.dump_serially(start_url="https://www.sacred-texts.com/hin/sbe29/sbe29208.htm", base_dir=base_dir, dest_path_maker=oldenberg_dest_path_maker)
@@ -69,14 +69,20 @@ def dump_oldenberg():
 
 
 def fix_oldenberg():
-  base_dir = ref_dir.replace("mUlam", "oldenberg")
-  
-  work_dir = os.path.join(base_dir, "1/2")
-  # arrangement.shift_contents(work_dir, start_index=19, substitute_content_offset=1)
-  # library.remove_file_by_index(work_dir, [25])
+  base_dir = ref_dir
+  content_helper.list_files_with_missing_details(base_dir, detail_title="Oldenberg")
+
+  work_dir = os.path.join(base_dir, "1/1")
+  # arrangement.shift_details(work_dir, start_index=16, substitute_content_offset=-2, detail_title="Oldenberg")
 
   work_dir = os.path.join(base_dir, "1/5")
-  arrangement.shift_contents(work_dir, start_index=18, substitute_content_offset=1)
+  # arrangement.shift_details(work_dir, detail_title="Oldenberg", start_index=26, substitute_content_offset=-1)
+
+  work_dir = os.path.join(base_dir, "2/2")
+  # arrangement.shift_details(work_dir, start_index=27, substitute_content_offset=-1, detail_title="Oldenberg")
+
+  work_dir = os.path.join(base_dir, "2/4")
+  # arrangement.shift_details(work_dir, start_index=20, substitute_content_offset=-1, detail_title="Oldenberg")
 
   work_dir = os.path.join(base_dir, "3/1")
   # arrangement.shift_contents(work_dir, start_index=3, substitute_content_offset=1)
@@ -100,22 +106,21 @@ def fix_oldenberg():
   # work_dir = os.path.join(base_dir, "4/1")
   # arrangement.shift_contents(work_dir, start_index=13, substitute_content_offset=1)
 
-  work_dir = os.path.join(base_dir, "4/2")
-  # arrangement.shift_contents(work_dir, start_index=13, substitute_content_offset=1)
+  work_dir = os.path.join(base_dir, "4/4")
+  # arrangement.shift_details(work_dir, start_index=21, substitute_content_offset=-1, detail_title="Oldenberg")
   pass
 
 
 def fix_includes():
   md_files = arrangement.get_md_files_from_path(dir_path=os.path.join(content_dir_base, "sarva-prastutiH"), file_pattern="**/[0-9]*.md")
+  dir_path = os.path.join(content_dir_base, "sarva-prastutiH")
 
   def include_fixer(x, current_file_path, *args):
     return include_helper.alt_include_adder(x, current_file_path, source_dir="vishvAsa-prastutiH", alt_dirs=["sarvASh_TIkAH"])
 
-  library.apply_function(fn=MdFile.transform, dir_path=content_dir_base, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_helper.old_include_remover))
-  library.apply_function(fn=MdFile.transform, dir_path=content_dir_base, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_fixer))
-
-  for md_file in md_files:
-    md_file.transform(content_transformer=lambda content, m: regex.sub("\n\n+", "\n\n", content), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y,transformer=include_helper.old_include_remover))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: include_helper.transform_includes_with_soup(x, y, transformer=include_fixer))
+  include_helper.prefill_includes(dir_path=dir_path)
 
 
 def combine():
@@ -128,8 +133,8 @@ def combine():
 if __name__ == '__main__':
   # dump_muulam()
   # dump_oldenberg()
-  fix_oldenberg()
-  # fix_includes()
+  # fix_oldenberg()
+  fix_includes()
   # fix_filenames()
   # combine()
   pass

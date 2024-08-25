@@ -197,11 +197,19 @@ def get_details(content, title, metadata=None):
 
 
 def get_detail(content, metadata, title):
+  """
+  
+  :param content: 
+  :param metadata: 
+  :param title: 
+  :return: (detail_tag, detail)
+  """
   details = get_details(content=content, metadata=metadata, title=title)
   if len(details) == 0:
     return (None, None)
   else:
     return details[0]
+
 
 def get_detail_content(content, titles, metadata=None):
   result = ""

@@ -48,3 +48,16 @@ def copy_contents(src_dir, dest_dir, detail_title=None, dest_content_condition=N
     repalced_content_count += 1
   logging.info(f"Skipped {len(skipped_files)} files:\n{skipped_files}")
 
+def list_files_with_missing_details(src_dir, detail_title):
+  from doc_curation.md.content_processor import details_helper
+  from doc_curation.md.library import arrangement
+  src_md_files = arrangement.get_md_files_from_path(dir_path=src_dir)
+  files = []
+  for src_md_file in src_md_files:
+    if src_md_file.file_path.endswith("_index.md"):
+      continue
+    (metadata, content) = src_md_file.read()
+    (_, detail) = details_helper.get_detail(content=content, metadata={}, title=detail_title)
+    if detail is None:
+      files.append(src_md_file.file_path)
+  logging.info("\n".join(sorted(files)))
