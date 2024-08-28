@@ -70,14 +70,18 @@ def fix_intra_word_footnotes(content, *args, **kwargs):
   content = regex.sub(r"(\[\^[\d-]+?\])([^:\[\s]+)", "\\2\\1", content)
   return content
 
+PLAIN_FN_REF_GUTEN = r"\[\\\[(\d+)\\\]\]\(#Foot.+?\)"
+PLAIN_FN_DEF_GUTEN = r"\[\\\[(\d+)\\\]\]\(#FN.+?\)"
 
 def fix_plain_footnotes(content, def_pattern="(?<=\n)(\d+)\.?(?= )", def_replacement_pattern=r"[^\1]:", ref_pattern=r"(?<=[^\s\d\^\-,\(\);:])(\d+)(?=\D)"):
   """
   Common def_patterns: (?<=\n)(\d+)\.?(?= ) to r"[^\1]:"
   r"\((\d+)[\. ]*([^\d\)][^\)]+)\) *" to r"\n[^\1]: \2\n"
+  Also see variables above.
   
   ref_patterns: r"(?<=[^\s\d\^\-,\(\);:])(\d+)(?=\D)" to r"[^\1]"
-  r"\((\d+)\)"
+  r"\((\d+)\)"  
+  
   
   :param content: 
   :param def_pattern: 

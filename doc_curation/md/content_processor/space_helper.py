@@ -11,9 +11,9 @@ def remove_fake_linebreaks(content, *args, **kwargs):
   :return: 
   """
   # 
-  content = regex.sub(r"(?<=\n|^)([^#\-*!<\s][^\n]+\S)\n(?=[^#\-*\s>!<])", r"\1 ", content)
+  content = regex.sub(r"(?<=\n|^)([^#\-*!<\s][^\n]+\S) ?\n(?=[^#\-*\s>!<])", r"\1 ", content)
   # Join markdown quotation lines
-  content = regex.sub(r"(?<=\n|^)(>[^\n]+\S)\n(?=>)", r"\1 ", content)
+  content = regex.sub(r"(?<=\n|^)(>[^\n]+\S) ?\n(?=>)", r"\1 ", content)
   return content
 
 
@@ -33,7 +33,7 @@ def markdownify_newlines(text):
   return text
 
 
-def dehyphenate_interline_words(text):
+def dehyphenate_interline_words_devanAgarI(text):
   text = regex.sub("(ाह)-", r"\1 - ", text)
   text = regex.sub(r"(?<=[ँ-९])\- (?=[क-९])", "", text)
   return text
@@ -81,7 +81,16 @@ def make_lines_end_with_pattern(content, full_line_pattern):
   return "  \n".join(lines_out)
 
 
-def dehyphenate_sanskrit_line_endings(content, script=sanscript.DEVANAGARI):
+def dehyphenate_sanskrit_verse_line_endings(content, script=sanscript.DEVANAGARI):
+  """
+  Fix text like - यस्येमां गां विक्रममेकमाहु-  
+  स्तदा नाशंसे विजयाय संजय ॥
+  
+  
+  :param content: 
+  :param script: 
+  :return: 
+  """
   text = sanscript.transliterate(content, _from=script, _to=sanscript.DEVANAGARI)
   dev_scheme = sanscript.SCHEMES[sanscript.DEVANAGARI]
   def nn_replacer(match):

@@ -1,5 +1,5 @@
 import regex
-from indic_transliteration import sanscript
+from indic_transliteration import sanscript, sacred_texts_scheme
 
 
 def deduce_root(text):
@@ -63,4 +63,12 @@ def fix_repha_duplication(text):
   text = regex.sub("र्य्य", "र्य", text)
   text = regex.sub(r"र्([ङञणनमयवशषसहल])्\1", r"र्\1", text)
   return text
-  
+
+
+def fix_sacred_texts_transliteration(text):
+  def italicized_fixer(match):
+    return sacred_texts_scheme.decode_italicized_text(match.group(1))
+
+  text = regex.sub("_(..?)_", italicized_fixer, text)
+  text = sacred_texts_scheme.decode_nonitalicized(text)
+  return text

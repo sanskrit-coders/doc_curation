@@ -1,7 +1,7 @@
 import logging
 import os
 
-from indic_transliteration import sanscript
+from indic_transliteration import sanscript, sacred_texts_scheme
 
 import doc_curation.md.content_processor.footnote_helper
 import regex
@@ -45,14 +45,6 @@ def get_footnote_definitions(footnote_div):
   return definitions
 
 
-def decode_italicized_text(text):
-  replacements = {"n": "ṇ", "t": "ṭ", "d": "ḍ", "m": "ṁ", "kh": "ch", "h": "ḥ", "ri": "r̥", "k": "c", "g": "j", "s": "ś"} # sh not intalicized is ṣ
-  for x, y in replacements.items():
-    text = text.replace(x, y)
-    text = text.replace(x.capitalize(), y.capitalize())
-  return text
-
-
 def get_text(tag):
   content_out = ""
   if isinstance(tag, NavigableString):
@@ -60,7 +52,7 @@ def get_text(tag):
   elif tag.name == "i":
     text = tag.text
     if len(text) <= 2:
-      content_out += decode_italicized_text(text)
+      content_out += sacred_texts_scheme.decode_italicized_text(text)
     else:
       content_out += f"_{text}_"
   elif tag.name == "br":
@@ -70,10 +62,7 @@ def get_text(tag):
       if child.name == "p":
         content_out += "\n\n"
       content_out += get_text(tag=child)
-  replacements = {"â": "ā", "î": "ī", "û": "ū", "": "\\`", "": " - ", " ": " "}
-  for x, y in replacements.items():
-    content_out = content_out.replace(x, y)
-    content_out = content_out.replace(x.capitalize(), y.capitalize())
+  content_out = sacred_texts_scheme.decode_nonitalicized(content_out)
   return content_out
 
 

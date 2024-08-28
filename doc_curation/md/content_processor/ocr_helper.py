@@ -68,7 +68,7 @@ def fix_iast_for_pdfs(text):
   return text
 
 
-def fix_google_ocr(text):
+def fix_google_ocr_devanaagarii(text):
   text = regex.sub(r"(?<=\n)[\-=]+ *(?=\n)", "", text)
   text = regex.sub("(?<=\n)([०-९\d]+) *(?=\n)", r"[[\1]]", text)
   text = regex.sub("(?<=[ँ-९]):", "ः", text)
@@ -122,6 +122,10 @@ def fix_google_ocr_iast_iso(text):
   text = regex.sub("(?<=[a-z])\- +(?=[a-z])", "", text)
   return text
 
+
+def strip_word_continuation_dashes(text):
+  text = regex.sub("(?<=\S)\- +(?=\S)", "", text)
+  return text
 
 def fix_typos(text):
   import doc_curation
