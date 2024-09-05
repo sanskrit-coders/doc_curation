@@ -40,12 +40,12 @@ def undo_gretil_analysis(text):
   :return: 
   """
   text = text.replace("ंल्", "ल्ँ")
-  text = regex.sub("म्[\. ]+(?=[अ-औ])", text)
+  text = regex.sub(r"म्[\. ]+(?=[अ-औ])", text)
   return text
 
 
 def seperate_uvaacha(text):
-  text = regex.sub("वाच॥\s*", "वाच॥\n\n", text)
+  text = regex.sub(r"वाच॥\s*", r"वाच॥\n\n", text)
   return text
 
 
