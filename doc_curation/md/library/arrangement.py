@@ -87,7 +87,7 @@ def shift_indices(dir_path, new_index_offset, start_index=1, end_index=9999, ind
       name_parts = os.path.basename(md_file.file_path).split("_")
       index_pattern = "%%0%dd" % len(name_parts[index_position])
       name_parts[index_position] = index_pattern % new_index
-      new_file_path = os.path.join(os.path.dirname(md_file.file_path), "_".join(name_parts))
+      new_file_path = os.path.join(os.path.dirname(md_file.file_path), "_".join(name_parts) + ".md")
       logging.info("Shifting %d to %d, %s to %s", index, new_index, md_file.file_path, new_file_path)
       if not dry_run:
         shutil.move(md_file.file_path, new_file_path)
