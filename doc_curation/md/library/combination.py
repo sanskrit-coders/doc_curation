@@ -26,13 +26,14 @@ def combine_select_files_in_dir(md_file, source_fnames, title_format="## %s\n", 
       os.remove(source_md.file_path)
 
 
-def combine_parts(dir_path, pattern="(.+?)[-_]*part[-_]*(\d+).md", dry_run=False):
+def combine_parts(dir_path, pattern=r"(?P<name>.+?)[-_]*part[-_]*(?P<part_id>\d+).md", dry_run=False):
   from collections import defaultdict
   file_to_parts = defaultdict(dict)
   for fname in os.listdir(dir_path):
     match = regex.match(pattern, fname)
     if match is not None:
-      file_to_parts[match.group(1)][int(match.group(2))] = fname
+      file_to_parts[match.group("name")][int(match.group("part_id"))] = fname
+  logging.info(f"{len(file_to_parts)} files to combine")
   for base_fname, part_dict in file_to_parts.items():
     fnames = [part_dict[k] for k in sorted(part_dict.keys()) ]
     combine_select_files_in_dir(md_file=MdFile(file_path=os.path.join(dir_path, base_fname + ".md")), source_fnames=fnames, dry_run=dry_run)

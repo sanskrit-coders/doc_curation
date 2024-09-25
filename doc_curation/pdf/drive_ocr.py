@@ -1,4 +1,7 @@
+import glob
 import logging
+import shutil
+
 from curation_utils.google import drive
 import os
 import time
@@ -148,6 +151,18 @@ def main():
                       type=bool)
   args = parser.parse_args()
   split_and_ocr_all(dir_path=args.input_path, small_pdf_pages=args.small_pdf_pages, detext=args.detext, google_key=args.google_key)
+
+
+def clear_tmp_files(base_dir):
+  # Find directories
+  files = glob.glob(os.path.join(base_dir, '**/*_splits'), recursive=True)
+  for f in files:
+    logging.info(f"Deleting {f}")
+    shutil.rmtree(f)
+  files = glob.glob(os.path.join(base_dir, '**/*_detexted.pdf'), recursive=True)
+  for f in files:
+    os.remove(f)
+    logging.info(f"Deleting {f}")
 
 
 if __name__ == '__main__':

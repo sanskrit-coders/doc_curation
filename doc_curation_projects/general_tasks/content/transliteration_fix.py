@@ -45,7 +45,8 @@ def fix_anunaasikas(dir_path):
 
 if __name__ == '__main__':
   pass
-  # fix_anunaasikas(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AhnikAmRtam.md")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/vAyu-purANam/dvi-khaNDa-saMskaraNam", content_transformer=lambda x, y: sanskrit_helper.fix_repha_duplication(x), dry_run=False, silent_iteration=False)
-  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AhnikAmRtam.md", source_script="telugu")
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/english/content/prose/hindu/indologist/max-muller/india_what_it_can_teach_us.md", content_transformer=lambda x, y: sanskrit_helper.fix_sacred_texts_transliteration(x), dry_run=False, silent_iteration=False)
+  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/5-tIkAH", source_script="tamil")
+  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/pancha-kAla-prakAshaH/_index.md", source_script="telugu")
+  # fix_anunaasikas(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/pancha-kAla-prakAshaH/_index.md")
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/english/content/prose/hindu/indologist/max-muller/india_what_it_can_teach_us.md", content_transformer=lambda x, y: sanskrit_helper.fix_sacred_texts_transliteration(x), dry_run=False, silent_iteration=False)

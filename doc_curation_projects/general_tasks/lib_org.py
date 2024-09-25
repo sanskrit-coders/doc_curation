@@ -3,17 +3,22 @@ from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper, arrangement, combination
 from indic_transliteration import sanscript
 
+
 def combine_files(dir_path):
   pass
 
   # combination.make_full_text_md(source_dir="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/paddhatiH/shrIvaiShNavaH/mADabhUShi-vIrarAghavaH/01_pUrva-prayoga-chandrikA/02_angAni/02_udakashAntiH")
-  combination.combine_files_in_dir(md_file=dir_path)
+  # combination.combine_files_in_dir(md_file=dir_path)
+  combination.combine_parts(dir_path=dir_path, pattern=r"(?P<part_id>.+?)_(?P<name>\d+).md")
   # arrangement.defolderify_single_md_dirs(dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA/", dry_run=False)
 
 
 if __name__ == '__main__':
   pass
-  combine_files("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/nIlameghAnuvAdaH/alt")
+  combine_files("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/hi/5_bhakti-sandarbhaH/pAThaH")
+
+  # library.fix_mistaken_nines("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/hi/5_bhakti-sandarbhaH/pAThaH", digit_from_last=2)
+  # library.highlight_out_of_order_files("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/hi/5_bhakti-sandarbhaH/pAThaH", fix_sequence="dry_run_no")
 
   # library.defolderify(dir_path="/home/vvasuki/vvasuki-git/vedAH/content/yajuH /taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/haradatta-TIkA", dry_run=False)
   # library.make_full_text_md(source_dir="/home/vvasuki/vvasuki-git/kAvya/content/TIkA/champUH/nItiH/hitopadeshaH")

@@ -6,7 +6,7 @@ import traceback
 from selenium.webdriver.common.by import By
 
 from doc_curation import book_data
-from doc_curation.md import library
+from doc_curation.md import library, content_processor
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper import selenium
 from doc_curation.scraping.html_scraper.selenium import click_link_by_text
@@ -20,7 +20,7 @@ logging.basicConfig(
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 configuration = {}
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'local_config.json'), 'r') as handle:
+with open('/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/site_config.json', 'r') as handle:
   configuration = json.load(handle)
 
 configuration_parankusha = configuration['parankusha']
@@ -72,9 +72,13 @@ def get_output_path(text_name, outdir):
   return os.path.join(outdir, file_helper.clean_file_path(text_name_transliterated) + ".md")
 
 
-def dump_text(browser, outdir, ordinal=None, has_comment=False):
-  text_name = deduce_text_name(browser, ordinal)
-  out_file_path = get_output_path(text_name=text_name, outdir=outdir)
+
+def dump_to_file(browser, out_file_path, has_comment=False, text_name=None, start_nodes=None, source_script=sanscript.DEVANAGARI):
+  if start_nodes is not None:
+    browse_nodes(browser=browser, start_nodes=start_nodes)
+  if text_name is None:
+    text_name = sanscript.transliterate(data=os.path.basename(out_file_path.replace(".md", "")), _from=sanscript.OPTITRANS,
+                            _to=sanscript.DEVANAGARI)
   rows = browser.find_elements(By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"]")
   text = ""
   for row in rows:
@@ -100,7 +104,8 @@ def dump_text(browser, outdir, ordinal=None, has_comment=False):
             text += f"\n\n<details><summary>टीका</summary>\n\n{main_text}\n</details>\n\n"
         else:
           text += main_text
-      
+  if source_script != sanscript.DEVANAGARI:
+    text = content_processor.transliterate(text=text, source_script=source_script)
   md_file = MdFile(file_path=out_file_path)
   md_file.dump_to_file(metadata={"title": text_name}, content=text, dry_run=False)
 
@@ -114,14 +119,20 @@ def browse_nodes(browser, start_nodes):
 
 
 def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False):
+  def _dump_text(browser, outdir, ordinal=None, has_comment=False, start_nodes=None):
+    text_name = deduce_text_name(browser, ordinal)
+    out_file_path = get_output_path(text_name=text_name, outdir=outdir)
+    dump_to_file(browser=browser, has_comment=has_comment, out_file_path=out_file_path, text_name=text_name, start_nodes=start_nodes)
+
   browse_nodes(browser=browser, start_nodes=start_nodes)
+
   os.makedirs(name=outdir, exist_ok=True)
   ordinal = ordinal_start
-  dump_text(browser=browser, outdir=outdir, ordinal=ordinal, has_comment=has_comment)
+  _dump_text(browser=browser, outdir=outdir, ordinal=ordinal, has_comment=has_comment)
   while click_link_by_text(browser=browser, element_text="Next"):
     if ordinal is not None:
       ordinal = ordinal + 1
-    dump_text(browser=browser, outdir=outdir, ordinal=ordinal, has_comment=has_comment)
+    _dump_text(browser=browser, outdir=outdir, ordinal=ordinal, has_comment=has_comment)
   library.fix_index_files(dir_path=outdir, overwrite=False, dry_run=False)
 
 

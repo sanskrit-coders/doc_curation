@@ -75,7 +75,9 @@ def shriibhaashyam(browser):
 def raamaanuja_misc(browser):
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "वेदार्थसङ्ग्रहः", "expand:वेदार्थसङ्ग्रहः", "Part-1-30"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/rAmAnujaH/vedArtha-sangrahaH/")
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "गद्यत्रयम्", "expand:गद्यत्रयम्", "शरणागति गद्यम्"], outdir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/gadyam/rAmAnujaH")
-  parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "नित्य-ग्रन्थः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/")
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "नित्य-ग्रन्थः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/")
+  parankusha.dump_to_file(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "ஶ்ரீந்ருஸிம்ஹப்ரியா-நித்யம் உரை"], out_file_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/rAmAnuja-nitya-granthaH/nRsiMhapriyA.md", source_script=sanscript.TAMIL)
+  # parankusha.dump_to_file(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "ஶ்ரீந்ருஸிம்ஹப்ரியா-நித்யம் உரை"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/")
 
 
 def deshika_nyAyasiddhAnjanam():
@@ -103,7 +105,8 @@ def deshika_misc(browser):
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "मीमांसापादुका", "expand:मीमांसापादुका", "धर्मजिज्ञासाधिकरणम्"], outdir="/home/vvasuki/gitland/vishvAsa/mImAMsA/content/mImAMsA-pAdukA/mUlam/", ordinal_start=1, has_comment=False)
   # library.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/mImAMsA/content/mImAMsA-pAdukA/", overwrite=False, dry_run=False)
 
-  parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "सङ्कल्पसूर्योदयः", "expand:सङ्कल्पसूर्योदयः", "प्रथमोऽङ्कः"], outdir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/mUlam", has_comment=False)
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "सङ्कल्पसूर्योदयः", "expand:सङ्कल्पसूर्योदयः", "प्रथमोऽङ्कः"], outdir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/mUlam", has_comment=False)
+  parankusha.dump_to_file(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "स्तोत्ररत्नभाष्यम्"], out_file_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/shrIvaiShNava-kRtam/yAmunaH/stotra-ratnam/venkaTanAthaH_alt.md", has_comment=False)
 
 
 def deshika_tattvamuktaakalaapa():
@@ -165,9 +168,9 @@ if __name__ == '__main__':
   browser = parankusha.get_logged_in_browser(headless=False)
   # shriibhaashyam(browser=browser)
   # yaamuna_siddhitraya(browser)
-  # raamaanuja_misc(browser)
+  raamaanuja_misc(browser)
   # deshika_misc(browser)
-  deshika_tattvamuktaakalaapa()
+  # deshika_tattvamuktaakalaapa()
   # stotra_misc()
   # deshika_rts(browser=browser)
   # tattva_misc(browser=browser)

@@ -22,10 +22,11 @@ def shloka_formatting():
 
 def details_fix(dir_path):
   pass
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_DANDA_END_SHLOKA))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_MULTI_LINE_SHLOKA_BOLDED))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.non_detail_parts_to_detail(content=c, title="वेङ्कटनाथार्यः"))
 
 
 if __name__ == '__main__':
   pass
   # shloka_formatting()
-  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/agni-purANam")
+  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/shrIvaiShNava-kRtam/yAmunaH/stotra-ratnam/venkaTanAtha-TikA.md")

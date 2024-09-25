@@ -136,3 +136,76 @@ def list_matching_files(dir_path, content_condition=None, file_pattern="**/*.md"
 def dump_matching_files(dir_path, content_condition=None, file_pattern="**/*.md", file_name_filter=None):
   matches = list_matching_files(dir_path=dir_path, content_condition=content_condition, file_pattern=file_pattern, file_name_filter=file_name_filter)
   MdFile(file_path=os.path.join(dir_path, "file_list.md")).dump_to_file(metadata={"title": "File list"}, content="\n".join(matches), dry_run=False)
+
+
+def fix_mistaken_nines(dir_path, digit_from_last=1, iterations=20):
+  # Consider the sequence of files listed in alphanumerical order - 057_31.md, 058_32.md, 059_33.md, 060_33.md, 061_34.md, 062_35.md, 063_34.md, 064_36.md, 065_37.md, 066_36.md, 067_37.md, 068_38.md, 069_38.md, 070_38.md, 071_36.md, 072_40.md.  
+  # In a given filename, where the last digit in the base name is 6, if it preceeds a file with basename ending with 0 or 9, the 6 in that filename should be replaced with 9. 
+  
+  for iteration in range(iterations):
+    # Get a list of all files in the directory
+    files = os.listdir(dir_path)
+  
+    # Sort the files in alphanumerical order
+    files.sort()
+    # Iterate through the files
+    for i in range(len(files)):
+      # Skip the first and last files
+      if i == 0 or i == len(files) - 1:
+        continue
+  
+      # Get the current and next filenames
+      curr_file = files[i]
+      next_file = files[i+1]
+  
+      # Extract the base names of the files
+      curr_base = os.path.splitext(curr_file)[0]
+      next_base = os.path.splitext(next_file)[0]
+  
+      # Check if the last digit of the current file is 6
+      digit = curr_base[-digit_from_last]
+      if digit == '6':
+        next_file_digit = next_base[-digit_from_last]
+        # Check if the next file ends with 0 or 9
+        if next_file_digit == '0' or next_file_digit == '9':
+          # Replace the 6 with 9 in the current filename
+          new_base = curr_base[:-digit_from_last] + '9' + curr_base[-(digit_from_last-1):]  # Replace only nth digit
+          new_file = new_base + os.path.splitext(curr_file)[1]
+          new_path = os.path.join(dir_path, new_file)
+          curr_path = os.path.join(dir_path, curr_file)
+          os.rename(curr_path, new_path)
+          logging.info(f"Renamed {curr_file} to {new_file}")
+
+
+def highlight_out_of_order_files(dir_path, id_pattern=r".+_(\d+)\.", fix_sequence="No"):
+  # Get a list of all files in the directory
+  files = os.listdir(dir_path)
+
+  # Sort the files in alphanumerical order
+  files.sort()
+  out_of_order_files = []
+  # Iterate through the files
+  for i in range(len(files)):
+    # Skip the first and last files
+    if i == 0:
+      continue
+
+    # Get the current and next filenames
+    curr_file = files[i]
+    prev_file = files[i-1]
+
+    if regex.match(id_pattern, curr_file) and regex.match(id_pattern, prev_file):
+      curr_id = int(regex.match(id_pattern, curr_file).group(1))
+      prev_id = int(regex.match(id_pattern, prev_file).group(1))
+      if curr_id < prev_id:
+        out_of_order_files.append(curr_file)
+        if fix_sequence != "No":
+          new_file = curr_file.split("_")[0] + "_" + str(prev_id) + ".md"
+          new_path = os.path.join(dir_path, new_file)
+          curr_path = os.path.join(dir_path, curr_file)
+          logging.info(f"Renamed {curr_file} to {new_file}")
+          if fix_sequence != "dry_run":
+            os.rename(curr_path, new_path)
+        
+  logging.warning(f"{out_of_order_files} are out of order")
+  return out_of_order_files

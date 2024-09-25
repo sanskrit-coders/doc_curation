@@ -22,7 +22,7 @@ def html_fixer(soup):
 #   as in https://sa.wikisource.org/s/1snc
 # a.mw-redirect - https://sa.wikisource.org/s/13lq
 def dump_text(start_url, out_path, title_maker=None, index_format="%02d", text_css_selector="div.mw-parser-output", base_url="https://sa.wikisource.org/", next_url_css="div.gen_header_forelink a", transliteration_source=None, dumper=None, dry_run=False):
-  next_url_getter = lambda soup: souper.anchor_url_from_soup_css(soup=soup, css=next_url_css, base_url=base_url)
+  next_url_getter = lambda soup, url: souper.anchor_url_from_soup_css(soup=soup, css=next_url_css, base_url=url)
   
   if title_maker is None:
     def title_maker(soup, title_prefix):
