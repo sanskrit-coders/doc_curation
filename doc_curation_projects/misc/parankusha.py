@@ -9,14 +9,12 @@ from indic_transliteration import sanscript
 from doc_curation.scraping.misc_sites import parankusha
 
 
-BS_BASE = "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/rAmAnujaH/shrI-bhAShyam"
+BS_BASE = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/rAmAnujaH/shrI-bhAShyam"
 
 def deshika_rts(browser):
-  base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/tattvam/venkaTanAthaH/rahasya-traya-sAraH/"
-  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "रहस्यत्रयसारः", "expand:रहस्यत्रयसारः","श्रीगुरुपरंपरासारः"], outdir=os.path.join(outdir, "mUlam"), ordinal_start=0)
-  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "42ம் பட்டம் ஶ்ரீமத் அழகியசிங்கர்", "सार-बोधिनी", "expand:सार-बोधिनी","श्रीगुरुपरंपरासारः"], outdir=os.path.join(base_dir, "sAra-bodhinI"), ordinal_start=0)
-  # 
-  library.apply_function(fn=MdFile.transform, dir_path=os.path.join(base_dir, "sAra-bodhinI"), content_transformer=lambda c, m: content_processor.transliterate(c, source_script=sanscript.TAMIL), dry_run=False)
+  base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/"
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "रहस्यत्रयसारः", "expand:रहस्यत्रयसारः","श्रीगुरुपरंपरासारः"], outdir=os.path.join(base_dir, "mUlam"), ordinal_start=0, source_script=sanscript.TAMIL)
+  parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "42ம் பட்டம் ஶ்ரீமத் அழகியசிங்கர்", "सार-बोधिनी", "expand:सार-बोधिनी","श्रीगुरुपरंपरासारः"], outdir=os.path.join(base_dir, "sAra-bodhinI"), ordinal_start=0, source_script=sanscript.TAMIL)
 
 
 def brahmasuutra(browser, author, text_id, sub_path):
@@ -69,19 +67,20 @@ def shriibhaashyam(browser):
   # brahmasuutra(browser, author="श्रीरङ्गरामानुजाचार्याः", text_id="भाव-प्रकाशिका", sub_path="rangarAmAnujaH/bhAva-prakAshikA/")
 
 
-  library.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH", overwrite=False, dry_run=False)
+  library.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH", overwrite=False, dry_run=False)
 
 
 def raamaanuja_misc(browser):
-  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "वेदार्थसङ्ग्रहः", "expand:वेदार्थसङ्ग्रहः", "Part-1-30"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/rAmAnujaH/vedArtha-sangrahaH/")
+  pass
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "वेदार्थसङ्ग्रहः", "expand:वेदार्थसङ्ग्रहः", "Part-1-30"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/vedArtha-sangrahaH/")
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "गद्यत्रयम्", "expand:गद्यत्रयम्", "शरणागति गद्यम्"], outdir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/gadyam/rAmAnujaH")
-  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "नित्य-ग्रन्थः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/")
-  parankusha.dump_to_file(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "ஶ்ரீந்ருஸிம்ஹப்ரியா-நித்யம் உரை"], out_file_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/rAmAnuja-nitya-granthaH/nRsiMhapriyA.md", source_script=sanscript.TAMIL)
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "नित्य-ग्रन्थः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/")
+  # parankusha.dump_to_file(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "ஶ்ரீந்ருஸிம்ஹப்ரியா-நித்யம் உரை"], out_file_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/rAmAnujaH/nitya-granthaH/nRsiMhapriyA.md", source_script=sanscript.TAMIL)
   # parankusha.dump_to_file(browser=browser, start_nodes=["विद्यास्थानानि", "रामानुजाचार्याः", "ஶ்ரீந்ருஸிம்ஹப்ரியா-நித்யம் உரை"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/")
 
 
 def deshika_nyAyasiddhAnjanam():
-  base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/venkaTanAthaH/nyAya-siddhANjanam"
+  base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/venkaTanAthaH/nyAya-siddhANjanam"
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "न्यायसिद्धाञ्जनम्", "expand:न्यायसिद्धाञ्जनम्", "जडद्रव्यपरिच्छेदः", "उपोद्घातः"], outdir=os.path.join(base_dir, "1_jaDa-dravyam"), ordinal_start=0)
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "न्यायसिद्धाञ्जनम्", "expand:न्यायसिद्धाञ्जनम्", "जीवपरिच्छेदः", "जीवस्य देहव्यतिरेकनिरूपणम्"], outdir=os.path.join(base_dir, "2_jIvaH"), ordinal_start=1)
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "न्यायसिद्धाञ्जनम्", "expand:न्यायसिद्धाञ्जनम्", "ईश्वरपरिच्छेदः", "ईश्वरलक्षणनिरूपणम्"], outdir=os.path.join(base_dir, "3_IshvaraH"), ordinal_start=1)
@@ -93,11 +92,11 @@ def deshika_nyAyasiddhAnjanam():
 
 def deshika_misc(browser):
   pass
-  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "शतदूषणी", "expand:शतदूषणी", "ब्रह्मशब्दवृत्त्यनुपपत्तिवादः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/rAmAnujaH/venkaTanAthaH/shatadUShaNI/", ordinal_start=1)
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "शतदूषणी", "expand:शतदूषणी", "ब्रह्मशब्दवृत्त्यनुपपत्तिवादः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/venkaTanAthaH/shatadUShaNI/", ordinal_start=1)
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "पादुका-सहस्रम्", "expand:पादुका-सहस्रम्", "प्रस्तावपद्धतिः"], outdir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/venkaTanAthaH/pAdukA-sahasram", ordinal_start=1, has_comment=False)
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "यादवाभ्युदयम्", "expand:यादवाभ्युदयम्", "सर्गः-1"], outdir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/venkaTanAthaH/yAdavAbhyudayam", ordinal_start=1, has_comment=False)
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "हंस-सन्देशः", "expand:हंस-सन्देशः", "प्रथमाश्वासः"], outdir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/venkaTanAthaH/haMsa-sandeshaH", ordinal_start=1, has_comment=False)
-  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "वैश्वदेव-कारिका", "expand:वैश्वदेव-कारिका", "Adhyaya-1"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/venkaTanAthaH/", ordinal_start=1, has_comment=False)
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "वैश्वदेव-कारिका", "expand:वैश्वदेव-कारिका", "Adhyaya-1"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/venkaTanAthaH/", ordinal_start=1, has_comment=False)
   
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "श्रीनरकेसरी", "सुभाषितनीवी-व्याख्या-नरकेसरीयम्", "expand:सुभाषितनीवी-व्याख्या-नरकेसरीयम्", "अनिपुणपद्धतिः"], outdir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/venkaTanAthaH/subhAShita-nIvI/narakesariH", ordinal_start=1, has_comment=True)
   # library.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnujaH/", overwrite=False, dry_run=False)
@@ -135,7 +134,7 @@ def deshika_tattvamuktaakalaapa():
 
 def yaamuna_siddhitraya(browser):
   pass
-  base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shrI-sampradAyaH/yAmunaH/siddhi-trayam"
+  base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/yAmunaH/siddhi-trayam"
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=.., frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI) # 
   parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "திருநாங்கூர் அண்ணங்கராசாரியார்", "सिद्धित्रय-व्याख्यानम्", "expand:सिद्धित्रय-व्याख्यानम्", "Sidhdhi-आत्मसिद्धि"], outdir=os.path.join(base_dir, "annangarAchArya-vyAkhyAnam"), ordinal_start=1, has_comment=False)
   parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "உத்தமூர் வீரராகவாசார்யர்", "गूढप्रकाशः", "expand:गूढप्रकाशः", "आत्मसिद्धि"], outdir=os.path.join(base_dir, "vIrarAghava-gUDha-prakAshaH"), ordinal_start=1, has_comment=False)
@@ -168,12 +167,12 @@ if __name__ == '__main__':
   browser = parankusha.get_logged_in_browser(headless=False)
   # shriibhaashyam(browser=browser)
   # yaamuna_siddhitraya(browser)
-  raamaanuja_misc(browser)
+  # raamaanuja_misc(browser)
   # deshika_misc(browser)
   # deshika_tattvamuktaakalaapa()
   # stotra_misc()
-  # deshika_rts(browser=browser)
+  deshika_rts(browser=browser)
   # tattva_misc(browser=browser)
   # deshika_nyAyasiddhAnjanam()
   # upanishat(browser=browser)
-  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "निक्षेप-रक्षा", "expand:निक्षेप-रक्षा", "expand:उपोद्घातः", "उपोद्घातः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaiShNavaH/shrI-sampradAyaH/venkaTanAthaH/nixepa-raxA")
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "निक्षेप-रक्षा", "expand:निक्षेप-रक्षा", "expand:उपोद्घातः", "उपोद्घातः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaiShNavaH/rAmAnuja-sampradAyaH/venkaTanAthaH/nixepa-raxA")

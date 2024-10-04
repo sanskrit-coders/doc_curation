@@ -18,12 +18,12 @@ def get_text(url, source_script=sanscript.DEVANAGARI):
   soup = scraping.get_soup(url=url)
   title_tag = soup.select_one("h1.elementor-heading-title")
   if title_tag is not None:
-    title = title_tag.text
+    title = fix_text(text=title_tag.text, source_script=source_script)
   else:
     logging.fatal("Can't grok title.")
   content_tag = soup.select_one(".elementor-widget-theme-post-content .elementor-widget-container")
-  content = md.get_md_with_pandoc(content_in=str(content_tag), source_format="html")
-  content = fix_text(content, source_script)
+  content = md.get_md_with_pandoc(content_in=str(content_tag), source_format="html").strip()
+  content = fix_text(text=content, source_script=source_script)
   logging.info(f"Got {title} from {url}")
   return (title, content)
 
@@ -48,6 +48,7 @@ def fix_text(text, source_script):
   text = regex.sub(r"(?<=^|\n)\*\*\((.+?)\)\*\*(?=$|\n)", r"## \1", text)
   text = space_helper.fix_markup(text)
   text = regex.sub("\n.+?Audio Archive.+?\n", "", text)
+  text = regex.sub("\n\n\n+", "\n\n", text)
   return text
 
 
@@ -59,7 +60,7 @@ def dump_text(url, dest_path, source_script=sanscript.DEVANAGARI, overwrite=Fals
   md_file = MdFile(file_path=dest_path)
   md_file.dump_to_file(metadata={"title": title}, content=content, dry_run=dry_run)
 
-def dump_series(url, dest_path, start_index=None, end_index=None, filename_from_title=None, source_script=sanscript.DEVANAGARI, overwrite=False):
+def dump_series(url, dest_path, start_index=None, end_index=None, filename_from_title=lambda x:x, source_script=sanscript.DEVANAGARI, overwrite=False):
   soup = scraping.get_soup(url=url)
   logging.info(f"Dumping series starting {url}")
   parts_tag = soup.select_one(".related-posts-meghamala")

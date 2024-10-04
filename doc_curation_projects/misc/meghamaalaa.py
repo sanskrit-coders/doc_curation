@@ -78,7 +78,6 @@ def misc():
   # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/boogola-kagola-nirnayam/%E0%AE%AA%E0%AF%82%E0%AE%95%E0%AF%8B%E0%AE%B3%E0%AE%95%E0%AE%95%E0%AF%8B%E0%AE%B3-%E0%AE%B5%E0%AE%BF%E0%AE%B7%E0%AE%AF%E0%AE%AE%E0%AF%8D/", "/home/vvasuki/gitland/vishvAsa/jyotiSham/content/astrophysics/history/paurANika-darshanam/bhUgola-khagola-nirNayam.md", source_script=sanscript.TAMIL)
 
   # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/other-titles/vedanta-kaarikaavazhi/vedanta-kaarikaavazhi/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/parichaya-sanxepAH/vedAnta-kArikAvalI/mUlam.md")
-  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/rahasyatraya-kaarikaavazhi/rahasyatraya-kaarikaavazhi/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTanAthaH/rahasya-traya-sAraH/kArikAvalI.md")
   # 
   # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/adyatmacintaa/अध्यात्मचिन्ता/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/sundara-jAmAtR-adhyAtma-chintA.md")
 
@@ -156,29 +155,76 @@ def raamaayaNam():
   meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/srimad-ramayanam/srimad-valmiki-ramayanam/srimad-valmiki-ramayan-uttara-kaanda/01-sarga-%E0%A4%89%E0%A4%A4%E0%A5%8D%E0%A4%A4%E0%A4%B0%E0%A4%95%E0%A4%BE%E0%A4%A3%E0%A5%8D%E0%A4%A1%E0%A4%83/", "/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/drAviDa-pAThaH/govindarAja-bhUShaNam/7_uttarakANDam", start_index=9, end_index=9, filename_from_title=sarga_detector)
 
 
-def rahasya():
-  base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/rahasya-granthaH/"
-  base_url = "https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/"
-  def dump_series(x, start_index=None):
-    name = [x for x in x.split("/") if x != "" ][-1]
-    meghamaalaa.dump_series(base_url + x, os.path.join(base_dir, f"{get_storage_name(text=name, max_length=20, source_script=sanscript.TAMIL)}") , start_index=start_index, filename_from_title=filename_from_title, source_script=sanscript.TAMIL)
-  
-  def dump_single(x):
-    name = [x for x in x.split("/") if x != "" ][-1]
-    meghamaalaa.dump_text(base_url + x, os.path.join(base_dir, f"{get_storage_name(text=name, max_length=20, source_script=sanscript.TAMIL)}.md"), source_script=sanscript.TAMIL)
 
-  dump_series(x="paranda-rahasyam/அவதாரிகை-ஸம்பூர்ணம்/", start_index=4)
+def rahasya():
+  base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/"
+  base_url = "https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/"
+  def dump_series(x, dest_path, start_index=None, source_script=sanscript.TAMIL):
+    name = [x for x in x.split("/") if x != "" ][-1]
+    meghamaalaa.dump_series(base_url + x, os.path.join(dest_path, f"{get_storage_name(text=name, max_length=20, source_script=source_script)}"), start_index=start_index, source_script=source_script, overwrite=True)
+  
+  def dump_single(x, dest_path, source_script=sanscript.TAMIL):
+    name = [x for x in x.split("/") if x != "" ][-1]
+    if ".md" not in dest_path:
+      dest_path = os.path.join(dest_path, f"{get_storage_name(text=name, max_length=20, source_script=source_script)}.md")
+    meghamaalaa.dump_text(base_url + x, dest_path=dest_path, source_script=source_script, overwrite=True)
+
+  dump_series(x="srimad-rahasya-traya-saram-content/श्रीमद्रहस्यत्रयसारे-प-5/", dest_path=os.path.join(base_dir, "venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/mUlam/me/"), start_index=26, source_script=sanscript.TAMIL)
+  return 
+  # dump_series(x="paranda-rahasyam/அவதாரிகை-ஸம்பூர்ணம்/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/periya-vAchAn-piLLai/paranda-rahasyam/"), start_index=1, source_script=sanscript.TAMIL)
+  # dump_single(x="astasloki-content/astasloki", dest_path=os.path.join(base_dir, "parAshara-bhaTTaH/aShTa-shlokI.md"), source_script=sanscript.DEVANAGARI)
+  dump_single(x="pradhaana-satakam/ப்ரதாந-சதகம்/", dest_path=os.path.join(base_dir, "venkaTa-nAtha-shAkhA/venkaTanAthaH/pradhAna-shatakam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="kaliyan-arulpaadu/கலியனருளப்பாடு/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/kaliyan-aruLpADu.md"), source_script=sanscript.TAMIL)
+  # dump_single(x="adyatmacintaa/अध्यात्मचिन्ता/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/saumya-jAmAtR-muniH/adhyAtma-chintA.md"), source_script=sanscript.DEVANAGARI)
+  dump_single(x="rahasya-traya-vivaranam/ரஹஸ்யத்ரய-விவரணம்/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/rahasya-traya-vivaraNam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="charmopaya-nirnayam-content/சரமோபாய-நிர்ணயம்/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/charamopAya-nirNayam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="charmopaya-tatparyam-content/சரமோபாய-தாத்பர்யம்/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/charamopAya-tAtparyam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="rahasya-traya-deepikai/ரஹஸ்யத்ரய-தீபிகை/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/rahasya-traya-dIpikA.md"), source_script=sanscript.TAMIL)
+  dump_single(x="tani-dvayam/தனி-த்வயம்/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/tani-dvayam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="tani-charmam/தனி-சரமம்/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/tani-charamam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="artha-panchakam-content/அர்த்த-பஞ்சகம்/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/artha-panchakam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="tattva-sekaram/தத்த்வ-ஶேகரம்/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/tattva-shekharam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="tattva-trayam-content/தத்வத்ரயம்-சித்ப்ரகரணம்/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/tattva-trayam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="nava-vidha-sambhandham-content/nava-vidha-sambhandam/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/nava-vidha-sambandham.md"), source_script=sanscript.TAMIL)
+  dump_single(x="saara-sangraham-content/sara-sangraham/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/sAra-sangraham.md"), source_script=sanscript.TAMIL)
+  dump_single(x="prameya-sekaram-content/prameya-sekaram/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/prameya-shekharam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="manikka-maalai-content/maanikkamaalai/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/mANikka-mAlai.md"), source_script=sanscript.TAMIL)
+  dump_single(x="parandappadi/பரந்தபடி/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/parandap-paDi.md"), source_script=sanscript.TAMIL)
+  dump_single(x="yadricchikappadi-content/yadrucchikappadi/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/yadRchChikA-paDi.md"), source_script=sanscript.TAMIL)
+  dump_single(x="sriyapathippadi-content/ஶ்ரியபதிப்படி/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/shriyaH-pati-paDi.md"), source_script=sanscript.TAMIL)
+  dump_single(x="muktabhogavazhi-content/muktabhogavalee/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/mukta-bhogAvalI.md"), source_script=sanscript.TAMIL)
+  dump_single(x="nigamanapadi/nigamanapadi/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/nigamana-paDi.md"), source_script=sanscript.TAMIL)
+  dump_single(x="sakala-pramana-taatparyam-content/sakala-pramana-taatparyam", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/sakala-pramANa-tAtparyam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="sakala-pramana-taatparyam-content/sakala-pramana-taatparyam", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/sakala-pramANa-tAtparyam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="seyyatamaraitaalinaivazhiye-bhasyam/செய்யதாமரைத்-தாளிணை-வ்ய", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/seyya-tAmarai-tAlinai_vALHiye_bhAShyam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="sri-ramanuja-rahasya-trayam-content/ராமாநுஜரஹஸ்யத்ரயம்", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/rAmAnuja-rahasya-trayam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="tani-pranavam/தனி-ப்ரணவம்/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/tani-praNavam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="samsaara-saamrajyam-content/samsaara-saamrajyam/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/saMsAra-sAmrAjyam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="samsaara-saamrajyam-content/samsaara-saamrajyam/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/saMsAra-sAmrAjyam.md"), source_script=sanscript.TAMIL)
+  dump_single(x="prapanna-paritraanam-content/prapanna-paritranam/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/prapanna-paritrANam.md"), source_script=sanscript.TAMIL)
+  # dump_single(x="paratattva-nirnaya/परतत्त्वनिर्णयः", dest_path=os.path.join(base_dir, "vAtsya-varadaH/para-tattva-nirNayaH.md"), source_script=sanscript.DEVANAGARI)
+
+  dump_series(x="gnaana-saam-prameya-saram-content/prameya-saram", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/jNAna-prameya-sArau/"), start_index=1, source_script=sanscript.TAMIL)
+  dump_single(x="thirukkolur-penpillai-rahasyam-content/திருக்கோளூர்ப்-பெண்பிள்/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/tiruk-kOlUr-peNpiLLai-rahasyam.md"), source_script=sanscript.TAMIL)
+  dump_series(x="mumukshuppadi-content/முமுக்ஷுப்படி-திருமந்த்/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/mumuxup-paDi/"), start_index=1, source_script=sanscript.TAMIL)
+  dump_series(x="archiradi-content/archiradi/", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/archir-Adi/"), start_index=1, source_script=sanscript.TAMIL)
+  dump_series(x="sapthakaadai-content/ஸப்தகாதை-part-1", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/sapta-gAthA/"), start_index=1, source_script=sanscript.TAMIL)
+  dump_series(x="arulicheyal-rahasyam/திருமந்த்ர-ப்ரகரணம்", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/aruLi-cheyAl-rahasyam/"), start_index=1, source_script=sanscript.TAMIL)
+  dump_series(x="prakaranam-01/srivacanabusanam-prk-01-ayee", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/shrI-vachana-bhUShaNam/"), start_index=1)
+
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/ciriya-rahasyangal/ciriya-rahasyangal-part-1/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/lokAchArya-shAkhA/lokAchAryaH/chiriya-rahasyangaL", source_script=sanscript.TAMIL, filename_from_title=lambda x: regex.match(".+(\d)", x).group(1))
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/paranda-rahasyam/அவதாரிகை-ஸம்பூர்ணம்/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/lokAchArya-shAkhA/paranda-rahasyam/", source_script=sanscript.TAMIL)
 
 
 def bhagavad_vishayam():
   base_dir = "/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/shrIvaiShNava/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/"
   base_url = "https://srivaishnavan.com/publications/meghamala/bhagavad-visayam/"
-  # meghamaalaa.dump_series(base_url + "6000-padi", os.path.join(base_dir, "6k") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
-  # meghamaalaa.dump_series(base_url + "9000-padi", os.path.join(base_dir, "9k") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
-  # meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-01/01-01-12000-36000-padi/", os.path.join(base_dir, "12k/01") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
-  # meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-02/02-01-12000-36000-padi/", os.path.join(base_dir, "12k/02") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
-  # meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-03/03-01-12000-36000-padi/", os.path.join(base_dir, "12k/03") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
-  # meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-04/04-01-12000-36000-padi/", os.path.join(base_dir, "12k/04") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
+  meghamaalaa.dump_series(base_url + "6000-padi", os.path.join(base_dir, "6k_tiruk-kurugaip-pirAn-piLLAn") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
+  meghamaalaa.dump_series(base_url + "9000-padi", os.path.join(base_dir, "9k_nan-jIyar_nam-piLLai") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
+  meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-01/01-01-12000-36000-padi/", os.path.join(base_dir, "12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/01") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
+  meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-02/02-01-12000-36000-padi/", os.path.join(base_dir, "12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/02") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
+  meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-03/03-01-12000-36000-padi/", os.path.join(base_dir, "12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/03") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
+  meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-04/04-01-12000-36000-padi/", os.path.join(base_dir, "12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/04") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
 
   library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
   # library.apply_function(dir_path=base_dir, fn=metadata_helper.set_filename_from_title, dry_run=False)
@@ -190,9 +236,10 @@ def fix_text(dir_path):
 
 if __name__ == '__main__':
   pass
+  # lokaachaarya()
   # raamaayaNam()
-  # bhagavad_vishayam()
-  kaavyam()
+  bhagavad_vishayam()
+  # kaavyam()
   # upanishat()
   # shriibhaashya()
   # fix_text("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/ma")

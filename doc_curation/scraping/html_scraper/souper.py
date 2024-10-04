@@ -91,6 +91,15 @@ def strip_comments(soup):
   for comment in comments:
     comment.extract()
 
+def get_text_after_element(element):
+  collected_text = []
+  for sibling in element.find_next_siblings():
+    if sibling.name is not None:  # If it's an element node
+      collected_text.append(sibling.get_text(strip=True))
+    else:  # If it's a text node
+      collected_text.append(sibling.strip())
+  return "\n".join(collected_text).strip()
+
 
 def find_matching_tags(tags, filter):
   return [tag for tag in tags if filter(tag)]

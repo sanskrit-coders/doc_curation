@@ -3,22 +3,42 @@ from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import details_helper, ocr_helper, space_helper
 from doc_curation.md.file import MdFile
 from doc_curation.utils import patterns
+from indic_transliteration import tamil_tools
 
 
 def fix_audio_tags():
   library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/4k-divya-prabandha/02_tiruppAvai/_index.md", content_transformer=lambda x, y: doc_curation.md.content_processor.embed_helper.set_audio_caption_from_filename(x, prefix="vibhA"), dry_run=False, silent_iteration=True)
 
 
+def tamil_nna_fixer(x):
+  output = ""
+  import regex
+  for index, y in enumerate(regex.split(r"(\+\+\+)", x)):
+    # skip over comments which are enclosed as +++(COMMENT)+++
+    if not (y.startswith("(") or y.endswith(")")):
+      output += tamil_tools.fix_naive_ta_transliterations(y)
+    else:
+      output += y
+  return output
+
+
 def details_fix(dir_path):
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.non_detail_parts_to_detail(content=c, title="टीका"))
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_MULTI_LINE_SHLOKA))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_MULTI_LINE_SHLOKA))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_2LINE_SHLOKA))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=details_helper.insert_duplicate_adjascent)
 
+  def transformer(x):
+    # x = doc_curation.md.content_processor.space_helper.dehyphenate_sanskrit_line_endings(x)
+    #x = sanskrit_helper.fix_lazy_anusvaara(x)
+    x = tamil_tools.fix_naive_ta_transliterations(x)
+    return x
 
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/rAmAyaNam/goraxapura-pAThaH/hindy-anuvAdaH", content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.sanskrit_tag_transformer, title_pattern="विश्वास.*|मूल.*"))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=tamil_nna_fixer, title_pattern="सा.*"))
+
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=tamil_nna_fixer, title_pattern="विश्वास-प्रस्तुतिः.*|मूलम्.*"))
 
   pass
 
@@ -54,7 +74,7 @@ if __name__ == '__main__':
   # misc_typos("/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/sage-bloodlines/AngIrasaH/prajAH_khyAtyAH/bharadvAjaH/bhAradvAjaH/bannanje-kulam/articles/govindAlokaH")
   # fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/static/shlokashaH/06-bhIShma-parva/03-bhagavad-gItA-parva/saMskRtam/rAmAnujaH/venkaTanAthaH")
   # section_fix()
-  # details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/brahmANDa-purANam/sarva-prastutiH")
+  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/sarva-prastutiH/1_arthAnushAsana-vibhAgaH")
 
 
   pass

@@ -48,7 +48,7 @@ class Detail(object):
     return Detail(title=title, content=detail_text)
 
 
-def interleave_from_file(md_file, source_file, dest_pattern="[^\d०-९೦-೯]([\d०-९೦-೯]+) *॥.*(?=\n|$)", source_pattern="(?<=\n|^)([\d०-९೦-೯]+).+\n", detail_title="English", dry_run=False):
+def interleave_from_file(md_files, source_file, dest_pattern="[^\d०-९೦-೯]([\d०-९೦-೯]+) *॥.*(?=\n|$)", source_pattern="(?<=\n|^)([\d०-९೦-೯]+).+\n", detail_title="English", overwrite=False, dry_run=False):
   """
   
   :param md_file: 
@@ -62,45 +62,68 @@ def interleave_from_file(md_file, source_file, dest_pattern="[^\d०-९೦-೯]
   :param dry_run: Boolean
   :return: 
   """
-  (_, dest_content) = md_file.read()
-  if callable(source_file):
-    source_file = source_file(md_file.file_path)
-  if not os.path.exists(source_file):
-    logging.warning("Source %s does not exist!", source_file)
-    return 
-  logging.info("Interleaving content from %s into %s", source_file, md_file.file_path)
-  source_md = MdFile(file_path=source_file)
-  (_, source_content) = source_md.read()
-  dest_matches = list(regex.finditer(dest_pattern, dest_content))
-  source_match_map = get_quasi_section_int_map(source_content, source_pattern)
-  logging.info(f"Got {len(dest_matches)} dest matches and {len(source_match_map)} source matches ")
-  for dest_match in dest_matches:
-    index_str = sanscript.transliterate(dest_match.group(1), _to=sanscript.IAST)
-    if not index_str.isnumeric():
-      logging.warning("Could not get index for: %s", dest_match.group())
-      continue
-    index = int(index_str)
-    if index not in source_match_map:
-      logging.warning("Could not get index %d in source: %s", index, dest_match.group())
-      continue
-    if detail_title is not None:
-      inserted_html = textwrap.dedent(
-        """
-        <details><summary>%s</summary>
+  def _get_source_matches(source_file):
+    if not os.path.exists(source_file):
+      logging.warning("Source %s does not exist!", source_file)
+      return
+    logging.info("Sourcing content from %s", source_file)
+    source_md = MdFile(file_path=source_file)
+    (_, source_content) = source_md.read()
+    source_match_map = get_quasi_section_int_map(source_content, source_pattern)
+    logging.info(f"Got {len(source_match_map)} source matches ")
+    return (source_md, source_content, source_match_map)
+
+  missing_dest_indices = {}
+  if not callable(source_file):
+    source_md, source_content, source_match_map = _get_source_matches(source_file=source_file)
+  for md_file in md_files:
+    logging.info("Interleaving into %s", md_file.file_path)
+    if callable(source_file):
+      source_file = source_file(md_files.file_path)
+      source_md, source_content, source_match_map = _get_source_matches(source_file=source_file)
+    (_, dest_content) = md_file.read()
+    dest_matches = list(regex.finditer(dest_pattern, dest_content))
+    for dest_match in dest_matches:
+      index_str = sanscript.transliterate(dest_match.group(1), _to=sanscript.IAST)
+      if not index_str.isnumeric():
+        logging.warning("Could not get index for: %s", dest_match.group())
+        continue
+      index = int(index_str)
+      if index not in source_match_map:
+        missing_dest_indices[index] = dest_match.group()
+        continue
+      if detail_title is not None:
+        if detail_title == "विश्वास-प्रसुतिः":
+          detail_params = " open"
+        else:
+          detail_params = ""
+        inserted_html = textwrap.dedent(
+          f"""
+          <details{detail_params}><summary>{detail_title} - {dest_match.group(1)}</summary>
+    
+          {source_match_map[index].group()}
+          </details>
+          """
+        )
+        # textwrap.dedent seems to fail with in-place  formatted string
+        inserted_html = regex.sub("(?<=\n|^) +", "", inserted_html)
+      else:
+        inserted_html = source_match_map[index].group().strip()
+      if not overwrite:
+        dest_content = dest_content.replace(dest_match.group(), "%s\n\n%s" % (dest_match.group(), inserted_html))
+      else:
+        dest_content = dest_content.replace(dest_match.group(), inserted_html)
+      dest_content = _normalize_spaces(dest_content)
+      source_content = source_content.replace(source_match_map[index].group(), "")
+      source_content = _normalize_spaces(source_content)
+    md_file.replace_content_metadata(new_content=dest_content, dry_run=dry_run)
+    source_md.replace_content_metadata(new_content=source_content, dry_run=dry_run)
+
+  if len(missing_dest_indices) > 0:
+    logging.warning(f"Could not get indices in source: {missing_dest_indices}")
   
-        %s
-        </details>
-        """
-      ) % (detail_title, source_match_map[index].group())
-    else:
-      inserted_html = source_match_map[index].group()
-    dest_content = dest_content.replace(dest_match.group(), "%s\n\n%s" % (dest_match.group(), inserted_html))
-    source_content = source_content.replace(source_match_map[index].group(), "")
-  md_file.replace_content_metadata(new_content=dest_content, dry_run=dry_run)
-  source_md.replace_content_metadata(new_content=source_content, dry_run=dry_run)
 
-
-def transform_details_with_soup(content, metadata, transformer, title=None, *args, **kwargs):
+def transform_details_with_soup(content, metadata, transformer, title_pattern=None, *args, **kwargs):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
     return content
@@ -110,8 +133,8 @@ def transform_details_with_soup(content, metadata, transformer, title=None, *arg
   details = soup.select("body>details")
   for detail_tag in details:
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
-    if title is None or regex.fullmatch(title, detail.title):
-      transformer(detail_tag, *args, **kwargs)
+    if title_pattern is None or regex.fullmatch(title_pattern, detail.title):
+      transform_tag_strings(detail_tag=detail_tag, transformer=transformer, title_pattern=title_pattern, *args, **kwargs)
     detail_tag.insert_after("\n")
   return content_processor._make_content_from_soup(soup=soup)
 
@@ -331,8 +354,8 @@ def _denumerify(title):
 
 
 def _normalize_spaces(content):
-  content = regex.sub("(?<=\n)(<\w+)", r"\n\n\1", content)
-  content = regex.sub("\n\n\n+", "\n\n", content)
+  content = regex.sub(r"(?<=\n)(<\w+)", r"\n\n\1", content)
+  content = regex.sub(r"\n *\n *\s+", "\n\n", content)
   return content
 
 
@@ -349,23 +372,42 @@ def detail_content_replacer_soup(detail_tag, replacement):
   summary.insert_after(f"\n\n{replacement}\n")
 
 
-def transform_tag_strings(detail_tag, transformer, type_pattern=None):
-  if type_pattern is not None and not regex.fullmatch(type_pattern, detail_tag.select_one("summary").text):
+def transform_tag_strings(detail_tag, transformer, title_pattern=None):
+  if title_pattern is not None and not regex.fullmatch(title_pattern, detail_tag.select_one("summary").text):
     return
   for x in detail_tag.contents:
     if isinstance(x, NavigableString):
       x.replace_with(transformer(x))
 
 
-def sanskrit_tag_transformer(detail_tag, type_pattern):
-  def transformer(x):
-    # x = doc_curation.md.content_processor.space_helper.dehyphenate_sanskrit_line_endings(x)
-    x = sanskrit_helper.fix_lazy_anusvaara(x)
-    return x
-  transform_tag_strings(detail_tag=detail_tag, transformer=transformer, type_pattern=type_pattern)
+def shlokas_to_details(content, pattern=None, title_base="टीका"):
+  from doc_curation.utils import patterns, sanskrit_helper
+  if f">{title_base}" in content:
+    return content
+  content = sanskrit_helper.seperate_uvaacha(text=content)
+  if pattern is None:
+    pattern = patterns.PATTERN_2LINE_SHLOKA
+  def detail_maker(match):
+    shloka = match.group()
+    if pattern == patterns.PATTERN_BOLDED_QUOTED_SHLOKA:
+      shloka = shloka.replace("**", "")
+      shloka = regex.sub("\n> *", "\n", shloka)
+    if pattern not in [patterns.PATTERN_2LINE_SHLOKA_NO_NUM, patterns.PATTERN_BOLDED_QUOTED_SHLOKA]:
+      shloka_id = f" - {match.groups()[-1].strip()}"
+    else:
+      shloka_id = ""
+    detail = Detail(title=f"{title_base}{shloka_id}", content=shloka)
+    return f"\n{detail.to_md_html()}\n"
+  try:
+    content = regex.sub(pattern, detail_maker, content)
+  except TimeoutError as x:
+    print(x)
+    logging.fatal(f"pattern: {pattern}")
+  content = _normalize_spaces(content)
+  return content
 
 
-def shlokas_to_muula_viprastuti_details(content, pattern=None):
+def shlokas_to_muula_viprastuti_details(content, pattern=None, id_position=-1):
   if "विश्वास-प्रस्तुतिः" in content:
     return content
   from doc_curation.utils import patterns, sanskrit_helper
@@ -377,9 +419,13 @@ def shlokas_to_muula_viprastuti_details(content, pattern=None):
     if pattern == patterns.PATTERN_BOLDED_QUOTED_SHLOKA:
       shloka = shloka.replace("**", "")
       shloka = regex.sub("\n> *", "\n", shloka)
+    if pattern not in [patterns.PATTERN_2LINE_SHLOKA_NO_NUM, patterns.PATTERN_BOLDED_QUOTED_SHLOKA]:
+      shloka_id = f" - {match.groups()[id_position].strip()}"
+    else:
+      shloka_id = ""
     shloka = shloka.replace("**", "")
-    detail_vishvaasa = Detail(title="विश्वास-प्रस्तुतिः", content=shloka)
-    detail_muula = Detail(title="मूलम्", content=shloka)
+    detail_vishvaasa = Detail(title=f"विश्वास-प्रस्तुतिः{shloka_id}", content=shloka)
+    detail_muula = Detail(title=f"मूलम्{shloka_id}", content=shloka)
     return f"\n{detail_vishvaasa.to_md_html()}\n\n{detail_muula.to_md_html()}" 
   try:
     content = regex.sub(pattern, detail_maker, content)
@@ -475,8 +521,12 @@ def wrap_into_detail(content, title, attributes_str=None):
 
 def non_detail_parts_to_detail(content, title):
 
-  content = regex.sub(r"(?<=/details>|^)\s*([^<]+?)\s*(?=<details|$)", rf"\n\n<details><summary>{title}</summary>\n\n\1\n</details>\n\n", content)
+  if title in ["विश्वास-प्रस्तुतिः", "मूलम् (वचनम्)"]:
+    attributes_str = " open"
+  else:
+    attributes_str = ""
+  content = regex.sub(r"(?<=/details>|^)\s*([^<]+?)\s*(?=<details|$)", rf"\n\n<details{attributes_str}><summary>{title}</summary>\n\n\1\n</details>\n\n", content)
   content = regex.sub(rf"<details><summary>{title}</summary>\n\n*</details>", "", content)
-  content = regex.sub(rf"\n\n\n+", "\n\n", content)
+  content = _normalize_spaces(content)
   
   return content

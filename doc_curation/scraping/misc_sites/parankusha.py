@@ -14,6 +14,7 @@ from indic_transliteration import sanscript
 from selenium.common.exceptions import NoSuchElementException
 
 from curation_utils import scraping, file_helper
+from selenium.webdriver.support.ui import WebDriverWait
 
 logging.basicConfig(
   level=logging.DEBUG,
@@ -57,9 +58,13 @@ def expand_tree_by_text(browser, element_text):
 
 def deduce_text_name(browser, ordinal=None):
   logging.debug(f"Sequence {ordinal}")
-  element = browser.find_elements(By.CSS_SELECTOR, "td>a.tv_0.tv_3")[-1]
+  # Gets the link highlighted by red color in the left panel.
+  WebDriverWait(browser,5).until(lambda browser: browser.find_elements(By.CSS_SELECTOR, "td>a.tv_0.tv_3"))
+
+  elements = browser.find_elements(By.CSS_SELECTOR, "td>a.tv_0.tv_3")
   # element = browser.find_elements(By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"] td")[-1]
-  text_name = element.text.strip()
+
+  text_name = elements[-1].text.strip()
   if ordinal is None:
     return text_name
   else:
@@ -118,11 +123,11 @@ def browse_nodes(browser, start_nodes):
       click_link_by_text(browser=browser, element_text=node)
 
 
-def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False):
+def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False, source_script=sanscript.DEVANAGARI):
   def _dump_text(browser, outdir, ordinal=None, has_comment=False, start_nodes=None):
     text_name = deduce_text_name(browser, ordinal)
     out_file_path = get_output_path(text_name=text_name, outdir=outdir)
-    dump_to_file(browser=browser, has_comment=has_comment, out_file_path=out_file_path, text_name=text_name, start_nodes=start_nodes)
+    dump_to_file(browser=browser, has_comment=has_comment, out_file_path=out_file_path, text_name=text_name, start_nodes=start_nodes, source_script=source_script)
 
   browse_nodes(browser=browser, start_nodes=start_nodes)
 

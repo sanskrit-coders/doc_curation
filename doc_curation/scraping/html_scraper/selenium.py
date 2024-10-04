@@ -1,8 +1,9 @@
+from selenium.webdriver.support.ui import WebDriverWait
 import logging
 import os
 from functools import lru_cache
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome import options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.remote_connection import LOGGER
@@ -117,8 +118,9 @@ def click_element(browser, element):
   # Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen 
   browser.execute_script("arguments[0].click();", element)
 
-def click_link_by_text(browser, element_text):
+def click_link_by_text(browser, element_text, timeout=5):
   try:
+    WebDriverWait(browser, timeout).until(lambda browser: browser.find_elements(By.LINK_TEXT, element_text))
     subunit_elements = browser.find_elements(By.LINK_TEXT, element_text)
     if len(subunit_elements) == 0:
       logging.warning("Could not find %s", element_text)
@@ -126,6 +128,6 @@ def click_link_by_text(browser, element_text):
     logging.info("Clicking: %s" % element_text)
     click_element(browser=browser, element=subunit_elements[-1])
     return True
-  except NoSuchElementException:
+  except (NoSuchElementException, TimeoutException):
     logging.warning("Could not find %s", element_text)
     return False

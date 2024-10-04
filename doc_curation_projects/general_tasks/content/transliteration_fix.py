@@ -4,7 +4,7 @@ from doc_curation.md import content_processor, library
 from doc_curation.md.content_processor import footnote_helper
 from doc_curation.md.file import MdFile
 from doc_curation.utils import sanskrit_helper
-from indic_transliteration import sanscript
+from indic_transliteration import sanscript, aksharamukha_helper, tamil_tools
 
 # 
 def devanaagarify(dir_path, source_script):
@@ -46,7 +46,9 @@ def fix_anunaasikas(dir_path):
 if __name__ == '__main__':
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/vAyu-purANam/dvi-khaNDa-saMskaraNam", content_transformer=lambda x, y: sanskrit_helper.fix_repha_duplication(x), dry_run=False, silent_iteration=False)
-  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/5-tIkAH", source_script="tamil")
+  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/paramata-bhangaH_dev.md", source_script="tamil")
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/pancha-kAla-prakAshaH/_index.md", source_script="telugu")
   # fix_anunaasikas(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/pancha-kAla-prakAshaH/_index.md")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/english/content/prose/hindu/indologist/max-muller/india_what_it_can_teach_us.md", content_transformer=lambda x, y: sanskrit_helper.fix_sacred_texts_transliteration(x), dry_run=False, silent_iteration=False)
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/", content_transformer=lambda x, y: tamil_tools.set_tamil_soft_consonants(x), dry_run=False, silent_iteration=False)
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/shrIvaiShNava/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam", content_transformer=lambda x, y: tamil_tools.fix_naive_ta_transliterations(x), dry_run=False, silent_iteration=False)

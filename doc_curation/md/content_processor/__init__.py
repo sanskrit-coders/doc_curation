@@ -115,7 +115,7 @@ def get_quasi_section_int_map(content, pattern):
   source_matches = list(regex.finditer(pattern, content))
   source_match_map = {}
   for source_match in source_matches:
-    index_str = sanscript.transliterate(source_match.group(1), _to=sanscript.IAST)
+    index_str = sanscript.transliterate(source_match.groups()[-1], _to=sanscript.IAST)
     if index_str.isnumeric():
       source_match_map[int(index_str)] = source_match
     else:
