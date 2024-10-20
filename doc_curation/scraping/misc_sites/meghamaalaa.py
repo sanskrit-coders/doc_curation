@@ -7,7 +7,7 @@ from doc_curation import md
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import space_helper
 from curation_utils.file_helper import get_storage_name
-from doc_curation.utils import text_utils
+from doc_curation.utils import text_utils, sanskrit_helper
 
 from doc_curation.md.file import MdFile
 import logging
@@ -37,6 +37,7 @@ def fix_text(text, source_script):
     text = regex.sub("s", "ऽ", text)
     text = regex.sub("ॆ", "े", text)
     text = regex.sub("ॊ", "ो", text)
+    text = sanskrit_helper.fix_bad_anunaasikas(text)
   elif source_script.startswith(sanscript.TAMIL):
     text = regex.sub(r"\*\*([²³⁴₂₃₄])\*\*", r"\1", text)
     text = regex.sub("श्रिय:", "श्रियः", text)

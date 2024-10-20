@@ -13,7 +13,7 @@ def migrate_and_include_shlokas():
 
 def shloka_formatting():
   pass
-  library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/padma-purANam", patterns=[r"(?<=[^०-९])([०-९]{1,2}) *(?=\n)"], replacement=r"॥ \1 ॥\n\n")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/padma-purANam", patterns=[r"(?<=[^०-९])([०-९]{1,2}) *(?=\n)"], replacement=r"॥ \1 ॥\n\n")
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/skanda-purANam/8_ambikA-khaNDaH", content_transformer=lambda c, m: space_helper.make_md_verse_lines(text=c))
 
@@ -32,5 +32,5 @@ def details_fix(dir_path):
 if __name__ == '__main__':
   pass
   # shloka_formatting()
-  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/sampradAyaH/kaulaH_shAktaH/sampradAyaH/pUrvAmnAyaH_trikam/abhinavagupta-mUlam/anuttarAShTikA_abhinavaguptavirachitA.md")
+  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/shrIvaiShNava/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/vAdi-kesari-dramiDopaniShat-sangatiH")
   # details_helper.interleave_from_file(md_file=MdFile("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/tiruk-kural/sarva-prastutiH.md"), source_file="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/tiruk-kural/TIkA/sa/shrI-rAma-deshikaH.md", dest_pattern= "<details.+?summary>विश्वास-प्रस्तुतिः *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>.*?- *(\S+)</summary>[\s\S]+?</details>\n", detail_title=None, dry_run=False)
