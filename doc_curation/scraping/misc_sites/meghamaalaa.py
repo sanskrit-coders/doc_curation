@@ -35,6 +35,8 @@ def fix_text(text, source_script):
     text = regex.sub("ळ", "ल", text)
     text = regex.sub(":", "ः", text)
     text = regex.sub("s", "ऽ", text)
+    text = regex.sub("ॆ", "े", text)
+    text = regex.sub("ॊ", "ो", text)
   elif source_script.startswith(sanscript.TAMIL):
     text = regex.sub(r"\*\*([²³⁴₂₃₄])\*\*", r"\1", text)
     text = regex.sub("श्रिय:", "श्रियः", text)

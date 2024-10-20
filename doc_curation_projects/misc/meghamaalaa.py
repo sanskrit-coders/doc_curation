@@ -219,6 +219,10 @@ def rahasya():
 def bhagavad_vishayam():
   base_dir = "/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/shrIvaiShNava/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/"
   base_url = "https://srivaishnavan.com/publications/meghamala/bhagavad-visayam/"
+  # meghamaalaa.dump_text(url=base_url + "dramidaamnaaya-sanghathi/dramidaamnaaya-sanghathi/", dest_path=os.path.join(base_dir, "12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/dt.md"), dry_run=False )
+  # meghamaalaa.dump_text(url=base_url + "dramidopanishat-tatparya-ratnavazhi/dramidopanishat-tatparya-ratnavazhi-moolam/", dest_path=os.path.join(base_dir, "venkaTa-nAthAryaH/dramiDopaniShat-tAtparya-ratnAvalI/me.md"), dry_run=False )
+  # meghamaalaa.dump_text(url="https://srivaishnavan.com/uncategorized/dramidopanishat-saram/", dest_path=os.path.join(base_dir, "venkaTa-nAthAryaH/dramiDopaniShat-sAraH_me.md"), dry_run=False )
+  # return 
   meghamaalaa.dump_series(base_url + "6000-padi", os.path.join(base_dir, "6k_tiruk-kurugaip-pirAn-piLLAn") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
   meghamaalaa.dump_series(base_url + "9000-padi", os.path.join(base_dir, "9k_nan-jIyar_nam-piLLai") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)
   meghamaalaa.dump_series(base_url + "12000-36000-padi/centum-01/01-01-12000-36000-padi/", os.path.join(base_dir, "12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/01") , start_index=None, source_script=sanscript.TAMIL_SUB, overwrite=True)

@@ -4,6 +4,7 @@ import os
 import regex
 
 from doc_curation.md import content_processor
+from doc_curation.md.library import combination
 from doc_curation.scraping import wisdom_lib
 
 from doc_curation.scraping.html_scraper import souper
@@ -32,6 +33,8 @@ def dumper (url, outfile_path, title_prefix, dry_run):
   return souper.dump_text_from_element(url=url, outfile_path=outfile_path, text_css_selector="#scontent", title_maker=title_maker, html_fixer=html_fixer, md_fixer=md_fixer, footnote_definier=wisdom_lib.footnote_extractor, overwrite=True, dry_run=dry_run)
 
 
-def dump_series(start_url, out_path, index=1, dumper=dumper, end_url=None, index_format="%02d", dry_run=False):
+def dump_series(start_url, out_path, index=1, dumper=dumper, end_url=None, index_format="%02d", join=False, dry_run=False):
   next_url_getter = lambda soup, *args, **kwargs: souper.anchor_url_from_soup_css(soup=soup, css="div.order-3 a", base_url="https://www.wisdomlib.org/")
   souper.dump_series(start_url=start_url, out_path=out_path, next_url_getter=next_url_getter, dumper=dumper, end_url=end_url, index_format=index_format, dry_run=dry_run, index=index)
+  if join:
+    combination.combine_files_in_dir(md_file=os.path.join(out_path, "_index.md"), dry_run=dry_run)

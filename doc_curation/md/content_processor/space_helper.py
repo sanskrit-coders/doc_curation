@@ -56,6 +56,14 @@ def make_md_verse_lines(text):
   text = regex.sub("\n\n\n+", "\n\n", text) ## Be careful not to mess with two new lines after detail tag opening.
   return text
 
+def fix_danda_spaces(text):
+  from doc_curation.md.content_processor import ocr_helper
+  text = ocr_helper.fix_dandas(text)
+  text = regex.sub(r"([०-९।॥\.\d]*)॥\s*", r"\1॥\n\n", text)
+  text = regex.sub(r"([०-९।\.\d]*)।(?=\S)", r"\1। ", text)
+  text = regex.sub(r"। *(?=\n)", r"।  ", text)
+  return text
+
 
 def make_lines_end_with_pattern(content, full_line_pattern):
   lines = content.split("\n")

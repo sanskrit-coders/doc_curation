@@ -69,12 +69,10 @@ def fix_iast_for_pdfs(text):
 
 
 def fix_google_ocr_devanaagarii(text, keep_lines=False):
+  text = fix_dandas(text)
   text = regex.sub(r"(?<=\n)[\-=]+ *(?=\n)", "", text)
   text = regex.sub("(?<=\n)([०-९\d]+) *(?=\n)", r"[[\1]]", text)
   text = regex.sub("(?<=[ँ-९]):", "ः", text)
-  text = regex.sub(r"\|\|", "॥", text)
-  text = regex.sub(r"\|", "।", text)
-  text = regex.sub(r"।।", "॥", text)
   if keep_lines:
     text = regex.sub("(?<=\S ?)\n", "  \n", text)
   else:
@@ -87,10 +85,15 @@ def fix_mid_shloka_empty_lines(text):
   text = regex.sub(r"।\n\n+", "।  \n", text)
   return text
 
-def misc_manipravaala_typs(text):
+def fix_dandas(text):
   text = regex.sub(r"\|\|", "॥", text)
   text = regex.sub(r"\|", "।", text)
+  text = regex.sub(r"।।।+", r"…", text)
   text = regex.sub(r"।।", "॥", text)
+  return text
+
+def misc_manipravaala_typs(text):
+  text = fix_dandas(text)
   text = regex.sub("[ञनम](्[क-घ])\n", r"ङ\1", text)
   text = regex.sub("[ङनम](्[च-झ])\n", r"ञ\1", text)
   text = regex.sub("[ञङम](्[त-न])\n", r"न\1", text)

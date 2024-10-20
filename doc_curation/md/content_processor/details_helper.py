@@ -133,8 +133,7 @@ def transform_details_with_soup(content, metadata, transformer, title_pattern=No
   details = soup.select("body>details")
   for detail_tag in details:
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
-    if title_pattern is None or regex.fullmatch(title_pattern, detail.title):
-      transform_tag_strings(detail_tag=detail_tag, transformer=transformer, title_pattern=title_pattern, *args, **kwargs)
+    transform_tag_strings(detail_tag=detail_tag, transformer=transformer, title_pattern=title_pattern, *args, **kwargs)
     detail_tag.insert_after("\n")
   return content_processor._make_content_from_soup(soup=soup)
 

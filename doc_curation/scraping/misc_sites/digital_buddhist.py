@@ -10,9 +10,13 @@ from bs4 import BeautifulSoup
 
 from curation_utils import scraping
 from doc_curation.md import library
+from doc_curation.md.content_processor import space_helper
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper import souper
 from indic_transliteration import sanscript
+
+
+BASE_AGAMA = "/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/bauddhaH/"
 
 
 def get_all_texts():
@@ -71,6 +75,9 @@ def dump_text_to_file(url, dir_path, title):
   safe_title = file_helper.get_storage_name(title)
   file_name = f"{safe_title}.md"
   file_path = os.path.join(dir_path, file_name)
+  
+  patterns_to_skip = ["madhyamaka/prasannapadA"]
+  
   logging.info("Dumping to file %s", file_path)
   metadata = _get_meta_info(soup)
   metadata['title'] = title
@@ -131,4 +138,7 @@ def dump_all_texts(base_path):
   
 
 if __name__ == '__main__':
-  dump_all_texts(base_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/bauddhaH/")
+  pass
+  # dump_all_texts(base_path=)
+  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m: space_helper.fix_danda_spaces(c), dir_path=BASE_AGAMA)
+  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m: space_helper.fix_danda_spaces(c), dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/bauddham")
