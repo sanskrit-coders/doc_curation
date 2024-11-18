@@ -84,6 +84,7 @@ def dump_substack():
   substack.scrape_free_articles_from_index_anchors(url="https://thedharmadispatch.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/dharma-dispatch", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://jhalazalimsingh.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/jhalazalimsingh", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://williamjames17.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/williamjames17", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://sadashree.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/sadashree", dry_run=False)
 
   substack.scrape_free_articles_from_index_anchors(url="https://newsletter.smallbets.co/archive", dir_path=f"{BASE_PATH}/weblogs/non-hindu/smallbets", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://machiavellianhindu.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/machiavellianhindu", dry_run=False)

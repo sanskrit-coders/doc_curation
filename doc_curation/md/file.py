@@ -161,6 +161,17 @@ class MdFile(object):
       title = regex.sub(r"^[+०-९\d]+ +", "", title)
     return title
 
+  def get_index_basename(self, index_position=0):
+    base_name = os.path.basename(self.file_path)
+    try:
+      index = int(base_name.replace(".md", "").split("_")[index_position])
+      name_list = base_name.split("_")
+      del name_list[index_position]
+      base_name = "_".join(name_list)
+    except ValueError:
+      logging.warning(f"Skipping file with irregular index- {self.file_path}")
+    return (index, base_name)
+
   def dump_mediawiki(self, outpath=None, dry_run=False):
     (metadata, content) = self.read()
     import pypandoc

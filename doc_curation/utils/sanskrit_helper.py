@@ -10,8 +10,8 @@ def deduce_root(text):
 
 
 def fix_bad_anunaasikas(text):
-  # Beware of निम्न नृम्ण, गम्यते etc..
-  replacements = {r"म्([च-ञ])": r"ञ्\1", r"म्([क-ङ])": r"ङ्\1", r"म्([ट-ढ])": r"ण्\1", r"म्([त-ध])": r"न्\1", r"म्([श])": r"ं\1", r"ं$": "म्", r"ं(\**\s*[अ-औ।॥])": r"म्\1", r"म्(\**\s+[क-नय-ह])": r"ं\1"}
+  # Beware of निम्न नृम्ण, गम्यते etc.. - so can't do - r"(?<!्)म्(\**[क-नय-ह])": r"ं\1"
+  replacements = {r"म्([च-ञ])": r"ञ्\1", r"म्([क-ङ])": r"ङ्\1", r"म्([ट-ढ])": r"ण्\1", r"म्([त-ध])": r"न्\1", r"म्([श])": r"ं\1", r"ं$": "म्", r"ं(\**\s*[अ-औ।॥])": r"म्\1", r"म्(\**\s+[क-नय-ह])": r"ं\1", }
   c = text
   for pattern, replacement in replacements.items():
     c = regex.sub(pattern, replacement, c)
@@ -22,6 +22,30 @@ def fix_lazy_anusvaara(text, script=sanscript.DEVANAGARI):
   text = regex.sub("ंऽ", "ऽं", text)
   text = sanscript.SCHEMES[script].fix_lazy_anusvaara(text, ignore_padaanta=True, omit_yrl=True)
   return text
+
+
+def fix_bad_visargas(text):
+  replacements = {r"(?<=[ि-ौ])ः(?=\s+[अ-औगघङजझञदधनडढणबभमयलवह])": r"र्", r"(?<=[ा])ः(?=\s+[अ-औगघङजझञदधनडढणबभमयरलवह])": r"", r"(?<=[क-ह])ः(\s+)अ": r"ो\1ऽ", r"ः(?=\s+[चछ])": r"श्", r"ः(?=\s+[टठ])": r"ष्", r"ः(?=\s+[तथ])": r"स्", r"(?<=[क-ह])ः(?=\s+[आ-औ])": r"", r"(?<=[क-ह])ः(?=\s*ऽ)": r"ो", }
+  c = text
+  for pattern, replacement in replacements.items():
+    c = regex.sub(pattern, replacement, c)
+  return c
+
+
+def fix_bad_vyanjanaantas(text):
+  replacements = {r"त्(?=\s+[चछ])": r"च्", r"त्(?=\s+[जझ])": r"ज्", r"त्(?=\s+[टठ])": r"ट्", r"त्(?=\s+[डढ])": r"ड्", r"त्(?=\s+[अ-औगघदधबभयरलव])": r"द्", r"त्(?=\s+[मन])": r"न्"}
+  c = text
+  for pattern, replacement in replacements.items():
+    c = regex.sub(pattern, replacement, c)
+  return c
+
+
+def fix_yaNs(text):
+  replacements = { r"[ुू](?=\s+[अ-ईऋ-औ])": r"्व्", r"[िी](?=\s+[अआउ-औ])": r"्य्", r"[ृॄ](?=\s+[अ-ऊऌ-औ])": r"्र्", r"[ॢॣ](?=\s+[अ-ॠए-औ])": r"्ल्", }
+  c = text
+  for pattern, replacement in replacements.items():
+    c = regex.sub(pattern, replacement, c)
+  return c
 
 
 def numerify_shloka_numbering(text, encoding="कखगघङचछजझञ"):
