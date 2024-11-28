@@ -126,10 +126,11 @@ def puraaNam():
 
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-01/श्रीविष्णुपुराणम्-amsa-01-ady-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/01/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-02/amsa-02-ady-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/02/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)$", x).group(1))
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-03/श्रीविष्णुपुराणम्-amsa-03-ady-01-2/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/03/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-04/amsa-04-ady-01-10/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/04/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-05/श्रीविष्णुपुराणम्-amsa-05-ady-01-10/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/05/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-03/श्रीविष्णुपुराणम्-amsa-03-ady-01-2/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/03/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-04/amsa-04-ady-01-10/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/04/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-05/श्रीविष्णुपुराणम्-amsa-05-ady-01-10/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/05/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
 
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-05/श्रीविष्णुपुराणम्-amsa-06-ady-01-05/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/06", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
 
 def raamaayaNam():
   pass
@@ -242,11 +243,11 @@ if __name__ == '__main__':
   pass
   # lokaachaarya()
   # raamaayaNam()
-  bhagavad_vishayam()
+  # bhagavad_vishayam()
   # kaavyam()
   # upanishat()
   # shriibhaashya()
   # fix_text("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/ma")
   # misc()
-  # puraaNam()
+  puraaNam()
   # rahasya()

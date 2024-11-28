@@ -140,7 +140,8 @@ def process_catalog_page_soup(url):
   """Does not work - get template content which is different from actual view in browser."""
   soup = scraping.get_soup(url=url)
 
-
+# TODO: can be made a bit more efficient by following https://muktalib7.com/DL_CATALOG_ROOT/MUKTABODHA-LIBRARY-DEVANAGARI/DEV-TITLE-LINK-LIST.html or https://muktalib7.com/DL_CATALOG_ROOT/MUKTABODHA-LIBRARY-IAST/UTF8-TITLE-LINK-LIST.html .  
+# But they do not include the etexts of the cumulative Muktabodha/IFP collection.
 def get_docs(out_dir):
   soup = scraping.get_soup(
     "https://%s@muktalib7.com/DL_CATALOG_ROOT/DL_CATALOG/DL_CATALOG_USER_INTERFACE/dl_user_interface_list_catalog_records.php?sort_key=title" % creds)

@@ -168,9 +168,10 @@ class MdFile(object):
       name_list = base_name.split("_")
       del name_list[index_position]
       base_name = "_".join(name_list)
+      return (index, base_name)
     except ValueError:
       logging.warning(f"Skipping file with irregular index- {self.file_path}")
-    return (index, base_name)
+      return (None, base_name)
 
   def dump_mediawiki(self, outpath=None, dry_run=False):
     (metadata, content) = self.read()
@@ -240,6 +241,8 @@ class MdFile(object):
                 out_file_obj.write(chunk)
 
   def set_title(self, title, overwrite=True, dry_run=False):
+    if self.file_path.endswith("_index.md") and not title.startswith("+"):
+      title = f"+{title}"
     self.set_frontmatter_field_value(field_name="title", value=title, overwrite=overwrite, dry_run=dry_run)
     
   def set_frontmatter_field_value(self, field_name, value, overwrite=True, dry_run=False):

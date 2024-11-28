@@ -419,7 +419,9 @@ def shlokas_to_muula_viprastuti_details(content, pattern=None, id_position=-1):
       shloka = shloka.replace("**", "")
       shloka = regex.sub("\n> *", "\n", shloka)
     if pattern not in [patterns.PATTERN_2LINE_SHLOKA_NO_NUM, patterns.PATTERN_BOLDED_QUOTED_SHLOKA]:
-      shloka_id = f" - {match.groups()[id_position].strip()}"
+      shloka_id = match.groups()[id_position].strip()
+      if shloka_id != "":
+        shloka_id = f" - {shloka_id}"
     else:
       shloka_id = ""
     shloka = shloka.replace("**", "")

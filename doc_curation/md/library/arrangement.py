@@ -136,7 +136,8 @@ def get_index_to_md(dir_path, index_position=0):
   for index, file_path in enumerate(files):
     md_file = MdFile(file_path=file_path)
     (index, basename) = md_file.get_index_basename()
-    index_to_md_file[index] = md_file
+    if index is not None:
+      index_to_md_file[index] = md_file
   return index_to_md_file
 
 
@@ -160,7 +161,7 @@ def migrate(files, location_computer, dry_run=False):
         os.rename(src=f, dst=new_path)
         
 
-def make_include_files(dest_dir, source_dir, start_index, end_index, dry_run=False):
+def make_include_files(dest_dir, source_dir, start_index=None, end_index=None, dry_run=False):
   files = [os.path.join(source_dir, x) for x in os.listdir(source_dir) if x != "_index.md" and x.endswith(".md")]
   files.sort()
   index_to_md_file = get_index_to_md(dir_path=source_dir, index_position=0)
@@ -170,17 +171,19 @@ def make_include_files(dest_dir, source_dir, start_index, end_index, dry_run=Fal
   index_to_md_file_dest = get_index_to_md(dir_path=dest_dir, index_position=0)
   start_index_dest = max(list(index_to_md_file_dest.keys()) + [0]) + 1
   for index, md_file in index_to_md_file.items():
-    if start_index <= index and end_index >= index:
+    if (start_index is None or start_index <= index) and (end_index is None or end_index >= index):
       dest_index = index - start_index + start_index_dest
       (_, basename) = md_file.get_index_basename()
-      base_name_dest = f"{dest_index:02d}.md" 
+      base_name_dest = f"{dest_index:02d}" 
       if basename != "":
         base_name_dest = f"{base_name_dest}_{basename}"
+      else:
+        base_name_dest = f"{base_name_dest}.md"
       md_file_dest = MdFile(file_path=os.path.join(dest_dir, base_name_dest))
       (metadata, content) = md_file.read()
       index_str = sanscript.transliterate(f"{dest_index:02d}", _to=sanscript.DEVANAGARI, _from=sanscript.IAST)
       metadata["title"] = f"{index_str} {md_file.get_title()}"
-      url = md_file.file_path.replace("/home/vvasuki/gitland/vishvAsa/", "/").replace("/static/", "/").replace("/content/", "/")
+      url = md_file.file_path.replace("/home/vvasuki/gitland/vishvAsa/", "/").replace("/static/", "/").replace("/content/", "/").replace("_index.md", "").replace(".md", "")
       md = f'<div class="js_include" url="{url}"  newLevelForH1="1" includeTitle="true">\n\n{content}\n</div>'
       md_file_dest.dump_to_file(metadata=metadata, content=md, dry_run=dry_run)
 
