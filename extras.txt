@@ -15,3 +15,5 @@ aksharamukha
 
 nltk
 translators
+
+anthropic

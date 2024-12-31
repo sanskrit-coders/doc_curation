@@ -5,13 +5,12 @@ import os
 from selenium.webdriver.common.by import By
 
 from curation_utils import scraping
+from doc_curation import configuration
 
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
-
-configuration = {}
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'local_config.json'), 'r') as handle:
     configuration = json.load(handle)
 

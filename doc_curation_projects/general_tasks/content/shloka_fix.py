@@ -23,7 +23,8 @@ def shloka_formatting():
 def details_fix(dir_path):
   pass
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=r"(?<=\n)(\d\d\.\d+\.\d\d)[a-z]* *(\S.+(\n\1.+)*)(?=\n)", id_position=0))
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_MULTI_LINE_SHLOKA))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_2LINE_SHLOKA_2LINE_SEP_NUM_END, shloka_processor=lambda x: x.replace("\n\n", "  \n")))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_4LINE_SHLOKA, shloka_processor=lambda x: x.replace("\n\n", "  \n")))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_details(content=c, pattern=patterns.PATTERN_MULTI_LINE_SHLOKA, title_base="श्री-राम-देशिकः"))
   
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.non_detail_parts_to_detail(content=c, title="विश्वास-प्रस्तुतिः"))
@@ -32,5 +33,5 @@ def details_fix(dir_path):
 if __name__ == '__main__':
   pass
   # shloka_formatting()
-  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/shrIvaiShNava/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/vAdi-kesari-dramiDopaniShat-sangatiH")
+  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/subhAShitam/kali-viDambanam.md")
   # details_helper.interleave_from_file(md_file=MdFile("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/tiruk-kural/sarva-prastutiH.md"), source_file="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/tiruk-kural/TIkA/sa/shrI-rAma-deshikaH.md", dest_pattern= "<details.+?summary>विश्वास-प्रस्तुतिः *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>.*?- *(\S+)</summary>[\s\S]+?</details>\n", detail_title=None, dry_run=False)

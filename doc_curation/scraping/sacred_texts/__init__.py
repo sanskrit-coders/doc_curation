@@ -159,15 +159,17 @@ def title_from_element(soup, title_css_selector=None, title_prefix=""):
   return title
 
 
-def dump_serially(start_url, base_dir, dest_path_maker,max_items=9999, dry_run=False):
+def dump_serially(start_url, base_dir, dest_path_maker = None, max_items=9999, dry_run=False):
   next_url_getter = lambda soup, base_url: souper.anchor_url_from_soup_css(soup=soup, css="center a", base_url=base_url, pattern="Next:")
+  if dest_path_maker is None:
+    dest_path_maker = lambda url, index, base_dir: regex.sub(".htm.?", ".md", os.path.join(base_dir, os.path.basename(url)))
 
   next_url = start_url
   num_items = 0
   while next_url and num_items < max_items:
     from doc_curation.scraping.sacred_texts import para_translation
+    soup = dump(url=next_url, outfile_path=lambda x: dest_path_maker(x, index=num_items, base_dir=base_dir), dry_run=dry_run, main_content_extractor=para_translation.get_main_content)
     num_items = num_items + 1
-    soup = dump(url=next_url, outfile_path=lambda x: dest_path_maker(x, base_dir=base_dir), dry_run=dry_run, main_content_extractor=para_translation.get_main_content)
     if soup is None:
       html = souper.get_html(url=next_url)
       soup = BeautifulSoup(html, 'html.parser')

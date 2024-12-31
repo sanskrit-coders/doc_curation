@@ -5,7 +5,7 @@ import traceback
 
 from selenium.webdriver.common.by import By
 
-from doc_curation import book_data
+from doc_curation import book_data, configuration
 from doc_curation.md import library, content_processor
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper import selenium
@@ -20,9 +20,6 @@ logging.basicConfig(
   level=logging.DEBUG,
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
-configuration = {}
-with open('/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/site_config.json', 'r') as handle:
-  configuration = json.load(handle)
 
 configuration_parankusha = configuration['parankusha']
 
@@ -40,8 +37,9 @@ def get_logged_in_browser(headless=True):
   return browser
 
 
-def expand_tree_by_text(browser, element_text):
+def expand_tree_by_text(browser, element_text, timeout=5):
   try:
+    WebDriverWait(browser, timeout).until(lambda browser: browser.find_elements(By.LINK_TEXT, element_text))
     subunit_element = browser.find_element(By.LINK_TEXT, element_text)
     expansion_element = subunit_element.find_element(By.XPATH, "./..")
     expansion_element = subunit_element.find_element(By.XPATH, "./../preceding-sibling::td")
@@ -108,19 +106,20 @@ def dump_to_file(browser, out_file_path, has_comment=False, text_name=None, star
               text += f"\n\n<details open><summary>मूलम्</summary>\n\n{comment_td.text.strip()}\n</details>\n\n"
             text += f"\n\n<details><summary>टीका</summary>\n\n{main_text}\n</details>\n\n"
         else:
-          text += main_text
+          text += f"{main_text}\n\n"
   if source_script != sanscript.DEVANAGARI:
     text = content_processor.transliterate(text=text, source_script=source_script)
   md_file = MdFile(file_path=out_file_path)
   md_file.dump_to_file(metadata={"title": text_name}, content=text, dry_run=False)
 
 
-def browse_nodes(browser, start_nodes):
+def browse_nodes(browser, start_nodes, timeout=10):
   for node in start_nodes:
     if node.startswith("expand:"):
-      expand_tree_by_text(browser=browser, element_text=node.replace("expand:", ""))
+      click_link_by_text(browser=browser, element_text=node.replace("expand:", ""), ordinal=0, timeout=timeout)
+      expand_tree_by_text(browser=browser, element_text=node.replace("expand:", ""), timeout=timeout)
     else:
-      click_link_by_text(browser=browser, element_text=node)
+      click_link_by_text(browser=browser, element_text=node, ordinal=0, timeout=timeout)
 
 
 def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False, source_script=sanscript.DEVANAGARI):
@@ -141,7 +140,7 @@ def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False, 
   library.fix_index_files(dir_path=outdir, overwrite=False, dry_run=False)
 
 
-def get_structured_text(browser, start_nodes, base_dir, unit_info_file):
+def get_structured_text(browser, start_nodes, base_dir, unit_info_file, has_comment=False, source_script=sanscript.DEVANAGARI):
   def open_path(subunit_path, unit_data):
     logging.debug(list(zip(subunit_path, unit_data["unitNameListInSite"])))
     for (subunit, unitNameInSite) in zip(subunit_path, unit_data["unitNameListInSite"]):
@@ -171,13 +170,9 @@ def get_structured_text(browser, start_nodes, base_dir, unit_info_file):
     if os.path.exists(outfile_path):
       logging.info("Skipping " + outfile_path)
     else:
-      text_spans = browser.find_elements(By.ID, "divResults").find_element(By.TAG_NAME, "span")
-      lines = ["\n", "\n"]
-      for span in text_spans:
-        lines.append(span.text + "  \n")
       os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
-      with open(outfile_path, "w") as outfile:
-        outfile.writelines(lines)
+      text_name = deduce_text_name(browser)
+      dump_to_file(browser=browser, has_comment=has_comment, out_file_path=outfile_path, text_name=text_name, start_nodes=None, source_script=source_script)
     # Close the kANDa - else the driver may pick sarga from this kANDa when it is to pick the sarga from the next kANDa?!
     close_path(subunit_path=subunit_path, unit_data=unit_data)
-  MdFile.fix_index_files(dir_path=base_dir)
+  library.fix_index_files(dir_path=base_dir)

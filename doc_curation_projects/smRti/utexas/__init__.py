@@ -2,8 +2,9 @@ from doc_curation.md import library, content_processor
 
 
 def general_fix(dir_path):
-  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"’"], replacement=r"ऽ", dry_run=False)
+  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"’|ʼ"], replacement=r"ऽ", dry_run=False)
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\s)ऽ(\S+)ऽ(?=[\s-:])"], replacement=r"'\1'", dry_run=False)
+  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"<span style=\"text-decoration:underline;\">(.+?)</span>"], replacement=r"<u>\1</u>", dry_run=False)
 
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=[ँ-९]):"], replacement=r"-", dry_run=False)
 

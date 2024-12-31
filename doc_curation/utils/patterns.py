@@ -4,10 +4,13 @@ from indic_transliteration.sanscript.schemes.brahmic import accent
 PATTERN_SHLOKA = r"(?<=\n)([^#\s<>\[\(][^#<>]+?)॥\s*([०-९\d\.]+)\s*॥.*?(?=\n|$)"
 PATTERN_2LINE_SHLOKA = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।  +\n([^#\s<>\[\(][ \S]+?)[।॥ ]+\s*([०-९\d\.]+)\s*[।॥ ].*?(?=\n|$)"
 PATTERN_2LINE_SHLOKA_NUM_END = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।?  +\n([^#\s<>\[\(][ \S]+?)\s*([०-९\d\.]+)\s*[।॥ ]*?(?=\n|$)"
+PATTERN_2LINE_SHLOKA_2LINE_SEP_NUM_END = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।? *\n\n([^#\s<>\[\(][ \S]+?)\s*([०-९\d\.]+)\s*[।॥ ]*?(?=\n|$)"
 PATTERN_2LINE_SHLOKA_NO_NUM = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।  +\n([^#\s<>\[\(][ \S]+?)[॥।].*?(?=\n|$)"
+PATTERN_4LINE_SHLOKA_2LINE_SEP_NUM_END = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?) *\n\n([^#\s<>\[\(][ \S]+?) *। *\n\n([^#\s<>\[\(][ \S]+?) *\n\n([^#\s<>\[\(][ \S]+?)\s*([०-९\d\.]+)\s*[।॥ ]*?(?=\n|$)"
 PATTERN_MULTI_LINE_SHLOKA_DOUBLE_DANDA = r"(?<=\n|^)(([^#\s<>\[][ \S]+?)।?  +\n)+?([^#\s<>\[\(][ \S]+?)॥(.*?)(?=\n|$)"
-PATTERN_MULTI_LINE_SHLOKA = fr"(?<=\n|^)(([^#\s<>\[][ \S]+?)।?  +\n)+?([^#\s<>\[\(][ \S]+?)॥\s*([०-९\d\.\-–]+)\s*॥?.*?(?=\n|$)"
-PATTERN_MULTI_LINE_SHLOKA_BOLDED = r"(?<=\n|^)\*\*(([^#\s<>\[][ \S]+?)।?  +\n){1,3}([^#\s<>\[\(][ \S]+?)॥\s*([०-९\d\.]+)\s*॥\*\*.*?(?=\n|$)"
+PATTERN_4LINE_SHLOKA = r"(?<=\n|^)(([^#\s<>\[][ \S]+?)।?  +\n){3}([^#\s<>\[\(][ \S]+?)॥ *([०-९\d\.\-–]+) *॥?.*?(?=\n|$)"
+PATTERN_MULTI_LINE_SHLOKA = fr"(?<=\n|^)(([^#\s<>\[][ \S]+?)।?  +\n)+?([^#\s<>\[\(][ \S]+?)॥ *([०-९\d\.\-–]+) *॥?.*?(?=\n|$)"
+PATTERN_MULTI_LINE_SHLOKA_BOLDED = r"(?<=\n|^)\*\*(([^#\s<>\[][ \S]+?)।?  +\n){1,3}([^#\s<>\[\(][ \S]+?)॥ *([०-९\d\.]+) *॥\*\*.*?(?=\n|$)"
 
 ## * instead of {1,4} would lead to timeouts.
 PATTERN_DANDA_END_SHLOKA = r"(?<=\n|^)([^#\s<>\[\(][ \S।॥]+?[।॥\s]*){1,4}॥\s*([०-९\d\.]+)\s*॥"

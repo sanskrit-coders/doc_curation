@@ -13,7 +13,7 @@ def translate_details(base_dir, source_language, dest_language, src_detail_patte
 
 
 def translate_partwise(base_dir, source_language, dest_language):
-  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: text_utils.translate_partwise(text=c, source_language=source_language, dest_language=dest_language), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: doc_curation.translation.translate_partwise(text=c, source_language=source_language, dest_language=dest_language), dry_run=False)
 
 
 if __name__ == '__main__':

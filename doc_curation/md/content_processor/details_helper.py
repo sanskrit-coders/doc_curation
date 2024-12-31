@@ -3,6 +3,7 @@ import logging
 import os
 import textwrap
 
+import doc_curation.translation
 from bs4.element import PageElement
 from tqdm import tqdm
 
@@ -181,9 +182,36 @@ def extract_detail_tags_from_file(md_file):
   return details
 
 
+def get_detail_bunches(md_file, bunch_start_pattern="विश्वास-प्रस्तुतिः.*", comment_title_pattern="मूलम्.*|.*भाष्यम्.*|.*टीका.*|English.*|Español.*|विश्वास-टिप्पनी.*|विषयः"):
+  details = extract_detail_tags_from_file(md_file=md_file)
+  bunches = []
+  bunch = None
+  for index, detail_tag in enumerate(details):
+    detail = Detail.from_soup_tag(detail_tag=detail_tag)
+    if detail_tag.parent.name == "div":
+      # Likely to already be an include
+      continue
+    if regex.fullmatch(bunch_start_pattern, detail.title):
+      if bunch is not None:
+        bunches.append(bunch)
+      bunch = [detail]
+      gathering_commentaries = True
+      comment_text = ""
+    elif gathering_commentaries  and regex.match(comment_title_pattern, detail.title):
+      bunch.append(detail)
+      pass
+    else:
+      gathering_commentaries = False
+      bunches.append(bunch)
+      bunch = None
+  if bunch is not None:
+    bunches.append(bunch)
+  return bunches
+
+
 def insert_adjascent_detail(content, metadata, title, new_element, inserter=PageElement.insert_after):
   # Stray usage of < can fool the soup parser. Hence the below.
-  if "details" not in content or title not in content:
+  if "details" not in content or not regex.search(title, content):
     return content
   soup = content_processor._soup_from_content(content=content, metadata=metadata)
   if soup is None:
@@ -194,10 +222,10 @@ def insert_adjascent_detail(content, metadata, title, new_element, inserter=Page
     new_element = new_element.to_soup()
   details = soup.select("details")
   for detail in details:
-    if detail.select_one("summary").text.strip() == title:
-      inserter(detail, "\n")
-      inserter(detail, new_element)
-      inserter(detail, "\n")
+    if regex.fullmatch(title, detail.select_one("summary").text.strip()):
+      inserter(detail, "\n\n")
+      inserter(detail, copy.copy(new_element))
+      inserter(detail, "\n\n")
     # inserter(detail, "\n")
   return content_processor._make_content_from_soup(soup=soup)
 
@@ -406,8 +434,9 @@ def shlokas_to_details(content, pattern=None, title_base="टीका"):
   return content
 
 
-def shlokas_to_muula_viprastuti_details(content, pattern=None, id_position=-1):
+def shlokas_to_muula_viprastuti_details(content, shloka_processor=lambda x:x, pattern=None, id_position=-1):
   if "विश्वास-प्रस्तुतिः" in content:
+    logging.warning("विश्वास-प्रस्तुतिः found. Returning")
     return content
   from doc_curation.utils import patterns, sanskrit_helper
   content = sanskrit_helper.seperate_uvaacha(text=content)
@@ -425,6 +454,7 @@ def shlokas_to_muula_viprastuti_details(content, pattern=None, id_position=-1):
     else:
       shloka_id = ""
     shloka = shloka.replace("**", "")
+    shloka = shloka_processor(shloka)
     detail_vishvaasa = Detail(title=f"विश्वास-प्रस्तुतिः{shloka_id}", content=shloka)
     detail_muula = Detail(title=f"मूलम्{shloka_id}", content=shloka)
     return f"\n{detail_vishvaasa.to_md_html()}\n\n{detail_muula.to_md_html()}" 
@@ -446,7 +476,7 @@ def sentences_to_translated_details(content, source_language="en", dest_language
   content_out = ""
   for subcontent in tqdm(subcontents, desc='Sec', ):
     if regex.match(r"[#\-<! ]+", subcontent):
-      translation = text_utils.translate(text=subcontent, source_language=source_language, dest_language=dest_language)
+      translation = doc_curation.translation.translate(text=subcontent, source_language=source_language, dest_language=dest_language)
       content_out += f"{subcontent}  \n  {{{translation}}}\n"
       continue
     soup = content_processor._soup_from_content(content=subcontent)
@@ -459,7 +489,7 @@ def sentences_to_translated_details(content, source_language="en", dest_language
         detail_pairs = []
         for sentence in tqdm(sentences, desc='Sent', ):
           detail_muula = Detail(title = source_language, content=sentence)
-          translation = text_utils.translate(text=sentence, source_language=source_language, dest_language=dest_language)
+          translation = doc_curation.translation.translate(text=sentence, source_language=source_language, dest_language=dest_language)
           detail_trans = Detail(title = dest_language, content=translation)
           detail_pairs.append([detail_muula, detail_trans])
         detail_pairs.reverse()
@@ -471,7 +501,7 @@ def sentences_to_translated_details(content, source_language="en", dest_language
         element.extract()
         if element.name == "details":
           detail = Detail.from_soup_tag(detail_tag=element)
-          translation = text_utils.translate(text=detail.content, source_language=source_language, dest_language=dest_language)
+          translation = doc_curation.translation.translate(text=detail.content, source_language=source_language, dest_language=dest_language)
           detail_trans = Detail(title = f"{detail.title} {dest_language}", content=translation)
           element.insert_after(NavigableString("\n\n"))
           element.insert_after(detail_trans.to_soup())
@@ -501,7 +531,7 @@ def add_translation(content, src_detail_pattern="English", source_language="en",
   for element in tqdm(elements):
     detail = Detail.from_soup_tag(detail_tag=element)
     title = _title_from_detail(detail)
-    translation = text_utils.translate(text=detail.content, source_language=source_language, dest_language=dest_language)
+    translation = doc_curation.translation.translate(text=detail.content, source_language=source_language, dest_language=dest_language)
     translation = regex.sub(r"\[^", fr"\[^{dest_language}", translation)
     translation = regex.sub(r"(?<=\n|^) (\[^.+?\]:|>)", fr"\1", translation)
     detail_trans = Detail(title=title, content=translation)

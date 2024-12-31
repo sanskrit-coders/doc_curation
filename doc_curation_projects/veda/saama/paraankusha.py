@@ -9,48 +9,39 @@ from doc_curation import book_data
 from doc_curation.scraping.misc_sites import parankusha
 
 
-def get_taittiriiya(browser):
-    # parankusha.click_link_by_text(browser=browser, element_text="मूलपाठः")
-    # get_text(browser=browser, text_id="पदपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/padapAThaH/saMhitA", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/taittirIya/mUlam/saMhitA.json"))
-    # get_text(browser=browser, text_id="क्रमपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/kramapAThaH/saMhitA", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/taittirIya/mUlam/saMhitA.json"))
-    # get_text(browser=browser, text_id="संहितायाः भट्टभास्करभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/bhaTTa-bhAskara/saMhitA", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/taittirIya/bhAShya/bhaTTa-bhAskara/saMhitA.json"))
-    # get_text(browser=browser, text_id="संहितायाः सायणभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/sAyaNa/saMhitA", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/taittirIya/bhAShya/bhaTTa-bhAskara/saMhitA.json"))
-    # get_text(browser=browser, text_id="संहिता", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/mUlam/saMhitA", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/taittirIya/mUlam/saMhitA.json"))
+  
 
-    # parankusha.get_structured_text(browser=browser, start_nodes=["विद्यास्थानानि", "वेदाः", "यजुर्वेदः", "कृष्णयजुर्वेदः", "भाष्यम्", "भट्टभास्करभाष्यम्",  "ब्राह्मणस्य भट्टभास्करभाष्यम्", "expand:ब्राह्मणस्य भट्टभास्करभाष्यम्"], base_dir="/home/vvasuki/vvasuki-git/saMskAra/content/sangrahaH/taittirIyA/brAhmaNam/bhaTTa-bhAskara-bhAShyam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/vedaH/taittirIya/bhAShya/bhaTTa-bhAskara/brAhmaNa.json"))
+def get_rv():
+  pass
+  # parankusha.get_structured_text(browser=browser, start_nodes=["विद्यास्थानानि", "वेदाः", "कृष्णयजुर्वेदः-तैत्तिरीयशाखा(सारस्वतपाठः)",  "क्रमपाठः"], base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/kramapAThaH/saMhitA", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/shakala/saMhitA.json"))
+  # parankusha.get_structured_text(browser=browser, start_nodes=["विद्यास्थानानि", "वेदाः", "कृष्णयजुर्वेदः-तैत्तिरीयशाखा(सारस्वतपाठः)",  "पदपाठः"], base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/padapAThaH/saMhitA", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/shakala/saMhitA.json"))
+  # parankusha.get_structured_text(browser=browser, start_nodes=["विद्यास्थानानि", "वेदाः", "कृष्णयजुर्वेदः-तैत्तिरीयशाखा(सारस्वतपाठः)",  "ब्राह्मणम्"], base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/brAhmaNam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/shakala/brAhmaNam.json"))
+  # parankusha.get_structured_text(browser=browser, start_nodes=["विद्यास्थानानि", "वेदाः", "कृष्णयजुर्वेदः-तैत्तिरीयशाखा(सारस्वतपाठः)",  "आरण्यकम्"], base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/AraNyakam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/shakala/AraNyakam.json"))
 
-    # get_text(browser=browser, text_id="ब्राह्मणम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/mUlam/brAhmaNam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/taittirIya/mUlam/brAhmaNa.json"))
-    # get_text(browser=browser, text_id="ब्राह्मणस्य सायणभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/sAyaNa/brAhmaNam/", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/taittirIya/bhAShya/bhaTTa-bhAskara/brAhmaNa.json"))
 
-    # get_text(browser=browser, text_id="आरण्यकम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/mUlam/AraNyakam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/taittirIya/mUlam/AraNyaka.json"))
-    parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदाः", "कृष्णयजुर्वेदः-तैत्तिरीयशाखा(सारस्वतपाठः)", "भाष्यम्", "भट्टभास्करभाष्यम्", "आरण्यकस्य भट्टभास्करभाष्यम्", "expand:आरण्यकस्य भट्टभास्करभाष्यम्", "प्रश्नः-1"], outdir="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/AraNyakam/bhaTTa-bhAskara-bhAShyam")
-    # get_text(browser=browser, text_id="आरण्यकस्य सायणभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/sAyaNa/AraNyakam/", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/taittirIya/bhAShya/bhaTTa-bhAskara/AraNyaka.json"))
+def get_kauthuma():
+  parankusha.click_link_by_text(browser=browser, element_text="ऋग्वेदः")
+  parankusha.click_link_by_text(browser=browser, element_text="यजुर्वेदः")
+  # parankusha.get_structured_text(browser=browser, start_nodes=["विद्यास्थानानि", "वेदाः", "कृष्णयजुर्वेदः-तैत्तिरीयशाखा(सारस्वतपाठः)",  "संहिता"], base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/kauthuma/saMhitA", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/kauthuma/saMhitA.json"))
+  # parankusha.get_structured_text(browser=browser, start_nodes=["विद्यास्थानानि", "वेदाः", "कृष्णयजुर्वेदः-तैत्तिरीयशाखा(सारस्वतपाठः)",  "छन्दःपदम्"], base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/kauthuma/ChandaHpadam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/kauthuma/ChandaHpadam.json"))
+  parankusha.get_structured_text(browser=browser, start_nodes=["विद्यास्थानानि", "वेदाः", "कृष्णयजुर्वेदः-तैत्तिरीयशाखा(सारस्वतपाठः)",  "स्तोभपदम्"], base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/kauthuma/stobhapadam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/kauthuma/stobhapadam.json"))
+  # parankusha.get_structured_text(browser=browser, start_nodes=["विद्यास्थानानि", "वेदाः", "कृष्णयजुर्वेदः-तैत्तिरीयशाखा(सारस्वतपाठः)",  "रहस्यगानम्"], base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/kauthuma/rahasyagAnam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/kauthuma/rahasyagAnam.json"))
 
-    # get_text(browser=browser, text_id="काठकम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/mUlam/kAThakam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/taittirIya/mUlam/kAThaka.json"))
-    # get_text(browser=browser, text_id="काठकस्य भट्टभास्करभाष्यम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/taittirIya/bhaTTa-bhAskara/kAThakam/", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/taittirIya/bhAShya/bhaTTa-bhAskara/kAThaka.json"))
-    
 
-# def get_rv():
-#     # get_text(browser=browser, text_id="क्रमपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/kramapAThaH/saMhitA", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/shakala/saMhitA.json"))
-#     # get_text(browser=browser, text_id="पदपाठः", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/padapAThaH/saMhitA", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/shakala/saMhitA.json"))
-#     # get_text(browser=browser, text_id="ब्राह्मणम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/brAhmaNam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/shakala/brAhmaNam.json"))
-#     # get_text(browser=browser, text_id="आरण्यकम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/shakala/AraNyakam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/shakala/AraNyakam.json"))
-# 
-# 
-# def get_kauthuma():
-#     parankusha.click_link_by_text(browser=browser, element_text="ऋग्वेदः")
-#     parankusha.click_link_by_text(browser=browser, element_text="यजुर्वेदः")
-#     # get_text(browser=browser, text_id="संहिता", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/kauthuma/saMhitA", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/kauthuma/saMhitA.json"))
-#     # get_text(browser=browser, text_id="छन्दःपदम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/kauthuma/ChandaHpadam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/kauthuma/ChandaHpadam.json"))
-#     get_text(browser=browser, text_id="स्तोभपदम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/kauthuma/stobhapadam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/kauthuma/stobhapadam.json"))
-#     # get_text(browser=browser, text_id="रहस्यगानम्", base_dir="/home/vvasuki/sanskrit/raw_etexts/veda/kauthuma/rahasyagAnam", unit_info_file=os.path.join(os.path.dirname(book_data.__file__), "data/book_data/veda/kauthuma/rahasyagAnam.json"))
-
+def get_misc(browser):
+  pass
+  for i in [3,5,7,9]:
+    parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "expand:विद्यास्थानानि", "वेदाः", f"expand:वैदिक-पादानुक्रम-कोशः-{i}", f"{i}.1"], outdir=f"/home/vvasuki/gitland/sanskrit/raw_etexts/koshaH/indic-dict/kAvya/vaidika-padAnukrama-koshaH/mUla/0{i}")
+    # Reset.
+    parankusha.browse_nodes(browser=browser, start_nodes=["विद्यास्थानानि"])
+  
 
 
 if __name__ == '__main__':
-    browser = parankusha.get_logged_in_browser(headless=False)
-    get_taittiriiya(browser=browser)
-    # get_rv()
-    # get_kauthuma()
-    # browser.implicitly_wait(13)
-    browser.close()
+  browser = parankusha.get_logged_in_browser(headless=False)
+  # get_taittiriiya(browser=browser)
+  get_misc(browser=browser)
+  # get_rv()
+  # get_kauthuma()
+  # browser.implicitly_wait(13)
+  browser.close()

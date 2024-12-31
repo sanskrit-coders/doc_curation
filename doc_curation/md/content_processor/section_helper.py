@@ -1,3 +1,5 @@
+from bs4.element import PageElement
+from tqdm import tqdm
 import itertools
 import logging
 
@@ -39,11 +41,11 @@ class Section(object):
     self.header_prefix = header_prefix
 
   def __repr__(self):
-    return f"{self.header_prefix} {self.title} ({len(self.lines)})"
+    return f"{self.header_prefix} {self.title.strip()} ({len(self.lines)})"
 
   def to_md(self):
     text = "\n".join(self.lines)
-    return f"\n\n{self.header_prefix} {self.title}\n{text}"
+    return f"\n\n{self.header_prefix} {self.title.strip()}\n{text}"
     
 
 def get_section(lines_in):
@@ -287,6 +289,23 @@ def section_contents_to_details(content, title):
   
   for section in sections:
     section.lines = [_make_detail(section.lines)]
+    new_content += section.to_md()
+
+  return new_content
+
+
+def section_headings_to_details(content, prev_detail_title="मूलम्(.*)", title="विषयः", inserter=PageElement.insert_after):
+  from doc_curation.md.content_processor import details_helper
+  (lines_till_section, sections) = get_sections(content=content)
+
+  new_content = "\n".join(lines_till_section)
+
+  # TODO: Consider section hierarchy
+  for section in tqdm(sections):
+    section_content = "\n".join(section.lines)
+    
+    section_content_new = details_helper.insert_adjascent_detail(content=section_content, metadata=None, title=prev_detail_title, new_element=details_helper.Detail(title=title, content=section.title), inserter=inserter)
+    section.lines = section_content_new.split("\n")
     new_content += section.to_md()
 
   return new_content
