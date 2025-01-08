@@ -53,7 +53,7 @@ def update_commentary(commentary_dir, commentary_name, dry_run=False):
     source_md = MdFile(file_path=source_path)
     (metadata, content) = source_md.read()
     md_file = MdFile(file_path=dest_path)
-    md_file.transform(content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title=commentary_name, new_text=content), dry_run=dry_run)
+    md_file.transform(content_transformer=lambda c, m: details_helper.transform_detail_contents_with_soup(content=c, metadata=m, transformer=details_helper.detail_content_replacer_soup, title=commentary_name, new_text=content), dry_run=dry_run)
 
 
 def sanaatana_adhimantra():

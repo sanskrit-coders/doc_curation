@@ -11,7 +11,7 @@ def remove_fake_linebreaks(content, *args, **kwargs):
   :return: 
   """
   # 
-  content = regex.sub(r"(?<=\n|^)([^#\-*!<\s][^\n]+\S) ?\n(?=[^#\-*\s>!<])", r"\1 ", content)
+  content = regex.sub(r"(?<=\n|^)([^#\-*!<\s\[][^\n]+\S) ?\n(?=[^#\-*\s>!<])", r"\1 ", content)
   # Join markdown quotation lines
   content = regex.sub(r"(?<=\n|^)(>[^\n]+\S) ?\n(?=>)", r"\1 ", content)
   return content

@@ -29,7 +29,7 @@ def details_fix(dir_path):
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_MULTI_LINE_SHLOKA_DOUBLE_DANDA))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_2LINE_SHLOKA))
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: section_helper.section_headings_to_details(content=c))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: section_helper.section_headings_to_details(content=c))
 
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=details_helper.insert_duplicate_adjascent)
@@ -47,6 +47,9 @@ def details_fix(dir_path):
 
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=line_breaker, title_pattern="विश्वास-प्रस्तुतिः.*"))
+
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_detail_contents_with_soup(content=c, metadata=m, transformer=lambda c, m:space_helper.remove_fake_linebreaks(c), title_pattern="गङ्गानथ-तुल्य-वाक्यानि"))
+
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=tamil_nna_fixer, title_pattern="विश्वास-प्रस्तुतिः.*|मूलम्.*"))
 
@@ -84,7 +87,7 @@ if __name__ == '__main__':
   # misc_typos("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/bhRgu-saMhitA")
   # fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/static/shlokashaH/06-bhIShma-parva/03-bhagavad-gItA-parva/saMskRtam/rAmAnujaH/venkaTanAthaH")
   # section_fix()
-  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/subhAShitam/kali-viDambanam.md")
+  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/static/smRtiH/manuH/sarvASh_TIkAH")
 
 
   pass

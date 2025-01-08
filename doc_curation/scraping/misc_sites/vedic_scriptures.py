@@ -112,7 +112,7 @@ def dump_mantra_details(dest_path, url, commentaries_needed, mode=ForceMode.NONE
     md_file.dump_to_file(metadata={}, content=new_content, dry_run=False)
   else:
     if pada_paaTha is not None:
-      content = details_helper.transform_details_with_soup(content=content, metadata=metadata, transformer=details_helper.detail_content_replacer_soup, title="पदपाठः", replacement=pada_paaTha)
+      content = details_helper.transform_detail_contents_with_soup(content=content, metadata=metadata, transformer=details_helper.detail_content_replacer_soup, title="पदपाठः", replacement=pada_paaTha)
     # md_file.replace_content_metadata(new_content=f"{content}\n\n{new_content}")
     md_file.replace_content_metadata(new_content=content)
   return next_url

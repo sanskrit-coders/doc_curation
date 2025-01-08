@@ -124,7 +124,7 @@ def interleave_from_file(md_files, source_file, dest_pattern="[^\d०-९೦-೯
     logging.warning(f"Could not get indices in source: {missing_dest_indices}")
   
 
-def transform_details_with_soup(content, metadata, transformer, title_pattern=None, *args, **kwargs):
+def transform_detail_contents_with_soup(content, metadata, transformer, title_pattern=None, *args, **kwargs):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
     return content
@@ -134,8 +134,27 @@ def transform_details_with_soup(content, metadata, transformer, title_pattern=No
   details = soup.select("body>details")
   for detail_tag in details:
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
-    transform_tag_strings(detail_tag=detail_tag, transformer=transformer, title_pattern=title_pattern, *args, **kwargs)
+    if title_pattern is not None and not regex.fullmatch(title_pattern, detail_tag.select_one("summary").text):
+      continue
+    for x in detail_tag.contents:
+      if isinstance(x, NavigableString):
+        x.replace_with(transformer(x, metadata, *args, **kwargs))
     detail_tag.insert_after("\n")
+  return content_processor._make_content_from_soup(soup=soup)
+
+
+def transform_detail_tags_with_soup(content, metadata, transformer, title_pattern=None, *args, **kwargs):
+  # Stray usage of < can fool the soup parser. Hence the below.
+  if "details" not in content:
+    return content
+  soup = content_processor._soup_from_content(content=content, metadata=metadata)
+  if soup is None:
+    return content
+  details = soup.select("body>details")
+  for detail_tag in details:
+    detail = Detail.from_soup_tag(detail_tag=detail_tag)
+    if regex.fullmatch(title_pattern, detail.title):
+      transformer(detail_tag, metadata)
   return content_processor._make_content_from_soup(soup=soup)
 
 
@@ -148,24 +167,26 @@ def transliterate_details(content, source_script, dest_script=sanscript.DEVANAGA
       child.extract()
     list(detail_tag.children)[0].insert_after(new_text)
 
-  return transform_details_with_soup(content=content, metadata=None, title=title, transformer=transformer)
+  return transform_detail_contents_with_soup(content=content, metadata=None, title=title, transformer=transformer)
 
-def insert_duplicate_adjascent(content, metadata, old_title_pattern="मूलम्.*", new_title="विश्वास-प्रस्तुतिः", inserter=PageElement.insert_before, content_transformer=lambda x:x):
+def insert_duplicate_adjascent(content, metadata, old_title_pattern="मूलम्(.*)", new_title=r"विश्वास-प्रस्तुतिः\1", inserter=PageElement.insert_before, content_transformer=lambda x:x):
   if new_title in content:
     logging.error(f"{new_title} already present. returning")
     return content
-  def transformer(detail_tag):
+  def transformer(detail_tag, metadata):
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
-    detail.title = new_title
+    detail.title = regex.sub(old_title_pattern, new_title, detail.title)
     detail.content = content_transformer(detail.content)
-    if new_title == "विश्वास-प्रस्तुतिः":
+    attribute_str = None
+    if new_title.startswith("विश्वास-प्रस्तुतिः"):
       attribute_str = "open"
     inserter(detail_tag, "\n\n")
     inserter(detail_tag, detail.to_soup(attributes_str=attribute_str))
     inserter(detail_tag, "\n\n")
     if "open" in detail_tag and "मूलम्" in old_title_pattern:
       del detail_tag["open"]
-  content = transform_details_with_soup(content=content, metadata=metadata, transformer=transformer, title=old_title_pattern)
+
+  content = transform_detail_tags_with_soup(content=content, metadata=metadata, transformer=transformer, title_pattern=old_title_pattern)
   content.replace("open = \"\"", "open")
   if "मूलम्" in old_title_pattern:
     content.replace("<details open><summary>मूलम्", "<details><summary>मूलम्")
@@ -182,7 +203,7 @@ def extract_detail_tags_from_file(md_file):
   return details
 
 
-def get_detail_bunches(md_file, bunch_start_pattern="विश्वास-प्रस्तुतिः.*", comment_title_pattern="मूलम्.*|.*भाष्यम्.*|.*टीका.*|English.*|Español.*|विश्वास-टिप्पनी.*|विषयः"):
+def get_detail_bunches(md_file, bunch_start_pattern="विश्वास-प्रस्तुतिः.*", comment_title_pattern="मूलम्.*|.*भाष्यम्.*|.*टीका.*|English.*|Español.*|विश्वास-टिप्पनी.*|विषयः|भावः|स्रोतः", ignored_titles = ""):
   details = extract_detail_tags_from_file(md_file=md_file)
   bunches = []
   bunch = None
@@ -199,7 +220,8 @@ def get_detail_bunches(md_file, bunch_start_pattern="विश्वास-प�
       comment_text = ""
     elif gathering_commentaries  and regex.match(comment_title_pattern, detail.title):
       bunch.append(detail)
-      pass
+    elif regex.fullmatch(ignored_titles, detail.title): 
+      continue
     else:
       gathering_commentaries = False
       bunches.append(bunch)
@@ -290,19 +312,25 @@ def rearrange_details(content, metadata, titles, *args, **kwargs):
   # Don't pick up details within details.
   details = soup.find_all(lambda x: x.name == 'details' and x.find_parent("details") is None)
   final_details = []
-  title_to_detail = collections.defaultdict(list)
+  title_to_detail = collections.defaultdict(lambda:collections.defaultdict(list))
   for detail in details:
-    title = _denumerify(detail.select_one("summary").text)
+    title = detail.select_one("summary").text
+    number = _get_number(title=title)
+    title_denumerified = _denumerify(title)
     if title in titles:
-      title_to_detail[title].append(detail)
+      title_to_detail[title_denumerified][number].append(detail)
     else:
-      title_to_detail["unarranged"].append(detail)
-  for title in titles:
-    if title in title_to_detail:
-      for detail in title_to_detail[title]:
-        final_details.append(detail)
-  for detail in title_to_detail["unarranged"]:
-    final_details.append(detail)
+      title_to_detail["unarranged"][number].append(detail)
+  def _get_details_with_id(id):
+    details_list = []
+    for title in titles + ["unarranged"]:
+      details_list.extend(title_to_detail[title][id])
+    details_list.extend(title_to_detail["unarranged"][id])
+    return details_list
+  for title in titles + ["unarranged"]:
+    for id in title_to_detail[title].keys():
+      if detail not in final_details:
+        final_details.extend(_get_details_with_id(id=id))
   current_detail = final_details[0]
   for index, detail in enumerate(final_details[1:]):
     spacer = NavigableString("\n\n")
@@ -380,6 +408,13 @@ def _denumerify(title):
   return title
 
 
+def _get_number(title):
+  matches = regex.findall(f"{patterns.ALL_DIGITS}+", title)
+  if len(matches) > 0:
+    return matches[-1]
+  else:
+    return None
+
 def _normalize_spaces(content):
   content = regex.sub(r"(?<=\n)(<\w+)", r"\n\n\1", content)
   content = regex.sub(r"\n *\n *\s+", "\n\n", content)
@@ -397,14 +432,6 @@ def detail_content_replacer_soup(detail_tag, replacement):
   if callable(replacement):
     replacement = replacement(detail.content)
   summary.insert_after(f"\n\n{replacement}\n")
-
-
-def transform_tag_strings(detail_tag, transformer, title_pattern=None):
-  if title_pattern is not None and not regex.fullmatch(title_pattern, detail_tag.select_one("summary").text):
-    return
-  for x in detail_tag.contents:
-    if isinstance(x, NavigableString):
-      x.replace_with(transformer(x))
 
 
 def shlokas_to_details(content, pattern=None, title_base="टीका"):

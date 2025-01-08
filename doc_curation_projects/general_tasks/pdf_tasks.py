@@ -25,7 +25,7 @@ if __name__ == '__main__':
     # drive_ocr.split_and_ocr_on_drive(pdf_path="/media/vvasuki/vData/text/granthasangrahaH/koshaH/upasarga-artha-candrika. vol. 1 (pra-sam).pdf", small_pdf_pages=10, detext=True, end_page=71)    
     # drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/koshaH/upasarga-artha-candrika. vol. 1 (pra-sam).pdf", small_pdf_pages=10, detext=False)
     # drive_ocr.split_and_ocr_all( dir_path="/media/vvasuki/vData/text/granthasangrahaH/vedAH/sb", small_pdf_pages=10, detext=False, )
-    drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/kAvyam/subhAShitam/MSS", small_pdf_pages=10, detext=False, file_pattern="[!_]*.pdf")
+    drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/vedAH", small_pdf_pages=10, detext=False, file_pattern="[!_]*.pdf")
     
     # TODO
     # drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/mixed/jIvAnanda-vidyAsAgaraH", small_pdf_pages=10, detext=False, file_pattern="[!_]*.pdf")
