@@ -27,6 +27,7 @@ def smrti():
 
 if __name__ == '__main__':
   # sv()
-  smrti()
+  # smrti()
   # miimaamsaa()
+  ebhaarati.dump_all(use_url_cache=True)
   pass

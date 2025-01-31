@@ -12,13 +12,14 @@ from indic_transliteration import sanscript
 
 def title_fix(dir_path, overwrite=True, dry_run=False):
   ## DEVANAGARI
-  # library.apply_function(dir_path="/home/vvasuki/vvasuki-git/pALi/content", fn=MdFile.ensure_ordinal_in_title, transliteration_target=sanscript.DEVANAGARI, dry_run=dry_run)
-  library.apply_function(dir_path=dir_path, fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, overwrite=overwrite, dry_run=dry_run)
-  # library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path=dir_path, skip_dirs=False, source_script=sanscript.DEVANAGARI, dry_run=dry_run)
+  # library.apply_function(dir_path=dir_path, fn=MdFile.ensure_ordinal_in_title, transliteration_target=sanscript.DEVANAGARI, dry_run=dry_run)
+  # library.apply_function(dir_path=dir_path, fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, overwrite=overwrite, dry_run=dry_run)
+  library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path=dir_path, skip_dirs=False, source_script=sanscript.DEVANAGARI, overwrite=overwrite, dry_run=dry_run)
   
   ##### General
   # library.apply_function(dir_path=dir_path, fn=metadata_helper.strip_index_from_title, dry_run=dry_run)
   # library.apply_function(dir_path=dir_path, fn=metadata_helper.prepend_file_index_to_title, dry_run=dry_run)
+  # arrangement.shift_indices(dir_path=dir_path, start_index=42, new_index_offset=-42, dry_run=dry_run)
 
 
   # library.apply_function(fn=MdFile.prepend_file_index_to_title, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/books/vivekAnanda", dry_run=dry_run)
@@ -40,9 +41,8 @@ def title_fix(dir_path, overwrite=True, dry_run=False):
 
 
 if __name__ == '__main__':
-  title_fix("/home/vvasuki/gitland/vishvAsa/purANam/content/skanda-purANam/leiden-saMskaraNam", overwrite=False, dry_run=False)
+  title_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/venkaTa-nAtha-shAkhA/venkaTanAthaH/sachcharitra-raxA/02_Urdhva-puNDra-dhAraNam/09_saMsthAnavichAraH_laxmyAsahasthitishcha.md", overwrite=True, dry_run=False)
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/brAhmaNam/sarva-prastutiH/1/", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False, overwrite=False)
-  # arrangement.shift_indices(dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/shrIvaiShNava/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/venkaTa-sheShaH/02", start_index=2, new_index_offset=1, end_index=32, dry_run=dry_run)
 
   # library.apply_function(
   #   fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/rAmAyaNam/goraxapura-pAThaH/kannaDAnuvAda",
