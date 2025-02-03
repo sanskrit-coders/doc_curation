@@ -30,4 +30,5 @@ if __name__ == '__main__':
   # smrti()
   # miimaamsaa()
   ebhaarati.dump_all(use_url_cache=True)
+  # ebhaarati.dump_all(use_url_cache=False)
   pass

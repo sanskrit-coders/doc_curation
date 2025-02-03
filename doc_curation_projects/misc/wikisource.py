@@ -47,12 +47,19 @@ def vaikhaanasa():
   library.fix_index_files(dir_path=base_dir, transliteration_target=sanscript.DEVANAGARI, overwrite=False, dry_run=False)
 
 
+def veda():
+  pass
+  enumerated.dump_text(url_base="काठकसंहिता_(विस्वरः)/स्थानकम्", num_parts=40, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/saMhitA/sthAnakAni", url_id_padding="%02d")
+  enumerated.dump_text(url_base="काठकसंहिता_(विस्वरः)/वचनम्", num_parts=13, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/saMhitA/vachanAni", url_id_padding="%02d")
+
+
 if __name__ == '__main__':
   pass
   # paancharaatra()
   # vaikhaanasa()
   # logging.debug(get_item("http://sanskritabhyas.in/hi/Kridanta/View/%E0%A4%AD%E0%A5%82"))
-  enumerated.dump_text(url_base="बृहद्देवता/अध्यायः", num_parts=8, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content/shAkalam/bRhad-devatA", url_id_padding="%01d")
+  veda()
+  # enumerated.dump_text(url_base="बृहद्देवता/अध्यायः", num_parts=8, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content/shAkalam/bRhad-devatA", url_id_padding="%01d")
 
   # serial.dump_text(start_url="https://en.enumerated.org/wiki/Sanskrit_Grammar_(Whitney)", out_path="/home/vvasuki/vvasuki-git/sanskrit/content/vyAkaraNam/whitney", base_url="http://en.wikisource.org/", dry_run=False)
   # serial.dump_text(start_url="https://sa.wikisource.org/s/1wlz", out_path="/home/vvasuki/sanskrit/raw_etexts/kalpaH/saMskAraratnamAlA/01/", dry_run=False)
