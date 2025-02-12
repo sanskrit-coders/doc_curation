@@ -208,10 +208,13 @@ class MdFile(object):
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
       with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
         import yaml
-        if metadata == {}:
+        if len(metadata) == 0:
           yamlout = ""
         else:
-          yamlout = yaml.dump(metadata, default_flow_style=False, indent=2, allow_unicode=True, width=1000)
+          import json
+          json_str = json.dumps(metadata, indent=2)
+          regular_dict = json.loads(json_str)
+          yamlout = yaml.dump(regular_dict, default_flow_style=False, indent=2, allow_unicode=True, width=1000)
         dump = "---\n{metadata}\n---\n{markdown}".format(metadata=yamlout, markdown=content)
         chunks = [dump[i:i + CHUNK_SIZE] for i in range(0, len(dump), CHUNK_SIZE)]
         for chunk in chunks:

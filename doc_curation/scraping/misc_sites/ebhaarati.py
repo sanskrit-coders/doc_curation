@@ -34,7 +34,9 @@ def remove_dummy_lines(text):
 def fix_footnotes(content):
   content = regex.sub(r"\]\(http://॑ *", "](", content)
   old_content = content
-  content = footnote_helper.inline_comments_to_footnotes(content=content, pattern=r"(?<=\])\(# *([^\n\)]+?)\)")
+  content = regex.sub(r"\!\[\]\(([^\)]+?)\)", r'<MISSING_FIG href="\1"/>', content)
+  content = regex.sub(rf"({footnote_helper.REF_PATTERN})\(", r'\1 (', content)
+  content = footnote_helper.inline_comments_to_footnotes(content=content, pattern=r"(?<=\])\(((?!https?:\/\/|mailto:)[^\n\)]+?)\)")
   if content != old_content:
     content = footnote_helper.define_footnotes_near_use(content=content)
     content = regex.sub(r"\[([^\]]+)\](?=\[\^)", r"\1", content)

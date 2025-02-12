@@ -4,10 +4,10 @@ import regex
 import logging
 from collections import defaultdict
 
-DEFINITION_PATTERN_SINGLE_LINE = r"\n(\[\^(.+?)\]):(\s*\S[\s\S]+?(?=$|\n\[\^|\n<|\n#|\n\n)"
-DEFINITION_PATTERN_MULTI_LINE = r"\n(\[\^(.+?)\]): *\n(   .*|\n)+?(?=$|\n\[\^|\n<|\n#))"
-DEFINITION_PATTERN = r"\n(\[\^(.+?)\]):(\s*\S[\s\S]+?(?=$|\n\[\^|\n<|\n#|\n\n)| *\n(   .*|\n)+?(?=$|\n\[\^|\n<|\n#))"
-REF_PATTERN = r"\[\^(.+?) *\]"
+REF_PATTERN = r"\[\^([^\]\n]+?) *\]"
+DEF_ENDING = r"(?=$|\n\[\^|\n<|\n#|\n\n)"
+DEFINITION_PATTERN_SINGLE_LINE = rf"(?<=\n)({REF_PATTERN}):(\s*\S[\s\S]+?){DEF_ENDING}"
+DEFINITION_PATTERN_MULTI_LINE = rf"(?<=\n)({REF_PATTERN}): *\n((   .*|\n)+?){DEF_ENDING}"
 
 
 for handler in logging.root.handlers[:]:
@@ -46,35 +46,46 @@ def transform_footnote_marks(content, transformer):
 
 def define_footnotes_near_use(content, *args, **kwargs):
   # For correct regex matching.
-  content = "\n%s\n\n" % content
+  content = "\n%s\n\n" % content.strip()
   content, definitions = extract_definitions(content)
   content = insert_definitions_near_use(content, definitions)
+  content = make_ids_unique(content)
   # Undo initial additions
   content = regex.sub(r"^\n", "", content)
   content = regex.sub(r"\n\n+$", "", content)
   return content
 
-
 def insert_definitions_near_use(content, definitions):
   definitions.reverse()
   for definition in definitions:
     old_content = content
+    ref_para_pattern = rf"({regex.escape(definition.group(1))}[\s\S]*?\n)(\n|</details|#)"
     try:
-      content = regex.sub(r"(%s[\s\S]+?\n)(\n|</details|#)" % regex.escape(definition.group(1)),
-                          r"\g<1>%s\n\g<2>" % definition.group(0), content, timeout=1)
+      content = regex.sub(ref_para_pattern,
+                          rf"\g<1>\n{definition.group(0)}\n\g<2>", content, count=1, timeout=1)
     except TimeoutError:
       logging.warning(f"Regex sub timed out trying to find {definition.group(1)}")
       pass
     if old_content == content:
-      logging.warning(f"Could not find {definition.group(1)}")
+      logging.warning(f"Could not find {definition.group(1)} with {ref_para_pattern}")
       content += "\n\n" + definition.group(0)
   content = regex.sub("\n\n\n+", "\n\n", content)
   return content
 
 
 def extract_definitions(content):
-  definitions = list(regex.finditer(DEFINITION_PATTERN, content))
-  content = regex.sub(DEFINITION_PATTERN, "", content)
+  seen_matches = set()
+  definitions = []
+  def _process_pattern(pattern, content):
+    definitions.extend([
+      match
+      for match in regex.finditer(pattern, content)
+      if match.group(0) not in seen_matches and not seen_matches.add(match.group(0))
+    ])
+    content = regex.sub(pattern, "", content)
+    return content
+  content = _process_pattern(DEFINITION_PATTERN_SINGLE_LINE, content=content)
+  content = _process_pattern(DEFINITION_PATTERN_MULTI_LINE, content=content)
   return content, definitions
 
 
@@ -112,21 +123,13 @@ import regex
 
 def get_max_index(content):
   indexes_old = [0]  # Initialize the list within the function
-  logging.debug(f"{len(indexes_old) - 1} footnotes found.")
-  indexes_old.extend(int(x.group(2)) for x in regex.finditer(DEFINITION_PATTERN, content) if x.group(2).isdigit())
-  logging.debug(f"{len(indexes_old) - 1} footnotes found.")
   indexes_old.extend(int(x.group(1)) for x in regex.finditer(REF_PATTERN, content) if x.group(1).isdigit())
   logging.debug(f"{len(indexes_old) - 1} footnotes found.")
   return max(indexes_old)
 
 
 def inline_comments_to_footnotes(content, pattern=r"\[([^\^][^\]]+)?\]"):
-  definitions_unfiltered = regex.finditer(pattern, content)
-  definitions = []
-  for definition in definitions_unfiltered:
-    if definition not in definitions:
-      definitions.append(definition)
-
+  definitions = list(regex.finditer(pattern, content))
   if len(definitions) == 0:
     logging.info("No footnote found.")
     return content
@@ -136,9 +139,18 @@ def inline_comments_to_footnotes(content, pattern=r"\[([^\^][^\]]+)?\]"):
     footnote = Footnote(id_str=f"{max_index + index + 1}", content=definition.group(1))
     footnotes[index] = footnote
 
+  # Rather than content.replace(f"{definition.group(0)}", footnote.get_reference()),  
+  # we do the below to avoid unwarranted replacements due to not caring for lookahead or lookbefore patterns. 
+  result = ""
+  last_match_end = 0
   for index, definition in enumerate(definitions):
     footnote = footnotes[index]
-    content = content.replace(f"{definition.group(0)}", footnote.get_reference())
+    result += content[last_match_end:definition.start()]
+    result += footnote.get_reference()
+    last_match_end = definition.end()
+  result += content[last_match_end:]
+  content = result
+
   for index, footnote in footnotes.items():
     content += footnote.to_definition()
   logging.info(f"{len(definitions)} footnotes found.")
@@ -193,30 +205,15 @@ def add_page_id_to_ref_ids(content, page_pattern="[\s\S]+?<dg (\d+)/>"):
     content = regex.sub(regex.escape(page_text), page_text_fixed, content)
   return content
 
-def make_ids_unique_to_be_fixed(content):
-  # TODO - fix this.
-  content, definitions = extract_definitions(content=content)
-  definitions_map = defaultdict(list)
+def make_ids_unique(content):
+  content, definitions = extract_definitions(content)
+  def_map = {}
+  filtered_defs = []
   for definition in definitions:
-    definitions_map[definition.group(2)].append(definition)
-
-  references = list(regex.finditer(REF_PATTERN, content))
-  ref_ids = list(set([x.group(1) for x in references]))
-  ref_id_count = {id: ref_ids.count(id) for id in ref_ids}
-
-  unmatched_ids = []
-  for ref_id, count in ref_id_count.items():
-    if count != len(definitions_map[ref_id]):
-      unmatched_ids.append(ref_id)
+    if definition.group(3).strip() in def_map:
+      content = content.replace(definition.group(1), def_map[definition.group(3).strip()])
     else:
-      for i in range (1, count+1):
-        content = regex.sub(fr"\[\^{ref_id}\]", f"[^{ref_id}__{i}]", content, count=1)
-        definition = definitions_map[ref_id].pop(0)
-        content = f"{content}\n\n[^{definition.group(2)}__{i}]: {definition.group(3)}"
-
-  if len(unmatched_ids) > 0:
-    logging.warning(f"Unmatched ids: {unmatched_ids}")
-    for ref_id in unmatched_ids:
-      content = f"{content}\n\n[//]: # (ALERT!! UNMATCHED FOOTNOTE IDS.)\n\n" + "\n\n".join([definition.group(0) for definition in definitions_map[ref_id]])
-  
+      filtered_defs.append(definition)
+      def_map[definition.group(3).strip()] = definition.group(1)
+  content = insert_definitions_near_use(content=content, definitions=filtered_defs)
   return content

@@ -89,7 +89,7 @@ def misc_typos(dir_path):
 if __name__ == '__main__':
   # fix_audio_tags()
   # misc_typos("/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/ebhAratI-sampat")
-  fix_whitespaces(dir_path="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/ebhAratI-sampat")
+  fix_whitespaces(dir_path="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/ebhAratI-sampat/")
   # section_fix()
   # details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/static/smRtiH/manuH/sarvASh_TIkAH")
 
