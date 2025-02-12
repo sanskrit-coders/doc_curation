@@ -24,6 +24,21 @@ logging.basicConfig(
 
 CHUNK_SIZE = 2000
 
+from collections import OrderedDict
+
+
+def order_metadata(metadata):
+  # Create an OrderedDict with "title" first if it exists
+  ordered_metadata = OrderedDict()
+  if "title" in metadata:
+    ordered_metadata["title"] = metadata.pop("title")
+
+  # Add remaining items in the original order
+  ordered_metadata.update(metadata)
+
+  return ordered_metadata
+
+
 class MdFile(object):
   YAML = "yaml"
   TOML = "toml"
@@ -34,8 +49,6 @@ class MdFile(object):
 
   def __repr__(self):
     return str(self.file_path)
-  
-
 
   def _read_yml_md_file(self) -> Tuple[Dict, str]:
     metadata = {}
@@ -91,7 +104,8 @@ class MdFile(object):
     content = get_md_with_pandoc(content_in=content, source_format=source_format, pandoc_extra_args=pandoc_extra_args)
     self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
-  def import_with_pandoc(self, source_file, source_format, dry_run, metadata={}, pandoc_extra_args=['--markdown-headings=atx']):
+  def import_with_pandoc(self, source_file, source_format, dry_run, metadata={},
+                         pandoc_extra_args=['--markdown-headings=atx']):
     if source_format == "rtf":
       html_path = str(source_file).replace(".rtf", ".html")
       subprocess.call(['Ted', '--saveTo', source_file, html_path])
@@ -139,7 +153,7 @@ class MdFile(object):
     if not isinstance(metadata, dict):
       logging.fatal(f"Crazy metadata - {self.file_path}")
     title = metadata.get("title", None)
-    title = str(title) # Might be mistakenly numeric!
+    title = str(title)  # Might be mistakenly numeric!
     if ref_dir_for_ancestral_title is not None:
       while ref_dir_for_ancestral_title.endswith("/"):
         ref_dir_for_ancestral_title = ref_dir_for_ancestral_title[:-1]
@@ -148,15 +162,16 @@ class MdFile(object):
       if parent_md is not None:
         parent_dir = os.path.dirname(parent_md.file_path)
         if parent_dir != ref_dir_for_ancestral_title:
-          parent_title = parent_md.get_title(omit_chapter_id=omit_chapter_id, ref_dir_for_ancestral_title=ref_dir_for_ancestral_title)
+          parent_title = parent_md.get_title(omit_chapter_id=omit_chapter_id,
+                                             ref_dir_for_ancestral_title=ref_dir_for_ancestral_title)
           title = "%s// %s" % (parent_title, title)
           title = regex.sub(r"(?:^| )\+", "", title)
-    
+
     if title is None:
       logging.fatal("%s has None title", self.file_path)
     if omit_plus and title.startswith("+"):
       title = title[1:]
-    
+
     if omit_chapter_id and title is not None:
       title = regex.sub(r"^[+०-९\d]+ +", "", title)
     return title
@@ -181,7 +196,7 @@ class MdFile(object):
       outpath = self.file_path.replace(".md", ".wiki")
     if not dry_run:
       with codecs.open(outpath, "w", 'utf-8') as out_file_obj:
-        chunks = [output[i:i+CHUNK_SIZE] for i in range(0, len(output), CHUNK_SIZE)]
+        chunks = [output[i:i + CHUNK_SIZE] for i in range(0, len(output), CHUNK_SIZE)]
         for chunk in chunks:
           out_file_obj.write(chunk)
     else:
@@ -198,7 +213,7 @@ class MdFile(object):
         else:
           yamlout = yaml.dump(metadata, default_flow_style=False, indent=2, allow_unicode=True, width=1000)
         dump = "---\n{metadata}\n---\n{markdown}".format(metadata=yamlout, markdown=content)
-        chunks = [dump[i:i+CHUNK_SIZE] for i in range(0, len(dump), CHUNK_SIZE)]
+        chunks = [dump[i:i + CHUNK_SIZE] for i in range(0, len(dump), CHUNK_SIZE)]
         for chunk in chunks:
           out_file_obj.write(chunk)
         # out_file_obj.write(yamldown.dump(metadata, content)) has a bug - https://github.com/dougli1sqrd/yamldown/issues/5
@@ -214,7 +229,7 @@ class MdFile(object):
         import toml
         tomlout = toml.dumps(metadata)
         dump = "+++\n{frontmatter}\n+++\n{markdown}".format(frontmatter=tomlout, markdown=content)
-        chunks = [dump[i:i+CHUNK_SIZE] for i in range(0, len(dump), CHUNK_SIZE)]
+        chunks = [dump[i:i + CHUNK_SIZE] for i in range(0, len(dump), CHUNK_SIZE)]
         for chunk in chunks:
           out_file_obj.write(chunk)
     else:
@@ -226,25 +241,26 @@ class MdFile(object):
       logging.info("Writing %s", self.file_path)
     content = file_helper.clear_bad_chars(content)
     if len(metadata) > 0:
-        if self.frontmatter_type is None:
-          self.frontmatter_type = MdFile.TOML # Default
-        if self.frontmatter_type == MdFile.YAML:
-          self._dump_to_file_yamlmd(metadata, content, dry_run)
-        elif self.frontmatter_type == MdFile.TOML:
-          self._dump_to_file_tomlmd(metadata, content, dry_run)
+      metadata = order_metadata(metadata=metadata)
+      if self.frontmatter_type is None:
+        self.frontmatter_type = MdFile.TOML  # Default
+      if self.frontmatter_type == MdFile.YAML:
+        self._dump_to_file_yamlmd(metadata, content, dry_run)
+      elif self.frontmatter_type == MdFile.TOML:
+        self._dump_to_file_tomlmd(metadata, content, dry_run)
     else:
-        if not dry_run:
-            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-            with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
-              chunks = [content[i:i+CHUNK_SIZE] for i in range(0, len(content), CHUNK_SIZE)]
-              for chunk in chunks:
-                out_file_obj.write(chunk)
+      if not dry_run:
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+        with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
+          chunks = [content[i:i + CHUNK_SIZE] for i in range(0, len(content), CHUNK_SIZE)]
+          for chunk in chunks:
+            out_file_obj.write(chunk)
 
   def set_title(self, title, overwrite=True, dry_run=False):
     if self.file_path.endswith("_index.md") and not title.startswith("+"):
       title = f"+{title}"
     self.set_frontmatter_field_value(field_name="title", value=title, overwrite=overwrite, dry_run=dry_run)
-    
+
   def set_frontmatter_field_value(self, field_name, value, overwrite=True, dry_run=False):
     if not os.path.exists(self.file_path):
       if not dry_run:
@@ -253,14 +269,14 @@ class MdFile(object):
         logging.info(f"Setting %s: %s of {self.file_path}", field_name)
       return
     metadata, content = self.read()
-    if field_name in metadata: 
+    if field_name in metadata:
       if metadata[field_name] == value:
         return
       current_value = metadata[field_name]
       if field_name == "title":
         current_value = regex.sub(r"^\+?[\d ०-९೦-೯]", "", current_value)
       elif current_value != "" and not overwrite:
-        return 
+        return
     logging.info(f"Setting %s: %s (← %s) of {self.file_path}", field_name, value, metadata.get(field_name, "None"))
     if not dry_run:
       metadata[field_name] = value
@@ -276,17 +292,17 @@ class MdFile(object):
     if new_content is None:
       new_content = content
     if metadata == new_metadata and content == new_content:
-      return 
+      return
     self.dump_to_file(metadata=new_metadata, content=new_content, dry_run=dry_run, silent=silent)
 
   def split_to_bits(
-      self, source_script=sanscript.DEVANAGARI, 
-      mixed_languages_in_titles=True, 
-      title_index_pattern="%02d", 
-      bits_dir_url=None, 
+      self, source_script=sanscript.DEVANAGARI,
+      mixed_languages_in_titles=True,
+      title_index_pattern="%02d",
+      bits_dir_url=None,
       maybe_use_dravidian_variant="yes",
       target_frontmantter_type=TOML,
-      add_short_title=False, 
+      add_short_title=False,
       deromanize=False,
       start_index=1,
       dry_run=False, max_length=40):
@@ -295,7 +311,8 @@ class MdFile(object):
     Implementation notes: md parsers oft convert to html or json. Processing that output would be more complicated than what we need here.
     :return: 
     """
-    from doc_curation.md.content_processor.section_helper import get_lines_till_section, reduce_section_depth, split_to_sections
+    from doc_curation.md.content_processor.section_helper import get_lines_till_section, reduce_section_depth, \
+      split_to_sections
 
     # TODO: Fix links upon splitting.
     logging.debug("Processing file: %s", self.file_path)
@@ -303,7 +320,7 @@ class MdFile(object):
       out_dir = os.path.dirname(self.file_path)
     else:
       out_dir = os.path.join(os.path.dirname(self.file_path), os.path.basename(self.file_path).replace(".md", ""))
-      
+
     (metadata, content) = self.read()
     lines = content.splitlines(keepends=False)
     (lines_till_section, remaining) = get_lines_till_section(lines)
@@ -326,6 +343,7 @@ class MdFile(object):
           def deromanizer(match):
             import roman
             return str(roman.fromRoman(match.group(1)))
+
           title = regex.sub(r"^([IVX]+)\.?", deromanizer, title)
 
       title = title.strip()
@@ -334,7 +352,10 @@ class MdFile(object):
       short_title = text_utils.title_from_text(text=title, num_words=6, target_title_length=24)
       title_in_file_name = title[:max_length]
       if source_script is not None:
-        title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script, maybe_use_dravidian_variant=maybe_use_dravidian_variant, mixed_languages_in_titles=mixed_languages_in_titles, max_length=max_length)
+        title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script,
+                                                          maybe_use_dravidian_variant=maybe_use_dravidian_variant,
+                                                          mixed_languages_in_titles=mixed_languages_in_titles,
+                                                          max_length=max_length)
       if title_in_file_name == "":
         raise ValueError(f"title: {title_in_file_name}")
       file_name = file_helper.clean_file_path("%s.md" % title_in_file_name)
@@ -356,12 +377,16 @@ class MdFile(object):
       remainder_file_path = os.path.join(out_dir, "_index.md")
     content = "\n".join(lines_till_section)
     if len(section_md_urls) > 0:
-      section_md_includes = ["""<div class="js_include" url="%s"  newLevelForH1="2" includeTitle="false"> </div>""" % url for url in section_md_urls]
+      section_md_includes = [
+        """<div class="js_include" url="%s"  newLevelForH1="2" includeTitle="false"> </div>""" % url for url in
+        section_md_urls]
       content = content + "\n" + "\n".join(section_md_includes)
     logging.debug(metadata)
     if not metadata["title"].startswith("+"):
       metadata["title"] = "+" + metadata["title"]
-    MdFile(file_path=remainder_file_path, frontmatter_type=target_frontmantter_type).dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
+    MdFile(file_path=remainder_file_path, frontmatter_type=target_frontmantter_type).dump_to_file(metadata=metadata,
+                                                                                                  content=content,
+                                                                                                  dry_run=dry_run)
     if str(self.file_path) != str(remainder_file_path):
       logging.info("Removing %s as %s is different ", self.file_path, remainder_file_path)
       if not dry_run and remainder_file_path != self.file_path:
@@ -395,4 +420,3 @@ class MdFile(object):
       new_content += f"\n\n{title}{source_content}"
     if new_content != dest_content:
       self.replace_content_metadata(new_content=new_content, dry_run=dry_run)
-

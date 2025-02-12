@@ -10,6 +10,13 @@ DEFINITION_PATTERN = r"\n(\[\^(.+?)\]):(\s*\S[\s\S]+?(?=$|\n\[\^|\n<|\n#|\n\n)| 
 REF_PATTERN = r"\[\^(.+?) *\]"
 
 
+for handler in logging.root.handlers[:]:
+  logging.root.removeHandler(handler)
+logging.basicConfig(
+  level=logging.DEBUG,
+  format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
+
+
 class Footnote(object):
   def __init__(self, id_str, content):
     self.id_str = id_str
@@ -44,7 +51,7 @@ def define_footnotes_near_use(content, *args, **kwargs):
   content = insert_definitions_near_use(content, definitions)
   # Undo initial additions
   content = regex.sub(r"^\n", "", content)
-  content = regex.sub(r"\n\n$", "", content)
+  content = regex.sub(r"\n\n+$", "", content)
   return content
 
 
@@ -52,11 +59,16 @@ def insert_definitions_near_use(content, definitions):
   definitions.reverse()
   for definition in definitions:
     old_content = content
-    content = regex.sub(r"(%s[\s\S]+?\n)(\n|</details|#)" % regex.escape(definition.group(1)),
-                        r"\g<1>%s\n\g<2>" % definition.group(0), content)
+    try:
+      content = regex.sub(r"(%s[\s\S]+?\n)(\n|</details|#)" % regex.escape(definition.group(1)),
+                          r"\g<1>%s\n\g<2>" % definition.group(0), content, timeout=1)
+    except TimeoutError:
+      logging.warning(f"Regex sub timed out trying to find {definition.group(1)}")
+      pass
     if old_content == content:
       logging.warning(f"Could not find {definition.group(1)}")
       content += "\n\n" + definition.group(0)
+  content = regex.sub("\n\n\n+", "\n\n", content)
   return content
 
 
@@ -96,6 +108,18 @@ def fix_plain_footnotes(content, def_pattern="(?<=\n)(\d+)\.?(?= )", def_replace
   return content
 
 
+import regex
+
+def get_max_index(content):
+  indexes_old = [0]  # Initialize the list within the function
+  logging.debug(f"{len(indexes_old) - 1} footnotes found.")
+  indexes_old.extend(int(x.group(2)) for x in regex.finditer(DEFINITION_PATTERN, content) if x.group(2).isdigit())
+  logging.debug(f"{len(indexes_old) - 1} footnotes found.")
+  indexes_old.extend(int(x.group(1)) for x in regex.finditer(REF_PATTERN, content) if x.group(1).isdigit())
+  logging.debug(f"{len(indexes_old) - 1} footnotes found.")
+  return max(indexes_old)
+
+
 def inline_comments_to_footnotes(content, pattern=r"\[([^\^][^\]]+)?\]"):
   definitions_unfiltered = regex.finditer(pattern, content)
   definitions = []
@@ -103,9 +127,13 @@ def inline_comments_to_footnotes(content, pattern=r"\[([^\^][^\]]+)?\]"):
     if definition not in definitions:
       definitions.append(definition)
 
+  if len(definitions) == 0:
+    logging.info("No footnote found.")
+    return content
   footnotes = {}
+  max_index = get_max_index(content)
   for index, definition in enumerate(definitions):
-    footnote = Footnote(id_str=f"{index + 1}", content=definition.group(1))
+    footnote = Footnote(id_str=f"{max_index + index + 1}", content=definition.group(1))
     footnotes[index] = footnote
 
   for index, definition in enumerate(definitions):
@@ -113,6 +141,7 @@ def inline_comments_to_footnotes(content, pattern=r"\[([^\^][^\]]+)?\]"):
     content = content.replace(f"{definition.group(0)}", footnote.get_reference())
   for index, footnote in footnotes.items():
     content += footnote.to_definition()
+  logging.info(f"{len(definitions)} footnotes found.")
   return content
 
 

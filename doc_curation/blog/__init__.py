@@ -27,7 +27,8 @@ logging.basicConfig(
   level=logging.DEBUG,
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
-
+# Set the logging level for your specific loggers
+logging.getLogger("dateutil").setLevel(logging.WARNING)
 
 def get_post_html(url, entry_css_list=None, browser=None):
   '''get the text body of links'''
@@ -55,11 +56,13 @@ def get_post_html(url, entry_css_list=None, browser=None):
 def get_post_metadata(soup):
   title_css_list = [".post-title", ".entry-title", "h1", "h2", ".card-header", "h3", "h4"]
   title_tags = get_tags_matching_css(soup=soup, css_selector_list=title_css_list)
-  title = title_tags[0].text.replace('\xa0', ' ')
+
+  title = None
+  if len(title_tags) > 0:
+    title = title_tags[0].text.replace('\xa0', ' ')
   time_css_list = ["time", ".entry-date", ".post-date", ".published", "div.card-body>center"]
   time_tags = get_tags_matching_css(soup=soup, css_selector_list=time_css_list)
   date = None
-
   if len(time_tags) > 0:
     try:
       time_tag = time_tags[0]
@@ -115,6 +118,9 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
   else:
     ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list)
     date_obj, title = get_post_metadata(soup)
+    if title is None:
+      logging.warning(f"Could not get title from {url}")
+      return False
     file_name = "%s.md" % get_storage_name(text=title, max_length=max_title_length)
 
   file_path = get_file_path(date_obj, dir_path, file_name)

@@ -13,8 +13,8 @@ from indic_transliteration import sanscript
 def title_fix(dir_path, overwrite=True, dry_run=False):
   ## DEVANAGARI
   # library.apply_function(dir_path=dir_path, fn=MdFile.ensure_ordinal_in_title, transliteration_target=sanscript.DEVANAGARI, dry_run=dry_run)
-  # library.apply_function(dir_path=dir_path, fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, overwrite=overwrite, dry_run=dry_run)
-  library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path=dir_path, skip_dirs=False, source_script=sanscript.DEVANAGARI, overwrite=overwrite, dry_run=dry_run)
+  library.apply_function(dir_path=dir_path, fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, overwrite=overwrite, dry_run=dry_run)
+  # library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path=dir_path, skip_dirs=False, source_script=sanscript.DEVANAGARI, overwrite=overwrite, dry_run=dry_run)
   
   ##### General
   # library.apply_function(dir_path=dir_path, fn=metadata_helper.strip_index_from_title, dry_run=dry_run)
@@ -41,7 +41,7 @@ def title_fix(dir_path, overwrite=True, dry_run=False):
 
 
 if __name__ == '__main__':
-  title_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/venkaTa-nAtha-shAkhA/venkaTanAthaH/sachcharitra-raxA/02_Urdhva-puNDra-dhAraNam/09_saMsthAnavichAraH_laxmyAsahasthitishcha.md", overwrite=True, dry_run=False)
+  title_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/static/rAmAnuja-sampradAyaH/tattvam/rAmAnujaH/shrI-bhAShyam/adhikaraNa-ratnamAlA", overwrite=True, dry_run=False)
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/brAhmaNam/sarva-prastutiH/1/", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False, overwrite=False)
 
   # library.apply_function(
@@ -49,6 +49,12 @@ if __name__ == '__main__':
   #   content_transformer=None,
   #   metadata_transformer=lambda c, m: metadata_helper.add_value_to_field(m, "unicode_script", "kannada"),
   #   dry_run=dry_run)
+
+  # library.apply_function(
+  #   fn=MdFile.transform, dir_path="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/ebhAratI-sampat",
+  #   content_transformer=None,
+  #   metadata_transformer=lambda c, m: metadata_helper.standardize_metadata(m),
+  #   dry_run=False)
 
   # metadata_helper.copy_metadata_and_filename(ref_dir="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/shrautam/meta/thITe-gaNeshaH/viShaya-vibhAgaH", dest_dir="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/shrautam/sarva-prastutiH", dry_run=dry_run)
 

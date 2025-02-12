@@ -50,8 +50,8 @@ def fix_anunaasikaadi(dir_path):
 if __name__ == '__main__':
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/vAyu-purANam/dvi-khaNDa-saMskaraNam", content_transformer=lambda x, y: sanskrit_helper.fix_repha_duplication(x), dry_run=False, silent_iteration=False)
-  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/shrIvaiShNava-kRtam/parAshara-bhaTTaH/rangarAja-stavaH/shrIvatsAnkaH_2_102.md", source_script="tamil")
-  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTa-nAtha-shAkhA/shrInivAsa-deshikaH_ShaShTi-darpaNAbhidhAnam.md", source_script="telugu")
+  devanaagarify(dir_path="/home/vvasuki/gitland/indic-dict/dicts/stardict-tamil/ta-head/ta-entries_dev-script/dp_pArthasArathi_dev/dp_pArthasArathi_dev.babylon_pre", source_script="tamil")
+  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTa-nAtha-shAkhA/shrInivAsa-deshikaH_ShaShTi-darpaNAbhidhAnam.md", source_script="telugu")
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/meta/articles/ranganAthaH_vyAsa-rahasya/_index.md", source_script="kannada")
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/nibandhaH/laxmI-dharaH_kRtya-kalpa-taruH/07_shrAddha-kANDam.md", source_script=sanscript.IAST)
   # fix_anunaasikaadi(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/purANam/nArAyaNIyam/mAhAtmyam.md")

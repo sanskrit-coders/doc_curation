@@ -340,6 +340,14 @@ def iti_saptamii_title_extractor(text, conclusion_pattern="इति.+ऽध्�
     return title
 
 
+def standardize_metadata(metadata):
+  metadata_out = {}
+  for key, value in metadata.items():
+    if key == "url":
+      key = "source_url"
+    metadata_out[key.lower().strip()] = value.strip()
+  return metadata_out
+
 def title_from_text(text, num_words=2, target_title_length=50, title_id=None, depunctuate=True, script=sanscript.DEVANAGARI):
   from doc_curation.md.content_processor.stripper import remove_non_content_text
   text = remove_non_content_text(content=text)

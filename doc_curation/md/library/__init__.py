@@ -44,7 +44,8 @@ def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, 
   logging.info("Processing %d files.", len(md_files))
   from tqdm import tqdm
   results_map = {}
-  for md_file in tqdm(md_files):
+  for md_file in tqdm(md_files, desc="Processing files"):
+    tqdm.write(f"Processing {md_file.file_path}")
     if start_file is not None and not start_file_reached:
       if str(md_file.file_path) != start_file:
         continue

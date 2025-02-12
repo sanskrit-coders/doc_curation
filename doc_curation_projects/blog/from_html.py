@@ -43,7 +43,7 @@ def dump_wordpress():
 
 def dump_wordpress_monthly():
 
-  init_year_month_str = "2024/05"
+  init_year_month_str = "2024/10"
   wordpress.scrape_monthly_indexes(url="https://dothemath.ucsd.edu/", dir_path=f"{BASE_PATH}/weblogs/non-hindu/doTheMath", init_year_month_str=init_year_month_str, dry_run=False)
 
   # Slow scan

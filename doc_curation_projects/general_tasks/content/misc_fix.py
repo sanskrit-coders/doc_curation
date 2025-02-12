@@ -3,6 +3,7 @@ import regex
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import details_helper, ocr_helper, space_helper, section_helper
 from doc_curation.md.file import MdFile
+from doc_curation.scraping.misc_sites import ebhaarati
 from doc_curation.utils import patterns
 from indic_transliteration import tamil_tools
 
@@ -59,7 +60,9 @@ def details_fix(dir_path):
 def fix_whitespaces(dir_path):
   # library.apply_function(fn=MdFile.transform, content_transformer=space_helper.make_paras, dir_path=dir_path)
 
-  library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.remove_fake_linebreaks(c), dir_path=dir_path)
+  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.remove_fake_linebreaks(c), dir_path=dir_path)
+
+  library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.remove_excess_newlines(c), dir_path=dir_path)
 
   # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.markdownify_newlines(c), dir_path=dir_path)
 
@@ -74,7 +77,8 @@ def misc_typos(dir_path):
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_google_ocr(x))
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.misc_sanskrit_typos(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.misc_sanskrit_typos(x))
+
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/social-cultivation/violence/articles/Sacred-ground_Bakker", content_transformer=lambda x, y: content_processor.fix_iast_gb(x))
 
@@ -84,10 +88,10 @@ def misc_typos(dir_path):
 
 if __name__ == '__main__':
   # fix_audio_tags()
-  # misc_typos("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/bhRgu-saMhitA")
-  # fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/static/shlokashaH/06-bhIShma-parva/03-bhagavad-gItA-parva/saMskRtam/rAmAnujaH/venkaTanAthaH")
+  # misc_typos("/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/ebhAratI-sampat")
+  fix_whitespaces(dir_path="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/ebhAratI-sampat")
   # section_fix()
-  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/static/smRtiH/manuH/sarvASh_TIkAH")
+  # details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/static/smRtiH/manuH/sarvASh_TIkAH")
 
 
   pass

@@ -164,3 +164,6 @@ def empty_line_around_quotes(content, after_too=False):
   if after_too:
     content = regex.sub("(>.+\n)(?=[^^>\n])", "\\1\n\n", content)
   return content
+
+def remove_excess_newlines(content):
+  return regex.sub("\n *\n *\n+", "\n\n", content)

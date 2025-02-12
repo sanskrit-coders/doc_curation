@@ -85,10 +85,33 @@ def fix_dandas(text):
   text = regex.sub("ll(?= +\n|$)", "॥", text)
   text = regex.sub("l(?= +\n|$)", "।", text)
   text = regex.sub(r"\|\|", "॥", text)
-  text = regex.sub(r"\|", "।", text)
+  # Pipes are used in md tables. So, taking care below.
+  lines = text.split("\n")
+  lines_out = []
+  for line in lines:
+    if line.strip().startswith("|") and line.strip().endswith("|"):
+      lines_out.append(line)
+    else:
+      lines_out.append(regex.sub(r"\|", "।", line))
+  text = "\n".join(lines_out)
   text = regex.sub(r"।।।+", r"…", text)
   text = regex.sub(r"।।", "॥", text)
   return text
+
+
+def fix_tables(text):
+  # Fix md tables with pipes and colons erroneously transliterated
+  lines = text.split("\n")
+  lines_out = []
+  for line in lines:
+    if len(line.strip()) >= 2 and line.strip()[0] in ("|", "।") and line.strip()[-1] in ("|", "।"):
+      l = regex.sub(r"।", "|", line)
+      l = regex.sub("-ः", "-:", l)
+      l = regex.sub("ः-", ":-", l)
+      lines_out.append(l)
+    else:
+      lines_out.append(line)
+  return "\n".join(lines_out)
 
 def misc_manipravaala_typos(text):
   text = fix_dandas(text)

@@ -10,7 +10,7 @@ from doc_curation.scraping.html_scraper import souper
 
 
 from doc_curation.md.file import MdFile, file_helper
-from doc_curation.md.content_processor import ocr_helper
+from doc_curation.md.content_processor import ocr_helper, footnote_helper
 import logging
 import os, regex
 
@@ -25,23 +25,43 @@ logging.basicConfig(
 BASE_URL = "https://www.ebharatisampat.in/"
 
 
+def remove_dummy_lines(text):
+  text = regex.sub(r"\n.*?include/loader\.gif.*?\n", "\n", text)
+  text = regex.sub(r"\n\*\*End Of Book\*\*\n*", "\n", text)
+  return text
+
+
+def fix_footnotes(content):
+  content = regex.sub(r"\]\(http://॑ *", "](", content)
+  old_content = content
+  content = footnote_helper.inline_comments_to_footnotes(content=content, pattern=r"(?<=\])\(# *([^\n\)]+?)\)")
+  if content != old_content:
+    content = footnote_helper.define_footnotes_near_use(content=content)
+    content = regex.sub(r"\[([^\]]+)\](?=\[\^)", r"\1", content)
+  return content
+
+
 def get_article(url, browser=None, scroll_pause=2):
   try:
     soup = scraping.scroll_and_get_soup(url=url, browser=browser, scroll_pause=scroll_pause, element_css="#content")
-    title = soup.select_one("li.title").text
-    content_tag = soup.select("div.page-content")
-    content = md.get_md_with_pandoc(content_in=str(content_tag), source_format="html-native_divs-native_spans")
+    title_element = soup.select_one("li.title")
+    if title_element is None:
+      # Pages like https://www.ebharatisampat.in/login.php 
+      content = "ERROR - COULD NOT GET TEXT!"
+      title = "Unknown"
+    else:
+      title = title_element.text
+      content_tag = soup.select("div.page-content")
+      content = md.get_md_with_pandoc(content_in=str(content_tag), source_format="html-native_divs-native_spans")
   except WebDriverException as e:
     logging.error(e)
-    content = "ERROR - COULD NOT GET TEXT!"
-    title = "Unknown"
-    soup = None
     raise 
   content = ocr_helper.misc_sanskrit_typos(content)
+  content = remove_dummy_lines(content)
   content = regex.sub(r"\n +", r"\n", content)
   # content = regex.sub(r"ब्राहृ", r"ब्रह्म", content)
   content = regex.sub(r"\n(>[^\n]+)>(?=\n)", r"\n\1  ", content).replace(" > ", " ")
-  
+  content = fix_footnotes(content=content)
   
   page_header = f"[[{title}\tSource: [EB]({url})]]"
   content = f"{page_header}\n\n{content}"
@@ -70,9 +90,9 @@ def get_metadata(url):
   metadata = {}
   for detail_tag in soup.select(".product__info__main h5"):
     detail_parts = regex.split("\s*:\s*", detail_tag.text)
-    metadata[detail_parts[0]] = ":".join(detail_parts[1:]).strip()
+    metadata[detail_parts[0].lower()] = ":".join(detail_parts[1:]).strip()
   button = soup.select_one(".wn__single__product a#btn")
-  metadata["url"] = urljoin(BASE_URL, button["href"])
+  metadata["source_url"] = urljoin(BASE_URL, button["href"])
   return metadata
 
 def dump_all(list_url="https://www.ebharatisampat.in/unicodetype.php?cat=All&sub_cat=All&author=All&publisher=All&contributor=All&language=All&sort=DESC", dest_dir="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/ebhAratI-sampat", scroll_pause=2, use_url_cache=False):
@@ -90,9 +110,9 @@ def dump_all(list_url="https://www.ebharatisampat.in/unicodetype.php?cat=All&sub
     if "AUTHOR" in metadata and metadata["AUTHOR"] != "":
       out_path = os.path.join(out_path, file_helper.get_storage_name(text=metadata["AUTHOR"]))
     out_path = os.path.join(out_path, file_helper.get_storage_name(text=metadata["TITLE"]) + ".md")
-    # if metadata["TITLE"] in ["श्रीस्कान्दमहापुराणम्"]:
-    #   logging.warning(f"Skipping {out_path}")
-    #   continue
+    if metadata["title"] in ["श्रीस्कान्दमहापुराणम्", "मानसोल्लासः द्वितीयभागः"]:
+      logging.warning(f"Skipping {out_path}")
+      continue
     if os.path.exists(out_path):
       logging.info(f"Skipping {url} with \n{metadata}")
     else:
