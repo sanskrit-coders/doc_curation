@@ -1,5 +1,6 @@
 import os
 
+import doc_curation.md.library
 import regex
 
 from doc_curation.md import library, content_processor
@@ -14,7 +15,7 @@ BASE_DIR = "/home/vvasuki/gitland/vishvAsa/purANam/content/agni-purANam/"
 
 
 def set_titles(dry_run=False):
-  md_files = library.get_md_files_from_path(dir_path=BASE_DIR, file_pattern="**/???.md")
+  md_files = doc_curation.md.library.get_md_files_from_path(dir_path=BASE_DIR, file_pattern="**/???.md")
   chapter_id_to_file = {}
   for md_file in md_files:
     chapter_id = int(os.path.basename(md_file.file_path).replace(".md", ""))

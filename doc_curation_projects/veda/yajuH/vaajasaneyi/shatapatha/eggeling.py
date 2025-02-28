@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 
+import doc_curation.md.library
 import regex
 from bs4 import BeautifulSoup
 
@@ -64,7 +65,7 @@ def missing_pages():
 
 
 def fix_cross_page_footnotes(dry_run=False):
-  md_files = arrangement.get_md_files_from_path(dir_path=base_dir)
+  md_files = doc_curation.md.library.get_md_files_from_path(dir_path=base_dir)
   for md_file in md_files:
     (metadata, old_content) = md_file.read()
     content = old_content

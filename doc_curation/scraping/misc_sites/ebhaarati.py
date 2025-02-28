@@ -1,7 +1,8 @@
 from selenium.common import WebDriverException
 
+import indic_transliteration
 from doc_curation.md.library import metadata_helper
-from indic_transliteration import sanscript
+from indic_transliteration import sanscript, detect
 from curation_utils import scraping
 from urllib.parse import urljoin
 from doc_curation import md
@@ -23,6 +24,7 @@ logging.basicConfig(
 
 
 BASE_URL = "https://www.ebharatisampat.in/"
+DEST_DIR = "/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/ebhAratI-sampat"
 
 
 def remove_dummy_lines(text):
@@ -92,12 +94,16 @@ def get_metadata(url):
   metadata = {}
   for detail_tag in soup.select(".product__info__main h5"):
     detail_parts = regex.split("\s*:\s*", detail_tag.text)
-    metadata[detail_parts[0].lower()] = ":".join(detail_parts[1:]).strip()
+    key = detail_parts[0].lower().strip()
+    value = ":".join(detail_parts[1:]).strip()
+    if detect.detect(text=value) == sanscript.DEVANAGARI:
+      value = ocr_helper.misc_sanskrit_typos(value)
+    metadata[key] = value
   button = soup.select_one(".wn__single__product a#btn")
   metadata["source_url"] = urljoin(BASE_URL, button["href"])
   return metadata
 
-def dump_all(list_url="https://www.ebharatisampat.in/unicodetype.php?cat=All&sub_cat=All&author=All&publisher=All&contributor=All&language=All&sort=DESC", dest_dir="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/ebhAratI-sampat", scroll_pause=2, use_url_cache=False):
+def dump_all(list_url="https://www.ebharatisampat.in/unicodetype.php?cat=All&sub_cat=All&author=All&publisher=All&contributor=All&language=All&sort=DESC", dest_dir=DEST_DIR, scroll_pause=2, use_url_cache=False):
   browser = scraping.get_selenium_chrome()
   urls = get_urls(browser, dest_dir, list_url, scroll_pause, use_url_cache)
 
@@ -120,8 +126,9 @@ def dump_all(list_url="https://www.ebharatisampat.in/unicodetype.php?cat=All&sub
     else:
       dump_article(url=metadata["url"], outfile_path=out_path, metadata=metadata, browser=browser)
     out_paths.append(out_path)
-  dest_files_md = MdFile(file_path=os.path.join(dest_dir, "dest_files.md"))
-  dest_files_md.dump_to_file(metadata={"title": "Dest files"}, content="\n".join(out_paths), dry_run=False)
+  # dest_files_md = MdFile(file_path=os.path.join(dest_dir, "dest_files.md"))
+  # dest_files_md.dump_to_file(metadata={"title": "Dest files"}, content="\n".join(out_paths), dry_run=False)
+  library.dump_matching_files(dir_path=dest_dir, file_name_filter=lambda x: not x.endswith("_index.md"))
   pass
 
 

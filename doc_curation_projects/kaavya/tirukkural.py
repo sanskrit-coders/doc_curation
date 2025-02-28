@@ -1,3 +1,4 @@
+import doc_curation.md.library
 from doc_curation.md import library
 from doc_curation.md.content_processor import details_helper
 from doc_curation.md.file import MdFile
@@ -5,7 +6,7 @@ from indic_transliteration import sanscript
 
 
 
-dest_files = library.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/tiruk-kuraL/sarva-prastutiH/")
+dest_files = doc_curation.md.library.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/tiruk-kuraL/sarva-prastutiH/")
 
 
 def sa():

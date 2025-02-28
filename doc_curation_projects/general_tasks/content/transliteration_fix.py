@@ -36,12 +36,8 @@ def devanaagarify(dir_path, source_script):
     library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
 
 
-def fix_anunaasikaadi(dir_path):
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_bad_anunaasikas(x), dry_run=False, silent_iteration=False)
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_lazy_anusvaara(x), dry_run=False, silent_iteration=False)
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_bad_visargas(x), dry_run=False, silent_iteration=False)
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_bad_vyanjanaantas(x), dry_run=False, silent_iteration=False)
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_yaNs(x), dry_run=False, silent_iteration=False)
+def fix_anunaasikaadi(dir_path, level=0):
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_anunaasikaadi(x, level=level), dry_run=False, silent_iteration=False)
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.misc_manipravaala_typos(x), dry_run=False, silent_iteration=False)
   pass
 

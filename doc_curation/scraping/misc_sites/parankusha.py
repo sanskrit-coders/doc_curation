@@ -1,13 +1,17 @@
 import json
 import logging
 import os
+import time
 import traceback
 
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.select import Select
 
-from doc_curation import book_data, configuration
+import doc_curation
+from doc_curation import book_data
 from doc_curation.md import library, content_processor
 from doc_curation.md.file import MdFile
+from doc_curation.md.library import arrangement
 from doc_curation.scraping.html_scraper import selenium
 from doc_curation.scraping.html_scraper.selenium import click_link_by_text
 from indic_transliteration import sanscript
@@ -20,8 +24,8 @@ logging.basicConfig(
   level=logging.DEBUG,
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
-
-configuration_parankusha = configuration['parankusha']
+# doc_curation.init_configuration()
+configuration_parankusha = doc_curation.configuration['parankusha']
 
 
 def get_logged_in_browser(headless=True):
@@ -31,9 +35,14 @@ def get_logged_in_browser(headless=True):
   username = browser.find_element(By.ID, "txtUserName")
   username.send_keys(configuration_parankusha["user"])
   browser.find_element(By.ID, "btnNext").click()
+  time.sleep(3)
   browser.find_element(By.ID, "txtPassword").send_keys(configuration_parankusha["pass"])
   browser.find_element(By.ID, "btnLogin").click()
   browser.get("http://parankusan.cloudapp.net/Integrated/Texts.aspx")
+  # TODO: deal with the inferior transliteration due to the below - esp in mixed devanAgarI/ tamiL context.
+  # dropdown = browser.find_element(By.NAME, 'ddlOutputTranslitLang')
+  # Select(dropdown).select_by_visible_text("Devanagari")
+  # time.sleep(3)
   return browser
 
 
@@ -114,6 +123,7 @@ def dump_to_file(browser, out_file_path, has_comment=False, text_name=None, star
 
 
 def browse_nodes(browser, start_nodes, timeout=10):
+  # We don't "expand all" to avoid confusion among nodes with identical names.
   for node in start_nodes:
     if node.startswith("expand:"):
       click_link_by_text(browser=browser, element_text=node.replace("expand:", ""), ordinal=0, timeout=timeout)
@@ -137,7 +147,7 @@ def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False, 
     if ordinal is not None:
       ordinal = ordinal + 1
     _dump_text(browser=browser, outdir=outdir, ordinal=ordinal, has_comment=has_comment)
-  library.fix_index_files(dir_path=outdir, overwrite=False, dry_run=False)
+  arrangement.fix_index_files(dir_path=outdir, overwrite=False, dry_run=False)
 
 
 def get_structured_text(browser, start_nodes, base_dir, unit_info_file, has_comment=False, source_script=sanscript.DEVANAGARI):

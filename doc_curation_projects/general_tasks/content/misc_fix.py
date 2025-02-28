@@ -4,7 +4,7 @@ from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import details_helper, ocr_helper, space_helper, section_helper
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.misc_sites import ebhaarati
-from doc_curation.utils import patterns
+from doc_curation.utils import patterns, sanskrit_helper
 from indic_transliteration import tamil_tools
 
 
@@ -33,7 +33,7 @@ def details_fix(dir_path):
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: section_helper.section_headings_to_details(content=c))
 
 
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=details_helper.insert_duplicate_adjascent)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=details_helper.insert_duplicate_adjascent)
 
   def transformer(x):
     # x = doc_curation.md.content_processor.space_helper.dehyphenate_sanskrit_line_endings(x)
@@ -73,6 +73,8 @@ def fix_whitespaces(dir_path):
 def misc_typos(dir_path):
   # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
 
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_anunaasikaadi(x, level=0), dry_run=False, silent_iteration=False)
+
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/strI-dharma-paddhatiH/leslie", content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_google_ocr(x))
@@ -88,10 +90,10 @@ def misc_typos(dir_path):
 
 if __name__ == '__main__':
   # fix_audio_tags()
-  # misc_typos("/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/ebhAratI-sampat")
-  fix_whitespaces(dir_path="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/ebhAratI-sampat/")
+  # misc_typos("/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/nibandhaH/viShNudattaH_navaratna-vivAha-paddhatiH.md")
+  # fix_whitespaces(dir_path="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/ebhAratI-sampat/")
   # section_fix()
-  # details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/static/smRtiH/manuH/sarvASh_TIkAH")
+  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/venkaTa-nAtha-shAkhA/gopAla-deshikaH/Ahnikam_AhnikArtha-prakAshikA/06_yogaH.md")
 
 
   pass

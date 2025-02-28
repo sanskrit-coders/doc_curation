@@ -4,6 +4,7 @@ from collections import OrderedDict
 from curation_utils import scraping
 from urllib.parse import urljoin
 from doc_curation import md
+from doc_curation.md.library import arrangement
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import space_helper
 from curation_utils.file_helper import get_storage_name
@@ -91,5 +92,5 @@ def dump_series(url, dest_path, start_index=None, end_index=None, filename_from_
     file_name = file_name.replace("_.", ".")
     dest_subpath = os.path.join(dest_path, file_name)
     dump_text(url=link["href"], dest_path=dest_subpath, source_script=source_script, overwrite=overwrite)
-  library.fix_index_files(dir_path=os.path.dirname(dest_path), overwrite=False, dry_run=False)
+  arrangement.fix_index_files(dir_path=os.path.dirname(dest_path), overwrite=False, dry_run=False)
   

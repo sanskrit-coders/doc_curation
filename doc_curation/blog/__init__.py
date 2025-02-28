@@ -7,6 +7,7 @@ import urllib
 from urllib.parse import urlsplit, urljoin, unquote
 from urllib.request import urlopen, Request
 import dateutil.parser as parser
+import doc_curation.md.library
 
 import regex
 from bs4 import BeautifulSoup
@@ -213,7 +214,7 @@ def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdow
 
 
 def organize_by_date(dir_path, dry_run=False):
-  md_files = library.get_md_files_from_path(dir_path=dir_path)
+  md_files = doc_curation.md.library.get_md_files_from_path(dir_path=dir_path)
   for md_file in md_files:
     (metadata, content) = md_file.read()
     if 'date' in metadata:

@@ -1,6 +1,7 @@
 import csv
 import os.path
 
+import doc_curation.md.library
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 from tqdm import tqdm
@@ -23,7 +24,7 @@ def fix_anunaasika(dir_path):
 
 
 def to_tsv(dir_path, out_path):
-  md_files = library.get_md_files_from_path(dir_path=dir_path)
+  md_files = doc_curation.md.library.get_md_files_from_path(dir_path=dir_path)
   if not out_path.endswith("tsv"):
     out_path = os.path.join(out_path, os.path.basename(dir_path) + ".tsv")
   os.makedirs(os.path.dirname(out_path), exist_ok=True)

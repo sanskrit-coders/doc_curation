@@ -124,10 +124,12 @@ def misc_manipravaala_typos(text):
   text = regex.sub("(?<=[ँ-ॣ])[sS]", "ऽ", text)
   return text
 
-def misc_sanskrit_typos(text):
+def misc_sanskrit_typos(text, strict=False):
   text = misc_manipravaala_typos(text=text)
-  text = regex.sub("ळ", "ल", text)
-  text = regex.sub("(?<=[ँ-९]):", "ः", text)
+  if strict:
+    text = regex.sub("ळ", "ल", text)
+    text = regex.sub("ढ़", "ढ", text)
+  text = regex.sub("(?<=[अ-ौ]|[ॎ-ॣ]):", "ः", text)
   # text = regex.sub("(?<=[ँ-ॣ])\- +(?=[ँ-ॣ])", "", text)
   return text
 

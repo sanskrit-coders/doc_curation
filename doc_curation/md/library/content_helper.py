@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 
+import doc_curation.md.library
 import regex
 
 from curation_utils import file_helper
@@ -16,7 +17,7 @@ from doc_curation.utils import text_utils
 def copy_contents(src_dir, dest_dir, detail_title=None, dest_content_condition=None, create_missing_files=True, dry_run=False):
   from doc_curation.md.library import arrangement
   sub_path_to_reference = arrangement.get_sub_path_to_reference_map(ref_dir=src_dir, sub_path_id_maker=None)
-  src_md_files = arrangement.get_md_files_from_path(dir_path=src_dir)
+  src_md_files = doc_curation.md.library.get_md_files_from_path(dir_path=src_dir)
   skipped_files = {}
   repalced_content_count = 0
   for src_md_file in src_md_files:
@@ -48,16 +49,3 @@ def copy_contents(src_dir, dest_dir, detail_title=None, dest_content_condition=N
     repalced_content_count += 1
   logging.info(f"Skipped {len(skipped_files)} files:\n{skipped_files}")
 
-def list_files_with_missing_details(src_dir, detail_title):
-  from doc_curation.md.content_processor import details_helper
-  from doc_curation.md.library import arrangement
-  src_md_files = arrangement.get_md_files_from_path(dir_path=src_dir)
-  files = []
-  for src_md_file in src_md_files:
-    if src_md_file.file_path.endswith("_index.md"):
-      continue
-    (metadata, content) = src_md_file.read()
-    (_, detail) = details_helper.get_detail(content=content, metadata={}, title=detail_title)
-    if detail is None:
-      files.append(src_md_file.file_path)
-  logging.info("\n".join(sorted(files)))

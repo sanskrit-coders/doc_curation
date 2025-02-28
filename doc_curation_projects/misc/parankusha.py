@@ -1,4 +1,4 @@
-from doc_curation.md.library import metadata_helper
+from doc_curation.md.library import metadata_helper, arrangement
 import logging
 import os.path
 
@@ -9,7 +9,7 @@ from indic_transliteration import sanscript
 from doc_curation.scraping.misc_sites import parankusha
 
 
-BS_BASE = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/rAmAnujaH/shrI-bhAShyam"
+BS_BASE = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/rAmAnujaH/shrI-bhAShyam/"
 
 def deshika_rts(browser):
   base_dir = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/"
@@ -25,29 +25,29 @@ def brahmasuutra(browser, author, text_id, sub_path):
     for y in range(1, 5):
       os.makedirs(os.path.join(base_dir, str(x), str(y)), exist_ok=True)
 
-  adhyaaya = 1
-  # adhyaaya = 2
-  # adhyaaya = 3
-  # adhyaaya = 4
-  
-  has_comment = author in ["सेनेश्वराचार्याः", "44ம் பட்டம் ஶ்ரீமத் அழகியசிங்கர்"] 
-  if adhyaaya == 1:
-    if author in ["रामानुजाचार्याः", "अप्पय-दीक्षितः", "सेनेश्वराचार्याः", "कपिस्थलं देशिकाचार्याः", "44ம் பட்டம் ஶ்ரீமத் அழகியசிங்கர்", "श्रीरङ्गरामानुजाचार्याः"]:
-      if text_id == "विषयवाक्य-दीपिका":
-        parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-1", "expand:Pada-1", "जन्माद्यधिकरणम्"], outdir=os.path.join(base_dir, "1"), has_comment=has_comment, ordinal_start=2)
+
+  adhyaayas = [1, 2, 3, 4]
+  adhyaayas = [3, 4]
+ 
+  for adhyaaya in adhyaayas:
+    has_comment = author in ["सेनेश्वराचार्याः", "44ம் பட்டம் ஶ்ரீமத் அழகியசிங்கர்"] 
+    if adhyaaya == 1:
+      if author in ["रामानुजाचार्याः", "अप्पय-दीक्षितः", "सेनेश्वराचार्याः", "कपिस्थलं देशिकाचार्याः", "44ம் பட்டம் ஶ்ரீமத் அழகியசிங்கர்", "श्रीरङ्गरामानुजाचार्याः", "सुदर्शनसूरिः"]:
+        if text_id == "विषयवाक्य-दीपिका":
+          parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-1", "expand:Pada-1", "जन्माद्यधिकरणम्"], outdir=os.path.join(base_dir, "1"), has_comment=has_comment, ordinal_start=2)
+        else:
+          parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-1", "expand:Pada-1", "जिज्ञासाधिकरणम्"], outdir=os.path.join(base_dir, "1"), has_comment=has_comment)
       else:
-        parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-1", "expand:Pada-1", "जिज्ञासाधिकरणम्"], outdir=os.path.join(base_dir, "1"), has_comment=has_comment)
-    else:
-      parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-1", "expand:Pada-1", "उपोद्घातम्"], outdir=os.path.join(base_dir, "1"), ordinal_start=0, has_comment=has_comment)
-  elif adhyaaya == 2:
-    parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-2", "expand:Pada-1", "स्मृत्यधिकरणम्"], outdir=os.path.join(base_dir, "2"), has_comment=has_comment)
-  elif adhyaaya == 3:
-    parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-3", "expand:Pada-1", "तदन्तरप्रतिपत्त्यधिकरणम्"], outdir=os.path.join(base_dir, "3"), has_comment=has_comment)
-  elif adhyaaya == 4:
-    if author in ["रामानुजाचार्याः", "अप्पय-दीक्षितः", "सेनेश्वराचार्याः", "कपिस्थलं देशिकाचार्याः", "44ம் பட்டம் ஶ்ரீமத் அழகியசிங்கர்", "श्रीरङ्गरामानुजाचार्याः"]:
-      parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-4", "expand:Pada-1", "आवृत्त्यधिकरणम्"], outdir=os.path.join(base_dir, "4"), has_comment=has_comment)
-    else:
-      parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-4", "expand:Pada-1", "उपोद्घातम्"], outdir=os.path.join(base_dir, "4"), has_comment=has_comment)
+        parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-1", "expand:Pada-1", "उपोद्घातम्"], outdir=os.path.join(base_dir, "1"), ordinal_start=0, has_comment=has_comment)
+    elif adhyaaya == 2:
+      parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-2", "expand:Pada-1", "स्मृत्यधिकरणम्"], outdir=os.path.join(base_dir, "2"), has_comment=has_comment)
+    elif adhyaaya == 3:
+      parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-3", "expand:Pada-1", "तदन्तरप्रतिपत्त्यधिकरणम्"], outdir=os.path.join(base_dir, "3"), has_comment=has_comment)
+    elif adhyaaya == 4:
+      if author in ["रामानुजाचार्याः", "अप्पय-दीक्षितः", "सेनेश्वराचार्याः", "कपिस्थलं देशिकाचार्याः", "44ம் பட்டம் ஶ்ரீமத் அழகியசிங்கர்", "श्रीरङ्गरामानुजाचार्याः", "सुदर्शनसूरिः"]:
+        parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-4", "expand:Pada-1", "आवृत्त्यधिकरणम्"], outdir=os.path.join(base_dir, "4"), has_comment=has_comment)
+      else:
+        parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", author, text_id, f"expand:{text_id}", "expand:Adhyaya-4", "expand:Pada-1", "उपोद्घातम्"], outdir=os.path.join(base_dir, "4"), has_comment=has_comment)
 
 
 def shriibhaashyam(browser):
@@ -65,9 +65,10 @@ def shriibhaashyam(browser):
   # brahmasuutra(browser, author="श्रीरङ्गरामानुजाचार्याः", text_id="शारीरकशास्त्रार्थ-दीपिका", sub_path="rangarAmAnujaH/shArIrika-shAstrArtha-dIpikA/")
   # brahmasuutra(browser, author="श्रीरङ्गरामानुजाचार्याः", text_id="विषयवाक्य-दीपिका", sub_path="rangarAmAnujaH/viShaya-vAkya-dIpikA/")
   # brahmasuutra(browser, author="श्रीरङ्गरामानुजाचार्याः", text_id="भाव-प्रकाशिका", sub_path="rangarAmAnujaH/bhAva-prakAshikA/")
+  # brahmasuutra(browser, author="सुदर्शनसूरिः", text_id="श्रुतप्रकाशिका", sub_path="sudarshana-sUriH/shruta-prakAshikA/mUlam_rA/")
 
 
-  library.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH", overwrite=False, dry_run=False)
+  arrangement.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH", overwrite=False, dry_run=False)
 
 
 def raamaanuja_misc(browser):
@@ -165,13 +166,13 @@ def upanishat(browser):
 
 if __name__ == '__main__':
   browser = parankusha.get_logged_in_browser(headless=False)
-  # shriibhaashyam(browser=browser)
+  shriibhaashyam(browser=browser)
   # yaamuna_siddhitraya(browser)
   # raamaanuja_misc(browser)
   # deshika_misc(browser)
   # deshika_tattvamuktaakalaapa()
   # stotra_misc()
-  deshika_rts(browser=browser)
+  # deshika_rts(browser=browser)
   # tattva_misc(browser=browser)
   # deshika_nyAyasiddhAnjanam()
   # upanishat(browser=browser)

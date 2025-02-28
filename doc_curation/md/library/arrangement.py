@@ -6,7 +6,7 @@ from functools import lru_cache
 import regex
 
 from doc_curation.md.file import MdFile
-from doc_curation.md.library import metadata_helper
+from doc_curation.md.library import metadata_helper, get_md_files_from_path
 from indic_transliteration import sanscript
 
 
@@ -141,14 +141,6 @@ def get_index_to_md(dir_path, index_position=0):
   return index_to_md_file
 
 
-def get_md_files_from_path(dir_path, file_pattern="**/*.md", file_name_filter=lambda x: True):
-  from pathlib import Path
-  # logging.debug(list(Path(dir_path).glob(file_pattern)))
-  md_file_paths = sorted(filter(file_name_filter, Path(dir_path).glob(file_pattern)))
-  md_file_paths = [f for f in md_file_paths if os.path.isfile(f)]
-  return [MdFile(path) for path in md_file_paths]
-
-
 def migrate(files, location_computer, dry_run=False):
   """Migrate a bunch of files to a new location (dynamically computed by location_computer function.)"""
   logging.info("Processing %d files", len(files))
@@ -224,3 +216,76 @@ def migrate_and_include(files, location_computer, new_url_computer, dry_run=Fals
     md = """<div class="js_include" url="%s"  newLevelForH1="1" includeTitle="true"> </div>""" % new_url_computer(str(f))
     logging.info("Inclusion in old file : %s", md)
     md_file.dump_to_file(metadata=metadata, content=md, dry_run=dry_run)
+
+
+def fix_mistaken_nines(dir_path, digit_from_last=1, iterations=20):
+  # Consider the sequence of files listed in alphanumerical order - 057_31.md, 058_32.md, 059_33.md, 060_33.md, 061_34.md, 062_35.md, 063_34.md, 064_36.md, 065_37.md, 066_36.md, 067_37.md, 068_38.md, 069_38.md, 070_38.md, 071_36.md, 072_40.md.  
+  # In a given filename, where the last digit in the base name is 6, if it preceeds a file with basename ending with 0 or 9, the 6 in that filename should be replaced with 9. 
+  
+  for iteration in range(iterations):
+    # Get a list of all files in the directory
+    files = os.listdir(dir_path)
+  
+    # Sort the files in alphanumerical order
+    files.sort()
+    # Iterate through the files
+    for i in range(len(files)):
+      # Skip the first and last files
+      if i == 0 or i == len(files) - 1:
+        continue
+  
+      # Get the current and next filenames
+      curr_file = files[i]
+      next_file = files[i+1]
+  
+      # Extract the base names of the files
+      curr_base = os.path.splitext(curr_file)[0]
+      next_base = os.path.splitext(next_file)[0]
+  
+      # Check if the last digit of the current file is 6
+      digit = curr_base[-digit_from_last]
+      if digit == '6':
+        next_file_digit = next_base[-digit_from_last]
+        # Check if the next file ends with 0 or 9
+        if next_file_digit == '0' or next_file_digit == '9':
+          # Replace the 6 with 9 in the current filename
+          new_base = curr_base[:-digit_from_last] + '9' + curr_base[-(digit_from_last-1):]  # Replace only nth digit
+          new_file = new_base + os.path.splitext(curr_file)[1]
+          new_path = os.path.join(dir_path, new_file)
+          curr_path = os.path.join(dir_path, curr_file)
+          os.rename(curr_path, new_path)
+          logging.info(f"Renamed {curr_file} to {new_file}")
+
+
+def highlight_out_of_order_files(dir_path, id_pattern=r".+_(\d+)\.", fix_sequence="No"):
+  # Get a list of all files in the directory
+  files = os.listdir(dir_path)
+
+  # Sort the files in alphanumerical order
+  files.sort()
+  out_of_order_files = []
+  # Iterate through the files
+  for i in range(len(files)):
+    # Skip the first and last files
+    if i == 0:
+      continue
+
+    # Get the current and next filenames
+    curr_file = files[i]
+    prev_file = files[i-1]
+
+    if regex.match(id_pattern, curr_file) and regex.match(id_pattern, prev_file):
+      curr_id = int(regex.match(id_pattern, curr_file).group(1))
+      prev_id = int(regex.match(id_pattern, prev_file).group(1))
+      if curr_id < prev_id:
+        out_of_order_files.append(curr_file)
+        if fix_sequence != "No":
+          new_file = curr_file.split("_")[0] + "_" + str(prev_id) + ".md"
+          new_path = os.path.join(dir_path, new_file)
+          curr_path = os.path.join(dir_path, curr_file)
+          logging.info(f"Renamed {curr_file} to {new_file}")
+          if fix_sequence != "dry_run":
+            os.rename(curr_path, new_path)
+        
+  logging.warning(f"{out_of_order_files} are out of order")
+  return out_of_order_files

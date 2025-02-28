@@ -1,5 +1,6 @@
 import os
 
+import doc_curation.md.library
 import doc_curation.md.library.metadata_helper
 import regex
 
@@ -11,7 +12,7 @@ from indic_transliteration import sanscript
 
 
 def fix_includes():
-  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/yAjJNavalkyaH/prastutiH", file_pattern="[0-9][0-9]*.md")
+  md_files = doc_curation.md.library.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/yAjJNavalkyaH/prastutiH", file_pattern="[0-9][0-9]*.md")
 
   for md_file in md_files:
     include_helper.transform_include_lines(md_file=md_file, transformer=include_helper.old_include_remover)

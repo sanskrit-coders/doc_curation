@@ -2,6 +2,7 @@ import glob
 import logging
 import os
 
+import doc_curation.md.library
 import regex
 
 import doc_curation.md.content_processor.include_helper
@@ -21,7 +22,7 @@ dest_dir_Rks = os.path.join(dest_dir_static, "mUlam")
 
 
 def set_book_content(dry_run=False):
-  md_files = arrangement.get_md_files_from_path(dir_path=dest_dir_suuktas, file_pattern="**/_index.md", file_name_filter=lambda x: regex.match("\\d\\d", os.path.basename(os.path.dirname(x))))
+  md_files = doc_curation.md.library.get_md_files_from_path(dir_path=dest_dir_suuktas, file_pattern="**/_index.md", file_name_filter=lambda x: regex.match("\\d\\d", os.path.basename(os.path.dirname(x))))
   for md_file in md_files:
     path_parts = regex.match(".+/(\d\d)/_index\.md", str(md_file.file_path))
     if path_parts is None:
@@ -41,7 +42,7 @@ def set_book_content(dry_run=False):
 
 
 def set_suukta_content(dry_run=False):
-  md_files = arrangement.get_md_files_from_path(dir_path=dest_dir_suuktas, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
+  md_files = doc_curation.md.library.get_md_files_from_path(dir_path=dest_dir_suuktas, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
   for md_file in md_files:
     [metadata, _] = md_file.read()
     path_parts = regex.match(".+(\d\d/\d\d\d.*)\.md", str(md_file.file_path))
@@ -90,7 +91,7 @@ def get_rk_content(rk_file_name, suukta_id):
 
 
 def set_suukta_info_to_match(dest_dir, dry_run=False):
-  md_files = arrangement.get_md_files_from_path(dir_path=dest_dir_suukta_info, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
+  md_files = doc_curation.md.library.get_md_files_from_path(dir_path=dest_dir_suukta_info, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
   for md_file in md_files:
     [metadata, content] = md_file.read()
     path_parts = regex.match(".+(\d\d/\d\d\d)", str(md_file.file_path))
@@ -103,7 +104,7 @@ def set_suukta_info_to_match(dest_dir, dry_run=False):
 
 
 def rename_suukta_files(dest_dir, dry_run=False):
-  md_files = arrangement.get_md_files_from_path(dir_path=dest_dir_suukta_info, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
+  md_files = doc_curation.md.library.get_md_files_from_path(dir_path=dest_dir_suukta_info, file_pattern="**/*.md", file_name_filter=lambda x: len(regex.findall("\\d\\d\\d", os.path.basename(x))) > 0)
   for md_file in md_files:
     path_parts = regex.match(".+(\d\d)/(\d\d\d)", str(md_file.file_path))
     if path_parts is None:

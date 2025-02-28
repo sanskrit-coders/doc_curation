@@ -1,5 +1,6 @@
 import os
 
+import doc_curation.md.library
 import regex
 from bs4 import BeautifulSoup
 
@@ -27,7 +28,7 @@ def fix_filenames():
 
 
 def fix_includes():
-  md_files = arrangement.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/baudhAyanaH/gRhyam/sUtra-TIkAH", file_pattern="[0-9][0-9]*.md")
+  md_files = doc_curation.md.library.get_md_files_from_path(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/baudhAyanaH/gRhyam/sUtra-TIkAH", file_pattern="[0-9][0-9]*.md")
   md_files = [f for f in md_files if os.path.basename(f.file_path) ]
   
   def include_fixer(match):

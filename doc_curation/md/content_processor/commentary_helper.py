@@ -1,4 +1,6 @@
 import logging
+
+import doc_curation.md.library
 from bs4 import BeautifulSoup, NavigableString
 
 import regex
@@ -51,7 +53,7 @@ def move_detail_to_matching_file(dest_dir, source_file, dest_id_maker=None, dest
   (_, source_content) = source_md.read()
   source_match_map = content_processor.get_quasi_section_int_map(source_content, source_pattern)
 
-  dest_md_files = library.get_md_files_from_path(dir_path=dest_dir)  
+  dest_md_files = doc_curation.md.library.get_md_files_from_path(dir_path=dest_dir)  
   if dest_id_maker is None:
     def dest_id_maker(x): 
       return arrangement.get_sub_path_id(x.file_path.replace(dest_dir, ""))

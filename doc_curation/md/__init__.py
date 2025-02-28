@@ -26,6 +26,9 @@ def get_md_with_pandoc(content_in, source_format="html-native_divs-native_spans"
   :return: 
   """
   import pypandoc
+  logger = logging.getLogger('pypandoc')
+  logger.setLevel(logging.CRITICAL)
+
   filters = None
   content = pypandoc.convert_text(source=content_in, to="gfm-raw_html", format=source_format,
                                      extra_args=pandoc_extra_args,

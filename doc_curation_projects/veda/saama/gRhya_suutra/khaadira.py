@@ -1,5 +1,6 @@
 import os
 
+import doc_curation.md.library
 import regex
 
 from doc_curation.md import library
@@ -112,7 +113,7 @@ def fix_oldenberg():
 
 
 def fix_includes():
-  md_files = arrangement.get_md_files_from_path(dir_path=os.path.join(content_dir_base, "sarva-prastutiH"), file_pattern="**/[0-9]*.md")
+  md_files = doc_curation.md.library.get_md_files_from_path(dir_path=os.path.join(content_dir_base, "sarva-prastutiH"), file_pattern="**/[0-9]*.md")
   dir_path = os.path.join(content_dir_base, "sarva-prastutiH")
 
   def include_fixer(x, current_file_path, *args):

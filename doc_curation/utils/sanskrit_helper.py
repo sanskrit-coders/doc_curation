@@ -48,6 +48,15 @@ def fix_yaNs(text):
   return c
 
 
+def fix_anunaasikaadi(text, level=0):
+  text = fix_bad_anunaasikas(text)
+  text = fix_lazy_anusvaara(text)
+  text = fix_bad_vyanjanaantas(text)
+  if level > 0:
+    text = fix_yaNs(text)
+    text = fix_bad_vyanjanaantas(text)
+  return text
+
 def numerify_shloka_numbering(text, encoding="कखगघङचछजझञ"):
   def transformer(match):
     return "॥%s.%d॥" % (match.group(1), encoding.index(match.group(2)) + 1)

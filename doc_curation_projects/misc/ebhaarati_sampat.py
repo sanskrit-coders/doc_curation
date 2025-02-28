@@ -1,6 +1,8 @@
 import os.path
 
 from doc_curation.scraping.misc_sites import ebhaarati
+from doc_curation.md import library
+
 
 def sv():
   BRAHMA_SUUTRA_BASE = "/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH"
@@ -29,6 +31,7 @@ if __name__ == '__main__':
   # sv()
   # smrti()
   # miimaamsaa()
-  ebhaarati.dump_all(use_url_cache=True)
+  # ebhaarati.dump_all(use_url_cache=True)
+  library.dump_matching_files(dir_path=ebhaarati.DEST_DIR, file_name_filter=lambda x: os.path.basename(x) != "_index.md")
   # ebhaarati.dump_all(use_url_cache=False)
   pass

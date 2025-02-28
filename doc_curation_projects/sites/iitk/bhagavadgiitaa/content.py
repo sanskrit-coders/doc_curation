@@ -1,6 +1,7 @@
 import logging
 import os
 
+import doc_curation.md.library
 import regex
 
 import doc_curation.md.content_processor.include_helper
@@ -34,7 +35,7 @@ def title_from_folder_path(folder_path):
 
 def make_content_files(base_dir):
   static_dir_base = base_dir.replace("/content/", "/static/")
-  md_files = arrangement.get_md_files_from_path(dir_path=base_dir, file_pattern="**/*.md")
+  md_files = doc_curation.md.library.get_md_files_from_path(dir_path=base_dir, file_pattern="**/*.md")
   for md_file in md_files:
     content = ""
     file_path = md_file.file_path
