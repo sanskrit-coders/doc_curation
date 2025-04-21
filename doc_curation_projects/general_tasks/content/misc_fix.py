@@ -60,9 +60,9 @@ def details_fix(dir_path):
 def fix_whitespaces(dir_path):
   # library.apply_function(fn=MdFile.transform, content_transformer=space_helper.make_paras, dir_path=dir_path)
 
-  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.remove_fake_linebreaks(c), dir_path=dir_path)
+  library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.remove_fake_linebreaks(c), dir_path=dir_path)
 
-  library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.remove_excess_newlines(c), dir_path=dir_path)
+  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.remove_excess_newlines(c), dir_path=dir_path)
 
   # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.markdownify_newlines(c), dir_path=dir_path)
 
@@ -77,7 +77,7 @@ def misc_typos(dir_path):
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/strI-dharma-paddhatiH/leslie", content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))
 
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_google_ocr(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_google_ocr_devanaagarii(x))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.misc_sanskrit_typos(x))
 
@@ -90,10 +90,10 @@ def misc_typos(dir_path):
 
 if __name__ == '__main__':
   # fix_audio_tags()
-  # misc_typos("/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/nibandhaH/viShNudattaH_navaratna-vivAha-paddhatiH.md")
-  # fix_whitespaces(dir_path="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/ebhAratI-sampat/")
+  # misc_typos("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/misc/satya-siddhiH.md")
+  fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/static/vyAsaH/shlokashaH/06-bhIShma-parva/03-bhagavad-gItA-parva/saMskRtam/rAmAnujaH/mUlam")
   # section_fix()
-  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/venkaTa-nAtha-shAkhA/gopAla-deshikaH/Ahnikam_AhnikArtha-prakAshikA/06_yogaH.md")
+  # details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/nibandhaH/shUdra-dharmaH/shUdra-kamalAkaraH")
 
 
   pass

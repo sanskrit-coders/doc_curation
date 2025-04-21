@@ -98,5 +98,5 @@ if __name__ == '__main__':
   # sur_vinaya_patrikaa()
   library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/prakIrNAryabhAShAH/padya/sUradAsa", frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
   # library.apply_function(fn=MdFile.split_to_bits, dir_path=dest_path, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI)
-  # library.fix_index_files(dir_path=dest_path, dry_run=False)
+  # arrangement.fix_index_files(dir_path=dest_path, dry_run=False)
   pass

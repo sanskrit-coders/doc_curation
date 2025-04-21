@@ -134,5 +134,5 @@ if __name__ == '__main__':
   # set_book_content()
   include_helper.prefill_includes(dir_path=dest_dir_suuktas)
   # rename_suukta_files(dest_dir=os.path.join(dest_dir_static, "whitney/notes"), dry_run=False)
-  # library.fix_index_files(dest_dir_suuktas)
+  # arrangement.fix_index_files(dest_dir_suuktas)
   pass

@@ -67,4 +67,4 @@ if __name__ == '__main__':
   dump(dry_run=False)
   include_helper.prefill_includes(dir_path=os.path.join(content_dir_base, "sarva-prastutiH"))
 
-  # md.library.fix_index_files(content_dir_base)
+  # md.arrangement.fix_index_files(content_dir_base)

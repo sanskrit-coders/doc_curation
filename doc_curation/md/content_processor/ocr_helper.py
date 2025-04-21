@@ -74,7 +74,8 @@ def fix_google_ocr_devanaagarii(text, new_line_substitute="\n\n"):
   text = regex.sub("(?<=\n)([०-९\d]+) *(?=\n)", r"[[\1]]", text)
   text = regex.sub("(?<=[ँ-९]):", "ः", text)
   text = regex.sub("(?<=\S ?)\n", new_line_substitute, text)
-  text = regex.sub("(?<=[a-zA-Z])\- +(?=[a-zA-Z])", "", text)
+  # text = regex.sub("(?<=[a-zA-Z])\- +(?=[a-zA-Z])", "", text)
+  text = strip_word_continuation_dashes(text)
   return text
 
 def fix_mid_shloka_empty_lines(text):

@@ -231,17 +231,26 @@ def get_detail_bunches(md_file, bunch_start_pattern="विश्वास-प�
   return bunches
 
 
-def insert_adjascent_detail(content, metadata, title, new_element, inserter=PageElement.insert_after):
+def insert_adjascent_element(content, metadata, title, new_element, inserter=PageElement.insert_after):
   # Stray usage of < can fool the soup parser. Hence the below.
+  def _get_soup_element(new_element):
+    if isinstance(new_element, str):
+      new_element = BeautifulSoup(new_element, 'html.parser')
+    if isinstance(new_element, Detail):
+      new_element = new_element.to_soup()
+    return new_element
+
+  if title is None:
+    new_element = _get_soup_element(new_element)
+    soup = content_processor._soup_from_content(content=content, metadata=metadata)
+    soup.body.append(new_element)
+    return content_processor._make_content_from_soup(soup=soup)
   if "details" not in content or not regex.search(title, content):
     return content
   soup = content_processor._soup_from_content(content=content, metadata=metadata)
   if soup is None:
     return content
-  if isinstance(new_element, str):
-    new_element = BeautifulSoup(new_element, 'html.parser')
-  if isinstance(new_element, Detail):
-    new_element = new_element.to_soup()
+  new_element = _get_soup_element(new_element)
   details = soup.select("details")
   for detail in details:
     if regex.fullmatch(title, detail.select_one("summary").text.strip()):
@@ -250,6 +259,11 @@ def insert_adjascent_detail(content, metadata, title, new_element, inserter=Page
       inserter(detail, "\n\n")
     # inserter(detail, "\n")
   return content_processor._make_content_from_soup(soup=soup)
+
+
+def remove_adjascent_duplicates(content):
+  content = regex.sub(r"(<details><summary>.+</summary>[^<]+</details>)\n+(?=\1)", "", content)
+  return content
 
 
 def get_details(content, title, metadata=None):
@@ -432,6 +446,14 @@ def detail_content_replacer_soup(detail_tag, replacement):
   if callable(replacement):
     replacement = replacement(detail.content)
   summary.insert_after(f"\n\n{replacement}\n")
+
+
+def sections_to_details(content, pattern=r"(?<=\n|^)\#+ +(\S.+)\s+(\S[^\#<]+?)(?=[\#<]|$)"):
+  def _detail_maker(match):
+    detail = Detail(title=match.group(1), content=match.group(2).strip())
+    return detail.to_md_html() + "\n\n"
+  content = regex.sub(pattern, _detail_maker, content)
+  return content
 
 
 def shlokas_to_details(content, pattern=None, title_base="टीका"):

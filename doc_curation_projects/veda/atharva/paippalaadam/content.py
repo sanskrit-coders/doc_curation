@@ -72,5 +72,5 @@ if __name__ == '__main__':
   dump(dry_run=False)
   include_helper.prefill_includes(dir_path=paippalaadam.CONTENT_DIR)
 
-  # library.fix_index_files(paippalaadam.CONTENT_DIR)
+  # arrangement.fix_index_files(paippalaadam.CONTENT_DIR)
 

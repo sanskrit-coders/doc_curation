@@ -16,5 +16,5 @@ GP_KN = os.path.join(BASE_DIR, "goraxapura-pAThaH/kannaDAnuvAda/7_uttarakANDam")
 # dump.fix_metadata_and_paths(base_dir_ref=DRA_TIKA, base_dir=GP_HI, dry_run=False)
 # arrangement.shift_indices(dir_path=GP_HI, start_index=62, new_index_offset=-2, dry_run=False)
 
-# library.fix_index_files(os.path.dirname(BASE_DIR))
+# arrangement.fix_index_files(os.path.dirname(BASE_DIR))
 library.apply_function(dir_path=GP_KN, fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, overwrite=True, dry_run=False)

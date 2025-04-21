@@ -29,7 +29,7 @@ def dump_all(url, dest_dir):
     return souper.dump_text_from_element(url=url, outfile_path=outfile_path, md_fixer=md_fixer, text_css_selector="#tabs-1",title_prefix=title_prefix, dry_run=dry_run)
   souper.dump_series(start_url=url, out_path=dest_dir, dumper=_dumper, next_url_getter=_next_url_getter, end_url=None, index_format="%02d", index=1)
   library.apply_function(dir_path=dest_dir, fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, dry_run=False)
-  library.fix_index_files(dir_path=os.path.dirname(dest_dir), overwrite=False, dry_run=False)
+  arrangement.fix_index_files(dir_path=os.path.dirname(dest_dir), overwrite=False, dry_run=False)
   library.apply_function(fn=MdFile.transform, dir_path=dest_dir, content_transformer=lambda c, m: md_fixer(c=c))
   pass
 

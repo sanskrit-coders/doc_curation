@@ -1,6 +1,6 @@
 import os
 
-from doc_curation.scraping import gp, html_scraper
+from doc_curation.scraping.misc_sites import gp
 
 
 # NOTE - Use with firefox.
@@ -32,7 +32,7 @@ def dump_suradas():
 def dump_sanskrit():
   base_dir = "/home/vvasuki/gitland/vishvAsa/purANam/static/"
   # gp.dump_book(url="https://gitaseva.org/books/srimad-valmikiya-ramayan", dest_html_path=os.path.join(base_dir, "rAmAyaNam/goraxapura-pAThaH/source.html"), final_url_check=lambda x: "toc_marker-14" in x)
-  # gp.dump_book(url="https://gitaseva.org/books/shrimad-bhagwat-mahapuran-with-hindi-explanation", dest_html_path=os.path.join(base_dir, "bhAgavatam/goraxapura-pAThaH/source.html"), "source.html"), final_url_check=lambda x: "toc_marker-32" in x)
+  gp.dump_book(url="https://gitaseva.org/#epubcfi(/6/228[Srimadbhagwad-satik-1-113]!/4[Srimadbhagwad-satik-1]/2/2/1:0)", dest_html_path="/home/vvasuki/gitland/sanskrit/raw_etexts/purANam/vaiShNavam/bhAgavata-purANam/goraxapura-pAThaH/raw/hindI.html", final_url_check=lambda x: "toc_marker-32" in x)
   # gp.dump_book(url="https://gitaseva.org/books/shrimad-bhagwat-mahapuran-with-hindi-explanation", dest_html_path=os.path.join(base_dir, "viShNu-purANam/goraxapura-pAThaH/source.html"), final_url_check=lambda x: "toc_marker-9" in x)
   # gp.dump_book(url="https://gitaseva.org/books/sri-duga-saptshati-with-hindi-translation", dest_html_path=os.path.join(base_dir, "durgA-saptashatI/goraxapura-pAThaH/source.html"), final_url_check=lambda x: "toc_marker-20" in x)
   # gp.dump_book(url="https://gitaseva.org/books/adhyatam-ramayan", dest_html_path=os.path.join(base_dir, "adhyAtma-rAmAyaNam/goraxapura-pAThaH/source.html"), "source.html"), final_url_check=lambda x: "toc_marker-12" in x)
@@ -402,10 +402,11 @@ def dump_pUjA():
 
 
 if __name__ == '__main__':
-  dump_tulasi()
+  # dump_tulasi()
   # dump_suradas()
   # dump_pUjA()
   # dump_kannada()
+  dump_sanskrit()
   # dump_tamil()
   # dump_oriya()
   # dump_bangla()

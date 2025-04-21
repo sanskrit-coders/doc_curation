@@ -11,6 +11,8 @@ def devanaagarify(dir_path, source_script):
   def content_transformer(c, m):
     c = footnote_helper.define_footnotes_near_use(c)
     c = content_processor.transliterate(text=c, source_script=source_script)
+    if source_script == sanscript.TAMIL:
+      c = aksharamukha_helper.manipravaalify(c)
     c = doc_curation.utils.sanskrit_helper.fix_lazy_anusvaara(c)
     c = regex.sub(r"\|\|", "॥", c)
     c = regex.sub(r"\|", "।", c)
@@ -31,9 +33,6 @@ def devanaagarify(dir_path, source_script):
     metadata_transformer=None,
   dry_run=False)
 
-  if source_script == sanscript.TAMIL:
-    from indic_transliteration import aksharamukha_helper
-    library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
 
 
 def fix_anunaasikaadi(dir_path, level=0):
@@ -46,10 +45,10 @@ def fix_anunaasikaadi(dir_path, level=0):
 if __name__ == '__main__':
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/vAyu-purANam/dvi-khaNDa-saMskaraNam", content_transformer=lambda x, y: sanskrit_helper.fix_repha_duplication(x), dry_run=False, silent_iteration=False)
-  devanaagarify(dir_path="/home/vvasuki/gitland/indic-dict/dicts/stardict-tamil/ta-head/ta-entries_dev-script/dp_pArthasArathi_dev/dp_pArthasArathi_dev.babylon_pre", source_script="tamil")
-  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTa-nAtha-shAkhA/shrInivAsa-deshikaH_ShaShTi-darpaNAbhidhAnam.md", source_script="telugu")
+  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/sage-bloodlines/bhRguH/dvitIyajanmani_bhRguH/chyavanaH/ApnavAna/aurvaH/jamadagniH/chakravarti-kulam/villivalam-nArAyaNaH.md", source_script="tamil")
+  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/para-mata-bhangaH/mUlam.md", source_script="tamil_subscripted")
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/meta/articles/ranganAthaH_vyAsa-rahasya/_index.md", source_script="kannada")
-  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/nibandhaH/laxmI-dharaH_kRtya-kalpa-taruH/07_shrAddha-kANDam.md", source_script=sanscript.IAST)
+  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/sanskrit/content/vyAkaraNam/pANinIyam/samAsaH/articles/samAsa-chandrikA.md", source_script=sanscript.IAST)
   # fix_anunaasikaadi(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/purANam/nArAyaNIyam/mAhAtmyam.md")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/english/content/prose/hindu/indologist/max-muller/india_what_it_can_teach_us.md", content_transformer=lambda x, y: sanskrit_helper.fix_sacred_texts_transliteration(x), dry_run=False, silent_iteration=False)
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/", content_transformer=lambda x, y: tamil_tools.set_tamil_soft_consonants(x), dry_run=False, silent_iteration=False)

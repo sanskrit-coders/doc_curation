@@ -185,7 +185,7 @@ def dump_series(start_url, out_path, dumper, next_url_getter, end_url=None, inde
     next_url = next_url_getter(soup, url=next_url)
     index = index + 1
     # break # For testing
-  library.fix_index_files(dir_path=out_path, dry_run=dry_run)
+  arrangement.fix_index_files(dir_path=out_path, dry_run=dry_run)
   logging.info("Reached end of series")
 
 

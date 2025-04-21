@@ -11,6 +11,7 @@ import doc_curation
 from doc_curation import book_data
 from doc_curation.md import library, content_processor
 from doc_curation.md.file import MdFile
+from doc_curation.md.content_processor import details_helper
 from doc_curation.md.library import arrangement
 from doc_curation.scraping.html_scraper import selenium
 from doc_curation.scraping.html_scraper.selenium import click_link_by_text
@@ -85,12 +86,21 @@ def get_output_path(text_name, outdir):
 
 
 
-def dump_to_file(browser, out_file_path, has_comment=False, text_name=None, start_nodes=None, source_script=sanscript.DEVANAGARI):
+def dump_to_file(browser, out_file_path, has_comment=False, text_name=None, start_nodes=None, source_script=sanscript.DEVANAGARI, overwrite=False):
+
+  if os.path.exists(out_file_path) and not overwrite:
+      logging.info("Skipping " + out_file_path)
+  else:
+    text = browse_get_text(browser, has_comment, source_script, start_nodes)
+    if text_name is None:
+      text_name = sanscript.transliterate(data=os.path.basename(out_file_path.replace(".md", "")), _from=sanscript.OPTITRANS,_to=sanscript.DEVANAGARI)
+    md_file = MdFile(file_path=out_file_path)
+    md_file.dump_to_file(metadata={"title": text_name}, content=text, dry_run=False)
+  
+
+def browse_get_text(browser, has_comment, source_script, start_nodes):
   if start_nodes is not None:
     browse_nodes(browser=browser, start_nodes=start_nodes)
-  if text_name is None:
-    text_name = sanscript.transliterate(data=os.path.basename(out_file_path.replace(".md", "")), _from=sanscript.OPTITRANS,
-                            _to=sanscript.DEVANAGARI)
   rows = browser.find_elements(By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"]")
   text = ""
   for row in rows:
@@ -118,8 +128,7 @@ def dump_to_file(browser, out_file_path, has_comment=False, text_name=None, star
           text += f"{main_text}\n\n"
   if source_script != sanscript.DEVANAGARI:
     text = content_processor.transliterate(text=text, source_script=source_script)
-  md_file = MdFile(file_path=out_file_path)
-  md_file.dump_to_file(metadata={"title": text_name}, content=text, dry_run=False)
+  return text
 
 
 def browse_nodes(browser, start_nodes, timeout=10):
@@ -150,7 +159,7 @@ def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False, 
   arrangement.fix_index_files(dir_path=outdir, overwrite=False, dry_run=False)
 
 
-def get_structured_text(browser, start_nodes, base_dir, unit_info_file, has_comment=False, source_script=sanscript.DEVANAGARI):
+def get_structured_text(browser, start_nodes, base_dir, unit_info_file, has_comment=False, source_script=sanscript.DEVANAGARI, detail_title=None, prev_detail_title=None):
   def open_path(subunit_path, unit_data):
     logging.debug(list(zip(subunit_path, unit_data["unitNameListInSite"])))
     for (subunit, unitNameInSite) in zip(subunit_path, unit_data["unitNameListInSite"]):
@@ -176,13 +185,22 @@ def get_structured_text(browser, start_nodes, base_dir, unit_info_file, has_comm
       exit()
       logging.warning("Skipping as Could not find element " + str(traceback.format_exc()))
       continue
-    outfile_path = os.path.join(base_dir, "/".join(map(str, subunit_path)) + ".md")
-    if os.path.exists(outfile_path):
-      logging.info("Skipping " + outfile_path)
+    outfile_path_base = os.path.join(base_dir, "/".join(map(lambda x: f"{x:02d}", subunit_path)))
+    file_with_prefix = file_helper.find_file_with_prefix(path_prefix=outfile_path_base)
+    if file_with_prefix is not None:
+      out_file_path = file_with_prefix
     else:
-      os.makedirs(name=os.path.dirname(outfile_path), exist_ok=True)
+      out_file_path = outfile_path_base + ".md"
+  
+    os.makedirs(name=os.path.dirname(out_file_path), exist_ok=True)
+    if detail_title is not None:
+      text = browse_get_text(browser=browser, has_comment=has_comment, source_script=source_script, start_nodes=None)
+      md_file = MdFile(file_path=out_file_path)
+      detail = details_helper.Detail(title=detail_title, content=text)
+      md_file.transform(content_transformer=lambda c, m: details_helper.insert_adjascent_element(content=c, metadata=m, title=prev_detail_title, new_element=detail))
+    else:
       text_name = deduce_text_name(browser)
-      dump_to_file(browser=browser, has_comment=has_comment, out_file_path=outfile_path, text_name=text_name, start_nodes=None, source_script=source_script)
+      dump_to_file(browser=browser, has_comment=has_comment, out_file_path=out_file_path, text_name=text_name, start_nodes=None, source_script=source_script)
     # Close the kANDa - else the driver may pick sarga from this kANDa when it is to pick the sarga from the next kANDa?!
     close_path(subunit_path=subunit_path, unit_data=unit_data)
-  library.fix_index_files(dir_path=base_dir)
+  arrangement.fix_index_files(dir_path=base_dir)

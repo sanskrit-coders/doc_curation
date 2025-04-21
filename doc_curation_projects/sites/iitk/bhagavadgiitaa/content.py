@@ -69,4 +69,4 @@ def make_content_files(base_dir):
 if __name__ == '__main__':
   base_dir = "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/mahAbhAratam/shlokashaH/bhagavad-gItA-parva/sarva-prastutiH"
   make_content_files(base_dir=base_dir)
-  # library.fix_index_files(dir_path=base_dir, dry_run=False)
+  # arrangement.fix_index_files(dir_path=base_dir, dry_run=False)

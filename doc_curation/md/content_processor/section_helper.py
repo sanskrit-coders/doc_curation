@@ -304,7 +304,7 @@ def section_headings_to_details(content, prev_detail_title="मूलम्(.*)"
   for section in tqdm(sections):
     section_content = "\n".join(section.lines)
     
-    section_content_new = details_helper.insert_adjascent_detail(content=section_content, metadata=None, title=prev_detail_title, new_element=details_helper.Detail(title=title, content=section.title), inserter=inserter)
+    section_content_new = details_helper.insert_adjascent_element(content=section_content, metadata=None, title=prev_detail_title, new_element=details_helper.Detail(title=title, content=section.title), inserter=inserter)
     section.lines = section_content_new.split("\n")
     new_content += section.to_md()
 

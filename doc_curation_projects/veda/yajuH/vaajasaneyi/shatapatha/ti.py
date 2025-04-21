@@ -85,7 +85,7 @@ def dump_text(base_dir, do_transliteration=False):
       md_file = MdFile(file_path=outfile_path)
       md_file.dump_to_file(metadata={"title": "%02d" % sarga_index}, content="\n".join(lines), dry_run=False)
 
-  library.fix_index_files(dir_path=base_dir, dry_run=False)
+  arrangement.fix_index_files(dir_path=base_dir, dry_run=False)
   library.apply_function(fn=metadata_helper.set_title_from_filename, dir_path=base_dir, frontmatter_type=MdFile.TOML, dry_run=False, transliteration_target=sanscript.DEVANAGARI) # 
 
 

@@ -42,7 +42,7 @@ def dump_files():
             get_file(outdir="/home/vvasuki/paali-bhaasaa/raw_etexts/tipiTaka", url=line.strip())
 
 
-# library.fix_index_files(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=False)
+# arrangement.fix_index_files(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=False)
 # library.fix_title_numbering_in_path(dir_path="/home/vvasuki/paali-bhaasaa/raw_etexts/", dry_run=False)
 # library.fix_title_numbering_in_path(dir_path="/home/vvasuki/vvasuki-git/pALi/content/01_tipiTaka", dry_run=False)
 metadata_helper.set_filenames_from_titles(dir_path="/home/vvasuki/vvasuki-git/tipiTaka/content/01_mUlam/02_suttapiTaka/04_anguttaranikAyo", source_script=sanscript.DEVANAGARI, dry_run=False)

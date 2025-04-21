@@ -20,7 +20,7 @@ def paancharaatra():
   # enumerated.dump_text(url_base="सात्त्वतसंहिता/अध्यायः", num_parts=25, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/vaiShNavaH/pAncharAtrAgamaH/sAttvata-saMhitA/", url_id_padding="%d", transliterate_id=True)
   # enumerated.dump_text(url_base="भार्गवतन्त्रम्/अध्यायः", num_parts=25, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/vaiShNavaH/pAncharAtrAgamaH/bhArgava-tantram/", url_id_padding="%d", transliterate_id=True)
   # enumerated.dump_text(url_base="लक्ष्मीतन्त्रम्/अध्यायः", num_parts=57, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/vaiShNavaH/pAncharAtrAgamaH/laxmI-tantram/", url_id_padding="%d", transliterate_id=True)
-  library.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/vaiShNavaH/pAncharAtrAgamaH", transliteration_target=sanscript.DEVANAGARI, overwrite=False, dry_run=False)
+  arrangement.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/vaiShNavaH/pAncharAtrAgamaH", transliteration_target=sanscript.DEVANAGARI, overwrite=False, dry_run=False)
 
 
 def vaikhaanasa():
@@ -44,7 +44,7 @@ def vaikhaanasa():
   #                  transliteration_source=sanscript.DEVANAGARI, base_url="http://sa.wikisource.org/", dry_run=False)
   library.apply_function(fn=content_processor.replace_texts, dir_path=base_dir, patterns=["[^\n]+\/wiki\/[^\n]+"], replacement="")
   library.apply_function(fn=content_processor.replace_texts, dir_path=base_dir, patterns=["[^\n]+\[लेखकः[^\n]+"], replacement="")
-  library.fix_index_files(dir_path=base_dir, transliteration_target=sanscript.DEVANAGARI, overwrite=False, dry_run=False)
+  arrangement.fix_index_files(dir_path=base_dir, transliteration_target=sanscript.DEVANAGARI, overwrite=False, dry_run=False)
 
 
 def veda():

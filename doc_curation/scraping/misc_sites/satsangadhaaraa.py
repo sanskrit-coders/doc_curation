@@ -67,4 +67,4 @@ def dump_book(init_url, out_path, overwrite=True):
   for url in part_urls:
     file_name = url.split("/")[-1].split(".")[0] + ".md"
     dump_text(url=url, out_path=os.path.join(out_path, file_name), overwrite=overwrite)
-  library.fix_index_files(os.path.dirname(os.path.dirname(out_path)))
+  arrangement.fix_index_files(os.path.dirname(os.path.dirname(out_path)))

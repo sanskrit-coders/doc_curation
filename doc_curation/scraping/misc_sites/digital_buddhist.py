@@ -134,7 +134,7 @@ def dump_all_texts(base_path):
   texts = get_all_texts()
   for text in texts:
     dump_text_bunch(text=text, base_path=base_path)
-  library.fix_index_files(os.path.dirname(base_path), overwrite=False)
+  arrangement.fix_index_files(os.path.dirname(base_path), overwrite=False)
   
 
 if __name__ == '__main__':

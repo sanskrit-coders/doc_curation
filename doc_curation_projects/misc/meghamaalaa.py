@@ -62,7 +62,7 @@ def shriibhaashya():
   for adhyaaya in range(1,5):
     for paada in range(1,5):
       meghamaalaa.dump_series(adhyaaya_map[(adhyaaya, paada)], f"/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/ma/{adhyaaya}/{paada}/", filename_from_title=lambda x: regex.match(".+?-(\d\d[A-Z]? .+$)", x).group(1))
-  library.fix_index_files("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/")
+  arrangement.fix_index_files("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/")
   pass
 
 

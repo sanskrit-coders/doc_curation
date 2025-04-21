@@ -85,7 +85,7 @@ def dump_article(url, outfile_path, browser=None, title_prefix="", metadata=None
     metadata = {}
   metadata["title"] = f"{title_prefix} {page_title}".strip()
   md_file.dump_to_file(metadata=metadata, content=page_content, dry_run=dry_run)
-  library.fix_index_files(os.path.dirname(os.path.dirname(file_path)))
+  arrangement.fix_index_files(os.path.dirname(os.path.dirname(file_path)))
   return soup
 
 

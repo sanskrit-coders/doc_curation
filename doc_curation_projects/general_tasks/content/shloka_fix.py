@@ -34,5 +34,5 @@ def details_fix(dir_path):
 if __name__ == '__main__':
   pass
   # shloka_formatting()
-  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/parameshvara-saMhitA")
+  details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/mAdhvam/content/kAvyam/nArAyaNa-paNDita-su-madhva-vijayaH/sarva-prastutiH")
   # details_helper.interleave_from_file(md_file=MdFile("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/tiruk-kural/sarva-prastutiH.md"), source_file="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/tiruk-kural/TIkA/sa/shrI-rAma-deshikaH.md", dest_pattern= "<details.+?summary>विश्वास-प्रस्तुतिः *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>.*?- *(\S+)</summary>[\s\S]+?</details>\n", detail_title=None, dry_run=False)

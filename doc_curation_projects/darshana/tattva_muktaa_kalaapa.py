@@ -9,9 +9,9 @@ from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 
 
-STATIC_DIR_BASE = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/static/rAmAnuja-sampradAyaH/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/tattva-muktA-kalApaH/sarvASh_TIkAH"
+STATIC_DIR_BASE = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/static/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/tattva-muktA-kalApaH/sarvASh_TIkAH"
 
-CONTENT_DIR_BASE = "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/tattva-muktA-kalApaH/"
+CONTENT_DIR_BASE = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/tattva-muktA-kalApaH/"
 
 
 def raw_comment_to_details(source_dir, detail_title):
@@ -25,15 +25,17 @@ def number_comments(source_dir):
   # library.apply_function(fn=content_processor.replace_texts, dir_path=source_dir, patterns=["(?<=^|॥[ ०-९]+॥)\s*(\S[\S\s]+?॥ *([०-९]+) *॥)"], replacement="\n\n<details><summary>सर्वाङ्कषा - \\2</summary>\n\n\\1\n</details>\n\n")
   
 
-def match_muula_commentary(source_dir, dest_pattern, overwrite_pattern=None):
+def match_muula_commentary(source_dir, dest_pattern, subdirs=None, overwrite_pattern=None):
   pass
-  number_comments(source_dir=source_dir)
+  # number_comments(source_dir=source_dir)
 
-  source_pattern = "<details.+?summary>.+? *- *([०-९]+)</summary>[\s\S]+?</details>\n"
+  source_pattern = "<details[^<]*><summary>[^<]+? *- *([०-९]+)</summary>[^<]+?</details>\n*"
   # source_pattern = "<details.+?summary>.+?</summary>[\s\S]+?[॥।]? *([०-९]+) *[॥।]?\s*</details>\n"
   ## Interleave from file
   # for dir in ["1_jaDa-dravya-saraH"]:
-  for dir in sorted(os.listdir(STATIC_DIR_BASE)):
+  if subdirs is None:
+    subdirs = sorted(os.listdir(STATIC_DIR_BASE))
+  for dir in subdirs:
     if dir.startswith("_") or "_" not in dir:
       continue
     sara_id = int(dir.split("_")[0])
@@ -48,9 +50,9 @@ def match_muula_commentary(source_dir, dest_pattern, overwrite_pattern=None):
 
 if __name__ == '__main__':
   pass
-  # raw_comment_to_details(source_dir=os.path.join(CONTENT_DIR_BASE, "kottamangala-varadaH/subodhinI_kn/1"), detail_title="ಕನ್ನಡ")
-  library.apply_function(fn=MdFile.transform, content_transformer=details_helper.rearrange_details,  titles=["मूलम्", "पाठाः (द्रष्टुं नोद्यम्)", "वरदार्य-सर्वाङ्कषा", "वरदार्य-सर्वाङ्कषा-पाठान्तरम्", "वरदार्य-सुबोधिनी (कन्नड)", "सर्वार्थसिद्धिः", "नरसिंह-देवः आनन्ददायिनी", "उत्तमूरु-वीरराघवः अलभ्यलाभः", "वाधूल-श्रीनिवासः गूढार्थ-विवृतिः", "सौम्य-वरद-रामानुज-गूढार्थ-प्रकाशः", "अभिनव-रङ्गनाथः भाव-प्रकाशः"], dir_path=STATIC_DIR_BASE)
-  # match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "kottamangala-varadaH/subodhinI_kn/1"), dest_pattern= "<details.+?summary>.*?</summary>[\s\S]+?</details>\n")
+  # raw_comment_to_details(source_dir=os.path.join(CONTENT_DIR_BASE, "kottamangala-varadaH/subodhinI_kn/3_nAyakasara.md"), detail_title="ಕನ್ನಡ")
+  # library.apply_function(fn=MdFile.transform, content_transformer=details_helper.rearrange_details,  titles=["मूलम्", "पाठाः (द्रष्टुं नोद्यम्)", "वरदार्य-सर्वाङ्कषा", "वरदार्य-सर्वाङ्कषा-पाठान्तरम्", "वरदार्य-सुबोधिनी (कन्नड)", "सर्वार्थसिद्धिः", "नरसिंह-देवः आनन्ददायिनी", "उत्तमूरु-वीरराघवः अलभ्यलाभः", "वाधूल-श्रीनिवासः गूढार्थ-विवृतिः", "सौम्य-वरद-रामानुज-गूढार्थ-प्रकाशः", "अभिनव-रङ्गनाथः भाव-प्रकाशः"], dir_path=STATIC_DIR_BASE)
+  match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "kottamangala-varadaH/subodhinI_kn"), subdirs=["3_nAyaka-saraH"], dest_pattern= "<details.+?summary>.*?</summary>[\s\S]+?</details>\n")
   # number_comments(source_dir=os.path.join(CONTENT_DIR_BASE, "sarvArtha-siddhiH"))
 
   # match_muula_commentary(source_dir=os.path.join(CONTENT_DIR_BASE, "kottamangala-varadaH/sarvAnkaShA"), dest_pattern= "<details.+?summary>सर्वाङ्कषा.*?</summary>[\s\S]+?</details>\n")

@@ -40,7 +40,7 @@ def get_numbers():
 # get_audio_file_data()
 # get_titles_english()
 # get_numbers()
-# library.fix_index_files(dir_path=md_file_path, dry_run=False)
+# arrangement.fix_index_files(dir_path=md_file_path, dry_run=False)
 
 # library.fix_field_values(
 #     md_files=raamaayana.get_adhyaaya_md_files(md_file_path),
