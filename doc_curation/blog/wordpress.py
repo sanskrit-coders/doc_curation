@@ -42,6 +42,8 @@ def month_str_from_url(url):
 
 def get_month_urls(url, reverse=True, init_year_month_str=None):
   ( post_html, soup) = blog.get_post_html(url=url)
+  # https://make.wordpress.org/support/user-manual/archives-widget/
+  
   month_anchors = soup.select(".widget_archive a")
   if len(month_anchors) == 0:
     archives_elements = soup.select_one("[name='archive-dropdown']")

@@ -118,6 +118,7 @@ def click_element(browser, element):
   # Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen 
   browser.execute_script("arguments[0].click();", element)
 
+
 def click_link_by_text(browser, element_text, ordinal=-1, timeout=5):
   try:
     WebDriverWait(browser, timeout).until(lambda browser: browser.find_elements(By.LINK_TEXT, element_text))
@@ -131,3 +132,18 @@ def click_link_by_text(browser, element_text, ordinal=-1, timeout=5):
   except (NoSuchElementException, TimeoutException):
     logging.warning("Could not find %s", element_text)
     return False
+
+
+def get_urls(browser, dest_dir, list_url, url_css, scroll_pause=2, scroll_btn_css=None, use_url_cache=False):
+  url_md_file = MdFile(file_path=os.path.join(dest_dir, "urls.md"))
+  from curation_utils import scraping as curation_scraping
+  if not use_url_cache:
+    logging.info(f"NOT Using cache {url_md_file}")
+    soup = curation_scraping.scroll_and_get_soup(url=list_url, browser=browser, scroll_pause=scroll_pause, scroll_btn_css=scroll_btn_css)
+    urls = [urljoin(BASE_URL, x["href"]) for x in soup.select(url_css)]
+    url_md_file.dump_to_file(metadata={"title": "URLs"}, content="\n".join(urls), dry_run=False)
+  else:
+    logging.info(f"Using cache {url_md_file}")
+    [_, urls] = url_md_file.read()
+    urls = urls.split("\n")
+  return urls

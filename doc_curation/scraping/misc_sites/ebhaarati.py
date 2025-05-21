@@ -8,7 +8,7 @@ from urllib.parse import urljoin
 from doc_curation import md
 from doc_curation.md import library
 from doc_curation.scraping.html_scraper import souper
-
+from doc_curation.scraping.html_scraper import selenium
 
 from doc_curation.md.file import MdFile, file_helper
 from doc_curation.md.content_processor import ocr_helper, footnote_helper
@@ -133,18 +133,8 @@ def dump_all(list_url="https://www.ebharatisampat.in/unicodetype.php?cat=All&sub
 
 
 def get_urls(browser, dest_dir, list_url, scroll_pause, use_url_cache):
-  url_md_file = MdFile(file_path=os.path.join(dest_dir, "urls.md"))
-  if not use_url_cache:
-    logging.info(f"NOT Using cache {url_md_file}")
-    soup = scraping.scroll_and_get_soup(url=list_url, browser=browser, scroll_pause=scroll_pause,
-                                        scroll_btn_css="#load_more")
-    urls = [urljoin(BASE_URL, x["href"]) for x in soup.select("div.product__thumb a.first__img")]
-    url_md_file.dump_to_file(metadata={"title": "URLs"}, content="\n".join(urls), dry_run=False)
-  else:
-    logging.info(f"Using cache {url_md_file}")
-    [_, urls] = url_md_file.read()
-    urls = urls.split("\n")
-  return urls
+  return selenium.get_urls(browser=browser, dest_dir=dest_dir, list_url=list_url, scroll_pause=scroll_pause, use_url_cache=use_url_cache, scroll_btn_css="#load_more", url_css="div.product__thumb a.first__img")
+
 
 
 if __name__ == '__main__':

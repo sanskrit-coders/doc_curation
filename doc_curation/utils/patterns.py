@@ -17,6 +17,7 @@ PATTERN_MULTI_LINE_SHLOKA_BOLDED = r"(?<=\n|^)\*\*(([^#\s<>\[][ \S]+?)।?  +\n)
 PATTERN_DANDA_END_SHLOKA = r"(?<=\n|^)([^#\s<>\[\(][ \S।॥]+?[।॥\s]*){1,4}॥\s*([०-९\d\.]+)\s*॥"
 
 PATTERN_BOLDED_QUOTED_SHLOKA = r"(?<=\n\n|^)\> \*\*([\s\S]+?[०-९ ]+॥.*)(?=\n\n)"
+PATTERN_BOLD_LINES = r"(?<=\n\n|^)\*\*([^*]+?)()\*\*(?=\n\n)"
 
 FOOTNOTE_DEFINITION = r"\n(\[\^.+?\]):[\s\S]+?(?=[\n\[])"
 SUMMARY = r"<summary>.+?</summary>"

@@ -133,7 +133,6 @@ def transform_detail_contents_with_soup(content, metadata, transformer, title_pa
     return content
   details = soup.select("body>details")
   for detail_tag in details:
-    detail = Detail.from_soup_tag(detail_tag=detail_tag)
     if title_pattern is not None and not regex.fullmatch(title_pattern, detail_tag.select_one("summary").text):
       continue
     for x in detail_tag.contents:
