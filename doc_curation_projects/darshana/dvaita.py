@@ -10,6 +10,11 @@ from doc_curation.utils import patterns
 
 
 def misc():
+
+  # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/18485/18481/sharav/pathar/pathar", dest_path="/home/vvasuki/gitland/vishvAsa/mAdhvam/content/tattvam/padma-nAbhaH/padArtha-sangrahaH")
+
+  # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/19565/18484/sharav/mathha/managa", dest_path="/home/vvasuki/gitland/vishvAsa/mAdhvam/content/tattvam/padma-nAbhaH/madhva-siddhAnta-sAroddhAraH")
+
   # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/19085/18678/sharav/sarava/upatha", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/vijayIndra-tIrthAH/sarva-siddhAnta-sAra-vivechanam")
 
   # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/18411/18411/sharav/sharam", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/vijayIndra-tIrthAH/madhva-siddhAnta-sAroddhAraH/")
@@ -26,15 +31,15 @@ def misc():
   # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/18582/18416/sharas/bhagav/managa", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/satya-pramodaH/bhagavan-nirdoShatva-laxaNam/sarva-prastutiH")
   # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/18641/18620/sharas/sharav/managa", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/satya-pramodaH/vijayIndra-vaibhavam/sarva-prastutiH")
   # 
-  # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/18641/18620/sharas/sharav/managa", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/padma-nAbhaH/padArtha-sangrahaH/sarva-prastutiH")
+  # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/18641/18620/sharas/sharav/managa", dest_path="/home/vvasuki/gitland/vishvAsa/mAdhvam/content/tattvam/vijayIndra-tIrthAH/sarva-siddhAnta-sAra-vivechanam/satya-pramoda-vijayIndra-vijaya-vaibhavam")
   # 
   # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/4438/4433/sharaj/parama/parata/managa", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/jaya-tIrthaH/pramANa-paddhatiH/sarva-prastutiH")
   # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/9011/4434/sharaj/vathav/vathav/managa", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/jaya-tIrthaH/vAdAvalI/sarva-prastutiH")
   # 
   # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/13901/4778/sharav/nayaya/parath/managa", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/vyAsa-tIrthaH/nyAyAmRtam/sarva-prastutiH/")
-  dvaita.dump_series(url="https://dvaitavedanta.in/category-details/11066/4779/sharav/tatapa/managa", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/vyAsa-tIrthaH/tAtparya-chandrikA/sarva-prastutiH/")
-  dvaita.dump_series(url="https://dvaitavedanta.in/category-details/12775/4780/sharav/taraka/managa", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/vyAsa-tIrthaH/tarka-tANDavam/sarva-prastutiH/")
-  dvaita.dump_series(url="https://dvaitavedanta.in/category-details/12781/12778/sharav/bhatha/bhatha/bhatha", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/vyAsa-tIrthaH/bhedojjIvanam/sarva-prastutiH/")
+  # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/11066/4779/sharav/tatapa/managa", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/vyAsa-tIrthaH/tAtparya-chandrikA/sarva-prastutiH/")
+  # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/12775/4780/sharav/taraka/managa", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/vyAsa-tIrthaH/tarka-tANDavam/sarva-prastutiH/")
+  # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/12781/12778/sharav/bhatha/bhatha/bhatha", dest_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/vyAsa-tIrthaH/bhedojjIvanam/sarva-prastutiH/")
 
 
 
@@ -92,8 +97,8 @@ if __name__ == '__main__':
   pass
   # arrangement.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/", overwrite=False, dry_run=False)
   # fix_details(dir_path="/home/vvasuki/gitland/vishvAsa/mAdhvam/content/kAvyam/nArAyaNa-paNDita-su-madhva-vijayaH/sarva-prastutiH")
-  upaniShat()
-  # misc()
+  # upaniShat()
+  misc()
   # dashaprakaraNAni()
   # kAvyAdi()
   # brahmasUtrAdi()

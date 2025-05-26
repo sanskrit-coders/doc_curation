@@ -20,18 +20,13 @@ def devanaagarify(dir_path, source_script):
     # c = regex.sub(r"\n\t+", "\n> ", c)
     # c = regex.sub(r"\<span style\=\"text\-decoration\:underline\;\"\>(.+?)</span>", r"<u>\1</u>", c)
 
-    # c = regex.sub(r"\n\*\*(\s+)", "\n\\1**", c)
-    # c = regex.sub(r"\*\* *(\n+)\*\*", "  \n", c)
-    # c = regex.sub(r"(?<=[^:])\n+[\t	 ]+", "\n> ", c)
-    # for x in range(1, 20):
-    #   c = regex.sub("\n(>.+)\n\n+>", "\n\\1  \n>", c)
-    return c
+  # c = regex.sub(r"\n\*\*(\s+)", "\n\\1**", c)
+  # c = regex.sub(r"\*\* *(\n+)\*\*", "  \n", c)
+  # c = regex.sub(r"(?<=[^:])\n+[\t	 ]+", "\n> ", c)
+  # for x in range(1, 20):
+  #   c = regex.sub("\n(>.+)\n\n+>", "\n\\1  \n>", c)
+  return c
   
-  library.apply_function(
-    fn=MdFile.transform, dir_path=dir_path, 
-    content_transformer=content_transformer,
-    metadata_transformer=None,
-  dry_run=False)
 
 
 

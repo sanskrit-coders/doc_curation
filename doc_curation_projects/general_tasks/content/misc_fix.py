@@ -24,38 +24,6 @@ def tamil_nna_fixer(x):
   return output
 
 
-def details_fix(dir_path):
-
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.non_detail_parts_to_detail(content=c, title="टीका"))
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_MULTI_LINE_SHLOKA_DOUBLE_DANDA))
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_2LINE_SHLOKA))
-
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: section_helper.section_headings_to_details(content=c))
-
-
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=details_helper.insert_duplicate_adjascent)
-
-  def transformer(x):
-    # x = doc_curation.md.content_processor.space_helper.dehyphenate_sanskrit_line_endings(x)
-    #x = sanskrit_helper.fix_lazy_anusvaara(x)
-    x = tamil_tools.fix_naive_ta_transliterations(x)
-    return x
-
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=tamil_nna_fixer, title_pattern="सा.*"))
-
-  def line_breaker(x):
-    return regex.sub("(?<=\S)(?=\n)", "  ", x)
-
-
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=line_breaker, title_pattern="विश्वास-प्रस्तुतिः.*"))
-
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_detail_contents_with_soup(content=c, metadata=m, transformer=lambda c, m:space_helper.remove_fake_linebreaks(c), title_pattern="गङ्गानथ-तुल्य-वाक्यानि"))
-
-
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, transformer=tamil_nna_fixer, title_pattern="विश्वास-प्रस्तुतिः.*|मूलम्.*"))
-
-  pass
-
 
 def fix_whitespaces(dir_path):
   # library.apply_function(fn=MdFile.transform, content_transformer=space_helper.make_paras, dir_path=dir_path)
@@ -91,9 +59,9 @@ def misc_typos(dir_path):
 if __name__ == '__main__':
   # fix_audio_tags()
   # misc_typos("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/misc/satya-siddhiH.md")
-  fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/static/vyAsaH/shlokashaH/06-bhIShma-parva/03-bhagavad-gItA-parva/saMskRtam/rAmAnujaH/mUlam")
+  fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/paramparA/venkaTa-nAtha-shAkhA/ahobila-shAkhA/AchArya-vaibhava_en.md")
   # section_fix()
-  # details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/nibandhaH/shUdra-dharmaH/shUdra-kamalAkaraH")
+  # details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/kAvyam/padyam/shrIvaiShNava-kRtam/venkaTanAthaH/varada-rAja-panchAshat.md")
 
 
   pass

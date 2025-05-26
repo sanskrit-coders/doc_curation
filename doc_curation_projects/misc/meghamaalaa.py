@@ -107,7 +107,8 @@ def kaavyam():
   pass
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/stotras/parasara-bhattar/sri-gunaratnakosaha/श्रीगुणरत्नकोशः-व्याख्-2/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/mahAbhAratam/goraxapura-pAThaH/hindy-anuvAdaH/13_anushAsanaparva/01_dAna-dharma-parva/149_viShNu-sahasra-nAma-stotram/TIkA/parAshara-bhaTTaH/shrI-vatsa-vIra-rAghavaH", start_index=1)
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/stotras/kooratazhwan/panchastavam/वरदराजस्तवव्याख्यानम्/", "/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/shrIvaiShNava-kRtam/kUresha-shrIvatsAnka-mishraH/TIkA/rAmAnujaH", start_index=1)
-  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/stotras/yamunacharyar/stotraratnam/%E0%A4%B5%E0%A5%87%E0%A4%A6%E0%A4%BE%E0%A4%A8%E0%A5%8D%E0%A4%A4%E0%A4%BE%E0%A4%9A%E0%A4%BE%E0%A4%B0%E0%A5%8D%E0%A4%AF%E0%A4%B8%E0%A5%8D%E0%A4%AF-%E0%A4%B8%E0%A5%8D%E0%A4%A4%E0%A5%8B%E0%A4%A4%E0%A5%8D/", "/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/shrIvaiShNava-kRtam/yAmunaH/stotra-ratnam/venkaTanAth-TikA.md")
+  # meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/stotras/yamunacharyar/stotraratnam/%E0%A4%B5%E0%A5%87%E0%A4%A6%E0%A4%BE%E0%A4%A8%E0%A5%8D%E0%A4%A4%E0%A4%BE%E0%A4%9A%E0%A4%BE%E0%A4%B0%E0%A5%8D%E0%A4%AF%E0%A4%B8%E0%A5%8D%E0%A4%AF-%E0%A4%B8%E0%A5%8D%E0%A4%A4%E0%A5%8B%E0%A4%A4%E0%A5%8D/", "/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/shrIvaiShNava-kRtam/yAmunaH/stotra-ratnam/venkaTanAth-TikA.md")
+  meghamaalaa.dump_text("https://srivaishnavan.com/publications/meghamala/stotras/pillai-lokacharyar/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%B2%E0%A5%8B%E0%A4%95%E0%A4%BE%E0%A4%9A%E0%A4%BE%E0%A4%B0%E0%A5%8D%E0%A4%AF-%E0%A4%AA%E0%A4%9E%E0%A5%8D%E0%A4%9A%E0%A4%BE%E0%A4%B6%E0%A4%A4%E0%A5%8D/", "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/padyam/dAxiNAchAryAH/lokAchArya-panchAshat.md")
 
 
 def puraaNam():
@@ -239,15 +240,16 @@ def fix_text(dir_path):
   pass
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: meghamaalaa.fix_text(x, source_script=sanscript.DEVANAGARI), dry_run=False, silent_iteration=False)
 
+
+
 if __name__ == '__main__':
   pass
-  # lokaachaarya()
   # raamaayaNam()
   # bhagavad_vishayam()
-  # kaavyam()
+  kaavyam()
   # upanishat()
   # shriibhaashya()
   # fix_text("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/ma")
   # misc()
-  puraaNam()
+  # puraaNam()
   # rahasya()
