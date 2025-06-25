@@ -45,6 +45,7 @@ PUNCT = rf"[।॥{NON_DEV_PUNCT}]"
 
 TAMIL = "[ஂ-௺]"
 TAMIL_ENG_DIGITS = "[ஂ-௺0-9]" # \d matches ०-९ in py, but not in intellij!
+TAMIL_BLOCK = rf"(?<=^|\n)([^\n]*[ஂ-௺][^\n]*\n)+(?=$|\n)"
 
 DEVANAGARI_MANIPRAVALA_MID_K_L = f"(?<=[^\\s्])क(?={DEVANAGARI_MATRA}?ळ)"
 

@@ -4,7 +4,7 @@ from doc_curation import book_data
 
 
 def test_get_subunit_list():
-    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/vedaH/vAjasaneyi/shatapatha.json")
+    unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/vedaH/vAjasaneyi/mAdhyandina/shatapatha.json")
     assert book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]) == range(1, 15)
     assert book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[2]) == range(1, 7)
 

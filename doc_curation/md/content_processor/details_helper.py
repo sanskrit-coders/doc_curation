@@ -447,6 +447,13 @@ def detail_content_replacer_soup(detail_tag, replacement):
   summary.insert_after(f"\n\n{replacement}\n")
 
 
+def pattern_to_details(content, title="टीका", pattern=patterns.TAMIL_BLOCK):
+  def _detail_maker(match):
+    detail = Detail(title=title, content=match.group().strip())
+    return detail.to_md_html() + "\n\n"
+  content = regex.sub(pattern, _detail_maker, content)
+  return content
+
 def sections_to_details(content, pattern=r"(?<=\n|^)\#+ +(\S.+)\s+(\S[^\#<]+?)(?=[\#<]|$)"):
   def _detail_maker(match):
     detail = Detail(title=match.group(1), content=match.group(2).strip())

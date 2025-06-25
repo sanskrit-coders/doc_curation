@@ -67,11 +67,31 @@ def get_section(lines_in):
   lines_in_section = []
   remaining = []
   if len(lines) > 1:
-    # Below, we're careful to handle sections without titles - ie lines such as "##\n"
+    # Convert the iterator to a list immediately
     is_non_section_start = lambda line: not (line.strip() + " ").startswith(header_prefix)
-    section.lines = itertools.takewhile(is_non_section_start, lines[1:])
-    remaining = itertools.dropwhile(lambda line: is_non_section_start(line), lines[1:])
+    section.lines = list(itertools.takewhile(is_non_section_start, lines[1:]))
+    remaining = list(itertools.dropwhile(lambda line: is_non_section_start(line), lines[1:]))
   return (section, remaining)
+
+
+def repeat_sections_to_bold(content):
+  (lines_till_section, sections) = get_sections(content=content)
+  new_sections = []
+  for section in sections:
+    section_title = section.title.strip()
+    prev_title = None
+    if len(new_sections) > 0:
+      prev_title = new_sections[-1].title.strip()
+    if section_title != prev_title:
+      new_sections.append(section)
+    else:
+      new_sections[-1].lines.extend(["\n", "**%s**" % section_title, "\n"])
+      new_sections[-1].lines.extend(section.lines)
+
+  new_content = "\n".join(lines_till_section)
+  for section in new_sections:
+    new_content += section.to_md()
+  return new_content
 
 
 def split_to_sections(lines_in):
@@ -135,7 +155,7 @@ def drop_sections(md_file, title_condition):
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
-def derominize_section_numbers(content):
+def deromanize_section_numbers(content):
   lines = content.splitlines(keepends=False)
   outlines = []
   def deromanize(match):
@@ -146,6 +166,11 @@ def derominize_section_numbers(content):
     outline = regex.sub(r"^(#+) *([XIVxiv]+)[\.\s]+(.+)", deromanize, line)
     outlines.append(outline)
   return "\n".join(outlines)
+
+
+def denumerify_section_titles(content):
+  content = regex.sub(r"(?<=^|\n)(#+) *([\d०-९೦-೯]+)", r"\1", content)
+  return content
 
 
 def add_init_words_to_section_titles(md_file, num_words=2, title_post_processor=None, dry_run=False):

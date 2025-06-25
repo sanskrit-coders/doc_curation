@@ -1,4 +1,5 @@
 import regex
+from doc_curation.utils import sanskrit_helper
 
 
 def fix_iast_for_pdfs(text):
@@ -116,10 +117,7 @@ def fix_tables(text):
 
 def misc_manipravaala_typos(text):
   text = fix_dandas(text)
-  text = regex.sub("[ञनम](्[क-घ])\n", r"ङ\1", text)
-  text = regex.sub("[ङनम](्[च-झ])\n", r"ञ\1", text)
-  text = regex.sub("[ञङम](्[त-न])\n", r"न\1", text)
-  text = regex.sub("[ञनङ](्[प-म])\n", r"म्\1", text)
+  sanskrit_helper.fix_bad_anunaasikas(text)
   # text = regex.sub(":-", "--", text)
   text = regex.sub("(?<=[ँ-ॣ]):", "ः", text)
   text = regex.sub("(?<=[ँ-ॣ])[sS]", "ऽ", text)
@@ -127,6 +125,7 @@ def misc_manipravaala_typos(text):
 
 def misc_sanskrit_typos(text, strict=False):
   text = misc_manipravaala_typos(text=text)
+  text = sanskrit_helper.fix_anunaasikaadi(text=text)
   if strict:
     text = regex.sub("ळ", "ल", text)
     text = regex.sub("ढ़", "ढ", text)

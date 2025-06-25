@@ -10,8 +10,12 @@ def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVA
     from indic_transliteration import aksharamukha_helper
     if source_script.lower() == sanscript.TAMIL_SUB:
       text = sanscript.SCHEMES[sanscript.TAMIL].transliterate_subscripted(text=text, _to=dest_script)
-    dest_script = dest_script.capitalize()
-    c = aksharamukha_helper.transliterate_tamil(text=text, dest_script=dest_script)
+    if dest_script in [sanscript.OPTITRANS]:
+      c = aksharamukha_helper.transliterate_tamil(text=text, dest_script=sanscript.DEVANAGARI)
+      c = sanscript.transliterate(data=c, _from=sanscript.DEVANAGARI, _to=dest_script)
+    else:
+      dest_script = dest_script.capitalize()
+      c = aksharamukha_helper.transliterate_tamil(text=text, dest_script=dest_script)
   else:
     text = regex.sub(r"(?<=\+\+\+\()(.+?)(?=\)\+\+\+)", r"{{\1}}", text)
     # Quotes should not be mistaken for transliteration togglers. 
@@ -20,7 +24,8 @@ def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVA
     if sanscript.SCHEMES[source_script].is_roman:
       text = regex.sub(r"(?<=<details><summary>)(.*Eng.*)</summary>([\s\S]+?)(?=</details>)", r"{{\1}}</summary>{{\2}}", text)
     c = sanscript.transliterate(text, source_script, dest_script, suspend_on=set(("<", "{{")), suspend_off=set((">", "}}")))
-    c = sanscript.SCHEMES[dest_script].dot_for_numeric_ids(c)
+    if not sanscript.SCHEMES[dest_script].is_roman:
+      c = sanscript.SCHEMES[dest_script].dot_for_numeric_ids(c)
     c = c.replace("{{", "").replace("}}", "")
     c = c.replace("≫", ">")
   if dest_script == sanscript.DEVANAGARI:

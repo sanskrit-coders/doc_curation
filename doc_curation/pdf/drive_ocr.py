@@ -23,6 +23,8 @@ def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf", detext
   file_paths = [f for f in file_paths if not (str(f).endswith("_detexted.pdf") or str(f).endswith("_tiny.pdf"))]
   for file_path in file_paths:
     split_and_ocr_on_drive(pdf_path=str(file_path), small_pdf_pages=small_pdf_pages, detext=detext, google_key=google_key)
+  if dir_path.startswith("/media/vvasuki/vData/text/granthasangrahaH/"):
+    clear_tmp_files(base_dir="/media/vvasuki/vData/text/granthasangrahaH/")
 
  
 def split_and_ocr_on_drive(pdf_path,

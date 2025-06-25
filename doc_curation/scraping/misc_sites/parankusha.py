@@ -79,9 +79,8 @@ def deduce_text_name(browser, ordinal=None):
     return "%02d %s" % (ordinal, text_name)
 
 
-def get_output_path(text_name, outdir):
-  text_name_transliterated = sanscript.transliterate(data=text_name, _from=sanscript.DEVANAGARI,
-                                                     _to=sanscript.OPTITRANS)
+def get_output_path(text_name, outdir, source_script=sanscript.DEVANAGARI):
+  text_name_transliterated = content_processor.transliterate(text=text_name, source_script=source_script, dest_script=sanscript.OPTITRANS)
   return os.path.join(outdir, file_helper.clean_file_path(text_name_transliterated) + ".md")
 
 
@@ -94,6 +93,8 @@ def dump_to_file(browser, out_file_path, has_comment=False, text_name=None, star
     text = browse_get_text(browser, has_comment, source_script, start_nodes)
     if text_name is None:
       text_name = sanscript.transliterate(data=os.path.basename(out_file_path.replace(".md", "")), _from=sanscript.OPTITRANS,_to=sanscript.DEVANAGARI)
+    elif source_script != sanscript.DEVANAGARI:
+      text_name = content_processor.transliterate(text=text_name, source_script=source_script)
     md_file = MdFile(file_path=out_file_path)
     md_file.dump_to_file(metadata={"title": text_name}, content=text, dry_run=False)
   
@@ -144,7 +145,7 @@ def browse_nodes(browser, start_nodes, timeout=10):
 def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False, source_script=sanscript.DEVANAGARI):
   def _dump_text(browser, outdir, ordinal=None, has_comment=False, start_nodes=None):
     text_name = deduce_text_name(browser, ordinal)
-    out_file_path = get_output_path(text_name=text_name, outdir=outdir)
+    out_file_path = get_output_path(text_name=text_name, outdir=outdir, source_script=source_script)
     dump_to_file(browser=browser, has_comment=has_comment, out_file_path=out_file_path, text_name=text_name, start_nodes=start_nodes, source_script=source_script)
 
   browse_nodes(browser=browser, start_nodes=start_nodes)
