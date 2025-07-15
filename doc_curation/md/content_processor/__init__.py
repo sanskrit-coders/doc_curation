@@ -115,7 +115,7 @@ def get_quasi_section_int_map(content, pattern):
   
   :param content: 
   :param pattern: Pattern to find with an int id. Common patterns:
-      (?<=\n|^)([\d०-९೦-೯]+).+\n
+      (?<=\\n|^)([\\d०-९೦-೯]+).+\n
   :return: 
   """
   source_matches = list(regex.finditer(pattern, content))

@@ -35,6 +35,7 @@ def word_clouds():
 
 def dump_wordpress():
   wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-index/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/manasataramgini")
+  wordpress.scrape_index(url="https://vansatakopadaya.wordpress.com/index-of-all-posts/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/vansatakopadaya")
   wordpress.scrape_index(url="https://padmavajra.net/index-of-posts/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/padmavajra/")
   wordpress.scrape_index(url="https://vriitrahan.wordpress.com/2021/07/21/archive/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/vriitrahan/")
   wordpress.scrape_index(url="https://aryaakasha.com/unfiltered-archive/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/aryaakasha/")

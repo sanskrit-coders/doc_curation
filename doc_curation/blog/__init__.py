@@ -72,9 +72,8 @@ def get_post_metadata(soup):
         date_string = time_tag.text
       date = parser.parse(date_string, fuzzy=True)
     except parser.ParserError:
-      date_str = regex.search("\d+[-/]\d+[-/]\d+", time_tags[0].text).group()
-      date = parser.parse(date_str, dayfirst=True, fuzzy=True)
-  else:
+      date = None
+  if date is None:
     post_tags = get_tags_matching_css(soup=soup, css_selector_list=["article", ".post"])
     if len(post_tags) > 0:
       import datefinder

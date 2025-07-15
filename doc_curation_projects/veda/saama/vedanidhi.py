@@ -5,7 +5,7 @@ import regex
 from selenium.webdriver.support.select import Select
 
 from doc_curation.md.file import MdFile
-from doc_curation.scraping import vedanidhi
+from doc_curation.scraping.misc_sites import vedanidhi
 from doc_curation.scraping.html_scraper import selenium
 from indic_transliteration import sanscript
 

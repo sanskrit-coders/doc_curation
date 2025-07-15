@@ -49,7 +49,7 @@ class Detail(object):
     return Detail(title=title, content=detail_text)
 
 
-def interleave_from_file(md_files, source_file, dest_pattern="[^\d०-९೦-೯]([\d०-९೦-೯]+) *॥.*(?=\n|$)", source_pattern="(?<=\n|^)([\d०-९೦-೯]+).+\n", detail_title="English", overwrite=False, dry_run=False):
+def interleave_from_file(md_files, source_file, dest_pattern=r"[^\d०-९೦-೯]([\d०-९೦-೯]+) *॥.*(?=\n|$)", source_pattern=r"(?<=\n|^)([\d०-९೦-೯]+).+\n", detail_title="English", overwrite=False, dry_run=False):
   """
   
   :param md_file: 

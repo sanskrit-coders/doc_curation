@@ -186,7 +186,7 @@ def insert_page_breaks(content):
   return content
 
 
-def add_page_id_to_ref_ids(content, page_pattern="[\s\S]+?<dg (\d+)/>"):
+def add_page_id_to_ref_ids(content, page_pattern=r"[\s\S]+?<dg (\d+)/>"):
   """
   
   :param content: 

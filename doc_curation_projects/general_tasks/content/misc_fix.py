@@ -58,8 +58,8 @@ def misc_typos(dir_path):
 
 if __name__ == '__main__':
   # fix_audio_tags()
-  misc_typos("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/parameshvara-saMhitA/alt.txt")
-  # fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/non-india/lankA/articles/culture-pfaffenberger81.md")
+  # misc_typos("/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/18_sangrahaH")
+  fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAsaH/shlokashaH/bhagavad-gItA-parva/TIkA/bellamkoNDa-rAma-rAyaH/bhAShyopetA_bhagavadgItA")
   # section_fix()
 
 
