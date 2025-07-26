@@ -103,12 +103,8 @@ def insert_garani(dir_path):
   
 
 def set_id(dir_path):
-  mUla_md = MdFile(file_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/mUlam.md")
-  (_, content_mUla) = mUla_md.read()
-  matches = regex.finditer(r"(?<=\n)([०-९]+): +\n((.*\S.+\n)+)", content_mUla, overlapped=False)
-  id_mUla = {f"DP_{match.group(1)}": match.group(2) for match in matches}
-  logging.info(f"Got {len(id_mUla)} mUla entries")
-  
+  id_mUla = get_madurai_mUla()
+
   def match_id(content):
     best_id = None
     best_dist = 1
@@ -149,8 +145,64 @@ def set_id(dir_path):
   library.apply_function(fn=set_ids_for_file, dir_path=dir_path, file_pattern="**/*.md")
 
 
+def get_madurai_mUla():
+  mUla_md = MdFile(
+    file_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/mUlam.md")
+  (_, content_mUla) = mUla_md.read()
+  matches = regex.finditer(r"(?<=\n)([०-९]+): +\n((.*\S.+\n)+)", content_mUla, overlapped=False)
+  id_mUla = {f"DP_{match.group(1)}": match.group(2) for match in matches}
+  logging.info(f"Got {len(id_mUla)} mUla entries")
+  return id_mUla
+
+
+def update_content(dir_path):
+  id_mUla = get_madurai_mUla()
+  def update(detail_tag, *args, **kwargs):
+    detail = details_helper.Detail.from_soup_tag(detail_tag)
+    id_match = regex.findall(r"(DP_\S+)", detail.title)
+    if len(id_match) == 1:
+      id_ = id_match[0]
+      if "+++(" in detail.content:
+        logging.warning(f"Skipping {detail.title} - has +++")
+        return 
+      details_helper.detail_content_replacer_soup(detail_tag=detail_tag, replacement=id_mUla[id_])
+    else:
+      logging.warning(f"Could not match id for {detail.title}")
+  
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_detail_tags_with_soup(title_pattern="मूलम्.*|विश्वास-प्रस्तुतिः.*", content=c, transformer=update, metadata=m))
+
+
+def insert_hart(dir_path):
+  id_to_hart = {}
+  def get_hart(content):
+    matches = regex.finditer(r"(?<=\n)(\d+)\. (([^\d\n]*\S.+\n){2,}?)(?=\n\d|$)", content)
+    for match in matches:
+      text = match.group(2)
+      text = regex.sub(r"\n\s*", "  \n", text)
+      text = regex.sub(r"\.", ":", text)
+      id_dev = content_processor.transliterate(match.group(1), source_script=sanscript.IAST, dest_script=sanscript.DEVANAGARI)
+      id_to_hart[f"DP_{id_dev}"] = text
+    return None
+  
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/hart", content_transformer=lambda c, m: get_hart(c))
+
+  logging.info(f"Got {len(id_to_hart)} harts")
+  
+  def neighbor_maker(detail):
+    id_ = regex.findall(r"(DP_\S+)", detail.title)[0]
+    if id_ in id_to_hart:
+      new_detail = details_helper.Detail(title=f"Hart - {id_}", content=id_to_hart[id_])
+      return new_detail.to_soup()
+    else:
+      return None
+
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_detail_tags_with_soup(title_pattern="मूलम्.*DP_.+", content=c, metadata=m, transformer=details_helper.adjascent_inserter, neighbor_maker=neighbor_maker))
+
+
 if __name__ == '__main__':
   pass
   # insert_garani("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/4k-divya-prabandha/sarva-prastutiH/02_tiruppAvai_aNDaL_474_-503/_index.md")
   # from_garani("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/4k-divya-prabandha/sarva-prastutiH/20_tiruveLHuku.Rh.Rhirukkai_tirumangai-ALHvAr_2672")
-  set_id("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
+  # set_id("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
+  # update_content("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
+  insert_hart("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")

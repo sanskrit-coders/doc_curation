@@ -161,8 +161,18 @@ def transform_detail_tags_with_soup(content, metadata, transformer, title_patter
   for detail_tag in details:
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
     if regex.fullmatch(title_pattern, detail.title):
-      transformer(detail_tag, metadata)
+      transformer(detail_tag, metadata, *args, **kwargs)
   return content_processor._make_content_from_soup(soup=soup)
+
+
+def adjascent_inserter(detail_tag, metadata, neighbor_maker, inserter=PageElement.insert_after):
+  detail = Detail.from_soup_tag(detail_tag=detail_tag)
+  neighbor = neighbor_maker(detail)
+  if neighbor is None:
+    return 
+  inserter(detail_tag, "\n\n")
+  inserter(detail_tag, neighbor)
+  inserter(detail_tag, "\n\n")
 
 
 def transliterate_details(content, source_script, dest_script=sanscript.DEVANAGARI, title=None):

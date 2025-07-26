@@ -405,6 +405,8 @@ class MdFile(object):
     update_needed = False
     if content_transformer is not None:
       content_new = content_transformer(content, metadata, *args, **kwargs)
+      if content_new is None:
+        return 
       update_needed |= content.strip() != content_new.strip()
       content = content_new
     if metadata_transformer is not None:
