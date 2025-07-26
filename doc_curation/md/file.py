@@ -71,6 +71,7 @@ class MdFile(object):
           content = file.read()
         # logging.info((metadata, content))
         if metadata is None: metadata = {}
+    metadata['_file_path'] = self.file_path
     return (metadata, content)
 
   def _read_toml_md_file(self) -> Tuple[Dict, str]:
@@ -97,6 +98,7 @@ class MdFile(object):
           logging.warning("No front-matter found.")
           file.seek(0)
           content = file.read()
+    metadata['_file_path'] = self.file_path 
     return (metadata, content)
 
   def import_content_with_pandoc(self, content, source_format, dry_run, metadata={},
@@ -245,6 +247,8 @@ class MdFile(object):
     content = file_helper.clear_bad_chars(content)
     if len(metadata) > 0:
       metadata = order_metadata(metadata=metadata)
+      if "_file_path" in metadata:
+        del metadata["_file_path"]
       if self.frontmatter_type is None:
         self.frontmatter_type = MdFile.TOML  # Default
       if self.frontmatter_type == MdFile.YAML:

@@ -38,19 +38,19 @@ def fix_iast_for_pdfs(text):
   text = regex.sub(rf"(K\.)(?={patterns.LOWER_CASE_ISO})", "Ḳ", text)
   text = regex.sub(rf"(k\.)(?={patterns.LOWER_CASE_ISO})", "ḳ", text)
 
-  text = regex.sub("¯\s*a", "ā", text)
-  text = regex.sub("¯\s*i", "ī", text)
-  text = regex.sub("¯?ı", "ī", text)
-  text = regex.sub("¯\s*u", "ū", text)
+  text = regex.sub(r"¯\s*a", "ā", text)
+  text = regex.sub(r"¯\s*i", "ī", text)
+  text = regex.sub(r"¯?ı", "ī", text)
+  text = regex.sub(r"¯\s*u", "ū", text)
   text = regex.sub("¯r̥", "r̥̄", text)
   text = regex.sub("¯l̥", "l̥̄", text)
-  text = regex.sub("¯\s*A", "Ā", text)
-  text = regex.sub("¯\s*I", "Ī", text)
-  text = regex.sub("¯\s*U", "Ū", text)
+  text = regex.sub(r"¯\s*A", "Ā", text)
+  text = regex.sub(r"¯\s*I", "Ī", text)
+  text = regex.sub(r"¯\s*U", "Ū", text)
   
   # The below are rarer, so substituted later.
-  text = regex.sub("¯\s*e", "ē", text)
-  text = regex.sub("¯\s*o", "ō", text)
+  text = regex.sub(r"¯\s*e", "ē", text)
+  text = regex.sub(r"¯\s*o", "ō", text)
   text = regex.sub("l¯", "ḻ", text)
   text = regex.sub("n¯", "ṉ", text)
   text = regex.sub("N¯", "Ṉ", text)
@@ -72,9 +72,9 @@ def fix_iast_for_pdfs(text):
 def fix_google_ocr_devanaagarii(text, new_line_substitute="\n\n"):
   text = fix_dandas(text)
   text = regex.sub(r"(?<=\n)[\-=]+ *(?=\n)", "", text)
-  text = regex.sub("(?<=\n)([०-९\d]+) *(?=\n)", r"[[\1]]", text)
+  text = regex.sub(r"(?<=\n)([०-९\d]+) *(?=\n)", r"[[\1]]", text)
   text = regex.sub("(?<=[ँ-९]):", "ः", text)
-  text = regex.sub("(?<=\S ?)\n", new_line_substitute, text)
+  text = regex.sub(r"(?<=\S ?)\n", new_line_substitute, text)
   # text = regex.sub("(?<=[a-zA-Z])\- +(?=[a-zA-Z])", "", text)
   text = strip_word_continuation_dashes(text)
   return text
@@ -134,8 +134,8 @@ def misc_sanskrit_typos(text, strict=False):
   return text
 
 def fix_avagraha_quotations(text):
-  text = regex.sub("(?<=\s)ऽ", "\"", text)
-  text = regex.sub("ऽ(?=\s)", "\"", text)
+  text = regex.sub(r"(?<=\s)ऽ", "\"", text)
+  text = regex.sub(r"ऽ(?=\s)", "\"", text)
   return text
 
 def replace_casewise(text, pattern, replacement):
@@ -155,13 +155,15 @@ def fix_google_ocr_iast_iso(text):
   text = replace_casewise(text, "ḑ", "ḍ")
   text = replace_casewise(text, "ä|ă|å|Ã", "ā")
   text = replace_casewise(text, "ü|û", "ū")
+  text = replace_casewise(text, "õ", "ō")
   text = replace_casewise(text, "Ï|ī|î", "Ī")
-  text = regex.sub("(?<=[a-z])\- +(?=[a-z])", "", text)
+  text = replace_casewise(text, "ě", "ē")
+  text = regex.sub(r"(?<=[a-z])\- +(?=[a-z])", "", text)
   return text
 
 
 def strip_word_continuation_dashes(text):
-  text = regex.sub("(?<=\S)\- +(?=\S)", "", text)
+  text = regex.sub(r"(?<=\S)\- +(?=\S)", "", text)
   return text
 
 def fix_typos(text):
@@ -181,7 +183,7 @@ def fix_foxit(text):
 
 def fix_poppler_ocular(text):
   text = regex.sub(r"([ \-])\�(([क-ह]्)*([क-ह]))(?<![ा-ॏ])", r"\1\2ि", text)
-  text = regex.sub("(([क-ह]्)*([क-ह][ा-ॏ]?))\�(?=[ \-])", r"र्\1", text)
+  text = regex.sub(r"(([क-ह]्)*([क-ह][ा-ॏ]?))\�(?=[ \-])", r"र्\1", text)
   return text
 
 def fix_dangling_maatraas(text):
@@ -193,7 +195,7 @@ def fix_pandoc_md(text):
   text = regex.sub(r"\\\*", r"_", text)
   text = regex.sub(r"\\_", r"_", text)
   text = regex.sub("(?<=\n) +", "", text)
-  text = regex.sub("\*\*\*\*", "", text)
+  text = regex.sub(r"\*\*\*\*", "", text)
   from doc_curation.md.content_processor import space_helper
   text = space_helper.fix_markup(text=text)
   return text

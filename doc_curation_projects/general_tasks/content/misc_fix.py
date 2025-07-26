@@ -43,11 +43,11 @@ def misc_typos(dir_path):
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_anunaasikaadi(x, level=0), dry_run=False, silent_iteration=False)
 
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/strI-dharma-paddhatiH/leslie", content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_google_ocr_devanaagarii(x))
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.misc_sanskrit_typos(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.misc_sanskrit_typos(x))
 
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/social-cultivation/violence/articles/Sacred-ground_Bakker", content_transformer=lambda x, y: content_processor.fix_iast_gb(x))
@@ -58,8 +58,8 @@ def misc_typos(dir_path):
 
 if __name__ == '__main__':
   # fix_audio_tags()
-  # misc_typos("/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/18_sangrahaH")
-  fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAsaH/shlokashaH/bhagavad-gItA-parva/TIkA/bellamkoNDa-rAma-rAyaH/bhAShyopetA_bhagavadgItA")
+  # misc_typos("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/parichaya-sanxepAH/en/shrI-vaishNava-brAhmaNas_rangAchAri.md")
+  fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content/kauShItakam/brAhmaNopaniShat.md")
   # section_fix()
 
 

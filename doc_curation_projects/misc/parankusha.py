@@ -66,7 +66,13 @@ def shriibhaashyam(browser):
   # brahmasuutra(browser, author="श्रीरङ्गरामानुजाचार्याः", text_id="विषयवाक्य-दीपिका", sub_path="rangarAmAnujaH/viShaya-vAkya-dIpikA/")
   # brahmasuutra(browser, author="श्रीरङ्गरामानुजाचार्याः", text_id="भाव-प्रकाशिका", sub_path="rangarAmAnujaH/bhAva-prakAshikA/")
   # brahmasuutra(browser, author="सुदर्शनसूरिः", text_id="श्रुतप्रकाशिका", sub_path="sudarshana-sUriH/shruta-prakAshikA/mUlam_rA/")
+  # brahmasuutra(browser, author="சொக்கனாவூர் நரஸிம்ஹாசாரியார்", text_id="ஶ்ரீபாஷ்யார்த்ததீபிகை", sub_path="chokkanAvUr-narasiMhaH/")
 
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "சொக்கனாவூர் நரஸிம்ஹாசாரியார்", "ஶ்ரீபாஷ்யார்த்ததீபிகை", "expand:ஶ்ரீபாஷ்யார்த்ததீபிகை", "समन्वयः", "अयोग-व्यवच्छेदः", "जिज्ञासाधिकरणम्"], outdir="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/chokkanAvUr-narasiMhaH/1", source_script=sanscript.TAMIL)
+
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "சொக்கனாவூர் நரஸிம்ஹாசாரியார்", "ஶ்ரீபாஷ்யார்த்ததீபிகை", "expand:ஶ்ரீபாஷ்யார்த்ததீபிகை", "अविरोधः", "स्मृतिः", "स्मृत्यधिकरणम्"], outdir="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/chokkanAvUr-narasiMhaH/2", source_script=sanscript.TAMIL)
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "சொக்கனாவூர் நரஸிம்ஹாசாரியார்", "ஶ்ரீபாஷ்யார்த்ததீபிகை", "expand:ஶ்ரீபாஷ்யார்த்ததீபிகை", "साधनम्", "वैराग्यपादः", "तदन्तरप्रतिपत्त्यधिकरणम्"], outdir="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/chokkanAvUr-narasiMhaH/3", source_script=sanscript.TAMIL)
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "சொக்கனாவூர் நரஸிம்ஹாசாரியார்", "ஶ்ரீபாஷ்யார்த்ததீபிகை", "expand:ஶ்ரீபாஷ்யார்த்ததீபிகை", "प्राप्तिः-फलम्", "आवृत्तिपादः", "आवृत्त्यधिकरणम्"], outdir="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/chokkanAvUr-narasiMhaH/4", source_script=sanscript.TAMIL)
 
   arrangement.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH", overwrite=False, dry_run=False)
 
@@ -171,8 +177,10 @@ def stotra_misc(browser):
 
 def tattva_misc(browser):
   pass
-  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "लक्ष्मीपुरं श्रीनिवासाचार्याः", "मान-मेय-रहस्य-श्लोकवार्त्तिकम्", "expand:मान-मेय-रहस्य-श्लोकवार्त्तिकम्", "expand:प्रयोजनवाक्यार्थः", "प्रवृत्तिक्रमः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/mishram/mAna-meya-rahasya-shloka-vArttikam", ordinal_start=746, has_comment=True)
-  parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेङ्कटरमणार्याः", "सनातनविज्ञानसमुदयः", "expand:सनातनविज्ञानसमुदयः", "सनातनभौतिकविज्ञानम्"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/nyAya-vaisheShike/padArthAH/venkaTaramaNa-sanAtana-vijJNAna-samudayaH/", ordinal_start=None)
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "लक्ष्मीपुरं श्रीनिवासाचार्याः", "मान-मेय-रहस्य-श्लोकवार्त्तिकम्", "expand:मान-मेय-रहस्य-श्लोकवार्त्तिकम्", "expand:प्रयोजनवाक्यार्थः", "प्रवृत्तिक्रमः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/sAmya-vaiShamye/tattvam/sangrahaH/laxmIpura-shrInivAsa-mAna-meya-rahasya-shloka-vArttikam", ordinal_start=746, has_comment=True)
+  # En and kn translations of the above are mechanical, and bad as of 2025.
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "लक्ष्मीपुरं श्रीनिवासाचार्याः", "मान-मेय-रहस्य-श्लोकवार्त्तिकम् (कन्नड)", "expand:मान-मेय-रहस्य-श्लोकवार्त्तिकम् (कन्नड)", "expand:ಟೇಬಲ್", "ಒಳ್ಳೆಯದಾಗಲಿ!"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/sAmya-vaiShamye/tattvam/sangrahaH/laxmIpura-shrInivAsa-mAna-meya-rahasya-shloka-vArttikam/kn", source_script="kannada")
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेङ्कटरमणार्याः", "सनातनविज्ञानसमुदयः", "expand:सनातनविज्ञानसमुदयः", "सनातनभौतिकविज्ञानम्"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/nyAya-vaisheShike/padArthAH/venkaTaramaNa-sanAtana-vijJNAna-samudayaH/", ordinal_start=None)
 
 
 def upanishat(browser):
@@ -191,11 +199,11 @@ if __name__ == '__main__':
   # yaamuna_siddhitraya(browser)
   # raamaanuja_misc(browser)
   # deshika_misc(browser)
-  chillarai(browser)
+  # chillarai(browser)
   # deshika_tattvamuktaakalaapa()
   # stotra_misc()
   # deshika_rts(browser=browser)
-  # tattva_misc(browser=browser)
+  tattva_misc(browser=browser)
   # deshika_nyAyasiddhAnjanam()
   # upanishat(browser=browser)
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "निक्षेप-रक्षा", "expand:निक्षेप-रक्षा", "expand:उपोद्घातः", "उपोद्घातः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaiShNavaH/rAmAnuja-sampradAyaH/venkaTanAthaH/nixepa-raxA")

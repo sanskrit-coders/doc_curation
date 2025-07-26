@@ -1,8 +1,10 @@
+import logging
 import os
 
+import editdistance
 import regex
 
-from doc_curation.utils import sanskrit_helper
+from doc_curation.utils import sanskrit_helper, text_utils
 from curation_utils import file_helper
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import include_helper, footnote_helper, details_helper, section_helper
@@ -100,8 +102,55 @@ def insert_garani(dir_path):
   library.apply_function(fn=details_helper.interleave_from_file, dir_path=dir_path, source_file=lambda x: x.replace("_index", "garaNi"), detail_title=None, dest_pattern= "<details.+?summary>गरणि-प्रतिपदार्थः *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>गरणि-गद्यानुवादः *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
   
 
+def set_id(dir_path):
+  mUla_md = MdFile(file_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/mUlam.md")
+  (_, content_mUla) = mUla_md.read()
+  matches = regex.finditer(r"(?<=\n)([०-९]+): +\n((.*\S.+\n)+)", content_mUla, overlapped=False)
+  id_mUla = {f"DP_{match.group(1)}": match.group(2) for match in matches}
+  logging.info(f"Got {len(id_mUla)} mUla entries")
+  
+  def match_id(content):
+    best_id = None
+    best_dist = 1
+    def normalize_text(text):
+      text = regex.sub(r"\s+", "", text)
+      text = regex.sub(r"ऩ", "न", text)
+      return text
+    content = normalize_text(content)
+    for id_, text in id_mUla.items():
+      dist = text_utils.normalized_edit_distance(normalize_text(text), content, strip_svaras=False)
+      if dist < best_dist: 
+        best_id = id_
+        best_dist = dist
+    return best_id, best_dist
+
+  
+  def id_to_tag(detail_tag, *args, **kwargs):
+    detail = details_helper.Detail.from_soup_tag(detail_tag)
+    (id_, dist) = match_id(detail.content)
+    if dist > 0.3:
+      logging.warning(f"Could not match id for {detail.content.replace('\n', '  ')} - score {dist} for {id_mUla.get(id_, '')}")
+      return
+    title = detail_tag.select_one("summary").text
+    title_parts = regex.split(" *- *", title)
+    title = ' - '.join([title_parts[0], id_] + title_parts[1:])
+    detail_tag.select_one("summary").string = title
+    
+    
+  def set_ids_for_file(file_path):
+    md_file = MdFile(file_path=file_path)
+    (metadata, content) = md_file.read()
+    
+    # content = details_helper.transform_detail_tags_with_soup(title_pattern="मूलम्.*", content=content, transformer=id_to_tag, metadata=metadata)
+    content = details_helper.set_id_from_neighbor(target_title_pattern="विश्वास-प्रस्तुतिः.*", seek_before=False, content=content, )
+    content = details_helper.set_id_from_neighbor(target_title_pattern="गरणि-.*", seek_before=True, content=content, )
+    md_file.replace_content_metadata(new_content=content)
+  
+  library.apply_function(fn=set_ids_for_file, dir_path=dir_path, file_pattern="**/*.md")
+
 
 if __name__ == '__main__':
   pass
   # insert_garani("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/4k-divya-prabandha/sarva-prastutiH/02_tiruppAvai_aNDaL_474_-503/_index.md")
-  from_garani("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/4k-divya-prabandha/sarva-prastutiH/20_tiruveLHuku.Rh.Rhirukkai_tirumangai-ALHvAr_2672")
+  # from_garani("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/4k-divya-prabandha/sarva-prastutiH/20_tiruveLHuku.Rh.Rhirukkai_tirumangai-ALHvAr_2672")
+  set_id("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")

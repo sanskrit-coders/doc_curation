@@ -37,7 +37,7 @@ def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True,
   return title
 
 
-def normalized_edit_distance(a, b, strip_svaras):
+def normalized_edit_distance(a, b, strip_svaras=False):
   a = regex.sub(r"\s", "", a)
   b = regex.sub(r"\s", "", b)
   a = regex.sub(fr"{patterns.DEVANAGARI_DANDAS}|{patterns.DEVANAGARI_DIGITS}|\d|{patterns.PUNCT}", "", a)

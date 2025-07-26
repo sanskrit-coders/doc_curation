@@ -80,7 +80,10 @@ def deduce_text_name(browser, ordinal=None):
 
 
 def get_output_path(text_name, outdir, source_script=sanscript.DEVANAGARI):
-  text_name_transliterated = content_processor.transliterate(text=text_name, source_script=source_script, dest_script=sanscript.OPTITRANS)
+  if source_script is None:
+    text_name_transliterated = text_name
+  else:
+    text_name_transliterated = content_processor.transliterate(text=text_name, source_script=source_script, dest_script=sanscript.OPTITRANS)
   return os.path.join(outdir, file_helper.clean_file_path(text_name_transliterated) + ".md")
 
 
@@ -91,9 +94,9 @@ def dump_to_file(browser, out_file_path, has_comment=False, text_name=None, star
       logging.info("Skipping " + out_file_path)
   else:
     text = browse_get_text(browser, has_comment, source_script, start_nodes)
-    if text_name is None:
+    if text_name is None and source_script is not None:
       text_name = sanscript.transliterate(data=os.path.basename(out_file_path.replace(".md", "")), _from=sanscript.OPTITRANS,_to=sanscript.DEVANAGARI)
-    elif source_script != sanscript.DEVANAGARI:
+    elif source_script is not None and source_script != sanscript.DEVANAGARI:
       text_name = content_processor.transliterate(text=text_name, source_script=source_script)
     md_file = MdFile(file_path=out_file_path)
     md_file.dump_to_file(metadata={"title": text_name}, content=text, dry_run=False)
@@ -127,7 +130,7 @@ def browse_get_text(browser, has_comment, source_script, start_nodes):
             text += f"\n\n<details><summary>टीका</summary>\n\n{main_text}\n</details>\n\n"
         else:
           text += f"{main_text}\n\n"
-  if source_script != sanscript.DEVANAGARI:
+  if source_script is not None and source_script != sanscript.DEVANAGARI:
     text = content_processor.transliterate(text=text, source_script=source_script)
   return text
 

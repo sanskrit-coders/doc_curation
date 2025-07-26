@@ -1,5 +1,6 @@
 import logging
 
+from doc_curation import pdf
 from doc_curation.pdf import drive_ocr, image_ops
 
 # Remove all handlers associated with the root logger object.
@@ -25,7 +26,8 @@ if __name__ == '__main__':
     # drive_ocr.split_and_ocr_on_drive(pdf_path="/media/vvasuki/vData/text/granthasangrahaH/koshaH/upasarga-artha-candrika. vol. 1 (pra-sam).pdf", small_pdf_pages=10, detext=True, end_page=71)    
     # drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/koshaH/upasarga-artha-candrika. vol. 1 (pra-sam).pdf", small_pdf_pages=10, detext=False)
     # drive_ocr.split_and_ocr_all( dir_path="/media/vvasuki/vData/text/granthasangrahaH/vedAH/sb", small_pdf_pages=10, detext=False, )
-    drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/purANam", small_pdf_pages=10, detext=True, file_pattern="[!_]*.pdf")
+    # pdf.detext_via_jpg(input_file_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/shrIvaiShNavaH/yAmuna/AGAMA PRAMANYAM_sa.pdf")
+    drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/", small_pdf_pages=10, detext=True, file_pattern="[!_]*.pdf")
     
     # TODO
     # drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/mixed/jIvAnanda-vidyAsAgaraH", small_pdf_pages=10, detext=False, file_pattern="[!_]*.pdf")

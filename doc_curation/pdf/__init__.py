@@ -144,10 +144,12 @@ def images_to_pdf(image_dir, output_path):
     f.write(img2pdf.convert(imgs))
 
 
-def detext_via_jpg(input_file_path, output_file_path):
+def detext_via_jpg(input_file_path, output_file_path=None):
   image_directory = _get_ocr_dir(input_file_path, 1)
   os.makedirs(image_directory, exist_ok=True)
   dump_images(input_file_path, image_directory)
+  if output_file_path is None:
+    output_file_path = input_file_path.replace(".pdf", "_detexted.pdf")
   images_to_pdf(image_directory, output_file_path)
 
 

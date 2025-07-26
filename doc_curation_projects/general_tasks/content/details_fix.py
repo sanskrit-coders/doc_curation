@@ -40,7 +40,7 @@ def make_details(dir_path):
 def transform_details(dir_path):
   pass
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_detail_contents_with_soup(content=c, metadata=m, transformer=lambda c, m : "\n\n" + content_processor.transliterate(text=c, source_script="tamil"), title_pattern=".*(तमि|द्राविडी).*"))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, content_transformer=lambda c, m : "\n\n" + content_processor.transliterate(text=c, source_script="tamil"), title_pattern=".*(तमि|द्राविडी).*"))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_detail_contents_with_soup(content=c, metadata=m, transformer=tamil_nna_fixer, title_pattern="सा.*"))
 

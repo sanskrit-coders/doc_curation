@@ -24,6 +24,9 @@ class Detail(object):
     self.title = title
     self.content = content
 
+  def __str__(self):
+    return f"{self.title}: {self.content}"
+
   def to_md_html(self, attributes_str=None):
     if self.title is None:
       title = "Misc Detail"
@@ -44,6 +47,8 @@ class Detail(object):
 
   @classmethod
   def from_soup_tag(cls, detail_tag):
+    if detail_tag == None or detail_tag.name != "details":
+      return None
     title = detail_tag.select_one("summary").text.strip()
     detail_text = "".join([x.text for x in list(detail_tag.children)[1:]]).strip()
     return Detail(title=title, content=detail_text)
@@ -124,7 +129,7 @@ def interleave_from_file(md_files, source_file, dest_pattern=r"[^\d०-९೦-�
     logging.warning(f"Could not get indices in source: {missing_dest_indices}")
   
 
-def transform_detail_contents_with_soup(content, metadata, transformer, title_pattern=None, *args, **kwargs):
+def transform_details_with_soup(content, metadata, content_transformer=None, title_transformer=None, title_pattern=None, *args, **kwargs):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
     return content
@@ -135,10 +140,13 @@ def transform_detail_contents_with_soup(content, metadata, transformer, title_pa
   for detail_tag in details:
     if title_pattern is not None and not regex.fullmatch(title_pattern, detail_tag.select_one("summary").text):
       continue
-    for x in detail_tag.contents:
-      if isinstance(x, NavigableString):
-        x.replace_with(transformer(x, metadata, *args, **kwargs))
-    detail_tag.insert_after("\n")
+    if title_transformer is not None:
+      detail_tag.select_one("summary").text = title_transformer(detail_tag.select_one("summary").text)
+    if content_transformer is not None:
+      for x in detail_tag.contents:
+        if isinstance(x, NavigableString):
+          x.replace_with(content_transformer(x, metadata, *args, **kwargs))
+      detail_tag.insert_after("\n")
   return content_processor._make_content_from_soup(soup=soup)
 
 
@@ -166,7 +174,7 @@ def transliterate_details(content, source_script, dest_script=sanscript.DEVANAGA
       child.extract()
     list(detail_tag.children)[0].insert_after(new_text)
 
-  return transform_detail_contents_with_soup(content=content, metadata=None, title=title, transformer=transformer)
+  return transform_details_with_soup(content=content, metadata=None, title=title, content_transformer=transformer)
 
 def insert_duplicate_adjascent(content, metadata, old_title_pattern="मूलम्(.*)", new_title=r"विश्वास-प्रस्तुतिः\1", inserter=PageElement.insert_before, content_transformer=lambda x:x):
   if new_title in content:
@@ -379,6 +387,42 @@ def merge_successive(content, title_filter=".*"):
     prev_detail_tag = detail_tag
   content = content_processor._make_content_from_soup(soup=soup)
   content = _normalize_spaces(content)
+  return content
+
+def get_nieghbor_detail(detail_tag, seek_before=False):
+  """Gets the neighboring detail tag based on seek direction.
+
+  Args:
+      detail_tag: The BeautifulSoup detail tag to start from
+      seek_before: If True, look at previous siblings, else next siblings
+
+  Returns:
+      The neighboring Detail object or None if not found
+  """
+  if seek_before:
+    sibling = detail_tag.find_previous_sibling("details")
+  else:
+    sibling = detail_tag.find_next_sibling("details")
+  return sibling
+
+
+
+def set_id_from_neighbor(content, target_title_pattern=".*", ref_title_pattern="मूलम्.+", seek_before=True, metadata=None):
+  def copy_id(detail_tag, *args, **kwargs):
+    ref_detail_tag = get_nieghbor_detail(detail_tag, seek_before=seek_before)
+    ref_detail = Detail.from_soup_tag(detail_tag=ref_detail_tag)
+    while ref_detail is not None and ref_detail.title is not None and not regex.fullmatch(ref_title_pattern, ref_detail.title):
+      ref_detail_tag = get_nieghbor_detail(ref_detail_tag, seek_before=seek_before)
+      ref_detail = Detail.from_soup_tag(detail_tag=ref_detail_tag)
+
+    if ref_detail is None or not regex.fullmatch(ref_title_pattern, ref_detail.title):
+      ref_detail = None
+      return
+    detail = Detail.from_soup_tag(detail_tag=detail_tag)
+    base_title = detail.title.split(" - ")[0]
+    ids = ref_detail.title.split(" - ")
+    detail_tag.select_one("summary").string = " - ".join([base_title] + ids[1:])
+  content = transform_detail_tags_with_soup(title_pattern=target_title_pattern, content=content, transformer=copy_id, metadata=metadata)
   return content
 
 
