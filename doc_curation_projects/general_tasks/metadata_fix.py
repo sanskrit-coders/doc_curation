@@ -11,6 +11,7 @@ from indic_transliteration import sanscript
 
 
 def title_fix(dir_path, overwrite=True, dry_run=False):
+  arrangement.fix_index_files(dir_path=dir_path, overwrite=overwrite, dry_run=dry_run)
   ## DEVANAGARI
   # library.apply_function(dir_path=dir_path, fn=MdFile.ensure_ordinal_in_title, transliteration_target=sanscript.DEVANAGARI, dry_run=dry_run)
   library.apply_function(dir_path=dir_path, fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, overwrite=overwrite, dry_run=dry_run)
@@ -41,7 +42,7 @@ def title_fix(dir_path, overwrite=True, dry_run=False):
 
 
 if __name__ == '__main__':
-  title_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/mAdhva-sampradAyaH/tattvam/vijayIndra-tIrthAH/sarva-siddhAnta-sAra-vivechanam", overwrite=True, dry_run=False)
+  title_fix("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/kAThakam/mUlam", overwrite=True, dry_run=False)
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/brAhmaNam/sarva-prastutiH/1/", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False, overwrite=False)
 
   # library.apply_function(

@@ -45,7 +45,7 @@ def from_garani(dir_path):
 
   # return
 
-# TODO: Manually ensure stray &.t, < and > characters don't exist, lest the mess with details tag processing.
+  # TODO: Manually ensure stray &.t, < and > characters don't exist, lest the mess with details tag processing.
   
   
   # devanaagarify(dir_path, source_script=sanscript.KANNADA)
@@ -59,7 +59,7 @@ def from_garani(dir_path):
   # Check shataka separation manually TODO
   library.apply_function(fn=MdFile.split_to_bits, dir_path=dir_path, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, title_index_pattern=None) # 
 
-  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["(?<=\n)[०-९]+\..+\n+(?=[०-९]+\.)"], replacement="")
+  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\n)[०-९]+\..+\n+(?=[०-९]+\.)"], replacement="")
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[" (ऱ|न्द)"], replacement=r"\1")
 
 
@@ -70,10 +70,10 @@ def from_garani(dir_path):
   # TODO: Note that the above will fail in case of lines split by page breaks. That will need to be resolved manually.
   
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=</details>\n)\s*(\S.+?)(?=\n|$)"], replacement=r"\n<details><summary>गरणि-गद्यानुवादः</summary>\n\n\1\n</details>\n\n")
-  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["(?<=</details>\n)\s*(\S[^<#]+?)\s*(?=\n[०-९]+\.|$|\nअडिय *नड)"], replacement=r"\n<details><summary>गरणि-विस्तारः</summary>\n\n\1\n</details>\n\n")
+  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=</details>\n)\s*(\S[^<#]+?)\s*(?=\n[०-९]+\.|$|\nअडिय *नड)"], replacement=r"\n<details><summary>गरणि-विस्तारः</summary>\n\n\1\n</details>\n\n")
   # TODO: Look for गरणि-विस्तारः.+[^<]+?\\\([०-१\d] to find missing/ misplaced गरणि-गद्यानुवादः sections?
 
-  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["(?<=\n)अडिय *नडॆ[ \-]+(.+)(?=\n)"], replacement=r"\n<details><summary>गरणि-अडियनडे</summary>\n\n\1\n</details>\n")
+  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\n)अडिय *नडॆ[ \-]+(.+)(?=\n)"], replacement=r"\n<details><summary>गरणि-अडियनडे</summary>\n\n\1\n</details>\n")
 
   def _make_viprastuti(match):
     text = match.group(2)
@@ -85,7 +85,7 @@ def from_garani(dir_path):
     index = sanscript.transliterate(index, _from=sanscript.IAST, _to=sanscript.DEVANAGARI)
     return f"## {index}\n{detail_vi.to_md_html()}\n\n{detail_mu.to_md_html()}\n\n"
 
-  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["(?<=\n|^)([०-९]+)\.\s*(\S[^<]+?)\s*(?=<details><summary>गरणि-प्रतिपदार्थः)"], replacement=_make_viprastuti)
+  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\n|^)([०-९]+)\.\s*(\S[^<]+?)\s*(?=<details><summary>गरणि-प्रतिपदार्थः)"], replacement=_make_viprastuti)
 
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.merge_successive(content=c,  title_filter="गरणि.*"))
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.autonumber_details(content=c))
@@ -99,8 +99,19 @@ def insert_garani(dir_path):
   # library.apply_function(fn=details_helper.interleave_from_file, dir_path=dir_path, source_file=lambda x: x.replace("_index", "garaNi"), detail_title=None, dest_pattern= "<details.+?summary>विश्वास-प्रस्तुतिः *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>मूलम् *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
   # library.apply_function(fn=details_helper.interleave_from_file, dir_path=dir_path, source_file=lambda x: x.replace("_index", "garaNi"), detail_title=None, dest_pattern= "<details.+?summary>मूलम् *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>गरणि-विस्तारः *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
   # library.apply_function(fn=details_helper.interleave_from_file, dir_path=dir_path, source_file=lambda x: x.replace("_index", "garaNi"), detail_title=None, dest_pattern= "<details.+?summary>मूलम् *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>गरणि-प्रतिपदार्थः *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
-  library.apply_function(fn=details_helper.interleave_from_file, dir_path=dir_path, source_file=lambda x: x.replace("_index", "garaNi"), detail_title=None, dest_pattern= "<details.+?summary>गरणि-प्रतिपदार्थः *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>गरणि-गद्यानुवादः *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
+  library.apply_function(fn=details_helper.interleave_from_file, md_files=dir_path, source_file=lambda x: x.replace("_index", "garaNi"), detail_title=None, dest_pattern= r"<details.+?summary>गरणि-प्रतिपदार्थः *- *(\S+)</summary>[\s\S]+?</details>\n", source_pattern= r"<details.+?summary>गरणि-गद्यानुवादः *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
   
+
+def insert_uv(dest_dir):
+  # library.apply_function(fn=details_helper.interleave_from_file, dir_path=dest_dir, source_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/mUlam_UV.md", detail_title=None, dest_pattern= "<details.+?summary>विश्वास-प्रस्तुतिः *- *DP_([०-९]+).*?</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>मूलम् \(विभक्तम्\) *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
+
+  # details_helper.interleave_from_file(md_files=dest_dir, source_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/mUlam_UV.md", detail_title=None, dest_pattern= "<details.+?summary>मूलम् *- *DP_([०-९]+).*?</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>अर्थः \(UV\) *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
+
+  # details_helper.interleave_from_file(md_files=dest_dir, source_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/mUlam_UV.md", detail_title=None, dest_pattern= "<details.+?summary>मूलम् *- *DP_([०-९]+).*?</summary>[\s\S]+?</details>\n", source_pattern= "<details.+?summary>Info *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
+
+
+  details_helper.interleave_from_file(md_files=MdFile("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/mUlam_UV.md"), source_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/synonyms_ta.md", detail_title=None, dest_pattern= r"<details.+?summary>मूलम् \(UV\) *- *([०-९]+).*?</summary>[\s\S]+?</details>\n", source_pattern= r"<details.+?summary>प्रतिपदार्थः \(UV\) *- *(\S+)</summary>[\s\S]+?</details>\n", dry_run=False)
+
 
 def set_id(dir_path):
   id_mUla = get_madurai_mUla()
@@ -205,4 +216,6 @@ if __name__ == '__main__':
   # from_garani("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/4k-divya-prabandha/sarva-prastutiH/20_tiruveLHuku.Rh.Rhirukkai_tirumangai-ALHvAr_2672")
   # set_id("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
   # update_content("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
-  insert_hart("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
+  # insert_hart("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
+  insert_uv("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
+  

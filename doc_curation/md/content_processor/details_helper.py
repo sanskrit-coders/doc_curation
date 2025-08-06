@@ -11,6 +11,7 @@ import doc_curation.md.content_processor.space_helper
 import regex
 
 from doc_curation.utils import patterns
+from doc_curation.md import library
 from doc_curation.md.content_processor import get_quasi_section_int_map
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
@@ -68,6 +69,10 @@ def interleave_from_file(md_files, source_file, dest_pattern=r"[^\d०-९೦-�
   :param dry_run: Boolean
   :return: 
   """
+  if isinstance(md_files, str):
+    md_files = library.get_md_files_from_path(dir_path=md_files, file_pattern="**/*.md")
+  elif isinstance(md_files, MdFile):
+    md_files = [md_files]
   def _get_source_matches(source_file):
     if not os.path.exists(source_file):
       logging.warning("Source %s does not exist!", source_file)

@@ -6,7 +6,7 @@ from doc_curation.md.file import MdFile
 from doc_curation.scraping.misc_sites import ebhaarati
 from doc_curation.utils import patterns, sanskrit_helper
 from indic_transliteration import tamil_tools, aksharamukha_helper, sanscript
-
+from indic_transliteration.sanscript.schemes.brahmic import accent
 
 def transformer(x):
   # x = doc_curation.md.content_processor.space_helper.dehyphenate_sanskrit_line_endings(x)
@@ -15,7 +15,7 @@ def transformer(x):
   return x
 
 def line_breaker(x):
-  return regex.sub("(?<=\S)(?=\n)", "  ", x)
+  return regex.sub(r"(?<=\S)(?=\n)", "  ", x)
 
 
 def make_details(dir_path):
@@ -40,7 +40,9 @@ def make_details(dir_path):
 def transform_details(dir_path):
   pass
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, content_transformer=lambda c, m : "\n\n" + content_processor.transliterate(text=c, source_script="tamil"), title_pattern=".*(तमि|द्राविडी).*"))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, content_transformer=lambda c, m : "\n\n" + content_processor.transliterate(text=c, source_script="tamil"), title_pattern=".*(तमि|द्राविडी).*"))
+
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, content_transformer=lambda c, m : accent.to_US_accents(text=c, pauses=r"[।॥]+"), title_pattern="विश्वास-प्रस्तुतिः.*"))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_detail_contents_with_soup(content=c, metadata=m, transformer=tamil_nna_fixer, title_pattern="सा.*"))
 
@@ -52,6 +54,6 @@ def transform_details(dir_path):
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_detail_contents_with_soup(content=c, metadata=m, transformer=tamil_nna_fixer, title_pattern="विश्वास-प्रस्तुतिः.*|मूलम्.*"))
 
 if __name__ == '__main__':
-  make_details(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/hAritaH/vRddhA")
-  # transform_details(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/paippalAdam/prashnopaniShat/shankaraH.md")
+  # make_details(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/hAritaH/vRddhA")
+  transform_details(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH/1/7_aiShTika-yAjamAnAdi/02_iDopAhvAnabrAhmaNam.md")
   pass

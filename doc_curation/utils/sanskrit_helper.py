@@ -11,7 +11,8 @@ def deduce_root(text):
 
 def fix_bad_anunaasikas(text):
   # Beware of निम्न नृम्ण, गम्यते, तन्मध्य, अस्मिन्काले, मृण्मय, प्राङ्मुखं etc.. - so can't do - r"(?<!्)म्(\**[क-नय-ह])": r"ं\1" etc..
-  replacements = {r"[ञणम](्[क-घ])": r"ङ\1", r"[ङनणम](्[च-झ])": r"ञ\1", r"[ञङनम](्[ट-ढ])": r"ण\1", r"म्([श])": r"ं\1", r"ं$": "म्", r"ं(\**\s*[अ-औ।॥])": r"म्\1", r"म्(\**\s+[क-नय-ह])": r"ं\1", }
+  replacements = {r"[ञणम](्[क-घ])": r"ङ\1", r"[ङनणम](्[च-झ])": r"ञ\1", r"[ञङनम](्[ट-ढ])": r"ण\1", r"म्([श])": r"ं\1",
+                  r"ं$": "म्", r"ं(\**\s*[अ-औ।॥])": r"म्\1", r"म्(\**\s+[क-नय-ह])": r"ं\1", }
   c = text
   for pattern, replacement in replacements.items():
     c = regex.sub(pattern, replacement, c)
@@ -27,7 +28,10 @@ def fix_lazy_anusvaara(text, script=sanscript.DEVANAGARI):
 
 
 def fix_bad_visargas(text):
-  replacements = {r"(?<=[ि-ौ])ः(?=\s+[अ-औगघङजझञदधनडढणबभमयलवह])": r"र्", r"(?<=[ा])ः(?=\s+[अ-औगघङजझञदधनडढणबभमयरलवह])": r"", r"(?<=[क-ह])ः(\s+)अ": r"ो\1ऽ", r"ः(?=\s+[चछ])": r"श्", r"ः(?=\s+[टठ])": r"ष्", r"ः(?=\s+[तथ])": r"स्", r"(?<=[क-ह])ः(?=\s+[आ-औ])": r"", r"(?<=[क-ह])ः(?=\s*ऽ)": r"ो", }
+  replacements = {r"(?<=[ि-ौ])ः(?=\s+[अ-औगघङजझञदधनडढणबभमयलवह])": r"र्",
+                  r"(?<=[ा])ः(?=\s+[अ-औगघङजझञदधनडढणबभमयरलवह])": r"", r"(?<=[क-ह])ः(\s+)अ": r"ो\1ऽ",
+                  r"ः(?=\s+[चछ])": r"श्", r"ः(?=\s+[टठ])": r"ष्", r"ः(?=\s+[तथ])": r"स्",
+                  r"(?<=[क-ह])ः(?=\s+[आ-औ])": r"", r"(?<=[क-ह])ः(?=\s*ऽ)": r"ो", }
   c = text
   for pattern, replacement in replacements.items():
     c = regex.sub(pattern, replacement, c)
@@ -35,7 +39,42 @@ def fix_bad_visargas(text):
 
 
 def fix_bad_vyanjanaantas(text):
-  replacements = {r"त्(?=\s+[चछ])": r"च्", r"त्(?=\s+[जझ])": r"ज्", r"त्(?=\s+[टठ])": r"ट्", r"त्(?=\s+[डढ])": r"ड्", r"त्(?=\s+[अ-औगघदधबभयरलव])": r"द्", r"त्(?=\s+[मन])": r"न्"}
+  replacements = {r"त्(?=\s+[चछ])": r"च्", r"त्(?=\s+[जझ])": r"ज्", r"त्(?=\s+[टठ])": r"ट्", r"त्(?=\s+[डढ])": r"ड्",
+                  r"त्(?=\s+[अ-औगघदधबभयरलव])": r"द्", r"त्(?=\s+[मन])": r"न्"}
+  c = text
+  for pattern, replacement in replacements.items():
+    c = regex.sub(pattern, replacement, c)
+  return c
+
+
+def fix_svara_typos(text):
+  SVARAS = "[॒᳕॑꣡]"
+  replacements = {
+    r"(॒){2,}": r"॒", r"(॑){2,}": r"॑",  
+    rf"({SVARAS})(ँ)+\1?": r"\2\1",
+    r"(?<![यलव]्)ँ([॒॑]?)([यलव])्": r"\1\2्ँ",
+    r"([यलव]्ँ)(वै|वा अ|य॒ज्ञ|वाव |लो॒क)": r"\1 \2",  
+    "": "३॒॑", "": "१॒॑", "": "ᳶ", "": r"ँ", "": r"॑",
+  }
+  c = text
+  for pattern, replacement in replacements.items():
+    c = regex.sub(pattern, replacement, c)
+  return c
+
+def undo_taittirIya_forms(text):
+  SP_QUOT = r"[\s\"',;*]*"
+  SVARAS = "[॒᳕॑꣡]"
+  # Bad replacements 
+  # पृथग्ग्रहणम् rf"({SVARAS}?)ग्ग्\1": r"ँ\1",
+  
+  replacements = {
+    r"[᳚᳛]": r"॑", r"२?[ꣲ-ꣷ]": r"ँ", r"ग्ं": r"ँ", rf"({SVARAS})(ग्)?ग्\1": r"ँ\1", 
+    rf"ख्({SP_QUOT}[सष])": r"क्\1", rf"थ्({SP_QUOT}[सष])": r"त्\1", rf"फ्({SP_QUOT}[सष])": r"प्\1",
+    fr"({SVARAS})र्\1": r"\1र्",
+    rf"(न्)?न्({SVARAS})": r"\2न्", rf"न्न्({SVARAS}?){SP_QUOT}।": r"\1न् ।",
+    rf"({SVARAS})(\S्)\1": r"\1\2", 
+  }
+  # To test - "(॑|॒)(\S्)+\1": r"\1\2"
   c = text
   for pattern, replacement in replacements.items():
     c = regex.sub(pattern, replacement, c)
@@ -43,7 +82,8 @@ def fix_bad_vyanjanaantas(text):
 
 
 def fix_yaNs(text):
-  replacements = { r"[ुू](?=\s+[अ-ईऋ-औ])": r"्व्", r"[िी](?=\s+[अआउ-औ])": r"्य्", r"[ृॄ](?=\s+[अ-ऊऌ-औ])": r"्र्", r"[ॢॣ](?=\s+[अ-ॠए-औ])": r"्ल्", }
+  replacements = {r"[ुू](?=\s+[अ-ईऋ-औ])": r"्व्", r"[िी](?=\s+[अआउ-औ])": r"्य्", r"[ृॄ](?=\s+[अ-ऊऌ-औ])": r"्र्",
+                  r"[ॢॣ](?=\s+[अ-ॠए-औ])": r"्ल्", }
   c = text
   for pattern, replacement in replacements.items():
     c = regex.sub(pattern, replacement, c)
@@ -59,11 +99,14 @@ def fix_anunaasikaadi(text, level=0):
     text = fix_bad_vyanjanaantas(text)
   return text
 
+
 def numerify_shloka_numbering(text, encoding="कखगघङचछजझञ"):
   def transformer(match):
     return "॥%s.%d॥" % (match.group(1), encoding.index(match.group(2)) + 1)
+
   c = regex.sub(r"॥ *(\d+)[ (]*([%s])[ )]*॥" % encoding, transformer, text)
   return c
+
 
 def undo_gretil_analysis(text):
   """
