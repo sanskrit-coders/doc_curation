@@ -52,7 +52,7 @@ if __name__ == '__main__':
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/pAdma-saMhitA", content_transformer=lambda x, y: sanskrit_helper.fix_anunaasikaadi(x), dry_run=False, silent_iteration=False)
 
-  # ocr_fix_dev("/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/nyAya-vaisheShike/aNNam-bhaTTaH_tarkasangrahaH/TIkA-mUlAni/sa/ranganAthAdi-nyAya-pradIpaH.md", new_line_substitute="\n\n")
+  ocr_fix_dev("/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/nibandhaH/vaidya-nAtha-smRti-muktAphalam/sarva-prastutiH/2.md", new_line_substitute="\n\n")
   # fix_en_ocr("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/paramparA/articles/shAttAdas_Lester.md")
   # ocr_fix_iast("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/govindaH_yati-dharma-samuchchayaH/en.md")
   # foxit_ocr_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/svAmi-nArAyaNa-sampradAyaH/vaDatAla-paramparA/darshana-sAra-sangrahaH")

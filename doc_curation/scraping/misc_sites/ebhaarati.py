@@ -93,7 +93,7 @@ def get_metadata(url):
   soup = scraping.get_soup(url=url)
   metadata = {}
   for detail_tag in soup.select(".product__info__main h5"):
-    detail_parts = regex.split("\s*:\s*", detail_tag.text)
+    detail_parts = regex.split(r"\s*:\s*", detail_tag.text)
     key = detail_parts[0].lower().strip()
     value = ":".join(detail_parts[1:]).strip()
     if detect.detect(text=value) == sanscript.DEVANAGARI:

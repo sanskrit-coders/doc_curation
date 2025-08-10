@@ -134,14 +134,15 @@ def interleave_from_file(md_files, source_file, dest_pattern=r"[^\d०-९೦-�
     logging.warning(f"Could not get indices in source: {missing_dest_indices}")
   
 
-def transform_details_with_soup(content, metadata, content_transformer=None, title_transformer=None, title_pattern=None, *args, **kwargs):
+def transform_details_with_soup(content, metadata, content_transformer=None, title_transformer=None, title_pattern=None, details_css="body>details", *args, **kwargs):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
     return content
   soup = content_processor._soup_from_content(content=content, metadata=metadata)
   if soup is None:
     return content
-  details = soup.select("body>details")
+  # Note - fixes only top level details
+  details = soup.select(details_css)
   for detail_tag in details:
     if title_pattern is not None and not regex.fullmatch(title_pattern, detail_tag.select_one("summary").text):
       continue

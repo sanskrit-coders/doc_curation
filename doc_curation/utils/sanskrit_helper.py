@@ -1,5 +1,9 @@
 import regex
 from indic_transliteration import sanscript, sacred_texts_scheme
+from indic_transliteration.sanscript.schemes.brahmic import accent
+from indic_transliteration.sanscript.schemes.brahmic.accent import ACCENTS_PATTERN
+
+
 
 
 def deduce_root(text):
@@ -48,13 +52,12 @@ def fix_bad_vyanjanaantas(text):
 
 
 def fix_svara_typos(text):
-  SVARAS = "[॒᳕॑꣡]"
   replacements = {
     r"(॒){2,}": r"॒", r"(॑){2,}": r"॑",  
-    rf"({SVARAS})(ँ)+\1?": r"\2\1",
+    rf"({ACCENT_PATTERN})(ँ)+\1?": r"\2\1",
     r"(?<![यलव]्)ँ([॒॑]?)([यलव])्": r"\1\2्ँ",
-    r"([यलव]्ँ)(वै|वा अ|य॒ज्ञ|वाव |लो॒क)": r"\1 \2",  
-    "": "३॒॑", "": "१॒॑", "": "ᳶ", "": r"ँ", "": r"॑",
+    r"([यलव]्ँ)(वै|वा अ|य॒?ज्ञ|वाव |लो॒?क)": r"\1 \2",  
+    "": "३॒॑", "": "१॒॑", "": "ᳶ", r"[]": r"ँ", "": r"॑",
   }
   c = text
   for pattern, replacement in replacements.items():
@@ -63,16 +66,15 @@ def fix_svara_typos(text):
 
 def undo_taittirIya_forms(text):
   SP_QUOT = r"[\s\"',;*]*"
-  SVARAS = "[॒᳕॑꣡]"
   # Bad replacements 
-  # पृथग्ग्रहणम् rf"({SVARAS}?)ग्ग्\1": r"ँ\1",
+  # पृथग्ग्रहणम् rf"({ACCENT_PATTERN}?)ग्ग्\1": r"ँ\1",
   
   replacements = {
-    r"[᳚᳛]": r"॑", r"२?[ꣲ-ꣷ]": r"ँ", r"ग्ं": r"ँ", rf"({SVARAS})(ग्)?ग्\1": r"ँ\1", 
+    r"[᳚᳛]": r"॑", r"२?[ꣲ-ꣷ]": r"ँ", r"ग्ं": r"ँ", rf"({ACCENT_PATTERN})(ग्)?ग्\1": r"ँ\1", 
     rf"ख्({SP_QUOT}[सष])": r"क्\1", rf"थ्({SP_QUOT}[सष])": r"त्\1", rf"फ्({SP_QUOT}[सष])": r"प्\1",
-    fr"({SVARAS})र्\1": r"\1र्",
-    rf"(न्)?न्({SVARAS})": r"\2न्", rf"न्न्({SVARAS}?){SP_QUOT}।": r"\1न् ।",
-    rf"({SVARAS})(\S्)\1": r"\1\2", 
+    fr"({ACCENT_PATTERN})र्\1": r"\1र्",
+    rf"(न्)?न्({ACCENT_PATTERN})": r"\2न्", rf"न्न्({ACCENT_PATTERN}?){SP_QUOT}।": r"\1न् ।",
+    rf"({ACCENT_PATTERN})(\S्)\1": r"\1\2", 
   }
   # To test - "(॑|॒)(\S्)+\1": r"\1\2"
   c = text
