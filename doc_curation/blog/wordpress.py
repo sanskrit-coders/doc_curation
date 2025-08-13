@@ -34,7 +34,7 @@ def scrape_index(url, dir_path, dry_run=False):
 
 
 def month_str_from_url(url):
-  match = regex.match(".+/(2\d\d\d/\d\d)/", url)
+  match = regex.match(r".+/(2\d\d\d/\d\d)/", url)
   if match is None:
     return None
   return match.group(1)
