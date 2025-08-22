@@ -19,8 +19,10 @@ def dump_item(item_url, outfile_path, title_maker):
     md = md.replace("\n  \n", "\n\n")
     md = regex.sub("\n{3, 13}", "\n\n", md)
     md = sanscript.transliterate(md, sanscript.IAST, sanscript.DEVANAGARI)
+    if "rAmAyaNa" in outfile_path and "राम" not in md:
+      return None
     return md
 
-  souper.dump_text_from_element(url=item_url, outfile_path=outfile_path, text_css_selector="div.content", title_maker=title_maker, title_prefix="", html_fixer=html_fixer, md_fixer=md_fixer, dry_run=False)
+  souper.dump_text_from_element(url=item_url, outfile_path=outfile_path, text_css_selector="div.field-content", title_maker=title_maker, title_prefix="", html_fixer=html_fixer, md_fixer=md_fixer, dry_run=False)
 
 

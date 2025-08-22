@@ -146,6 +146,9 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_maker=lam
   if md_fixer is not None:
     # md_fixer may fix footnote markers as well. So it should be called earlier.
     content = md_fixer(content)
+    if content is None:
+      logging.warn(f"Skipping {outfile_path} from {url}")
+      return 
 
   if footnote_definier is not None:
     footnote_md = footnote_definier(unaltered_soup)

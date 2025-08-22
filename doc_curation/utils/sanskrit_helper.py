@@ -54,8 +54,9 @@ def fix_bad_vyanjanaantas(text):
 def fix_svara_typos(text):
   replacements = {
     r"(॒){2,}": r"॒", r"(॑){2,}": r"॑",  
-    rf"({ACCENT_PATTERN})(ँ)+\1?": r"\2\1",
-    r"(?<![यलव]्)ँ([॒॑]?)([यलव])्": r"\1\2्ँ",
+    rf"({ACCENTS_PATTERN})(ँ)+\1?": r"\2\1",
+    rf"(?<![यलव]्)(ँ{ACCENTS_PATTERN}?)([यलव]्)": r"\2\1",
+    rf"({ACCENTS_PATTERN})([यलव]्ँ)": r"\2\1",
     r"([यलव]्ँ)(वै|वा अ|य॒?ज्ञ|वाव |लो॒?क)": r"\1 \2",  
     "": "३॒॑", "": "१॒॑", "": "ᳶ", r"[]": r"ँ", "": r"॑",
   }

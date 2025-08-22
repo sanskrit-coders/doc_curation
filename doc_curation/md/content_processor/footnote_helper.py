@@ -95,6 +95,8 @@ def fix_intra_word_footnotes(content, *args, **kwargs):
 
 PLAIN_FN_REF_GUTEN = r"\[\\\[(\d+)\\\]\]\(#Foot.+?\)"
 PLAIN_FN_DEF_GUTEN = r"\[\\\[(\d+)\\\]\]\(#FN.+?\)"
+PLAIN_FN_REF_2SQ = r"\[\\?\[(\d+)\\?\]\]\(#.+?\)"
+PLAIN_FN_DEF_2SQ = r"(?<=\n)\[\\?\[(\d+)\\?\]\]\(#.+?\)"
 
 def fix_plain_footnotes(content, def_pattern="(?<=\n)(\d+)\.?(?= )", def_replacement_pattern=r"[^\1]:", ref_pattern=r"(?<=[^\s\d\^\-,\(\);:])(\d+)(?=\D)"):
   """
