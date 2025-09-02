@@ -44,7 +44,7 @@ def dump_wordpress():
 
 def dump_wordpress_monthly():
 
-  init_year_month_str = "2024/10"
+  init_year_month_str = "2025/07"
   wordpress.scrape_monthly_indexes(url="https://dothemath.ucsd.edu/", dir_path=f"{BASE_PATH}/weblogs/non-hindu/doTheMath", init_year_month_str=init_year_month_str, dry_run=False)
 
   # Slow scan
@@ -101,9 +101,9 @@ def dump_substack():
 
 
 def dump_mags():
-  # sambhashana_sandesha.dump_year(year=2023, dest_path=f"{BASE_PATH}/mags/saMbhAShaNa-sandesha")
+  sambhashana_sandesha.dump_year(year=2023, dest_path=f"{BASE_PATH}/mags/saMbhAShaNa-sandesha")
   # sambhashana_sandesha.dump_year(year=2022, dest_path=f"{BASE_PATH}/mags/saMbhAShaNa-sandesha")
-  sambhashana_sandesha.dump_year(year=2021, dest_path=f"{BASE_PATH}/mags/saMbhAShaNa-sandesha")
+  # sambhashana_sandesha.dump_year(year=2021, dest_path=f"{BASE_PATH}/mags/saMbhAShaNa-sandesha")
 
 
 if __name__ == '__main__':
@@ -111,8 +111,8 @@ if __name__ == '__main__':
   # word_clouds()
   # dump_mags()
   # blog.organize_by_date(dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/sage-bloodlines/bhRguH/dvitIyajanmani_bhRguH/chyavanaH/ApnavAna/aurvaH/jamadagniH/MT_charitram")
-  dump_substack()
   dump_wordpress()
-  dump_wordpress_monthly()
+  # dump_wordpress_monthly()
+  # dump_substack()
 
   # blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path=f"{BASE_PATH}/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)

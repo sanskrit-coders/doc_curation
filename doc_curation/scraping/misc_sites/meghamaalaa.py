@@ -30,7 +30,7 @@ def get_text(url, source_script=sanscript.DEVANAGARI):
 
 
 def fix_text(text, source_script):
-  text = text.replace("\|", "।")
+  text = text.replace(r"\|", "।")
   text = regex.sub("।।+", "॥", text)
   if source_script == sanscript.DEVANAGARI:
     text = regex.sub("ळ", "ल", text)
@@ -87,7 +87,7 @@ def dump_series(url, dest_path, start_index=None, end_index=None, filename_from_
       file_name = f"{get_storage_name(text=filename_from_title(link.text), max_length=20, source_script=source_script)}.md"
     else:
       file_name = ".md"
-    if not regex.match("\d+", file_name):
+    if not regex.match(r"\d+", file_name):
       file_name = f"{index:02d}b_{file_name}"
     file_name = file_name.replace("_.", ".")
     dest_subpath = os.path.join(dest_path, file_name)

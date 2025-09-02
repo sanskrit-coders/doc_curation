@@ -99,6 +99,7 @@ def deshika_nyAyasiddhAnjanam():
 
 def deshika_misc(browser):
   pass
+  parankusha.dump_to_file(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "ईशावास्योपनिषद् भाष्यम्"], out_file_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/IshAvAsyopaniShat/venkaTanAthaH.md", comment_mode="first")
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "शतदूषणी", "expand:शतदूषणी", "ब्रह्मशब्दवृत्त्यनुपपत्तिवादः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/venkaTanAthaH/shatadUShaNI/", ordinal_start=1)
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "पादुका-सहस्रम्", "expand:पादुका-सहस्रम्", "प्रस्तावपद्धतिः"], outdir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/venkaTanAthaH/pAdukA-sahasram", ordinal_start=1, has_comment=False)
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "यादवाभ्युदयम्", "expand:यादवाभ्युदयम्", "सर्गः-1"], outdir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/venkaTanAthaH/yAdavAbhyudayam", ordinal_start=1, has_comment=False)
@@ -198,12 +199,12 @@ if __name__ == '__main__':
   # shriibhaashyam(browser=browser)
   # yaamuna_siddhitraya(browser)
   # raamaanuja_misc(browser)
-  # deshika_misc(browser)
+  deshika_misc(browser)
   # chillarai(browser)
   # deshika_tattvamuktaakalaapa()
   # stotra_misc()
   # deshika_rts(browser=browser)
-  tattva_misc(browser=browser)
+  # tattva_misc(browser=browser)
   # deshika_nyAyasiddhAnjanam()
   # upanishat(browser=browser)
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "निक्षेप-रक्षा", "expand:निक्षेप-रक्षा", "expand:उपोद्घातः", "उपोद्घातः"], outdir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaiShNavaH/rAmAnuja-sampradAyaH/venkaTanAthaH/nixepa-raxA")

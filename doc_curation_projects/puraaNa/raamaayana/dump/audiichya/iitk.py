@@ -7,10 +7,12 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 from doc_curation import book_data
-from doc_curation.md import get_md_with_pandoc
+from doc_curation.md import get_md_with_pandoc, library
 from doc_curation.md.file import MdFile
+from doc_curation.md.library import metadata_helper, arrangement
 from doc_curation.scraping.misc_sites import iitk
 from doc_curation.scraping.html_scraper import souper
+from doc_curation_projects.puraaNa.raamaayana.dump import fix_metadata_and_paths
 from indic_transliteration import sanscript
 
 # Remove all handlers associated with the root logger object.
@@ -21,6 +23,9 @@ logging.basicConfig(
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
 unit_info_file = os.path.join(os.path.dirname(book_data.__file__), "data/book_data/raamaayanam/andhra.json")
+
+
+ref_dir = "/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/goraxapura-pAThaH/hindy-anuvAdaH"
 
 
 def dump_sarga(url, out_path, sarga_id, dry_run=False):
@@ -84,6 +89,8 @@ def dump_all_sargas(base_dir):
 
 
 def dump_commentary(base_dir, commentary_id):
+  title_maker = lambda soup, title_prefix: sanscript.transliterate("%03d" % sarga_index, sanscript.IAST,
+                                                                   sanscript.DEVANAGARI)
   for kaanda_index in book_data.get_subunit_list(file_path=unit_info_file, unit_path_list=[]):
     if kaanda_index >= 6:
       continue
@@ -93,15 +100,19 @@ def dump_commentary(base_dir, commentary_id):
       out_path = os.path.join(base_dir, "%d" % kaanda_index, "%03d.md" % sarga_index)
       url = "https://www.valmiki.iitk.ac.in/commentaries?language=dv&field_commnetary_tid=%d&field_kanda_tid=%d&field_sarga_value=%d" % (
       commentary_id, kaanda_index, sarga_index)
-      title_maker = lambda soup, title_prefix: sanscript.transliterate("%03d" % sarga_index, sanscript.IAST,
-                                                                       sanscript.DEVANAGARI)
+      if os.path.exists(out_path):
+        continue
       iitk.dump_item(item_url=url, outfile_path=out_path, title_maker=title_maker)
+  arrangement.fix_index_files("/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/audIchya-pAThaH/TIkA")
+  # TODO: Fix this.
+  fix_metadata_and_paths(base_dir=base_dir, base_dir_ref=ref_dir, dry_run=False)
+  return
 
 
 if __name__ == '__main__':
   pass
   # dump_all_sargas(base_dir="/home/vvasuki/sanskrit/raw_etexts/purANam/rAmAyaNam/Andhra-pAThaH_iitk/")
-  # aandhra.fix_title_names(base_dir="/home/vvasuki/sanskrit/raw_etexts/purANam/rAmAyaNam/kumbhakona", base_dir_ref="/home/vvasuki/sanskrit/raw_etexts/purANam/rAmAyaNam/goraxapuram/VR_with_errors", dry_run=False)
-  # dump_commentary(base_dir="/home/vvasuki/sanskrit/raw_etexts/purANam/rAmAyaNam/TIkA/bhUShaNa_iitk/", commentary_id=14)
+  # dump_commentary(base_dir="/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/audIchya-pAThaH/TIkA/maheshvara-tIrtha-tattva-dIpikA", commentary_id=12)
+  # dump_commentary(base_dir="/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/audIchya-pAThaH/TIkA/mAdhava-yogy-amRta-katakaH", commentary_id=8)
   # dump_commentary(base_dir="/home/vvasuki/sanskrit/raw_etexts/purANam/rAmAyaNam/TIkA/shiromaNI_iitk/", commentary_id=10)
   # dump_commentary(base_dir="/home/vvasuki/sanskrit/raw_etexts/purANam/rAmAyaNam/TIkA/tilaka_iitk/", commentary_id=13)

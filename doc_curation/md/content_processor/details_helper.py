@@ -534,7 +534,11 @@ def shlokas_to_details(content, pattern=None, title_base="टीका"):
     if pattern == patterns.PATTERN_BOLDED_QUOTED_SHLOKA:
       shloka = shloka.replace("**", "")
       shloka = regex.sub("\n> *", "\n", shloka)
-    if pattern not in [patterns.PATTERN_2LINE_SHLOKA_NO_NUM, patterns.PATTERN_BOLDED_QUOTED_SHLOKA]:
+    if "shloka_id" in pattern:
+      shloka_id = match.group('shloka_id')
+      shloka_id = regex.sub(r"[\.,]$", "", shloka_id)
+      shloka_id = f" - {shloka_id}"
+    elif pattern not in [patterns.PATTERN_2LINE_SHLOKA_NO_NUM, patterns.PATTERN_BOLDED_QUOTED_SHLOKA]:
       shloka_id = f" - {match.groups()[-1].strip()}"
     else:
       shloka_id = ""
@@ -562,7 +566,11 @@ def shlokas_to_muula_viprastuti_details(content, shloka_processor=lambda x:x, pa
     if pattern == patterns.PATTERN_BOLDED_QUOTED_SHLOKA:
       shloka = shloka.replace("**", "")
       shloka = regex.sub("\n> *", "\n", shloka)
-    if pattern not in [patterns.PATTERN_2LINE_SHLOKA_NO_NUM, patterns.PATTERN_BOLDED_QUOTED_SHLOKA]:
+    if "shloka_id" in pattern:
+      shloka_id = match.group('shloka_id')
+      shloka_id = regex.sub(r"[\.,]$", "", shloka_id)
+      shloka_id = f" - {shloka_id}"
+    elif pattern not in [patterns.PATTERN_2LINE_SHLOKA_NO_NUM, patterns.PATTERN_BOLDED_QUOTED_SHLOKA]:
       shloka_id = match.groups()[id_position].strip()
       if shloka_id != "":
         shloka_id = f" - {shloka_id}"

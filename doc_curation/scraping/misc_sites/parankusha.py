@@ -5,6 +5,7 @@ import time
 import traceback
 
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import Select
 
 import doc_curation
@@ -31,15 +32,15 @@ configuration_parankusha = doc_curation.configuration['parankusha']
 
 def get_logged_in_browser(headless=True):
   """Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen """
-  browser = scraping.get_selenium_chrome(headless=headless)
-  browser.get("http://parankusan.cloudapp.net/Integrated/Texts.aspx")
+  browser = scraping.get_selenium_firefox(headless=headless)
+  scraping.get_selenium_url("http://parankusan.cloudapp.net/Integrated/Texts.aspx", browser=browser)
   username = browser.find_element(By.ID, "txtUserName")
   username.send_keys(configuration_parankusha["user"])
   browser.find_element(By.ID, "btnNext").click()
   time.sleep(3)
   browser.find_element(By.ID, "txtPassword").send_keys(configuration_parankusha["pass"])
   browser.find_element(By.ID, "btnLogin").click()
-  browser.get("http://parankusan.cloudapp.net/Integrated/Texts.aspx")
+  scraping.get_selenium_url("http://parankusan.cloudapp.net/Integrated/Texts.aspx", browser=browser)
   # TODO: deal with the inferior transliteration due to the below - esp in mixed devanAgarI/ tamiL context.
   # dropdown = browser.find_element(By.NAME, 'ddlOutputTranslitLang')
   # Select(dropdown).select_by_visible_text("Devanagari")
@@ -88,12 +89,12 @@ def get_output_path(text_name, outdir, source_script=sanscript.DEVANAGARI):
 
 
 
-def dump_to_file(browser, out_file_path, has_comment=False, text_name=None, start_nodes=None, source_script=sanscript.DEVANAGARI, overwrite=False):
+def dump_to_file(browser, out_file_path, comment_mode=None, text_name=None, start_nodes=None, source_script=sanscript.DEVANAGARI, overwrite=False):
 
   if os.path.exists(out_file_path) and not overwrite:
       logging.info("Skipping " + out_file_path)
   else:
-    text = browse_get_text(browser, has_comment, source_script, start_nodes)
+    text = browse_get_text(browser, comment_mode, source_script, start_nodes)
     if text_name is None and source_script is not None:
       text_name = sanscript.transliterate(data=os.path.basename(out_file_path.replace(".md", "")), _from=sanscript.OPTITRANS,_to=sanscript.DEVANAGARI)
     elif source_script is not None and source_script != sanscript.DEVANAGARI:
@@ -102,10 +103,12 @@ def dump_to_file(browser, out_file_path, has_comment=False, text_name=None, star
     md_file.dump_to_file(metadata={"title": text_name}, content=text, dry_run=False)
   
 
-def browse_get_text(browser, has_comment, source_script, start_nodes):
+def browse_get_text(browser, comment_mode, source_script, start_nodes):
   if start_nodes is not None:
     browse_nodes(browser=browser, start_nodes=start_nodes)
-  rows = browser.find_elements(By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"]")
+  rows = WebDriverWait(browser, 10).until(
+    EC.presence_of_all_elements_located((By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"]"))
+  )
   text = ""
   for row in rows:
     tds = row.find_elements(By.CSS_SELECTOR, "td")
@@ -114,20 +117,18 @@ def browse_get_text(browser, has_comment, source_script, start_nodes):
       if len(spans) > 0:
         text_segments = [span.text.strip().replace("\\n", "\n").replace("\n", "  \n") for span in spans]
         main_text = "\n\n".join(text_segments)
-        if has_comment:
-          commentary_main = False
-          if not commentary_main:
+        if comment_mode == "last":
             text += f"\n\n<details open><summary>मूलम्</summary>\n\n{main_text}\n</details>\n\n"
             comment_tds = td.find_elements(By.XPATH, './/following-sibling::*')
             for comment_td in comment_tds:
               comment_text = comment_td.text.strip()
               if comment_text != "":
                 text += f"\n\n<details><summary>टीका</summary>\n\n{comment_text}\n</details>\n\n"
-          else:
-            comment_tds = td.find_elements(By.XPATH, './/following-sibling::*')
-            for comment_td in comment_tds:
-              text += f"\n\n<details open><summary>मूलम्</summary>\n\n{comment_td.text.strip()}\n</details>\n\n"
-            text += f"\n\n<details><summary>टीका</summary>\n\n{main_text}\n</details>\n\n"
+        elif comment_mode == "first":
+          comment_tds = td.find_elements(By.XPATH, './/following-sibling::*')
+          for comment_td in comment_tds:
+            text += f"\n\n<details open><summary>मूलम्</summary>\n\n{comment_td.text.strip()}\n</details>\n\n"
+          text += f"\n\n<details><summary>टीका</summary>\n\n{main_text}\n</details>\n\n"
         else:
           text += f"{main_text}\n\n"
   if source_script is not None and source_script != sanscript.DEVANAGARI:
@@ -149,7 +150,7 @@ def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False, 
   def _dump_text(browser, outdir, ordinal=None, has_comment=False, start_nodes=None):
     text_name = deduce_text_name(browser, ordinal)
     out_file_path = get_output_path(text_name=text_name, outdir=outdir, source_script=source_script)
-    dump_to_file(browser=browser, has_comment=has_comment, out_file_path=out_file_path, text_name=text_name, start_nodes=start_nodes, source_script=source_script)
+    dump_to_file(browser=browser, comment_mode=has_comment, out_file_path=out_file_path, text_name=text_name, start_nodes=start_nodes, source_script=source_script)
 
   browse_nodes(browser=browser, start_nodes=start_nodes)
 
@@ -163,7 +164,7 @@ def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False, 
   arrangement.fix_index_files(dir_path=outdir, overwrite=False, dry_run=False)
 
 
-def get_structured_text(browser, start_nodes, base_dir, unit_info_file, has_comment=False, source_script=sanscript.DEVANAGARI, detail_title=None, prev_detail_title=None):
+def get_structured_text(browser, start_nodes, base_dir, unit_info_file, comment_mode=False, source_script=sanscript.DEVANAGARI, detail_title=None, prev_detail_title=None):
   def open_path(subunit_path, unit_data):
     logging.debug(list(zip(subunit_path, unit_data["unitNameListInSite"])))
     for (subunit, unitNameInSite) in zip(subunit_path, unit_data["unitNameListInSite"]):
@@ -198,13 +199,13 @@ def get_structured_text(browser, start_nodes, base_dir, unit_info_file, has_comm
   
     os.makedirs(name=os.path.dirname(out_file_path), exist_ok=True)
     if detail_title is not None:
-      text = browse_get_text(browser=browser, has_comment=has_comment, source_script=source_script, start_nodes=None)
+      text = browse_get_text(browser=browser, comment_mode=comment_mode, source_script=source_script, start_nodes=None)
       md_file = MdFile(file_path=out_file_path)
       detail = details_helper.Detail(title=detail_title, content=text)
       md_file.transform(content_transformer=lambda c, m: details_helper.insert_adjascent_element(content=c, metadata=m, title=prev_detail_title, new_element=detail))
     else:
       text_name = deduce_text_name(browser)
-      dump_to_file(browser=browser, has_comment=has_comment, out_file_path=out_file_path, text_name=text_name, start_nodes=None, source_script=source_script)
+      dump_to_file(browser=browser, comment_mode=comment_mode, out_file_path=out_file_path, text_name=text_name, start_nodes=None, source_script=source_script)
     # Close the kANDa - else the driver may pick sarga from this kANDa when it is to pick the sarga from the next kANDa?!
     close_path(subunit_path=subunit_path, unit_data=unit_data)
   arrangement.fix_index_files(dir_path=base_dir)
