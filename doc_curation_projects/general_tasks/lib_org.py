@@ -1,12 +1,18 @@
+import os
+
+import regex
+
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper, arrangement, combination
 from indic_transliteration import sanscript
 
 
-def combine_files(dir_path):
+def combine_files(dir_path, author=None):
   pass
 
+  metadata, out_path = combination.get_epub_metadata_path(author, dir_path)
+  combination.make_epub(source_dir=dir_path, out_path=out_path, metadata=metadata, recursion_depth=3, css_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/epub_style.css")
   # combination.make_full_text_md(source_dir=dir_path)
   # combination.combine_files_in_dir(md_file=dir_path)
   # combination.combine_parts(dir_path=dir_path, pattern=r"(?P<part_id>.+?)_(?P<name>\d+).md")
@@ -15,7 +21,7 @@ def combine_files(dir_path):
 
 if __name__ == '__main__':
   pass
-  # combine_files("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/static/rAmAnuja-sampradAyaH/tattvam/rAmAnujaH/shrI-bhAShyam/adhikaraNa-ratnamAlA")
+  combine_files("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/sarva-prastutiH", author="venkaTanAthaH", )
 
   # library.fix_mistaken_nines("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/hi/5_bhakti-sandarbhaH/pAThaH", digit_from_last=2)
   # library.highlight_out_of_order_files("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/hi/5_bhakti-sandarbhaH/pAThaH", fix_sequence="dry_run_no")
@@ -33,4 +39,4 @@ if __name__ == '__main__':
   ## Kannada
   # arrangement.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/kannaDa/static/padya/kumAra-vyAsa-bhArata/vishvAsa-prastuti", transliteration_target=sanscript.KANNADA, overwrite=True, dry_run=False)
 
-  metadata_helper.copy_metadata_and_filename(ref_dir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/parAshara-vishiShTa-dharma-shAstram/mUlam-1901", dest_dir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/parAshara-vishiShTa-dharma-shAstram/sarva-prastutiH", dry_run=False)
+  # metadata_helper.copy_metadata_and_filename(ref_dir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/parAshara-vishiShTa-dharma-shAstram/mUlam-1901", dest_dir="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/parAshara-vishiShTa-dharma-shAstram/sarva-prastutiH", dry_run=False)

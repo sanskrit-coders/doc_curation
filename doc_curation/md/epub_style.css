@@ -1,0 +1,148 @@
+
+code {
+    font-size: 100%;
+}
+
+main details {
+    margin: 3px 0px;
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+}
+
+main summary {
+    border-bottom: 1px dashed black;
+    font-size: 90%;
+    font-weight: bold;
+    font-style: italic;
+    color: black;
+}
+
+.inline_comment {
+    font-size: 80%;
+    color: rgb(114, 47, 55);
+    font-style: italic;
+    vertical-align: sub;
+}
+
+h1 {
+    font-size: 160%; /* 120% of body font size */
+    line-height: 100%;
+}
+h2 {
+    font-size: 150%; /* 120% of body font size */
+    line-height: 100%;
+}
+h3 {
+    font-size: 140%; /* 120% of body font size */
+    line-height: 100%;
+}
+h4 {
+    font-size: 130%; /* 120% of body font size */
+    line-height: 100%;
+}
+h5 {
+    font-size: 120%; /* 120% of body font size */
+    line-height: 100%;
+}
+h6 {
+    font-size: 110%; /* 120% of body font size */
+    line-height: 100%;
+}
+
+details.headingDetail > summary {
+    line-height: 100%;
+}
+
+/************************************************************/
+
+h1:after {
+    content: "①";
+}
+h2:after {
+    content: "②";
+}
+h3:after {
+    content: "③";
+}
+h4:after {
+    content: "④";
+}
+h5:after {
+    content: "⑤";
+}
+h6:after {
+    content: "⑥";
+}
+table {
+    border: 1px solid black;
+}
+th, td {
+    border-bottom: 1px solid black;
+    border-left: 1px solid black;
+}
+tr:hover {
+    background-color: coral;
+}
+figure {
+    align-content: center;
+    text-align: center;
+    font-style: italic;
+    font-size: smaller;
+    text-indent: 0;
+    border: thin silver solid;
+    margin: 0.5em;
+    padding: 0.5em;
+    display: inline-block;
+}
+figure.thumbnail {
+    width: 250px;
+    height: 250px;
+}
+figure.thumbnail img {
+    max-width: 100%;
+    max-height: 100%;
+}
+blockquote {
+    padding-left: 2rem;
+    border-left-style: solid;
+    border-width: 0.25rem;
+}
+audio {
+    width: 100%;
+}
+
+pre {
+    white-space: break-spaces;
+    border: thin black solid;
+}
+
+.handsontable th, .handsontable td {
+    line-height: 1.2em;
+}
+.audioCaption {
+    text-align: center;
+    font-style: italic;
+}
+.proof:before {
+    content: "Proof:";
+}
+.proof {
+    color: #2a82a5;
+}
+.proof:after {
+    content: "∎";
+}
+#sidebar .active {
+    background-color: wheat;
+}
+.header-nav a {
+    color: yellow;
+}
+.header-nav a:active {
+    color: pink;
+}
+details.highlight  > *:not(summary) {
+    text-decoration: underline;
+}
+
+
