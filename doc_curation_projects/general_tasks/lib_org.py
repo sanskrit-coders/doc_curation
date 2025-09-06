@@ -2,6 +2,7 @@ import os
 
 import regex
 
+import doc_curation.md.library.epub
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper, arrangement, combination
@@ -11,8 +12,8 @@ from indic_transliteration import sanscript
 def combine_files(dir_path, author=None):
   pass
 
-  metadata, out_path = combination.get_epub_metadata_path(author, dir_path)
-  combination.make_epub(source_dir=dir_path, out_path=out_path, metadata=metadata, recursion_depth=3, css_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/epub_style.css")
+  metadata, out_path = doc_curation.md.library.epub.get_epub_metadata_path(author, dir_path)
+  doc_curation.md.library.epub.make_epub(source_dir=dir_path, out_path=out_path, metadata=metadata, recursion_depth=3, css_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/epub_style.css")
   # combination.make_full_text_md(source_dir=dir_path)
   # combination.combine_files_in_dir(md_file=dir_path)
   # combination.combine_parts(dir_path=dir_path, pattern=r"(?P<part_id>.+?)_(?P<name>\d+).md")

@@ -131,8 +131,8 @@ class MdFile(object):
     [metadata_in, content_in] = self.read() 
     if metadata is not None:
       metadata.update(metadata_in)
-    content_in = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'<span class="inline_comment">\1</span>', content_in)
-    content_in = regex.sub(r" *\.\.\.\{Loading\}\.\.\.", fr"", content_in)
+    from doc_curation.md.library import epub
+    content_in = epub.prep_content(content_in)
     filters = None
     if dest_format == "epub":
       if css_path is not None:
