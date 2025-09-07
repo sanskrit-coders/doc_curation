@@ -135,7 +135,7 @@ def interleave_from_file(md_files, source_file, dest_pattern=r"[^\d०-९೦-�
     logging.warning(f"Could not get indices in source: {missing_dest_indices}")
   
 
-def transform_details_with_soup(content, metadata, content_transformer=None, title_transformer=None, title_pattern=None, details_css="body>details", *args, **kwargs):
+def transform_details_with_soup(content, metadata, content_str_transformer=None, title_transformer=None, title_pattern=None, details_css="body>details", *args, **kwargs):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
     return content
@@ -149,15 +149,15 @@ def transform_details_with_soup(content, metadata, content_transformer=None, tit
       continue
     if title_transformer is not None:
       detail_tag.select_one("summary").text = title_transformer(detail_tag.select_one("summary").text)
-    if content_transformer is not None:
+    if content_str_transformer is not None:
       for x in detail_tag.contents:
         if isinstance(x, NavigableString):
-          x.replace_with(content_transformer(x, metadata, *args, **kwargs))
+          x.replace_with(content_str_transformer(x, metadata=metadata, *args, **kwargs))
       detail_tag.insert_after("\n")
   return content_processor._make_content_from_soup(soup=soup)
 
 
-def transform_detail_tags_with_soup(content, metadata, transformer, title_pattern=None, details_css="body>details", remove_detail=False, *args, **kwargs):
+def transform_detail_tags_with_soup(content, metadata, transformer, title_pattern=None, details_css="body>details", *args, **kwargs):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
     return content
@@ -168,9 +168,7 @@ def transform_detail_tags_with_soup(content, metadata, transformer, title_patter
   for detail_tag in details:
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
     if title_pattern is None or regex.fullmatch(title_pattern, detail.title):
-      transformer(detail_tag, metadata, *args, **kwargs)
-      if remove_detail:
-        detail_tag.decompose()
+      transformer(detail_tag, metadata=metadata, *args, **kwargs)
   return content_processor._make_content_from_soup(soup=soup)
 
 
@@ -193,9 +191,11 @@ def add_detail_footnotes(content, remove_detail=False, *args, **kwargs):
     footnote = Footnote(id_str=f"fn_det_{detail.title[:3]}_{len(previous_details)}", content=detail.content)
 
     detail_tag.insert_after(f"\n\n({detail.title}{footnote.get_reference()})\n\n{footnote.to_definition()}\n\n")
+    if remove_detail:
+      detail_tag.decompose()
 
   detail_css = "details:not([open])"
-  content = transform_detail_tags_with_soup(content=content, metadata=None, transformer=transformer, details_css=detail_css, remove_detail=remove_detail)
+  content = transform_detail_tags_with_soup(content=content, metadata=None, transformer=transformer, details_css=detail_css)
   return content
 
 
@@ -208,7 +208,7 @@ def transliterate_details(content, source_script, dest_script=sanscript.DEVANAGA
       child.extract()
     list(detail_tag.children)[0].insert_after(new_text)
 
-  return transform_details_with_soup(content=content, metadata=None, title=title, content_transformer=transformer)
+  return transform_detail_tags_with_soup(content=content, metadata=None, title=title, content_transformer=transformer)
 
 def insert_duplicate_adjascent(content, metadata, old_title_pattern="मूलम्(.*)", new_title=r"विश्वास-प्रस्तुतिः\1", inserter=PageElement.insert_before, content_transformer=lambda x:x):
   if new_title in content:

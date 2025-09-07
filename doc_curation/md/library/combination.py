@@ -105,7 +105,7 @@ def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=
     md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
 
-def make_full_text_md(source_dir, detail_to_footnotes=False, dry_run=False):
+def make_full_text_md(source_dir, detail_to_footnotes=False, overwrite=True, dry_run=False):
   """Create a text - by include-directives - which includes all md files within the directory."""
   # logging.debug(list(Path(dir_path).glob(file_pattern)))
   content = ""
@@ -119,7 +119,7 @@ def make_full_text_md(source_dir, detail_to_footnotes=False, dry_run=False):
     index_md = MdFile(file_path=index_md_path)
     (index_yml, _) = index_md.read()
     title = "%s (%s)" % (index_yml["title"], title)
-    content = "%s\n%s" % (content, """<div class="js_include" url="%s"  newLevelForH1="0" includeTitle="false"> </div>""" % (rel_url).strip())
+    content = "%s\n\n%s" % (content, """<div class="js_include" url="%s"  newLevelForH1="0" includeTitle="false"> </div>""" % (rel_url).strip())
     num_md_files = num_md_files + 1
 
 
@@ -127,8 +127,9 @@ def make_full_text_md(source_dir, detail_to_footnotes=False, dry_run=False):
     subfile_path = os.path.join(source_dir, subfile)
     if os.path.isdir(subfile_path):
       if subfile not in ["images"]:
-        make_full_text_md(source_dir=subfile_path)
-        sub_md_file_path = os.path.join(subfile, "full.md")
+        sub_md_file_path = os.path.join(subfile_path, "full.md")
+        if overwrite or not os.path.exists(sub_md_file_path):
+          make_full_text_md(source_dir=subfile_path, detail_to_footnotes=detail_to_footnotes, overwrite=overwrite, dry_run=dry_run)
       else:
         continue
     else:
@@ -138,13 +139,13 @@ def make_full_text_md(source_dir, detail_to_footnotes=False, dry_run=False):
 
     num_md_files = num_md_files + 1
     rel_url = os.path.join("..", regex.sub(r"\.md", "/", sub_md_file_path))
-    content = "%s\n%s" % (content, """<div class="js_include" url="%s"  newLevelForH1="1" includeTitle="true"> </div>""" % (rel_url).strip())
+    content = "%s\n\n%s" % (content, """<div class="js_include" url="%s"  newLevelForH1="1" includeTitle="true"> </div>""" % (rel_url).strip())
   
   if num_md_files > 0:
     full_md_path = os.path.join(source_dir, "full.md")
     full_md = MdFile(file_path=full_md_path)
     full_md.dump_to_file(content=content, metadata={"title": title}, dry_run=dry_run)
-    include_helper.prefill_includes(dir_path=os.path.dirname(full_md_path))
+    include_helper.prefill_includes(dir_path=os.path.dirname(full_md_path), file_name_filter=lambda x: os.path.basename(x) != "full.md")
     include_helper.prefill_includes(dir_path=full_md_path)
     from doc_curation.md import content_processor
     content_processor.replace_texts(md_file=full_md, patterns=[r"^(#+ .+?)( \(पूर्णपाठः\))"], replacement=r"\1", flags=regex.MULTILINE)

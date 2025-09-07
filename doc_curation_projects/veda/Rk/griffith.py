@@ -56,7 +56,7 @@ def dump(dest_dir, suukta_ids, dry_run=False):
       dest_file = os.path.join(dest_dir, suukta_id, dest_file)
       # logging.debug("%d: %s", rk_num, dest_file)
       md_file = MdFile(file_path=dest_file)
-      md_file.transform(content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, content_transformer=details_helper.detail_content_replacer_soup, title="Griffith", new_text=content), dry_run=dry_run)
+      md_file.transform(content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, content_str_transformer=details_helper.detail_content_replacer_soup, title="Griffith", new_text=content), dry_run=dry_run)
 
 
 if __name__ == '__main__':

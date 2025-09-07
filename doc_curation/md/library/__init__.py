@@ -28,7 +28,7 @@ def import_md_recursive(source_dir, file_extension, source_format=None, dry_run=
     md_file.import_with_pandoc(source_file=source_path, source_format=source_format, dry_run=dry_run)
 
 
-def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, frontmatter_type="toml", start_file=None, silent_iteration=True, *args,
+def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, start_file=None, silent_iteration=True, *args,
                    **kwargs):
   if not silent_iteration:
     logging.debug(list(Path(dir_path).glob(file_pattern)))

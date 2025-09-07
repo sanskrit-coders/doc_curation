@@ -73,7 +73,7 @@ def shift_details(dir_path, substitute_content_offset, detail_title, start_index
       md_detail.content = detail.content
       md_file.transform(content_transformer=lambda c, m: f"{c}\n\n{md_detail.to_md_html()}", dry_run=dry_run)
     else:
-      md_file.transform(content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, content_transformer=details_helper.detail_content_replacer_soup, title=detail_title, replacement=detail.content), dry_run=dry_run)
+      md_file.transform(content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, content_str_transformer=details_helper.detail_content_replacer_soup, title=detail_title, replacement=detail.content), dry_run=dry_run)
 
   shift_contents(dir_path=dir_path, substitute_content_offset=substitute_content_offset, start_index=start_index, end_index=end_index, index_position=index_position, replacer=replacer)
 

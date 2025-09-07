@@ -11,7 +11,7 @@ from indic_transliteration.sanscript.schemes.brahmic import accent
 
 
 def details_fix(dir_path):
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, content_transformer=lambda c, m : accent.to_US_accents(text=c, pauses=r"[।॥\[]+"), title_pattern=r"विश्वास-प्रस्तुतिः.*", details_css="details"))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, content_str_transformer=lambda c, m : accent.to_US_accents(text=c, pauses=r"[।॥\[]+"), title_pattern=r"विश्वास-प्रस्तुतिः.*", details_css="details"))
 
 
 def content_fix(dir_path):

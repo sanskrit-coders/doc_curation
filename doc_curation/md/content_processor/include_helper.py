@@ -258,9 +258,9 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   inc.append("\n")
 
 
-def prefill_includes(dir_path):
+def prefill_includes(dir_path, file_name_filter=None, ):
   logging.info(f"Prefilling includes in {dir_path}")
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: transform_includes_with_soup(x, y,transformer=prefill_include))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, metadata: transform_includes_with_soup(x, metadata,transformer=prefill_include), file_name_filter=file_name_filter)
 
 
 def alt_include_adder(inc, current_file_path, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/gitland/vishvAsa"):

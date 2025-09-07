@@ -50,7 +50,7 @@ def _make_content_from_soup(soup):
       x = str(x).replace("<", "&lt;")
     new_content = new_content + str(x)
   new_content = new_content.replace("&amp;", "&").replace("&gt;", ">").replace("open=\"\"", "open")
-  new_content = regex.sub("</details>\n?<details", "</details>\n\n<details", new_content)
+  new_content = regex.sub("(?<=</(details|div)>)\n?(?=<(details|div))", "\n\n", new_content)
   new_content = regex.sub("\n\n+", "\n\n", new_content)
   return new_content
 

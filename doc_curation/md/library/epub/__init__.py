@@ -38,7 +38,7 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
   return out_path
 
 
-def make_epubs_recursively(source_dir, out_path, recursion_depth=None, dry_run=False, *args, **kwargs):
+def make_epubs_recursively(source_dir, out_path, recursion_depth=None, dry_run=False, cleanup=True, *args, **kwargs):
   if out_path is None:
     out_path = source_dir
   if recursion_depth is not None:
@@ -46,17 +46,17 @@ def make_epubs_recursively(source_dir, out_path, recursion_depth=None, dry_run=F
       subdir_path = os.path.join(source_dir, subdir)
       if os.path.isdir(subdir_path):
         if recursion_depth > 0:
-          make_epubs_recursively(source_dir=subdir_path, out_path=os.path.join(out_path, subdir), recursion_depth=recursion_depth - 1, dry_run=dry_run, *args, **kwargs)
+          make_epubs_recursively(source_dir=subdir_path, out_path=os.path.join(out_path, subdir), recursion_depth=recursion_depth - 1, dry_run=dry_run, cleanup=False, *args, **kwargs)
 
 
-  epub_from_full_md(source_dir=source_dir, out_path=out_path, *args, **kwargs)
+  epub_from_full_md(source_dir=source_dir, out_path=out_path, cleanup=cleanup, *args, **kwargs)
 
 
 
-def epub_from_full_md(source_dir, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6): 
+def epub_from_full_md(source_dir, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, cleanup=True): 
   full_md_path = os.path.join(source_dir, "full.md")
   if not os.path.exists(full_md_path):
-    full_md_path = make_full_text_md(source_dir=source_dir, detail_to_footnotes=True)
+    full_md_path = make_full_text_md(source_dir=source_dir, detail_to_footnotes=True, overwrite=False)
     if full_md_path is None:
       return
 
@@ -67,9 +67,11 @@ def epub_from_full_md(source_dir, out_path, css_path=None, metadata={}, file_spl
   epub_for_kobo(epub_path=epub_path)
   
   # Clean up full.md files under source_dir
-  # for dirpath, dirnames, filenames in os.walk(source_dir):
-  #   if "full.md" in filenames:
-  #     os.remove(os.path.join(dirpath, "full.md"))
+  if cleanup:
+    for dirpath, dirnames, filenames in os.walk(source_dir):
+      if "full.md" in filenames:
+        os.remove(os.path.join(dirpath, "full.md"))
+    logging.info(f"Removed {os.path.join(dirpath, 'full.md')} etc..")
 
 
 def epub_for_kobo(epub_path: str):

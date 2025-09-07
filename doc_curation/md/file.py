@@ -383,7 +383,7 @@ class MdFile(object):
     metadata["_file_path"] = self.file_path
     update_needed = False
     if content_transformer is not None:
-      content_new = content_transformer(content, metadata, *args, **kwargs)
+      content_new = content_transformer(content, metadata=metadata, *args, **kwargs)
       if content_new is None:
         return 
       update_needed |= content.strip() != content_new.strip()
