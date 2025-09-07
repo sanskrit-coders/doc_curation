@@ -7,15 +7,12 @@ from typing import Tuple, Dict
 
 import regex
 import toml
-import yaml
 import yamldown
-
-from doc_curation.md import get_md_with_pandoc
-from indic_transliteration import sanscript
+from attr.validators import is_callable
 
 # Remove all handlers associated with the root logger object.
 from curation_utils import file_helper
-import regex
+from indic_transliteration import sanscript
 
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)
@@ -61,7 +58,6 @@ class MdFile(object):
           full_content = file.read()
           full_content = regex.sub("^--- *\n", "---\n", full_content)
           full_content = regex.sub("\n--- *\n", "\n---\n", full_content)
-          from yaml.composer import ComposerError
           try:
             import io
             (metadata, content) = yamldown.load(io.StringIO(full_content))
@@ -101,50 +97,6 @@ class MdFile(object):
           content = file.read()
     metadata['_file_path'] = self.file_path 
     return (metadata, content)
-
-  def import_content_with_pandoc(self, content, source_format, dry_run, metadata={},
-                                 pandoc_extra_args=['--markdown-headings=atx']):
-    content = get_md_with_pandoc(content_in=content, source_format=source_format, pandoc_extra_args=pandoc_extra_args)
-    self.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
-
-  def import_with_pandoc(self, source_file, source_format, dry_run, metadata={},
-                         pandoc_extra_args=['--markdown-headings=atx']):
-    if source_format == "rtf":
-      html_path = str(source_file).replace(".rtf", ".html")
-      subprocess.call(['Ted', '--saveTo', source_file, html_path])
-      source_file = html_path
-      source_format = "html"
-      if not os.path.exists(html_path):
-        logging.warning("Could not convert rtf to html, skipping %s", source_file)
-        return
-
-    with open(source_file, 'r') as fin:
-      self.import_content_with_pandoc(content=fin.read(), source_file=source_file, source_format=source_format,
-                                      dry_run=dry_run, metadata=metadata, pandoc_extra_args=pandoc_extra_args)
-
-
-  def export_with_pandoc(self, dest_path, dest_format="epub", css_path=None, metadata=None, pandoc_extra_args=["--toc", "--toc-depth=5"] ):
-    import pypandoc
-    logger = logging.getLogger('pypandoc')
-    logger.setLevel(logging.CRITICAL)
-  
-    [metadata_in, content_in] = self.read() 
-    if metadata is not None:
-      metadata.update(metadata_in)
-    from doc_curation.md.library import epub
-    content_in = epub.prep_content(content_in)
-    filters = None
-    if dest_format == "epub":
-      if css_path is not None:
-        pandoc_extra_args.extend([f'--css={css_path}'])
-
-    # prepend metadata as yaml string to content_in
-    content_in = "\n".join([f"---\n{yaml.dump(metadata)}\n---", content_in])
-        
-    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-    pypandoc.convert_text(source=content_in, to=dest_format, format="gfm-raw_html",extra_args=pandoc_extra_args,filters=filters, outputfile=dest_path)
-
-
 
   def get_frontmatter_type(self):
     with open(self.file_path, 'r') as fin:
@@ -325,6 +277,8 @@ class MdFile(object):
       new_content = content
     if metadata == new_metadata and content == new_content:
       return
+    if callable(new_content):
+      new_content = new_content(content)
     self.dump_to_file(metadata=new_metadata, content=new_content, dry_run=dry_run, silent=silent)
 
   def split_to_bits(

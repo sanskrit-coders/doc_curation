@@ -2,27 +2,29 @@ import os
 
 import regex
 
-import doc_curation.md.library.epub
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
-from doc_curation.md.library import metadata_helper, arrangement, combination
+from doc_curation.md.library import metadata_helper, arrangement, combination, epub
 from indic_transliteration import sanscript
 
 
 def combine_files(dir_path, author=None):
   pass
-
-  metadata, out_path = doc_curation.md.library.epub.get_epub_metadata_path(author, dir_path)
-  doc_curation.md.library.epub.make_epub(source_dir=dir_path, out_path=out_path, metadata=metadata, recursion_depth=3, css_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/epub_style.css")
   # combination.make_full_text_md(source_dir=dir_path)
   # combination.combine_files_in_dir(md_file=dir_path)
   # combination.combine_parts(dir_path=dir_path, pattern=r"(?P<part_id>.+?)_(?P<name>\d+).md")
   # arrangement.defolderify_single_md_dirs(dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/static/prakIrNAryabhAShAH/padya/rAmacharitamAnasa/TIkA/", dry_run=False)
 
 
+def make_epub(dir_path, author=None):
+
+  metadata, out_path = epub.get_epub_metadata_path(author, dir_path)
+  epub.make_epubs_recursively(source_dir=dir_path, out_path=out_path, metadata=metadata, css_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/epub_style.css", recursion_depth=3)
+
+
 if __name__ == '__main__':
   pass
-  combine_files("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/sarva-prastutiH", author="venkaTanAthaH", )
+  make_epub("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/sarva-prastutiH", author="venkaTanAthaH", )
 
   # library.fix_mistaken_nines("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/hi/5_bhakti-sandarbhaH/pAThaH", digit_from_last=2)
   # library.highlight_out_of_order_files("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/hi/5_bhakti-sandarbhaH/pAThaH", fix_sequence="dry_run_no")

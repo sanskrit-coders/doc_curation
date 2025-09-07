@@ -334,3 +334,9 @@ def section_headings_to_details(content, prev_detail_title="मूलम्(.*)"
     new_content += section.to_md()
 
   return new_content
+
+
+def fix_headers(content: str, h1_level: int) -> str:
+  content = regex.sub(r"(?<=\n|^)#", f"{'#' * h1_level}", content)
+  content = regex.sub(rf"(?<=\n|^)#######+", f"{'#' * 6}", content)
+  return content

@@ -5,6 +5,7 @@ import doc_curation.md.library.metadata_helper
 import regex
 from bs4 import BeautifulSoup
 
+from doc_curation.md.content_processor.section_helper import fix_headers
 from doc_curation.md.library import arrangement
 from curation_utils import file_helper
 from doc_curation.md import content_processor, library
@@ -148,9 +149,9 @@ def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs
   new_content = new_content.replace("{{&lt;", "{{<").replace("&gt;}}", ">}}")
 
   # Fix quotation symbols in markdown
-  new_content = regex.sub("(?<=\s)&gt;", ">", new_content)
+  new_content = regex.sub(r"(?<=\s)&gt;", ">", new_content)
 
-  html_escapes = list(regex.findall("&[lg]t;(?=/?d(iv|etails))", new_content))
+  html_escapes = list(regex.findall(r"&[lg]t;(?=/?d(iv|etails))", new_content))
   if len(html_escapes) > 0:
     logging.warning(f"Somehow < or > was replaced in " + metadata["_file_path"])
     return content
@@ -231,13 +232,15 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
       inc["url"] = url
   md_file = MdFile(file_path=file_path)
   (metadata, content) = md_file.read()
+  if inc.get("includetitle", "false").lower() != "false":
+    title = regex.sub(r"^\+", "", metadata['title'].strip())
+    content = f"# {title}\n\n{content}"
   metadata["_file_path"] = file_path
   h1_level = h1_level_offset + int(inc.get("newlevelforh1", 2))
   if "newlevelforh1" not in inc.attrs:
     logging.warning(f"No newlevelforh1 for {file_path} in {container_file_path}")
 
-  content = regex.sub(r"(?<=\n|^)#", f"{'#' * h1_level}", content)
-  content = regex.sub(rf"(?<=\n|^)#######+", f"{'#' * 6}", content)
+  content = fix_headers(content, h1_level)
   # TODO: Handle images, spreadsheets, relative urls in includes
   if file_path == container_file_path:
     logging.fatal(f"Circular include in {container_file_path}")

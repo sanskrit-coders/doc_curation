@@ -1,5 +1,6 @@
 import logging
 import os
+import pathlib
 import shutil
 from functools import lru_cache
 
@@ -112,8 +113,24 @@ def get_sub_path_to_reference_map(ref_dir, sub_path_id_maker=None):
       sub_path_to_reference[sub_path_id] = md_file
   return sub_path_to_reference
 
+def get_md_level(md_path, base_dir):
+  md_path = str(md_path)
+  if base_dir is not None:
+    md_path = md_path.replace(base_dir, "")
+  parts = [x for x in md_path.split("/") if x != ""]
+  if parts[-1] == "_index.md":
+    return len(parts) - 1
+  else:
+    return len(parts)
+
 
 def get_sub_path_id(sub_path, basename_id_pattern=r"(.+?)(?=[_\.]|$)"):
+  """ /1/2/3/4.md -> 1/2/3/4
+  
+  :param sub_path: 
+  :param basename_id_pattern: 
+  :return: 
+  """
   id_parts = []
   for name in sub_path.split("/"):
     if name == "":
@@ -289,3 +306,28 @@ def highlight_out_of_order_files(dir_path, id_pattern=r".+_(\d+)\.", fix_sequenc
         
   logging.warning(f"{out_of_order_files} are out of order")
   return out_of_order_files
+
+
+
+def stage_md_files(source_dir, tmp_path: pathlib.Path):
+  md_files = sorted(
+    list(pathlib.Path(source_dir).rglob("*.md"))
+  )
+  # Copy MD files to tmp directory
+  for md_file in md_files:
+    # Keep same relative path under tmp directory
+    rel_path = md_file.relative_to(source_dir)
+    dest_path = tmp_path / rel_path
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    dest_path.write_text(md_file.read_text(), encoding="utf-8")
+
+
+def natural_sort_key(s):
+  s = str(s)
+  base = os.path.basename(s)
+  if base == "_index.md":
+    base = f"00__{base}"
+  else:
+    base = f"01__{base}"
+  key = [os.path.dirname(s), base]
+  return key

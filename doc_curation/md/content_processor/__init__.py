@@ -35,11 +35,11 @@ def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVA
   return c
 
 
-def replace_texts(md_file, patterns, replacement, dry_run=False):
+def replace_texts(md_file, patterns, replacement, flags=0, dry_run=False):
   logging.info("Processing %s", md_file.file_path)
   [metadata, content] = md_file.read()
   for text_pattern in patterns:
-    content = regex.sub(text_pattern, replacement, content)
+    content = regex.sub(text_pattern, replacement, content, flags=flags)
   md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
