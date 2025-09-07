@@ -61,7 +61,7 @@ def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, p
   logger.info(f"Converting {md_file} to {dest_path}...")
   [metadata_in, content_in] = md_file.read()
   if metadata is not None:
-    metadata.update(metadata_in)
+    metadata_in.update(metadata)
   if content_maker is not None:
     content_in = content_maker(content_in)
   filters = None
@@ -69,9 +69,9 @@ def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, p
   content_in = "\n".join([f"---\n{yaml.dump(metadata)}\n---", content_in])
 
   os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-  pypandoc.convert_text(source=content_in, to=dest_format, format="gfm-raw_html-smart",extra_args=pandoc_extra_args,filters=filters, outputfile=dest_path)
+  pypandoc.convert_text(source=content_in, to=dest_format, format="gfm-raw_html-smart+footnotes",extra_args=pandoc_extra_args,filters=filters, outputfile=dest_path)
   logging.info(f"Successfully created '{dest_path}'!")
 
 
 if __name__ == '__main__':
-  pandoc_from_md_file(md_file=MdFile(file_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/library/test_local.md"), dest_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/library/test_local.md.epub", dest_format="epub", css_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/epub_style.css", metadata={"title": "mUlam-1.1", "author": "mUlam"})
+  pandoc_from_md_file(md_file=MdFile(file_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/library/test_local.md"), dest_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/library/test_local.md.epub", dest_format="epub", metadata={"title": "mUlam-1.1", "author": "mUlam"})

@@ -29,12 +29,13 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
     source_dir = os.path.dirname(md_file.file_path)
     epub_name = os.path.basename(source_dir)
     if epub_name in ["sarva-prastutiH", "mUlam"]:
-      source_dir = os.path.dirname(md_file.file_path)
+      source_dir = os.path.dirname(source_dir)
       epub_name = os.path.basename(source_dir)
-      metadata["title"] = MdFile(os.path.join(source_dir, "_index.md")).get_title()
     out_path = os.path.join(out_path, f"{epub_name}.epub")
+    metadata["title"] = get_epub_title(dir_path=source_dir)
 
   pandoc_from_md_file(md_file=md_file, dest_path=out_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content)
+  return out_path
 
 
 def make_epubs_recursively(source_dir, out_path, recursion_depth=None, dry_run=False, *args, **kwargs):
@@ -52,23 +53,23 @@ def make_epubs_recursively(source_dir, out_path, recursion_depth=None, dry_run=F
 
 
 
-def epub_from_full_md(source_dir, out_path, css_path=None, metadata=None, file_split_level=4, toc_depth=6): 
+def epub_from_full_md(source_dir, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6): 
   full_md_path = os.path.join(source_dir, "full.md")
   if not os.path.exists(full_md_path):
-    full_md_path = make_full_text_md(source_dir=source_dir)
+    full_md_path = make_full_text_md(source_dir=source_dir, detail_to_footnotes=True)
     if full_md_path is None:
       return
 
 
 
   md_file = MdFile(file_path=full_md_path)
-  epub_from_md_file(md_file=md_file, out_path=out_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path)
-  epub_for_kobo(epub_path=out_path)
+  epub_path = epub_from_md_file(md_file=md_file, out_path=out_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path)
+  epub_for_kobo(epub_path=epub_path)
   
   # Clean up full.md files under source_dir
-  for dirpath, dirnames, filenames in os.walk(source_dir):
-    if "full.md" in filenames:
-      os.remove(os.path.join(dirpath, "full.md"))
+  # for dirpath, dirnames, filenames in os.walk(source_dir):
+  #   if "full.md" in filenames:
+  #     os.remove(os.path.join(dirpath, "full.md"))
 
 
 def epub_for_kobo(epub_path: str):
@@ -96,6 +97,16 @@ def get_epub_metadata_path(author, dir_path, out_path=f"/home/vvasuki/gitland/sa
   if tome_match is not None:
     tome = tome_match.group(2)
     out_path = os.path.join(out_path, tome)
-    metadata["title"] = MdFile(os.path.join(tome_match.group(1), tome_match.group(2), "_index.md")).get_title()
   return metadata, out_path
 
+
+def get_epub_title(dir_path):
+  tome_match = regex.match("(.+)/(.+?)/sarva-prastutiH|mUlam/", dir_path)
+  if tome_match is not None:
+    ref_dir = os.path.join(tome_match.group(1), tome_match.group(2))
+    title = MdFile(os.path.join(ref_dir, "_index.md")).get_title(omit_chapter_id=False)
+    if not regex.match("sarva-prastutiH|mUlam", dir_path):
+      title = MdFile(os.path.join(dir_path, "_index.md")).get_title(omit_chapter_id=False, ref_dir_for_ancestral_title=ref_dir)
+  else:
+    title = MdFile(os.path.join(dir_path, "_index.md")).get_title(omit_chapter_id=False)
+  return title

@@ -10,6 +10,7 @@ from tqdm import tqdm
 import doc_curation.md.content_processor.space_helper
 import regex
 
+from doc_curation.md.content_processor.footnote_helper import Footnote
 from doc_curation.utils import patterns
 from doc_curation.md import library
 from doc_curation.md.content_processor import get_quasi_section_int_map
@@ -56,7 +57,7 @@ class Detail(object):
 
 
 def interleave_from_file(md_files, source_file, dest_pattern=r"[^\d०-९೦-೯]([\d०-९೦-೯]+) *॥.*(?=\n|$)", source_pattern=r"(?<=\n|^)([\d०-९೦-೯]+).+\n", detail_title="English", overwrite=False, dry_run=False):
-  """
+  r"""
   
   :param md_file: 
   :param source_file: Can be a function returning a string or a string.
@@ -156,18 +157,20 @@ def transform_details_with_soup(content, metadata, content_transformer=None, tit
   return content_processor._make_content_from_soup(soup=soup)
 
 
-def transform_detail_tags_with_soup(content, metadata, transformer, title_pattern=None, *args, **kwargs):
+def transform_detail_tags_with_soup(content, metadata, transformer, title_pattern=None, details_css="body>details", remove_detail=False, *args, **kwargs):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
     return content
   soup = content_processor._soup_from_content(content=content, metadata=metadata)
   if soup is None:
     return content
-  details = soup.select("body>details")
+  details = soup.select(details_css)
   for detail_tag in details:
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
-    if regex.fullmatch(title_pattern, detail.title):
+    if title_pattern is None or regex.fullmatch(title_pattern, detail.title):
       transformer(detail_tag, metadata, *args, **kwargs)
+      if remove_detail:
+        detail_tag.decompose()
   return content_processor._make_content_from_soup(soup=soup)
 
 
@@ -179,6 +182,21 @@ def adjascent_inserter(detail_tag, metadata, neighbor_maker, inserter=PageElemen
   inserter(detail_tag, "\n\n")
   inserter(detail_tag, neighbor)
   inserter(detail_tag, "\n\n")
+
+
+def add_detail_footnotes(content, remove_detail=False, *args, **kwargs):
+  def transformer(detail_tag, *args, **kwargs):
+    if detail_tag.get("open") is not None:
+      return 
+    detail = Detail.from_soup_tag(detail_tag=detail_tag)
+    previous_details = detail_tag.find_all_previous(name=detail_tag.name)
+    footnote = Footnote(id_str=f"fn_det_{detail.title[:3]}_{len(previous_details)}", content=detail.content)
+
+    detail_tag.insert_after(f"\n\n({detail.title}{footnote.get_reference()})\n\n{footnote.to_definition()}\n\n")
+
+  detail_css = "details:not([open])"
+  content = transform_detail_tags_with_soup(content=content, metadata=None, transformer=transformer, details_css=detail_css, remove_detail=remove_detail)
+  return content
 
 
 def transliterate_details(content, source_script, dest_script=sanscript.DEVANAGARI, title=None):
