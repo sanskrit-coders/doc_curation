@@ -105,7 +105,7 @@ def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=
     md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
 
-def make_full_text_md(source_dir, detail_to_footnotes=False, overwrite=True, dry_run=False):
+def make_full_text_md(source_dir, overwrite=True, dry_run=False):
   """Create a text - by include-directives - which includes all md files within the directory."""
   # logging.debug(list(Path(dir_path).glob(file_pattern)))
   content = ""
@@ -126,9 +126,10 @@ def make_full_text_md(source_dir, detail_to_footnotes=False, overwrite=True, dry
   for subfile in sorted(os.listdir(source_dir)):
     subfile_path = os.path.join(source_dir, subfile)
     if os.path.isdir(subfile_path):
-      if subfile not in ["images"]:
-        sub_md_file_path = os.path.join(subfile_path, "full.md")
-        if overwrite or not os.path.exists(sub_md_file_path):
+      if subfile not in ["images", "aMshaH", "aMshAH"]:
+        md_file_path = os.path.join(subfile_path, "full.md")
+        sub_md_file_path = os.path.join(subfile, "full.md")
+        if overwrite or not os.path.exists(md_file_path):
           make_full_text_md(source_dir=subfile_path, detail_to_footnotes=detail_to_footnotes, overwrite=overwrite, dry_run=dry_run)
       else:
         continue
@@ -150,10 +151,6 @@ def make_full_text_md(source_dir, detail_to_footnotes=False, overwrite=True, dry
     from doc_curation.md import content_processor
     content_processor.replace_texts(md_file=full_md, patterns=[r"^(#+ .+?)( \(पूर्णपाठः\))"], replacement=r"\1", flags=regex.MULTILINE)
     logging.info("Fixed headings in %s", full_md_path)
-    if detail_to_footnotes:
-      from doc_curation.md.content_processor import details_helper
-      logging.info("Adding detail footnotes to %s", full_md_path)
-      full_md.transform(content_transformer=details_helper.add_detail_footnotes, dry_run=dry_run)
     return full_md_path
   else:
     logging.info("No md files found in %s. Skipping.", source_dir)

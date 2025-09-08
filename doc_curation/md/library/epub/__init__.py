@@ -1,41 +1,50 @@
 import logging
 import os
-import pathlib
 import subprocess
 
 import regex
-import json
 
-import doc_curation.md.library.arrangement
+from doc_curation.md.content_processor import details_helper
 from doc_curation.md.file import MdFile
-from doc_curation.md.library import arrangement
 from doc_curation.md.library.combination import make_full_text_md
 from doc_curation.md.library.pandoc_helper import pandoc_from_md_file
 
 
-def prep_content(content):
+def prep_content(content, detail_to_footnotes=True, appendix=None):
   content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'<span class="inline_comment">\1</span>', content)
   content = regex.sub(r" *\.\.\.\{Loading\}\.\.\.", fr"", content)
-  # TODO: Details to footnotes optionally
+  if detail_to_footnotes:
+    content = details_helper.add_detail_footnotes(content=content, remove_detail=True)
+  if appendix is not None:
+    if os.path.exists(appendix):
+      md_file = MdFile(file_path=appendix)
+      metadata, appendix = md_file.read()
+      appendix = f"# Appendix - {metadata['title']}\n\n{appendix}"
+    content = f"{content}\n\n{appendix}"
   return content
 
 
-def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6):
+def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, appendix=None):
   pandoc_extra_args = ["--toc", f"--toc-depth={toc_depth}", f"--epub-chapter-level={file_split_level}"]
   if css_path is not None:
     pandoc_extra_args.extend([f'--css={css_path}'])
 
   if not out_path.endswith(".epub"):
     source_dir = os.path.dirname(md_file.file_path)
-    epub_name = os.path.basename(source_dir)
-    if epub_name in ["sarva-prastutiH", "mUlam"]:
-      source_dir = os.path.dirname(source_dir)
-      epub_name = os.path.basename(source_dir)
-    out_path = os.path.join(out_path, f"{epub_name}.epub")
+    epub_path = get_epub_path(source_dir, out_path)
     metadata["title"] = get_epub_title(dir_path=source_dir)
 
-  pandoc_from_md_file(md_file=md_file, dest_path=out_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content)
-  return out_path
+  pandoc_from_md_file(md_file=md_file, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix)
+  return epub_path
+
+
+def get_epub_path(source_dir, out_path):
+  epub_name = os.path.basename(source_dir)
+  if epub_name in ["sarva-prastutiH", "mUlam"]:
+    source_dir = os.path.dirname(source_dir)
+    epub_name = os.path.basename(source_dir)
+  epub_path = os.path.join(out_path, f"{epub_name}.epub")
+  return epub_path
 
 
 def make_epubs_recursively(source_dir, out_path, recursion_depth=None, dry_run=False, cleanup=True, *args, **kwargs):
@@ -53,18 +62,26 @@ def make_epubs_recursively(source_dir, out_path, recursion_depth=None, dry_run=F
 
 
 
-def epub_from_full_md(source_dir, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, cleanup=True): 
+def epub_from_full_md(source_dir, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, cleanup=True,
+                      overwrite=True, appendix=None): 
   full_md_path = os.path.join(source_dir, "full.md")
+
+  epub_path = get_epub_path(source_dir, out_path)
+  if os.path.exists(epub_path) and not overwrite:
+    logging.info(f"Skipping {epub_path} as it already exists.")
+    return
+
   if not os.path.exists(full_md_path):
-    full_md_path = make_full_text_md(source_dir=source_dir, detail_to_footnotes=True, overwrite=False)
+    full_md_path = make_full_text_md(source_dir=source_dir, detail_to_footnotes=True, overwrite=overwrite)
     if full_md_path is None:
       return
 
 
 
   md_file = MdFile(file_path=full_md_path)
-  epub_path = epub_from_md_file(md_file=md_file, out_path=out_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path)
+  epub_path = epub_from_md_file(md_file=md_file, out_path=out_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path, appendix=appendix)
   epub_for_kobo(epub_path=epub_path)
+  to_azw3(epub_path=epub_path)
   
   # Clean up full.md files under source_dir
   if cleanup:
@@ -88,6 +105,22 @@ def epub_for_kobo(epub_path: str):
   else:
     logging.error("Error during kepubify conversion:")
     logging.error(result.stderr)
+
+
+def to_azw3(epub_path: str):
+  logging.info("\nStep 3: Converting EPUB to AZW3...")
+  # Construct the command for ebook-convert
+  # The command is: ebook-convert "input_path.epub" "output_path.azw3"
+  azw3_path = epub_path.replace(".epub", ".azw3") 
+  command = ['ebook-convert', epub_path, azw3_path]
+
+  logging.info(f"Converting {os.path.basename(epub_path)} to AZW3...")
+
+  # Execute the command
+  result = subprocess.run(command, check=True, capture_output=True, text=True)
+
+  logging.info("Conversion successful!")
+  return azw3_path
 
 
 def get_epub_metadata_path(author, dir_path, out_path=f"/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/"):

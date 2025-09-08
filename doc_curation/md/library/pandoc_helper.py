@@ -54,7 +54,7 @@ def import_with_pandoc(md_file, source_file, source_format, dry_run, metadata={}
 
 
 
-def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, pandoc_extra_args=[], content_maker=None):
+def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, pandoc_extra_args=[], content_maker=None, *args, **kwargs):
   import pypandoc
   logger = logging.getLogger('pypandoc')
   logger.setLevel(logging.CRITICAL)
@@ -63,7 +63,7 @@ def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, p
   if metadata is not None:
     metadata_in.update(metadata)
   if content_maker is not None:
-    content_in = content_maker(content_in)
+    content_in = content_maker(content_in, *args, **kwargs)
   filters = None
   # prepend metadata as yaml string to content_in
   content_in = "\n".join([f"---\n{yaml.dump(metadata)}\n---", content_in])
