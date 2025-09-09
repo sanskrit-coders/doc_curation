@@ -1,8 +1,14 @@
-from doc_curation.md.library import epub
+import os
+
+
+
+from doc_curation.md.file import MdFile
+from doc_curation.ebook import epub
+
+css_path = "/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/epub_style.css"
 
 
 def make_epub(dir_path, author=None):
-  css_path = "/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/epub_style.css"
 
   metadata, out_path = epub.get_epub_metadata_path(author, dir_path)
   # epub.make_epubs_recursively(source_dir=dir_path, out_path=out_path, metadata=metadata, css_path=css_path, recursion_depth=3)

@@ -1,27 +1,15 @@
 import logging
 import os
-import subprocess
 
 import regex
 
-from doc_curation.md.content_processor import details_helper
+from doc_curation import ebook
 from doc_curation.md.file import MdFile
 from doc_curation.md.library.combination import make_full_text_md
-from doc_curation.md.library.pandoc_helper import pandoc_from_md_file
 
-
-def prep_content(content, detail_to_footnotes=True, appendix=None):
-  content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'<span class="inline_comment">\1</span>', content)
-  content = regex.sub(r" *\.\.\.\{Loading\}\.\.\.", fr"", content)
-  if detail_to_footnotes:
-    content = details_helper.add_detail_footnotes(content=content, remove_detail=True)
-  if appendix is not None:
-    if os.path.exists(appendix):
-      md_file = MdFile(file_path=appendix)
-      metadata, appendix = md_file.read()
-      appendix = f"# Appendix - {metadata['title']}\n\n{appendix}"
-    content = f"{content}\n\n{appendix}"
-  return content
+from doc_curation.ebook import prep_content
+from doc_curation.ebook.convert import to_azw3
+from doc_curation.md.pandoc_helper import pandoc_from_md_file
 
 
 def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, appendix=None):
@@ -35,6 +23,9 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
     metadata["title"] = get_epub_title(dir_path=source_dir)
 
   pandoc_from_md_file(md_file=md_file, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix)
+  epub_for_kobo(epub_path=epub_path)
+  to_azw3(epub_path=epub_path)
+
   return epub_path
 
 
@@ -61,8 +52,7 @@ def make_epubs_recursively(source_dir, out_path, recursion_depth=None, dry_run=F
   epub_from_full_md(source_dir=source_dir, out_path=out_path, cleanup=cleanup, *args, **kwargs)
 
 
-
-def epub_from_full_md(source_dir, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, cleanup=True,
+def epub_from_full_md(source_dir, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, 
                       overwrite=True, appendix=None): 
   full_md_path = os.path.join(source_dir, "full.md")
 
@@ -71,24 +61,9 @@ def epub_from_full_md(source_dir, out_path, css_path=None, metadata={}, file_spl
     logging.info(f"Skipping {epub_path} as it already exists.")
     return
 
-  if not os.path.exists(full_md_path):
-    full_md_path = make_full_text_md(source_dir=source_dir, detail_to_footnotes=True, overwrite=overwrite)
-    if full_md_path is None:
-      return
-
-
-
-  md_file = MdFile(file_path=full_md_path)
-  epub_path = epub_from_md_file(md_file=md_file, out_path=out_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path, appendix=appendix)
-  epub_for_kobo(epub_path=epub_path)
-  to_azw3(epub_path=epub_path)
+  converter = lambda md_file, out_path: epub_from_md_file(md_file=md_file, out_path=out_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path, appendix=appendix)
+  ebook.via_full_md(source_dir=source_dir, out_path=epub_path, converter=converter, overwrite=overwrite, cleanup=True)
   
-  # Clean up full.md files under source_dir
-  if cleanup:
-    for dirpath, dirnames, filenames in os.walk(source_dir):
-      if "full.md" in filenames:
-        os.remove(os.path.join(dirpath, "full.md"))
-    logging.info(f"Removed {os.path.join(dirpath, 'full.md')} etc..")
 
 
 def epub_for_kobo(epub_path: str):
@@ -105,22 +80,6 @@ def epub_for_kobo(epub_path: str):
   else:
     logging.error("Error during kepubify conversion:")
     logging.error(result.stderr)
-
-
-def to_azw3(epub_path: str):
-  logging.info("\nStep 3: Converting EPUB to AZW3...")
-  # Construct the command for ebook-convert
-  # The command is: ebook-convert "input_path.epub" "output_path.azw3"
-  azw3_path = epub_path.replace(".epub", ".azw3") 
-  command = ['ebook-convert', epub_path, azw3_path]
-
-  logging.info(f"Converting {os.path.basename(epub_path)} to AZW3...")
-
-  # Execute the command
-  result = subprocess.run(command, check=True, capture_output=True, text=True)
-
-  logging.info("Conversion successful!")
-  return azw3_path
 
 
 def get_epub_metadata_path(author, dir_path, out_path=f"/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/"):

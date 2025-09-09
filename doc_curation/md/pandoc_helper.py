@@ -74,4 +74,4 @@ def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, p
 
 
 if __name__ == '__main__':
-  pandoc_from_md_file(md_file=MdFile(file_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/library/test_local.md"), dest_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/library/test_local.md.epub", dest_format="epub", metadata={"title": "mUlam-1.1", "author": "mUlam"})
+  pandoc_from_md_file(md_file=MdFile(file_path="/doc_curation/md/library/test_local.md"), dest_path="/doc_curation/md/library/test_local.md.epub", dest_format="epub", metadata={"title": "mUlam-1.1", "author": "mUlam"})
