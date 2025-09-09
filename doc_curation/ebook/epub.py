@@ -18,7 +18,7 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
     epub_path = get_book_path(source_dir, out_path) + ".epub"
     metadata["title"] = title_from_path(dir_path=source_dir)
 
-  pandoc_from_md_file(md_file=md_file, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix)
+  pandoc_from_md_file(md_file=md_file, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=True)
   epub_for_kobo(epub_path=epub_path)
   to_azw3(epub_path=epub_path)
 

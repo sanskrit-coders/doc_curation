@@ -197,7 +197,8 @@ def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=[
 
 
 
-def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="/home/vvasuki/gitland/vishvAsa"):
+def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
+                    say_loading=True):
   """To be used with transform_include_lines.
   
   :param match: 
@@ -232,9 +233,6 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
       inc["url"] = url
   md_file = MdFile(file_path=file_path)
   (metadata, content) = md_file.read()
-  if inc.get("includetitle", "false").lower() != "false":
-    title = regex.sub(r"^\+", "", metadata['title'].strip())
-    content = f"# {title}\n\n{content}"
   metadata["_file_path"] = file_path
   h1_level = h1_level_offset + int(inc.get("newlevelforh1", 2))
   if "newlevelforh1" not in inc.attrs:
@@ -245,12 +243,22 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   if file_path == container_file_path:
     logging.fatal(f"Circular include in {container_file_path}")
     return 
-  content = transform_includes_with_soup(content=content, metadata=metadata, h1_level_offset=h1_level, transformer=prefill_include)
+  content = transform_includes_with_soup(content=content, metadata=metadata, h1_level_offset=h1_level, transformer=prefill_include, say_loading=say_loading, hugo_base_dir=hugo_base_dir)
 
-  title = inc.get("title", metadata.get("title", "UNKNOWN_TITLE")) + " ...{Loading}..."
-  if "UNKNOWN_TITLE" in title:
-    logging.warning(f"Could not get title for {file_path} in {container_file_path}")
-  details = BeautifulSoup(f"<body><details><summary><h{h1_level}>{title}</h{h1_level}></summary>\n\n{content}\n</details></body>", 'html.parser').select_one("details")
+
+  if inc.get("includetitle", "false").lower() == "false" and "title" not in metadata:
+    title = "…"
+  else:
+    title = inc.get("title", metadata.get("title", "UNKNOWN_TITLE"))
+    title = regex.sub(r"^\+", "", title.strip())
+    if "UNKNOWN_TITLE" in title:
+      logging.warning(f"Could not get title for {file_path} in {container_file_path}")
+    if say_loading:
+      title +=  " ...{Loading}..."
+    if h1_level != 0:
+      title = f"<h{h1_level}>{title}</h{h1_level}>"
+
+  details = BeautifulSoup(f"<body><details><summary>{title}></summary>\n\n{content}\n</details></body>", 'html.parser').select_one("details")
   if "collapsed" not in inc["class"]:
     details["open"] = None
   inc.append("\n")
@@ -258,9 +266,9 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   inc.append("\n")
 
 
-def prefill_includes(dir_path, file_name_filter=None, ):
+def prefill_includes(dir_path, file_name_filter=None, *args, **kwargs):
   logging.info(f"Prefilling includes in {dir_path}")
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, metadata: transform_includes_with_soup(x, metadata,transformer=prefill_include), file_name_filter=file_name_filter)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, metadata: transform_includes_with_soup(x, metadata,transformer=prefill_include, *args, **kwargs), file_name_filter=file_name_filter)
 
 
 def alt_include_adder(inc, current_file_path, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/gitland/vishvAsa"):

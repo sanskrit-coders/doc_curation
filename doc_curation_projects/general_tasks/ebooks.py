@@ -7,6 +7,8 @@ from doc_curation.ebook import epub
 
 css_path = "/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/md/epub_style.css"
 out_path_base = f"/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/"
+appendix_dg = "/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/_index.md"
+
 
 def make_epub(dir_path, author=None):
 
@@ -17,6 +19,6 @@ def make_epub(dir_path, author=None):
 
 if __name__ == '__main__':
   # make_epub("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/sarva-prastutiH", author="venkaTanAthaH", )
-  # make_epub("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", author="yAmunaH", appendix="/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/_index.md")
-  ebook.dir_to_html("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", out_path=out_path_base, appendix="/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/_index.md")
+  # make_epub("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", author="yAmunaH", appendix=appendix_dg)
+  ebook.dir_to_html("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", out_path=os.path.join(out_path_base, "yAmunaH/Agama-prAmANyam"), pandoc_extra_args=[f'--css={css_path}'], appendix=appendix_dg)
   

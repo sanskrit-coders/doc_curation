@@ -130,7 +130,7 @@ def make_full_text_md(source_dir, overwrite=True, dry_run=False):
         md_file_path = os.path.join(subfile_path, "full.md")
         sub_md_file_path = os.path.join(subfile, "full.md")
         if overwrite or not os.path.exists(md_file_path):
-          make_full_text_md(source_dir=subfile_path, detail_to_footnotes=detail_to_footnotes, overwrite=overwrite, dry_run=dry_run)
+          make_full_text_md(source_dir=subfile_path, overwrite=overwrite, dry_run=dry_run)
       else:
         continue
     else:
@@ -146,10 +146,10 @@ def make_full_text_md(source_dir, overwrite=True, dry_run=False):
     full_md_path = os.path.join(source_dir, "full.md")
     full_md = MdFile(file_path=full_md_path)
     full_md.dump_to_file(content=content, metadata={"title": title}, dry_run=dry_run)
-    include_helper.prefill_includes(dir_path=os.path.dirname(full_md_path), file_name_filter=lambda x: os.path.basename(x) != "full.md")
-    include_helper.prefill_includes(dir_path=full_md_path)
+    include_helper.prefill_includes(dir_path=os.path.dirname(full_md_path), file_name_filter=lambda x: os.path.basename(x) != "full.md", say_loading=False)
+    include_helper.prefill_includes(dir_path=full_md_path, say_loading=False)
     from doc_curation.md import content_processor
-    content_processor.replace_texts(md_file=full_md, patterns=[r"^(#+ .+?)( \(पूर्णपाठः\))"], replacement=r"\1", flags=regex.MULTILINE)
+    content_processor.replace_texts(md_file=full_md, patterns=[r" \(पूर्णपाठः\)"], replacement=r"", flags=regex.MULTILINE)
     logging.info("Fixed headings in %s", full_md_path)
     return full_md_path
   else:
