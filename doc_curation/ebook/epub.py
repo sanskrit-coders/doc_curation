@@ -1,8 +1,6 @@
 import logging
 import os
 
-import regex
-
 from doc_curation import ebook
 
 from doc_curation.ebook import prep_content, get_book_path, title_from_path
@@ -69,17 +67,5 @@ def epub_for_kobo(epub_path: str):
   else:
     logging.error("Error during kepubify conversion:")
     logging.error(result.stderr)
-
-
-def get_epub_metadata_path(author, dir_path, out_path=f"/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/"):
-  out_path = os.path.join(out_path, author)
-  tome_match = regex.match("(.+)/(.+?)/sarva-prastutiH|mUlam/", dir_path)
-  metadata = {}
-  if author is not None:
-    metadata["author"] = author
-  if tome_match is not None:
-    tome = tome_match.group(2)
-    out_path = os.path.join(out_path, tome)
-  return metadata, out_path
 
 

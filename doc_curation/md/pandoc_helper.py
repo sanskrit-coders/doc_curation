@@ -31,7 +31,7 @@ def get_md_with_pandoc(content_in, source_format="html-native_divs-native_spans"
   return content
 
 
-def pandoc_dump_md(md_file, content, source_format, dry_run, metadata={},
+def pandoc_dump_md(md_file, content, source_format, dry_run=False, metadata={},
                                pandoc_extra_args=['--markdown-headings=atx']):
   content = get_md_with_pandoc(content_in=content, source_format=source_format, pandoc_extra_args=pandoc_extra_args)
   md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
