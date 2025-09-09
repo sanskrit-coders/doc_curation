@@ -4,10 +4,8 @@ import os
 import regex
 
 from doc_curation import ebook
-from doc_curation.md.file import MdFile
-from doc_curation.md.library.combination import make_full_text_md
 
-from doc_curation.ebook import prep_content
+from doc_curation.ebook import prep_content, get_book_path, title_from_path
 from doc_curation.ebook.convert import to_azw3
 from doc_curation.md.pandoc_helper import pandoc_from_md_file
 
@@ -19,22 +17,13 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
 
   if not out_path.endswith(".epub"):
     source_dir = os.path.dirname(md_file.file_path)
-    epub_path = get_epub_path(source_dir, out_path)
-    metadata["title"] = get_epub_title(dir_path=source_dir)
+    epub_path = get_book_path(source_dir, out_path) + ".epub"
+    metadata["title"] = title_from_path(dir_path=source_dir)
 
   pandoc_from_md_file(md_file=md_file, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix)
   epub_for_kobo(epub_path=epub_path)
   to_azw3(epub_path=epub_path)
 
-  return epub_path
-
-
-def get_epub_path(source_dir, out_path):
-  epub_name = os.path.basename(source_dir)
-  if epub_name in ["sarva-prastutiH", "mUlam"]:
-    source_dir = os.path.dirname(source_dir)
-    epub_name = os.path.basename(source_dir)
-  epub_path = os.path.join(out_path, f"{epub_name}.epub")
   return epub_path
 
 
@@ -56,7 +45,7 @@ def epub_from_full_md(source_dir, out_path, css_path=None, metadata={}, file_spl
                       overwrite=True, appendix=None): 
   full_md_path = os.path.join(source_dir, "full.md")
 
-  epub_path = get_epub_path(source_dir, out_path)
+  epub_path = get_book_path(source_dir, out_path) + ".epub"
   if os.path.exists(epub_path) and not overwrite:
     logging.info(f"Skipping {epub_path} as it already exists.")
     return
@@ -94,13 +83,3 @@ def get_epub_metadata_path(author, dir_path, out_path=f"/home/vvasuki/gitland/sa
   return metadata, out_path
 
 
-def get_epub_title(dir_path):
-  tome_match = regex.match("(.+)/(.+?)/sarva-prastutiH|mUlam/", dir_path)
-  if tome_match is not None:
-    ref_dir = os.path.join(tome_match.group(1), tome_match.group(2))
-    title = MdFile(os.path.join(ref_dir, "_index.md")).get_title(omit_chapter_id=False)
-    if not regex.match("sarva-prastutiH|mUlam", dir_path):
-      title = MdFile(os.path.join(dir_path, "_index.md")).get_title(omit_chapter_id=False, ref_dir_for_ancestral_title=ref_dir)
-  else:
-    title = MdFile(os.path.join(dir_path, "_index.md")).get_title(omit_chapter_id=False)
-  return title
