@@ -69,6 +69,11 @@ def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, p
   content_in = "\n".join([f"---\n{yaml.dump(metadata)}\n---", content_in])
 
   os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+  
+  if dest_format == "pdf":
+    pandoc_extra_args.extend(["--pdf-engine=xelatex", "-V", "mainfont=Noto Sans", "-V", "devanagarifont=Noto Sans Devanagari"])
+
+
   pypandoc.convert_text(source=content_in, to=dest_format, format="gfm-raw_html-smart+footnotes",extra_args=pandoc_extra_args,filters=filters, outputfile=dest_path)
   logging.info(f"Successfully created '{dest_path}'!")
 

@@ -19,6 +19,7 @@ def make_epub(dir_path, author=None):
 
 if __name__ == '__main__':
   # make_epub("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/sarva-prastutiH", author="venkaTanAthaH", )
-  # make_epub("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", author="yAmunaH", appendix=appendix_dg)
-  ebook.dir_to_html("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", out_path=os.path.join(out_path_base, "yAmunaH/Agama-prAmANyam"), pandoc_extra_args=[f'--css={css_path}'], appendix=appendix_dg)
+  make_epub("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", author="yAmunaH")
+  # ebook.from_dir("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", out_path=os.path.join(out_path_base, "yAmunaH/Agama-prAmANyam"), dest_format="html", pandoc_extra_args=[f'--css={css_path}'], appendix=appendix_dg, cleanup=False, overwrite=True)
+  # ebook.from_dir("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", out_path=os.path.join(out_path_base, "yAmunaH/Agama-prAmANyam"), pandoc_extra_args=[f'--css={css_path}'], dest_format="pdf", appendix=appendix_dg, cleanup=False, overwrite=False)
   

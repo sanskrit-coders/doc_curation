@@ -12,7 +12,7 @@ from doc_curation.md.pandoc_helper import pandoc_dump_md
 
 def prep_content(content, detail_to_footnote=False, appendix=None):
   def _strip_figures(content):
-    return regex.sub(r"(?<=\n|^)!\[.+\]\(.+\) *\n(\{.+\})?\n", "", content)
+    return regex.sub(r"(?<=\n|^)!\[.*\]\(.+\) *\n(\{.+\})?\n", "", content)
   content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'<span class="inline_comment">\1</span>', content)
   content = regex.sub(r" *\.\.\.\{Loading\}\.\.\.", fr"", content)
   if detail_to_footnote:
@@ -27,7 +27,7 @@ def prep_content(content, detail_to_footnote=False, appendix=None):
   return content
 
 
-def via_full_md(source_dir, out_path, converter, overwrite=True, cleanup=True):
+def via_full_md(source_dir, out_path, converter, dest_format, overwrite=True, cleanup=True):
   full_md_path = os.path.join(source_dir, "full.md")
 
   if not os.path.exists(full_md_path):
@@ -39,9 +39,9 @@ def via_full_md(source_dir, out_path, converter, overwrite=True, cleanup=True):
   copyfile(full_md_path, md_path)
   md_file = MdFile(file_path=md_path)
   md_file.set_title(title=title_from_path(dir_path=source_dir), dry_run=False)
-  html_path = get_book_path(source_dir, out_path) + ".html"
+  dest_path = get_book_path(source_dir, out_path) + f".{dest_format}"
 
-  converter(md_file, html_path)
+  converter(md_file, dest_path)
 
   # Clean up full.md files under source_dir
   if cleanup:
@@ -60,9 +60,9 @@ def get_book_path(source_dir, out_path):
   return book_path
 
 
-def dir_to_html(source_dir, out_path, pandoc_extra_args=[], appendix=None):
-  
-  via_full_md(source_dir=source_dir, out_path=out_path, converter=lambda x,y: pandoc_helper.pandoc_from_md_file(x, y, dest_format="html", pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix), cleanup=True)
+def from_dir(source_dir, out_path, pandoc_extra_args=[], dest_format="html", appendix=None, cleanup=True, overwrite=True):
+
+  via_full_md(source_dir=source_dir, out_path=out_path, converter=lambda x,y: pandoc_helper.pandoc_from_md_file(x, y, dest_format=dest_format, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix), dest_format=dest_format, cleanup=cleanup, overwrite=overwrite)
 
 
 def title_from_path(dir_path):

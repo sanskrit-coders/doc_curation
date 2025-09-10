@@ -165,7 +165,10 @@ def transform_detail_tags_with_soup(content, metadata, transformer, title_patter
   if soup is None:
     return content
   details = soup.select(details_css)
-  for detail_tag in details:
+  for detail_tag in list(details):
+    if detail_tag.parent is None:
+      # detail_tag.decompose() may have been called.
+      continue
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
     if title_pattern is None or regex.fullmatch(title_pattern, detail.title):
       transformer(detail_tag, metadata=metadata, *args, **kwargs)

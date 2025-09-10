@@ -198,7 +198,7 @@ def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=[
 
 
 def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
-                    say_loading=True):
+                    dynamic_loading=True):
   """To be used with transform_include_lines.
   
   :param match: 
@@ -243,28 +243,37 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   if file_path == container_file_path:
     logging.fatal(f"Circular include in {container_file_path}")
     return 
-  content = transform_includes_with_soup(content=content, metadata=metadata, h1_level_offset=h1_level, transformer=prefill_include, say_loading=say_loading, hugo_base_dir=hugo_base_dir)
+  content = transform_includes_with_soup(content=content, metadata=metadata, h1_level_offset=h1_level, transformer=prefill_include, dynamic_loading=dynamic_loading, hugo_base_dir=hugo_base_dir)
 
 
-  if inc.get("includetitle", "false").lower() == "false" and "title" not in metadata:
-    title = "…"
+  if inc.get("includetitle", "false").lower() == "false" or "title" not in metadata:
+    title = ""
   else:
     title = inc.get("title", metadata.get("title", "UNKNOWN_TITLE"))
     title = regex.sub(r"^\+", "", title.strip())
     if "UNKNOWN_TITLE" in title:
       logging.warning(f"Could not get title for {file_path} in {container_file_path}")
-    if say_loading:
-      title +=  " ...{Loading}..."
+  if dynamic_loading:
+    title +=  " …{Loading}…"
+
+  if "collapsed" not in inc["class"]:
+    if title.strip() != "":
+      if h1_level != 0:
+        title = f"{'#'*h1_level} {title}"
+      else:
+        title = f"**{title}**"
+    details = BeautifulSoup(f"{title}\n\n{content}", 'html.parser')
+  else:
     if h1_level != 0:
       title = f"<h{h1_level}>{title}</h{h1_level}>"
-
-  details = BeautifulSoup(f"<body><details><summary>{title}></summary>\n\n{content}\n</details></body>", 'html.parser').select_one("details")
-  if "collapsed" not in inc["class"]:
-    details["open"] = None
-  inc.append("\n")
-  inc.append(details)
-  inc.append("\n")
-
+    details = BeautifulSoup(f"<body><details><summary>{title}></summary>\n\n{content}\n</details></body>", 'html.parser').select_one("details")
+  
+  if dynamic_loading:
+    inc.append("\n\n")
+    inc.append(details)
+    inc.append("\n\n")
+  else:
+    inc.replace_with(details)
 
 def prefill_includes(dir_path, file_name_filter=None, *args, **kwargs):
   logging.info(f"Prefilling includes in {dir_path}")
