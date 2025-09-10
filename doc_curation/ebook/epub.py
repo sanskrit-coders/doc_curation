@@ -4,7 +4,8 @@ import os
 from doc_curation import ebook
 
 from doc_curation.ebook import prep_content, get_book_path, title_from_path
-from doc_curation.ebook.convert import to_azw3
+from doc_curation.ebook import convert
+from doc_curation.md.file import MdFile
 from doc_curation.md.pandoc_helper import pandoc_from_md_file
 
 
@@ -20,8 +21,14 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
   else:
     epub_path = out_path
   pandoc_from_md_file(md_file=md_file, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=True)
+  
+  md_file_min = MdFile(file_path=epub_path.replace(".epub", "_min.md"))
+  metadata, content = md_file_min.read()
+  epub_path_min = epub_path.replace(".epub", "_min.epub")
+  pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=False)
+  convert.to_pdf(epub_path=epub_path_min, metadata=metadata)
   epub_for_kobo(epub_path=epub_path)
-  to_azw3(epub_path=epub_path)
+  convert.to_azw3(epub_path=epub_path, metadata=metadata)
 
   return epub_path
 

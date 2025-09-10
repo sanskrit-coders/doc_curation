@@ -14,7 +14,7 @@ def make_epub(dir_path, author=None):
 
   out_path = doc_curation.ebook.make_out_path(author, dir_path)
   # epub.make_epubs_recursively(source_dir=dir_path, out_path=out_path, metadata=metadata, css_path=css_path, recursion_depth=3)
-  epub.epub_from_full_md(source_dir=dir_path, out_path=out_path, metadata={"author": author}, css_path=css_path)
+  epub.epub_from_full_md(source_dir=dir_path, out_path=out_path, metadata={"author": author}, css_path=css_path, appendix=appendix_dg)
 
 
 if __name__ == '__main__':

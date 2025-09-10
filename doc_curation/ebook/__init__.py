@@ -3,7 +3,7 @@ import os
 
 import regex
 
-from doc_curation.md import pandoc_helper
+from doc_curation.md import pandoc_helper, content_processor
 from doc_curation.md.content_processor import details_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library.combination import make_full_text_md
@@ -39,6 +39,14 @@ def via_full_md(source_dir, out_path, converter, dest_format, overwrite=True, cl
   copyfile(full_md_path, md_path)
   md_file = MdFile(file_path=md_path)
   md_file.set_title(title=title_from_path(dir_path=source_dir), dry_run=False)
+
+  md_path_min = get_book_path(source_dir, out_path) + "_min.md"
+  copyfile(md_path, md_path_min)
+  md_file = MdFile(file_path=md_path_min)
+  md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, metadata, transformer=lambda x, *args, **kwargs: x.decompose(), title_pattern=r"मूलम्.*", details_css="details"), dry_run=False)
+  content_processor.replace_texts(md_file=md_file, patterns=[r"<details>"], replacement=r"<details open>", flags=regex.MULTILINE)
+
+
   dest_path = get_book_path(source_dir, out_path) + f".{dest_format}"
 
   converter(md_file, dest_path)
