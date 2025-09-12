@@ -14,6 +14,7 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
     pandoc_extra_args = ["--toc", f"--toc-depth={toc_depth}", f"--epub-chapter-level={file_split_level}"]
     if css_path is not None:
       pandoc_extra_args.extend([f'--css={css_path}'])
+    pandoc_extra_args.extend(["--resource-path", os.path.dirname(md_file.file_path)])
     return pandoc_extra_args
   pandoc_extra_args = make_extra_args(file_split_level=file_split_level, toc_depth=toc_depth)
 

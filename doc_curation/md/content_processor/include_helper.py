@@ -195,6 +195,30 @@ def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=[
     return None
 
 
+def fix_rel_urls(content, from_path, to_path):
+  def replacer(match):
+    orig_url = match.group(2)
+    # Skip if URL is absolute or starts with '#'
+    if regex.match(r'[a-zA-Z]+://', orig_url) or orig_url.startswith(('#', '/')):
+      return match.group(0)
+    # Compute fixed relative path from file b to target
+    if from_path.endswith("_index.md"):
+      src_folder = os.path.dirname(from_path)
+    else:
+      src_folder = from_path + "/"
+    if to_path.endswith("_index.md"):
+      dest_folder = os.path.dirname(to_path)
+    else:
+      dest_folder = to_path + "/"
+    resolved = os.path.normpath(os.path.join(src_folder, orig_url))
+    rel_new = os.path.relpath(resolved, dest_folder)
+    return f'{match.group(1)}{rel_new}{match.group(3)}'
+
+  # Fix both image ![](url) and link [](url) references
+  pattern = regex.compile(r'(!?\[.*?\]\()([^\)\s]+)(\))')
+  new_content = pattern.sub(replacer, content)
+  return new_content
+
 
 
 def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
@@ -239,7 +263,8 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
     logging.warning(f"No newlevelforh1 for {file_path} in {container_file_path}")
 
   content = fix_headers(content, h1_level)
-  # TODO: Handle images, spreadsheets, relative urls in includes
+  # TODO: Handle spreadsheets in includes
+  content = fix_rel_urls(content=content, from_path=file_path, to_path=container_file_path)
   if file_path == container_file_path:
     logging.fatal(f"Circular include in {container_file_path}")
     return 

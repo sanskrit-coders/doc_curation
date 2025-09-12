@@ -4,7 +4,7 @@ import os
 import regex
 
 from doc_curation.md import pandoc_helper, content_processor
-from doc_curation.md.content_processor import details_helper
+from doc_curation.md.content_processor import details_helper, include_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library.combination import make_full_text_md
 from doc_curation.md.pandoc_helper import pandoc_dump_md
@@ -23,6 +23,7 @@ def prep_content(content, detail_to_footnote=False, appendix=None):
       metadata, appendix = md_file.read()
       appendix = _strip_figures(appendix)
       appendix = f"# Appendix - {metadata['title']}\n\n{appendix}"
+      appendix = include_helper.fix_headers(content=appendix, h1_level=2)
     content = f"{content}\n\n{appendix}"
   return content
 
@@ -38,8 +39,17 @@ def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None,
   md_path = get_book_path(source_dir, out_path) + ".md"
   os.makedirs(os.path.dirname(md_path), exist_ok=True)
   copyfile(full_md_path, md_path)
+  # copy directory images to out_path, if it exists.
+  if os.path.exists(os.path.join(source_dir, "images")):
+    import shutil
+    images_dest = os.path.join(out_path, "images")
+    shutil.copytree(os.path.join(source_dir, "images"), images_dest, dirs_exist_ok=True)
+    logging.info(f"Copied images to {images_dest}")
+  
   md_file = MdFile(file_path=md_path)
   md_file.set_title(title=title_from_path(dir_path=source_dir), dry_run=False)
+
+  md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()../([^\)\s]+)(\))', r'\1\2)', c), dry_run=False)
 
   md_path_min = get_book_path(source_dir, out_path) + "_min.md"
   copyfile(md_path, md_path_min)
