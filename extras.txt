@@ -6,6 +6,7 @@ google-api-python-client
 kraken
 kraken[pdf]
 
+pypdf
 pikepdf
 pdf2image
 img2pdf

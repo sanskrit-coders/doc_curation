@@ -19,10 +19,18 @@ main summary {
 
 .inline_comment {
     font-size: 80%;
-    color: rgb(114, 47, 55);
+    color: #1B1B1B;
     font-style: italic;
     vertical-align: sub;
 }
+
+a:link,
+a:visited,
+a:hover,
+a:active {
+    color: #363031;
+}
+
 
 h1 {
     font-size: 160%; /* 120% of body font size */

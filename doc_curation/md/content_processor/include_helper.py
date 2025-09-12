@@ -253,8 +253,8 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
     title = regex.sub(r"^\+", "", title.strip())
     if "UNKNOWN_TITLE" in title:
       logging.warning(f"Could not get title for {file_path} in {container_file_path}")
-  if dynamic_loading:
-    title +=  " …{Loading}…"
+    if dynamic_loading:
+      title +=  " …{Loading}…"
 
   if "collapsed" not in inc["class"]:
     if title.strip() != "":

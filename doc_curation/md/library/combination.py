@@ -105,7 +105,8 @@ def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=
     md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 
 
-def make_full_text_md(source_dir, overwrite=True, dry_run=False):
+def make_full_text_md(source_dir, 
+                      omit_pattern=None, overwrite=True, dry_run=False):
   """Create a text - by include-directives - which includes all md files within the directory."""
   # logging.debug(list(Path(dir_path).glob(file_pattern)))
   content = ""
@@ -125,12 +126,14 @@ def make_full_text_md(source_dir, overwrite=True, dry_run=False):
 
   for subfile in sorted(os.listdir(source_dir)):
     subfile_path = os.path.join(source_dir, subfile)
+    if omit_pattern is not None and regex.match(omit_pattern, subfile_path):
+      continue
     if os.path.isdir(subfile_path):
-      if subfile not in ["images", "aMshaH", "aMshAH"]:
+      if subfile not in ["images", "aMshaH", "aMshAH", "angAni"]:
         md_file_path = os.path.join(subfile_path, "full.md")
         sub_md_file_path = os.path.join(subfile, "full.md")
         if overwrite or not os.path.exists(md_file_path):
-          make_full_text_md(source_dir=subfile_path, overwrite=overwrite, dry_run=dry_run)
+          make_full_text_md(source_dir=subfile_path, omit_pattern=omit_pattern, overwrite=overwrite, dry_run=dry_run)
       else:
         continue
     else:

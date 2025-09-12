@@ -27,24 +27,25 @@ def prep_content(content, detail_to_footnote=False, appendix=None):
   return content
 
 
-def via_full_md(source_dir, out_path, converter, dest_format, overwrite=True, cleanup=True):
+def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None, overwrite=True, cleanup=True, detail_pattern_to_remove=r"मूलम्.*"):
   full_md_path = os.path.join(source_dir, "full.md")
 
   if not os.path.exists(full_md_path):
-    full_md_path = make_full_text_md(source_dir=source_dir, overwrite=overwrite)
+    full_md_path = make_full_text_md(source_dir=source_dir, omit_pattern=omit_pattern, overwrite=overwrite)
   # copy full_md_path to out_path
   os.makedirs(os.path.dirname(out_path), exist_ok=True)
   from shutil import copyfile
   md_path = get_book_path(source_dir, out_path) + ".md"
+  os.makedirs(os.path.dirname(md_path), exist_ok=True)
   copyfile(full_md_path, md_path)
   md_file = MdFile(file_path=md_path)
   md_file.set_title(title=title_from_path(dir_path=source_dir), dry_run=False)
 
   md_path_min = get_book_path(source_dir, out_path) + "_min.md"
   copyfile(md_path, md_path_min)
-  md_file = MdFile(file_path=md_path_min)
-  md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, metadata, transformer=lambda x, *args, **kwargs: x.decompose(), title_pattern=r"मूलम्.*", details_css="details"), dry_run=False)
-  content_processor.replace_texts(md_file=md_file, patterns=[r"<details>"], replacement=r"<details open>", flags=regex.MULTILINE)
+  md_file_min = MdFile(file_path=md_path_min)
+  md_file_min.transform(content_transformer=lambda c, metadata, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, metadata, transformer=lambda x, *args, **kwargs: x.decompose(), title_pattern=detail_pattern_to_remove, details_css="details"), dry_run=False)
+  content_processor.replace_texts(md_file=md_file_min, patterns=[r"<details>"], replacement=r"<details open>", flags=regex.MULTILINE)
 
 
   dest_path = get_book_path(source_dir, out_path) + f".{dest_format}"
@@ -68,9 +69,9 @@ def get_book_path(source_dir, out_path):
   return book_path
 
 
-def from_dir(source_dir, out_path, pandoc_extra_args=[], dest_format="html", appendix=None, cleanup=True, overwrite=True):
+def from_dir(source_dir, out_path, omit_pattern=None, pandoc_extra_args=[], dest_format="html", appendix=None, cleanup=True, overwrite=True):
 
-  via_full_md(source_dir=source_dir, out_path=out_path, converter=lambda x,y: pandoc_helper.pandoc_from_md_file(x, y, dest_format=dest_format, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix), dest_format=dest_format, cleanup=cleanup, overwrite=overwrite)
+  via_full_md(source_dir=source_dir, out_path=out_path, omit_pattern=omit_pattern, converter=lambda x,y: pandoc_helper.pandoc_from_md_file(x, y, dest_format=dest_format, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix), dest_format=dest_format, cleanup=cleanup, overwrite=overwrite)
 
 
 def title_from_path(dir_path):
@@ -86,7 +87,8 @@ def title_from_path(dir_path):
 
 
 def make_out_path(author, dir_path, out_path=f"/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/"):
-  out_path = os.path.join(out_path, author)
+  if author is not None:
+    out_path = os.path.join(out_path, author)
   tome_match = regex.match("(.+)/(.+?)/sarva-prastutiH|mUlam/", dir_path)
   if tome_match is not None:
     tome = tome_match.group(2)
