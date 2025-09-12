@@ -337,6 +337,11 @@ def section_headings_to_details(content, prev_detail_title="मूलम्(.*)"
 
 
 def fix_headers(content: str, h1_level: int) -> str:
-  content = regex.sub(r"(?<=\n|^)#", f"{'#' * h1_level}", content)
+  # TODO: Hand jsinclude tags here.
+  # h1_level is taken to mean title header level.
+  if regex.search("^# ", content, flags=regex.MULTILINE):
+    content = regex.sub(r"(?<=\n|^)#", f"{'#' * (h1_level+1)}", content)
+  else:
+    content = regex.sub(r"(?<=\n|^)#", f"{'#' * h1_level}", content)
   content = regex.sub(rf"(?<=\n|^)#######+", f"{'#' * 6}", content)
   return content

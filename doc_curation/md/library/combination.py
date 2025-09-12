@@ -120,7 +120,7 @@ def make_full_text_md(source_dir,
     index_md = MdFile(file_path=index_md_path)
     (index_yml, _) = index_md.read()
     title = "%s (%s)" % (index_yml["title"], title)
-    content = "%s\n\n%s" % (content, """<div class="js_include" url="%s"  newLevelForH1="1" includeTitle="false"> </div>""" % (rel_url).strip())
+    content = "%s\n\n%s" % (content, """<div class="js_include" url="%s"  newLevelForH1="0" includeTitle="false"> </div>""" % (rel_url).strip())
     num_md_files = num_md_files + 1
 
 
@@ -143,7 +143,7 @@ def make_full_text_md(source_dir,
 
     num_md_files = num_md_files + 1
     rel_url = os.path.join("..", regex.sub(r"\.md", "/", sub_md_file_path))
-    content = "%s\n\n%s" % (content, """<div class="js_include" url="%s"  newLevelForH1="2" includeTitle="true"> </div>""" % (rel_url).strip())
+    content = "%s\n\n%s" % (content, """<div class="js_include" url="%s"  newLevelForH1="1" includeTitle="true"> </div>""" % (rel_url).strip())
   
   if num_md_files > 0:
     full_md_path = os.path.join(source_dir, "full.md")
