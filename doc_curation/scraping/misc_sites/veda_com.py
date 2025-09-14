@@ -102,7 +102,7 @@ def dump_mantra_details(dest_path, url, comment_detection_str, mode=ForceMode.NO
 
   if comment_detection_str in content:
     # logging.info(f"Skipping: {url}")
-    # md_file.transform(content_transformer=lambda c, m: details_helper.insert_after_detail(content=c, metadata=m, title="पदपाठः", new_element=comment_details[-1].to_soup()))
+    # md_file.transform(content_transformer=lambda c, *args, **kwargs: details_helper.insert_after_detail(content=c, metadata=m, title="पदपाठः", new_element=comment_details[-1].to_soup()))
     return next_url
 
   comment_details = []

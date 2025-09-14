@@ -35,8 +35,10 @@ def get_sections(content):
 
 
 class Section(object):
-  def __init__(self, title, header_prefix, lines=[]):
+  def __init__(self, title, header_prefix, lines=None):
     self.title = title
+    if lines is None:
+      lines = []
     self.lines = lines
     self.header_prefix = header_prefix
 

@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup, NavigableString
 from indic_transliteration import sanscript
 
 
-def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVANAGARI, aksharamukha_pre_options=[], aksharamukha_post_options=[], *args, **kwargs):
+def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVANAGARI, aksharamukha_pre_options=None, aksharamukha_post_options=None, *args, **kwargs):
   if source_script.lower().startswith("tamil"):
     from indic_transliteration import aksharamukha_helper
     if source_script.lower() == sanscript.TAMIL_SUB:
@@ -49,7 +49,7 @@ def _make_content_from_soup(soup):
     if isinstance(x, NavigableString):
       x = str(x).replace("<", "&lt;")
     new_content = new_content + str(x)
-  new_content = new_content.replace("&amp;", "&").replace("&gt;", ">").replace("open=\"\"", "open")
+  new_content = new_content.replace("&amp;", "&").replace("&gt;", ">")
   new_content = regex.sub("(?<=</(details|div)>)\n?(?=<(details|div))", "\n\n", new_content)
   new_content = regex.sub("\n\n+", "\n\n", new_content)
   return new_content

@@ -152,9 +152,9 @@ def get_docs(out_dir):
     # exit()
 
 def fix_footnotes(dir_path):
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.inline_comments_to_footnotes(c), dry_run=False)
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.fix_intra_word_footnotes(c), dry_run=False)
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: footnote_helper.define_footnotes_near_use(c), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: footnote_helper.inline_comments_to_footnotes(c), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: footnote_helper.fix_intra_word_footnotes(c), dry_run=False)
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: footnote_helper.define_footnotes_near_use(c), dry_run=False)
 
 
 

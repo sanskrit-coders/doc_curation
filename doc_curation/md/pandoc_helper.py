@@ -8,6 +8,10 @@ import yaml
 from doc_curation.md.file import MdFile
 
 
+os.environ.setdefault('PYPANDOC_PANDOC', '/usr/bin/pandoc')
+
+
+
 def get_md_with_pandoc(content_in, source_format="html-native_divs-native_spans", pandoc_extra_args=['--markdown-headings=atx']):
   """
   
@@ -54,11 +58,16 @@ def import_with_pandoc(md_file, source_file, source_format, dry_run, metadata={}
 
 
 
-def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, pandoc_extra_args=[], content_maker=None, *args, **kwargs):
+def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, pandoc_extra_args=None, content_maker=None, *args, **kwargs):
+  if pandoc_extra_args is None:
+    pandoc_extra_args = []
   import pypandoc
   logger = logging.getLogger('pypandoc')
-  logger.setLevel(logging.CRITICAL)
+  logger.setLevel(logging.INFO)
   logger.info(f"Converting {md_file} to {dest_path}...")
+
+  logging.info(f"pandoc {pypandoc.get_pandoc_version()} at {pypandoc.get_pandoc_path()}.")
+
   [metadata_in, content_in] = md_file.read()
   if metadata is not None:
     metadata_in.update(metadata)
@@ -66,17 +75,20 @@ def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, p
     content_in = content_maker(content_in, *args, **kwargs)
   filters = None
   # prepend metadata as yaml string to content_in
-  content_in = "\n".join([f"---\n{yaml.dump(metadata)}\n---", content_in])
+  content_in = "\n".join([f"---\n{yaml.dump(metadata_in)}\n---\n# ॐ\n", content_in])
 
   os.makedirs(os.path.dirname(dest_path), exist_ok=True)
   
   if dest_format == "pdf":
     pandoc_extra_args.extend(["--pdf-engine=xelatex", "-V", "mainfont=Noto Sans", "-V", "devanagarifont=Noto Sans Devanagari"])
 
-
-  pypandoc.convert_text(source=content_in, to=dest_format, format="gfm-raw_html-smart+footnotes",extra_args=pandoc_extra_args,filters=filters, outputfile=dest_path)
+  logging.info(f"Converting to {dest_format} with args {pandoc_extra_args} ...")
+  # -smart disables smart quotes and emdashification of --.
+  # raw_html allows raw html tags.
+  pypandoc.convert_text(source=content_in, to=dest_format, format="gfm+raw_html-smart+footnotes",extra_args=pandoc_extra_args,filters=filters, outputfile=dest_path)
   logging.info(f"Successfully created '{dest_path}'!")
 
 
 if __name__ == '__main__':
   pandoc_from_md_file(md_file=MdFile(file_path="/doc_curation/md/library/test_local.md"), dest_path="/doc_curation/md/library/test_local.md.epub", dest_format="epub", metadata={"title": "mUlam-1.1", "author": "mUlam"})
+  

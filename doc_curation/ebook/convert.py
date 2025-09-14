@@ -26,8 +26,8 @@ def to_azw3(epub_path: str, metadata={}):
   # The command is: ebook-convert "input_path.epub" "output_path.azw3"
   azw3_path = epub_path.replace(".epub", ".azw3")
   command = [CALIBRE, epub_path, azw3_path]
-  options = metadata_to_calibre_args(metadata=metadata)
-  command.extend(options)
+  # options = metadata_to_calibre_args(metadata=metadata)
+  # command.extend(options)
 
   logging.info(f"Converting {os.path.basename(epub_path)} to AZW3...")
 
@@ -75,8 +75,9 @@ def to_pdf(epub_path: str, paper_size="a5", metadata={}, move_toc=False):
     return total_pages
 
 
-  options = metadata_to_calibre_args(metadata=metadata)
-  command.extend(options)
+  # Doesn't work with unicode metadata.
+  # options = metadata_to_calibre_args(metadata=metadata)
+  # command.extend(options)
   # Execute the command
   result = subprocess.run(command, check=True, capture_output=True, text=True)
 

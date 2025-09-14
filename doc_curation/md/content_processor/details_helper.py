@@ -157,6 +157,11 @@ def transform_details_with_soup(content, metadata, content_str_transformer=None,
   return content_processor._make_content_from_soup(soup=soup)
 
 
+def open_attribute_fixer(detail_tag, *args, **kwargs):
+  if "open" in detail_tag.attrs:
+    detail_tag["open"] = ""
+
+
 def transform_detail_tags_with_soup(content, metadata, transformer, title_pattern=None, details_css="body>details", *args, **kwargs):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
@@ -231,7 +236,7 @@ def insert_duplicate_adjascent(content, metadata, old_title_pattern="मूल�
       del detail_tag["open"]
 
   content = transform_detail_tags_with_soup(content=content, metadata=metadata, transformer=transformer, title_pattern=old_title_pattern)
-  content.replace("open = \"\"", "open")
+  # content.replace("open = \"\"", "open")
   if "मूलम्" in old_title_pattern:
     content.replace("<details open><summary>मूलम्", "<details><summary>मूलम्")
   return content

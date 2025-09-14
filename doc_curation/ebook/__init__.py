@@ -23,12 +23,12 @@ def prep_content(content, detail_to_footnote=False, appendix=None):
       metadata, appendix = md_file.read()
       appendix = _strip_figures(appendix)
       appendix = f"# Appendix - {metadata['title']}\n\n{appendix}"
-      appendix = include_helper.fix_headers(content=appendix, h1_level=2)
+      # appendix = include_helper.fix_headers(content=appendix, h1_level=2)
     content = f"{content}\n\n{appendix}"
   return content
 
 
-def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None, overwrite=True, cleanup=True, detail_pattern_to_remove=r"मूलम्.*"):
+def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None, overwrite=True, cleanup=True, detail_pattern_to_remove=r"मूलम्.*", metadata={}):
   full_md_path = os.path.join(source_dir, "full.md")
 
   if not os.path.exists(full_md_path):
@@ -49,13 +49,21 @@ def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None,
   md_file = MdFile(file_path=md_path)
   md_file.set_title(title=title_from_path(dir_path=source_dir), dry_run=False)
 
-  md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()../([^\)\s]+)(\))', r'\1\2)', c), dry_run=False)
+  def _fix_metadata(c, m):
+    m.update(metadata)
+    return m
+  logging.info(f"Fixing links and metadata for {md_path}")
+  md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()../([^\)\s]+)(\))', r'\1\2)', c), metadata_transformer=_fix_metadata, dry_run=False)
+  
+  logging.info(f"Fixing open details tags for {md_path}")
+  md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, metadata, transformer=details_helper.open_attribute_fixer, details_css="details"), dry_run=False)
 
   md_path_min = get_book_path(source_dir, out_path) + "_min.md"
   copyfile(md_path, md_path_min)
   md_file_min = MdFile(file_path=md_path_min)
   md_file_min.transform(content_transformer=lambda c, metadata, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, metadata, transformer=lambda x, *args, **kwargs: x.decompose(), title_pattern=detail_pattern_to_remove, details_css="details"), dry_run=False)
-  content_processor.replace_texts(md_file=md_file_min, patterns=[r"<details>"], replacement=r"<details open>", flags=regex.MULTILINE)
+  content_processor.replace_texts(md_file=md_file_min, patterns=[r"<details>"], replacement=r"<details open=\"\">", flags=regex.MULTILINE)
+  logging.info(f"Removed <details> tags from {md_path_min}")
 
 
   dest_path = get_book_path(source_dir, out_path) + f".{dest_format}"
@@ -79,7 +87,7 @@ def get_book_path(source_dir, out_path):
   return book_path
 
 
-def from_dir(source_dir, out_path, omit_pattern=None, pandoc_extra_args=[], dest_format="html", appendix=None, cleanup=True, overwrite=True):
+def from_dir(source_dir, out_path, omit_pattern=None, pandoc_extra_args=None, dest_format="html", appendix=None, cleanup=True, overwrite=True):
 
   via_full_md(source_dir=source_dir, out_path=out_path, omit_pattern=omit_pattern, converter=lambda x,y: pandoc_helper.pandoc_from_md_file(x, y, dest_format=dest_format, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix), dest_format=dest_format, cleanup=cleanup, overwrite=overwrite)
 

@@ -11,20 +11,20 @@ from doc_curation.md.pandoc_helper import pandoc_from_md_file
 
 def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, appendix=None):
   def make_extra_args(file_split_level, toc_depth=6):
-    pandoc_extra_args = ["--toc", f"--toc-depth={toc_depth}", f"--epub-chapter-level={file_split_level}"]
+    pandoc_extra_args = ["--toc", f"--toc-depth={toc_depth}", f"--split-level={file_split_level}"]
     if css_path is not None:
       pandoc_extra_args.extend([f'--css={css_path}'])
     pandoc_extra_args.extend(["--resource-path", os.path.dirname(md_file.file_path)])
     return pandoc_extra_args
   pandoc_extra_args = make_extra_args(file_split_level=file_split_level, toc_depth=toc_depth)
+  source_dir = os.path.dirname(md_file.file_path)
 
   if not out_path.endswith(".epub"):
-    source_dir = os.path.dirname(md_file.file_path)
     epub_path = get_book_path(source_dir, out_path) + ".epub"
-    metadata["title"] = title_from_path(dir_path=source_dir)
   else:
     epub_path = out_path
   pandoc_from_md_file(md_file=md_file, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=True)
+  _fix_details_in_epub(epub_path=epub_path)
 
   md_file_min = MdFile(file_path=epub_path.replace(".epub", "_min.md"))
   metadata, content = md_file_min.read()
@@ -32,6 +32,7 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
   pandoc_extra_args = make_extra_args(file_split_level=1)
   epub_path_min = epub_path.replace(".epub", "_min_notoc.epub")
   pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=False)
+  _fix_details_in_epub(epub_path=epub_path_min)
   convert.to_pdf(epub_path=epub_path_min, metadata=metadata, paper_size="a4")
 
   pandoc_extra_args.remove("--toc")
@@ -68,7 +69,7 @@ def epub_from_full_md(source_dir, out_path, omit_pattern=None, css_path=None, me
     return
 
   converter = lambda md_file, out_path: epub_from_md_file(md_file=md_file, out_path=out_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path, appendix=appendix)
-  ebook.via_full_md(source_dir=source_dir, out_path=os.path.dirname(epub_path), converter=converter, omit_pattern=omit_pattern, overwrite=overwrite, dest_format="epub", cleanup=True, detail_pattern_to_remove=detail_pattern_to_remove)
+  ebook.via_full_md(source_dir=source_dir, out_path=os.path.dirname(epub_path), converter=converter, omit_pattern=omit_pattern, overwrite=overwrite, dest_format="epub", cleanup=True, detail_pattern_to_remove=detail_pattern_to_remove, metadata=metadata)
   
 
 
@@ -88,3 +89,77 @@ def epub_for_kobo(epub_path: str):
     logging.error(result.stderr)
 
 
+def _fix_details_in_epub(epub_path: str):
+  """
+  Post-process an EPUB to convert <details ... open> into <details ... open="open">.
+  Ensures 'mimetype' stays first and uncompressed as per EPUB spec.
+  """
+  import io
+  import re
+  import zipfile
+  import tempfile
+  import shutil
+
+  if not os.path.isfile(epub_path):
+    logging.warning(f"EPUB not found for post-process: {epub_path}")
+    return
+
+  # Read original EPUB
+  with zipfile.ZipFile(epub_path, "r") as zin:
+    # Extract 'mimetype' to preserve as-is (must be first and uncompressed)
+    mimetype_data = None
+    try:
+      mimetype_data = zin.read("mimetype")
+    except KeyError:
+      pass  # Not strictly required to exist, but typical; we'll just proceed.
+
+    # Create temp output EPUB
+    fd, temp_epub = tempfile.mkstemp(suffix=".epub")
+    os.close(fd)
+    try:
+      with zipfile.ZipFile(temp_epub, "w") as zout:
+        # Write mimetype first, uncompressed if present
+        if mimetype_data is not None:
+          zinfo = zipfile.ZipInfo("mimetype")
+          zinfo.compress_type = zipfile.ZIP_STORED
+          zout.writestr(zinfo, mimetype_data)
+
+        # Process all other files
+        for item in zin.infolist():
+          if item.filename == "mimetype":
+            continue
+          data = zin.read(item.filename)
+
+          # Modify only XHTML/HTML files
+          if item.filename.lower().endswith((".xhtml", ".html", ".htm")):
+            try:
+              text = data.decode("utf-8")
+            except UnicodeDecodeError:
+              # Try common fallback; if it fails, leave as-is
+              try:
+                text = data.decode("utf-16")
+              except UnicodeDecodeError:
+                zout.writestr(item, data)
+                continue
+
+            # Replace bare boolean open with explicit value, without touching open=
+            pattern = re.compile(r'(<details\b[^>]*?)\sopen(?!\s*=)(?=(\s|/?>))', flags=re.IGNORECASE)
+            fixed = pattern.sub(r'\1 open="open"', text)
+
+            # Also handle stray cases like "<details open>" exactly
+            fixed = re.sub(r'<details\s+open\s*>', '<details open="open">', fixed, flags=re.IGNORECASE)
+
+            data = fixed.encode("utf-8")
+
+          # Preserve compression for the rest (deflated)
+          zout.writestr(item, data)
+
+      # Replace original EPUB
+      shutil.move(temp_epub, epub_path)
+      logging.info(f"Normalized <details open> in EPUB: {epub_path}")
+    finally:
+      try:
+        if os.path.exists(temp_epub):
+          os.remove(temp_epub)
+      except Exception:
+        pass

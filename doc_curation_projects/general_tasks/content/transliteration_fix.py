@@ -32,8 +32,8 @@ def devanaagarify(dir_path, source_script):
 
 
 def fix_anunaasikaadi(dir_path, level=0):
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_anunaasikaadi(x, level=level), dry_run=False, silent_iteration=False)
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.misc_manipravaala_typos(x), dry_run=False, silent_iteration=False)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, metadata: sanskrit_helper.fix_anunaasikaadi(x, level=level), dry_run=False, silent_iteration=False)
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.misc_manipravaala_typos(x), dry_run=False, silent_iteration=False)
   pass
 
 
@@ -41,7 +41,7 @@ def fix_anunaasikaadi(dir_path, level=0):
 if __name__ == '__main__':
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/vAyu-purANam/dvi-khaNDa-saMskaraNam", content_transformer=lambda x, y: sanskrit_helper.fix_repha_duplication(x), dry_run=False, silent_iteration=False)
-  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shruta-prakAshikA/ta/gopAlAchAryaH.md", source_script="tamil")
+  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shruta-prakAshikA/ta/gopAlAchAryaH.md", source_script="tamil")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/lokAchAryaH/shrI-vachana-bhUShaNam/vyAkhyA", content_transformer=lambda x, y: sanscript.SCHEMES[sanscript.DEVANAGARI].fix_numbered_vargiiya_vyanjanas(x), dry_run=False, silent_iteration=False)
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/pinb-aLHagiya-perumAL-jIyar-vArtA-mAlA.md", content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
@@ -50,7 +50,7 @@ if __name__ == '__main__':
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/para-mata-bhangaH/mUlam.md", source_script="tamil_subscripted")
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/mAdhvam/content/kriyA/nArAyaNa-paNDitaH/madhvAmRta-mahArNavaH/sarva-prastutiH.md", source_script="kannada")
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/sanskrit/content/vyAkaraNam/pANinIyam/samAsaH/articles/samAsa-chandrikA.md", source_script=sanscript.IAST)
-  # fix_anunaasikaadi(dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/purANam/nArAyaNIyam/mAhAtmyam.md")
+  fix_anunaasikaadi(dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/harivaMshaH/sarva-prastutiH")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/english/content/prose/hindu/indologist/max-muller/india_what_it_can_teach_us.md", content_transformer=lambda x, y: sanskrit_helper.fix_sacred_texts_transliteration(x), dry_run=False, silent_iteration=False)
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/", content_transformer=lambda x, y: tamil_tools.set_tamil_soft_consonants(x), dry_run=False, silent_iteration=False)
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/shrIvaiShNava/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam", content_transformer=lambda x, y: tamil_tools.fix_naive_ta_transliterations(x), dry_run=False, silent_iteration=False)

@@ -23,7 +23,7 @@ def make_details(dir_path):
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.non_detail_parts_to_detail(content=c, title="टीका"))
 
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_2LINE_SHLOKA))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args,  **kwargs: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_SHLOKA))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_BOLD_LINES))
 
@@ -56,6 +56,6 @@ def transform_details(dir_path):
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_detail_contents_with_soup(content=c, metadata=m, transformer=tamil_nna_fixer, title_pattern="विश्वास-प्रस्तुतिः.*|मूलम्.*"))
 
 if __name__ == '__main__':
-  make_details(dir_path="/home/vvasuki/gitland/vishvAsa/sanskrit/content/vyAkaraNam/bhaRtr-hariH_vAkyapadIyam")
+  make_details(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/bRhaspatiH/vyavahAra-kANDam.md")
   # transform_details(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH/1/7_aiShTika-yAjamAnAdi/02_iDopAhvAnabrAhmaNam.md")
   pass

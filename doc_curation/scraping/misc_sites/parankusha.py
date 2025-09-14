@@ -202,7 +202,7 @@ def get_structured_text(browser, start_nodes, base_dir, unit_info_file, comment_
       text = browse_get_text(browser=browser, comment_mode=comment_mode, source_script=source_script, start_nodes=None)
       md_file = MdFile(file_path=out_file_path)
       detail = details_helper.Detail(title=detail_title, content=text)
-      md_file.transform(content_transformer=lambda c, m: details_helper.insert_adjascent_element(content=c, metadata=m, title=prev_detail_title, new_element=detail))
+      md_file.transform(content_transformer=lambda c, *args, **kwargs: details_helper.insert_adjascent_element(content=c, metadata=m, title=prev_detail_title, new_element=detail))
     else:
       text_name = deduce_text_name(browser)
       dump_to_file(browser=browser, comment_mode=comment_mode, out_file_path=out_file_path, text_name=text_name, start_nodes=None, source_script=source_script)

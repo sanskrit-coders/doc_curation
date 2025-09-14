@@ -140,5 +140,5 @@ def dump_all_texts(base_path):
 if __name__ == '__main__':
   pass
   # dump_all_texts(base_path=)
-  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m: space_helper.fix_danda_spaces(c), dir_path=BASE_AGAMA)
-  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m: space_helper.fix_danda_spaces(c), dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/bauddham")
+  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, *args, **kwargs: space_helper.fix_danda_spaces(c), dir_path=BASE_AGAMA)
+  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, *args, **kwargs: space_helper.fix_danda_spaces(c), dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/bauddham")
