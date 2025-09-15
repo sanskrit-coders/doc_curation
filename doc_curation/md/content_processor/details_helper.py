@@ -199,11 +199,19 @@ def add_detail_footnotes(content, remove_detail=False, *args, **kwargs):
     footnote = Footnote(id_str=f"fn_det_{detail.title[:3]}_{len(previous_details)}", content=detail.content)
 
     detail_tag.insert_after(f"\n\n({detail.title}{footnote.get_reference()})\n\n{footnote.to_definition()}\n\n")
-    if remove_detail:
-      detail_tag.decompose()
 
   detail_css = "details:not([open])"
   content = transform_detail_tags_with_soup(content=content, metadata=None, transformer=transformer, details_css=detail_css)
+
+  if remove_detail:
+    # We don't want to affect len(previous_details) in footnote numbering - so we remove the details separately.
+    def remover(detail_tag, *args, **kwargs):
+      if detail_tag.get("open") is not None:
+        return
+      detail_tag.decompose()
+    content = transform_detail_tags_with_soup(content=content, metadata=None, transformer=remover, details_css=detail_css)
+
+
   return content
 
 
@@ -236,7 +244,7 @@ def insert_duplicate_adjascent(content, metadata, old_title_pattern="मूल�
       del detail_tag["open"]
 
   content = transform_detail_tags_with_soup(content=content, metadata=metadata, transformer=transformer, title_pattern=old_title_pattern)
-  # content.replace("open = \"\"", "open")
+  content.replace("open=\"\"", "open")
   if "मूलम्" in old_title_pattern:
     content.replace("<details open><summary>मूलम्", "<details><summary>मूलम्")
   return content

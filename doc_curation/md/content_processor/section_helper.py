@@ -338,6 +338,10 @@ def section_headings_to_details(content, prev_detail_title="मूलम्(.*)"
   return new_content
 
 
+def headings_to_bold(content,suffix="॥"):
+  return regex.sub(r"^(#+) *(.+)[॥ ]*", rf"**\2{suffix}**", content, flags=regex.MULTILINE)
+
+
 def fix_headers(content: str, h1_level: int) -> str:
   # TODO: Hand jsinclude tags here.
   # h1_level is taken to mean title header level.

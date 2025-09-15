@@ -3,13 +3,17 @@ code {
     font-size: 100%;
 }
 
-main details {
+details {
     margin: 3px 0px;
     border-top: 1px solid black;
+    border-left: 1px dashed black;
     border-bottom: 1px solid black;
 }
+details.highlight  > *:not(summary) {
+    text-decoration: underline;
+}
 
-main summary {
+summary {
     border-bottom: 1px dashed black;
     font-size: 90%;
     font-weight: bold;
@@ -149,8 +153,6 @@ pre {
 .header-nav a:active {
     color: pink;
 }
-details.highlight  > *:not(summary) {
-    text-decoration: underline;
-}
+
 
 

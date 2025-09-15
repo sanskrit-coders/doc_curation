@@ -52,10 +52,12 @@ def transform_details(dir_path):
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_detail_contents_with_soup(content=c, metadata=m, transformer=lambda c, m:space_helper.remove_fake_linebreaks(c), title_pattern="गङ्गानथ-तुल्य-वाक्यानि"))
 
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.transform_details_with_soup(content=c, content_str_transformer=lambda c, *args, **kwargs:section_helper.headings_to_bold(c), title_pattern=".*", *args, **kwargs))
+
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_detail_contents_with_soup(content=c, metadata=m, transformer=tamil_nna_fixer, title_pattern="विश्वास-प्रस्तुतिः.*|मूलम्.*"))
 
 if __name__ == '__main__':
-  make_details(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/bRhaspatiH/vyavahAra-kANDam.md")
-  # transform_details(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH/1/7_aiShTika-yAjamAnAdi/02_iDopAhvAnabrAhmaNam.md")
+  # make_details(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/bRhaspatiH/vyavahAra-kANDam.md")
+  transform_details(dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAsaH/goraxapura-pAThaH/hindy-anuvAdaH/12_shAntiparva/03_moxadharmaparva/335-351_nArAyaNIyam/347_hayashira-upAkhyAnam_abhinava-ranganAtha-TIkA")
   pass

@@ -16,6 +16,7 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
       pandoc_extra_args.extend([f'--css={css_path}'])
     pandoc_extra_args.extend(["--resource-path", os.path.dirname(md_file.file_path)])
     return pandoc_extra_args
+
   pandoc_extra_args = make_extra_args(file_split_level=file_split_level, toc_depth=toc_depth)
   source_dir = os.path.dirname(md_file.file_path)
 
@@ -23,6 +24,7 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
     epub_path = get_book_path(source_dir, out_path) + ".epub"
   else:
     epub_path = out_path
+
   pandoc_from_md_file(md_file=md_file, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=True)
   _fix_details_in_epub(epub_path=epub_path)
 
@@ -30,15 +32,18 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
   metadata, content = md_file_min.read()
 
   pandoc_extra_args = make_extra_args(file_split_level=1)
-  epub_path_min = epub_path.replace(".epub", "_min_notoc.epub")
+  epub_path_min = epub_path.replace(".epub", "_min.epub")
   pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=False)
   _fix_details_in_epub(epub_path=epub_path_min)
   convert.to_pdf(epub_path=epub_path_min, metadata=metadata, paper_size="a4")
 
   pandoc_extra_args.remove("--toc")
-  epub_path_min = epub_path.replace(".epub", "_min.epub")
-  pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=False)
-  convert.to_pdf(epub_path=epub_path_min, metadata=metadata, paper_size="a5", move_toc=True)
+  epub_path_min_notoc = epub_path.replace(".epub", "_min_notoc.epub")
+  pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min_notoc, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=False)
+  _fix_details_in_epub(epub_path=epub_path_min_notoc)
+
+  convert.to_pdf(epub_path=epub_path_min_notoc, metadata=metadata, paper_size="a5", move_toc=True)
+
   epub_for_kobo(epub_path=epub_path)
   convert.to_azw3(epub_path=epub_path, metadata=metadata)
 

@@ -28,7 +28,8 @@ def prep_content(content, detail_to_footnote=False, appendix=None):
   return content
 
 
-def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None, overwrite=True, cleanup=True, detail_pattern_to_remove=r"मूलम्.*", metadata={}):
+def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None, overwrite=True, cleanup=True, detail_pattern_to_remove=r"मूलम्.*", metadata={},
+                baseUrl="https://vishvAsa.github.io"):
   full_md_path = os.path.join(source_dir, "full.md")
 
   if not os.path.exists(full_md_path):
@@ -54,7 +55,8 @@ def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None,
     return m
   logging.info(f"Fixing links and metadata for {md_path}")
   md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()../([^\)\s]+)(\))', r'\1\2)', c), metadata_transformer=_fix_metadata, dry_run=False)
-  
+  md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()/([^\)\s]+)(\))', f'{baseUrl}/)', c), metadata_transformer=_fix_metadata, dry_run=False)
+
   logging.info(f"Fixing open details tags for {md_path}")
   md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, metadata, transformer=details_helper.open_attribute_fixer, details_css="details"), dry_run=False)
 
@@ -62,7 +64,7 @@ def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None,
   copyfile(md_path, md_path_min)
   md_file_min = MdFile(file_path=md_path_min)
   md_file_min.transform(content_transformer=lambda c, metadata, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, metadata, transformer=lambda x, *args, **kwargs: x.decompose(), title_pattern=detail_pattern_to_remove, details_css="details"), dry_run=False)
-  content_processor.replace_texts(md_file=md_file_min, patterns=[r"<details>"], replacement=r"<details open=\"\">", flags=regex.MULTILINE)
+  content_processor.replace_texts(md_file=md_file_min, patterns=[r"<details>"], replacement=r"<details open="">", flags=regex.MULTILINE)
   logging.info(f"Removed <details> tags from {md_path_min}")
 
 

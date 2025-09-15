@@ -11,7 +11,7 @@ from indic_transliteration.sanscript.schemes.brahmic import accent
 
 
 def details_fix(dir_path):
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_details_with_soup(content=c, metadata=m, content_str_transformer=lambda c, m : accent.to_US_accents(text=c, pauses=r"[।॥\[]+"), title_pattern=r"विश्वास-प्रस्तुतिः.*", details_css="details"))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.transform_details_with_soup(content=c, content_str_transformer=lambda c, *args, **kwargs : accent.to_US_accents(text=c, pauses=r"[।॥]+"), title_pattern=r"विश्वास-प्रस्तुतिः.*", details_css="details", *args, **kwargs))
 
 
 def content_fix(dir_path):
@@ -29,7 +29,7 @@ def typo_fix(dir_path):
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.undo_taittirIya_forms(x))
 
 
-details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/AraNyakam/sarva-prastutiH/03_chAturhotra-chayanAdi/")
+details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH/1/6_aiShTika-yAjamAnAdi/07_anvAdhAnAdi.md")
 
 # fix_old_US_notation("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/prakIrNa-mantrAdi/gadyam/")
 # fix_old_US_notation("/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content")
