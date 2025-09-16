@@ -3,6 +3,7 @@ import itertools
 import logging
 import os
 import subprocess
+import unicodedata
 from typing import Tuple, Dict
 
 import regex
@@ -207,10 +208,15 @@ class MdFile(object):
     # logging.info(self.file_path)
     if not dry_run:
       os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-      with codecs.open(self.file_path, "w", 'utf-8') as out_file_obj:
+      with codecs.open(self.file_path, "w", 'utf-8', errors='strict') as out_file_obj:
         import toml
         tomlout = toml.dumps(metadata)
-        dump = "+++\n{frontmatter}\n+++\n{markdown}".format(frontmatter=tomlout, markdown=content)
+        markdown = content if isinstance(content, str) else str(content)
+        dump = f"+++\n{tomlout}+++\n{markdown}"
+        # Normalize to canonical composed form to avoid inconsistent encodings of the same graphemes
+        dump = unicodedata.normalize("NFC", dump)
+        if not dump.endswith("\n"):
+          dump += "\n"
         chunks = [dump[i:i + CHUNK_SIZE] for i in range(0, len(dump), CHUNK_SIZE)]
         for chunk in chunks:
           out_file_obj.write(chunk)

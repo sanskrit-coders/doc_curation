@@ -219,3 +219,31 @@ def make_ids_unique(content):
       def_map[definition.group(3).strip()] = definition.group(1)
   content = insert_definitions_near_use(content=content, definitions=filtered_defs)
   return content
+
+
+def add_for_links(content, prefix="lnk", *args, **kwargs):
+  # Find markdown links, add footnotes for each, so that they can be read when printed.
+  link_pattern = r"\[([^\]]+)\]\(([^\)]+)\)"
+  links = list(regex.finditer(link_pattern, content))
+
+  footnotes = {}
+  for index, link in enumerate(links):
+    text = link.group(1)
+    url = link.group(2)
+    footnote = Footnote(id_str=f"{prefix}_{index + 1}", content=url)
+    footnotes[index] = footnote
+
+  result = ""
+  last_match_end = 0
+  for index, link in enumerate(links):
+    footnote = footnotes[index]
+    result += content[last_match_end:link.start()]
+    result += f"{link.group(0)}{footnote.get_reference()}"
+    last_match_end = link.end()
+  result += content[last_match_end:]
+  content = result
+
+  for index, footnote in footnotes.items():
+    content += footnote.to_definition()
+
+  return content 

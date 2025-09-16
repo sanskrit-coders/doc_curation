@@ -1,12 +1,13 @@
 import logging
 import os
 
+import doc_curation.ebook.pandoc_helper
 from doc_curation import ebook
 
-from doc_curation.ebook import prep_content, get_book_path, title_from_path
-from doc_curation.ebook import convert
+from doc_curation.ebook import prep_content, get_book_path, pandoc_helper
+from doc_curation.ebook import calibre_helper
 from doc_curation.md.file import MdFile
-from doc_curation.md.pandoc_helper import pandoc_from_md_file
+from doc_curation.ebook.pandoc_helper import pandoc_from_md_file
 
 
 def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, appendix=None):
@@ -35,17 +36,17 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
   epub_path_min = epub_path.replace(".epub", "_min.epub")
   pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=False)
   _fix_details_in_epub(epub_path=epub_path_min)
-  convert.to_pdf(epub_path=epub_path_min, metadata=metadata, paper_size="a4")
+  calibre_helper.to_pdf(epub_path=epub_path_min, paper_size="a4")
 
   pandoc_extra_args.remove("--toc")
   epub_path_min_notoc = epub_path.replace(".epub", "_min_notoc.epub")
   pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min_notoc, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=False)
   _fix_details_in_epub(epub_path=epub_path_min_notoc)
 
-  convert.to_pdf(epub_path=epub_path_min_notoc, metadata=metadata, paper_size="a5", move_toc=True)
+  calibre_helper.to_pdf(epub_path=epub_path_min_notoc, paper_size="a5", move_toc=True)
 
   epub_for_kobo(epub_path=epub_path)
-  convert.to_azw3(epub_path=epub_path, metadata=metadata)
+  calibre_helper.to_azw3(epub_path=epub_path, metadata=metadata)
 
   return epub_path
 
@@ -99,7 +100,6 @@ def _fix_details_in_epub(epub_path: str):
   Post-process an EPUB to convert <details ... open> into <details ... open="open">.
   Ensures 'mimetype' stays first and uncompressed as per EPUB spec.
   """
-  import io
   import re
   import zipfile
   import tempfile

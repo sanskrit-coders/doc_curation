@@ -1,13 +1,15 @@
 import logging
 import os
+from shutil import copyfile
 
 import regex
 
-from doc_curation.md import pandoc_helper, content_processor
-from doc_curation.md.content_processor import details_helper, include_helper
+from doc_curation.md import content_processor
+from doc_curation.ebook import pandoc_helper
+from doc_curation.md.content_processor import details_helper, footnote_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library.combination import make_full_text_md
-from doc_curation.md.pandoc_helper import pandoc_dump_md
+from doc_curation.ebook.pandoc_helper import pandoc_dump_md
 
 
 def prep_content(content, detail_to_footnote=False, appendix=None):
@@ -30,6 +32,23 @@ def prep_content(content, detail_to_footnote=False, appendix=None):
 
 def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None, overwrite=True, cleanup=True, detail_pattern_to_remove=r"मूलम्.*", metadata={},
                 baseUrl="https://vishvAsa.github.io"):
+  md_file = prep_full_md(omit_pattern, out_path, overwrite, source_dir, metadata=metadata, base_url=baseUrl)
+
+  make_min_full_md(md_file.file_path, out_path, source_dir, detail_pattern_to_remove=detail_pattern_to_remove)
+
+  dest_path = get_book_path(source_dir, out_path) + f".{dest_format}"
+
+  converter(md_file, dest_path)
+
+  # Clean up full.md files under source_dir
+  if cleanup:
+    for dirpath, dirnames, filenames in os.walk(source_dir):
+      if "full.md" in filenames:
+        os.remove(os.path.join(dirpath, "full.md"))
+    logging.info(f"Removed {os.path.join(dirpath, 'full.md')} etc..")
+
+
+def prep_full_md(omit_pattern, out_path, overwrite: bool, source_dir, metadata, base_url):
   full_md_path = os.path.join(source_dir, "full.md")
 
   if not os.path.exists(full_md_path):
@@ -46,38 +65,47 @@ def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None,
     images_dest = os.path.join(out_path, "images")
     shutil.copytree(os.path.join(source_dir, "images"), images_dest, dirs_exist_ok=True)
     logging.info(f"Copied images to {images_dest}")
-  
+
   md_file = MdFile(file_path=md_path)
   md_file.set_title(title=title_from_path(dir_path=source_dir), dry_run=False)
 
   def _fix_metadata(c, m):
     m.update(metadata)
     return m
+
   logging.info(f"Fixing links and metadata for {md_path}")
-  md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()../([^\)\s]+)(\))', r'\1\2)', c), metadata_transformer=_fix_metadata, dry_run=False)
-  md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()/([^\)\s]+)(\))', f'{baseUrl}/)', c), metadata_transformer=_fix_metadata, dry_run=False)
+  md_file.transform(
+    content_transformer=lambda c, metadata, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()../([^\)\s]+)(\))', r'\1\2)', c),
+    metadata_transformer=_fix_metadata, dry_run=False)
+  md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()/([^\)\s]+)(\))',
+                                                                                       fr'\1{base_url}/\2)', c),
+                    metadata_transformer=_fix_metadata, dry_run=False)
 
   logging.info(f"Fixing open details tags for {md_path}")
-  md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, metadata, transformer=details_helper.open_attribute_fixer, details_css="details"), dry_run=False)
+  md_file.transform(
+    content_transformer=lambda c, metadata, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, metadata,
+                                                                                                            transformer=details_helper.open_attribute_fixer,
+                                                                                                            details_css="details"),
+    dry_run=False)
+  return md_file
 
+
+def make_min_full_md(md_path: str, out_path, source_dir, detail_pattern_to_remove):
   md_path_min = get_book_path(source_dir, out_path) + "_min.md"
   copyfile(md_path, md_path_min)
   md_file_min = MdFile(file_path=md_path_min)
-  md_file_min.transform(content_transformer=lambda c, metadata, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, metadata, transformer=lambda x, *args, **kwargs: x.decompose(), title_pattern=detail_pattern_to_remove, details_css="details"), dry_run=False)
-  content_processor.replace_texts(md_file=md_file_min, patterns=[r"<details>"], replacement=r"<details open="">", flags=regex.MULTILINE)
+
+  # Remove some detail tags.
+  md_file_min.transform(
+    content_transformer=lambda c, metadata, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, metadata, transformer=lambda  x, *args, **kwargs: x.decompose(),title_pattern=detail_pattern_to_remove,details_css="details"),
+    dry_run=False)
   logging.info(f"Removed <details> tags from {md_path_min}")
 
-
-  dest_path = get_book_path(source_dir, out_path) + f".{dest_format}"
-
-  converter(md_file, dest_path)
-
-  # Clean up full.md files under source_dir
-  if cleanup:
-    for dirpath, dirnames, filenames in os.walk(source_dir):
-      if "full.md" in filenames:
-        os.remove(os.path.join(dirpath, "full.md"))
-    logging.info(f"Removed {os.path.join(dirpath, 'full.md')} etc..")
+  # Open all details.
+  content_processor.replace_texts(md_file=md_file_min, patterns=[r"<details>"], replacement=r"<details open="">",
+                                  flags=regex.MULTILINE)
+  md_file_min.transform(content_transformer=footnote_helper.add_for_links, dry_run=False)
+  logging.info(f"Added link-footnotes for {md_path_min}")
 
 
 def get_book_path(source_dir, out_path):

@@ -5,8 +5,6 @@ import subprocess
 from pypdf import PdfReader, PdfWriter
 import regex
 
-from doc_curation.md.file import MdFile
-
 CALIBRE = 'ebook-convert'
 
 
@@ -38,8 +36,8 @@ def to_azw3(epub_path: str, metadata={}):
   return azw3_path
 
 
-
-def to_pdf(epub_path: str, paper_size="a5", metadata={}, move_toc=False):
+# TODO: footnotes not appearing the bottom of the page.
+def to_pdf(epub_path: str, paper_size="a5", move_toc=False):
   dest_path = regex.sub("(_min.*)?.epub", f"_{paper_size}.pdf", epub_path)
   command = [
     CALIBRE,
@@ -47,9 +45,9 @@ def to_pdf(epub_path: str, paper_size="a5", metadata={}, move_toc=False):
     dest_path,
     '--output-profile', 'generic_eink',
     '--paper-size', f'{paper_size}',
-    '--pdf-serif-family', 'Nimbus Roman [urw]',
-    '--pdf-sans-family', 'Noto Sans Devanagari',
-    '--pdf-mono-family', 'Nimbus Mono PS [urw]',
+    '--pdf-serif-family', '"Nimbus Roman [urw]"',
+    '--pdf-sans-family', '"Noto Sans Devanagari"',
+    '--pdf-mono-family', '"Nimbus Mono PS [urw]"',
     '--pdf-standard-font', 'sans',
     '--pdf-default-font-size', '14',
     '--pdf-mono-font-size', '14',
@@ -68,6 +66,9 @@ def to_pdf(epub_path: str, paper_size="a5", metadata={}, move_toc=False):
     command[2] = dest_path
     logging.debug(" ".join(command))
     result = subprocess.run(command, check=True, capture_output=True, text=True)
+    if result.returncode != 0:
+      logging.debug(result)
+      raise Exception(result.stderr)
     reader = PdfReader(dest_path)
     total_pages = len(reader.pages)
     os.remove(dest_path)
@@ -75,7 +76,7 @@ def to_pdf(epub_path: str, paper_size="a5", metadata={}, move_toc=False):
     return total_pages
 
 
-  # Doesn't work with unicode metadata.
+  # Below Doesn't work with unicode metadata.
   # options = metadata_to_calibre_args(metadata=metadata)
   # command.extend(options)
   # Execute the command
@@ -102,3 +103,5 @@ def to_pdf(epub_path: str, paper_size="a5", metadata={}, move_toc=False):
 
   logging.info("Conversion successful!")
   return dest_path
+
+
