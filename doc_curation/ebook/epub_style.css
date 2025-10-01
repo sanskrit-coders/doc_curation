@@ -6,8 +6,12 @@ code {
 details {
     margin: 3px 0px;
     border-top: 1px solid black;
-    border-left: 1px dashed black;
+    border-left: 1px dotted grey;
+    padding-left: 4px;
     border-bottom: 1px solid black;
+    border-right: 1px dotted grey;
+    padding-right: 4px;
+    border-radius: 4px;
 }
 details.highlight  > *:not(summary) {
     text-decoration: underline;

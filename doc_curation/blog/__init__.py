@@ -14,8 +14,9 @@ from bs4 import BeautifulSoup
 
 from curation_utils import file_helper
 from curation_utils.file_helper import get_storage_name
+from doc_curation.ebook import pandoc_helper
+from doc_curation.md import library
 from doc_curation.utils import text_utils
-from doc_curation.md import get_md_with_pandoc, library
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper.souper import get_tags_matching_css
 from curation_utils import scraping
@@ -154,7 +155,7 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
   if date_obj is not None:
     metadata["date"] = datetime.datetime.strftime(date_obj, "%Y-%m-%d")
   md_file = MdFile(file_path=file_path, frontmatter_type=MdFile.TOML)
-  content = get_md_with_pandoc(content_in=post_html, source_format="html")
+  content = pandoc_helper.get_md_with_pandoc(content_in=post_html, source_format="html")
   content = fix_special_markup(content=content)
   content = "Source: [here](%s).\n\n%s\n\n%s" % (url, title, content)
   md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)

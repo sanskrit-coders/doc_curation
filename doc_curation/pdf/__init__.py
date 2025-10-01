@@ -14,8 +14,8 @@ from curation_utils import list_helper
 
 ## To thwart DecompressionBombError: Image size (268216326 pixels) exceeds limit of 178956970 pixels, could be decompression bomb DOS attack.
 from PIL import Image
-Image.MAX_IMAGE_PIXELS = None
 
+Image.MAX_IMAGE_PIXELS = None
 
 # Remove all handlers associated with the root logger object.
 for handler in logging.root.handlers[:]:
@@ -60,18 +60,11 @@ def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_pag
 
 
 # Adapted from https://github.com/theeko74/pdfc/blob/master/pdf_compressor.py
-def compress_with_gs(input_file_path, output_file_path, power=3):
-  """Function to compress PDF and remove text via Ghostscript command line interface
-  
-  :param power: 0,1,2,3,4
+def compress_with_gs(input_file_path, output_file_path, quality='screen'):
   """
-  quality = {
-    0: '/default',
-    1: '/prepress',
-    2: '/printer',
-    3: '/ebook',
-    4: '/screen'
-  }
+    Compress PDF using Ghostscript.
+    quality: 'screen' (72 dpi, smallest), 'ebook' (150 dpi), 'printer' (300 dpi), 'prepress', 'default'
+    """
 
   # Basic controls
   # Check if valid path
@@ -86,14 +79,17 @@ def compress_with_gs(input_file_path, output_file_path, power=3):
 
   logging.info("Compress PDF...")
   initial_size = os.path.getsize(input_file_path)
+  # If output_file_path == input_file_path, the command will fail. Hence the below.
+  output_file_path_tmp = output_file_path.replace(".pdf", ".tmp.pdf")
   try:
     subprocess.call(['gs', '-sDEVICE=pdfwrite', '-dCompatibilityLevel=1.4',
-                     '-dPDFSETTINGS={}'.format(quality[power]),
+                     f'-dPDFSETTINGS=/{quality}',
                      '-dFILTERTEXT',
                      '-dNOPAUSE', '-dQUIET', '-dBATCH',
-                     '-sOutputFile={}'.format(output_file_path),
+                     f'-sOutputFile={output_file_path_tmp}',
                      input_file_path]
                     )
+    shutil.move(output_file_path_tmp, output_file_path)
   except OSError as e:
     if e.errno == errno.ENOENT:
       # handle file not found error.
@@ -122,15 +118,16 @@ def dump_images(input_file_path, output_path, poppler_path="/usr/bin"):
   image_segments = [str(pdf_segment) for pdf_segment in Path(_get_ocr_dir(input_file_path, 1)).glob("*.jpg")]
   if len(image_segments) > 0:
     logging.info("%d images already exist! So not dumping afresh.", len(image_segments))
-    return 
+    return
   logging.info("Splitting to images: %s to %s", input_file_path, output_path)
-  convert_from_path(input_file_path, fmt="jpeg", output_folder=output_path, output_file=os.path.splitext(os.path.basename(input_file_path))[0], poppler_path=poppler_path)
+  convert_from_path(input_file_path, fmt="jpeg", output_folder=output_path,
+                    output_file=os.path.splitext(os.path.basename(input_file_path))[0] + "_", poppler_path=poppler_path)
 
 
 def images_to_pdf(image_dir, output_path):
   import img2pdf
-  
-  with open(output_path,"wb") as f:
+
+  with open(output_path, "wb") as f:
     imgs = []
     image_files = os.listdir(image_dir)
     image_files.sort()

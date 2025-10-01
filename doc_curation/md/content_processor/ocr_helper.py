@@ -68,6 +68,11 @@ def fix_iast_for_pdfs(text):
 
   return text
 
+def fix_shuunya_ansvaaras(text):
+  # ऒ०दॊ०दर → ऒन्दॊन्दर
+  text = regex.sub(r"(?<=[ऀ-ॣ])[०o]", "ं", text)
+  text = sanskrit_helper.fix_anunaasikaadi(text=text)
+  return text
 
 def fix_google_ocr_devanaagarii(text, new_line_substitute="\n\n"):
   text = fix_dandas(text)

@@ -32,7 +32,7 @@ def prep_content(content, detail_to_footnote=False, appendix=None):
 
 def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None, overwrite=True, cleanup=True, detail_pattern_to_remove=r"मूलम्.*", metadata={},
                 baseUrl="https://vishvAsa.github.io"):
-  md_file = prep_full_md(omit_pattern, out_path, overwrite, source_dir, metadata=metadata, base_url=baseUrl)
+  md_file = prep_full_md(omit_pattern, out_path, overwrite==True, source_dir, metadata=metadata, base_url=baseUrl)
 
   make_min_full_md(md_file.file_path, out_path, source_dir, detail_pattern_to_remove=detail_pattern_to_remove)
 

@@ -15,6 +15,16 @@ import argparse
 
 
 def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf", detext=False, google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/sanskritnlp/service_account_key.json'):
+  """
+  small_pdf_pages=1 works best for kannaDa - images uploaded, rather than pdf.
+  
+  :param dir_path: 
+  :param small_pdf_pages: 
+  :param file_pattern: 
+  :param detext: 
+  :param google_key: 
+  :return: 
+  """
   if os.path.isfile(dir_path):
     logging.warning("Got a file actually. processing it!")
     file_paths = [dir_path]
@@ -22,7 +32,11 @@ def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf", detext
     file_paths = sorted(Path(dir_path).glob(file_pattern))
   file_paths = [f for f in file_paths if not (str(f).endswith("_detexted.pdf") or str(f).endswith("_tiny.pdf"))]
   for file_path in file_paths:
-    split_and_ocr_on_drive(pdf_path=str(file_path), small_pdf_pages=small_pdf_pages, detext=detext, google_key=google_key)
+    if small_pdf_pages == 1:
+      # Image ocrs are much superior to single page upload ocrs (202509 observation).
+      split_to_images_and_ocr(pdf_path=str(file_path), google_key=google_key)
+    else:
+      split_and_ocr_on_drive(pdf_path=str(file_path), small_pdf_pages=small_pdf_pages, detext=detext, google_key=google_key)
   if dir_path.startswith("/media/vvasuki/vData/text/granthasangrahaH/"):
     clear_tmp_files(base_dir="/media/vvasuki/vData/text/granthasangrahaH/")
 
@@ -120,9 +134,10 @@ def split_to_images_and_ocr(pdf_path,
     logging.warning("Skipping %s: %s exists", pdf_path, final_ocr_path)
     return
   image_directory = _get_ocr_dir(pdf_path, 1)
-  os.makedirs(image_directory, exist_ok=True)
-  pdf.dump_images(pdf_path, image_directory)
-  image_segments = [str(pdf_segment) for pdf_segment in Path(_get_ocr_dir(pdf_path)).glob("*.jpg")]
+  if not os.path.exists(image_directory): 
+    os.makedirs(image_directory, exist_ok=True)
+    pdf.dump_images(pdf_path, image_directory)
+  image_segments = [str(seg) for seg in Path(image_directory).glob("*.jpg")]
   ocr_segments = sorted([img + ".txt" for img in image_segments])
   drive_client = drive.get_cached_client(google_key=google_key)
   for image_segment in sorted(image_segments):

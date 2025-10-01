@@ -5,6 +5,8 @@ import subprocess
 from pypdf import PdfReader, PdfWriter
 import regex
 
+from doc_curation import pdf
+
 CALIBRE = 'ebook-convert'
 
 
@@ -43,11 +45,12 @@ def to_pdf(epub_path: str, paper_size="a5", move_toc=False):
     CALIBRE,
     epub_path,
     dest_path,
-    '--output-profile', 'generic_eink',
+    # generic_eink below ruins devanAgarI.
+    '--output-profile', 'default',
     '--paper-size', f'{paper_size}',
-    '--pdf-serif-family', '"Nimbus Roman [urw]"',
-    '--pdf-sans-family', '"Noto Sans Devanagari"',
-    '--pdf-mono-family', '"Nimbus Mono PS [urw]"',
+    '--pdf-serif-family', 'Noto Serif Devanagari',
+    '--pdf-sans-family', 'Noto Sans Devanagari',
+    '--pdf-mono-family', 'Nimbus Mono PS [urw]',
     '--pdf-standard-font', 'sans',
     '--pdf-default-font-size', '14',
     '--pdf-mono-font-size', '14',
@@ -55,10 +58,14 @@ def to_pdf(epub_path: str, paper_size="a5", move_toc=False):
     '--pdf-page-margin-right', '36',
     '--pdf-page-margin-top', '24',
     '--pdf-page-margin-bottom', '24',
-    '--pdf-page-numbers',
     '--chapter-mark', 'rule',
     '--pdf-add-toc',
+    '--pdf-page-numbers',
+    # The below fail.
+    # '--pdf-header-template', '[title] — [chapter] — [section]',
+    # '--pdf-footer-template', '[page]/[topage]'
   ]
+
   def _get_non_toc_page_length(command, dest_path):
     command = command.copy()
     command.remove("--pdf-add-toc")
@@ -102,6 +109,8 @@ def to_pdf(epub_path: str, paper_size="a5", move_toc=False):
 
 
   logging.info("Conversion successful!")
+  # The below only complesses slightly (8%), and removes all devanAgarI fonts!
+  # pdf.compress_with_gs(input_file_path=dest_path, output_file_path=dest_path)
   return dest_path
 
 

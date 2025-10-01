@@ -49,7 +49,7 @@ def _make_content_from_soup(soup):
     if isinstance(x, NavigableString):
       x = str(x).replace("<", "&lt;")
     new_content = new_content + str(x)
-  new_content = new_content.replace("&amp;", "&").replace("&gt;", ">")
+  new_content = new_content.replace("&amp;", "&").replace("&gt;", ">").replace("open=\"\"", "open")
   new_content = regex.sub("(?<=</(details|div)>)\n?(?=<(details|div))", "\n\n", new_content)
   new_content = regex.sub("\n\n+", "\n\n", new_content)
   return new_content
@@ -73,6 +73,11 @@ def fix_special_tags(content):
   content = regex.sub(r'<p style="text-align: right">([\s\S]+?)</p>', r"\1", content)
   content = regex.sub(r'<strong>([\s\S]+?)</strong>', r"**\1**", content)
   
+  return content
+
+
+def remove_links(content):
+  content = regex.sub(r"\[(.+?)\]\(.+?\)", r"\1", content)
   return content
 
 

@@ -16,8 +16,9 @@ def ocr_fix_iast(dir_path):
 
 def ocr_fix_dev(dir_path, new_line_substitute="\n\n"):
   pass
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_google_ocr_devanaagarii(x, new_line_substitute=new_line_substitute))
-  
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_google_ocr_devanaagarii(x, new_line_substitute=new_line_substitute))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_shuunya_ansvaaras(x))
+
 
 def foxit_ocr_fix(dir_path):
   pass
@@ -52,7 +53,7 @@ if __name__ == '__main__':
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/pAdma-saMhitA", content_transformer=lambda x, y: sanskrit_helper.fix_anunaasikaadi(x), dry_run=False, silent_iteration=False)
 
-  ocr_fix_dev("/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/nibandhaH/vaidya-nAtha-smRti-muktAphalam/sarva-prastutiH/2.md", new_line_substitute="\n\n")
+  ocr_fix_dev("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/kn/vijaya-rAghavaH", new_line_substitute="\n\n")
   # fix_en_ocr("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/paramparA/articles/shAttAdas_Lester.md")
   # ocr_fix_iast("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/govindaH_yati-dharma-samuchchayaH/en.md")
   # foxit_ocr_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/svAmi-nArAyaNa-sampradAyaH/vaDatAla-paramparA/darshana-sAra-sangrahaH")

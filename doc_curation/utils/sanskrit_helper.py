@@ -23,6 +23,13 @@ def fix_bad_anunaasikas(text):
   return c
 
 
+def fix_avagrahas(text):
+  replacements = {r"(?<=[ोॆ])’(?=\S)" : "ऽ"}
+  for pattern, replacement in replacements.items():
+    text = regex.sub(pattern, replacement, text)
+  return text
+
+
 def fix_lazy_anusvaara(text, script=sanscript.DEVANAGARI):
   text = regex.sub("ं+", "ं", text)
   text = regex.sub("ंऽ", "ऽं", text)
