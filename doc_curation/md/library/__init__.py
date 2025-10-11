@@ -96,7 +96,8 @@ def make_per_src_folder_content_files(dest_path, main_source_path, aux_source_li
           content = "%s\n%s" % (content, include_line)
 
       md_file.dump_to_file(metadata={"title": metadata_helper.get_title_from_filename(file_path=md_file.file_path, transliteration_target=source_script)}, content=content, dry_run=dry_run)
-  fix_index_files(dir_path=dest_path, transliteration_target=source_script, dry_run=dry_run)
+  from doc_curation.md.library import arrangement
+  arrangement.fix_index_files(dir_path=dest_path, transliteration_target=source_script, dry_run=dry_run)
 
 
 def dump_word_cloud(src_path, dest_path, stop_words=None, font_path='siddhanta'):
@@ -133,7 +134,7 @@ def list_matching_files(dir_path, content_condition=None, file_pattern="**/*.md"
   return matches
 
 
-def list_files_with_missing_details(src_dir, detail_title):
+def list_files_with_missing_details(src_dir, detail_title, expected_detail_count=1):
   from doc_curation.md.content_processor import details_helper
   from doc_curation.md.library import arrangement
   src_md_files = get_md_files_from_path(dir_path=src_dir)
@@ -142,10 +143,10 @@ def list_files_with_missing_details(src_dir, detail_title):
     if src_md_file.file_path.endswith("_index.md"):
       continue
     (metadata, content) = src_md_file.read()
-    (_, detail) = details_helper.get_detail(content=content, metadata={}, title=detail_title)
-    if detail is None:
-      files.append(src_md_file.file_path)
-  logging.info("\n".join(sorted(files)))
+    details = details_helper.get_details(content=content, metadata={}, title=detail_title)
+    if len(details) != expected_detail_count:
+      files.append((src_md_file.file_path, len(details)))
+  logging.info("\n".join([f"{x[0]} - {x[1]}" for x in (sorted(files))]))
 
 
 def dump_matching_files(dir_path, content_condition=None, file_pattern="**/*.md", file_name_filter=None):

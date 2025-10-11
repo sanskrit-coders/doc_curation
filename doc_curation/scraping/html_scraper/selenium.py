@@ -107,19 +107,20 @@ def dump_pages(url, out_path, next_button_css, content_css, page_id_css_selector
       if next_button is None or next_button.get_attribute("disabled") == "true":
         break
       else:
-        click_element(browser=browser, element=next_button)
-        time.sleep(wait_between_requests)
+        click_element(browser=browser, element=next_button, post_wait=wait_between_requests)
         page_number = page_number + 1
         prev_page_id = page_id
 
 
-def click_element(browser, element):
+def click_element(browser, element, post_wait=0):
   # element.click()
   # Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen 
   browser.execute_script("arguments[0].click();", element)
+  if post_wait > 0:
+    time.sleep(post_wait)
 
 
-def click_link_by_text(browser, element_text, ordinal=-1, timeout=5):
+def click_link_by_text(browser, element_text, ordinal=-1, timeout=5, post_wait=0):
   try:
     WebDriverWait(browser, timeout).until(lambda browser: browser.find_elements(By.LINK_TEXT, element_text))
     subunit_elements = browser.find_elements(By.LINK_TEXT, element_text)
@@ -127,7 +128,7 @@ def click_link_by_text(browser, element_text, ordinal=-1, timeout=5):
       logging.warning("Could not find %s", element_text)
       return False
     logging.info("Clicking: %s" % element_text)
-    click_element(browser=browser, element=subunit_elements[ordinal])
+    click_element(browser=browser, element=subunit_elements[ordinal], post_wait=post_wait)
     return True
   except (NoSuchElementException, TimeoutException):
     logging.warning("Could not find %s", element_text)

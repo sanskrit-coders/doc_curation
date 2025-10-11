@@ -23,7 +23,7 @@ def make_details(dir_path):
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.non_detail_parts_to_detail(content=c, title="टीका"))
 
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args,  **kwargs: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_SHLOKA))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args,  **kwargs: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_SHLOKA))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_BOLD_LINES))
 

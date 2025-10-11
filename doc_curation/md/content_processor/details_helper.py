@@ -1,3 +1,4 @@
+from collections import defaultdict
 import copy, collections
 import logging
 import os
@@ -162,11 +163,11 @@ def open_attribute_fixer(detail_tag, *args, **kwargs):
     detail_tag["open"] = ""
 
 
-def transform_detail_tags_with_soup(content, metadata, transformer, title_pattern=None, details_css="body>details", *args, **kwargs):
+def transform_detail_tags_with_soup(content, transformer, title_pattern=None, details_css="body>details", *args, **kwargs):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
     return content
-  soup = content_processor._soup_from_content(content=content, metadata=metadata)
+  soup = content_processor._soup_from_content(content=content, metadata=kwargs.get('metadata', None))
   if soup is None:
     return content
   details = soup.select(details_css)
@@ -176,8 +177,12 @@ def transform_detail_tags_with_soup(content, metadata, transformer, title_patter
       continue
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
     if title_pattern is None or regex.fullmatch(title_pattern, detail.title):
-      transformer(detail_tag, metadata=metadata, *args, **kwargs)
+      transformer(detail_tag, *args, **kwargs)
   return content_processor._make_content_from_soup(soup=soup)
+
+
+def detail_remover(content, title, *args, **kwargs):
+  return transform_detail_tags_with_soup(content=content, title_pattern=title, transformer=lambda x, *args, **kwargs: x.decompose())
 
 
 def adjascent_inserter(detail_tag, metadata, neighbor_maker, inserter=PageElement.insert_after):
@@ -226,11 +231,11 @@ def transliterate_details(content, source_script, dest_script=sanscript.DEVANAGA
 
   return transform_detail_tags_with_soup(content=content, metadata=None, title=title, content_transformer=transformer)
 
-def insert_duplicate_adjascent(content, metadata, old_title_pattern="मूलम्(.*)", new_title=r"विश्वास-प्रस्तुतिः\1", inserter=PageElement.insert_before, content_transformer=lambda x:x):
+def insert_duplicate_adjascent(content, old_title_pattern="मूलम्(.*)", new_title=r"विश्वास-प्रस्तुतिः\1", inserter=PageElement.insert_before, content_transformer=lambda x:x, *args, **kwargs):
   if new_title in content:
     logging.error(f"{new_title} already present. returning")
     return content
-  def transformer(detail_tag, metadata):
+  def transformer(detail_tag, *args, **kwargs):
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
     detail.title = regex.sub(old_title_pattern, new_title, detail.title)
     detail.content = content_transformer(detail.content)
@@ -243,7 +248,7 @@ def insert_duplicate_adjascent(content, metadata, old_title_pattern="मूल�
     if "open" in detail_tag and "मूलम्" in old_title_pattern:
       del detail_tag["open"]
 
-  content = transform_detail_tags_with_soup(content=content, metadata=metadata, transformer=transformer, title_pattern=old_title_pattern)
+  content = transform_detail_tags_with_soup(content=content, transformer=transformer, title_pattern=old_title_pattern, *args, **kwargs)
   content.replace("open=\"\"", "open")
   if "मूलम्" in old_title_pattern:
     content.replace("<details open><summary>मूलम्", "<details><summary>मूलम्")
@@ -334,7 +339,7 @@ def get_details(content, title, metadata=None):
   result = []
   for detail_tag in details:
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
-    if detail.title == title:
+    if regex.match(title, detail.title):
       result.append((detail_tag, detail))
   return result
 
@@ -370,6 +375,23 @@ def dump_detail_content(source_md, dest_path, titles, dry_run=False):
   detail_content = get_detail_content(content=content, metadata=metadata, titles=titles)
   dest_md = MdFile(file_path=dest_path)
   dest_md.dump_to_file(metadata={"title": " ".join(titles)}, content=detail_content, dry_run=dry_run)
+
+
+def count_details(content, metadata, *args, **kwargs):
+  if "details" not in content:
+    return content
+  soup = content_processor._soup_from_content(content=content, metadata=metadata)
+  if soup is None:
+    logging.info(f"No details found in {metadata['_file_path']}")
+    return content
+  # Don't pick up details within details.
+  details = soup.find_all(lambda x: x.name == 'details' and x.find_parent("details") is None)
+  details_dict = defaultdict(int)
+  for detail_tag in details:
+    title = Detail.from_soup_tag(detail_tag=detail_tag).title.split(" - ")[0]
+    details_dict[title] += 1
+  logging.info(f"{len(details_dict)} details found in {os.path.basename(metadata['_file_path'])} - {details_dict}")
+  return content
 
 
 def rearrange_details(content, metadata, titles, *args, **kwargs):
@@ -541,9 +563,12 @@ def detail_content_replacer_soup(detail_tag, replacement):
   summary.insert_after(f"\n\n{replacement}\n")
 
 
-def pattern_to_details(content, title="टीका", pattern=patterns.TAMIL_BLOCK):
+def pattern_to_details(content, title="टीका", pattern=patterns.TAMIL_BLOCK, content_group=1, title_suffix_group=None):
   def _detail_maker(match):
-    detail = Detail(title=title, content=match.group().strip())
+    local_title = title
+    if title_suffix_group is not None:
+      local_title = f"{title} - {match.group(title_suffix_group)}"
+    detail = Detail(title=local_title, content=match.group(content_group).strip())
     return detail.to_md_html() + "\n\n"
   content = regex.sub(pattern, _detail_maker, content)
   return content

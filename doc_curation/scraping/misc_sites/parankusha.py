@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import os
@@ -17,7 +18,7 @@ from doc_curation.md.library import arrangement
 from doc_curation.scraping.html_scraper import selenium
 from doc_curation.scraping.html_scraper.selenium import click_link_by_text
 from indic_transliteration import sanscript
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
 
 from curation_utils import scraping, file_helper
 from selenium.webdriver.support.ui import WebDriverWait
@@ -48,20 +49,30 @@ def get_logged_in_browser(headless=True):
   return browser
 
 
-def expand_tree_by_text(browser, element_text, timeout=5):
+def expand_tree_by_text(browser, element_text, timeout=5, mode="expand"):
   try:
-    WebDriverWait(browser, timeout).until(lambda browser: browser.find_elements(By.LINK_TEXT, element_text))
+    click_link_by_text(browser=browser, element_text=element_text, ordinal=0, timeout=timeout, post_wait=1)
+    # WebDriverWait(browser, timeout).until(lambda browser: browser.find_elements(By.LINK_TEXT, element_text))
     subunit_element = browser.find_element(By.LINK_TEXT, element_text)
-    expansion_element = subunit_element.find_element(By.XPATH, "./..")
-    expansion_element = subunit_element.find_element(By.XPATH, "./../preceding-sibling::td")
+    # expansion_element = subunit_element.find_element(By.XPATH, "./..")
+    # expansion_element = subunit_element.find_element(By.XPATH, "./../preceding-sibling::td")
     expansion_element = subunit_element.find_element(By.XPATH, "./../preceding-sibling::td/descendant::a")
+    
+    img_element = browser.find_element(By.LINK_TEXT, element_text).find_element(By.XPATH, "./../preceding-sibling::td/descendant::img")
+    if mode == "expand" and "Collaps" in img_element.get_attribute("alt"):
+      return True
+    if mode != "expand" and "Expand" in img_element.get_attribute("alt"):
+      return True
+
+    # The below doesn't work consistently.
+    # expansion_element = browser.find_element(By.CSS_SELECTOR, f"img[alt=\"Expand {element_text}\"]")
+    # expansion_element = expansion_element.find_element(By.XPATH, "..")
     logging.info("Expanding: %s" % element_text)
     # subunit_element.click()
-    # Sometimes headless browser fails with selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted . Then, non-headless browser works fine! Or can try https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen 
-    browser.execute_script("arguments[0].click();", expansion_element)
+    selenium.click_element(browser=browser, element=expansion_element, post_wait=1)
     return True
-  except NoSuchElementException:
-    logging.warning("Could not find %s", element_text)
+  except NoSuchElementException as e:
+    logging.warning(f"Could not find {element_text}, {e.msg}")
     return False
 
 
@@ -101,38 +112,62 @@ def dump_to_file(browser, out_file_path, comment_mode=None, text_name=None, star
       text_name = content_processor.transliterate(text=text_name, source_script=source_script)
     md_file = MdFile(file_path=out_file_path)
     md_file.dump_to_file(metadata={"title": text_name}, content=text, dry_run=False)
-  
+
 
 def browse_get_text(browser, comment_mode, source_script, start_nodes):
+  def get_rows():
+    return WebDriverWait(browser, 10).until(
+      EC.presence_of_all_elements_located((By.CSS_SELECTOR, '#gvResults tr[valign="top"]'))
+    )
+
   if start_nodes is not None:
     browse_nodes(browser=browser, start_nodes=start_nodes)
-  rows = WebDriverWait(browser, 10).until(
-    EC.presence_of_all_elements_located((By.CSS_SELECTOR, "#gvResults tr[valign=\"top\"]"))
-  )
+
   text = ""
-  for row in rows:
-    tds = row.find_elements(By.CSS_SELECTOR, "td")
-    for td in tds:
-      spans = td.find_elements(By.CSS_SELECTOR, "span")
-      if len(spans) > 0:
-        text_segments = [span.text.strip().replace("\\n", "\n").replace("\n", "  \n") for span in spans]
-        main_text = "\n\n".join(text_segments)
-        if comment_mode == "last":
-            text += f"\n\n<details open><summary>मूलम्</summary>\n\n{main_text}\n</details>\n\n"
-            comment_tds = td.find_elements(By.XPATH, './/following-sibling::*')
-            for comment_td in comment_tds:
-              comment_text = comment_td.text.strip()
-              if comment_text != "":
-                text += f"\n\n<details><summary>टीका</summary>\n\n{comment_text}\n</details>\n\n"
-        elif comment_mode == "first":
-          comment_tds = td.find_elements(By.XPATH, './/following-sibling::*')
-          for comment_td in comment_tds:
-            text += f"\n\n<details open><summary>मूलम्</summary>\n\n{comment_td.text.strip()}\n</details>\n\n"
-          text += f"\n\n<details><summary>टीका</summary>\n\n{main_text}\n</details>\n\n"
-        else:
-          text += f"{main_text}\n\n"
+  max_retries = 3
+  rows = get_rows()
+
+  for i in range(len(rows)):
+    retry_count = 0
+    while retry_count < max_retries:
+      try:
+        # refetch the row element to avoid stale reference
+        rows = get_rows()
+        row = rows[i]
+        tds = row.find_elements(By.CSS_SELECTOR, "td")
+
+        for td in tds:
+          spans = td.find_elements(By.CSS_SELECTOR, "span")
+          if len(spans) > 0:
+            text_segments = [span.text.strip().replace("\\n", "\n").replace("\n", "  \n") for span in spans]
+            main_text = "\n\n".join(text_segments)
+            if comment_mode == "last":
+              text += f"\n\n<details open><summary>मूलम्</summary>\n\n{main_text}\n</details>\n\n"
+              comment_tds = td.find_elements(By.XPATH, './/following-sibling::*')
+              for comment_td in comment_tds:
+                comment_text = comment_td.text.strip()
+                if comment_text != "":
+                  text += f"\n\n<details><summary>टीका</summary>\n\n{comment_text}\n</details>\n\n"
+            elif comment_mode == "first":
+              comment_tds = td.find_elements(By.XPATH, './/following-sibling::*')
+              for comment_td in comment_tds:
+                text += f"\n\n<details open><summary>मूलम्</summary>\n\n{comment_td.text.strip()}\n</details>\n\n"
+              text += f"\n\n<details><summary>टीका</summary>\n\n{main_text}\n</details>\n\n"
+            else:
+              text += f"{main_text}\n\n"
+
+        break  # success, exit retry loop
+      except StaleElementReferenceException:
+        retry_count += 1
+        time.sleep(0.5)  # short wait before retry
+
+    else:
+      # max retries exceeded
+      print(f"Warning: Skipped row {i} due to stale element exceptions after {max_retries} retries.")
+
   if source_script is not None and source_script != sanscript.DEVANAGARI:
     text = content_processor.transliterate(text=text, source_script=source_script)
+
   return text
 
 
@@ -140,16 +175,28 @@ def browse_nodes(browser, start_nodes, timeout=10):
   # We don't "expand all" to avoid confusion among nodes with identical names.
   for node in start_nodes:
     if node.startswith("expand:"):
-      click_link_by_text(browser=browser, element_text=node.replace("expand:", ""), ordinal=0, timeout=timeout)
       expand_tree_by_text(browser=browser, element_text=node.replace("expand:", ""), timeout=timeout)
     else:
-      click_link_by_text(browser=browser, element_text=node, ordinal=0, timeout=timeout)
+      click_link_by_text(browser=browser, element_text=node, ordinal=0, timeout=timeout, post_wait=1)
+
+
+def debrowse_nodes(browser, start_nodes, timeout=3):
+  # We don't "expand all" to avoid confusion among nodes with identical names.
+  for node in start_nodes.reverse():
+    if node.startswith("expand:"):
+      expand_tree_by_text(browser=browser, element_text=node.replace("expand:", ""), timeout=timeout, mode="collapse")
 
 
 def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False, source_script=sanscript.DEVANAGARI):
   def _dump_text(browser, outdir, ordinal=None, has_comment=False, start_nodes=None):
     text_name = deduce_text_name(browser, ordinal)
-    out_file_path = get_output_path(text_name=text_name, outdir=outdir, source_script=source_script)
+    try:
+      out_file_path = get_output_path(text_name=text_name, outdir=outdir, source_script=source_script)
+    except TimeoutException:
+      logging.warning("Returning to the previous page - next button likely failed.")
+      browser.back()
+      debrowse_nodes(browser=browser, start_nodes=start_nodes)
+      return
     dump_to_file(browser=browser, comment_mode=has_comment, out_file_path=out_file_path, text_name=text_name, start_nodes=start_nodes, source_script=source_script)
 
   browse_nodes(browser=browser, start_nodes=start_nodes)
@@ -157,7 +204,7 @@ def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False, 
   os.makedirs(name=outdir, exist_ok=True)
   ordinal = ordinal_start
   _dump_text(browser=browser, outdir=outdir, ordinal=ordinal, has_comment=has_comment)
-  while click_link_by_text(browser=browser, element_text="Next"):
+  while click_link_by_text(browser=browser, element_text="Next", post_wait=3):
     if ordinal is not None:
       ordinal = ordinal + 1
     _dump_text(browser=browser, outdir=outdir, ordinal=ordinal, has_comment=has_comment)

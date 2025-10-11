@@ -1,5 +1,4 @@
 from doc_curation.md.library import arrangement
-from doc_curation_projects.general_tasks.ebooks import make_epub
 
 
 def combine_files(dir_path, author=None):
