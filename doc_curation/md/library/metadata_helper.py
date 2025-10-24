@@ -98,6 +98,7 @@ def move_file(md_file, new_file_name, dry_run):
   if str(current_path) != file_path:
     logging.info("Renaming %s to %s", current_path, file_path)
     if not dry_run:
+      os.makedirs(os.path.dirname(file_path), exist_ok=True)
       os.rename(src=current_path, dst=file_path)
 
 

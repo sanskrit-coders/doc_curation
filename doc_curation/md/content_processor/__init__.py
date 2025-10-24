@@ -115,7 +115,7 @@ def fix_private_use_roman(content):
   return new_content
 
 
-def get_quasi_section_int_map(content, pattern):
+def get_quasi_section_int_map(content, pattern, use_ordinal=False):
   """
   
   :param content: 
@@ -123,13 +123,16 @@ def get_quasi_section_int_map(content, pattern):
       (?<=\\n|^)([\\d०-९೦-೯]+).+\n
   :return: 
   """
-  source_matches = list(regex.finditer(pattern, content))
+  source_matches = list(regex.finditer(pattern, content, flags=regex.DOTALL))
   source_match_map = {}
-  for source_match in source_matches:
-    index_str = sanscript.transliterate(source_match.groups()[-1], _to=sanscript.IAST)
-    if index_str.isnumeric():
-      source_match_map[int(index_str)] = source_match
+  for ordinal, source_match in enumerate(source_matches):
+    if not use_ordinal:
+      index_str = sanscript.transliterate(source_match.groups()[-1], _to=sanscript.IAST)
+      if index_str.isnumeric():
+        source_match_map[int(index_str)] = source_match
+      else:
+        logging.warning("Could not get index for: %s", source_match.group())
     else:
-      logging.warning("Could not get index for: %s", source_match.group())
+      source_match_map[ordinal] = source_match
   logging.info(f"Got {len(source_match_map)} source matches ")
   return source_match_map

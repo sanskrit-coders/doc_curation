@@ -16,7 +16,7 @@ def combine_select_files_in_dir(md_file, source_fnames, title_format="## %s\n", 
   if isinstance(source_fnames, list):
     source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in source_fnames if x in os.listdir(dir_path)]
   elif isinstance(source_fnames, str):
-    source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in regex.fullmatch(source_fnames, x) if x in os.listdir(dir_path)]
+    source_mds = [MdFile(file_path=os.path.join(dir_path, x)) for x in os.listdir(dir_path)  if regex.fullmatch(source_fnames, x)]
   title = source_mds[-1].get_title()
   title = regex.sub("[Pp]art.+$", "", title)
   md_file.set_title(title=title)

@@ -57,7 +57,43 @@ class Detail(object):
     return Detail(title=title, content=detail_text)
 
 
-def interleave_from_file(md_files, source_file, dest_pattern=r"[^\d०-९೦-೯]([\d०-९೦-೯]+) *॥.*(?=\n|$)", source_pattern=r"(?<=\n|^)([\d०-९೦-೯]+).+\n", detail_title="English", overwrite=False, dry_run=False):
+def _remap_source_matches(source_map, dest_matches):
+  if len(dest_matches) != len(source_map):
+    logging.info(f"Skipping re-indexing. Lengths do not match. {len(dest_matches)} != {len(source_map)}")
+    return source_map
+
+  source_match_map_new = {}
+  successful_mappings = 0
+
+  # Pair the destination matches directly with the source map's VALUES
+  # This still assumes order, but makes it much more explicit.
+  source_values = source_map.values()
+  for dest_match, source_value in zip(dest_matches, source_values):
+    index_str = sanscript.transliterate(dest_match.group(1), _to=sanscript.IAST)
+
+    if not index_str.isnumeric():
+      logging.warning("Could not get numeric index for: %s. Skipping this entry.", dest_match.group())
+      continue  # Skip this specific entry, but don't discard the whole operation
+
+    index = int(index_str)
+
+    # Check for potential duplicate keys in the destination text
+    if index in source_match_map_new:
+      logging.warning("Duplicate index %d found in destination matches. Overwriting previous value.", index)
+
+    source_match_map_new[index] = source_value
+    successful_mappings += 1
+
+  # A more intelligent final check
+  if successful_mappings != len(source_map):
+    logging.error("Re-indexing failed. The original map will be used.")
+    return source_map
+
+  logging.info("Successfully re-indexed %d out of %d entries.", successful_mappings, len(source_map))
+  return source_match_map_new
+
+
+def interleave_from_file(md_files, source_file, dest_pattern=r"[^\d०-९೦-೯]([\d०-९೦-೯]+) *॥.*(?=\n|$)", source_pattern=r"(?<=\n|^)([\d०-९೦-೯]+).+\n", detail_title="English", use_dest_number=False, overwrite=False, dry_run=False):
   r"""
   
   :param md_file: 
@@ -78,11 +114,11 @@ def interleave_from_file(md_files, source_file, dest_pattern=r"[^\d०-९೦-�
   def _get_source_matches(source_file):
     if not os.path.exists(source_file):
       logging.warning("Source %s does not exist!", source_file)
-      return
+      return (None, None, None)
     logging.info("Sourcing content from %s", source_file)
     source_md = MdFile(file_path=source_file)
     (_, source_content) = source_md.read()
-    source_match_map = get_quasi_section_int_map(source_content, source_pattern)
+    source_match_map = get_quasi_section_int_map(source_content, source_pattern, use_ordinal=use_dest_number)
     logging.info(f"Got {len(source_match_map)} source matches ")
     return (source_md, source_content, source_match_map)
 
@@ -92,10 +128,15 @@ def interleave_from_file(md_files, source_file, dest_pattern=r"[^\d०-९೦-�
   for md_file in md_files:
     logging.info("Interleaving into %s", md_file.file_path)
     if callable(source_file):
-      source_file = source_file(md_files.file_path)
+      source_file = source_file(md_file.file_path)
       source_md, source_content, source_match_map = _get_source_matches(source_file=source_file)
+      if source_match_map is None:
+        continue
     (_, dest_content) = md_file.read()
     dest_matches = list(regex.finditer(dest_pattern, dest_content))
+    if use_dest_number: 
+      source_match_map = _remap_source_matches(source_map=source_match_map, dest_matches=dest_matches)
+  
     for dest_match in dest_matches:
       index_str = sanscript.transliterate(dest_match.group(1), _to=sanscript.IAST)
       if not index_str.isnumeric():
@@ -130,7 +171,12 @@ def interleave_from_file(md_files, source_file, dest_pattern=r"[^\d०-९೦-�
       source_content = source_content.replace(source_match_map[index].group(), "")
       source_content = _normalize_spaces(source_content)
     md_file.replace_content_metadata(new_content=dest_content, dry_run=dry_run)
-    source_md.replace_content_metadata(new_content=source_content, dry_run=dry_run)
+    if source_content.strip() == "" and dest_content.strip() != "":
+      logging.info(f"Removing {source_file}")
+      if not dry_run:
+        os.remove(source_file)
+    else:
+      source_md.replace_content_metadata(new_content=source_content, dry_run=dry_run)
 
   if len(missing_dest_indices) > 0:
     logging.warning(f"Could not get indices in source: {missing_dest_indices}")
@@ -615,6 +661,7 @@ def shlokas_to_details(content, pattern=None, title_base="टीका"):
 def shlokas_to_muula_viprastuti_details(content, shloka_processor=lambda x:x, pattern=None, id_position=-1):
   if "विश्वास-प्रस्तुतिः" in content:
     logging.warning("विश्वास-प्रस्तुतिः found. Returning")
+    content = regex.sub(r"(?<=/details>|^)\s*([^<]+?)\s*(?=<details|$)", lambda x: shlokas_to_muula_viprastuti_details(content=x.group(0), pattern=pattern, id_position=id_position), content)
     return content
   from doc_curation.utils import patterns, sanskrit_helper
   content = sanskrit_helper.seperate_uvaacha(text=content)

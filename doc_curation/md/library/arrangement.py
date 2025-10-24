@@ -331,3 +331,45 @@ def natural_sort_key(s):
     base = f"01__{base}"
   key = [os.path.dirname(s), base]
   return key
+
+
+def rename_subfolders(ref_map, dest_path='.', dry_run=True, ref_map_mode=None):
+  """
+  Rename subfolders.
+  
+  Args:
+      ref_map: ALERT - ensure top level folders appear later!
+      dest_path (str): Base directory containing the numbered folders
+      dry_run (bool): If True, show what would be renamed without actually renaming 
+  Returns:
+      dict: Dictionary with 'success', 'failed', and 'skipped' lists
+  """
+  dest_path = str(pathlib.Path(dest_path).absolute()) + "/"
+
+  if isinstance(ref_map, str):
+    if not ref_map.endswith("/"):
+      ref_map = ref_map + "/"
+    dirs = [x[0].replace(ref_map, "") for x in os.walk(ref_map) if "/." not in x[0]]
+    ref_map = {get_sub_path_id(x): x for x in dirs}
+
+
+  for dirpath, dirnames, filenames in os.walk(dest_path, topdown=False):
+    sub_path = dirpath.replace(dest_path, "")
+    id = get_sub_path_id(sub_path)
+    target_subpath = ref_map.get(id, None)
+    if target_subpath is None:
+      logging.info(f"Skipping {dirpath}")
+      continue
+    if ref_map_mode == "basedir":
+      target_subpath = os.path.basename(target_subpath)
+      target_path = os.path.join(os.path.dirname(dirpath), target_subpath)
+    else:
+      target_path = os.path.join(dest_path, target_subpath)
+    if dirpath != target_path:
+      if not dry_run:
+        os.rename(dirpath, target_path)
+        md_path = os.path.join(target_path, "_index.md")
+        if os.path.exists(md_path):
+          md_file = MdFile(md_path) 
+          metadata_helper.set_title_from_filename(md_file)
+      logging.info(f"✓ RENAMED:\n  {dirpath} → {target_path}")

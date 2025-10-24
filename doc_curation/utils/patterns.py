@@ -3,7 +3,7 @@ from indic_transliteration.sanscript.schemes.brahmic import accent
 
 PATTERN_NUM_SUTRA = r"(?<=\n)([०-९]+) +.+(?=\n|$)"
 PATTERN_SHLOKA = r"(?<=\n)([^#\s<>\[\(][^#<>]+?)॥\s*([०-९\d\.।]+)\s*॥.*?(?=\n|$)"
-PATTERN_2LINE_SHLOKA = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।  +\n([^#\s<>\[\(][ \S]+?)[।॥ ]+\s*([०-९\d\.]+)\s*[।॥ ].*?(?=\n|$)"
+PATTERN_2LINE_SHLOKA = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।  +\n([^#\s<>\[\(][ \S]+?)[।॥ ]+\s*([०-९\d\.\-]+)\s*[।॥ ].*?(?=\n|$)"
 PATTERN_2LINE_SHLOKA_NUM_END = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।?  +\n([^#\s<>\[\(][ \S]+?)\s*([०-९\d\.]+)\s*[।॥ ]*?(?=\n|$)"
 PATTERN_2LINE_SHLOKA_2LINE_SEP_NUM_END = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।? *\n\n([^#\s<>\[\(][ \S]+?)\s*([०-९\d\.]+)\s*[।॥ ]*?(?=\n|$)"
 PATTERN_2LINE_SHLOKA_NO_NUM = r"(?<=\n|^)([^#\s<>\[\(][ \S]+?)।  +\n([^#\s<>\[\(][ \S]+?)[॥।].*?(?=\n|$)"

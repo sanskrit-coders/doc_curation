@@ -9,7 +9,8 @@ from curation_utils import file_helper
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import include_helper, footnote_helper, details_helper, section_helper
 from doc_curation.md.file import MdFile
-from doc_curation.md.library import metadata_helper, combination
+from doc_curation.md.library import metadata_helper, combination, arrangement
+from doc_curation_projects.kaavya import divyaprabandha
 from indic_transliteration import sanscript
 
 def devanaagarify(dir_path, source_script):
@@ -210,6 +211,12 @@ def insert_hart(dir_path):
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.transform_detail_tags_with_soup(title_pattern="मूलम्.*DP_.+", content=c, metadata=m, transformer=details_helper.adjascent_inserter, neighbor_maker=neighbor_maker))
 
 
+def reorg_comments(base_dir, dry_run=False):
+  divyaprabandha.move_files_increment_dir(base_dir=base_dir, dry_run=dry_run)
+  arrangement.fix_index_files(os.path.dirname(base_dir), dry_run=dry_run)
+
+
+
 if __name__ == '__main__':
   pass
   # insert_garani("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/4k-divya-prabandha/sarva-prastutiH/02_tiruppAvai_aNDaL_474_-503/_index.md")
@@ -217,5 +224,10 @@ if __name__ == '__main__':
   # set_id("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
   # update_content("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
   # insert_hart("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
-  insert_uv("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
-  
+  # insert_uv("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
+  # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/10_pEriya_tirumOLHi_tirumangai-ALHvAr_948-2031/aNNangarAchAryaH/padav-urai", dry_run=False)  
+  # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/10_pEriya_tirumOLHi_tirumangai-ALHvAr_948-2031/aNNangarAchAryaH/viLakkav-urai", dry_run=False)
+  # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/aNNangarAchAryaH/padav-urai", dry_run=False)
+  # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/aNNangarAchAryaH/viLakkav-urai", dry_run=False)
+
+  # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/aNNangarAchAryaH")

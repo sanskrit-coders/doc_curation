@@ -49,11 +49,13 @@ def get_logged_in_browser(headless=True):
   return browser
 
 
-def expand_tree_by_text(browser, element_text, timeout=5, mode="expand"):
+def expand_tree_by_text(browser, element_text, timeout=5, mode="expand", take_after=0):
   try:
     click_link_by_text(browser=browser, element_text=element_text, ordinal=0, timeout=timeout, post_wait=1)
     # WebDriverWait(browser, timeout).until(lambda browser: browser.find_elements(By.LINK_TEXT, element_text))
-    subunit_element = browser.find_element(By.LINK_TEXT, element_text)
+    subunit_elements = browser.find_elements(By.LINK_TEXT, element_text)
+    subunit_elements = subunit_elements[take_after:]
+    subunit_element = subunit_elements[0]
     # expansion_element = subunit_element.find_element(By.XPATH, "./..")
     # expansion_element = subunit_element.find_element(By.XPATH, "./../preceding-sibling::td")
     expansion_element = subunit_element.find_element(By.XPATH, "./../preceding-sibling::td/descendant::a")
@@ -77,7 +79,6 @@ def expand_tree_by_text(browser, element_text, timeout=5, mode="expand"):
 
 
 def deduce_text_name(browser, ordinal=None):
-  logging.debug(f"Sequence {ordinal}")
   # Gets the link highlighted by red color in the left panel.
   WebDriverWait(browser,5).until(lambda browser: browser.find_elements(By.CSS_SELECTOR, "td>a.tv_0.tv_3"))
 
@@ -141,20 +142,33 @@ def browse_get_text(browser, comment_mode, source_script, start_nodes):
           if len(spans) > 0:
             text_segments = [span.text.strip().replace("\\n", "\n").replace("\n", "  \n") for span in spans]
             main_text = "\n\n".join(text_segments)
+            comment_tds = td.find_elements(By.XPATH, './following-sibling::*')
+            if len(comment_tds) == 0:
+              comment_mode = None
+            id_tds = td.find_elements(By.XPATH, './preceding-sibling::*[1]')
+            comment_id = ""
+            if len(id_tds) > 0:
+              id_td = id_tds[0]
+              comment_id = " - " + id_td.text.strip()
             if comment_mode == "last":
-              text += f"\n\n<details open><summary>मूलम्</summary>\n\n{main_text}\n</details>\n\n"
-              comment_tds = td.find_elements(By.XPATH, './/following-sibling::*')
+              detail = details_helper.Detail(title=f"मूलम्{comment_id}", content=main_text)
+              text += f"\n\n{detail.to_md_html(attributes_str='open')}\n\n"
               for comment_td in comment_tds:
                 comment_text = comment_td.text.strip()
                 if comment_text != "":
-                  text += f"\n\n<details><summary>टीका</summary>\n\n{comment_text}\n</details>\n\n"
+                  detail = details_helper.Detail(title=f"टीका{comment_id}", content=comment_text)
+                  text += f"\n\n{detail.to_md_html()}\n\n"
             elif comment_mode == "first":
-              comment_tds = td.find_elements(By.XPATH, './/following-sibling::*')
               for comment_td in comment_tds:
-                text += f"\n\n<details open><summary>मूलम्</summary>\n\n{comment_td.text.strip()}\n</details>\n\n"
-              text += f"\n\n<details><summary>टीका</summary>\n\n{main_text}\n</details>\n\n"
+                comment_text = comment_td.text.strip()
+                if comment_text != "":
+                  detail = details_helper.Detail(title=f"मूलम्{comment_id}", content=comment_text)
+                  text += f"\n\n{detail.to_md_html(attributes_str='open')}\n\n"
+              detail = details_helper.Detail(title=f"टीका{comment_id}", content=main_text)
+              text += f"\n\n{detail.to_md_html()}\n\n"
             else:
-              text += f"{main_text}\n\n"
+              detail = details_helper.Detail(title=f"मूलम्{comment_id}", content=main_text)
+              text += f"\n\n{detail.to_md_html(attributes_str='open')}\n\n"
 
         break  # success, exit retry loop
       except StaleElementReferenceException:
@@ -173,11 +187,14 @@ def browse_get_text(browser, comment_mode, source_script, start_nodes):
 
 def browse_nodes(browser, start_nodes, timeout=10):
   # We don't "expand all" to avoid confusion among nodes with identical names.
+  nodes_done = []
   for node in start_nodes:
+    take_after = len([x for x in nodes_done if x == node])
     if node.startswith("expand:"):
-      expand_tree_by_text(browser=browser, element_text=node.replace("expand:", ""), timeout=timeout)
+      expand_tree_by_text(browser=browser, element_text=node.replace("expand:", ""), timeout=timeout, take_after=take_after)
     else:
-      click_link_by_text(browser=browser, element_text=node, ordinal=0, timeout=timeout, post_wait=1)
+      click_link_by_text(browser=browser, element_text=node, ordinal=take_after, timeout=timeout, post_wait=1)
+    nodes_done.append(node)
 
 
 def debrowse_nodes(browser, start_nodes, timeout=3):
@@ -187,8 +204,8 @@ def debrowse_nodes(browser, start_nodes, timeout=3):
       expand_tree_by_text(browser=browser, element_text=node.replace("expand:", ""), timeout=timeout, mode="collapse")
 
 
-def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False, source_script=sanscript.DEVANAGARI):
-  def _dump_text(browser, outdir, ordinal=None, has_comment=False, start_nodes=None):
+def get_texts(browser, outdir, start_nodes, ordinal_start=1, comment_mode=None, source_script=sanscript.DEVANAGARI):
+  def _dump_text(browser, outdir, ordinal=None, comment_mode=comment_mode, start_nodes=None):
     text_name = deduce_text_name(browser, ordinal)
     try:
       out_file_path = get_output_path(text_name=text_name, outdir=outdir, source_script=source_script)
@@ -197,21 +214,21 @@ def get_texts(browser, outdir, start_nodes, ordinal_start=1, has_comment=False, 
       browser.back()
       debrowse_nodes(browser=browser, start_nodes=start_nodes)
       return
-    dump_to_file(browser=browser, comment_mode=has_comment, out_file_path=out_file_path, text_name=text_name, start_nodes=start_nodes, source_script=source_script)
+    dump_to_file(browser=browser, comment_mode=comment_mode, out_file_path=out_file_path, text_name=text_name, start_nodes=start_nodes, source_script=source_script)
 
   browse_nodes(browser=browser, start_nodes=start_nodes)
 
   os.makedirs(name=outdir, exist_ok=True)
   ordinal = ordinal_start
-  _dump_text(browser=browser, outdir=outdir, ordinal=ordinal, has_comment=has_comment)
+  _dump_text(browser=browser, outdir=outdir, ordinal=ordinal, comment_mode=comment_mode)
   while click_link_by_text(browser=browser, element_text="Next", post_wait=3):
     if ordinal is not None:
       ordinal = ordinal + 1
-    _dump_text(browser=browser, outdir=outdir, ordinal=ordinal, has_comment=has_comment)
+    _dump_text(browser=browser, outdir=outdir, ordinal=ordinal, comment_mode=comment_mode)
   arrangement.fix_index_files(dir_path=outdir, overwrite=False, dry_run=False)
 
 
-def get_structured_text(browser, start_nodes, base_dir, unit_info_file, comment_mode=False, source_script=sanscript.DEVANAGARI, detail_title=None, prev_detail_title=None):
+def get_structured_text(browser, start_nodes, base_dir, unit_info_file, comment_mode=None, source_script=sanscript.DEVANAGARI, detail_title=None, prev_detail_title=None):
   def open_path(subunit_path, unit_data):
     logging.debug(list(zip(subunit_path, unit_data["unitNameListInSite"])))
     for (subunit, unitNameInSite) in zip(subunit_path, unit_data["unitNameListInSite"]):

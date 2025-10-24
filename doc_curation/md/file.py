@@ -256,7 +256,7 @@ class MdFile(object):
       if not dry_run:
         self.dump_to_file(metadata={field_name: value}, content="", dry_run=dry_run)
       else:
-        logging.info(f"Setting %s: %s of {self.file_path}", field_name)
+        logging.info(f"Setting {field_name}: {value} of {self.file_path}" )
       return
     metadata, content = self.read()
     if field_name in metadata:

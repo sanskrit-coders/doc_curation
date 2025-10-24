@@ -75,15 +75,15 @@ def prep_full_md(omit_pattern, out_path, overwrite: bool, source_dir, metadata, 
 
   logging.info(f"Fixing links and metadata for {md_path}")
   md_file.transform(
-    content_transformer=lambda c, metadata, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()../([^\)\s]+)(\))', r'\1\2)', c),
+    content_transformer=lambda c, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()../([^\)\s]+)(\))', r'\1\2)', c),
     metadata_transformer=_fix_metadata, dry_run=False)
-  md_file.transform(content_transformer=lambda c, metadata, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()/([^\)\s]+)(\))',
+  md_file.transform(content_transformer=lambda c, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()/([^\)\s]+)(\))',
                                                                                        fr'\1{base_url}/\2)', c),
                     metadata_transformer=_fix_metadata, dry_run=False)
 
   logging.info(f"Fixing open details tags for {md_path}")
   md_file.transform(
-    content_transformer=lambda c, metadata, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, metadata,
+    content_transformer=lambda c, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c,
                                                                                                             transformer=details_helper.open_attribute_fixer,
                                                                                                             details_css="details"),
     dry_run=False)
@@ -97,7 +97,7 @@ def make_min_full_md(md_path: str, out_path, source_dir, detail_pattern_to_remov
 
   # Remove some detail tags.
   md_file_min.transform(
-    content_transformer=lambda c, metadata, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, metadata, transformer=lambda  x, *args, **kwargs: x.decompose(),title_pattern=detail_pattern_to_remove,details_css="details"),
+    content_transformer=lambda c, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, transformer=lambda  x, *args, **kwargs: x.decompose(),title_pattern=detail_pattern_to_remove,details_css="details"),
     dry_run=False)
   logging.info(f"Removed <details> tags from {md_path_min}")
 
