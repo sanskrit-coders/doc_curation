@@ -298,7 +298,7 @@ def add_value_to_field(metadata, field, value):
   return metadata
 
 
-def iti_naama_title_extractor(text, conclusion_pattern="इति.+\n?.+ऽध्यायः"):
+def iti_naama_title_extractor(text, conclusion_pattern="इति.+\n?.+(ऽध्यायः|पटलः)"):
   """
   Example conclusion line: ॥ ॐ तत्सदिति श्रीमदान्त्ये पुराणोपनिषदि श्रीमन्मौद्गले महापुराणेपञ्चमे खण्डे लम्बोदरचरिते शेषातिदुःखवर्णनन्नाम षोडशोऽध्यायः ॥
   

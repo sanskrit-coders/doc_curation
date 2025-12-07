@@ -1,6 +1,7 @@
 import os.path
 
 from doc_curation.md import library, content_processor
+from doc_curation.md.library import arrangement
 from doc_curation.scraping import wikisource
 from doc_curation.scraping.wikisource import enumerated, serial
 from indic_transliteration import sanscript

@@ -4,7 +4,7 @@ import os.path, regex
 from curation_utils.file_helper import get_storage_name
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
-from doc_curation.md.library import metadata_helper
+from doc_curation.md.library import metadata_helper, arrangement
 from doc_curation.scraping.misc_sites import meghamaalaa
 from indic_transliteration import sanscript, aksharamukha_helper
 
@@ -61,7 +61,7 @@ def shriibhaashya():
   }
   for adhyaaya in range(1,5):
     for paada in range(1,5):
-      meghamaalaa.dump_series(adhyaaya_map[(adhyaaya, paada)], f"/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/ma/{adhyaaya}/{paada}/", filename_from_title=lambda x: regex.match(".+?-(\d\d[A-Z]? .+$)", x).group(1))
+      meghamaalaa.dump_series(adhyaaya_map[(adhyaaya, paada)], f"/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/ma/{adhyaaya}/{paada}/", filename_from_title=lambda x: regex.match(r".+?-(\d\d[A-Z]? .+$)", x).group(1))
   arrangement.fix_index_files("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/")
   pass
 
@@ -125,13 +125,13 @@ def puraaNam():
   # 
   # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/divya-desha-vaibhavam/srimad-ahobila-mahatmyam/श्रीमदहोबिलमाहात्म्यं-part-1/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/ahobila-mAhAtmyam", start_index=3, filename_from_title=False)
 
-  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-01/श्रीविष्णुपुराणम्-amsa-01-ady-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/01/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
-  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-02/amsa-02-ady-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/02/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)$", x).group(1))
-  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-03/श्रीविष्णुपुराणम्-amsa-03-ady-01-2/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/03/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
-  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-04/amsa-04-ady-01-10/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/04/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
-  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-05/श्रीविष्णुपुराणम्-amsa-05-ady-01-10/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/05/", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-01/श्रीविष्णुपुराणम्-amsa-01-ady-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/01/", start_index=None, filename_from_title=lambda x: regex.match(r".+(\d\d)", x).group(1))
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-02/amsa-02-ady-01/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/02/", start_index=None, filename_from_title=lambda x: regex.match(r".+(\d\d)$", x).group(1))
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-03/श्रीविष्णुपुराणम्-amsa-03-ady-01-2/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/03/", start_index=None, filename_from_title=lambda x: regex.match(r".+(\d\d)", x).group(1))
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-04/amsa-04-ady-01-10/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/04/", start_index=None, filename_from_title=lambda x: regex.match(r".+(\d\d)", x).group(1))
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-05/श्रीविष्णुपुराणम्-amsa-05-ady-01-10/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/05/", start_index=None, filename_from_title=lambda x: regex.match(r".+(\d\d)", x).group(1))
 
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-05/श्रीविष्णुपुराणम्-amsa-06-ady-01-05/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/06", start_index=None, filename_from_title=lambda x: regex.match(".+(\d\d)", x).group(1))
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/puranas/vishnu-purana-content/amsa-05/श्रीविष्णुपुराणम्-amsa-06-ady-01-05/", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/viShNuchitta-TIkA/06", start_index=None, filename_from_title=lambda x: regex.match(r".+(\d\d)", x).group(1))
 
 def raamaayaNam():
   pass
@@ -214,7 +214,7 @@ def rahasya():
   dump_series(x="arulicheyal-rahasyam/திருமந்த்ர-ப்ரகரணம்", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/lokAchAryaH/aruLi-cheyAl-rahasyam/"), start_index=1, source_script=sanscript.TAMIL)
   dump_series(x="prakaranam-01/srivacanabusanam-prk-01-ayee", dest_path=os.path.join(base_dir, "lokAchArya-shAkhA/shrI-vachana-bhUShaNam/"), start_index=1)
 
-  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/ciriya-rahasyangal/ciriya-rahasyangal-part-1/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/lokAchArya-shAkhA/lokAchAryaH/chiriya-rahasyangaL", source_script=sanscript.TAMIL, filename_from_title=lambda x: regex.match(".+(\d)", x).group(1))
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/ciriya-rahasyangal/ciriya-rahasyangal-part-1/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/lokAchArya-shAkhA/lokAchAryaH/chiriya-rahasyangaL", source_script=sanscript.TAMIL, filename_from_title=lambda x: regex.match(r".+(\d)", x).group(1))
   meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/rahasysa-granthas/paranda-rahasyam/அவதாரிகை-ஸம்பூர்ணம்/", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/lokAchArya-shAkhA/paranda-rahasyam/", source_script=sanscript.TAMIL)
 
 
@@ -240,6 +240,11 @@ def fix_text(dir_path):
   pass
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: meghamaalaa.fix_text(x, source_script=sanscript.DEVANAGARI), dry_run=False, silent_iteration=False)
 
+def bhagavad_gItA():
+  pass
+  base_dir = "/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAsaH/shlokashaH/bhagavad-gItA-parva/TIkA/rAmAnujaH_me"
+  # meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/bhagavad-gita/taatparya-chandrika-content/%E0%A4%A4%E0%A4%BE%E0%A4%A4%E0%A5%8D%E0%A4%AA%E0%A4%B0%E0%A5%8D%E0%A4%AF%E0%A4%9A%E0%A4%A8%E0%A5%8D%E0%A4%A6%E0%A5%8D%E0%A4%B0%E0%A4%BF%E0%A4%95%E0%A4%BE/", dest_path=os.path.join(base_dir, "venkaTanAthaH") , start_index=0, overwrite=True)
+  meghamaalaa.dump_series("https://srivaishnavan.com/publications/meghamala/bhagavad-gita/gita-bhasyam-content/%E0%A4%B6%E0%A5%8D%E0%A4%B0%E0%A5%80%E0%A4%AE%E0%A4%A6%E0%A5%8D%E0%A4%97%E0%A5%80%E0%A4%A4%E0%A4%BE%E0%A4%AD%E0%A4%BE%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A4%AE%E0%A5%8D-%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%A5/", dest_path=os.path.join(base_dir, "rAmAnujaH") , start_index=1, overwrite=True)
 
 
 if __name__ == '__main__':
@@ -247,7 +252,8 @@ if __name__ == '__main__':
   # raamaayaNam()
   # bhagavad_vishayam()
   # kaavyam()
-  upanishat()
+  # upanishat()
+  bhagavad_gItA()
   # shriibhaashya()
   # fix_text("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/rAmAnuja-sampradAyaH/rAmAnujaH/shrI-bhAShyam/mUlam/ma")
   # misc()

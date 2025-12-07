@@ -80,7 +80,8 @@ def make_lines_end_with_pattern(content, full_line_pattern):
     if line.startswith("#") or regex.match(" *<", line):
       last_line_complete = True
       current_line_complete = True
-    current_line_complete = regex.fullmatch(full_line_pattern, line)
+    else:
+      current_line_complete = regex.fullmatch(full_line_pattern, line)
     if not last_line_complete:
       lines_out[-1] = f"{lines_out[-1]} {line}"
     else:
@@ -152,6 +153,17 @@ def fix_markup(text):
   return text
 
 
+def fix_ut_dharmashaastra_markup(c):
+  c = regex.sub(r"‘", "ऽ", c)
+  c = regex.sub(r"\n\t+", "\n> ", c)
+  c = regex.sub(r"\<span style\=\"text\-decoration\:underline\;\"\>(.+?)</span>", r"<u>\1</u>", c)
+  
+  c = regex.sub(r"\n\*\*(\s+)", "\n\\1**", c)
+  c = regex.sub(r"\*\* *(\n+)\*\*(?=.+\*\*\n)", "  \n", c)
+  c = regex.sub(r"(?<=[^:])\n+[\t	 ]+", "\n> ", c)
+  for x in range(1, 20):
+    c = regex.sub("\n(>.+)\n\n+>", "\n\\1  \n>", c)
+  return c
 
 def empty_line_around_quotes(content, after_too=False):
   """

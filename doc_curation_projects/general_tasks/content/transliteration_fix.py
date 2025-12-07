@@ -16,15 +16,7 @@ def devanaagarify(dir_path, source_script):
     c = doc_curation.utils.sanskrit_helper.fix_lazy_anusvaara(c)
     c = regex.sub(r"\|\|", "॥", c)
     c = regex.sub(r"\|", "।", c)
-    # c = regex.sub(r"‘", "ऽ", c)
-    # c = regex.sub(r"\n\t+", "\n> ", c)
-    # c = regex.sub(r"\<span style\=\"text\-decoration\:underline\;\"\>(.+?)</span>", r"<u>\1</u>", c)
 
-    # c = regex.sub(r"\n\*\*(\s+)", "\n\\1**", c)
-    # c = regex.sub(r"\*\* *(\n+)\*\*", "  \n", c)
-    # c = regex.sub(r"(?<=[^:])\n+[\t	 ]+", "\n> ", c)
-    # for x in range(1, 20):
-    #   c = regex.sub("\n(>.+)\n\n+>", "\n\\1  \n>", c)
     return c
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=content_transformer, dry_run=False, silent_iteration=False)
 
@@ -43,9 +35,9 @@ def fix_anunaasikaadi(dir_path, level=0):
 if __name__ == '__main__':
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/vAyu-purANam/dvi-khaNDa-saMskaraNam", content_transformer=lambda x, y: sanskrit_helper.fix_repha_duplication(x), dry_run=False, silent_iteration=False)
-  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/lokAchArya-shAkhA/emberumAnAr-dAsaH_prapannAnuShThAna-bhAskaraH/_index.md", source_script="telugu")
+  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/venkaTAchala-mAhAtmyam_1.md", source_script="telugu")
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/abrAhmaNAH/articles/mahAmahopAdhyAya-charitram.md", source_script="tamil")
-  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/lokAchArya-shAkhA/private/yg-pancha-saMskAra-khaNDam.md", source_script="kannada")
+  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/kn/mADa-bhUSha-kRShNamAchAryaH_kn/2.md", source_script="kannada")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/lokAchAryaH/shrI-vachana-bhUShaNam/vyAkhyA", content_transformer=lambda x, y: sanscript.SCHEMES[sanscript.DEVANAGARI].fix_numbered_vargiiya_vyanjanas(x), dry_run=False, silent_iteration=False)
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/pinb-aLHagiya-perumAL-jIyar-vArtA-mAlA.md", content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
@@ -53,7 +45,7 @@ if __name__ == '__main__':
 
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/para-mata-bhangaH/mUlam.md", source_script="tamil_subscripted")
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/paramparA/kalai-quarrel/articles/yadu-giriH_melukoTe.md", source_script="kannada")
-  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/kn/vijaya-rAghavaH/05.md", source_script=sanscript.IAST)
+  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/manuH/bhAruchiH/jagannAtha-pAThaH/_index.md", source_script=sanscript.IAST)
   # fix_anunaasikaadi(dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/garuDa-purANam/shrIranga-mAhAtmyam")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/english/content/prose/hindu/indologist/max-muller/india_what_it_can_teach_us.md", content_transformer=lambda x, y: sanskrit_helper.fix_sacred_texts_transliteration(x), dry_run=False, silent_iteration=False)
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/", content_transformer=lambda x, y: tamil_tools.set_tamil_soft_consonants(x), dry_run=False, silent_iteration=False)

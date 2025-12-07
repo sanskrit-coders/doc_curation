@@ -14,7 +14,7 @@ from doc_curation_projects.kaavya import divyaprabandha
 from indic_transliteration import sanscript
 
 def devanaagarify(dir_path, source_script):
-  def content_transformer(c, m):
+  def content_transformer(c):
     # c = footnote_helper.define_footnotes_near_use(c)
     c = content_processor.transliterate(text=c, source_script=source_script)
     c = sanskrit_helper.fix_lazy_anusvaara(c)
@@ -229,5 +229,6 @@ if __name__ == '__main__':
   # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/10_pEriya_tirumOLHi_tirumangai-ALHvAr_948-2031/aNNangarAchAryaH/viLakkav-urai", dry_run=False)
   # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/aNNangarAchAryaH/padav-urai", dry_run=False)
   # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/aNNangarAchAryaH/viLakkav-urai", dry_run=False)
+  reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/uttamUr-vIrarAghavaH/", dry_run=False)
 
   # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/aNNangarAchAryaH")

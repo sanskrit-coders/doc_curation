@@ -50,28 +50,47 @@ def get_logged_in_browser(headless=True):
 
 
 def expand_tree_by_text(browser, element_text, timeout=5, mode="expand", take_after=0):
-  try:
-    click_link_by_text(browser=browser, element_text=element_text, ordinal=0, timeout=timeout, post_wait=1)
-    # WebDriverWait(browser, timeout).until(lambda browser: browser.find_elements(By.LINK_TEXT, element_text))
+  element_text = element_text.strip()
+  def _get_subunit_element():
     subunit_elements = browser.find_elements(By.LINK_TEXT, element_text)
     subunit_elements = subunit_elements[take_after:]
+    if len(subunit_elements) == 0:
+      raise NoSuchElementException(f"Link not found - {element_text}")
     subunit_element = subunit_elements[0]
-    # expansion_element = subunit_element.find_element(By.XPATH, "./..")
-    # expansion_element = subunit_element.find_element(By.XPATH, "./../preceding-sibling::td")
-    expansion_element = subunit_element.find_element(By.XPATH, "./../preceding-sibling::td/descendant::a")
-    
-    img_element = browser.find_element(By.LINK_TEXT, element_text).find_element(By.XPATH, "./../preceding-sibling::td/descendant::img")
-    if mode == "expand" and "Collaps" in img_element.get_attribute("alt"):
+    return subunit_element
+  
+  try:
+    subunit_element = _get_subunit_element()
+    try:
+      img_element = subunit_element.find_element(By.XPATH, "./../preceding-sibling::td/descendant::img")
+    except NoSuchElementException as e:
+      img_element = None
+
+    if img_element is not None and "Collaps" in img_element.get_attribute("alt"):
       return True
+
+    click_link_by_text(browser=browser, element_text=element_text, ordinal=take_after, timeout=timeout, post_wait=1)
+    # WebDriverWait(browser, timeout).until(lambda browser: browser.find_elements(By.LINK_TEXT, element_text))
+    
+    # After clicking, StaleElementReferenceException is possible. So, reget the elements.
+    subunit_element = _get_subunit_element()
+    try:
+      img_element = subunit_element.find_element(By.XPATH, "./../preceding-sibling::td/descendant::img")
+    except NoSuchElementException as e:
+      img_element = None
+
+
     if mode != "expand" and "Expand" in img_element.get_attribute("alt"):
       return True
 
-    # The below doesn't work consistently.
-    # expansion_element = browser.find_element(By.CSS_SELECTOR, f"img[alt=\"Expand {element_text}\"]")
-    # expansion_element = expansion_element.find_element(By.XPATH, "..")
+    if mode == "expand" and "Collaps" in img_element.get_attribute("alt"):
+      return True
     logging.info("Expanding: %s" % element_text)
     # subunit_element.click()
-    selenium.click_element(browser=browser, element=expansion_element, post_wait=1)
+
+    expansion_element = subunit_element.find_element(By.XPATH, "./../preceding-sibling::td/descendant::a")
+
+    selenium.click_element(browser=browser, element=expansion_element, post_wait=timeout)
     return True
   except NoSuchElementException as e:
     logging.warning(f"Could not find {element_text}, {e.msg}")
@@ -101,12 +120,12 @@ def get_output_path(text_name, outdir, source_script=sanscript.DEVANAGARI):
 
 
 
-def dump_to_file(browser, out_file_path, comment_mode=None, text_name=None, start_nodes=None, source_script=sanscript.DEVANAGARI, overwrite=False):
+def dump_to_file(browser, out_file_path, comment_mode=None, text_name=None, start_nodes=None, source_script=sanscript.DEVANAGARI, overwrite=False, timeout=10):
 
   if os.path.exists(out_file_path) and not overwrite:
       logging.info("Skipping " + out_file_path)
   else:
-    text = browse_get_text(browser, comment_mode, source_script, start_nodes)
+    text = browse_get_text(browser, comment_mode, source_script, start_nodes, timeout=timeout)
     if text_name is None and source_script is not None:
       text_name = sanscript.transliterate(data=os.path.basename(out_file_path.replace(".md", "")), _from=sanscript.OPTITRANS,_to=sanscript.DEVANAGARI)
     elif source_script is not None and source_script != sanscript.DEVANAGARI:
@@ -115,9 +134,9 @@ def dump_to_file(browser, out_file_path, comment_mode=None, text_name=None, star
     md_file.dump_to_file(metadata={"title": text_name}, content=text, dry_run=False)
 
 
-def browse_get_text(browser, comment_mode, source_script, start_nodes):
+def browse_get_text(browser, comment_mode, source_script, start_nodes, timeout=10):
   def get_rows():
-    return WebDriverWait(browser, 10).until(
+    return WebDriverWait(browser, timeout).until(
       EC.presence_of_all_elements_located((By.CSS_SELECTOR, '#gvResults tr[valign="top"]'))
     )
 
@@ -204,7 +223,7 @@ def debrowse_nodes(browser, start_nodes, timeout=3):
       expand_tree_by_text(browser=browser, element_text=node.replace("expand:", ""), timeout=timeout, mode="collapse")
 
 
-def get_texts(browser, outdir, start_nodes, ordinal_start=1, comment_mode=None, source_script=sanscript.DEVANAGARI):
+def get_texts(browser, outdir, start_nodes, ordinal_start=1, comment_mode=None, source_script=sanscript.DEVANAGARI, timeout=10):
   def _dump_text(browser, outdir, ordinal=None, comment_mode=comment_mode, start_nodes=None):
     text_name = deduce_text_name(browser, ordinal)
     try:
@@ -214,7 +233,7 @@ def get_texts(browser, outdir, start_nodes, ordinal_start=1, comment_mode=None, 
       browser.back()
       debrowse_nodes(browser=browser, start_nodes=start_nodes)
       return
-    dump_to_file(browser=browser, comment_mode=comment_mode, out_file_path=out_file_path, text_name=text_name, start_nodes=start_nodes, source_script=source_script)
+    dump_to_file(browser=browser, comment_mode=comment_mode, out_file_path=out_file_path, text_name=text_name, start_nodes=start_nodes, source_script=source_script, timeout=timeout)
 
   browse_nodes(browser=browser, start_nodes=start_nodes)
 

@@ -120,6 +120,8 @@ def click_element(browser, element, post_wait=0):
     time.sleep(post_wait)
 
 
+
+
 def click_link_by_text(browser, element_text, ordinal=-1, timeout=5, post_wait=0):
   try:
     WebDriverWait(browser, timeout).until(lambda browser: browser.find_elements(By.LINK_TEXT, element_text))

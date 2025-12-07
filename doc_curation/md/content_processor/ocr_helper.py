@@ -126,16 +126,23 @@ def misc_manipravaala_typos(text):
   # text = regex.sub(":-", "--", text)
   text = regex.sub("(?<=[ँ-ॣ]):", "ः", text)
   text = regex.sub("(?<=[ँ-ॣ])[sS]", "ऽ", text)
+  text = regex.sub(r"(?<=[ऀ-ॣ])[०]", "॰", text)
   return text
 
-def misc_sanskrit_typos(text, strict=False):
+def misc_sanskrit_typos(text, strict=False, *args, **kwargs):
   text = misc_manipravaala_typos(text=text)
   text = sanskrit_helper.fix_anunaasikaadi(text=text)
+  text = sanskrit_helper.fix_svara_typos(text=text)
   if strict:
     text = regex.sub("ळ", "ल", text)
     text = regex.sub("ढ़", "ढ", text)
   text = regex.sub("(?<=[अ-ौ]|[ॎ-ॣ]):", "ः", text)
   # text = regex.sub("(?<=[ँ-ॣ])\- +(?=[ँ-ॣ])", "", text)
+  return text
+
+
+def fix_line_end_dashes(text):
+  text = regex.sub("(?<=[ँ-ॣ])\- +(?=[ँ-ॣ])", "", text)
   return text
 
 def fix_avagraha_quotations(text):

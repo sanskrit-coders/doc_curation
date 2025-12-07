@@ -42,6 +42,7 @@ class Include(object):
       extra_attributes = "%s %s" % (title_str, extra_attributes)
     return """<div class="js_include %s" url="%s"  newLevelForH1="%d" %s> </div>"""  % (classes_str,self.url, self.h1_level, extra_attributes)
 
+
 def static_include_path_maker(title, original_path, path_replacements={"content": "static", ".md": ""}, use_preexisting_file_with_prefix=True):
   include_path = str(original_path)
   for key, value in path_replacements.items():
@@ -71,7 +72,8 @@ def init_word_title_maker(text_matched, index, file_title):
   return title
 
 
-def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa_include_maker, migrated_text_processor=None, destination_path_maker=static_include_path_maker, title_maker=init_word_title_maker, dry_run=False):
+def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa_include_maker, migrated_text_processor=None, destination_path_maker=static_include_path_maker, title_maker=init_word_title_maker,
+                              migration_mode="append", dry_run=False):
   """
   
   :param md_file: 
@@ -101,7 +103,10 @@ def migrate_and_replace_texts(md_file, text_patterns, replacement_maker=vishvAsa
       from doc_curation.md.file import MdFile
       md_file_dest = MdFile(file_path=text_path)
       if os.path.exists(md_file_dest.file_path):
-        md_file_dest.replace_content_metadata(new_content=text, dry_run=dry_run)
+        if migration_mode == "append":
+          md_file_dest.replace_content_metadata(new_content=lambda x: f"{x}\n\n{text}", dry_run=dry_run)
+        else:
+          md_file_dest.replace_content_metadata(new_content=text, dry_run=dry_run)
       else:
         md_file_dest.dump_to_file(metadata={"title": title}, content=text, dry_run=dry_run)
     include_text = replacement_maker(text_matched, text_path)

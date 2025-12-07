@@ -8,6 +8,9 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import json
+import pypdf
+import os
 from pikepdf import Pdf
 
 from curation_utils import list_helper
@@ -63,7 +66,7 @@ def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_pag
 def compress_with_gs(input_file_path, output_file_path, quality='screen'):
   """
     Compress PDF using Ghostscript.
-    quality: 'screen' (72 dpi, smallest), 'ebook' (150 dpi), 'printer' (300 dpi), 'prepress', 'default'
+    quality: 'screen' (72 dpi, smallest), 'ebook' (150 dpi), 'logging.infoer' (300 dpi), 'prepress', 'default'
     """
 
   # Basic controls
@@ -164,3 +167,85 @@ def detext_with_pdfimages(input_file_path, output_file_path):
   # subprocess.call(["convert", input_file_path, image_directory  + "/page%04.jpg"])
   subprocess.check_output(["convert", image_directory + "/*", output_file_path], shell=True)
   shutil.rmtree(image_directory)
+
+
+
+def crop_pdf_with_json(input_pdf_path, output_pdf_path, json_path="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation_projects/general_tasks/pdf_boxes.json", ):
+  """
+  Crops pages of a PDF based on coordinates from a JSON file.
+
+  Args:
+      input_pdf_path (str): Path to the source PDF file.
+      json_path (str): Path to the JSON file with cropping data.
+      output_pdf_path (str): Path to save the new, cropped PDF file.
+  """
+  logging.info(f"Loading JSON data from: {json_path}")
+  try:
+    with open(json_path, 'r') as f:
+      crop_data = json.load(f)
+  except FileNotFoundError:
+    logging.info(f"Error: JSON file not found at '{json_path}'")
+    return
+  except json.JSONDecodeError:
+    logging.info(f"Error: Could not parse JSON file. Please check its format.")
+    return
+
+  logging.info(f"Opening source PDF: {input_pdf_path}")
+  try:
+    reader = pypdf.PdfReader(input_pdf_path)
+  except FileNotFoundError:
+    logging.info(f"Error: Input PDF not found at '{input_pdf_path}'")
+    return
+
+  writer = pypdf.PdfWriter()
+
+  logging.info(f"Processing {len(crop_data)} pages as defined in the JSON file...")
+
+  for item in crop_data:
+    # JSON page numbers are typically 1-based, while list indices are 0-based.
+    page_index = item['page'] - 1
+    box = item['box_2d']
+
+    if not (0 <= page_index < len(reader.pages)):
+      logging.info(f"  - Warning: Page {page_index + 1} requested in JSON, but it's out of bounds for the PDF. Skipping.")
+      continue
+
+    # Get the specific page object
+    page = reader.pages[page_index]
+
+    # Original page dimensions are needed for coordinate conversion
+    original_height = page.mediabox.height
+
+    # --- Coordinate Conversion ---
+    # The JSON 'box_2d' is [x_min, y_min, width, height] from the TOP-LEFT corner.
+    # PDF coordinates originate from the BOTTOM-LEFT corner.
+    json_x, json_y, json_w, json_h = box
+
+    # Calculate the four corners for the PDF crop box
+    left = json_x
+    right = json_x + json_w
+    top = original_height - json_y
+    bottom = original_height - (json_y + json_h)
+
+    # Apply the new coordinates to the page's CropBox
+    # A page's CropBox is what is visible to the user.
+    page.cropbox.lower_left = (left, bottom)
+    page.cropbox.upper_right = (right, top)
+
+    # It's also good practice to set the MediaBox to the CropBox
+    # This removes any hidden data outside the visible area.
+    page.mediabox = page.cropbox
+
+    # Add the modified (cropped) page to our new PDF
+    writer.add_page(page)
+    logging.info(f"  - Cropped and added page {page_index + 1}")
+
+  # Save the newly created PDF to a file
+  try:
+    with open(output_pdf_path, 'wb') as f_out:
+      writer.write(f_out)
+    logging.info(f"\nSuccessfully created cropped PDF: '{output_pdf_path}'")
+  except Exception as e:
+    logging.info(f"\nError: Could not save the output PDF. Reason: {e}")
+
+

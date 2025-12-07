@@ -89,6 +89,11 @@ def extract_definitions(content):
   return content, definitions
 
 
+def transform_definitions(content, transformer, *args, **kwargs):
+  content = regex.sub(DEFINITION_PATTERN_SINGLE_LINE, transformer, content)
+  return content
+
+
 def fix_intra_word_footnotes(content, *args, **kwargs):
   content = regex.sub(r"(\[\^[\d-]+?\])([^:\[\s]+)", "\\2\\1", content)
   return content
@@ -188,7 +193,7 @@ def insert_page_breaks(content):
   return content
 
 
-def add_page_id_to_ref_ids(content, page_pattern=r"[\s\S]+?<dg (\d+)/>"):
+def add_page_id_to_ref_ids(content, page_pattern=r"[\s\S]+?<dg (\d+)/>", *args, **kwargs):
   """
   
   :param content: 

@@ -44,6 +44,6 @@ def word_clouds():
 
 if __name__ == '__main__':
   # word_clouds()
-  # scrape_groups()
-  dump_google_groups()
+  scrape_groups()
+  # dump_google_groups()
   pass

@@ -28,9 +28,10 @@ def tamil_nna_fixer(x):
 def fix_whitespaces(dir_path):
   # library.apply_function(fn=MdFile.transform, content_transformer=space_helper.make_paras, dir_path=dir_path)
 
-  library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.remove_fake_linebreaks(c), dir_path=dir_path)
+  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.remove_fake_linebreaks(c), dir_path=dir_path)
 
   # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.remove_excess_newlines(c), dir_path=dir_path)
+  library.apply_function(fn=MdFile.transform, content_transformer=lambda c, *args, **kwargs: space_helper.make_lines_end_with_pattern(c, ".+[।॥]"), dir_path=dir_path)
 
   # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.markdownify_newlines(c), dir_path=dir_path)
 
@@ -43,11 +44,11 @@ def misc_typos(dir_path):
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_anunaasikaadi(x, level=0), dry_run=False, silent_iteration=False)
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_google_ocr_devanaagarii(x))
 
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.misc_sanskrit_typos(x))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=ocr_helper.misc_sanskrit_typos)
 
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/social-cultivation/violence/articles/Sacred-ground_Bakker", content_transformer=lambda x, y: content_processor.fix_iast_gb(x))
@@ -58,8 +59,8 @@ def misc_typos(dir_path):
 
 if __name__ == '__main__':
   # fix_audio_tags()
-  # misc_typos("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/parichaya-sanxepAH/en/shrI-vaishNava-brAhmaNas_rangAchAri.md")
-  fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content/kauShItakam/brAhmaNopaniShat.md")
+  # misc_typos("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/kriyA/nRsiMhaH_bhagavad-archA-prakaraNam/mAnasaH_en.md")
+  fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/marIchiH/vimAnArchana-kalpaH/000")
   # section_fix()
 
 

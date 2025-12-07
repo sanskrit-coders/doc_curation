@@ -1,8 +1,10 @@
+import logging
+
 import regex
 
 from doc_curation_projects.smRti.manu import content
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper
+from doc_curation.md.content_processor import include_helper, details_helper
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 
@@ -22,7 +24,7 @@ def get_canonical_verse_number(verse_num, chapter_id):
       verse_num = verse_num + 2
     pass
   if chapter_id == "11":
-    if verse_num > 5 and verse_nucm <= 226:
+    if verse_num > 5 and verse_num <= 226:
       verse_num = verse_num + 1 # धनानि तु यथाशक्ति
     elif verse_num > 226 and verse_num <= 244:
       verse_num = verse_num + 2 # यथा यथा मनस् तस्य, इत्य् एतद् एनसाम्
@@ -40,21 +42,30 @@ def title_maker(text_matched, index, file_title):
 
 
 def migrate_and_include_commentary(chapter_id):
-  text_processor = lambda x: regex.sub("^.+?\n", "", x)
+  text_processor = lambda x: details_helper.Detail(content=regex.sub(r"^.+?\n+", "", x).strip(), title="भारुचिः").to_md_html()
 
   def replacement_maker(text_matched, dest_path):
-    id_line = regex.match("(.+॥.+\n)\n", text_matched).group(1)
+    id_line = regex.match(r"(.+॥.+\n)\n", text_matched)
+    if id_line is None:
+      logging.fatal(f"Couldn't find id line - {text_matched}")
+    else:
+      id_line = id_line.group(1)
     include_line = include_helper.vishvAsa_include_maker(dest_path, h1_level=4, classes=[], title="भारुचिः")
     return "%s\n%s" % (id_line, include_line)
 
-  library.apply_function(fn=include_helper.migrate_and_replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/manuH/bhAruchiH/%s.md" % chapter_id, text_patterns = ["[॥ ०-९]+\.[०-९\.]+? *॥.+\n[^>][\\s\\S]+?(?=\n>|$)"], migrated_text_processor=text_processor, replacement_maker=replacement_maker,
-                         title_maker=title_maker, dry_run=False)
+  def dest_path_maker(title, original_path):
+    return include_helper.static_include_path_maker(title, original_path, path_replacements={"content": "static", ".md": "", "dharmaH/": "","bhAruchiH/jagannAtha-pAThaH": "sarvASh_TIkAH", "/01": "/01_praveshaH"}, use_preexisting_file_with_prefix=True)
+
+  library.apply_function(
+    fn=include_helper.migrate_and_replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/manuH/bhAruchiH/jagannAtha-pAThaH/%s.md" % chapter_id, text_patterns = [r"[॥ ०-९]+\.([०-९]+?) *॥.*\}.*\n+(\S[\s\S]+?)(?=\n\{|$)"], migrated_text_processor=text_processor, replacement_maker=replacement_maker,
+    destination_path_maker=dest_path_maker,
+                         title_maker=title_maker, migration_mode="append", dry_run=False)
 
 
 if __name__ == '__main__':
   pass
   # library.combine_files_in_dir(md_file=MdFile(file_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH/08/_index.md"))
   # library.defolderify_single_md_dirs(dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/smRtiH/manuH/medhAtithiH")
-  migrate_and_include_commentary(chapter_id="%02d" % 11)
+  migrate_and_include_commentary(chapter_id="%02d" % 6)
   # logging.info(get_canonical_verse_number(248, "08"))
   # logging.info(get_canonical_verse_number(178, "03"))

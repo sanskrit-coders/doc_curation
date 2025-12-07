@@ -20,10 +20,11 @@ def line_breaker(x):
 
 def make_details(dir_path):
   pass
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.non_detail_parts_to_detail(content=c, title="टीका"))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.non_detail_parts_to_detail(content=c, title="मूलम्"))
 
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args,  **kwargs: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_4LINE_SHLOKA_PRENUM))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args,  **kwargs: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=fr"(?<=\n)सूत्र *[\–\.] *(.+){
+    patterns.PATTERN_SUTRA_DANDA}"))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, m: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_BOLD_LINES))
 
@@ -63,7 +64,7 @@ def transliterate(dir_path):
 
 
 if __name__ == '__main__':
-  make_details(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/venkaTa-nAthaH/adhikaraNa-sArAvalI/sarva-prastutiH/")
+  make_details(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/bhakti-sUtrANi/shANDilyaH/sarva-prastutiH/_index.md")
   # transliterate(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/rAma-subba-shAstrI/mahA-shaiva-mata-mardanam.md")
   # transform_details(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/rAma-subba-shAstrI/mahA-shaiva-mata-mardanam.md")
   pass

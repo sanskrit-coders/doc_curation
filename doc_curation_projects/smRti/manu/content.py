@@ -24,12 +24,12 @@ def fix_includes():
 
 
 def get_title_id(text_matched):
-  long_id_match = regex.search("\.([०-९]+)\.([०-९]+)\s+॥", text_matched)
+  long_id_match = regex.search(r"\.([०-९]+)\.([०-९]+)\s+॥", text_matched)
   if long_id_match is not None:
     id_in_text = long_id_match.group(1)
     title_id = "%03d-%s" % (int(id_in_text), long_id_match.group(2))
   else:
-    id_in_text = regex.search("\.([०-९]+)", text_matched).group(1)
+    id_in_text = regex.search(r"\.([०-९]+)", text_matched).group(1)
     title_id = "%03d" % int(id_in_text)
   return title_id
 

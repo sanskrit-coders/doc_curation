@@ -2,8 +2,9 @@ import json
 
 import regex
 
-from doc_curation.md.content_processor import details_helper
+from doc_curation.md.content_processor import details_helper, transliterate
 from doc_curation.md.file import MdFile
+from doc_curation_projects.kaavya.divyaprabandha import general
 from indic_transliteration import sanscript
 
 
@@ -95,4 +96,6 @@ def process_basic_data_json(in_path, out_path):
 # Run the main function when the script is executed
 if __name__ == "__main__":
   # process_word_meaning_json(in_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/static/4k-divya-prabandha/synonyms_ta.json", out_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/synonyms_ta.md")
-  process_basic_data_json(in_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/static/4k-divya-prabandha/uveda-basic.json", out_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/mUlam_UV.md")
+  # general.devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/static/4k-divya-prabandha/uveda-basic.json", source_script="tamil")
+
+  process_basic_data_json(in_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/static/4k-divya-prabandha/uveda-basic.json", out_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/UV/mUlam_UV.md")

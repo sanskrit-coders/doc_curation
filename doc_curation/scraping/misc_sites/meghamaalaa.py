@@ -1,3 +1,4 @@
+from doc_curation.ebook import pandoc_helper
 from indic_transliteration import sanscript
 from collections import OrderedDict
 
@@ -23,7 +24,7 @@ def get_text(url, source_script=sanscript.DEVANAGARI):
   else:
     logging.fatal("Can't grok title.")
   content_tag = soup.select_one(".elementor-widget-theme-post-content .elementor-widget-container")
-  content = md.get_md_with_pandoc(content_in=str(content_tag), source_format="html").strip()
+  content = pandoc_helper.get_md_with_pandoc(content_in=str(content_tag), source_format="html").strip()
   content = fix_text(text=content, source_script=source_script)
   logging.info(f"Got {title} from {url}")
   return (title, content)

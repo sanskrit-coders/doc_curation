@@ -17,10 +17,12 @@ def fix_bad_anunaasikas(text):
   # Beware of निम्न नृम्ण, गम्यते, तन्मध्य, अस्मिन्काले, मृण्मय, प्राङ्मुखं etc.. - so can't do - r"(?<!्)म्(\**[क-नय-ह])": r"ं\1" etc..
   replacements = {r"[ञणम](्[क-घ])": r"ङ\1", r"[ङनणम](्[च-झ])": r"ञ\1", r"[ञङनम](्[ट-ढ])": r"ण\1", r"म्([श])": r"ं\1",
                   r"ं$": "म्", r"ं(\**\s*[अ-औ।॥])": r"म्\1", r"म्(\**\s+[क-नय-ह])": r"ं\1", }
-  c = text
-  for pattern, replacement in replacements.items():
-    c = regex.sub(pattern, replacement, c)
-  return c
+  output = ""
+  for c in regex.split(r"(?<=\n|^)(#.+)(?=\n|$)", text):
+    for pattern, replacement in replacements.items():
+      c = regex.sub(pattern, replacement, c)
+    output += c
+  return output
 
 
 def fix_avagrahas(text):
@@ -60,7 +62,8 @@ def fix_bad_vyanjanaantas(text):
 
 def fix_svara_typos(text):
   replacements = {
-    r"(॒){2,}": r"॒", r"(॑){2,}": r"॑",  
+    r"(॒){2,}": r"॒", r"(॑){2,}": r"॑",
+    rf"({ACCENTS_PATTERN})(ः)": r"\2\1",
     rf"({ACCENTS_PATTERN})(ँ)+\1?": r"\2\1",
     rf"(?<![यलव]्)(ँ{ACCENTS_PATTERN}?)([यलव]्)": r"\2\1",
     rf"({ACCENTS_PATTERN})([यलव]्ँ)": r"\2\1",
