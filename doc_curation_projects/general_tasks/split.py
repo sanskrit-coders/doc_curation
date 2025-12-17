@@ -15,10 +15,10 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/venkaTanAthaH/deshika-prabandhAH/gopAlAchArya_kn_sa/1960/v1/_index.md",  dry_run=False, source_script=sanscript.KANNADA, start_index=1) # 
 
   # देवनागरी
-  # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/vaikhAnasaH/mantra-saMhitA/mUlam.md", start_index=5)
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/prati-mAdhvaH/shrInivAsaH_naya-dyumaNiH/tanUja-saMskaraNam/02_nayadyumaNivyAkhyA.md", target_frontmantter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None) 
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/manuH/bhAruchiH/jagannAtha-pAThaH/_index.md", dry_run=False, source_script=sanscript.DEVANAGARI, start_index=1, max_length=40) # 
-  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/kn/mADa-bhUSha-kRShNamAchAryaH_kn/04_sampradAya-prakriyAbhAgaH.md",  dry_run=False, source_script=sanscript.DEVANAGARI, start_index=30) # 
+  # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/bhRgu-saMhitA/kriyAdhikAraH/v2021.md", start_index=0)
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/bhRgu-saMhitA/kriyAdhikAraH/v2021/anubandhAH.md", target_frontmantter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI,  title_index_pattern=None) 
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/sarva-prastutiH/3_pada-vAkya-yojanA-vibhAgaH/28_dvayAdhikAraH/_index.md", dry_run=False, source_script=sanscript.DEVANAGARI, start_index=16, max_length=40) # 
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/sarva-prastutiH/1_arthAnushAsana-vibhAgaH/12_sAnga-prapadanAdhikAraH.md",  dry_run=False, source_script=sanscript.DEVANAGARI, start_index=1) # 
   # 
   # IAST
   # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/kriyA/goudriaan/daily-worship/07_Worship.md", start_index=1, dest_script=sanscript.IAST)
@@ -32,7 +32,7 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.split_to_bits,  dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/meta/articles/sen-bAg_on_shulba-sUtras/",  dry_run=False, source_script=sanscript.ISO, mixed_languages_in_titles=False, title_index_pattern=None, maybe_use_dravidian_variant="force", max_length=70) # 
 
   ## None Script
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/kriyA/goudriaan/daily-worship/09_Appendices.md", dry_run=False, source_script=None, start_index=1)
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/kriyA/tirupati-mandiram/N-ramesha/02_HISTORICAL_BACKGROUND.md", dry_run=False, source_script=None, start_index=1)
   # 
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/parichaya-sanxepAH/en/shrI-vaishNava-brAhmaNas_rangAchAri.md", dry_run=False, source_script=None,  title_index_pattern=None, max_length=30)
   

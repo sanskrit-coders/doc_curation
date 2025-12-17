@@ -1,4 +1,8 @@
-from doc_curation.md.library import metadata_helper
+from curation_utils.file_helper import get_storage_name
+from doc_curation.md import library
+from doc_curation.md.content_processor import details_helper
+from doc_curation.md.library import metadata_helper, arrangement
+from doc_curation.utils import sanskrit_helper
 from indic_transliteration import sanscript
 from curation_utils import scraping
 from urllib.parse import urljoin
@@ -8,7 +12,45 @@ from doc_curation.scraping.html_scraper import souper
 
 from doc_curation.md.file import MdFile, file_helper
 import logging
-import os, regex
+import os, regex, doc_curation
+
+
+
+config_aws = doc_curation.configuration['aws']
+
+
+def dump_kIrtana(url, dest_path):
+  # The below fails
+  # soup = scraping.get_soup(url=url, config_aws=(config_aws["id"], config_aws["key"]))
+  soup = scraping.get_soup(url=url)
+  def _get_text(css):
+    node = soup.select_one(css)
+    if node is None:
+      return ""
+    text = node.get_text(separator="  \n", strip=True)
+    return sanskrit_helper.fix_lazy_anusvaara(text, script=sanscript.DEVANAGARI).replace(":", " -")
+
+  meta = _get_text("div.vol_reku")
+  composer = _get_text("div.vaggeyakara")
+  raaga = _get_text("div.raga").replace("रागमु -", "").strip()
+  title_raw = _get_text("title")
+  title = title_raw.split(" - ")[2].strip()
+  text = _get_text("div.content table")
+  dest_path = os.path.join(dest_path, get_storage_name(composer), get_storage_name(raaga), get_storage_name(title) + ".md")
+  meta_detail = details_helper.Detail(title="अधिगीतम्", content=f"{composer}  \n{raaga}  \n{meta}").to_md_html()
+  content_detail = details_helper.Detail(title="मूलम्", content=text.replace("\n", "  \n")).to_md_html(attributes_str="open")
+  content = "\n\n".join([meta_detail, content_detail])
+  dest_md = MdFile(dest_path)
+
+  # Use stable string keys in metadata.
+  dest_md.dump_to_file(
+    metadata={"title": title, "composer": composer, "raaga": raaga},
+    content=content,
+    dry_run=False
+  )
+
+  # `fix_index_files` expects a directory path, not a file path.
+  arrangement.fix_index_files(dir_path=dest_path, dry_run=False)
 
 
 def get_article(url):
@@ -16,7 +58,7 @@ def get_article(url):
   title = soup.select_one("font[size='7']").text
   content_tag = soup.select("div.wmsect table td")[-1]
   content = md.get_md_with_pandoc(content_in=str(content_tag), source_format="html")
-  content = content.replace("\|\|", "॥").replace("\|", "।")
+  content = content.replace(r"\|\|", "॥").replace(r"\|", "।")
   content = regex.sub(r"\n(>[^\n]+)>(?=\n)", r"\n\1  ", content).replace(" > ", " ")
 
   # Fix footnotes
@@ -44,10 +86,15 @@ def _next_url_getter(soup, url):
   else:
     return urljoin(url, content_tag.parent["href"])
 
-def dump_series(url, dest_path, title=None, dry_run=False):
+def dump_series(url, dest_path, a_css, title=None, dry_run=False):
+  
   souper.dump_series(start_url=url, out_path=dest_path, dumper=dump_article, next_url_getter=_next_url_getter, end_url=None, index_format="%02d")
   soup = scraping.scroll_and_get_soup(url=url, browser=scraping.get_selenium_chrome())
+  anchor_tags = soup.select(a_css)
+  anchor_tags.reverse()
+  page_urls = [urljoin("https://www.prekshaa.in/", a["href"]) for a in anchor_tags]
   for index, page_url in enumerate(page_urls):
+    (page_content, page_title) = get_article(url=page_url)
     
     if title is None:
       title = page_title

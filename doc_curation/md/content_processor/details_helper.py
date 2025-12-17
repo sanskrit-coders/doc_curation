@@ -182,25 +182,45 @@ def interleave_from_file(md_files, source_file, dest_pattern=r"[^\d०-९೦-�
     logging.warning(f"Could not get indices in source: {missing_dest_indices}")
   
 
-def transform_details_with_soup(content, metadata, content_str_transformer=None, title_transformer=None, title_pattern=None, details_css="body>details", *args, **kwargs):
-  # Stray usage of < can fool the soup parser. Hence the below.
-  if "details" not in content:
+def transform_details_with_soup(content, content_str_transformer=None, title_transformer=None, title_pattern=None, details_css="body>details", *args, **kwargs):
+  metadata = kwargs.get("metadata", None)
+
+  # Stray usage of < can fool the soup parser. Keep this as a cheap guard,
+  # but make it a bit more specific than "details" in content.
+  if "<details" not in content.lower():
     return content
+
   soup = content_processor._soup_from_content(content=content, metadata=metadata)
   if soup is None:
     return content
-  # Note - fixes only top level details
+
+  # Note - fixes only top level details (by default selector).
   details = soup.select(details_css)
+
   for detail_tag in details:
     if title_pattern is not None and not regex.fullmatch(title_pattern, detail_tag.select_one("summary").text):
-      continue
+        continue
+
     if title_transformer is not None:
-      detail_tag.select_one("summary").text = title_transformer(detail_tag.select_one("summary").text)
+      detail_tag.select_one("summary").string = title_transformer(detail_tag.select_one("summary").text)
     if content_str_transformer is not None:
-      for x in detail_tag.contents:
-        if isinstance(x, NavigableString):
-          x.replace_with(content_str_transformer(x, metadata=metadata, *args, **kwargs))
+      # Transform descendant text nodes, excluding anything inside <summary>.
+      # Snapshot the strings since we'll mutate the tree during replacement.
+      for s in list(detail_tag.find_all(string=True)):
+        if isinstance(s, NavigableString):
+          if s.parent is not None and s.parent.name == "summary":
+            continue
+          if str(s).strip() == "":
+            continue
+          s.replace_with(
+            content_str_transformer(str(s), *args, **kwargs)
+          )
+
+    # Prevent repeated runs from accumulating extra newlines.
+    nxt = detail_tag.next_sibling
+    if not (isinstance(nxt, NavigableString) and str(nxt) == "\n"):
       detail_tag.insert_after("\n")
+
   return content_processor._make_content_from_soup(soup=soup)
 
 

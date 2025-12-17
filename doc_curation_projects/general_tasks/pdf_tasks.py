@@ -27,7 +27,7 @@ if __name__ == '__main__':
     # drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/koshaH/upasarga-artha-candrika. vol. 1 (pra-sam).pdf", small_pdf_pages=10, detext=False)
     # drive_ocr.split_and_ocr_all( dir_path="/media/vvasuki/vData/text/granthasangrahaH/vedAH/sb", small_pdf_pages=10, detext=False, )
     # pdf.detext_via_jpg(input_file_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/shrIvaiShNavaH/yAmuna/AGAMA PRAMANYAM_sa.pdf")
-    drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/shrIvaiShNavaH/venkaTanAtha/rts", small_pdf_pages=10, detext=False, file_pattern="[!_]*.pdf")
+    drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/brAhmaH/", small_pdf_pages=10, detext=True, file_pattern="[!_]*.pdf")
     
     # pdf.crop_pdf_with_json(input_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/pAncharAtram/Pancharatra-pAramyam.pdf", output_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/pAncharAtram/Pancharatra-pAramyam-out.pdf", )
     

@@ -87,6 +87,13 @@ def prep_full_md(omit_pattern, out_path, overwrite: bool, source_dir, metadata, 
                                                                                                             transformer=details_helper.open_attribute_fixer,
                                                                                                             details_css="details"),
     dry_run=False)
+
+
+  md_file.transform(
+    content_transformer=lambda c, *args, **kwargs: details_helper.transform_details_with_soup(c,
+                                                                                                  title_transformer=lambda x: regex.sub("^विश्वास-", "मूल-", x), title_pattern="विश्वास-प्रस्तुतिः.*"),
+    dry_run=False)
+
   return md_file
 
 

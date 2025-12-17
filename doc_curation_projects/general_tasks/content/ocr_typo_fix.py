@@ -38,10 +38,20 @@ def fix_ttd(dir_path):
     text = regex.sub(r"(?<=[\।॥])\n\n", r"  \n", text)
     text = regex.sub(r"(?<=\n)([०-९\d]+) *(?=\n)", r"[[\1]]", text)
     text = regex.sub(r"(?<=\n)---+ *(?=\n)", r"_______", text)
+    text = regex.sub(r"निर\nञ्झ\n", r"र्झ", text)
+    text = regex.sub(r"([ा-ौ]) *\n *क्ष् *\n", r"क्ष\1", text)
+    text = regex.sub(r"क्ष\n(\S+)\n", r"क्ष्\1", text)
+    text = regex.sub(r"ष([ा-ौ])\nण\n", r"ष्ण\1", text)
+    text = regex.sub(r"([ा-ौ]*) *\nक्ष् *\n", r"्क्ष\1", text)
+    text = regex.sub(r"([ा-ौ]*) *\n *क्ष *\n *्व", r"्क्ष्व\1", text)
+    text = regex.sub(r"([ा-ौ]*)त *\n *क्ष *\n", r"त्क्ष\1", text)
+    text = regex.sub(r"([ा-ौ]*) *\nङ्ग *\n", r"्ङ्ग\1", text)
+    text = regex.sub(r"[]", r"", text)
+    text = regex.sub(r" ृ", r"ृ", text)
     return text
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ttd_fixer(x))
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.strip_word_continuation_dashes(x))
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.misc_sanskrit_typos(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.misc_sanskrit_typos(x))
 
 
 def misc_typos(dir_path):
@@ -67,7 +77,7 @@ def misc_typos(dir_path):
 
 if __name__ == '__main__':
   pass
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/shata-dUShaNI/sarva-prastutiH", content_transformer=lambda x, *args, **kwargs: sanskrit_helper.fix_anunaasikaadi(x), dry_run=False, silent_iteration=False)
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/shata-dUShaNI/sarva-prastutiH", content_transformer=lambda x, *args, **kwargs: sanskrit_helper.fix_anunaasikaadi(x), dry_run=False, silent_iteration=False)
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/manuH/bhAruchiH/jagannAtha-pAThaH/_index.md", content_transformer=lambda x, *args, **kwargs: space_helper.fix_ut_dharmashaastra_markup(x), dry_run=False, silent_iteration=False)
 
@@ -76,7 +86,7 @@ if __name__ == '__main__':
   # ocr_fix_iast("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/govindaH_yati-dharma-samuchchayaH/en.md")
   # foxit_ocr_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/svAmi-nArAyaNa-sampradAyaH/vaDatAla-paramparA/darshana-sAra-sangrahaH")
   # misc_typos("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/shata-dUShaNI/sarva-prastutiH")
-  # fix_ttd("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/bhRgu-saMhitA/khilAdhikAraH.md")
+  fix_ttd("/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/venkaTAchala-mAhAtmyam_2.md")
   # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/pAdma-saMhitA/", patterns=["। *\n"], replacement="।  \n")
   # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/bhAgavatam/gauDIya-prastutiH/", patterns=[r"\\?[\|।] *\\?[\|।]"], replacement="॥")
   # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/bhAgavatam/gauDIya-prastutiH/", patterns=[r"\\?[\|।]"], replacement="।")

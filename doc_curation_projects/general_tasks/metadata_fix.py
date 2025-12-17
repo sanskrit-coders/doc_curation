@@ -20,7 +20,6 @@ def title_fix(dir_path, overwrite=True, dry_run=False):
   ##### General
   # library.apply_function(dir_path=dir_path, fn=metadata_helper.strip_index_from_title, dry_run=dry_run)
   # library.apply_function(dir_path=dir_path, fn=metadata_helper.prepend_file_index_to_title, dry_run=dry_run)
-  # arrangement.shift_indices(dir_path=dir_path, start_index=42, new_index_offset=-42, dry_run=dry_run)
 
 
   # library.apply_function(fn=MdFile.prepend_file_index_to_title, dir_path="/home/vvasuki/hindutva/hindutva-hugo/content/main/books/vivekAnanda", dry_run=dry_run)
@@ -47,7 +46,10 @@ def file_name_fix(dir_path, overwrite=False, dry_run=False):
 
 if __name__ == '__main__':
   # title_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/marIchiH/vimAnArchana-kalpaH/", overwrite=False, dry_run=False)
-  file_name_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/marIchiH/vimAnArchanA-kalpaH/", overwrite=True, dry_run=False)
+  # file_name_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/marIchiH/vimAnArchanA-kalpaH/", overwrite=True, dry_run=False)
+
+  # arrangement.shift_indices(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/kriyA/tirupati-mandiram/N-ramesha/05_mUrtis/02_DHRUVABERA", start_index=25, new_index_offset=-24, dry_run=False)
+
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/brAhmaNam/sarva-prastutiH/1/", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False, overwrite=False)
 
   # library.apply_function(
