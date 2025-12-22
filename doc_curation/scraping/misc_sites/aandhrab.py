@@ -1,5 +1,5 @@
 from curation_utils.file_helper import get_storage_name
-from doc_curation.md import library
+from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import details_helper
 from doc_curation.md.library import metadata_helper, arrangement
 from doc_curation.utils import sanskrit_helper
@@ -28,29 +28,43 @@ def dump_kIrtana(url, dest_path):
     if node is None:
       return ""
     text = node.get_text(separator="  \n", strip=True)
+    text = content_processor.transliterate(text, source_script=sanscript.TELUGU)
     return sanskrit_helper.fix_lazy_anusvaara(text, script=sanscript.DEVANAGARI).replace(":", " -")
+
+  if url.startswith("/"):
+    id = os.path.basename(url).replace(".html", "")
+    url = f"https://www.andhrabharati.com/kIrtanalu/annamayya/kirtana.php?id={id}&dispScript=uc:de"
 
   meta = _get_text("div.vol_reku")
   composer = _get_text("div.vaggeyakara")
-  raaga = _get_text("div.raga").replace("रागमु -", "").strip()
+  raaga = regex.sub("रागमु ?- ?", "", _get_text("div.raga")).strip()
   title_raw = _get_text("title")
+  if len(title_raw.split(" - ")) < 2:
+    raise ConnectionError("Rate limited")
   title = title_raw.split(" - ")[2].strip()
   text = _get_text("div.content table")
-  dest_path = os.path.join(dest_path, get_storage_name(composer), get_storage_name(raaga), get_storage_name(title) + ".md")
   meta_detail = details_helper.Detail(title="अधिगीतम्", content=f"{composer}  \n{raaga}  \n{meta}").to_md_html()
   content_detail = details_helper.Detail(title="मूलम्", content=text.replace("\n", "  \n")).to_md_html(attributes_str="open")
   content = "\n\n".join([meta_detail, content_detail])
-  dest_md = MdFile(dest_path)
+  md_path = os.path.join(dest_path, get_storage_name(composer), get_storage_name(raaga), get_storage_name(title) + ".md")
+  dest_md = MdFile(md_path)
 
   # Use stable string keys in metadata.
   dest_md.dump_to_file(
-    metadata={"title": title, "composer": composer, "raaga": raaga},
+    metadata={"title": title, "composer": composer, "raaga": raaga, "upstream_url": url},
     content=content,
     dry_run=False
   )
 
   # `fix_index_files` expects a directory path, not a file path.
   arrangement.fix_index_files(dir_path=dest_path, dry_run=False)
+
+
+def dump_from_html_files(src_path, dest_path):
+  for filename in os.listdir(src_path):
+    if filename.endswith(".html"):
+      file_path = os.path.join(src_path, filename)
+      dump_kIrtana(file_path, dest_path)
 
 
 def get_article(url):
