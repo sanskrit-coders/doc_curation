@@ -19,7 +19,7 @@ import os, regex, doc_curation
 config_aws = doc_curation.configuration['aws']
 
 
-def dump_kIrtana(url, dest_path):
+def dump_kIrtana(url, dest_path, overwrite=False):
   # The below fails
   # soup = scraping.get_soup(url=url, config_aws=(config_aws["id"], config_aws["key"]))
   soup = scraping.get_soup(url=url)
@@ -47,6 +47,9 @@ def dump_kIrtana(url, dest_path):
   content_detail = details_helper.Detail(title="मूलम्", content=text.replace("\n", "  \n")).to_md_html(attributes_str="open")
   content = "\n\n".join([meta_detail, content_detail])
   md_path = os.path.join(dest_path, get_storage_name(composer), get_storage_name(raaga), get_storage_name(title) + ".md")
+  if os.path.exists(md_path) and not overwrite:
+    logging.info(f"Skipping {md_path}")
+    return 
   dest_md = MdFile(md_path)
 
   # Use stable string keys in metadata.
@@ -64,14 +67,14 @@ def dump_from_html_files(src_path, dest_path):
   for filename in os.listdir(src_path):
     if filename.endswith(".html"):
       file_path = os.path.join(src_path, filename)
-      dump_kIrtana(file_path, dest_path)
+      dump_kIrtana(file_path, dest_path, overwrite=False)
 
 
 def get_article(url):
   soup = scraping.get_soup(url=url)
   title = soup.select_one("font[size='7']").text
   content_tag = soup.select("div.wmsect table td")[-1]
-  content = md.get_md_with_pandoc(content_in=str(content_tag), source_format="html")
+  content = pandoc_helper.get_md_with_pandoc(content_in=str(content_tag), source_format="html")
   content = content.replace(r"\|\|", "॥").replace(r"\|", "।")
   content = regex.sub(r"\n(>[^\n]+)>(?=\n)", r"\n\1  ", content).replace(" > ", " ")
 

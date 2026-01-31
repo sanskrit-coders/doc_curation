@@ -29,14 +29,14 @@ def typo_fix(dir_path):
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.undo_taittirIya_forms(x))
 
 
-# details_fix(dir_path="//home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH/2/3_hotR-brAhmaNAdi/08_sRShTisAdhanatvena_hotRmantrasAmarthyaprashaMsA.md")
+details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH/2/5/07_sAmidhenImantravyAkhyAnam.md")
 
 # fix_old_US_notation("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/AraNyakam/sarva-prastutiH/04_pitR-medhAdi/01_dAhAntam.md")
 # fix_old_US_notation("/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content")
 # fix_old_US_notation("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH/1/7_aiShTika-yAjamAnAdi/05_dhruvApyAyanAdi-brAhmaNam.md")
 # fix_old_US_notation("/home/vvasuki/gitland/vishvAsa/devaH/content")
 
-content_fix("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/Rk/vishvAsa-prastutiH/2/4_upahomAdi/2_01-09_chaxuSho_hete")
+# content_fix("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/vishvAsa-prastutiH/1_15/05_bhaga_eva.md")
 
 # typo_fix("/home/vvasuki/gitland/sanskrit/raw_etexts_private")
 

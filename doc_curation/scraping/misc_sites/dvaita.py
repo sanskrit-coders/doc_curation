@@ -6,6 +6,7 @@ from collections import OrderedDict
 from curation_utils import scraping
 from urllib.parse import urljoin
 from doc_curation import md
+from doc_curation.ebook import pandoc_helper
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import space_helper
 from curation_utils.file_helper import get_storage_name
@@ -18,16 +19,20 @@ import os, regex
 import aksharamukha
 
 
+SCROLL_PAUSE = 6
+
+
 def fix_text(text, source_script):
   text = regex.sub(r"</?div.*?>", "", text)
   text = regex.sub(r"\n\[Load More.+\n", "", text)
-  text = text.replace("\|", "।")
+  text = text.replace(r"\|", "।")
   text = regex.sub("।।+", "॥", text)
   text = regex.sub("ळ", "ल", text)
   text = regex.sub(":", "ः", text)
   text = regex.sub("s", "ऽ", text)
   text = regex.sub("ॆ", "े", text)
   text = regex.sub("ॊ", "ो", text)
+  text = regex.sub("व्द्य", "द्व्य", text)
   text = sanskrit_helper.fix_bad_anunaasikas(text)
   text = sanskrit_helper.fix_bad_visargas(text)
   text = sanskrit_helper.fix_bad_vyanjanaantas(text)
@@ -40,7 +45,7 @@ def fix_text(text, source_script):
 
 def get_text(url, browser, source_script=sanscript.DEVANAGARI):
   logging.info("Getting text from " + url)
-  soup = scraping.scroll_and_get_soup(url=url, browser=browser, scroll_pause=5, scroll_btn_css="#load_more_article")
+  soup = scraping.scroll_and_get_soup(url=url, browser=browser, scroll_pause=SCROLL_PAUSE, scroll_btn_css=None)
   title = None
   title_tag = soup.select_one("li.mm-active>a.active")
   if title_tag is not None:
@@ -48,7 +53,7 @@ def get_text(url, browser, source_script=sanscript.DEVANAGARI):
   else:
     logging.fatal("Can't grok title.")
   content_tag = soup.select_one("div.main-content")
-  content = md.get_md_with_pandoc(content_in=str(content_tag), source_format="html").strip()
+  content = pandoc_helper.get_md_with_pandoc(content_in=str(content_tag), source_format="html").strip()
   content = fix_text(text=content, source_script=source_script)
   logging.info(f"Got {title} from {url}")
   return (title, content)
@@ -60,13 +65,13 @@ def dump_text(url, dest_path, browser, index_str, source_script=sanscript.DEVANA
     return
   (title, content) = get_text(url=url, browser=browser, source_script=source_script)
   md_file = MdFile(file_path=dest_path)
-  md_file.dump_to_file(metadata={"title": f"{index_str} {title}"}, content=content, dry_run=dry_run)
+  md_file.dump_to_file(metadata={"title": f"{index_str} {title}", "upstream_url": url}, content=content, dry_run=dry_run)
 
 
 def process_ul_tree(ul_tag, path="", overwrite=False, dry_run=False):
   file_map = {}
   items = [l for l in ul_tag.children if l.name == "li" and l.text.strip().lower() != "temp" ]
-  logging.debug(items)
+  # logging.debug(items)
   for index, item in enumerate(items):
     anchor = item.select_one("a")
     title = anchor.text.strip()
@@ -82,16 +87,30 @@ def process_ul_tree(ul_tag, path="", overwrite=False, dry_run=False):
   return file_map
 
 
-browser = scraping.get_selenium_chrome(headless=False)
 
 
-def dump_series(url, dest_path, start_index=None, end_index=None, source_script=sanscript.DEVANAGARI, overwrite=False, dry_run=False):
-  soup = scraping.scroll_and_get_soup(url=url, browser=browser)
+def dump_series(url, dest_path, start_file=None, end_index=None, source_script=sanscript.DEVANAGARI, overwrite=True, dry_run=False):
+  browser = scraping.get_selenium_chrome(headless=False)
+  # First, prepare file_map. No need to scroll long just to get the urls.
+  soup = scraping.scroll_and_get_soup(url=url, browser=browser, scroll_pause=2, scroll_btn_css=None)
   logging.info(f"Dumping series starting {url}")
   parts_tag = soup.select_one("ul.sub-menu.mm-show")
-  file_map = process_ul_tree(parts_tag, path=dest_path, overwrite=overwrite, dry_run=dry_run)
+  file_map = process_ul_tree(parts_tag, overwrite=overwrite, dry_run=dry_run)
   logging.info(f"{len(file_map)} files will be written.")
-  for dest_path, url in file_map.items():
-    index_str = sanscript.transliterate(os.path.basename(dest_path).split("_")[0], _to=sanscript.DEVANAGARI, _from=sanscript.IAST)
-    dump_text(url=url, index_str=index_str, browser=browser, dest_path=dest_path, source_script=source_script, overwrite=overwrite)
-  arrangement.fix_index_files(dir_path=os.path.dirname(dest_path), overwrite=False, dry_run=False)
+
+  file_map = {regex.sub("^[^/]+?/", "", item_path) : url for item_path, url in file_map.items()}
+  # drop all items until item_path = start_file
+  if start_file is not None:
+    try:
+      keys = list(file_map.keys())
+      start_idx = keys.index(start_file)
+      file_map = {k: file_map[k] for k in keys[start_idx:]}
+    except ValueError:
+      logging.warning(f"start_file '{start_file}' not found in file_map. Proceeding without dropping.")
+
+  # Now get each page.
+  for item_path, url in file_map.items():
+    item_path = os.path.join(dest_path, item_path)
+    index_str = sanscript.transliterate(os.path.basename(item_path).split("_")[0], _to=sanscript.DEVANAGARI, _from=sanscript.IAST)
+    dump_text(url=url, index_str=index_str, browser=browser, dest_path=item_path, source_script=source_script, overwrite=overwrite)
+  arrangement.fix_index_files(dir_path=os.path.dirname(item_path), overwrite=False, dry_run=False)

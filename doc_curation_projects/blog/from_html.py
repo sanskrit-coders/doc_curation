@@ -79,6 +79,10 @@ def dump_wordpress_monthly():
 
 def dump_substack():
   substack.scrape_free_articles_from_index_anchors(url="https://ramaseshanchandrasekaran.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/ramaseshan", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://cshc.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/cshc", dry_run=False)
+
+  substack.scrape_free_articles_from_index_anchors(url="https://tsering.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/bauddham/tsering", dry_run=False)
+
   substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/non-hindu/razib", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://www.stoneageherbalist.com/", dir_path=f"{BASE_PATH}/weblogs/non-hindu/stoneageherbalist", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://frontierdharma.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/hindoohistory_frontierdharma", dry_run=False)

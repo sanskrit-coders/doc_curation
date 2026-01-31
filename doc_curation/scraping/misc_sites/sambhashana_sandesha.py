@@ -39,7 +39,7 @@ def dump_month(url, dest_path_month):
       logging.info(f"Skipping {dest_path}")
       continue
     md_file = MdFile(file_path=dest_path)
-    content = md.get_md_with_pandoc(content_in=str(div), source_format="html")
+    content = pandoc_helper.get_md_with_pandoc(content_in=str(div), source_format="html")
     content = content.replace(":", "ः").replace("\n# ", "\n## ")
     md_file.dump_to_file(metadata={"title": title}, content=content, dry_run=False)
 

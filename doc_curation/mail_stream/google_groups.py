@@ -78,7 +78,7 @@ def get_thread_messages_selenium(url, browser=thread_browser):
     message_html = None
     try:
       message_html = str(message_tag)
-      content = md.get_md_with_pandoc(content_in=message_html, source_format="html")
+      content = pandoc_helper.get_md_with_pandoc(content_in=message_html, source_format="html")
     except RecursionError:
       #   https://bugs.launchpad.net/beautifulsoup/+bug/1967610
       logging.warning(f"Infinite recursion : {url}")

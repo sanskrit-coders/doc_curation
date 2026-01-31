@@ -20,7 +20,7 @@ def dump_chapter(url, dest_path, dry_run=False, overwrite=False):
   if len(two_page_divs) == 0:
     chapter_div = soup.select_one("#chapterBody")
     fix_footnote_refs(chapter_div)
-    content = md.get_md_with_pandoc(content_in=str(chapter_div))
+    content = pandoc_helper.get_md_with_pandoc(content_in=str(chapter_div))
     content = content.replace("\[", "[").replace("\]", "]")
     footnote_def_md = get_footnote_def_md(chapter_div)
     content = content + "\n\n" + footnote_def_md
@@ -40,7 +40,7 @@ def dump_chapter(url, dest_path, dry_run=False, overwrite=False):
 def get_devanaagarii_page_md(core_page, comment_detail):
   # Replace footnote markers
   fix_footnote_refs(core_page)
-  md_content = md.get_md_with_pandoc(content_in=str(core_page))
+  md_content = pandoc_helper.get_md_with_pandoc(content_in=str(core_page))
 
   logging.debug(f"Text snippet  : {md_content[:30]}")
   md_content = md_content.replace("\[", "[").replace("\]", "]").replace("\|", "|")
@@ -79,7 +79,7 @@ def get_footnote_def_md(base_div):
       logging.warning(f"No superscript found! {id}")
     else:
       sup_tag.decompose()
-    md_content = md.get_md_with_pandoc(content_in=str(footnote_def))
+    md_content = pandoc_helper.get_md_with_pandoc(content_in=str(footnote_def))
     md_content = textwrap.indent(md_content, "    ")
     md_content = f"[^{id}]:\n\n{md_content}"
     footnote_mds.append(md_content)

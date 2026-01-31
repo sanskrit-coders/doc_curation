@@ -11,7 +11,7 @@ from indic_transliteration import sanscript
 
 
 def title_fix(dir_path, overwrite=True, dry_run=False):
-  arrangement.fix_index_files(dir_path=dir_path, overwrite=overwrite, dry_run=dry_run)
+  # arrangement.fix_index_files(dir_path=dir_path, overwrite=overwrite, dry_run=dry_run)
   ## DEVANAGARI
   # library.apply_function(dir_path=dir_path, fn=MdFile.ensure_ordinal_in_title, transliteration_target=sanscript.DEVANAGARI, dry_run=dry_run)
   # library.apply_function(dir_path=dir_path, fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, overwrite=overwrite, dry_run=dry_run)
@@ -30,7 +30,7 @@ def title_fix(dir_path, overwrite=True, dry_run=False):
 
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/bhAgavatam", fn=metadata_helper.remove_adhyaaya_word_from_title, dry_run=dry_run)
 
-  library.apply_function(fn=metadata_helper.set_title_from_content, dir_path=dir_path, title_extractor=metadata_helper.iti_naama_title_extractor)
+  # library.apply_function(fn=metadata_helper.set_title_from_content, dir_path=dir_path, title_extractor=metadata_helper.iti_naama_title_extractor)
   # library.apply_function(fn=metadata_helper.set_title_from_content, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/sampradAyaH/vIra-shaivaH/tattvam/siddhAnta-shikhA-maNiH", title_extractor=metadata_helper.iti_naama_title_extractor, conclusion_pattern=".+\n?.+परिच्छेदः")
 
 
@@ -45,7 +45,9 @@ def file_name_fix(dir_path, overwrite=False, dry_run=False):
 
 
 if __name__ == '__main__':
-  # title_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/marIchiH/vimAnArchana-kalpaH/", overwrite=False, dry_run=False)
+  # title_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/en/satya-nArAyaNaH", overwrite=False, dry_run=False)
+  library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/en/satya-nArAyaNaH", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, overwrite=True, dry_run=False)
+
   # file_name_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/marIchiH/vimAnArchanA-kalpaH/", overwrite=True, dry_run=False)
 
   # arrangement.shift_indices(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/kriyA/tirupati-mandiram/N-ramesha/05_mUrtis/02_DHRUVABERA", start_index=25, new_index_offset=-24, dry_run=False)

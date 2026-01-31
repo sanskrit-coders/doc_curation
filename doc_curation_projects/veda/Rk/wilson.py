@@ -39,7 +39,7 @@ def dumper (url, dry_run, *args, **kwargs):
   souper.tag_replacer(soup=soup, css_selector="#scontent .border-bottom .row", tag_name="ul")
   souper.tag_replacer(soup=soup, css_selector="#scontent .border-bottom .col-12", tag_name="li")
   content = get_content_from_element(soup=soup, text_css_selector="#scontent", url=url)
-  content = md.get_md_with_pandoc(content_in=content, source_format="html")
+  content = pandoc_helper.get_md_with_pandoc(content_in=content, source_format="html")
   content_lines = content.split("\n")
 
   content_lines_wilson = list(dropwhile(lambda x: not x.strip().startswith("## English"), content_lines))

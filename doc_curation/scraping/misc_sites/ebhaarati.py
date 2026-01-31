@@ -56,7 +56,7 @@ def get_article(url, browser=None, scroll_pause=2):
     else:
       title = title_element.text
       content_tag = soup.select("div.page-content")
-      content = md.get_md_with_pandoc(content_in=str(content_tag), source_format="html-native_divs-native_spans")
+      content = pandoc_helper.get_md_with_pandoc(content_in=str(content_tag), source_format="html-native_divs-native_spans")
   except WebDriverException as e:
     logging.error(e)
     raise 

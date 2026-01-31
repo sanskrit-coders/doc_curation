@@ -8,7 +8,8 @@ from urllib.parse import urljoin
 
 import doc_curation.md.content_processor.footnote_helper
 import regex
-from bs4 import BeautifulSoup, Tag, Comment
+from bs4 import BeautifulSoup, Tag, Comment, NavigableString
+
 from doc_curation import md
 
 from curation_utils import file_helper, scraping
@@ -57,6 +58,34 @@ def element_remover(soup, css_selector):
 def tag_appender(soup, css_selector, tag_name):
   for element in soup.select(css_selector):
     element.insert_after(soup.new_tag(tag_name))
+
+
+def is_prev_sibling(prev_tag, next_tag):
+  """
+  Returns True if prev_tag is the previous sibling of next_tag, 
+  allowing only whitespace between them.
+  If there is any actual text (non-whitespace) or another tag, returns False.
+  """
+  if not prev_tag or not next_tag:
+    return False
+
+  # Iterate backwards through all siblings
+  for sib in next_tag.previous_siblings:
+    if sib == prev_tag:
+      return True
+
+    # If we hit another Tag, they are not siblings in this context
+    if isinstance(sib, Tag):
+      return False
+
+    # If we hit a string, check if it contains actual text content
+    if isinstance(sib, NavigableString):
+      # .strip() is empty if the string is only \n, \t, or spaces
+      if sib.strip():
+        # There is a non-whitespace string intervening
+        return False
+
+  return False
 
 
 def get_content_from_element(url, text_css_selector, soup=None):

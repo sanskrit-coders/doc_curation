@@ -15,7 +15,7 @@ def get_article(url):
   soup = scraping.get_soup(url=url)
   title = soup.select_one("h1").text
   content_tag = soup.select_one("article .field")
-  content = md.get_md_with_pandoc(content_in=str(content_tag), source_format="html")
+  content = pandoc_helper.get_md_with_pandoc(content_in=str(content_tag), source_format="html")
   content = content.replace("\|\|", "॥").replace("\|", "।")
   content = regex.sub(r"\n(>[^\n]+)>(?=\n)", r"\n\1  ", content).replace(" > ", " ")
 

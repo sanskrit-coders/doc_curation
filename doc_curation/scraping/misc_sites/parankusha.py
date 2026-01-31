@@ -120,7 +120,7 @@ def get_output_path(text_name, outdir, source_script=sanscript.DEVANAGARI):
 
 
 
-def dump_to_file(browser, out_file_path, comment_mode=None, text_name=None, start_nodes=None, source_script=sanscript.DEVANAGARI, overwrite=False, timeout=10):
+def dump_to_file(browser, out_file_path, comment_mode=None, text_name=None, start_nodes=None, source_script=sanscript.DEVANAGARI, overwrite=False, timeout=10, debrowse=True):
 
   if os.path.exists(out_file_path) and not overwrite:
       logging.info("Skipping " + out_file_path)
@@ -132,6 +132,8 @@ def dump_to_file(browser, out_file_path, comment_mode=None, text_name=None, star
       text_name = content_processor.transliterate(text=text_name, source_script=source_script)
     md_file = MdFile(file_path=out_file_path)
     md_file.dump_to_file(metadata={"title": text_name}, content=text, dry_run=False)
+    if debrowse:
+      debrowse_nodes(browser=browser, start_nodes=start_nodes)
 
 
 def browse_get_text(browser, comment_mode, source_script, start_nodes, timeout=10):
@@ -218,7 +220,7 @@ def browse_nodes(browser, start_nodes, timeout=10):
 
 def debrowse_nodes(browser, start_nodes, timeout=3):
   # We don't "expand all" to avoid confusion among nodes with identical names.
-  for node in start_nodes.reverse():
+  for node in reversed(start_nodes):
     if node.startswith("expand:"):
       expand_tree_by_text(browser=browser, element_text=node.replace("expand:", ""), timeout=timeout, mode="collapse")
 
@@ -233,7 +235,7 @@ def get_texts(browser, outdir, start_nodes, ordinal_start=1, comment_mode=None, 
       browser.back()
       debrowse_nodes(browser=browser, start_nodes=start_nodes)
       return
-    dump_to_file(browser=browser, comment_mode=comment_mode, out_file_path=out_file_path, text_name=text_name, start_nodes=start_nodes, source_script=source_script, timeout=timeout)
+    dump_to_file(browser=browser, comment_mode=comment_mode, out_file_path=out_file_path, text_name=text_name, start_nodes=start_nodes, source_script=source_script, timeout=timeout, debrowse=False)
 
   browse_nodes(browser=browser, start_nodes=start_nodes)
 
@@ -245,6 +247,7 @@ def get_texts(browser, outdir, start_nodes, ordinal_start=1, comment_mode=None, 
       ordinal = ordinal + 1
     _dump_text(browser=browser, outdir=outdir, ordinal=ordinal, comment_mode=comment_mode)
   arrangement.fix_index_files(dir_path=outdir, overwrite=False, dry_run=False)
+  debrowse_nodes(browser=browser, start_nodes=start_nodes)
 
 
 def get_structured_text(browser, start_nodes, base_dir, unit_info_file, comment_mode=None, source_script=sanscript.DEVANAGARI, detail_title=None, prev_detail_title=None):

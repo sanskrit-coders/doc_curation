@@ -20,7 +20,7 @@ from indic_transliteration import sanscript
 from doc_curation.md import content_processor
 from bs4 import BeautifulSoup, NavigableString
 from doc_curation.utils import sanskrit_helper
-
+from doc_curation.scraping.html_scraper import souper
 
 class Detail(object):
   def __init__(self, title, content):
@@ -513,16 +513,20 @@ def merge_successive(content, title_filter=".*"):
   final_details = []
   prev_detail = None
   prev_detail_tag = None
+  
+  
+  
   for index, detail_tag in enumerate(details):
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
     title = _denumerify(detail.title)
     if prev_detail is not None:
       prev_title = _denumerify(prev_detail.title)
-    if prev_detail is not None and title == prev_title and regex.fullmatch(title_filter, prev_title):
+    if prev_detail is not None and title == prev_title and regex.fullmatch(title_filter, prev_title) and souper.is_prev_sibling(prev_detail_tag, detail_tag):
       prev_detail_tag.append(f"\n{detail.content}\n")
       detail_tag.decompose()
-    prev_detail = detail
-    prev_detail_tag = detail_tag
+    else:
+      prev_detail = detail
+      prev_detail_tag = detail_tag
   content = content_processor._make_content_from_soup(soup=soup)
   content = _normalize_spaces(content)
   return content
@@ -629,17 +633,19 @@ def detail_content_replacer_soup(detail_tag, replacement):
   summary.insert_after(f"\n\n{replacement}\n")
 
 
-def pattern_to_details(content, title="टीका", pattern=patterns.TAMIL_BLOCK, content_group=1, title_suffix_group=None):
+def pattern_to_details(content, title="टीका", pattern=patterns.TAMIL_BLOCK, content_group=1, title_suffix_group=None, attributes_str=None):
   def _detail_maker(match):
     local_title = title
     if title_suffix_group is not None:
       local_title = f"{title} - {match.group(title_suffix_group)}"
     detail = Detail(title=local_title, content=match.group(content_group).strip())
-    return detail.to_md_html() + "\n\n"
+    return detail.to_md_html(attributes_str=attributes_str) + "\n\n"
   content = regex.sub(pattern, _detail_maker, content)
+  content = merge_successive(content)
   return content
 
-def sections_to_details(content, pattern=r"(?<=\n|^)\#+ +(\S.+)\s+(\S[^\#<]+?)(?=[\#<]|$)"):
+
+def sections_to_details(content, pattern=r"(?<=\n|^)\###+ +(\S.+)\s+(\S[^\#<]+?)(?=[\#<]|$)"):
   def _detail_maker(match):
     detail = Detail(title=match.group(1), content=match.group(2).strip())
     return detail.to_md_html() + "\n\n"
@@ -799,14 +805,13 @@ def wrap_into_detail(content, title, attributes_str=None):
   return Detail(title=title, content=content.strip()).to_md_html(attributes_str=attributes_str)
 
 
-def non_detail_parts_to_detail(content, title):
+def non_detail_parts_to_detail(content, title, attributes_str=""):
 
-  if title in ["विश्वास-प्रस्तुतिः", "मूलम् (वचनम्)"]:
+  if title in ["विश्वास-प्रस्तुतिः", "मूलम् (वचनम्)"] and not "open" in attributes_str:
     attributes_str = " open"
-  else:
-    attributes_str = ""
-  content = regex.sub(r"(?<=/details>|^)\s*([^<]+?)\s*(?=<details|$)", rf"\n\n<details{attributes_str}><summary>{title}</summary>\n\n\1\n</details>\n\n", content)
-  content = regex.sub(rf"<details><summary>{title}</summary>\n\n*</details>", "", content)
+  content = regex.sub(r"(/details>|\n##+ .*)\s*([^<#]+?)\s*(?=<details|\n#|$)", rf"\1\n\n<details{attributes_str}><summary>{title}</summary>\n\n\2\n</details>\n\n", content)
+  content = regex.sub(r"(?<=/details>|^)\s*([^<#]+?)\s*(?=<details|\n#|$)", rf"\n\n<details{attributes_str}><summary>{title}</summary>\n\n\1\n</details>\n\n", content)
+  content = regex.sub(rf"<details{attributes_str}><summary>{title}</summary>\n\n*</details>", "", content)
   content = _normalize_spaces(content)
   
   return content

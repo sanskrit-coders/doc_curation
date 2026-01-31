@@ -22,7 +22,7 @@ def get_two_page_md(two_page_div):
   comment_md = ""
   for comment_page in comment_pages:
     fix_footnote_refs(comment_page)
-    md_content = md.get_md_with_pandoc(content_in=str(comment_page))
+    md_content = pandoc_helper.get_md_with_pandoc(content_in=str(comment_page))
     logging.debug(f"Text snippet  : {md_content[:30]}")
     comment_md = f"{md_content}\n\n{comment_md}".strip()
 

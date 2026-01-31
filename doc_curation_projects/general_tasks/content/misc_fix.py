@@ -59,8 +59,8 @@ def misc_typos(dir_path):
 
 if __name__ == '__main__':
   # fix_audio_tags()
-  # misc_typos("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/kriyA/nRsiMhaH_bhagavad-archA-prakaraNam/mAnasaH_en.md")
-  fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/marIchiH/vimAnArchana-kalpaH/000")
+  misc_typos("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/devanAtha-bhAva-prakAshaH/_index.md")
+  # fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/marIchiH/vimAnArchana-kalpaH/000")
   # section_fix()
 
 
