@@ -290,7 +290,6 @@ class MdFile(object):
   def split_to_bits(
       self, source_script=sanscript.DEVANAGARI,
       mixed_languages_in_titles=True,
-      title_index_pattern="%02d",
       bits_dir_url=None,
       maybe_use_dravidian_variant="yes",
       target_frontmantter_type=TOML,
@@ -319,12 +318,14 @@ class MdFile(object):
     sections = split_to_sections(remaining)
     if len(sections) == 0:
       return
+    
+    title_index_pattern = f"%0{len(str(len(sections)))}d"
     section_md_urls = []
     for section_index, section in enumerate(sections):
       title = section.title
       if title == None:
         title = ""
-      if title_index_pattern is not None:
+      if start_index is not None:
         title_index = title_index_pattern % (section_index + start_index)
         if source_script is not None:
           ## Transliterate the number

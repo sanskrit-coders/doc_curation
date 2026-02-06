@@ -13,7 +13,7 @@ from tqdm import tqdm
 from doc_curation.md.file import MdFile
 
 
-def ensure_ordinal_in_title(dir_path, transliteration_target=sanscript.DEVANAGARI, first_file_index=1, dry_run=False, recursive=False, format=None):
+def ensure_ordinal_in_title(dir_path, dest_script=sanscript.DEVANAGARI, first_file_index=1, dry_run=False, recursive=False, format=None):
   files = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if x != "_index.md" and x.endswith(".md")]
   files.sort()
   for index, file in enumerate(files):
@@ -26,16 +26,16 @@ def ensure_ordinal_in_title(dir_path, transliteration_target=sanscript.DEVANAGAR
     if format is None:
       format = "%%0%dd" % (len(str(len(files))))
     index = format % (index + first_file_index)
-    if transliteration_target:
-      index = sanscript.transliterate(index, sanscript.OPTITRANS, transliteration_target)
+    if dest_script:
+      index = sanscript.transliterate(index, sanscript.OPTITRANS, dest_script)
     title = "%s %s" % (index, title)
     md_file.set_title(title=title, dry_run=dry_run)
-    set_filename_from_title(md_file=md_file, source_script=transliteration_target, dry_run=dry_run)
+    set_filename_from_title(md_file=md_file, source_script=dest_script, dry_run=dry_run)
 
   if recursive:
     dirs = [os.path.join(dir_path, x) for x in os.listdir(dir_path) if os.path.isdir(os.path.join(dir_path, x))]
     for dir in dirs:
-      ensure_ordinal_in_title(dir_path=dir, transliteration_target=transliteration_target, dry_run=dry_run, recursive=True, first_file_index=first_file_index, format=format)
+      ensure_ordinal_in_title(dir_path=dir, dest_script=dest_script, dry_run=dry_run, recursive=True, first_file_index=first_file_index, format=format)
 
 
 def pad_title_numbering(dir_path, dry_run):
@@ -113,34 +113,48 @@ def truncate_file_name(md_file, max_length=50, dry_run=False):
       md_file.file_path = new_path
 
 
-def get_title_from_filename(file_path, transliteration_target, maybe_use_dravidian_variant=None):
+def get_title_from_filename(file_path, dest_script, maybe_use_dravidian_variant=None):
   if os.path.basename(file_path) == "_index.md":
     dir_name = os.path.basename(os.path.dirname(file_path)).replace(".md", "")
     title_optitrans = "+" + dir_name
   else:
     title_optitrans = os.path.basename(file_path).replace(".md", "")
   title = title_optitrans.replace("_", " ")
-  if transliteration_target is not None:
+  if dest_script is not None:
     title = title.replace("-dhyAyaH", ".adhyAyaH")
-    title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=transliteration_target, maybe_use_dravidian_variant=maybe_use_dravidian_variant)
+    title = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS, _to=dest_script, maybe_use_dravidian_variant=maybe_use_dravidian_variant)
   else:
     title = title.capitalize()
   return title
 
-def set_title_from_filename(md_file, transliteration_target=sanscript.DEVANAGARI, overwrite=True, dry_run=False, maybe_use_dravidian_variant=None):
+
+def get_index_from_filename(file_path, dest_script):
+  title = get_title_from_filename(file_path=file_path, dest_script=dest_script)
+  return title.split(" ")[0]
+
+
+def set_title_from_filename(md_file, dest_script=sanscript.DEVANAGARI, overwrite=True, dry_run=False, maybe_use_dravidian_variant=None):
   # logging.debug(md_file.file_path)
-  title = get_title_from_filename(file_path=md_file.file_path, transliteration_target=transliteration_target, maybe_use_dravidian_variant=maybe_use_dravidian_variant)
+  title = get_title_from_filename(file_path=md_file.file_path, dest_script=dest_script, maybe_use_dravidian_variant=maybe_use_dravidian_variant)
   md_file.set_title(dry_run=dry_run, overwrite=overwrite, title=title)
 
 
-def prepend_file_index_to_title(md_file, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
+def set_index_from_filename(md_file, dest_script=sanscript.DEVANAGARI, overwrite=True, dry_run=False):
+  # logging.debug(md_file.file_path)
+  index = get_index_from_filename(file_path=md_file.file_path, dest_script=dest_script)
+  title = md_file.get_title(omit_chapter_id=True)
+  title = f"{index} {title}"
+  md_file.set_title(dry_run=dry_run, overwrite=overwrite, title=title)
+
+
+def prepend_file_index_to_title(md_file, dest_script=sanscript.DEVANAGARI, dry_run=False):
   if os.path.basename(md_file.file_path) == "_index.md":
     base_name = os.path.basename(os.path.dirname(md_file.file_path))
   else:
     base_name = os.path.basename(md_file.file_path)
   base_name = base_name.replace(".md", "")
   index = regex.sub("_.+", "", base_name)
-  index = sanscript.transliterate(index, _to=transliteration_target, _from=sanscript.IAST)
+  index = sanscript.transliterate(index, _to=dest_script, _from=sanscript.IAST)
   title = index + " " + md_file.get_title(omit_chapter_id=True)
   md_file.set_title(dry_run=dry_run, title=title)
 
@@ -163,11 +177,11 @@ def add_init_words_to_title(md_file, num_words=3, target_title_length=50,script=
   md_file.set_title(title=title, dry_run=dry_run)
 
 
-def transliterate_title(md_file, transliteration_target=sanscript.DEVANAGARI, dry_run=False):
+def transliterate_title(md_file, dest_script=sanscript.DEVANAGARI, dry_run=False):
   # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
   logging.debug(md_file.file_path)
   title_fixed = sanscript.transliterate(data=md_file.get_title(omit_chapter_id=False, omit_plus=False), _from=sanscript.OPTITRANS,
-                                        _to=transliteration_target)
+                                        _to=dest_script)
   md_file.set_title(title=title_fixed, dry_run=dry_run)
 
 

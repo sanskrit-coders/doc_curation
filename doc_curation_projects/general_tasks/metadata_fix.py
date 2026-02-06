@@ -46,11 +46,12 @@ def file_name_fix(dir_path, overwrite=False, dry_run=False):
 
 if __name__ == '__main__':
   # title_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/en/satya-nArAyaNaH", overwrite=False, dry_run=False)
-  library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/en/satya-nArAyaNaH", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, overwrite=True, dry_run=False)
+  # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/en/satya-nArAyaNaH", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, overwrite=True, dry_run=False)
 
   # file_name_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/marIchiH/vimAnArchanA-kalpaH/", overwrite=True, dry_run=False)
 
   # arrangement.shift_indices(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/kriyA/tirupati-mandiram/N-ramesha/05_mUrtis/02_DHRUVABERA", start_index=25, new_index_offset=-24, dry_run=False)
+  library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/gItam_vaiShNavam/content/te/tALlapAka_annamAchArya/sankalanAni/advitIya-sankalanam", fn=metadata_helper.set_index_from_filename, dest_script=sanscript.DEVANAGARI, dry_run=False, overwrite=True)
 
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/brAhmaNam/sarva-prastutiH/1/", fn=metadata_helper.set_filename_from_title, source_script=sanscript.DEVANAGARI, dry_run=False, overwrite=False)
 

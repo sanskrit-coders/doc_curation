@@ -149,6 +149,7 @@ def make_full_text_md(source_dir,
     full_md_path = os.path.join(source_dir, "full.md")
     full_md = MdFile(file_path=full_md_path)
     full_md.dump_to_file(content=content, metadata={"title": title}, dry_run=dry_run)
+    # dynamic_loading=True below because the include tags should be retained in ordinary md files which will be rendered as html pages on the website.
     include_helper.prefill_includes(dir_path=os.path.dirname(full_md_path), file_name_filter=lambda x: os.path.basename(x) != "full.md", dynamic_loading=True)
     include_helper.prefill_includes(dir_path=full_md_path, dynamic_loading=False)
     from doc_curation.md import content_processor

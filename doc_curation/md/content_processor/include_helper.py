@@ -286,17 +286,19 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
     if dynamic_loading:
       title +=  " …{Loading}…"
 
-  if "collapsed" not in inc["class"]:
-    if title.strip() != "":
+  if title.strip() != "":
+    if "collapsed" not in inc["class"]:
       if h1_level != 0:
         title = f"{'#'*h1_level} {title}"
       else:
         title = f"**{title}**"
-    details = BeautifulSoup(f"{title}\n\n{content}", 'html.parser')
+      details = BeautifulSoup(f"{title}\n\n{content}", 'html.parser')
+    else:
+      if h1_level != 0 and title.strip() != "":
+        title = f"<h{h1_level}>{title}</h{h1_level}>"
+      details = BeautifulSoup(f"<body><details><summary>{title}</summary>\n\n{content}\n</details></body>", 'html.parser').select_one("details")
   else:
-    if h1_level != 0:
-      title = f"<h{h1_level}>{title}</h{h1_level}>"
-    details = BeautifulSoup(f"<body><details><summary>{title}></summary>\n\n{content}\n</details></body>", 'html.parser').select_one("details")
+    details = BeautifulSoup(f"{content}", 'html.parser')
   
   if dynamic_loading:
     inc.append("\n\n")
@@ -304,6 +306,7 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
     inc.append("\n\n")
   else:
     inc.replace_with(details)
+    
 
 def prefill_includes(dir_path, file_name_filter=None, *args, **kwargs):
   logging.info(f"Prefilling includes in {dir_path}")

@@ -14,7 +14,7 @@ def rAmAnujIyam():
   pass
   out_path = os.path.join(OUT_PATH_BASE, "rAmAnujIyam")
   # epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/sarva-prastutiH", metadata={"author": "वेङ्कटनाथः"}, out_path=os.path.join(out_path, "venkaTanAthaH/rahasya-traya-sAraH"), css_path=CSS_PATH, appendix=appendix_dg,)
-  epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", out_path=os.path.join(out_path, "yAmunaH/Agama-prAmANyam"),css_path=CSS_PATH, metadata={"author": "यामुनः"},appendix=appendix_dg, file_split_level=2)
+  epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", out_path=os.path.join(out_path, "yAmunaH/Agama-prAmANyam"),css_path=CSS_PATH, metadata={"author": "यामुनः"}, appendix=appendix_dg, file_split_level=2)
   # epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/parichaya-sanxepAH/kRShNamAchAryoktA_mata-prakriyA", metadata={"author": "कृष्णमाचार्यः"}, file_split_level=1, css_path=CSS_PATH, appendix=appendix_dg, out_path=os.path.join(out_path, "kRShNamAchAraH/mata-prakriyA"),)
   # epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/parichaya-sanxepAH/venkaTArya-vedAnta-kArikAvalI/sarva-prastutiH", metadata={"author": "वेङ्कटार्यः"}, out_path=os.path.join(out_path, "venkaTAryaH/vedAnta-kArikAvalI"), file_split_level=1, detail_pattern_to_remove=r"मूलम्.*|.*\(सं\).*", css_path=CSS_PATH, appendix=appendix_dg, )
   # 
@@ -38,7 +38,7 @@ def vedAH_yajuH():
   pass
   out_path = os.path.join(OUT_PATH_BASE, "vedAH_yajuH")
   # epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/sarva-prastutiH", metadata={"author": "ApastambaH", "title": "आपस्तम्ब-धर्म-सूत्राणि"}, file_split_level=1, detail_pattern_to_remove=r"मूलम्.*", out_path=out_path, css_path=CSS_PATH, appendix=appendix_dg, )
-  # epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/sarva-prastutiH", metadata={"author": "ApastambaH", "title": "आपस्तम्ब-गृह्य-सूत्राणि"}, file_split_level=1, detail_pattern_to_remove=r"मूलम्.*", out_path=out_path, css_path=CSS_PATH, appendix=appendix_dg, )
+  epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/sarva-prastutiH", metadata={"author": "ApastambaH", "title": "आपस्तम्ब-गृह्य-सूत्राणि"}, file_split_level=1, detail_pattern_to_remove=r"मूलम्.*", out_path=out_path, css_path=CSS_PATH, appendix=appendix_dg, )
   # epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/sarva-prastutiH", metadata={"author": "ApastambaH"}, file_split_level=1, detail_pattern_to_remove=r"मूलम्.*", out_path=out_path, css_path=CSS_PATH, appendix=appendix_dg, )
   # epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/paddhatiH/shrIvaiShNavaH/DenkaNi-koTTai-shrInivAsaH", metadata={"author": "DenkaNi-koTTai-shrInivAsaH"}, file_split_level=1, detail_pattern_to_remove=r"मूलम्.*", out_path=out_path, css_path=CSS_PATH, appendix=appendix_dg, )
   # epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/paddhatiH/shrIvaiShNavaH/gopAla-deshika-shrAddha-prayogaH", metadata={"author": "gopAla-deshikaH"}, file_split_level=1, detail_pattern_to_remove=r"मूलम्.*", out_path=out_path, css_path=CSS_PATH, appendix=appendix_dg, )
@@ -46,6 +46,6 @@ def vedAH_yajuH():
 
 
 if __name__ == '__main__':
-  rAmAnujIyam()
-  # vedAH_yajuH()
+  # rAmAnujIyam()
+  vedAH_yajuH()
   pass
