@@ -263,7 +263,10 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   md_file = MdFile(file_path=file_path)
   (metadata, content) = md_file.read()
   metadata["_file_path"] = file_path
-  h1_level = h1_level_offset + int(inc.get("newlevelforh1", 2))
+  if h1_level_offset == "b[]" or inc.get("newlevelforh1", 2) == "b[]":
+    h1_level = "b[]"
+  else:
+    h1_level = h1_level_offset + int(inc.get("newlevelforh1", 2))
   if "newlevelforh1" not in inc.attrs:
     logging.warning(f"No newlevelforh1 for {file_path} in {container_file_path}")
 

@@ -39,7 +39,13 @@ def to_azw3(epub_path: str, metadata={}):
 
 
 # TODO: footnotes not appearing the bottom of the page.
-def to_pdf(epub_path: str, paper_size="a5", move_toc=False):
+def to_pdf(epub_path: str, paper_size="a5", margins=None, move_toc=False):
+  # Actual results -  
+  # left 36 - 14.5mm, left 39.7 - 15.87mm, right 36 - 16.6mm, top 24 - 9.31mm, bottom 24 - 1.75 mm to the page number, bottom 60.94 - 8.36 to page number.
+  # theoretical - 1pt = 0.3528mm, 36 pt = 12.7 mm. 24 pt = 8.5 mm
+  if margins is None:
+    # For 39.7 is 14 mm theoretical; 60.95 is 21.5mm
+    margins = {"left": "40.7", "right": "40", "top": "39.7", "bottom": "70.94"}
   dest_path = regex.sub("(_min.*)?.epub", f"_{paper_size}.pdf", epub_path)
   command = [
     CALIBRE,
@@ -54,10 +60,10 @@ def to_pdf(epub_path: str, paper_size="a5", move_toc=False):
     '--pdf-standard-font', 'sans',
     '--pdf-default-font-size', '14',
     '--pdf-mono-font-size', '14',
-    '--pdf-page-margin-left', '36',
-    '--pdf-page-margin-right', '36',
-    '--pdf-page-margin-top', '24',
-    '--pdf-page-margin-bottom', '24',
+    '--pdf-page-margin-left', margins["left"],
+    '--pdf-page-margin-right', margins["right"],
+    '--pdf-page-margin-top', margins["top"],
+    '--pdf-page-margin-bottom', margins["bottom"],
     '--chapter-mark', 'rule',
     '--pdf-add-toc',
     '--pdf-page-numbers',
@@ -111,6 +117,11 @@ def to_pdf(epub_path: str, paper_size="a5", move_toc=False):
   logging.info("Conversion successful!")
   # The below only complesses slightly (8%), and removes all devanAgarI fonts!
   # pdf.compress_with_gs(input_file_path=dest_path, output_file_path=dest_path)
+
+  pdf.sample_pdf_margins(dest_path, page_size="a5", page_type="all")
+  pdf.sample_pdf_margins(dest_path, page_size="a5", page_type="odd")
+  pdf.sample_pdf_margins(dest_path, page_size="a5", page_type="even")
+
   return dest_path
 
 

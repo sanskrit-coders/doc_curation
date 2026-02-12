@@ -345,6 +345,10 @@ def headings_to_bold(content,suffix="॥"):
 def fix_headers(content: str, h1_level: int) -> str:
   # TODO: Hand jsinclude tags here.
   # h1_level is taken to mean title header level.
+  if h1_level == "b[]":
+    content = regex.sub(rf"(?<=\n|^)#+ ([^\n]+) *(?=\n)", rf"**\1**", content)
+    return content
+
   if regex.search("^# ", content, flags=regex.MULTILINE):
     content = regex.sub(r"(?<=\n|^)#", f"{'#' * (h1_level+1)}", content)
   else:

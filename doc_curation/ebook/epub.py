@@ -8,6 +8,7 @@ from doc_curation.ebook import prep_content, get_book_path, pandoc_helper
 from doc_curation.ebook import calibre_helper
 from doc_curation.md.file import MdFile
 from doc_curation.ebook.pandoc_helper import pandoc_from_md_file
+from doc_curation.pdf import booklet
 
 
 def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, appendix=None):
@@ -43,7 +44,9 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
   pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min_notoc, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=False)
   _fix_details_in_epub(epub_path=epub_path_min_notoc)
 
-  calibre_helper.to_pdf(epub_path=epub_path_min_notoc, paper_size="a5", move_toc=True)
+  a5_path = calibre_helper.to_pdf(epub_path=epub_path_min_notoc, paper_size="a5", move_toc=True)
+  # booklet.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=a5_path.replace(".pdf", "_dup_booklet.pdf"))
+
 
   epub_for_kobo(epub_path=epub_path)
   calibre_helper.to_azw3(epub_path=epub_path, metadata=metadata)

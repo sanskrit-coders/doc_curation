@@ -81,6 +81,12 @@ def prep_full_md(omit_pattern, out_path, overwrite: bool, source_dir, metadata, 
                                                                                        fr'\1{base_url}/\2)', c),
                     metadata_transformer=_fix_metadata, dry_run=False)
 
+  logging.info("Fixing footnotes")
+  md_file.transform(
+    content_transformer=lambda c, *args, **kwargs: footnote_helper.to_plain_footnotes(content=c),
+    dry_run=False)
+
+
   logging.info(f"Fixing open details tags for {md_path}")
   md_file.transform(
     content_transformer=lambda c, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c,
@@ -120,7 +126,10 @@ def get_book_path(source_dir, out_path):
   if book_name in ["sarva-prastutiH", "mUlam"]:
     source_dir = os.path.dirname(source_dir)
     book_name = os.path.basename(source_dir)
-  book_path = os.path.join(out_path, f"{book_name}")
+  book_path = out_path
+  if book_name not in book_path:
+    book_path = os.path.join(out_path, book_name)
+  book_path = os.path.join(book_path, os.path.basename(book_path))
   return book_path
 
 

@@ -7,6 +7,10 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+import xml.etree.ElementTree as ET
+import random
+from bs4 import BeautifulSoup
+
 
 import json
 import pypdf
@@ -26,6 +30,79 @@ for handler in logging.root.handlers[:]:
 logging.basicConfig(
   level=logging.DEBUG,
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
+
+# Common page sizes in points (1 pt = 1/72 inch)
+PAGE_SIZES = {
+  "a5": (420, 595),   # 148 x 210 mm
+  "a4": (595, 842),   # 210 x 297 mm
+  "letter": (612, 792) # 8.5 x 11 in
+}
+
+
+
+
+def get_page_margins(pdf_path, page_num, page_size="a5"):
+  """Compute margins for a single page using pdftotext -bbox-layout (HTML)."""
+  width_pt, height_pt = PAGE_SIZES[page_size]
+  cmd = ["pdftotext", "-bbox-layout", "-f", str(page_num), "-l", str(page_num), pdf_path, "-"]
+  result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+  soup = BeautifulSoup(result.stdout, "html.parser")
+  words = soup.find_all("word")
+  if not words:
+    return None
+
+  xmins, xmaxs, ymins, ymaxs = [], [], [], []
+  for w in words:
+    try: 
+      x_min = float(w.get("xmin")) 
+      y_min = float(w.get("ymin")) 
+      x_max = float(w.get("xmax")) 
+      y_max = float(w.get("ymax")) 
+      xmins.append(x_min); 
+      xmaxs.append(x_max) 
+      ymins.append(y_min); ymaxs.append(y_max) 
+    except (TypeError, ValueError): 
+      continue
+  pt_to_mm = 0.3528
+  return {
+    "left_mm": min(xmins) * pt_to_mm,
+    "right_mm": (width_pt - max(xmaxs)) * pt_to_mm,
+    "top_mm": min(ymins) * pt_to_mm,
+    "bottom_mm": (height_pt - max(ymaxs)) * pt_to_mm
+  }
+
+def sample_pdf_margins(pdf_path, n=50, page_size="a5", page_type="all"):
+  """Sample n pages (odd/even/all) and compute average margins."""
+  # Get total pages
+  cmd = ["pdfinfo", pdf_path]
+  result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+  pages = 0
+  for line in result.stdout.splitlines():
+    if line.startswith("Pages:"):
+      pages = int(line.split()[1])
+      break
+
+  # Select candidate pages
+  if page_type == "odd":
+    candidates = [p for p in range(1, pages+1) if p % 2 == 1]
+  elif page_type == "even":
+    candidates = [p for p in range(1, pages+1) if p % 2 == 0]
+  else:
+    candidates = list(range(1, pages+1))
+
+  sample_pages = random.sample(candidates, min(n, len(candidates)))
+  margins_list = []
+
+  for p in sample_pages:
+    m = get_page_margins(pdf_path, p, page_size)
+    if m:
+      margins_list.append(m)
+
+  # Compute averages
+  avg = {k: sum(m[k] for m in margins_list)/len(margins_list) for k in margins_list[0]}
+  logging.info(f"{page_size} {page_type} {avg}")
+  return avg, sample_pages
 
 
 def _get_ocr_dir(pdf_path, small_pdf_pages=None):
@@ -249,3 +326,38 @@ def crop_pdf_with_json(input_pdf_path, output_pdf_path, json_path="/home/vvasuki
     logging.info(f"\nError: Could not save the output PDF. Reason: {e}")
 
 
+def from_latex(latex_body: str, dest_path: str):
+  """
+  Wrap LaTeX body into a full book-style document and compile to PDF.
+  """
+  doc_template = r"""
+\documentclass[12pt]{book}
+\usepackage{fontspec} % Unicode support
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+\setmainfont{Noto Serif}
+
+\begin{document}
+\tableofcontents
+\newpage
+
+%s
+
+\end{document}
+""" % latex_body
+
+  import subprocess, tempfile, os
+  with tempfile.TemporaryDirectory() as tmpdir:
+    tex_path = os.path.join(tmpdir, "doc.tex")
+    with open(tex_path, "w", encoding="utf-8") as f:
+      f.write(doc_template)
+
+    subprocess.run(["xelatex", "-interaction=nonstopmode", tex_path], cwd=tmpdir)
+    subprocess.run(["xelatex", "-interaction=nonstopmode", tex_path], cwd=tmpdir)
+
+    pdf_path = os.path.join(tmpdir, "doc.pdf")
+    if os.path.exists(pdf_path):
+      os.replace(pdf_path, dest_path)
+      logging.info(f"PDF generated: {dest_path}")
+    else:
+      raise RuntimeError("PDF generation failed")

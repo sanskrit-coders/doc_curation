@@ -49,7 +49,7 @@ def define_footnotes_near_use(content, *args, **kwargs):
   content = "\n%s\n\n" % content.strip()
   content, definitions = extract_definitions(content)
   content = insert_definitions_near_use(content, definitions)
-  content = make_ids_unique(content)
+  content = make_ids_unique_per_def(content)
   # Undo initial additions
   content = regex.sub(r"^\n", "", content)
   content = regex.sub(r"\n\n+$", "", content)
@@ -126,7 +126,12 @@ def fix_plain_footnotes(content, def_pattern="(?<=\n)(\d+)\.?(?= )", def_replace
   return content
 
 
-import regex
+def to_plain_footnotes(content):
+  content = regex.sub(r"\[\^", "[F", content)
+  return content
+
+
+
 
 def get_max_index(content):
   indexes_old = [0]  # Initialize the list within the function
@@ -212,7 +217,7 @@ def add_page_id_to_ref_ids(content, page_pattern=r"[\s\S]+?<dg (\d+)/>", *args, 
     content = regex.sub(regex.escape(page_text), page_text_fixed, content)
   return content
 
-def make_ids_unique(content):
+def make_ids_unique_per_def(content):
   content, definitions = extract_definitions(content)
   def_map = {}
   filtered_defs = []
