@@ -325,39 +325,3 @@ def crop_pdf_with_json(input_pdf_path, output_pdf_path, json_path="/home/vvasuki
   except Exception as e:
     logging.info(f"\nError: Could not save the output PDF. Reason: {e}")
 
-
-def from_latex(latex_body: str, dest_path: str):
-  """
-  Wrap LaTeX body into a full book-style document and compile to PDF.
-  """
-  doc_template = r"""
-\documentclass[12pt]{book}
-\usepackage{fontspec} % Unicode support
-\usepackage{tcolorbox}
-\usepackage{hyperref}
-\setmainfont{Noto Serif}
-
-\begin{document}
-\tableofcontents
-\newpage
-
-%s
-
-\end{document}
-""" % latex_body
-
-  import subprocess, tempfile, os
-  with tempfile.TemporaryDirectory() as tmpdir:
-    tex_path = os.path.join(tmpdir, "doc.tex")
-    with open(tex_path, "w", encoding="utf-8") as f:
-      f.write(doc_template)
-
-    subprocess.run(["xelatex", "-interaction=nonstopmode", tex_path], cwd=tmpdir)
-    subprocess.run(["xelatex", "-interaction=nonstopmode", tex_path], cwd=tmpdir)
-
-    pdf_path = os.path.join(tmpdir, "doc.pdf")
-    if os.path.exists(pdf_path):
-      os.replace(pdf_path, dest_path)
-      logging.info(f"PDF generated: {dest_path}")
-    else:
-      raise RuntimeError("PDF generation failed")

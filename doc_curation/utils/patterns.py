@@ -42,7 +42,10 @@ DEVANAGARI_DANDAS = "[।॥]"
 LOWER_CASE_ISO = "[a-zāīūṛr̥ēōṅñṇṭḍṣśḷṁṃḥḻṉṟäü]"
 UPPER_CASE_ISO = "[A-ZĀĪŪṚR̥ĒŌṄÑṆṬḌṢŚḶṀṂḤḺṈṞÜ]"
 ACCENTS = accent.ACCENTS_PATTERN
-NON_DEV_PUNCT = r"[\.\(\)\[\],;+\*_\-:'\"]"
+NON_DEV_PUNCT = r"[\.\(\)\[\],;+\*_\-:'\"#$\^/%@~!&=]"
+# devanagarI block, accents, punctuations, spaces, digits
+DEVANAGARI_LINE_SYMBOLS = fr"[\u0900-ॿ\u1CD0-\u1CE8\u1CF9\u1CFA\uA8E0-\uA8F1\u0951-\u0954\u0957\.\(\)\[\],;+\*_\-:'\"#$\^/%@~!&= \t\d]"
+DEVANAGARI_BLOCK = fr"{DEVANAGARI}{DEVANAGARI_LINE_SYMBOLS}*"
 PUNCT = rf"[।॥{NON_DEV_PUNCT}]"
 
 TAMIL = "[ஂ-௺]"

@@ -4,6 +4,7 @@ from shutil import copyfile
 
 import regex
 
+from doc_curation.utils import patterns
 from doc_curation.md import content_processor
 from doc_curation.ebook import pandoc_helper
 from doc_curation.md.content_processor import details_helper, footnote_helper
@@ -17,6 +18,10 @@ def prep_content(content, detail_to_footnote=False, appendix=None):
     return regex.sub(r"(?<=\n|^)!\[.*\]\(.+\) *\n(\{.+\})?\n", "", content)
   content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'<span class="inline_comment">\1</span>', content)
   content = regex.sub(r" *\.\.\.\{Loading\}\.\.\.", fr"", content)
+
+  # The below messes empty lines within details.
+  # content = regex.sub(f"({patterns.DEVANAGARI_BLOCK})"], r'<span class="deva">\1</span>', content)
+
   if detail_to_footnote:
     content = details_helper.add_detail_footnotes(content=content, remove_detail=True)
   if appendix is not None:
@@ -93,7 +98,6 @@ def prep_full_md(omit_pattern, out_path, overwrite: bool, source_dir, metadata, 
                                                                                                             transformer=details_helper.open_attribute_fixer,
                                                                                                             details_css="details"),
     dry_run=False)
-
 
   md_file.transform(
     content_transformer=lambda c, *args, **kwargs: details_helper.transform_details_with_soup(c,

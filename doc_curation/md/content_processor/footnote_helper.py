@@ -127,7 +127,7 @@ def fix_plain_footnotes(content, def_pattern="(?<=\n)(\d+)\.?(?= )", def_replace
 
 
 def to_plain_footnotes(content):
-  content = regex.sub(r"\[\^", "[F", content)
+  content = regex.sub(r"\[\^", "[#", content)
   return content
 
 

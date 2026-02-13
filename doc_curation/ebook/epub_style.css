@@ -31,6 +31,9 @@ summary {
     font-style: italic;
     vertical-align: sub;
 }
+.deva { 
+    font-size: 120%; 
+}
 
 a:link,
 a:visited,
