@@ -14,13 +14,57 @@ __PAPER_GEOMETRY__
 % Automatic switching rules
 \setTransitionsFor{U+0900..U+097F}{\devanagarifont}{\rmfamily}
 \setTransitionsFor{U+0951..U+0954}{\devanagarifont}{\rmfamily}
+\setTransitionsFor{U+0966..U+096F}{\devanagarifont}{\rmfamily} % digits
 \setTransitionsFor{U+1CD0..U+1CE8}{\devanagarifont}{\rmfamily}
 \setTransitionsFor{DevanagariMarks}{\devanagarifont}{\rmfamily}
+\setTransitionsFor{CommonIndicNumberForms}{\devanagarifont}{\rmfamily}
 \setTransitionsFor{DevanagariExtended}{\devanagarifont}{\rmfamily}
 \setTransitionsFor{DevanagariExtendedA}{\devanagarifont}{\rmfamily}
 \setTransitionsFor{DevanagariPreMarks}{\devanagarifont}{\rmfamily}
 \setTransitionsFor{DevanagariPostMarks}{\devanagarifont}{\rmfamily}
 \setTransitionsFor{DevanagariDanDa}{\devanagarifont}{\rmfamily}
+
+\usepackage{titlesec}
+
+% Make Part look like Chapter
+\titleformat{\part}[hang]
+  {\normalfont\normalsize\bfseries}{\thepart}{1.5em}{}
+% Prevent \part from forcing a new page
+\makeatletter
+\renewcommand\part{\@startsection{part}{0}{\z@}%
+  {-3.5ex \@plus -1ex \@minus -.2ex}%
+  {2.3ex \@plus.2ex}%
+  {\normalfont\Large\bfseries}}
+\makeatother
+
+
+% Make Chapter look like Section
+\titleformat{\chapter}[hang]
+  {\normalfont\normalsize\bfseries}{\thechapter}{1.4em}{}
+% Make Section look like Subsection
+\titleformat{\section}[hang]
+  {\normalfont\normalsize\bfseries}{\thesection}{1.2em}{}
+% Make Subsection look like Subsubsection
+\titleformat{\subsection}[hang]
+  {\normalfont\normalsize\bfseries}{\thesubsection}{1.1em}{}
+\titleformat{\subsubsection}[hang]
+  {\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+
+% Suppress “Part”, “Chapter”, “Section” labels:
+\renewcommand{\partname}{}
+\renewcommand{\chaptername}{}
+\renewcommand{\sectionname}{}
+
+
+\renewcommand{\contentsname}{Contents} % or use Sanskrit if you prefer
+
+\usepackage{tocloft}
+\renewcommand{\cftpartfont}{\bfseries\normalsize}
+\renewcommand{\cftchapfont}{\bfseries\normalsize}
+\renewcommand{\cftsecfont}{\bfseries\normalsize}
+
+
 
 % Inline comment style
 \newcommand{\inlinecomment}[1]{%
