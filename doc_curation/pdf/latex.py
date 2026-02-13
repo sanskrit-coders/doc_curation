@@ -1,16 +1,87 @@
-import re
+import regex
 import subprocess, tempfile, os
 import shutil
 from curation_utils import file_helper
+from doc_curation.md.content_processor import footnote_helper
 
 
-def from_md(md_text, title, author=None) -> str:
+def md_links_to_latex(content: str) -> str:
+    """
+    Convert Markdown links [text](url) into LaTeX \href{url}{text}.
+    """
+    pattern = regex.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+    
+    def repl(match):
+        text = match.group(1)
+        url = match.group(2)
+        # Escape LaTeX special characters in text minimally
+        text = text.replace("&", "\\&").replace("%", "\\%")
+        return f"\\href{{{url}}}{{{text}}}"
+    
+    return pattern.sub(repl, content)
+
+
+def escape_latex(text: str) -> str:
+  """
+  Escape LaTeX special characters in text.
+  """
+  replacements = {
+    '\\': r'\textbackslash{}',
+    '{': r'\{',
+    '}': r'\}',
+    # '#': r'\#', messes with heading replacement
+    '$': r'\$',
+    '%': r'\%',
+    '&': r'\&',
+    '_': r'\_',
+    '^': r'\^{}',
+    '~': r'\textasciitilde{}',
+  }
+  for char, repl in replacements.items():
+    text = text.replace(char, repl)
+  return text
+
+
+
+
+def from_md(content, appendix=None) -> str:
   """
   Convert custom Markdown with <details><summary>...</summary>...</details>
   into LaTeX with tcolorbox environments and proper heading mapping.
   """
+
+  content = escape_latex(content)
+  from doc_curation import ebook
+  content = ebook.prep_content(content=content, appendix=appendix, target="latex")
+
+  # Should be called before # is escaped.
+  content = headings_to_sections(content)
+  content = details_to_colorbox(content)
+  content = footnote_helper.to_latex_footnotes(content=content)
+  content = md_links_to_latex(content)
+
+
+
+  return content
+
+
+def headings_to_sections(content: str) -> str:
+  # Headings mapping
+  content = regex.sub(r"^# (.*)$", r"\\part{\1}\n", content, flags=regex.MULTILINE)
+  content = regex.sub(r"^## (.*)$", r"\\part{\1}", content, flags=regex.MULTILINE)
+  content = regex.sub(r"^### (.*)$", r"\\chapter{\1}", content, flags=regex.MULTILINE)
+  content = regex.sub(r"^#### (.*)$", r"\\section{\1}", content, flags=regex.MULTILINE)
+  content = regex.sub(r"^##### (.*)$", r"\\subsection{\1}", content, flags=regex.MULTILINE)
+  content = regex.sub(r"^###### (.*)$", r"\\subsubsection{\1}", content, flags=regex.MULTILINE)
+
+  content = regex.sub(r"^###### (.*)$", r"\\subsubsection{\1}", content, flags=regex.MULTILINE)
+  content = regex.sub("#", "\\#", content)
+  return content
+
+
+def details_to_colorbox(md_text) -> str:
   # Convert <details> blocks into tcolorbox
-  pattern = re.compile(r"<details.*?><summary>(.*?)</summary>(.*?)</details>", re.DOTALL)
+  pattern = regex.compile(r"<details.*?><summary>(.*?)</summary>(.*?)</details>", regex.DOTALL)
 
   def details_to_box(match):
     title = match.group(1).strip()
@@ -18,34 +89,30 @@ def from_md(md_text, title, author=None) -> str:
     content = content.replace("&", "\\&").replace("%", "\\%")
     return f"\\begin{{tcolorbox}}[title={{{title}}}]\n{content}\n\\end{{tcolorbox}}\n"
 
-  latex_text = pattern.sub(details_to_box, md_text)
-
-  # Headings mapping
-  latex_text = re.sub(r"^# (.*)$", r"\\part{\1}\n", latex_text, flags=re.MULTILINE)
-  latex_text = re.sub(r"^## (.*)$", r"\\chapter{\1}", latex_text, flags=re.MULTILINE)
-  latex_text = re.sub(r"^### (.*)$", r"\\section{\1}", latex_text, flags=re.MULTILINE)
-  latex_text = re.sub(r"^#### (.*)$", r"\\subsection{\1}", latex_text, flags=re.MULTILINE)
-  latex_text = re.sub(r"^##### (.*)$", r"\\subsubsection{\1}", latex_text, flags=re.MULTILINE)
-  latex_text = re.sub(r"^###### (.*)$", r"\\subsubsection{\1}", latex_text, flags=re.MULTILINE)
+  content = pattern.sub(details_to_box, md_text)
+  return content
 
 
-  latex_text = f"{title}\\maketitle\n\n{latex_text}"
-
-  return latex_text
-
-
-def to_pdf(latex_body, dest_path, **kwargs):
+def to_pdf(latex_body, dest_path, metadata, paper_size="a5", **kwargs):
   """
   Wrap LaTeX body into a full book-style document and compile to PDF.
   """
   
   template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/template.tex')
 
+  paper_geometry = f"\\usepackage[{paper_size}paper,left=16mm,right=16mm,top=16mm,bottom=10mm]{{geometry}}"
 
   with tempfile.TemporaryDirectory() as tmpdir:
     tex_path = os.path.join(tmpdir, "doc.tex")
     with open(tex_path, "w", encoding="utf-8") as f, open(template_path, "r", encoding="utf-8") as template:
       content = template.read()
+      content = content.replace("__PAPER_GEOMETRY__", paper_geometry)
+      metadata_str = f"\\title{{{metadata['title']}}}"
+      if "author" in metadata:
+        metadata_str = f"{metadata_str}\n\\author{{{metadata['author']}}}"
+      if "date" in metadata:
+        metadata_str = f"{metadata_str}\n\\date{{{metadata['date']}}}"
+      content = content.replace("__METADATA__", metadata_str)
       content = content.replace("__LATEX_BODY__", latex_body)
       f.write(content)
 

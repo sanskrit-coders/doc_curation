@@ -13,10 +13,13 @@ from doc_curation.md.library.combination import make_full_text_md
 from doc_curation.ebook.pandoc_helper import pandoc_dump_md
 
 
-def prep_content(content, detail_to_footnote=False, appendix=None):
+def prep_content(content, detail_to_footnote=False, appendix=None, target="epub"):
   def _strip_figures(content):
     return regex.sub(r"(?<=\n|^)!\[.*\]\(.+\) *\n(\{.+\})?\n", "", content)
-  content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'<span class="inline_comment">\1</span>', content)
+  if target == "latex":
+    content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'\\inlinecomment{\1}', content)
+  else:
+    content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'<span class="inline_comment">\1</span>', content)
   content = regex.sub(r" *\.\.\.\{Loading\}\.\.\.", fr"", content)
 
   # The below messes empty lines within details.

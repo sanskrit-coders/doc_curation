@@ -48,8 +48,8 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
   # booklet.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=a5_path.replace(".pdf", "_dup_booklet.pdf"))
 
   a5_latex_path = regex.sub("(_min.*)?.epub", f"_A5.latex", epub_path_min_notoc)
-  latex_body = latex.from_md(md_text=content, title=metadata["title"])
-  latex.to_pdf(latex_body=latex_body, dest_path=a5_path.replace(".pdf", "_latex_local.pdf"))
+  latex_body = latex.from_md(content=content)
+  latex.to_pdf(latex_body=latex_body, dest_path=a5_path.replace(".pdf", "_latex_local.pdf"), metadata=metadata)
 
 
   epub_for_kobo(epub_path=epub_path)

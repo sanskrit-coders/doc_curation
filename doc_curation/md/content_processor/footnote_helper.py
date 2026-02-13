@@ -6,7 +6,7 @@ from collections import defaultdict
 
 REF_PATTERN = r"\[\^([^\]\n]+?) *\]"
 DEF_ENDING = r"(?=$|\n\[\^|\n<|\n#|\n\n)"
-DEFINITION_PATTERN_SINGLE_LINE = rf"(?<=\n)({REF_PATTERN}):(\s*\S[\s\S]+?){DEF_ENDING}"
+DEFINITION_PATTERN_SINGLE_LINE = rf"(?<=\n)({REF_PATTERN}):\s*(\S[\s\S]+?){DEF_ENDING}"
 DEFINITION_PATTERN_MULTI_LINE = rf"(?<=\n)({REF_PATTERN}): *\n((   .*|\n)+?){DEF_ENDING}"
 
 
@@ -76,6 +76,7 @@ def insert_definitions_near_use(content, definitions):
 def extract_definitions(content):
   seen_matches = set()
   definitions = []
+  # Extracts definitions matching pattern; removes matches from content
   def _process_pattern(pattern, content):
     definitions.extend([
       match
@@ -91,6 +92,13 @@ def extract_definitions(content):
 
 def transform_definitions(content, transformer, *args, **kwargs):
   content = regex.sub(DEFINITION_PATTERN_SINGLE_LINE, transformer, content)
+  return content
+
+
+def to_latex_footnotes(content):
+  content, definitions = extract_definitions(content=content)
+  for definition in definitions:
+    content = content.replace(definition.group(1), f"\\footnote{{{definition.group(2)}}}")
   return content
 
 
@@ -129,8 +137,6 @@ def fix_plain_footnotes(content, def_pattern="(?<=\n)(\d+)\.?(?= )", def_replace
 def to_plain_footnotes(content):
   content = regex.sub(r"\[\^", "[#", content)
   return content
-
-
 
 
 def get_max_index(content):
@@ -217,11 +223,13 @@ def add_page_id_to_ref_ids(content, page_pattern=r"[\s\S]+?<dg (\d+)/>", *args, 
     content = regex.sub(regex.escape(page_text), page_text_fixed, content)
   return content
 
+
 def make_ids_unique_per_def(content):
   content, definitions = extract_definitions(content)
   def_map = {}
   filtered_defs = []
   for definition in definitions:
+    # Replaces duplicate definitions; accumulates unique definitions
     if definition.group(3).strip() in def_map:
       content = content.replace(definition.group(1), def_map[definition.group(3).strip()])
     else:
