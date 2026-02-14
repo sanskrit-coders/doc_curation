@@ -15,9 +15,9 @@ from doc_curation.ebook.pandoc_helper import pandoc_dump_md
 
 def prep_content(content, detail_to_footnote=False, appendix=None, target="epub"):
   def _strip_figures(content):
-    return regex.sub(r"(?<=\n|^)!\[.*\]\(.+\) *\n(\{.+\})?\n", "", content)
+    return regex.sub(r"(?<=\n|^)!\[.*\]\(.+\) *\n(\{.+\})?\n", "", content, flags=regex.DOTALL)
   if target == "latex":
-    content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'\\inlinecomment{\1}', content)
+    content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'\\inlinecomment{\1}', content, flags=regex.DOTALL)
   else:
     content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'<span class="inline_comment">\1</span>', content)
   content = regex.sub(r" *\.\.\.\{Loading\}\.\.\.", fr"", content)

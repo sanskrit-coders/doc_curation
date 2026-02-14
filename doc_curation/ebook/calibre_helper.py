@@ -46,7 +46,10 @@ def to_pdf(epub_path: str, paper_size="a5", margins=None, move_toc=False):
   if margins is None:
     # For 39.7 is 14 mm theoretical; 60.95 is 21.5mm
     margins = {"left": "40.7", "right": "40", "top": "39.7", "bottom": "70.94"}
-  dest_path = regex.sub("(_min.*)?.epub", f"_{paper_size}.pdf", epub_path)
+  if not move_toc:
+    dest_path = regex.sub("(_min.*)?.epub", f"_{paper_size}_online.pdf", epub_path)
+  else:
+    dest_path = regex.sub("(_min.*)?.epub", f"_{paper_size}.pdf", epub_path)
   command = [
     CALIBRE,
     epub_path,
@@ -58,8 +61,8 @@ def to_pdf(epub_path: str, paper_size="a5", margins=None, move_toc=False):
     '--pdf-sans-family', 'Noto Sans Devanagari',
     '--pdf-mono-family', 'Nimbus Mono PS [urw]',
     '--pdf-standard-font', 'sans',
-    '--pdf-default-font-size', '14',
-    '--pdf-mono-font-size', '14',
+    '--pdf-default-font-size', '17', # For 0.6cm font
+    '--pdf-mono-font-size', '17',
     '--pdf-page-margin-left', margins["left"],
     '--pdf-page-margin-right', margins["right"],
     '--pdf-page-margin-top', margins["top"],
@@ -71,6 +74,10 @@ def to_pdf(epub_path: str, paper_size="a5", margins=None, move_toc=False):
     # '--pdf-header-template', '[title] — [chapter] — [section]',
     # '--pdf-footer-template', '[page]/[topage]'
   ]
+  if paper_size == "a4":
+    pass
+    # The below fails - https://bugs.launchpad.net/calibre/+bug/2141822
+    # command.extend(["--extra-css", "body { column-count: 2; column-gap: 10px; column-rule-style: solid; column-rule-width:1px;}"])
 
   def _get_non_toc_page_length(command, dest_path):
     command = command.copy()

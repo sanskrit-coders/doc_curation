@@ -26,13 +26,10 @@ summary {
 }
 
 .inline_comment {
-    font-size: 80%;
+    font-size: 90%;
     color: #1B1B1B;
     font-style: italic;
     vertical-align: sub;
-}
-.deva { 
-    font-size: 120%; 
 }
 
 a:link,

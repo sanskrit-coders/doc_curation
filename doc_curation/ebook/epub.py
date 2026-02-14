@@ -47,14 +47,15 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
     pandoc_extra_args.remove("--toc")
     pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min_notoc, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=False)
     _fix_details_in_epub(epub_path=epub_path_min_notoc)
-  
+
+    calibre_helper.to_pdf(epub_path=epub_path_min_notoc, paper_size="a4", move_toc=True)
     a5_path = calibre_helper.to_pdf(epub_path=epub_path_min_notoc, paper_size="a5", move_toc=True)
     # booklet.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=a5_path.replace(".pdf", "_dup_booklet.pdf"))
 
-  if True == overwrite or "latex" in overwrite:
-    a5_latex_path = regex.sub("(_min.*)?.epub", f"_A5.latex", epub_path_min_notoc)
-    latex_body = latex.from_md(content=content)
-    latex.to_pdf(latex_body=latex_body, dest_path=a5_path.replace(".pdf", "_latex_local.pdf"), metadata=metadata)
+  # if True == overwrite or "latex" in overwrite:
+  #   a5_latex_path = regex.sub("(_min.*)?.epub", f"_A5.latex", epub_path_min_notoc)
+  #   latex_body = latex.from_md(content=content)
+  #   latex.to_pdf(latex_body=latex_body, dest_path=a5_path.replace(".pdf", "_latex_local.pdf"), metadata=metadata)
 
 
   if True == overwrite or "kobo" in overwrite:
