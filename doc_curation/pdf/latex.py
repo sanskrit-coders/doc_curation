@@ -2,7 +2,7 @@ import regex
 import subprocess, tempfile, os
 import shutil
 from curation_utils import file_helper
-from doc_curation.md.content_processor import footnote_helper
+from doc_curation.md.content_processor import footnote_helper, quote_helper, details_helper
 
 
 def md_links_to_latex(content: str) -> str:
@@ -56,12 +56,10 @@ def from_md(content, appendix=None) -> str:
 
   # Should be called before # is escaped.
   content = headings_to_sections(content)
-  content = details_to_colorbox(content)
+  content = quote_helper.convert_markdown_to_latex_leftbar(content=content)
+  content = details_helper.details_to_latex(content)
   content = footnote_helper.to_latex_footnotes(content=content)
   content = md_links_to_latex(content)
-
-
-
   return content
 
 
@@ -82,15 +80,6 @@ def headings_to_sections(content: str) -> str:
 def details_to_colorbox(md_text) -> str:
   # Convert <details> blocks into tcolorbox
   pattern = regex.compile(r"<details.*?><summary>(.*?)</summary>(.*?)</details>", regex.DOTALL)
-
-  def details_to_box(match):
-    title = match.group(1).strip()
-    content = match.group(2).strip()
-    content = content.replace("&", "\\&").replace("%", "\\%")
-    return f"\\begin{{tcolorbox}}[title={{{title}}}]\n{content}\n\\end{{tcolorbox}}\n"
-
-  content = pattern.sub(details_to_box, md_text)
-  return content
 
 
 def to_pdf(latex_body, dest_path, metadata, paper_size="a5", **kwargs):

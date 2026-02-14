@@ -8,28 +8,49 @@
 
 __PAPER_GEOMETRY__
 
+\makeatletter
+% Force the 'plain' page style (used by Parts/Chapters) to be the same as 'headings'
+\let\ps@plain\ps@headings
+\makeatother
+\pagestyle{headings}
+
+% Apply sloppy globally
+\sloppy 
+
 % --- 1. FONT CONFIGURATION ---
 \setmainfont{Noto Sans}[Script=Latin,Renderer=HarfBuzz]
 
-\newfontfamily\devanagarifont{Noto Sans Devanagari}[
+\newfontfamily\devanagarifont{Siddhanta}[
   Script=Devanagari,
   Renderer=HarfBuzz,
   Scale=1.3,
-  % Enabling Fake Slant for Devanagari Italics
-  ItalicFont={Noto Sans Devanagari},
+  ItalicFont={Siddhanta},
   ItalicFeatures={FakeSlant=0.2},
-  BoldItalicFont={Noto Sans Devanagari},
+  BoldItalicFont={Siddhanta},
   BoldItalicFeatures={FakeSlant=0.2, Weight=Bold}
 ]
 
-% Automatic font switching
+% TODO - ᳓ tofued.
 \setTransitionsForDevanagari{\devanagarifont}{\rmfamily}
 \setTransitionsForDevanagariExtended{\devanagarifont}{\rmfamily}
 \setTransitionsForDevanagariExtendedA{\devanagarifont}{\rmfamily}
 \setTransitionsForVedicExtensions{\devanagarifont}{\rmfamily}
 \setTransitionsFor{DevanagariDanDa}{\devanagarifont}{\rmfamily}
 
-% --- 2. DEVANAGARI NUMERALS ---
+
+% Define a font that contains the arrow symbol (Noto Sans Symbols is best)
+\newfontfamily\symbolfont{Noto Sans Symbols}[Renderer=HarfBuzz]
+
+% FIX: Use newunicodechar for arrows instead of ucharclasses transitions
+\usepackage{newunicodechar}
+\newunicodechar{᳓}{{\devanagarifont ᳓}} % Force Vedic Sign Nihshvasa to use Devanagari font
+\newunicodechar{→}{{\symbolfont →}}
+\newunicodechar{←}{{\symbolfont ←}}
+\newunicodechar{↔}{{\symbolfont ↔}}
+
+\emergencystretch=1em % Allows TeX to find better line breaks in tight spots
+
+% --- 2. DEVANAGARI NUMERALS & HIERARCHICAL NUMBERING ---
 \makeatletter
 \newcommand{\devanagarinum}[1]{%
   \expandafter\@devanagarinum\number#1\@nil
@@ -41,22 +62,23 @@ __PAPER_GEOMETRY__
   \fi
 }
 
-% Apply Devanagari numerals to all levels
+% Hierarchical numbering: part.chapter.section.subsection.subsubsection
 \renewcommand{\thepage}{\devanagarinum{\value{page}}}
 \renewcommand{\thepart}{\devanagarinum{\value{part}}}
-\renewcommand{\thechapter}{\devanagarinum{\value{chapter}}}
+\renewcommand{\thechapter}{\thepart.\devanagarinum{\value{chapter}}}
 \renewcommand{\thesection}{\thechapter.\devanagarinum{\value{section}}}
 \renewcommand{\thesubsection}{\thesection.\devanagarinum{\value{subsection}}}
+\renewcommand{\thesubsubsection}{\thesubsection.\devanagarinum{\value{subsubsection}}}
 \makeatother
 
 % --- 3. REMOVE PAGE BREAKS & REDUCE SPACING ---
 \makeatletter
-% 1. Disable page-breaking globally for this document
-\let\cleardoublepage\relax
-\let\clearpage\relax
-\let\newpage\relax
+% Instead of 'relax', use 'par'. This ensures a new line but NO new page.
+\let\cleardoublepage\par
+\let\clearpage\par
+\let\newpage\par
 
-% 2. Redefine \part and \chapter to act like normal sections
+% Redefine Part and Chapter to act like standard sections (no new pages)
 \renewcommand\part{\@startsection{part}{0}{\z@}%
   {-2pt \@plus -1ex \@minus -.2ex}%
   {2pt \@plus.2ex}%
@@ -68,22 +90,21 @@ __PAPER_GEOMETRY__
   {\normalfont\normalsize\bfseries}}
 \makeatother
 
-
-% 2. Format Titles (Sizes and Labels)
-\titleformat{\part}[hang]{\normalfont\normalsize\bfseries}{\thepart}{1.5em}{}
-\titleformat{\chapter}[hang]{\normalfont\normalsize\bfseries}{\thechapter}{1.4em}{}
-\titleformat{\section}[hang]{\normalfont\normalsize\bfseries}{\thesection}{1.2em}{}
-\titleformat{\subsection}[hang]{\normalfont\normalsize\bfseries}{\thesubsection}{1.1em}{}
+% Format Titles Appearance
+\titleformat{\part}[hang]{\normalfont\normalsize\bfseries}{\thepart}{1em}{}
+\titleformat{\chapter}[hang]{\normalfont\normalsize\bfseries}{\thechapter}{1em}{}
+\titleformat{\section}[hang]{\normalfont\normalsize\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}[hang]{\normalfont\normalsize\bfseries}{\thesubsection}{1em}{}
 \titleformat{\subsubsection}[hang]{\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
 
-% Control vertical gaps: {left}{before}{after}
+% Tight Spacing
 \titlespacing*{\part}{0pt}{2pt}{2pt}
 \titlespacing*{\chapter}{0pt}{2pt}{2pt}
 \titlespacing*{\section}{0pt}{2pt}{2pt}
 \titlespacing*{\subsection}{0pt}{2pt}{2pt}
 \titlespacing*{\subsubsection}{0pt}{2pt}{2pt}
 
-% Suppress "Part" and "Chapter" words
+% Suppress "Part" and "Chapter" labels
 \renewcommand{\partname}{}
 \renewcommand{\chaptername}{}
 
@@ -97,6 +118,11 @@ __PAPER_GEOMETRY__
 \patchcmd{\tableofcontents}{\clearpage}{}{}{}
 \patchcmd{\tableofcontents}{\newpage}{}{}{}
 
+% Adjust TOC width to accommodate long hierarchical numbers (e.g. १.१.१.१)
+\setlength{\cftchapnumwidth}{4em}
+\setlength{\cftsecnumwidth}{5em}
+\setlength{\cftsubsecnumwidth}{6em}
+\setlength{\cftsubsubsecnumwidth}{7em}
 % Inline comment style
 \newcommand{\inlinecomment}[1]{%
   {\color[HTML]{1B1B1B}\textit{\small\raisebox{-0.3ex}{#1}}}%
@@ -105,7 +131,6 @@ __PAPER_GEOMETRY__
 __METADATA__
 
 \begin{document}
-% Remove page break after TOC
 \tableofcontents
 \vspace{2em} 
 

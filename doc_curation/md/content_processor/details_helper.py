@@ -237,6 +237,13 @@ def transform_detail_tags_with_soup(content, transformer, title_pattern=None, de
   if soup is None:
     return content
   details = soup.select(details_css)
+
+  details = sorted(
+    details,
+    key=lambda tag: len(list(tag.parents)),
+    reverse=True
+  )
+  
   for detail_tag in list(details):
     if detail_tag.parent is None:
       # detail_tag.decompose() may have been called.
@@ -283,6 +290,19 @@ def add_detail_footnotes(content, remove_detail=False, *args, **kwargs):
     content = transform_detail_tags_with_soup(content=content, metadata=None, transformer=remover, details_css=detail_css)
 
 
+  return content
+
+
+def details_to_latex(content, *args, **kwargs):
+  def transformer(detail_tag, *args, **kwargs):
+    detail = Detail.from_soup_tag(detail_tag=detail_tag)
+    detail_tag.insert_after(f"\\begin{{tcolorbox}}[title={{{detail.title}}}]\n{detail.content}\n\\end{{tcolorbox}}\n")
+
+  detail_css = "details"
+  content = transform_detail_tags_with_soup(content=content, metadata=None, transformer=transformer, details_css=detail_css)
+  def remover(detail_tag, *args, **kwargs):
+    detail_tag.decompose()
+  content = transform_detail_tags_with_soup(content=content, metadata=None, transformer=remover, details_css=detail_css)
   return content
 
 

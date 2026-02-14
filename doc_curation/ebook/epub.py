@@ -11,7 +11,7 @@ from doc_curation.ebook.pandoc_helper import pandoc_from_md_file
 from doc_curation.pdf import booklet, latex
 
 
-def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, appendix=None):
+def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, appendix=None, overwrite=True):
   def make_extra_args(file_split_level, toc_depth=6):
     pandoc_extra_args = ["--toc", f"--toc-depth={toc_depth}", f"--split-level={file_split_level}"]
     if css_path is not None:
@@ -27,33 +27,39 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
   else:
     epub_path = out_path
 
-  pandoc_from_md_file(md_file=md_file, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=True)
-  _fix_details_in_epub(epub_path=epub_path)
-
-  md_file_min = MdFile(file_path=epub_path.replace(".epub", "_min.md"))
-  metadata, content = md_file_min.read()
-
-  pandoc_extra_args = make_extra_args(file_split_level=1)
   epub_path_min = epub_path.replace(".epub", "_min.epub")
-  pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=False)
-  _fix_details_in_epub(epub_path=epub_path_min)
-  calibre_helper.to_pdf(epub_path=epub_path_min, paper_size="a4")
-
-  pandoc_extra_args.remove("--toc")
   epub_path_min_notoc = epub_path.replace(".epub", "_min_notoc.epub")
-  pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min_notoc, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=False)
-  _fix_details_in_epub(epub_path=epub_path_min_notoc)
+  if True == overwrite or "epub" in overwrite:
+    pandoc_from_md_file(md_file=md_file, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=True)
+    _fix_details_in_epub(epub_path=epub_path)
 
-  a5_path = calibre_helper.to_pdf(epub_path=epub_path_min_notoc, paper_size="a5", move_toc=True)
-  # booklet.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=a5_path.replace(".pdf", "_dup_booklet.pdf"))
+    md_file_min = MdFile(file_path=epub_path.replace(".epub", "_min.md"))
+    metadata, content = md_file_min.read()
+  
+    pandoc_extra_args = make_extra_args(file_split_level=1)
+    pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=False)
+    _fix_details_in_epub(epub_path=epub_path_min)
+    overwrite = True
 
-  a5_latex_path = regex.sub("(_min.*)?.epub", f"_A5.latex", epub_path_min_notoc)
-  latex_body = latex.from_md(content=content)
-  latex.to_pdf(latex_body=latex_body, dest_path=a5_path.replace(".pdf", "_latex_local.pdf"), metadata=metadata)
+  if True == overwrite or "calibre" in overwrite:
+    calibre_helper.to_pdf(epub_path=epub_path_min, paper_size="a4")
+  
+    pandoc_extra_args.remove("--toc")
+    pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min_notoc, metadata=metadata, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix, detail_to_footnote=False)
+    _fix_details_in_epub(epub_path=epub_path_min_notoc)
+  
+    a5_path = calibre_helper.to_pdf(epub_path=epub_path_min_notoc, paper_size="a5", move_toc=True)
+    # booklet.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=a5_path.replace(".pdf", "_dup_booklet.pdf"))
+
+  if True == overwrite or "latex" in overwrite:
+    a5_latex_path = regex.sub("(_min.*)?.epub", f"_A5.latex", epub_path_min_notoc)
+    latex_body = latex.from_md(content=content)
+    latex.to_pdf(latex_body=latex_body, dest_path=a5_path.replace(".pdf", "_latex_local.pdf"), metadata=metadata)
 
 
-  epub_for_kobo(epub_path=epub_path)
-  calibre_helper.to_azw3(epub_path=epub_path, metadata=metadata)
+  if True == overwrite or "kobo" in overwrite:
+    epub_for_kobo(epub_path=epub_path)
+    calibre_helper.to_azw3(epub_path=epub_path, metadata=metadata)
 
   return epub_path
 
@@ -81,7 +87,7 @@ def epub_from_full_md(source_dir, out_path, omit_pattern=None, css_path=None, me
     logging.info(f"Skipping {epub_path} as it already exists.")
     return
 
-  converter = lambda md_file, out_path: epub_from_md_file(md_file=md_file, out_path=out_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path, appendix=appendix)
+  converter = lambda md_file, out_path: epub_from_md_file(md_file=md_file, out_path=out_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path, appendix=appendix, overwrite=overwrite)
   ebook.via_full_md(source_dir=source_dir, out_path=os.path.dirname(epub_path), converter=converter, omit_pattern=omit_pattern, overwrite=overwrite, dest_format="epub", cleanup=True, detail_pattern_to_remove=detail_pattern_to_remove, metadata=metadata)
   
 

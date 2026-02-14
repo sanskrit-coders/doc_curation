@@ -18,3 +18,9 @@ def set_audio_caption_from_filename(text, prefix):
   c = regex.sub(r"(?<=audioEmbed.+/)([^/]+?).mp3\" +caption=\".*?\"", transformer, text)
   
   return c
+
+
+def remove_embeds(content):
+  content = regex.sub(r"<div[^>]+(audio|video)Embed[^>]*>[^<]*</div>", "", content)
+  content = regex.sub(r"<div[^>]+(audio|video)Embed[^>]*/>", "", content)
+  return content

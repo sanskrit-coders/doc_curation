@@ -7,7 +7,7 @@ import regex
 from doc_curation.utils import patterns
 from doc_curation.md import content_processor
 from doc_curation.ebook import pandoc_helper
-from doc_curation.md.content_processor import details_helper, footnote_helper
+from doc_curation.md.content_processor import details_helper, footnote_helper, embed_helper, quote_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library.combination import make_full_text_md
 from doc_curation.ebook.pandoc_helper import pandoc_dump_md
@@ -21,6 +21,7 @@ def prep_content(content, detail_to_footnote=False, appendix=None, target="epub"
   else:
     content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'<span class="inline_comment">\1</span>', content)
   content = regex.sub(r" *\.\.\.\{Loading\}\.\.\.", fr"", content)
+  content = embed_helper.remove_embeds(content=content)
 
   # The below messes empty lines within details.
   # content = regex.sub(f"({patterns.DEVANAGARI_BLOCK})"], r'<span class="deva">\1</span>', content)
@@ -40,9 +41,9 @@ def prep_content(content, detail_to_footnote=False, appendix=None, target="epub"
 
 def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None, overwrite=True, cleanup=True, detail_pattern_to_remove=r"मूलम्.*", metadata={},
                 baseUrl="https://vishvAsa.github.io"):
-  md_file = prep_full_md(omit_pattern, out_path, overwrite==True, source_dir, metadata=metadata, base_url=baseUrl)
+  md_file = prep_full_md(omit_pattern=omit_pattern, out_path=out_path, overwrite=overwrite, source_dir=source_dir, metadata=metadata, base_url=baseUrl)
 
-  make_min_full_md(md_file.file_path, out_path, source_dir, detail_pattern_to_remove=detail_pattern_to_remove)
+  make_min_full_md(md_path=md_file.file_path, out_path=out_path, source_dir=source_dir, detail_pattern_to_remove=detail_pattern_to_remove)
 
   dest_path = get_book_path(source_dir, out_path) + f".{dest_format}"
 
