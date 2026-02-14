@@ -1,51 +1,73 @@
-\documentclass[12pt,openany]{book} % 'openany' prevents empty pages between chapters
+\documentclass[12pt,openany]{book}
 \usepackage{fontspec}
 \usepackage{ucharclasses}
 \usepackage{hyperref}
 \usepackage{xcolor}
-\usepackage{etoolbox} % For patching chapter behavior
+\usepackage{titlesec}
+\usepackage{etoolbox}
 
 __PAPER_GEOMETRY__
 
-% --- FONT CONFIGURATION ---
-% Latin font
+% --- 1. FONT CONFIGURATION ---
 \setmainfont{Noto Sans}[Script=Latin,Renderer=HarfBuzz]
 
-% Devanagari font with Fake Slant
 \newfontfamily\devanagarifont{Noto Sans Devanagari}[
   Script=Devanagari,
   Renderer=HarfBuzz,
   Scale=1.3,
-  % This adds the fake slant for italics
+  % Enabling Fake Slant for Devanagari Italics
   ItalicFont={Noto Sans Devanagari},
   ItalicFeatures={FakeSlant=0.2},
   BoldItalicFont={Noto Sans Devanagari},
   BoldItalicFeatures={FakeSlant=0.2, Weight=Bold}
 ]
 
-% Automatic switching rules
+% Automatic font switching
 \setTransitionsForDevanagari{\devanagarifont}{\rmfamily}
 \setTransitionsForDevanagariExtended{\devanagarifont}{\rmfamily}
 \setTransitionsForDevanagariExtendedA{\devanagarifont}{\rmfamily}
 \setTransitionsForVedicExtensions{\devanagarifont}{\rmfamily}
 \setTransitionsFor{DevanagariDanDa}{\devanagarifont}{\rmfamily}
 
-% --- SECTIONING & SPACING ---
-\usepackage{titlesec}
-
-% 1. Remove page breaks for Parts and Chapters
-% This redefines \part and \chapter to behave like \section (no \clearpage)
+% --- 2. DEVANAGARI NUMERALS ---
 \makeatletter
+\newcommand{\devanagarinum}[1]{%
+  \expandafter\@devanagarinum\number#1\@nil
+}
+\def\@devanagarinum#1{%
+  \ifx#1\@nil\else
+    \ifcase#1 ०\or १\or २\or ३\or ४\or ५\or ६\or ७\or ८\or ९\fi
+    \expandafter\@devanagarinum
+  \fi
+}
+
+% Apply Devanagari numerals to all levels
+\renewcommand{\thepage}{\devanagarinum{\value{page}}}
+\renewcommand{\thepart}{\devanagarinum{\value{part}}}
+\renewcommand{\thechapter}{\devanagarinum{\value{chapter}}}
+\renewcommand{\thesection}{\thechapter.\devanagarinum{\value{section}}}
+\renewcommand{\thesubsection}{\thesection.\devanagarinum{\value{subsection}}}
+\makeatother
+
+% --- 3. REMOVE PAGE BREAKS & REDUCE SPACING ---
+\makeatletter
+% 1. Disable page-breaking globally for this document
+\let\cleardoublepage\relax
+\let\clearpage\relax
+\let\newpage\relax
+
+% 2. Redefine \part and \chapter to act like normal sections
 \renewcommand\part{\@startsection{part}{0}{\z@}%
-  {-3.5ex \@plus -1ex \@minus -.2ex}%
-  {1ex \@plus.2ex}% % Reduced space after
-  {\normalfont\Large\bfseries}}
+  {-2pt \@plus -1ex \@minus -.2ex}%
+  {2pt \@plus.2ex}%
+  {\normalfont\normalsize\bfseries}}
 
 \renewcommand\chapter{\@startsection{chapter}{1}{\z@}%
-  {-3.5ex \@plus -1ex \@minus -.2ex}%
-  {1ex \@plus.2ex}% % Reduced space after
-  {\normalfont\Large\bfseries}}
+  {-2pt \@plus -1ex \@minus -.2ex}%
+  {2pt \@plus.2ex}%
+  {\normalfont\normalsize\bfseries}}
 \makeatother
+
 
 % 2. Format Titles (Sizes and Labels)
 \titleformat{\part}[hang]{\normalfont\normalsize\bfseries}{\thepart}{1.5em}{}
@@ -54,27 +76,26 @@ __PAPER_GEOMETRY__
 \titleformat{\subsection}[hang]{\normalfont\normalsize\bfseries}{\thesubsection}{1.1em}{}
 \titleformat{\subsubsection}[hang]{\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
 
-% 3. Tighten Spacing (Left, Before, After)
-% \titlespacing*{command}{left}{before-sep}{after-sep}
-\titlespacing*{\part}{0pt}{12pt}{6pt}
-\titlespacing*{\chapter}{0pt}{12pt}{6pt}
-\titlespacing*{\section}{0pt}{10pt}{4pt}
-\titlespacing*{\subsection}{0pt}{8pt}{3pt}
-\titlespacing*{\subsubsection}{0pt}{6pt}{2pt}
+% Control vertical gaps: {left}{before}{after}
+\titlespacing*{\part}{0pt}{2pt}{2pt}
+\titlespacing*{\chapter}{0pt}{2pt}{2pt}
+\titlespacing*{\section}{0pt}{2pt}{2pt}
+\titlespacing*{\subsection}{0pt}{2pt}{2pt}
+\titlespacing*{\subsubsection}{0pt}{2pt}{2pt}
 
-% Suppress “Part”, “Chapter”, etc. labels:
+% Suppress "Part" and "Chapter" words
 \renewcommand{\partname}{}
 \renewcommand{\chaptername}{}
-\renewcommand{\sectionname}{}
 
-% --- TABLE OF CONTENTS ---
+% --- 4. TABLE OF CONTENTS ---
 \usepackage{tocloft}
 \renewcommand{\contentsname}{Contents}
 \renewcommand{\cftpartfont}{\bfseries\normalsize}
 \renewcommand{\cftchapfont}{\bfseries\normalsize}
 \renewcommand{\cftsecfont}{\bfseries\normalsize}
-% Remove the page breaks before TOC if desired
+% Remove the page breaks before TOC
 \patchcmd{\tableofcontents}{\clearpage}{}{}{}
+\patchcmd{\tableofcontents}{\newpage}{}{}{}
 
 % Inline comment style
 \newcommand{\inlinecomment}[1]{%
@@ -84,8 +105,9 @@ __PAPER_GEOMETRY__
 __METADATA__
 
 \begin{document}
+% Remove page break after TOC
 \tableofcontents
-% \newpage % Removed to keep things compact
+\vspace{2em} 
 
 __LATEX_BODY__
 
