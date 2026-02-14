@@ -12,17 +12,16 @@ __PAPER_GEOMETRY__
 \newfontfamily\devanagarifont{Noto Sans Devanagari}[Script=Devanagari,Renderer=HarfBuzz,Scale=1.3]
 
 % Automatic switching rules
-\setTransitionsFor{U+0900..U+097F}{\devanagarifont}{\rmfamily}
-\setTransitionsFor{U+0951..U+0954}{\devanagarifont}{\rmfamily}
-\setTransitionsFor{U+0966..U+096F}{\devanagarifont}{\rmfamily} % digits
-\setTransitionsFor{U+1CD0..U+1CE8}{\devanagarifont}{\rmfamily}
-\setTransitionsFor{DevanagariMarks}{\devanagarifont}{\rmfamily}
-\setTransitionsFor{CommonIndicNumberForms}{\devanagarifont}{\rmfamily}
-\setTransitionsFor{DevanagariExtended}{\devanagarifont}{\rmfamily}
-\setTransitionsFor{DevanagariExtendedA}{\devanagarifont}{\rmfamily}
-\setTransitionsFor{DevanagariPreMarks}{\devanagarifont}{\rmfamily}
-\setTransitionsFor{DevanagariPostMarks}{\devanagarifont}{\rmfamily}
+\setTransitionsForDevanagari{\devanagarifont}{\rmfamily}
+
+% Optional: If you use specific Vedic marks/extended blocks, add them:
+\setTransitionsForDevanagariExtended{\devanagarifont}{\rmfamily}
+\setTransitionsForDevanagariExtendedA{\devanagarifont}{\rmfamily}
+\setTransitionsForVedicExtensions{\devanagarifont}{\rmfamily}
 \setTransitionsFor{DevanagariDanDa}{\devanagarifont}{\rmfamily}
+% \setTransitionsFor{DevanagariMarks}{\devanagarifont}{\rmfamily}
+% \setTransitionsFor{DevanagariPreMarks}{\devanagarifont}{\rmfamily}
+% \setTransitionsFor{DevanagariPostMarks}{\devanagarifont}{\rmfamily}
 
 \usepackage{titlesec}
 

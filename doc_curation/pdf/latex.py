@@ -122,9 +122,9 @@ def to_pdf(latex_body, dest_path, metadata, paper_size="a5", **kwargs):
     pdf_path = os.path.join(tmpdir, "doc.pdf")
     # At this point pdf_path points to something like /tmp/.../doc.pdf
     # and dest_path is the final location.
-    file_helper.move_file_cross_device_safe(tex_path, dest_path + ".tex")
+    file_helper.move_file_cross_device_safe(tex_path, dest_path.replace(".pdf", ".tex"))
+    file_helper.move_file_cross_device_safe(os.path.join(tmpdir, "doc.log"), dest_path.replace(".pdf", ".log"))
     file_helper.move_file_cross_device_safe(pdf_path, dest_path)
-    file_helper.move_file_cross_device_safe(os.path.join(tmpdir, "doc.log"), dest_path + ".log")
 
     # At this point pdf_path points to something like /tmp/.../doc.pdf
     # and dest_path is the final location.
