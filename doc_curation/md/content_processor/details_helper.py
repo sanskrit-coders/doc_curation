@@ -6,6 +6,7 @@ import textwrap
 
 import doc_curation.translation
 from bs4.element import PageElement
+from more_itertools.more import lstrip
 from tqdm import tqdm
 
 import doc_curation.md.content_processor.space_helper
@@ -308,7 +309,7 @@ def details_to_latex(content, *args, **kwargs):
 
 def dedetailsify(content, title_pattern=None, title_maker=None, *args, **kwargs):
   if title_maker is None:
-    title_maker = lambda x: f"**{x}**—"
+    title_maker = lambda x: f"**{x}**—\n"
   def transformer(detail_tag, *args, **kwargs):
     # Remove all details contents and place them next to the details tag.
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
@@ -322,6 +323,10 @@ def dedetailsify(content, title_pattern=None, title_maker=None, *args, **kwargs)
     #   so text would stay inside <details> and get destroyed by decompose().
     # - Using summary.next_siblings preserves BOTH tags and NavigableStrings.
     nodes_to_move = list(summary.next_siblings)
+    if isinstance(nodes_to_move[0], NavigableString):
+      nodes_to_move[0] = NavigableString(title_maker(detail.title) + nodes_to_move[0].lstrip())
+    else:
+      nodes_to_move = [NavigableString(title_maker(detail.title))] + nodes_to_move
 
     # Move nodes out of <details> while preserving their original order.
     # We insert in reverse so the final order after detail_tag matches the original.
@@ -329,9 +334,6 @@ def dedetailsify(content, title_pattern=None, title_maker=None, *args, **kwargs)
       node.extract()
       detail_tag.insert_after(node)
 
-    # Insert the title so it ends up immediately after the <details> tag,
-    # and before the moved content.
-    detail_tag.insert_after(title_maker(detail.title))
   detail_css = "details"
   content = transform_detail_tags_with_soup(content=content, metadata=None, transformer=transformer, title_pattern=title_pattern, details_css=detail_css)
   def remover(detail_tag, *args, **kwargs):

@@ -49,7 +49,7 @@ def vedAH_yajuH():
 
 if __name__ == '__main__':
   # rAmAnujIyam()
-  vedAH_yajuH()
+  # vedAH_yajuH()
 
   a5_path = "/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/vedAH_yajuH/ApastambaH/dharma-sUtram-en/dharma-sUtram-en_a5.pdf"
   # booklet.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=a5_path.replace(".pdf", "_dup_booklet.pdf"))
