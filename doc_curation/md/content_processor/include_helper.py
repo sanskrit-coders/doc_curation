@@ -227,7 +227,7 @@ def fix_rel_urls(content, from_path, to_path):
 
 
 def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
-                    dynamic_loading=True):
+                    dynamic_loading=True, hash_title=False):
   """To be used with transform_include_lines.
   
   :param match: 
@@ -278,28 +278,34 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
     return 
   content = transform_includes_with_soup(content=content, metadata=metadata, h1_level_offset=h1_level, transformer=prefill_include, dynamic_loading=dynamic_loading, hugo_base_dir=hugo_base_dir)
 
-
-  if inc.get("includetitle", "false").lower() == "false" or "title" not in metadata:
-    title = ""
-  else:
-    title = inc.get("title", metadata.get("title", "UNKNOWN_TITLE"))
-    title = regex.sub(r"^\+", "", title.strip())
-    if "UNKNOWN_TITLE" in title:
+  title = inc.get("title", "")
+  if title == "" and inc.get("includetitle", "false").lower() != "false":
+    title = metadata.get("title", "UNKNOWN_TITLE")
+    if title == "UNKNOWN_TITLE":
       logging.warning(f"Could not get title for {file_path} in {container_file_path}")
-    if dynamic_loading:
-      title +=  " …{Loading}…"
+  if title != "" and dynamic_loading:
+    title +=  " …{Loading}…"
 
-  if title.strip() != "":
-    if "collapsed" not in inc["class"]:
-      if h1_level != 0:
+  title = title.strip()
+  # title = regex.sub(r"^\+", "", title)
+
+  hash_title = hash_title or os.path.basename(container_file_path) == "full.md"
+
+  if title != "":
+    if "collapsed" not in inc["class"] and hash_title:
+      if h1_level != "b[]":
         title = f"{'#'*h1_level} {title}"
       else:
         title = f"**{title}**"
       details = BeautifulSoup(f"{title}\n\n{content}", 'html.parser')
     else:
-      if h1_level != 0 and title.strip() != "":
+      if h1_level != "b[]":
         title = f"<h{h1_level}>{title}</h{h1_level}>"
+      else:
+        title = f"{title}"
       details = BeautifulSoup(f"<body><details><summary>{title}</summary>\n\n{content}\n</details></body>", 'html.parser').select_one("details")
+      if "collapsed" not in inc["class"]:
+        details["open"] = ""
   else:
     details = BeautifulSoup(f"{content}", 'html.parser')
   

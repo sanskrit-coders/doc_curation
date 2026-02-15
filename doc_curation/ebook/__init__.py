@@ -38,7 +38,7 @@ def make_out_path(author, dir_path, out_path=f"/home/vvasuki/gitland/sanskrit/ra
 
 
 def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata={}, file_split_level=4, toc_depth=6,
-             overwrite=".*", appendix=None, detail_pattern_to_remove=r"मूलम्.*", cleanup=True):
+             overwrite=".*", appendix=None, detail_pattern_to_extract=".*सर्वाष् .*", detail_pattern_to_remove=r"मूलम्.*", details_pattern_to_prefix=None, cleanup=True):
 
 
 
@@ -50,7 +50,8 @@ def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata={}
     md_file = md_book.prep_full_md(omit_pattern=omit_pattern, md_path=md_path, overwrite=overwrite, source_dir=source_dir, metadata=metadata, base_url="https://vishvAsa.github.io", appendix=appendix)
 
 
-    md_book.make_min_full_md(md_path=md_path, source_dir=source_dir, detail_pattern_to_remove=detail_pattern_to_remove)
+    md_book.make_min_full_md(md_path=md_path, source_dir=source_dir,
+                             detail_pattern_to_extract=detail_pattern_to_extract, detail_pattern_to_remove=detail_pattern_to_remove, details_pattern_to_prefix=details_pattern_to_prefix)
 
   if cleanup:
     md_book.remove_full_mds(source_dir)

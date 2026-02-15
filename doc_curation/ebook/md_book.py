@@ -56,7 +56,6 @@ def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, b
       content_appendix = regex.sub(r"(?<=\n|^)!\[.*?\]\(.+?\) *\n(\{.+?\})?\n", "", content_appendix)
       # appendix = include_helper.fix_headers(content=appendix, h1_level=2)
       content = f"{content}\n\n{content_appendix}"
-      return content
  
     logging.info(f"Fixing links and metadata")
     content = regex.sub(r'(!?\[.*?\]\()../([^\)\s]+)(\))', r'\1\2)', content)
@@ -66,6 +65,7 @@ def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, b
 
     logging.info("Fixing footnotes")
     content = footnote_helper.to_plain_footnotes(content=content)
+    # min md will have links converted to footnotes. Not here.
 
     logging.info(f"Fixing open details tags for {md_path}")
     content = details_helper.transform_detail_tags_with_soup(content, transformer=details_helper.open_attribute_fixer, details_css="details")
@@ -79,6 +79,7 @@ def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, b
   
     if detail_to_footnote:
       content = details_helper.add_detail_footnotes(content=content, remove_detail=True)
+    return content
 
   md_file.transform(
     content_transformer=_fix_content, metadata_transformer=_fix_metadata,
@@ -87,22 +88,27 @@ def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, b
   return md_file
 
 
-def make_min_full_md(md_path: str, source_dir, detail_pattern_to_remove):
+def make_min_full_md(md_path: str, source_dir, detail_pattern_to_remove, detail_pattern_to_extract=".*सर्वाष्", details_pattern_to_prefix=None):
   md_path_min = md_path.replace(".md", "_min.md")
   copyfile(md_path, md_path_min)
   md_file_min = MdFile(file_path=md_path_min)
 
-  # Remove some detail tags.
-  md_file_min.transform(
-    content_transformer=lambda c, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c, transformer=lambda  x, *args, **kwargs: x.decompose(),title_pattern=detail_pattern_to_remove,details_css="details"),
-    dry_run=False)
-  logging.info(f"Removed <details> tags from {md_path_min}")
+  def _fix_content(content, *args, **kwargs):
 
-  # Open all details.
-  content_processor.replace_texts(md_file=md_file_min, patterns=[r"<details>"], replacement=r"<details open="">",
-                                  flags=regex.MULTILINE)
-  md_file_min.transform(content_transformer=footnote_helper.add_for_links, dry_run=False)
-  logging.info(f"Added link-footnotes for {md_path_min}")
+    content = details_helper.detail_remover(content=content,title_pattern=detail_pattern_to_remove,details_css="details")
+    logging.info(f"Removed <details> {detail_pattern_to_remove} tags from {md_path_min}")
+
+    content = details_helper.dedetailsify(content, title_maker=lambda x: "", title_pattern=detail_pattern_to_extract)
+    if details_pattern_to_prefix is not None:
+      content = details_helper.dedetailsify(content, title_pattern=details_pattern_to_prefix)
+    # Open all details.
+    content = regex.sub(r"<details>", r"<details open=\"\">", content, flags=regex.MULTILINE)
+    content = footnote_helper.add_for_links(content=content)
+    logging.info(f"Added link-footnotes for {md_path_min}")
+    return content
+  md_file_min.transform(
+    content_transformer=_fix_content,
+    dry_run=False)
 
 
 def remove_full_mds(source_dir):

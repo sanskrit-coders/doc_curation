@@ -121,7 +121,7 @@ def to_pdf(epub_path: str, paper_size="a5", margins=None, move_toc=False):
     logging.info(f"Successfully created final PDF with TOC at front: {dest_path}")
 
 
-  logging.info("Conversion successful!")
+  logging.info(f"Made {os.path.basename(dest_path)} at {dest_path}")
   # The below only complesses slightly (8%), and removes all devanAgarI fonts!
   # pdf.compress_with_gs(input_file_path=dest_path, output_file_path=dest_path)
 

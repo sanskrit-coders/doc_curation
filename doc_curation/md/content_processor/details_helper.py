@@ -254,8 +254,8 @@ def transform_detail_tags_with_soup(content, transformer, title_pattern=None, de
   return content_processor._make_content_from_soup(soup=soup)
 
 
-def detail_remover(content, title, *args, **kwargs):
-  return transform_detail_tags_with_soup(content=content, title_pattern=title, transformer=lambda x, *args, **kwargs: x.decompose())
+def detail_remover(content, title_pattern, *args, **kwargs):
+  return transform_detail_tags_with_soup(content=content, title_pattern=title_pattern, transformer=lambda x, *args, **kwargs: x.decompose(), *args, **kwargs)
 
 
 def adjascent_inserter(detail_tag, metadata, neighbor_maker, inserter=PageElement.insert_after):
@@ -304,6 +304,42 @@ def details_to_latex(content, *args, **kwargs):
     detail_tag.decompose()
   content = transform_detail_tags_with_soup(content=content, metadata=None, transformer=remover, details_css=detail_css)
   return content
+
+
+def dedetailsify(content, title_pattern=None, title_maker=None, *args, **kwargs):
+  if title_maker is None:
+    title_maker = lambda x: f"**{x}**—"
+  def transformer(detail_tag, *args, **kwargs):
+    # Remove all details contents and place them next to the details tag.
+    detail = Detail.from_soup_tag(detail_tag=detail_tag)
+    summary = detail_tag.select_one("summary")
+    if summary is None:
+      # Nothing reliable to move; let the later "remover" decompose the tag.
+      return
+
+    # IMPORTANT:
+    # - summary.find_next_siblings() returns only *tags* (skips text nodes),
+    #   so text would stay inside <details> and get destroyed by decompose().
+    # - Using summary.next_siblings preserves BOTH tags and NavigableStrings.
+    nodes_to_move = list(summary.next_siblings)
+
+    # Move nodes out of <details> while preserving their original order.
+    # We insert in reverse so the final order after detail_tag matches the original.
+    for node in reversed(nodes_to_move):
+      node.extract()
+      detail_tag.insert_after(node)
+
+    # Insert the title so it ends up immediately after the <details> tag,
+    # and before the moved content.
+    detail_tag.insert_after(title_maker(detail.title))
+  detail_css = "details"
+  content = transform_detail_tags_with_soup(content=content, metadata=None, transformer=transformer, title_pattern=title_pattern, details_css=detail_css)
+  def remover(detail_tag, *args, **kwargs):
+    detail_tag.decompose()
+  content = transform_detail_tags_with_soup(content=content, metadata=None, title_pattern=title_pattern, transformer=remover, details_css=detail_css)
+  return content
+
+
 
 
 def transliterate_details(content, source_script, dest_script=sanscript.DEVANAGARI, title=None):

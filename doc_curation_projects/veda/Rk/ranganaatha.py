@@ -42,7 +42,7 @@ def export_to_files():
         exit(1)
       md_file = MdFile(file_path=dest_path)
       md_file.replace_content_metadata(new_content=lambda c, *args, **kwargs: details_helper.insert_duplicate_adjascent(content=c, old_title_pattern="सायण-भा(.*)", new_title="रङ्गनाथः", content_transformer=lambda c: detail.content.replace("\n", " "), *args, **kwargs), dry_run=False)
-    return details_helper.detail_remover(content=content, title="रङ्गनाथः.*")
+    return details_helper.detail_remover(content=content, title_pattern="रङ्गनाथः.*")
 
   library.apply_function(fn=MdFile.transform, dir_path=IN_DIR, content_transformer=_content_fixer)
 
