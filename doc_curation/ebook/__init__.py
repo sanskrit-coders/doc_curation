@@ -6,9 +6,8 @@ from doc_curation.ebook.epub import epub_from_md_file
 
 
 from doc_curation.ebook import pandoc_helper, md_book
-from doc_curation.md.file import MdFile
+from doc_curation.ebook.pdf_book import pdf_maker
 from doc_curation.ebook.pandoc_helper import pandoc_dump_md
-from doc_curation.pdf import pdf_maker
 
 
 def get_book_path(source_dir, out_path):

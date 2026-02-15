@@ -25,8 +25,8 @@ def title_from_path(dir_path):
 def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, base_url, appendix=None, detail_to_footnote=False):
   full_md_path = os.path.join(source_dir, "full.md")
 
-  if not os.path.exists(full_md_path):
-    full_md_path = make_full_text_md(source_dir=source_dir, omit_pattern=omit_pattern, overwrite=overwrite)
+  if not os.path.exists(full_md_path) or regex.match(overwrite, "md"):
+    full_md_path = make_full_text_md(source_dir=source_dir, omit_pattern=omit_pattern, overwrite=regex.match(overwrite, "md"))
   # copy full_md_path to out_path
   os.makedirs(os.path.dirname(md_path), exist_ok=True)
   from shutil import copyfile
@@ -48,15 +48,15 @@ def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, b
 
   def _fix_content(content, *args, **kwargs):
 
-    if appendix is not None:
-      if os.path.exists(appendix):
-        md_file_appendix = MdFile(file_path=appendix)
-        metadata, content_appendix = md_file_appendix.read()
-        content_appendix = f"# Appendix - {metadata['title']}\n\n{content_appendix}"
-        logging.info("Strip figures?")
-        content_appendix = regex.sub(r"(?<=\n|^)!\[.*\]\(.+\) *\n(\{.+\})?\n", "", content_appendix, flags=regex.DOTALL)
-        # appendix = include_helper.fix_headers(content=appendix, h1_level=2)
+    if appendix is not None and os.path.exists(appendix):
+      md_file_appendix = MdFile(file_path=appendix)
+      metadata, content_appendix = md_file_appendix.read()
+      content_appendix = f"# Appendix - {metadata['title']}\n\n{content_appendix}"
+      logging.info("Strip appendix figures")
+      content_appendix = regex.sub(r"(?<=\n|^)!\[.*?\]\(.+?\) *\n(\{.+?\})?\n", "", content_appendix)
+      # appendix = include_helper.fix_headers(content=appendix, h1_level=2)
       content = f"{content}\n\n{content_appendix}"
+      return content
  
     logging.info(f"Fixing links and metadata")
     content = regex.sub(r'(!?\[.*?\]\()../([^\)\s]+)(\))', r'\1\2)', content)
