@@ -1,17 +1,14 @@
 import logging
-import os, regex
+import os
+import regex
 
-import doc_curation.ebook.pandoc_helper
-from doc_curation import ebook
-
-from doc_curation.ebook import get_book_path, pandoc_helper
 from doc_curation.ebook import calibre_helper
-from doc_curation.md.file import MdFile
+
 from doc_curation.ebook.pandoc_helper import pandoc_from_md_file
-from doc_curation.pdf import booklet, latex
+from doc_curation.md.file import MdFile
 
 
-def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, appendix=None, overwrite=True):
+def epub_from_md_file(md_file, epub_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, appendix=None, overwrite=".*"):
   def make_extra_args(file_split_level, toc_depth=6):
     pandoc_extra_args = ["--toc", f"--toc-depth={toc_depth}", f"--split-level={file_split_level}"]
     if css_path is not None:
@@ -22,14 +19,9 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
   pandoc_extra_args = make_extra_args(file_split_level=file_split_level, toc_depth=toc_depth)
   source_dir = os.path.dirname(md_file.file_path)
 
-  if not out_path.endswith(".epub"):
-    epub_path = get_book_path(source_dir, out_path) + ".epub"
-  else:
-    epub_path = out_path
-
   epub_path_min = epub_path.replace(".epub", "_min.epub")
   epub_path_min_notoc = epub_path.replace(".epub", "_min_notoc.epub")
-  if True == overwrite or "epub" in overwrite:
+  if regex.match(overwrite, "epub"):
     pandoc_from_md_file(md_file=md_file, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, detail_to_footnote=True)
     _fix_details_in_epub(epub_path=epub_path)
 
@@ -39,28 +31,23 @@ def epub_from_md_file(md_file, out_path, css_path=None, metadata={}, file_split_
     pandoc_extra_args = make_extra_args(file_split_level=1)
     pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, appendix=appendix, detail_to_footnote=False)
     _fix_details_in_epub(epub_path=epub_path_min)
-    overwrite = True
+    overwrite = ".*"
 
-  if True == overwrite or "calibre" in overwrite:
-    calibre_helper.to_pdf(epub_path=epub_path_min, paper_size="a4")
-  
+
+  if regex.match(overwrite, "pdf"):
     pandoc_extra_args.remove("--toc")
     pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min_notoc, metadata=metadata, pandoc_extra_args=pandoc_extra_args, appendix=appendix, detail_to_footnote=False)
     _fix_details_in_epub(epub_path=epub_path_min_notoc)
 
-    calibre_helper.to_pdf(epub_path=epub_path_min_notoc, paper_size="a4", move_toc=True)
-    a5_path = calibre_helper.to_pdf(epub_path=epub_path_min_notoc, paper_size="a5", move_toc=True)
-    # booklet.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=a5_path.replace(".pdf", "_dup_booklet.pdf"))
+  make_deprecated = False
 
-  # if True == overwrite or "latex" in overwrite:
-  #   a5_latex_path = regex.sub("(_min.*)?.epub", f"_A5.latex", epub_path_min_notoc)
-  #   latex_body = latex.from_md(content=content)
-  #   latex.to_pdf(latex_body=latex_body, dest_path=a5_path.replace(".pdf", "_latex_local.pdf"), metadata=metadata)
+  if make_deprecated:  
+    if regex.match(overwrite, "kobo"):
+      epub_for_kobo(epub_path=epub_path)
 
 
-  if True == overwrite or "kobo" in overwrite:
-    epub_for_kobo(epub_path=epub_path)
-    calibre_helper.to_azw3(epub_path=epub_path, metadata=metadata)
+    if regex.match(overwrite, "azw"):
+      calibre_helper.to_azw3(epub_path=epub_path, metadata=metadata)
 
   return epub_path
 
@@ -76,21 +63,7 @@ def make_epubs_recursively(source_dir, out_path, recursion_depth=None, dry_run=F
           make_epubs_recursively(source_dir=subdir_path, out_path=os.path.join(out_path, subdir), recursion_depth=recursion_depth - 1, dry_run=dry_run, cleanup=False, *args, **kwargs)
 
 
-  epub_from_full_md(source_dir=source_dir, out_path=out_path, cleanup=cleanup, *args, **kwargs)
-
-
-def epub_from_full_md(source_dir, out_path, omit_pattern=None, css_path=None, metadata={}, file_split_level=4, toc_depth=6, 
-                      overwrite=True, appendix=None, detail_pattern_to_remove=r"मूलम्.*"): 
-  full_md_path = os.path.join(source_dir, "full.md")
-
-  epub_path = get_book_path(source_dir, out_path) + ".epub"
-  if os.path.exists(epub_path) and not overwrite:
-    logging.info(f"Skipping {epub_path} as it already exists.")
-    return
-
-  converter = lambda md_file, out_path: epub_from_md_file(md_file=md_file, out_path=out_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path, overwrite=overwrite)
-  ebook.via_full_md(source_dir=source_dir, out_path=os.path.dirname(epub_path), converter=converter, omit_pattern=omit_pattern, overwrite=overwrite, dest_format="epub", cleanup=True, detail_pattern_to_remove=detail_pattern_to_remove, appendix=appendix, metadata=metadata)
-  
+  make_all(source_dir=source_dir, out_path=out_path, cleanup=cleanup, *args, **kwargs)
 
 
 def epub_for_kobo(epub_path: str):
