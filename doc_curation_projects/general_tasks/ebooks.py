@@ -39,7 +39,7 @@ def vedAH_yajuH():
   pass
   out_path = os.path.join(OUT_PATH_BASE, "vedAH_yajuH", "ApastambaH")
   # epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/sarva-prastutiH", metadata={"author": "ApastambaH", "title": "आपस्तम्ब-धर्म-सूत्राणि"}, file_split_level=1, detail_pattern_to_remove=r"मूलम्.*", out_path=os.path.join(out_path, "dharma-sUtram"), css_path=CSS_PATH, appendix=appendix_dg, )
-  epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/sarva-prastutiH", metadata={"author": "ApastambaH", "title": "आपस्तम्ब-धर्म-सूत्राणि (En)"}, file_split_level=1, detail_pattern_to_remove=r"(मूलम्|हर|शङ्क).*", out_path=os.path.join(out_path, "dharma-sUtram-en"), css_path=CSS_PATH, appendix=appendix_dg, )
+  # epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/sarva-prastutiH", metadata={"author": "ApastambaH", "title": "आपस्तम्ब-धर्म-सूत्राणि (En)"}, file_split_level=1, detail_pattern_to_remove=r"(मूलम्|हर|शङ्क).*", out_path=os.path.join(out_path, "dharma-sUtram-en"), css_path=CSS_PATH, appendix=appendix_dg, )
   epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/viShaya-vibhAgaH", metadata={"author": "ApastambaH", "title": "आपस्तम्ब-धर्म-सूत्राणि - विषय-विभागः"}, file_split_level=1, detail_pattern_to_remove=r"(मूलम्|हर|शङ्क).*", out_path=os.path.join(out_path, "dharma-sUtra-viShaya-vibhAgaH"), css_path=CSS_PATH, appendix=appendix_dg, )
   # epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/sarva-prastutiH", metadata={"author": "ApastambaH", "title": "आपस्तम्ब-गृह्य-सूत्राणि"}, file_split_level=1, detail_pattern_to_remove=r"मूलम्.*", out_path=os.path.join(out_path, "gRhyam"), css_path=CSS_PATH, appendix=appendix_dg, )
   # epub.epub_from_full_md("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/karmANi", metadata={"author": "ApastambaH", "title": "आपस्तम्ब-गृह्य-सूत्राणि - कर्म-सङ्ग्रहः"}, file_split_level=1, detail_pattern_to_remove=r"मूलम्.*", out_path=os.path.join(out_path, "gRhyam_karma-sangrahaH"), css_path=CSS_PATH, appendix=appendix_dg, )
@@ -52,11 +52,11 @@ def vedAH_yajuH():
 
 if __name__ == '__main__':
   # rAmAnujIyam()
-  # vedAH_yajuH()
+  vedAH_yajuH()
 
   a5_path = "/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/vedAH_yajuH/ApastambaH/dharma-sUtram-en/dharma-sUtram-en_a5.pdf"
   # booklet.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=a5_path.replace(".pdf", "_dup_booklet.pdf"))
-  booklet.two_column_page_booklet(input_pdf_path=a5_path)
+  # booklet.two_column_page_booklet(input_pdf_path=a5_path)
   # pdf.sample_pdf_margins(a5_path, page_size="a5", page_type="all")
   # pdf.sample_pdf_margins(a5_path, page_size="a5", page_type="odd")
   # pdf.sample_pdf_margins(a5_path, page_size="a5", page_type="even")

@@ -51,8 +51,7 @@ def from_md(content, appendix=None) -> str:
   """
 
   content = escape_latex(content)
-  from doc_curation import ebook
-  content = ebook.prep_content(content=content, appendix=appendix, target="latex")
+  content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'\\inlinecomment{\1}', content, flags=regex.DOTALL)
 
   # Should be called before # is escaped.
   content = headings_to_sections(content)

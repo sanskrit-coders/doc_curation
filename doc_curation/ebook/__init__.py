@@ -13,35 +13,11 @@ from doc_curation.md.library.combination import make_full_text_md
 from doc_curation.ebook.pandoc_helper import pandoc_dump_md
 
 
-def prep_content(content, detail_to_footnote=False, appendix=None, target="epub"):
-  def _strip_figures(content):
-    return regex.sub(r"(?<=\n|^)!\[.*\]\(.+\) *\n(\{.+\})?\n", "", content, flags=regex.DOTALL)
-  if target == "latex":
-    content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'\\inlinecomment{\1}', content, flags=regex.DOTALL)
-  else:
-    content = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'<span class="inline_comment">\1</span>', content)
-  content = regex.sub(r" *\.\.\.\{Loading\}\.\.\.", fr"", content)
-  content = embed_helper.remove_embeds(content=content)
 
-  # The below messes empty lines within details.
-  # content = regex.sub(f"({patterns.DEVANAGARI_BLOCK})"], r'<span class="deva">\1</span>', content)
-
-  if detail_to_footnote:
-    content = details_helper.add_detail_footnotes(content=content, remove_detail=True)
-  if appendix is not None:
-    if os.path.exists(appendix):
-      md_file = MdFile(file_path=appendix)
-      metadata, appendix = md_file.read()
-      appendix = _strip_figures(appendix)
-      appendix = f"# Appendix - {metadata['title']}\n\n{appendix}"
-      # appendix = include_helper.fix_headers(content=appendix, h1_level=2)
-    content = f"{content}\n\n{appendix}"
-  return content
-
-
-def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None, overwrite=True, cleanup=True, detail_pattern_to_remove=r"मूलम्.*", metadata={},
+def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None, overwrite=True, cleanup=True, detail_pattern_to_remove=r"मूलम्.*", metadata={}, appendix=None,
                 baseUrl="https://vishvAsa.github.io"):
-  md_file = prep_full_md(omit_pattern=omit_pattern, out_path=out_path, overwrite=overwrite, source_dir=source_dir, metadata=metadata, base_url=baseUrl)
+  md_file = prep_full_md(omit_pattern=omit_pattern, out_path=out_path, overwrite=overwrite, source_dir=source_dir, metadata=metadata, base_url=baseUrl, appendix=appendix)
+
 
   make_min_full_md(md_path=md_file.file_path, out_path=out_path, source_dir=source_dir, detail_pattern_to_remove=detail_pattern_to_remove)
 
@@ -57,7 +33,7 @@ def via_full_md(source_dir, out_path, converter, dest_format, omit_pattern=None,
     logging.info(f"Removed {os.path.join(dirpath, 'full.md')} etc..")
 
 
-def prep_full_md(omit_pattern, out_path, overwrite: bool, source_dir, metadata, base_url):
+def prep_full_md(omit_pattern, out_path, overwrite: bool, source_dir, metadata, base_url, appendix=None, detail_to_footnote=False):
   full_md_path = os.path.join(source_dir, "full.md")
 
   if not os.path.exists(full_md_path):
@@ -82,30 +58,42 @@ def prep_full_md(omit_pattern, out_path, overwrite: bool, source_dir, metadata, 
     m.update(metadata)
     return m
 
-  logging.info(f"Fixing links and metadata for {md_path}")
-  md_file.transform(
-    content_transformer=lambda c, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()../([^\)\s]+)(\))', r'\1\2)', c),
-    metadata_transformer=_fix_metadata, dry_run=False)
-  md_file.transform(content_transformer=lambda c, *args, **kwargs: regex.sub(r'(!?\[.*?\]\()/([^\)\s]+)(\))',
-                                                                                       fr'\1{base_url}/\2)', c),
-                    metadata_transformer=_fix_metadata, dry_run=False)
+  def _fix_content(content, *args, **kwargs):
 
-  logging.info("Fixing footnotes")
-  md_file.transform(
-    content_transformer=lambda c, *args, **kwargs: footnote_helper.to_plain_footnotes(content=c),
-    dry_run=False)
+    if appendix is not None:
+      if os.path.exists(appendix):
+        md_file_appendix = MdFile(file_path=appendix)
+        metadata, content_appendix = md_file_appendix.read()
+        content_appendix = f"# Appendix - {metadata['title']}\n\n{content_appendix}"
+        logging.info("Strip figures?")
+        content_appendix = regex.sub(r"(?<=\n|^)!\[.*\]\(.+\) *\n(\{.+\})?\n", "", content_appendix, flags=regex.DOTALL)
+        # appendix = include_helper.fix_headers(content=appendix, h1_level=2)
+      content = f"{content}\n\n{content_appendix}"
+ 
+    logging.info(f"Fixing links and metadata")
+    content = regex.sub(r'(!?\[.*?\]\()../([^\)\s]+)(\))', r'\1\2)', content)
+    content = regex.sub(r'(!?\[.*?\]\()/([^\)\s]+)(\))',
+                        fr'\1{base_url}/\2)', content)
 
 
-  logging.info(f"Fixing open details tags for {md_path}")
-  md_file.transform(
-    content_transformer=lambda c, *args, **kwargs: details_helper.transform_detail_tags_with_soup(c,
-                                                                                                            transformer=details_helper.open_attribute_fixer,
-                                                                                                            details_css="details"),
-    dry_run=False)
+    logging.info("Fixing footnotes")
+    content = footnote_helper.to_plain_footnotes(content=content)
+
+    logging.info(f"Fixing open details tags for {md_path}")
+    content = details_helper.transform_detail_tags_with_soup(content, transformer=details_helper.open_attribute_fixer, details_css="details")
+    content = details_helper.transform_details_with_soup(content, title_transformer=lambda x: regex.sub("^विश्वास-", "मूल-", x), title_pattern="विश्वास-प्रस्तुतिः.*")
+
+    content = embed_helper.remove_embeds(content=content)
+    content = regex.sub(r" *\.\.\.\{Loading\}\.\.\.", fr"", content)
+    
+    # The below messes empty lines within details.
+    # content = regex.sub(f"({patterns.DEVANAGARI_BLOCK})"], r'<span class="deva">\1</span>', content)
+  
+    if detail_to_footnote:
+      content = details_helper.add_detail_footnotes(content=content, remove_detail=True)
 
   md_file.transform(
-    content_transformer=lambda c, *args, **kwargs: details_helper.transform_details_with_soup(c,
-                                                                                                  title_transformer=lambda x: regex.sub("^विश्वास-", "मूल-", x), title_pattern="विश्वास-प्रस्तुतिः.*"),
+    content_transformer=_fix_content, metadata_transformer=_fix_metadata,
     dry_run=False)
 
   return md_file

@@ -4,6 +4,24 @@ from pypdf import PdfReader, PdfWriter, PageObject
 from pypdf import Transformation
 from pypdf.annotations import Line
 from tqdm import tqdm
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import portrait
+import io
+
+
+
+def get_4_page_separator_overlay(w, h):
+  packet = io.BytesIO()
+  can = canvas.Canvas(packet, pagesize=(w, h))
+  can.setStrokeColorRGB(0, 0, 0) # Black
+  can.setLineWidth(0.5)
+  # Draw crosshair
+  can.line(w/2, 0, w/2, h)
+  can.line(0, h/2, w, h/2)
+  can.save()
+  packet.seek(0)
+  return PdfReader(packet).pages[0]
+
 
 
 def to_booklet(input_pdf_path, output_pdf_path):
@@ -159,54 +177,57 @@ def two_column_page_booklet(input_pdf_path, output_pdf_path=None):
   num_sheets = total_padded // 8
 
   # Dimensions for the A3-style landscape sheet
-  sheet_w = orig_height * 2
-  sheet_h = orig_width * 2
+  # 1. Transpose Sheet Dimensions to Portrait
+  sheet_w = orig_width * 2
+  sheet_h = orig_height * 2
 
   for i in tqdm(range(num_sheets), desc="Generating Booklet"):
     # --- FRONT SIDE (Odd Output Page) ---
     front_page = writer.add_blank_page(width=sheet_w, height=sheet_h)
 
-    # Indices: Left side = very end; Right side = very beginning
-    idx_tl_f = total_padded - 1 - 4*i
-    idx_bl_f = total_padded - 2 - 4*i
-    idx_tr_f = 4*i + 1
-    idx_br_f = 4*i
+    # Indices
+    idx_tl_f = total_padded - 2 - 4*i
+    idx_tr_f = total_padded - 1 - 4*i
+    idx_bl_f = 4*i
+    idx_br_f = 4*i + 1
 
-    # Front Rotation: 90 degrees CCW
-    f_rot = 90
-    front_page.merge_transformed_page(padded_pages[idx_tl_f], Transformation().rotate(f_rot).translate(tx=orig_height, ty=orig_width))
-    front_page.merge_transformed_page(padded_pages[idx_bl_f], Transformation().rotate(f_rot).translate(tx=orig_height, ty=0))
-    front_page.merge_transformed_page(padded_pages[idx_tr_f], Transformation().rotate(f_rot).translate(tx=sheet_w, ty=orig_width))
-    front_page.merge_transformed_page(padded_pages[idx_br_f], Transformation().rotate(f_rot).translate(tx=sheet_w, ty=0))
+    # Front Rotation: 0 degrees (Facing Up)
+    # TL: x=0, y=orig_height | BL: x=0, y=0 | TR: x=orig_width, y=orig_height | BR: x=orig_width, y=0
+    front_page.merge_transformed_page(padded_pages[idx_tl_f], Transformation().translate(tx=0, ty=orig_height))
+    front_page.merge_transformed_page(padded_pages[idx_bl_f], Transformation().translate(tx=0, ty=0))
+    front_page.merge_transformed_page(padded_pages[idx_tr_f], Transformation().translate(tx=orig_width, ty=orig_height))
+    front_page.merge_transformed_page(padded_pages[idx_br_f], Transformation().translate(tx=orig_width, ty=0))
 
-    # Add lines for front
-    for ann in [Line(p1=(orig_height, 0), p2=(orig_height, sheet_h), rect=(orig_height, 0, orig_height, sheet_h)),
-                Line(p1=(0, orig_width), p2=(sheet_w, orig_width), rect=(0, orig_width, sheet_w, orig_width))]:
-      writer.add_annotation(page_number=len(writer.pages)-1, annotation=ann)
+
 
     # --- BACK SIDE (Even Output Page) ---
     back_page = writer.add_blank_page(width=sheet_w, height=sheet_h)
 
-    # Indices: Left side = next start pages; Right side = next end pages
-    idx_tl_b = 4*i + 3
-    idx_bl_b = 4*i + 2
+    # Indices 
+    idx_tl_b = total_padded - 3 - 4*i
     idx_tr_b = total_padded - 4 - 4*i
-    idx_br_b = total_padded - 3 - 4*i
+    idx_bl_b = 4*i + 3
+    idx_br_b = 4*i + 2
 
-    # Back Rotation: 270 degrees CCW (Opposite direction to 90)
-    b_rot = 270
-    back_page.merge_transformed_page(padded_pages[idx_tl_b], Transformation().rotate(b_rot).translate(tx=orig_height, ty=sheet_h))
-    back_page.merge_transformed_page(padded_pages[idx_bl_b], Transformation().rotate(b_rot).translate(tx=orig_height, ty=orig_width))
-    back_page.merge_transformed_page(padded_pages[idx_tr_b], Transformation().rotate(b_rot).translate(tx=0, ty=sheet_h))
-    back_page.merge_transformed_page(padded_pages[idx_br_b], Transformation().rotate(b_rot).translate(tx=0, ty=orig_width))
+    # Back Rotation: 180 degrees (Opposite direction to 0)
+    # Note: rotate(180) moves coords to (-x, -y). We translate back into the positive slots.
+    # Slot TL: tx=orig_width, ty=sheet_h
+    back_page.merge_transformed_page(padded_pages[idx_tl_b], Transformation().rotate(180).translate(tx=orig_width, ty=sheet_h))
+    # Slot BL: tx=orig_width, ty=orig_height
+    back_page.merge_transformed_page(padded_pages[idx_bl_b], Transformation().rotate(180).translate(tx=orig_width, ty=orig_height))
+    # Slot TR: tx=sheet_w, ty=sheet_h
+    back_page.merge_transformed_page(padded_pages[idx_tr_b], Transformation().rotate(180).translate(tx=sheet_w, ty=sheet_h))
+    # Slot BR: tx=sheet_w, ty=orig_height
+    back_page.merge_transformed_page(padded_pages[idx_br_b], Transformation().rotate(180).translate(tx=sheet_w, ty=orig_height))
 
-    # Add lines for back
-    for ann in [Line(p1=(orig_height, 0), p2=(orig_height, sheet_h), rect=(orig_height, 0, orig_height, sheet_h)),
-                Line(p1=(0, orig_width), p2=(sheet_w, orig_width), rect=(0, orig_width, sheet_w, orig_width))]:
-      writer.add_annotation(page_number=len(writer.pages)-1, annotation=ann)
+    # Add lines 
+    overlay = get_4_page_separator_overlay(sheet_w, sheet_h)
+    front_page.merge_page(overlay)
+    back_page.merge_page(overlay)
+
 
   if output_pdf_path is None:
-    output_pdf_path = input_pdf_path.replace(".pdf", "_2col_booklet.pdf")
+    output_pdf_path = input_pdf_path.replace(".pdf", "_2col_LongEdge_booklet.pdf")
   with open(output_pdf_path, "wb") as out_file:
     writer.write(out_file)
   logging.info(f"Booklet created: {output_pdf_path}")

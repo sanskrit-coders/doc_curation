@@ -59,7 +59,7 @@ def import_with_pandoc(md_file, source_file, source_format, dry_run, metadata={}
 
 
 
-def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, pandoc_extra_args=None, content_maker=None, *args, **kwargs):
+def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, pandoc_extra_args=None, *args, **kwargs):
   if pandoc_extra_args is None:
     pandoc_extra_args = []
   import pypandoc
@@ -72,11 +72,12 @@ def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, p
   [metadata_in, content_in] = md_file.read()
   if metadata is not None:
     metadata_in.update(metadata)
-  if content_maker is not None:
-    content_in = content_maker(content_in, *args, **kwargs)
   filters = None
   # prepend metadata as yaml string to content_in
   content_in = "\n".join([f"---\n{yaml.dump(metadata_in)}\n---\n# ॐ\n", content_in])
+
+  if dest_format == "epub":
+    content_in = regex.sub(r"\+\+\+(\(.+?\))\+\+\+", r'<span class="inline_comment">\1</span>', content_in)
 
   os.makedirs(os.path.dirname(dest_path), exist_ok=True)
   
