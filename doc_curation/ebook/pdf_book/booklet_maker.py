@@ -24,66 +24,103 @@ def get_4_page_separator_overlay(w, h):
 
 
 
-def to_booklet(input_pdf_path, output_pdf_path):
+
+def create_title_page(text, width, height):
+  """Creates a temporary PDF page with the specified text."""
+  packet = io.BytesIO()
+  can = canvas.Canvas(packet, pagesize=(width, height))
+
+  # Set font and center the text
+  can.setFont("Noto Sans", 40)
+  can.drawCentredString(width / 2, height / 2, text)
+  can.save()
+
+  packet.seek(0)
+  new_pdf = PdfReader(packet)
+  return new_pdf.pages[0]
+
+
+def to_booklet(input_pdf_path, output_pdf_path=None, max_sheets=None, signature_title=None):
+  """
+  :param input_pdf_path: Path to source PDF.
+  :param output_pdf_path: Path to save result.
+  :param max_sheets: Max physical sheets per signature (4 pages per sheet).
+  :param signature_title: String prefix for the separator page (e.g. "Part"). 
+                          If None, no separator is added.
+  """
   reader = PdfReader(input_pdf_path)
   writer = PdfWriter()
 
-  # 1. Get original dimensions and page count
-  num_pages = len(reader.pages)
   first_page = reader.pages[0]
   orig_width = float(first_page.mediabox.width)
   orig_height = float(first_page.mediabox.height)
+  sheet_width = orig_width * 2
 
-  # 2. Pad PDF to a multiple of 4 (required for booklet folding)
-  padded_pages = list(reader.pages)
-  while len(padded_pages) % 4 != 0:
-    blank = PageObject.create_blank_page(width=orig_width, height=orig_height)
-    padded_pages.append(blank)
+  # 1. Pad the entire PDF to a multiple of 4 first
+  pages_in = list(reader.pages)
+  total_padded = len(pages_in)
+
+  # 2. Determine pages per signature
+  if max_sheets:
+    pages_per_sig = max_sheets * 4
+  else:
+    pages_per_sig = total_padded
+
+  # 3. Process signatures
+  sig_count = 1
+  # Wrap range in tqdm for a progress bar
+  for sig_start in tqdm(range(0, total_padded, pages_per_sig), desc="Signatures"):
+    sig_end = min(sig_start + pages_per_sig, total_padded)
+    sig_pages = pages_in[sig_start:sig_end]
+
+    # --- Add Title Page if prefix is provided ---
+    if signature_title is not None:
+      title_text = f"{signature_title} {sig_count}"
+      # Add the front of the separator sheet
+      writer.add_page(create_title_page(title_text, orig_width, orig_height))
+      # Add a blank back for the separator sheet
+      writer.add_page(PageObject.create_blank_page(width=orig_width, height=orig_height))
+
+    # Ensure current signature slice is a multiple of 4 (for the final chunk)
+    while len(sig_pages) % 4 != 0:
+      blank = PageObject.create_blank_page(width=orig_width, height=orig_height)
+      sig_pages.append(blank)
+
+    sig_len = len(sig_pages)
+    num_sheets_in_sig = sig_len // 2 # 2 pages (logical) per side of sheet
 
 
-  total_padded = len(padded_pages)
+    # 4. Rearrange pages within this signature
+    for i in tqdm(range(num_sheets_in_sig)):
+      # Booklet logic: alternates (Last, First) then (Second, Last-1)
+      if i % 2 == 0:
+        left_idx = sig_len - 1 - i
+        right_idx = i
+      else:
+        left_idx = i
+        right_idx = sig_len - 1 - i
 
-  # 3. Rearrange and merge pages side-by-side
-  # We create total_padded / 2 sheets (each sheet has 2 pages side-by-side)
-  for i in tqdm(range(total_padded // 2)):
-    # Determine Left and Right page indices based on booklet logic
-    # Sequence: (Last, First), (Second, Last-1), (Last-2, Third), (Fourth, Last-3)...
-    # i ranges from 0 to total_padded // 2 -1
-    if i % 2 == 0:
-      left_idx = total_padded - 1 - i
-      right_idx = i
-    else:
-      left_idx = i
-      right_idx = total_padded - 1 - i
+      left_page = sig_pages[left_idx]
+      right_page = sig_pages[right_idx]
 
-    left_page = padded_pages[left_idx]
-    right_page = padded_pages[right_idx]
+      new_page = PageObject.create_blank_page(width=sheet_width, height=orig_height)
+      new_page.merge_page(left_page)
+      new_page.merge_transformed_page(
+        right_page,
+        [1, 0, 0, 1, orig_width, 0]
+      )
+      writer.add_page(new_page)
 
-    # Create a new blank double-wide page
-    new_page = PageObject.create_blank_page(
-      width=orig_width * 2,
-      height=orig_height
-    )
+    sig_count += 1
 
-    # Merge the left and right logical pages onto the double-wide sheet
-    new_page.merge_page(left_page)
-    new_page.merge_transformed_page(
-      right_page,
-      [1, 0, 0, 1, orig_width, 0] # Shift right page by orig_width
-    )
-
-    writer.add_page(new_page)
-
+  # 5. Save the result
   if output_pdf_path is None:
     output_pdf_path = input_pdf_path.replace(".pdf", "_LandShortEdge_booklet.pdf")
   # 4. Save the result
   with open(output_pdf_path, "wb") as out_file:
     writer.write(out_file)
-  logging.info(f"Booklet created: {output_pdf_path}")
 
-# Example Usage:
-# to_booklet("my_document.pdf", "my_booklet.pdf")
-
+  logging.info(f"Created booklet with {sig_count-1} signatures at: {output_pdf_path}")
 
 
 def duplicated_booklet(input_pdf_path, output_pdf_path=None):

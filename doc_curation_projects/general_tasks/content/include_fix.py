@@ -30,5 +30,5 @@ def prefill_vishvAsa_includes():
 if __name__ == '__main__':
   pass
   # prefill_vishvAsa_includes()
-  # include_helper.prefill_includes(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content/shAkalam/sUtram/AshvalAyanaH/gRhyam/sarva-prastutiH")
+  include_helper.prefill_includes(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH/2/8_kAmya-pashavaH/9_08-16_nAsadIyam.md")
   # include_helper.prefill_includes(dir_path="/home/vvasuki/gitland/vishvAsa/devaH/content")

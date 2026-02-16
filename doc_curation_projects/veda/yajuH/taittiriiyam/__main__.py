@@ -1,11 +1,7 @@
-import doc_curation.utils.sanskrit_helper
-import regex
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import details_helper, ocr_helper, space_helper, section_helper, footnote_helper
+from doc_curation.md.content_processor import details_helper
 from doc_curation.md.file import MdFile
-from doc_curation.scraping.misc_sites import ebhaarati
-from doc_curation.utils import patterns, sanskrit_helper
-from indic_transliteration import tamil_tools, aksharamukha_helper, sanscript
+from doc_curation.utils import sanskrit_helper
 from indic_transliteration.sanscript.schemes.brahmic import accent
 
 
@@ -29,14 +25,14 @@ def typo_fix(dir_path):
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.undo_taittirIya_forms(x))
 
 
-details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH/2/6/10.md")
+# details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH/2/6/10.md")
 
 # fix_old_US_notation("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/AraNyakam/sarva-prastutiH/04_pitR-medhAdi/01_dAhAntam.md")
 # fix_old_US_notation("/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content")
 # fix_old_US_notation("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH/1/7_aiShTika-yAjamAnAdi/05_dhruvApyAyanAdi-brAhmaNam.md")
 # fix_old_US_notation("/home/vvasuki/gitland/vishvAsa/devaH/content")
 
-# content_fix("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/gRhyam/ekAgnikANDam/vishvAsa-prastutiH/1_15/05_bhaga_eva.md")
+content_fix("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/Rk/vishvAsa-prastutiH/2/8_kAmya-pashavaH/9_08-16_nAsadIyam/24_brahma_vanam.md")
 
 # typo_fix("/home/vvasuki/gitland/sanskrit/raw_etexts_private")
 

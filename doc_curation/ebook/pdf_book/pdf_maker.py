@@ -24,7 +24,7 @@ def make_script_pdfs(epub_path, scripts, booklets):
     if "a4" in booklets:
       booklet_maker.to_booklet(input_pdf_path=a4_path, output_pdf_path=None)
     if "a5_dup" in booklets:
-      booklet_maker.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=a5_path.replace(".pdf", "_dup_booklet.pdf"))
+      booklet_maker.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=None)
 
 
 def from_epub(epub_path, scripts=[sanscript.ISO], booklets=["a4"]):

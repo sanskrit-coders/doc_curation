@@ -53,6 +53,7 @@ def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata={}
 
     md_book.make_min_full_md(md_path=md_path, source_dir=source_dir,
                              detail_pattern_to_extract=detail_pattern_to_extract, detail_pattern_to_remove=detail_pattern_to_remove, details_pattern_to_prefix=details_pattern_to_prefix)
+    overwrite = ".*"
   else:
     from doc_curation.md.file import MdFile
     md_file = MdFile(md_path)

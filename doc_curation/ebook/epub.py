@@ -22,30 +22,29 @@ def epub_from_md_file(md_path, epub_path, css_path=None, metadata={}, file_split
   pandoc_extra_args = _make_extra_args(file_split_level=file_split_level, toc_depth=toc_depth)
   source_dir = os.path.dirname(md_path)
 
-  epub_path_min = epub_path.replace(".epub", "_min.epub")
-  epub_path_min_notoc = epub_path.replace(".epub", "_min_notoc.epub")
   if not os.path.exists(epub_path) or regex.match(overwrite, "epub"):
     make_script_epubs(epub_path=epub_path, md_path=md_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, scripts=scripts)
 
     md_path_min = epub_path.replace(".epub", "_min.md")
-  
-    pandoc_extra_args = _make_extra_args(file_split_level=1)
-    make_script_epubs(epub_path=epub_path, md_path=md_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, scripts=scripts)
 
-    if css_path is not None:
-      pandoc_extra_args = _make_extra_args(file_split_level=1, css_path=css_path.replace(".css", "_2col.css"))
-      make_script_epubs(epub_path=epub_path, md_path=md_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, scripts=scripts)
+    epub_path_min = epub_path.replace(".epub", "_min.epub")
+    pandoc_extra_args = _make_extra_args(file_split_level=1)
+    make_script_epubs(epub_path=epub_path_min, md_path=md_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, scripts=scripts)
 
     # Enable downstream artifacts recreation
     overwrite = ".*"
 
 
   if regex.match(overwrite, "pdf"):
+    pandoc_extra_args = _make_extra_args(file_split_level=1)
     pandoc_extra_args.remove("--toc")
-    epub_path_min_2cols = epub_path.replace(".epub", "_min_notoc_2cols.epub")
-    pandoc_from_md_file(md_path=md_path_min, dest_path=epub_path_min_2cols, metadata=metadata, pandoc_extra_args=pandoc_extra_args, appendix=appendix, detail_to_footnote=False)
-    pandoc_extra_args
-    _fix_details_in_epub(epub_path=epub_path_min_notoc)
+    epub_path_min_notoc = epub_path.replace(".epub", "_min_notoc.epub")
+    make_script_epubs(epub_path=epub_path_min_notoc, md_path=md_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, scripts=scripts)
+    if css_path is not None:
+      pandoc_extra_args = _make_extra_args(file_split_level=1, css_path=css_path.replace(".css", "_2col.css"))
+      epub_path_min_2cols = epub_path.replace(".epub", "_min_notoc_2cols.epub")
+      make_script_epubs(epub_path=epub_path_min_2cols, md_path=md_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, scripts=scripts)
+
 
   make_deprecated = False
 

@@ -1,27 +1,25 @@
-from collections import defaultdict
-import copy, collections
+import collections
+import copy
 import logging
 import os
 import textwrap
-
-import doc_curation.translation
-from bs4.element import PageElement
-from more_itertools.more import lstrip
-from tqdm import tqdm
+from collections import defaultdict
 
 import doc_curation.md.content_processor.space_helper
+import doc_curation.translation
 import regex
-
-from doc_curation.md.content_processor.footnote_helper import Footnote
-from doc_curation.utils import patterns
+from bs4 import BeautifulSoup, NavigableString
+from bs4.element import PageElement
+from doc_curation.md import content_processor
 from doc_curation.md import library
 from doc_curation.md.content_processor import get_quasi_section_int_map
+from doc_curation.md.content_processor.footnote_helper import Footnote
 from doc_curation.md.file import MdFile
-from indic_transliteration import sanscript
-from doc_curation.md import content_processor
-from bs4 import BeautifulSoup, NavigableString
-from doc_curation.utils import sanskrit_helper
 from doc_curation.scraping.html_scraper import souper
+from doc_curation.utils import patterns
+from indic_transliteration import sanscript
+from tqdm import tqdm
+
 
 class Detail(object):
   def __init__(self, title, content):
@@ -634,7 +632,6 @@ def autonumber_details(content, title_filter=".*", number_pattern=None, script =
   if soup is None:
     return content
   details = soup.select("details")
-  import collections
   detail_counts = {}
   prev_detail = None
   prev_detail_tag = None
@@ -781,7 +778,6 @@ def shlokas_to_muula_viprastuti_details(content, shloka_processor=lambda x:x, pa
 
 def sentences_to_translated_details(content, source_language="en", dest_language="es"):
   from nltk.tokenize import sent_tokenize
-  from doc_curation.utils import text_utils
   if f"<details><summary>{dest_language}</summary>" in content:
     logging.debug("Skipping translation because <summary>%s</summary>", dest_language)
     return content
@@ -826,7 +822,6 @@ def sentences_to_translated_details(content, source_language="en", dest_language
 
 
 def add_translation(content, src_detail_pattern="English", source_language="en", dest_language="es"):
-  from doc_curation.utils import text_utils
   def _title_from_detail(detail):
     title = f"{detail.title} {dest_language}"
     if detail.title == "English":

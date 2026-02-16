@@ -14,7 +14,6 @@ from doc_curation import md
 
 from curation_utils import file_helper, scraping
 from curation_utils import scraping
-from doc_curation.ebook import pandoc_helper
 from doc_curation.md import content_processor, library
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement
@@ -170,6 +169,7 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_maker=lam
 
   content = get_content_from_element(soup=soup, text_css_selector=text_css_selector, url=url)
 
+  from doc_curation.ebook import pandoc_helper
   md_file = MdFile(file_path=outfile_path)
   content = pandoc_helper.get_md_with_pandoc(content_in=content, source_format="html")
 

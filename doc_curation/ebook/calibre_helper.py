@@ -105,6 +105,7 @@ def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_t
   # options = metadata_to_calibre_args(metadata=metadata)
   # command.extend(options)
   # Execute the command
+  logging.debug(" ".join(command))
   result = subprocess.run(command, check=True, capture_output=True, text=True)
 
   if move_toc:
