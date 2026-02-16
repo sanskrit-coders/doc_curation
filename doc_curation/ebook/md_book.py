@@ -1,7 +1,7 @@
 import logging
 import os
 from shutil import copyfile
-
+from indic_transliteration import sanscript
 import regex
 from doc_curation.md import content_processor
 from doc_curation.md.content_processor import footnote_helper, details_helper, embed_helper
@@ -22,7 +22,18 @@ def title_from_path(dir_path):
   return title
 
 
-def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, base_url, appendix=None, detail_to_footnote=False):
+def make_script_mds(md_path, scripts):
+  for script in scripts:
+    script_dir = os.path.join(os.path.dirname(md_path), script)
+    script_md_path = os.path.join(script_dir, os.path.basename(md_path))
+    os.makedirs(script_dir, exist_ok=True)
+    copyfile(md_path, script_md_path)
+    md_file = MdFile(script_md_path)
+    md_file.transform(content_transformer=lambda c, *args, **kwargs: content_processor.transliterate(c, source_script=sanscript.DEVANAGARI, dest_script=script), dry_run=False)
+
+
+def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, base_url, appendix=None, detail_to_footnote=False, scripts=[sanscript.ISO]):
+  logging.info("=========MD 1========")
   full_md_path = os.path.join(source_dir, "full.md")
 
   if not os.path.exists(full_md_path) or regex.match(overwrite, "md"):
@@ -85,10 +96,21 @@ def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, b
     content_transformer=_fix_content, metadata_transformer=_fix_metadata,
     dry_run=False)
 
+  make_script_mds(md_path=md_path, scripts=scripts)
   return md_file
 
 
-def make_min_full_md(md_path: str, source_dir, detail_pattern_to_remove, detail_pattern_to_extract=".*सर्वाष्", details_pattern_to_prefix=None):
+def make_min_full_md(md_path: str, source_dir, detail_pattern_to_remove, detail_pattern_to_extract=".*सर्वाष्", details_pattern_to_prefix=None, scripts=[sanscript.ISO]):
+  """ This is used to make pdfs (via epubs) for printing.
+  
+  :param md_path: 
+  :param source_dir: 
+  :param detail_pattern_to_remove: 
+  :param detail_pattern_to_extract: 
+  :param details_pattern_to_prefix: 
+  :return: 
+  """
+  logging.info("=========MD 2========")
   md_path_min = md_path.replace(".md", "_min.md")
   copyfile(md_path, md_path_min)
   md_file_min = MdFile(file_path=md_path_min)
@@ -103,12 +125,15 @@ def make_min_full_md(md_path: str, source_dir, detail_pattern_to_remove, detail_
       content = details_helper.dedetailsify(content, title_pattern=details_pattern_to_prefix)
     # Open all details.
     content = regex.sub(r"<details>", r"<details open=\"\">", content, flags=regex.MULTILINE)
+    content = content.replace("विस्तारः (द्रष्टुं नोद्यम्)", "विस्तारः")
+
     content = footnote_helper.add_for_links(content=content)
     logging.info(f"Added link-footnotes for {md_path_min}")
     return content
   md_file_min.transform(
     content_transformer=_fix_content,
     dry_run=False)
+  make_script_mds(md_path=md_path_min, scripts=scripts)
 
 
 def remove_full_mds(source_dir):

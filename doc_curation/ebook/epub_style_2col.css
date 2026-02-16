@@ -1,10 +1,9 @@
-/*https://bugs.launchpad.net/calibre/+bug/2141822*/
-/*body {*/
-/*    column-count: 2;*/
-/*    column-gap: 10px;*/
-/*    column-rule-style: solid;*/
-/*    column-rule-width: 1px;*/
-/*}*/
+body {
+    column-count: 2;
+    column-gap: 10px;
+    column-rule-style: solid;
+    column-rule-width: 1px;
+}
 
 details {
     margin: 3px 0px;

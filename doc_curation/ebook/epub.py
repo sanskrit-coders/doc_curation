@@ -1,5 +1,7 @@
 import logging
 import os
+from typing import Any
+from indic_transliteration import sanscript
 import regex
 
 from doc_curation.ebook import calibre_helper
@@ -8,35 +10,41 @@ from doc_curation.ebook.pandoc_helper import pandoc_from_md_file
 from doc_curation.md.file import MdFile
 
 
-def epub_from_md_file(md_file, epub_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, appendix=None, overwrite=".*"):
-  def make_extra_args(file_split_level, toc_depth=6):
+def epub_from_md_file(md_path, epub_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, appendix=None, scripts=[sanscript.ISO], overwrite=".*"):
+  logging.info("=========EPUB 1========")
+  def _make_extra_args(file_split_level, toc_depth=6, css_path=css_path):
     pandoc_extra_args = ["--toc", f"--toc-depth={toc_depth}", f"--split-level={file_split_level}"]
     if css_path is not None:
       pandoc_extra_args.extend([f'--css={css_path}'])
-    pandoc_extra_args.extend(["--resource-path", os.path.dirname(md_file.file_path)])
+    pandoc_extra_args.extend(["--resource-path", os.path.dirname(md_path)])
     return pandoc_extra_args
 
-  pandoc_extra_args = make_extra_args(file_split_level=file_split_level, toc_depth=toc_depth)
-  source_dir = os.path.dirname(md_file.file_path)
+  pandoc_extra_args = _make_extra_args(file_split_level=file_split_level, toc_depth=toc_depth)
+  source_dir = os.path.dirname(md_path)
 
   epub_path_min = epub_path.replace(".epub", "_min.epub")
   epub_path_min_notoc = epub_path.replace(".epub", "_min_notoc.epub")
-  if regex.match(overwrite, "epub"):
-    pandoc_from_md_file(md_file=md_file, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, detail_to_footnote=True)
-    _fix_details_in_epub(epub_path=epub_path)
+  if not os.path.exists(epub_path) or regex.match(overwrite, "epub"):
+    make_script_epubs(epub_path=epub_path, md_path=md_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, scripts=scripts)
 
-    md_file_min = MdFile(file_path=epub_path.replace(".epub", "_min.md"))
-    metadata, content = md_file_min.read()
+    md_path_min = epub_path.replace(".epub", "_min.md")
   
-    pandoc_extra_args = make_extra_args(file_split_level=1)
-    pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, appendix=appendix, detail_to_footnote=False)
-    _fix_details_in_epub(epub_path=epub_path_min)
+    pandoc_extra_args = _make_extra_args(file_split_level=1)
+    make_script_epubs(epub_path=epub_path, md_path=md_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, scripts=scripts)
+
+    if css_path is not None:
+      pandoc_extra_args = _make_extra_args(file_split_level=1, css_path=css_path.replace(".css", "_2col.css"))
+      make_script_epubs(epub_path=epub_path, md_path=md_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, scripts=scripts)
+
+    # Enable downstream artifacts recreation
     overwrite = ".*"
 
 
   if regex.match(overwrite, "pdf"):
     pandoc_extra_args.remove("--toc")
-    pandoc_from_md_file(md_file=md_file_min, dest_path=epub_path_min_notoc, metadata=metadata, pandoc_extra_args=pandoc_extra_args, appendix=appendix, detail_to_footnote=False)
+    epub_path_min_2cols = epub_path.replace(".epub", "_min_notoc_2cols.epub")
+    pandoc_from_md_file(md_path=md_path_min, dest_path=epub_path_min_2cols, metadata=metadata, pandoc_extra_args=pandoc_extra_args, appendix=appendix, detail_to_footnote=False)
+    pandoc_extra_args
     _fix_details_in_epub(epub_path=epub_path_min_notoc)
 
   make_deprecated = False
@@ -51,6 +59,18 @@ def epub_from_md_file(md_file, epub_path, css_path=None, metadata={}, file_split
 
   return epub_path
 
+
+def make_script_epubs(epub_path, md_path, metadata: dict[Any, Any], pandoc_extra_args: list[str], scripts: list[Any]):
+  pandoc_from_md_file(md_path=md_path, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args)
+  _fix_details_in_epub(epub_path=epub_path)
+  for script in scripts:
+    script_dir = os.path.join(os.path.dirname(epub_path), script)
+    md_path = os.path.join(script_dir, os.path.basename(md_path))
+    epub_path = os.path.join(script_dir, os.path.basename(epub_path))
+    os.makedirs(script_dir, exist_ok=True)
+    pandoc_from_md_file(md_path=md_path, dest_path=epub_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args)
+    _fix_details_in_epub(epub_path=epub_path)
+    
 
 def make_epubs_recursively(source_dir, out_path, recursion_depth=None, dry_run=False, cleanup=True, *args, **kwargs):
   if out_path is None:

@@ -153,6 +153,7 @@ def make_full_text_md(source_dir,
     include_helper.prefill_includes(dir_path=os.path.dirname(full_md_path), file_name_filter=lambda x: os.path.basename(x) != "full.md", dynamic_loading=True)
     include_helper.prefill_includes(dir_path=full_md_path, dynamic_loading=False)
     from doc_curation.md import content_processor
+    full_md = MdFile(file_path=full_md_path)
     content_processor.replace_texts(md_file=full_md, patterns=[r" \(पूर्णपाठः\)"], replacement=r"", flags=regex.MULTILINE)
     logging.info("Fixed headings in %s", full_md_path)
     return full_md_path

@@ -1,5 +1,6 @@
 import logging
 import os
+from indic_transliteration import sanscript
 
 import regex
 from doc_curation.ebook.epub import epub_from_md_file
@@ -38,7 +39,7 @@ def make_out_path(author, dir_path, out_path=f"/home/vvasuki/gitland/sanskrit/ra
 
 
 def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata={}, file_split_level=4, toc_depth=6,
-             overwrite=".*", appendix=None, detail_pattern_to_extract=".*सर्वाष् .*", detail_pattern_to_remove=r"मूलम्.*", details_pattern_to_prefix=None, cleanup=True):
+             overwrite=".*", appendix=None, detail_pattern_to_extract=".*सर्वाष् .*", detail_pattern_to_remove=r"मूलम्.*", details_pattern_to_prefix=None, scripts=[], booklets=["a4"], cleanup=True):
 
 
 
@@ -52,6 +53,9 @@ def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata={}
 
     md_book.make_min_full_md(md_path=md_path, source_dir=source_dir,
                              detail_pattern_to_extract=detail_pattern_to_extract, detail_pattern_to_remove=detail_pattern_to_remove, details_pattern_to_prefix=details_pattern_to_prefix)
+  else:
+    from doc_curation.md.file import MdFile
+    md_file = MdFile(md_path)
 
   if cleanup:
     md_book.remove_full_mds(source_dir)
@@ -60,10 +64,12 @@ def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata={}
   if os.path.exists(epub_path) and not regex.match(overwrite, "epub"):
     logging.info(f"Skipping {epub_path} as it already exists.")
   else:
-    epub_from_md_file(md_file=md_file, epub_path=epub_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path, overwrite=overwrite)
+    epub_from_md_file(md_path=md_path, epub_path=epub_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path, scripts=[sanscript.ISO], overwrite=overwrite)
+    # Enable downstream artifacts recreation
+    overwrite = ".*"
 
   if regex.match(overwrite, "pdf"):
-    pdf_maker.from_epub(epub_path=epub_path)
+    pdf_maker.from_epub(epub_path=epub_path, scripts=scripts, booklets=["a4"])
 
   make_deprecated = False
 

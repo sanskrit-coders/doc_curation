@@ -48,6 +48,7 @@ def to_booklet(input_pdf_path, output_pdf_path):
   for i in tqdm(range(total_padded // 2)):
     # Determine Left and Right page indices based on booklet logic
     # Sequence: (Last, First), (Second, Last-1), (Last-2, Third), (Fourth, Last-3)...
+    # i ranges from 0 to total_padded // 2 -1
     if i % 2 == 0:
       left_idx = total_padded - 1 - i
       right_idx = i
@@ -73,6 +74,8 @@ def to_booklet(input_pdf_path, output_pdf_path):
 
     writer.add_page(new_page)
 
+  if output_pdf_path is None:
+    output_pdf_path = input_pdf_path.replace(".pdf", "_LandShortEdge_booklet.pdf")
   # 4. Save the result
   with open(output_pdf_path, "wb") as out_file:
     writer.write(out_file)
@@ -146,7 +149,7 @@ def duplicated_booklet(input_pdf_path, output_pdf_path=None):
 
   # 4. Save the result
   if output_pdf_path is None:
-    output_pdf_path = input_pdf_path.replace(".pdf", "_dup_booklet.pdf")
+    output_pdf_path = input_pdf_path.replace(".pdf", "_dup_PortLongEdge_booklet.pdf")
   with open(output_pdf_path, "wb") as out_file:
     writer.write(out_file)
   logging.info(f"Duplicated booklet created: {output_pdf_path}")
@@ -227,7 +230,7 @@ def two_column_page_booklet(input_pdf_path, output_pdf_path=None):
 
 
   if output_pdf_path is None:
-    output_pdf_path = input_pdf_path.replace(".pdf", "_2col_LongEdge_booklet.pdf")
+    output_pdf_path = input_pdf_path.replace(".pdf", "_2col_PortLongEdge_booklet.pdf")
   with open(output_pdf_path, "wb") as out_file:
     writer.write(out_file)
   logging.info(f"Booklet created: {output_pdf_path}")

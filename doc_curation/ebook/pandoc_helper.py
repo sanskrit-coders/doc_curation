@@ -59,17 +59,17 @@ def import_with_pandoc(md_file, source_file, source_format, dry_run, metadata={}
 
 
 
-def pandoc_from_md_file(md_file, dest_path, dest_format="epub", metadata=None, pandoc_extra_args=None, *args, **kwargs):
+def pandoc_from_md_file(md_path, dest_path, dest_format="epub", metadata=None, pandoc_extra_args=None, *args, **kwargs):
   if pandoc_extra_args is None:
     pandoc_extra_args = []
   import pypandoc
   logger = logging.getLogger('pypandoc')
   logger.setLevel(logging.INFO)
-  logger.info(f"Converting {md_file} to {dest_path}...")
+  logger.info(f"Converting {md_path} to {dest_path}...")
 
   logging.info(f"pandoc {pypandoc.get_pandoc_version()} at {pypandoc.get_pandoc_path()}.")
 
-  [metadata_in, content_in] = md_file.read()
+  [metadata_in, content_in] = MdFile(md_path).read()
   if metadata is not None:
     metadata_in.update(metadata)
   filters = None
@@ -200,6 +200,6 @@ def to_pdf(epub_path, paper_size="a4"):
 
 
 if __name__ == '__main__':
-  pandoc_from_md_file(md_file=MdFile(file_path="/doc_curation/md/library/test_local.md"), dest_path="/doc_curation/md/library/test_local.md.epub", dest_format="epub", metadata={"title": "mUlam-1.1", "author": "mUlam"})
+  pandoc_from_md_file(md_path=MdFile(file_path="/doc_curation/md/library/test_local.md"), dest_path="/doc_curation/md/library/test_local.md.epub", dest_format="epub", metadata={"title": "mUlam-1.1", "author": "mUlam"})
 
 

@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 
+from doc_curation_projects.puraaNa.bhaagavatam.gp.hindi import dest_path
 from pypdf import PdfReader, PdfWriter
 import regex
 
@@ -39,17 +40,21 @@ def to_azw3(epub_path: str, metadata={}):
 
 
 # TODO: footnotes not appearing the bottom of the page.
-def to_pdf(epub_path: str, paper_size="a5", margins=None, move_toc=False):
+def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_toc=False):
+  logging.info(f"=========PDF {paper_size}========")
+
+  if dest_path is None:
+    if "_notoc" not in epub_path:
+      dest_path = regex.sub("(_min.*)?.epub", f"_{paper_size}_online.pdf", epub_path)
+    else:
+      dest_path = regex.sub("(_min.*)?.epub", f"_{paper_size}.pdf", epub_path)
+
   # Actual results -  
   # left 36 - 14.5mm, left 39.7 - 15.87mm, right 36 - 16.6mm, top 24 - 9.31mm, bottom 24 - 1.75 mm to the page number, bottom 60.94 - 8.36 to page number.
   # theoretical - 1pt = 0.3528mm, 36 pt = 12.7 mm. 24 pt = 8.5 mm
   if margins is None:
     # For 39.7 is 14 mm theoretical; 60.95 is 21.5mm
     margins = {"left": "40.7", "right": "40", "top": "39.7", "bottom": "70.94"}
-  if not move_toc:
-    dest_path = regex.sub("(_min.*)?.epub", f"_{paper_size}_online.pdf", epub_path)
-  else:
-    dest_path = regex.sub("(_min.*)?.epub", f"_{paper_size}.pdf", epub_path)
   command = [
     CALIBRE,
     epub_path,
