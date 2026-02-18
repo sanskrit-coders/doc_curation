@@ -88,10 +88,17 @@ def shift_indices(dir_path, new_index_offset, start_index=1, end_index=9999, ind
       name_parts = os.path.basename(md_file.file_path).split(".")[0].split("_")
       index_pattern = "%%0%dd" % len(name_parts[index_position])
       name_parts[index_position] = index_pattern % new_index
-      new_file_path = os.path.join(os.path.dirname(md_file.file_path), "_".join(name_parts) + ".md")
+      new_file_path = os.path.join(os.path.dirname(md_file.file_path), "_".join(name_parts) + "_tmp.md")
       logging.info("Shifting %d to %d, %s to %s", index, new_index, md_file.file_path, new_file_path)
       if not dry_run:
         shutil.move(md_file.file_path, new_file_path)
+  index_to_md_file = get_index_to_md(dir_path=dir_path, index_position=index_position)
+  for index, md_file in index_to_md_file.items():
+    if md_file.file_path.endswith("_tmp.md") and not dry_run:
+      new_file_path = os.path.join(os.path.dirname(md_file.file_path), os.path.basename(md_file.file_path).replace("_tmp.md", ".md"))
+      shutil.move(md_file.file_path,  new_file_path)
+      metadata_helper.set_index_from_filename(MdFile(new_file_path))
+  
 
 
 def remove_file_by_index(dir_path, indices, index_position=0):

@@ -153,7 +153,7 @@ class MdFile(object):
       title = title[1:]
 
     if omit_chapter_id and title is not None:
-      title = regex.sub(r"^[+०-९\d]+ +", "", title)
+      title = regex.sub(r"^[+०-९\d]+ *", "", title)
     return title
 
   def get_index_basename(self, index_position=0):

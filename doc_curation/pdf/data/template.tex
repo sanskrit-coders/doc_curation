@@ -1,10 +1,10 @@
 \documentclass[12pt,openany]{book}
-\usepackage{fontspec}
-\usepackage{ucharclasses}
 \usepackage{hyperref}
 \usepackage{xcolor}
 \usepackage{titlesec}
 \usepackage{etoolbox}
+\usepackage{tcolorbox} % for details
+\usepackage{framed} % For leftbar
 
 __PAPER_GEOMETRY__
 
@@ -20,6 +20,8 @@ __PAPER_GEOMETRY__
 % --- 1. FONT CONFIGURATION ---
 \setmainfont{Noto Sans}[Script=Latin,Renderer=HarfBuzz]
 
+\usepackage{fontspec}
+\usepackage{ucharclasses}
 \newfontfamily\devanagarifont{Siddhanta}[
   Script=Devanagari,
   Renderer=HarfBuzz,
