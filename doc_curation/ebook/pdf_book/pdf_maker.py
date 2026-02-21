@@ -1,7 +1,9 @@
 from doc_curation.ebook import calibre_helper
 from doc_curation.ebook.pdf_book import booklet_maker
+from doc_curation.ebook import pdf_book
+from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
-import os
+import os, regex
 
 
 def make_script_pdfs(epub_path, scripts, booklets):
@@ -15,16 +17,31 @@ def make_script_pdfs(epub_path, scripts, booklets):
     epub_path_min = script_epub_path.replace(".epub", "_min.epub")
     epub_path_min_notoc = script_epub_path.replace(".epub", "_min_notoc.epub")
     epub_path_min_2cols = script_epub_path.replace(".epub", "_min_notoc_2cols.epub")
+    
+    # A pdf for online viewing
     calibre_helper.to_pdf(epub_path=epub_path_min, paper_size="a4")
   
     # Not moving TOC here - https://bugs.launchpad.net/calibre/+bug/2141822
-    a4_path = calibre_helper.to_pdf(epub_path=epub_path_min_2cols, paper_size="a4", move_toc=False)
+    # Instead setting init_note later.
+    a4_path = calibre_helper.to_pdf(epub_path=epub_path_min_2cols, paper_size="a4", move_toc=True)
+    pdf_book.insert_text_at_index(text="Please find towards the end - Table of contents, publisher info.", input_pdf_path=a4_path)
     a5_path = calibre_helper.to_pdf(epub_path=epub_path_min_notoc, paper_size="a5", move_toc=True)
   
     if "a4" in booklets:
       booklet_maker.to_booklet(input_pdf_path=a4_path, output_pdf_path=None)
     if "a5_dup" in booklets:
       booklet_maker.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=None)
+
+    make_deprecated = False
+    if make_deprecated:
+      from doc_curation.ebook.pdf_book import latex
+      a5_latex_path = regex.sub("(_min.*)?.epub", f"_A5.latex", epub_path_min_notoc)
+      md_path_min = epub_path_min.replace("_min.epub", "_min.md")
+      (metadata, content) = MdFile(md_path_min).read()
+      latex_body = latex.from_md(content=content)
+      latex.to_pdf(latex_body=latex_body, dest_path=a5_path.replace(".pdf", "_latex_local.pdf"), metadata=metadata)
+
+
 
 
 def from_epub(epub_path, scripts=[sanscript.ISO], booklets=["a4"]):

@@ -1,5 +1,6 @@
 import logging
 
+from doc_curation.ebook import pdf_book
 from pypdf import PdfReader, PdfWriter, PageObject
 from pypdf import Transformation
 from pypdf.annotations import Line
@@ -22,22 +23,6 @@ def get_4_page_separator_overlay(w, h):
   packet.seek(0)
   return PdfReader(packet).pages[0]
 
-
-
-
-def create_title_page(text, width, height):
-  """Creates a temporary PDF page with the specified text."""
-  packet = io.BytesIO()
-  can = canvas.Canvas(packet, pagesize=(width, height))
-
-  # Set font and center the text
-  can.setFont("Noto Sans", 40)
-  can.drawCentredString(width / 2, height / 2, text)
-  can.save()
-
-  packet.seek(0)
-  new_pdf = PdfReader(packet)
-  return new_pdf.pages[0]
 
 
 def to_booklet(input_pdf_path, output_pdf_path=None, max_sheets=None, signature_title=None):
@@ -74,10 +59,10 @@ def to_booklet(input_pdf_path, output_pdf_path=None, max_sheets=None, signature_
     sig_pages = pages_in[sig_start:sig_end]
 
     # --- Add Title Page if prefix is provided ---
-    if signature_title is not None:
+    if sig_start != 0 and signature_title is not None:
       title_text = f"{signature_title} {sig_count}"
       # Add the front of the separator sheet
-      writer.add_page(create_title_page(title_text, orig_width, orig_height))
+      writer.add_page(pdf_book.create_page(title_text, orig_width, orig_height))
       # Add a blank back for the separator sheet
       writer.add_page(PageObject.create_blank_page(width=orig_width, height=orig_height))
 

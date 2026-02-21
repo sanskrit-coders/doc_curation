@@ -8,6 +8,9 @@ import regex
 
 from doc_curation import pdf
 
+from doc_curation.ebook import pdf_book
+
+
 CALIBRE = 'ebook-convert'
 
 
@@ -109,7 +112,11 @@ def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_t
   result = subprocess.run(command, check=True, capture_output=True, text=True)
 
   if move_toc:
-    non_toc_page_length = _get_non_toc_page_length(command=command, dest_path=dest_path)
+    # https://bugs.launchpad.net/calibre/+bug/2141822
+    # non_toc_page_length = _get_non_toc_page_length(command=command, dest_path=dest_path)
+    pdf_book.trim_pdf_until_text(input_pdf_path=dest_path, start_index=1, target_pattern=".*ॐ ①")
+    non_toc_page_length = pdf_book.get_page_index_with_pattern(pdf_path=dest_path, start_index=0, target_pattern=r".*T\s*a\s*b\s*l\s*e\s*o\s*f\s*C\s*o\s*n\s*t\s*e\s*n\s*t\s*s", search_direction="reverse")
+
     writer = PdfWriter()
     with PdfReader(dest_path) as reader:
       # Add cover page

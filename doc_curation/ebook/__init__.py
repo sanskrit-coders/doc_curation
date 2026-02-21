@@ -70,12 +70,5 @@ def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata={}
     overwrite = ".*"
 
   if regex.match(overwrite, "pdf"):
-    pdf_maker.from_epub(epub_path=epub_path, scripts=scripts, booklets=["a4"])
+    pdf_maker.from_epub(epub_path=epub_path, scripts=scripts, booklets=booklets)
 
-  make_deprecated = False
-
-  if make_deprecated:
-    if regex.match(overwrite, "latex"):
-      a5_latex_path = regex.sub("(_min.*)?.epub", f"_A5.latex", epub_path_min_notoc)
-      latex_body = latex.from_md(content=content)
-      latex.to_pdf(latex_body=latex_body, dest_path=a5_path.replace(".pdf", "_latex_local.pdf"), metadata=metadata)
