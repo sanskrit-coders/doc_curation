@@ -6,23 +6,53 @@ from pypdf import Transformation
 from pypdf.annotations import Line
 from tqdm import tqdm
 from reportlab.pdfgen import canvas
+from reportlab.lib.units import cm  # Import cm for easy conversion
 from reportlab.lib.pagesizes import portrait
 import io
 
 
 
-def get_4_page_separator_overlay(w, h):
+
+def get_page_separator_overlay(w, h, mid_width=True, mid_height=True, stitch_points=False):
   packet = io.BytesIO()
   can = canvas.Canvas(packet, pagesize=(w, h))
   can.setStrokeColorRGB(0, 0, 0) # Black
   can.setLineWidth(0.5)
+
   # Draw crosshair
-  can.line(w/2, 0, w/2, h)
-  can.line(0, h/2, w, h/2)
+  if mid_width:
+    can.line(w/2, 0, w/2, h)
+  if mid_height:
+    can.line(0, h/2, w, h/2)
+
+  # Draw Stitch Points
+  if stitch_points:
+    # Radius of the hole (in points)
+    radius = 2
+    # X position is the middle width
+    x = w / 2
+    # Define 4 Y positions along the vertical spine
+    # 1 cm offset from the center of each pair results in a 2 cm gap
+    offset = 1.5 * cm
+
+    # Calculate Y positions
+    # Pair 1: centered at 25% (h * 0.25)
+    # Pair 2: centered at 75% (h * 0.75)
+    y_positions = [
+      (h * 0.25) - offset, (h * 0.25) + offset,
+      (h * 0.75) - offset, (h * 0.75) + offset
+    ]
+    for y in y_positions:
+      # Draw an unfilled circle to represent a punch hole
+      can.circle(x, y, radius, stroke=1, fill=0)
+
+      # Add a small cross inside the circle for high-precision alignment
+      can.line(x - radius, y, x + radius, y)
+      can.line(x, y - radius, x, y + radius)
+
   can.save()
   packet.seek(0)
   return PdfReader(packet).pages[0]
-
 
 
 def to_booklet(input_pdf_path, output_pdf_path=None, max_sheets=None, signature_title=None):
@@ -74,9 +104,9 @@ def to_booklet(input_pdf_path, output_pdf_path=None, max_sheets=None, signature_
     sig_len = len(sig_pages)
     num_sheets_in_sig = sig_len // 2 # 2 pages (logical) per side of sheet
 
-
+    indices = list(range(num_sheets_in_sig))
     # 4. Rearrange pages within this signature
-    for i in tqdm(range(num_sheets_in_sig)):
+    for i in tqdm(indices):
       # Booklet logic: alternates (Last, First) then (Second, Last-1)
       if i % 2 == 0:
         left_idx = sig_len - 1 - i
@@ -94,6 +124,14 @@ def to_booklet(input_pdf_path, output_pdf_path=None, max_sheets=None, signature_
         right_page,
         [1, 0, 0, 1, orig_width, 0]
       )
+      if i in [indices[0], indices[-1]]:
+        overlay = get_page_separator_overlay(w=sheet_width, h=orig_height, mid_width=True, mid_height=False, stitch_points=True)
+        new_page.merge_page(overlay)
+      else:
+        overlay = get_page_separator_overlay(w=sheet_width, h=orig_height, mid_width=False, mid_height=False, stitch_points=True)
+        new_page.merge_page(overlay)
+        
+
       writer.add_page(new_page)
 
     sig_count += 1
@@ -246,7 +284,7 @@ def two_column_page_booklet(input_pdf_path, output_pdf_path=None):
     back_page.merge_transformed_page(padded_pages[idx_br_b], Transformation().rotate(180).translate(tx=sheet_w, ty=orig_height))
 
     # Add lines 
-    overlay = get_4_page_separator_overlay(sheet_w, sheet_h)
+    overlay = get_page_separator_overlay(sheet_w, sheet_h, mid_width=True, mid_height=True)
     front_page.merge_page(overlay)
     back_page.merge_page(overlay)
 

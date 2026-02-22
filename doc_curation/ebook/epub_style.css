@@ -1,168 +1,194 @@
 /*https://bugs.launchpad.net/calibre/+bug/2141822*/
 /*body {*/
-/*    column-count: 2;*/
-/*    column-gap: 10px;*/
-/*    column-rule-style: solid;*/
-/*    column-rule-width: 1px;*/
+/*  column-count: 2;*/
+/*  column-gap: 10px;*/
+/*  column-rule-style: solid;*/
+/*  column-rule-width: 1px;*/
 /*}*/
 
 details {
-    margin: 3px 0px;
-    border-top: 1px solid black;
-    border-left: 1px dotted grey;
-    padding-left: 4px;
-    border-bottom: 1px solid black;
-    border-right: 1px dotted grey;
-    padding-right: 4px;
-    border-radius: 4px;
+  margin: 3px 0px;
+  border-top: 1px solid black;
+  border-left: 1px dotted grey;
+  padding-left: 4px;
+  border-bottom: 1px solid black;
+  border-right: 1px dotted grey;
+  padding-right: 4px;
+  border-radius: 4px;
 }
-details.highlight  > *:not(summary) {
-    text-decoration: underline;
+
+details.highlight > *:not(summary) {
+  text-decoration: underline;
 }
 
 .latin {
-    font-size: 80%;
+  font-size: 80%;
 }
 
 summary {
-    border-bottom: 1px dashed black;
-    font-size: 90%;
-    font-weight: bold;
-    font-style: italic;
-    color: black;
+  border-bottom: 1px dashed black;
+  font-size: 90%;
+  font-weight: bold;
+  font-style: italic;
+  color: black;
 }
 
 .inline_comment {
-    font-size: 90%;
-    color: #1B1B1B;
-    font-style: italic;
-    vertical-align: sub;
+  font-size: 90%;
+  color: #1B1B1B;
+  font-style: italic;
+  vertical-align: sub;
 }
 
 a:link,
 a:visited,
 a:hover,
 a:active {
-    color: #363031;
+  color: #363031;
 }
 
 
 h1 {
-    font-size: 160%; /* 120% of body font size */
-    line-height: 100%;
+  font-size: 160%; /* 120% of body font size */
+  line-height: 100%;
 }
+
 h2 {
-    font-size: 150%; /* 120% of body font size */
-    line-height: 100%;
+  font-size: 150%; /* 120% of body font size */
+  line-height: 100%;
 }
+
 h3 {
-    font-size: 140%; /* 120% of body font size */
-    line-height: 100%;
+  font-size: 140%; /* 120% of body font size */
+  line-height: 100%;
 }
+
 h4 {
-    font-size: 130%; /* 120% of body font size */
-    line-height: 100%;
+  font-size: 130%; /* 120% of body font size */
+  line-height: 100%;
 }
+
 h5 {
-    font-size: 120%; /* 120% of body font size */
-    line-height: 100%;
+  font-size: 120%; /* 120% of body font size */
+  line-height: 100%;
 }
+
 h6 {
-    font-size: 110%; /* 120% of body font size */
-    line-height: 100%;
+  font-size: 110%; /* 120% of body font size */
+  line-height: 100%;
 }
 
 details.headingDetail > summary {
-    line-height: 100%;
+  line-height: 100%;
 }
 
 /************************************************************/
 
 h1:after {
-    content: "①";
+  content: "①";
 }
+
 h2:after {
-    content: "②";
+  content: "②";
 }
+
 h3:after {
-    content: "③";
+  content: "③";
 }
+
 h4:after {
-    content: "④";
+  content: "④";
 }
+
 h5:after {
-    content: "⑤";
+  content: "⑤";
 }
+
 h6:after {
-    content: "⑥";
+  content: "⑥";
 }
+
 table {
-    border: 1px solid black;
+  border: 1px solid black;
 }
+
 th, td {
-    border-bottom: 1px solid black;
-    border-left: 1px solid black;
+  border-bottom: 1px solid black;
+  border-left: 1px solid black;
 }
+
 tr:hover {
-    background-color: coral;
+  background-color: coral;
 }
+
 figure {
-    align-content: center;
-    text-align: center;
-    font-style: italic;
-    font-size: smaller;
-    text-indent: 0;
-    border: thin silver solid;
-    margin: 0.5em;
-    padding: 0.5em;
-    display: inline-block;
+  align-content: center;
+  text-align: center;
+  font-style: italic;
+  font-size: smaller;
+  text-indent: 0;
+  border: thin silver solid;
+  margin: 0.5em;
+  padding: 0.5em;
+  display: inline-block;
 }
+
 figure.thumbnail {
-    width: 250px;
-    height: 250px;
+  width: 250px;
+  height: 250px;
 }
+
 figure.thumbnail img {
-    max-width: 100%;
-    max-height: 100%;
+  max-width: 100%;
+  max-height: 100%;
 }
+
 blockquote {
-    padding-left: 2rem;
-    border-left-style: solid;
-    border-width: 0.25rem;
+  padding-left: 2rem;
+  border-left-style: solid;
+  border-width: 0.25rem;
 }
+
 audio {
-    width: 100%;
+  width: 100%;
 }
 
 pre {
-    white-space: break-spaces;
-    border: thin black solid;
+  white-space: break-spaces;
+  border: thin black solid;
 }
 
 .handsontable th, .handsontable td {
-    line-height: 1.2em;
+  line-height: 1.2em;
 }
+
 .audioCaption {
-    text-align: center;
-    font-style: italic;
+  text-align: center;
+  font-style: italic;
 }
+
 .proof:before {
-    content: "Proof:";
+  content: "Proof:";
 }
+
 .proof {
-    color: #2a82a5;
+  color: #2a82a5;
 }
+
 .proof:after {
-    content: "∎";
+  content: "∎";
 }
+
 #sidebar .active {
-    background-color: wheat;
+  background-color: wheat;
 }
+
 .header-nav a {
-    color: yellow;
+  color: yellow;
 }
+
 .header-nav a:active {
-    color: pink;
+  color: pink;
 }
 
 

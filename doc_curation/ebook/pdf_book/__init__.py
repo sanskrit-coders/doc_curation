@@ -1,9 +1,91 @@
-import logging, regex
-
-from pypdf import PdfReader, PdfWriter, PageObject
-from pypdf import Transformation
-from reportlab.pdfgen import canvas
 import io
+import logging
+import os
+import os.path
+
+import regex
+from pypdf import PdfReader, PdfWriter
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A3, landscape
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Paragraph, Frame
+from doc_curation.md.file import MdFile
+
+# If using your custom font, remember to register it once:
+pdfmetrics.registerFont(TTFont('Tiro Devanagari Sanskrit', '/home/vvasuki/gitland/indic-transliteration/sanskrit-fonts/fonts/ttf-devanagari/TiroDevanagariSanskrit-Regular.ttf'))
+
+
+def save_grid_a3_pdf(text, dest_file, num_cols=4, num_rows=1, font="Tiro Devanagari Sanskrit", font_size=12):
+  """
+  Creates an A3 Landscape PDF with a grid of columns and rows and automatic text wrapping.
+  """
+  # Handle markdown file reading if path is provided
+  if os.path.exists(text):
+    # Assuming MdFile is a custom class you have defined elsewhere
+    md_file = MdFile(file_path=text)
+    (_, text) = md_file.read()
+
+  width, height = landscape(A3)
+  can = canvas.Canvas(dest_file, pagesize=(width, height))
+
+  # 1. Calculate Grid Dimensions
+  padding = 15  # Internal padding within each cell
+  col_width = width / num_cols
+  row_height = height / num_rows
+
+  # 2. Draw Column and Row Separators
+  can.setStrokeColorRGB(0.7, 0.7, 0.7)  # Light grey lines
+  can.setLineWidth(0.5)
+
+  # Draw vertical lines
+  for i in range(1, num_cols):
+    x = i * col_width
+    can.line(x, 0, x, height)
+
+  # Draw horizontal lines
+  for j in range(1, num_rows):
+    y = j * row_height
+    can.line(0, y, width, y)
+
+  # 3. Define Paragraph Style
+  style = ParagraphStyle(
+    name='GridStyle',
+    fontName=font,
+    fontSize=font_size,
+    leading=font_size * 1.4, # Adjusted for Sanskrit scripts
+    alignment=TA_CENTER,
+  )
+
+  # 4. Fill the Grid
+  for row in range(num_rows):
+    for col in range(num_cols):
+      # Calculate coordinates
+      # Note: ReportLab Y starts from bottom (0). 
+      # We want row 0 to be at the top.
+      x_pos = col * col_width
+      y_pos = (num_rows - 1 - row) * row_height
+
+      # Create Frame for the specific cell
+      f = Frame(
+        x_pos + padding,
+        y_pos + padding,
+        col_width - (padding * 2),
+        row_height - (padding * 2),
+        showBoundary=False
+      )
+
+      # Create Paragraph and add to frame
+      p = Paragraph(text, style)
+      f.addFromList([p], can)
+
+  can.save()
+  logging.info(f"Grid PDF saved to: {dest_file} ({num_cols}x{num_rows})")
+
+# --- Example Usage ---
+# save_grid_a3_pdf("My Sanskrit Text", "output.pdf", num_cols=3, num_rows=2, font_size=18)
 
 
 def insert_text_at_index(text, input_pdf_path, font_size=30, index=0, output_pdf_path=None ):
@@ -42,7 +124,7 @@ def create_page(text, width, height, font="Tiro Devanagari Sanskrit", font_size=
   can = canvas.Canvas(packet, pagesize=(width, height))
 
   # Set font and center the text
-  can.setFont(font, font_size=40)
+  can.setFont(font, size=font_size)
   can.drawCentredString(width / 2, height / 2, text)
   can.save()
 

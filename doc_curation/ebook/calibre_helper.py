@@ -71,6 +71,7 @@ def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_t
     '--pdf-standard-font', 'sans',
     '--pdf-default-font-size', '17', # For 0.6cm font
     '--pdf-mono-font-size', '17',
+    # "--extra-css", "p { margin: 0 0 0 0 !important; padding: 0 !important; }",
     '--pdf-page-margin-left', margins["left"],
     '--pdf-page-margin-right', margins["right"],
     '--pdf-page-margin-top', margins["top"],

@@ -24,7 +24,6 @@ def make_script_pdfs(epub_path, scripts, booklets):
     # Not moving TOC here - https://bugs.launchpad.net/calibre/+bug/2141822
     # Instead setting init_note later.
     a4_path = calibre_helper.to_pdf(epub_path=epub_path_min_2cols, paper_size="a4", move_toc=True)
-    pdf_book.insert_text_at_index(text="Please find towards the end - Table of contents, publisher info.", input_pdf_path=a4_path)
     a5_path = calibre_helper.to_pdf(epub_path=epub_path_min_notoc, paper_size="a5", move_toc=True)
   
     if "a4" in booklets:
