@@ -38,11 +38,18 @@ def make_out_path(author, dir_path, out_path=f"/home/vvasuki/gitland/sanskrit/ra
   return out_path
 
 
-def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata={}, file_split_level=4, toc_depth=6,
-             overwrite=".*", appendix=None, detail_pattern_to_extract=".*सर्वाष् .*", detail_pattern_to_remove=r"मूलम्.*", details_pattern_to_prefix=None, scripts=[], booklets=["a4"], cleanup=True):
+def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata=None, file_split_level=4, toc_depth=6,
+             overwrite=".*", appendix=None, detail_pattern_to_extract=".*सर्वाष् .*", detail_pattern_to_remove=r"मूलम्.*", details_pattern_to_prefix=r".*",
+             scripts=None, booklets=None, cleanup=True):
 
 
 
+  if metadata is None:
+    metadata = {}
+  if booklets is None:
+    booklets = ["a4"]
+  if scripts is None:
+    scripts = []
   src_full_md_path = os.path.join(source_dir, "full.md")
   epub_path = get_book_path(source_dir, out_path) + ".epub"
   md_path = get_book_path(source_dir, out_path) + ".md"
@@ -57,6 +64,7 @@ def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata={}
   else:
     from doc_curation.md.file import MdFile
     md_file = MdFile(md_path)
+  metadata, _ = md_file.read()
 
   if cleanup:
     md_book.remove_full_mds(source_dir)
@@ -70,5 +78,5 @@ def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata={}
     overwrite = ".*"
 
   if regex.match(overwrite, "pdf"):
-    pdf_maker.from_epub(epub_path=epub_path, scripts=scripts, booklets=booklets)
+    pdf_maker.from_epub(epub_path=epub_path, scripts=scripts, booklets=booklets, metadata=metadata)
 

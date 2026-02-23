@@ -80,7 +80,7 @@ def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, b
 
     logging.info(f"Fixing open details tags for {md_path}")
     content = details_helper.transform_detail_tags_with_soup(content, transformer=details_helper.open_attribute_fixer, details_css="details")
-    content = details_helper.transform_details_with_soup(content, title_transformer=lambda x: regex.sub("^विश्वास-", "मूल-", x), title_pattern="विश्वास-प्रस्तुतिः.*")
+    content = details_helper.transform_details_with_soup(content, title_transformer=lambda x: regex.sub("^विश्वास-प्रस्तुतिः", "वि॰प्र॰", x), title_pattern="विश्वास-प्रस्तुतिः.*")
 
     content = embed_helper.remove_embeds(content=content)
     content = regex.sub(r" *\.\.\.\{Loading\}\.\.\.", fr"", content)

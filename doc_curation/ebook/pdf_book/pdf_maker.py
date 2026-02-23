@@ -6,7 +6,7 @@ from indic_transliteration import sanscript
 import os, regex
 
 
-def make_script_pdfs(epub_path, scripts, booklets):
+def make_script_pdfs(epub_path, scripts, booklets, metadata, *args, **kwargs):
   for script in scripts:
     if script is None:
       script_dir = os.path.dirname(epub_path)
@@ -26,10 +26,15 @@ def make_script_pdfs(epub_path, scripts, booklets):
     a4_path = calibre_helper.to_pdf(epub_path=epub_path_min_2cols, paper_size="a4", move_toc=True)
     a5_path = calibre_helper.to_pdf(epub_path=epub_path_min_notoc, paper_size="a5", move_toc=True)
   
-    if "a4" in booklets:
-      booklet_maker.to_booklet(input_pdf_path=a4_path, output_pdf_path=None)
-    if "a5_dup" in booklets:
-      booklet_maker.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=None)
+    for booklet in booklets:
+      sig_pages = None
+      if "_" in booklet:
+        sig_pages = booklet.split("_")[-1].split(":")
+        sig_pages = [int(x) for x in sig_pages]
+      if "a4" in booklet:
+        booklet_maker.to_booklet(input_pdf_path=a4_path, output_pdf_path=None, sig_pages=sig_pages, signature_title="Part ", metadata=metadata)
+      elif "a5:dup" in booklets:
+        booklet_maker.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=None, sig_pages=sig_pages, signature_title="Part ")
 
     make_deprecated = False
     if make_deprecated:
@@ -43,5 +48,5 @@ def make_script_pdfs(epub_path, scripts, booklets):
 
 
 
-def from_epub(epub_path, scripts=[sanscript.ISO], booklets=["a4"]):
-  make_script_pdfs(epub_path=epub_path, scripts=[None] + scripts, booklets=booklets)
+def from_epub(epub_path, scripts=[sanscript.ISO], *args, **kwargs):
+  make_script_pdfs(epub_path=epub_path, scripts=[None] + scripts, *args, **kwargs)

@@ -32,7 +32,7 @@ def typo_fix(dir_path):
 # fix_old_US_notation("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH/1/7_aiShTika-yAjamAnAdi/05_dhruvApyAyanAdi-brAhmaNam.md")
 # fix_old_US_notation("/home/vvasuki/gitland/vishvAsa/devaH/content")
 
-content_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/static/prakIrNa-mantrAdi/gadyam/bala-mantraH_vaikhAnasaH.md")
+content_fix("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/AraNyakam/Rk/vishvAsa-prastutiH/04_pitR-medhAdi/05_yama-yajnaH")
 
 # typo_fix("/home/vvasuki/gitland/sanskrit/raw_etexts_private")
 

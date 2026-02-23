@@ -55,14 +55,17 @@ def get_page_separator_overlay(w, h, mid_width=True, mid_height=True, stitch_poi
   return PdfReader(packet).pages[0]
 
 
-def to_booklet(input_pdf_path, output_pdf_path=None, max_sheets=None, signature_title=None):
+def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_title=None, metadata=None):
   """
   :param input_pdf_path: Path to source PDF.
   :param output_pdf_path: Path to save result.
-  :param max_sheets: Max physical sheets per signature (4 pages per sheet).
+  :param sig_pages: Max pages per signature (4 pages per sheet).
   :param signature_title: String prefix for the separator page (e.g. "Part"). 
                           If None, no separator is added.
   """
+  if metadata is None:
+    metadata = {}
+
   reader = PdfReader(input_pdf_path)
   writer = PdfWriter()
 
@@ -76,25 +79,31 @@ def to_booklet(input_pdf_path, output_pdf_path=None, max_sheets=None, signature_
   total_padded = len(pages_in)
 
   # 2. Determine pages per signature
-  if max_sheets:
-    pages_per_sig = max_sheets * 4
-  else:
-    pages_per_sig = total_padded
+  sig_bounds = []
+  if sig_pages is None:
+    sig_pages = [total_padded]
+
+  while sum(sig_pages) < total_padded:
+    sig_pages.append(sig_pages[-1])
+
+  sig_start = 0
+  for num_pages in sig_pages:
+    sig_end = min(sig_start + num_pages - 1, total_padded)
+    sig_bounds.append((sig_start, sig_end))
+    sig_start = sig_end + 1
+
 
   # 3. Process signatures
   sig_count = 1
   # Wrap range in tqdm for a progress bar
-  for sig_start in tqdm(range(0, total_padded, pages_per_sig), desc="Signatures"):
-    sig_end = min(sig_start + pages_per_sig, total_padded)
+  for (sig_start, sig_end) in tqdm(sig_bounds, desc="Signatures"):
     sig_pages = pages_in[sig_start:sig_end]
 
     # --- Add Title Page if prefix is provided ---
     if sig_start != 0 and signature_title is not None:
-      title_text = f"{signature_title} {sig_count}"
+      title_text = f"{metadata.get('title', '')}\n{metadata.get('author', '')}\n{signature_title} {sig_count}"
       # Add the front of the separator sheet
-      writer.add_page(pdf_book.create_page(title_text, orig_width, orig_height))
-      # Add a blank back for the separator sheet
-      writer.add_page(PageObject.create_blank_page(width=orig_width, height=orig_height))
+      sig_pages.insert(0, pdf_book.create_page(title_text, orig_width, orig_height))
 
     # Ensure current signature slice is a multiple of 4 (for the final chunk)
     while len(sig_pages) % 4 != 0:
