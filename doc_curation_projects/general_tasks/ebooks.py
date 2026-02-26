@@ -50,7 +50,7 @@ def vedAH_yajuH():
 
 if __name__ == '__main__':
   rAmAnujIyam()
-  # vedAH_yajuH()
+  vedAH_yajuH()
 
   # pdf_book.save_grid_a3_pdf(text="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/covers/stitch_print.md", dest_file="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/covers/stitch_print_landscape.pdf", num_rows=4)
 

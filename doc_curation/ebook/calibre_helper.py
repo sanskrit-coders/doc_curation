@@ -66,7 +66,7 @@ def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_t
     '--output-profile', 'default',
     '--paper-size', f'{paper_size}',
     '--pdf-serif-family', 'Noto Serif Devanagari',
-    '--pdf-sans-family', 'Noto Sans Devanagari',
+    '--pdf-sans-family', 'Tiro Devanagari Sanskrit',
     '--pdf-mono-family', 'Nimbus Mono PS [urw]',
     '--pdf-standard-font', 'sans',
     '--pdf-default-font-size', '17', # For 0.6cm font
@@ -80,8 +80,8 @@ def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_t
     '--pdf-add-toc',
     '--pdf-page-numbers',
     # The below fail.
-    # '--pdf-header-template', '[title] — [chapter] — [section]',
-    # '--pdf-footer-template', '[page]/[topage]'
+    '--pdf-header-template', "<span style='width:100%; text-align:center; font-size: 15;'>§_TITLE_ / _TOP_LEVEL_SECTION_ / _SECTION_§</span>",
+    '--pdf-footer-template', "<div style='width:100%; text-align:center; font-size: 15;'>«_PAGENUM_ / _TOTAL_PAGES_»</div>"
   ]
   if paper_size == "a4":
     pass
@@ -115,7 +115,7 @@ def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_t
   if move_toc:
     # https://bugs.launchpad.net/calibre/+bug/2141822
     # non_toc_page_length = _get_non_toc_page_length(command=command, dest_path=dest_path)
-    pdf_book.trim_pdf_until_text(input_pdf_path=dest_path, start_index=1, target_pattern=".*ॐ ①")
+    pdf_book.trim_pdf_until_text(input_pdf_path=dest_path, start_index=1, target_pattern=r".*ॐ\s*①")
     non_toc_page_length = pdf_book.get_page_index_with_pattern(pdf_path=dest_path, start_index=0, target_pattern=r".*T\s*a\s*b\s*l\s*e\s*o\s*f\s*C\s*o\s*n\s*t\s*e\s*n\s*t\s*s", search_direction="reverse")
 
     writer = PdfWriter()

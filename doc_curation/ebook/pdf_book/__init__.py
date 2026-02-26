@@ -97,6 +97,7 @@ def save_grid_a3_pdf(text, dest_file, num_cols=4, num_rows=1, font_path=SKT_FONT
 def create_page(text, width, height, font_path=SKT_FONT, font_size=30):
   # 1. Initialize FPDF in 'points' to match your PDF dimensions
   # 'L' for landscape, 'pt' for points
+  text = text.strip()
   pdf = FPDF(orientation="L", unit="pt", format=(width, height))
   pdf.set_margins(0, 0, 0)
   pdf.set_auto_page_break(False)
