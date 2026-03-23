@@ -37,7 +37,7 @@ def dump_shloka_details(url, base_dir, chapter_title):
     md_file.dump_to_file(metadata=metadata, content=shloka, dry_run=False)
 
 
-  from doc_curation.md import get_md_with_pandoc
+  from doc_curation.ebook.pandoc_helper import get_md_with_pandoc
   for part_div in part_divs[1:]:
     title_tags = part_div.select("font[size='4px']")
     if len(title_tags) == 0:

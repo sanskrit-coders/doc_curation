@@ -213,9 +213,9 @@ def fix_index_files(dir_path, frontmatter_type=MdFile.TOML, transliteration_targ
     index_file = MdFile(file_path=os.path.join(dir, "_index.md"), frontmatter_type=frontmatter_type)
     if not os.path.exists(index_file.file_path):
       index_file.dump_to_file(metadata={}, content="", dry_run=dry_run)
-      metadata_helper.set_title_from_filename(index_file, transliteration_target=transliteration_target, dry_run=dry_run)
+      metadata_helper.set_title_from_filename(index_file, dest_script=transliteration_target, dry_run=dry_run)
     elif overwrite:
-      metadata_helper.set_title_from_filename(index_file, transliteration_target=transliteration_target, dry_run=dry_run)
+      metadata_helper.set_title_from_filename(index_file, dest_script=transliteration_target, dry_run=dry_run)
 
 
 def get_parent_md(md_file):

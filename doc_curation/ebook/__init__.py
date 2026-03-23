@@ -17,7 +17,7 @@ def get_book_path(source_dir, out_path):
     source_dir = os.path.dirname(source_dir)
     book_name = os.path.basename(source_dir)
   book_path = out_path
-  if book_name not in book_path:
+  if book_name not in book_path or book_name.split("_")[-1] not in book_path:
     book_path = os.path.join(out_path, book_name)
   book_path = os.path.join(book_path, os.path.basename(book_path))
   return book_path
@@ -61,19 +61,19 @@ def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata=No
     md_book.make_min_full_md(md_path=md_path, source_dir=source_dir,
                              detail_pattern_to_extract=detail_pattern_to_extract, detail_pattern_to_remove=detail_pattern_to_remove, details_pattern_to_prefix=details_pattern_to_prefix)
     overwrite = ".*"
+    if cleanup:
+      md_book.remove_full_mds(source_dir)
   else:
     from doc_curation.md.file import MdFile
     md_file = MdFile(md_path)
   metadata, _ = md_file.read()
 
-  if cleanup:
-    md_book.remove_full_mds(source_dir)
 
 
   if os.path.exists(epub_path) and not regex.match(overwrite, "epub"):
     logging.info(f"Skipping {epub_path} as it already exists.")
   else:
-    epub_from_md_file(md_path=md_path, epub_path=epub_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path, scripts=[sanscript.ISO], overwrite=overwrite)
+    epub_from_md_file(md_path=md_path, epub_path=epub_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path, scripts=scripts, overwrite=overwrite)
     # Enable downstream artifacts recreation
     overwrite = ".*"
 

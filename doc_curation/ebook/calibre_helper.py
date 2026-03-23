@@ -57,7 +57,7 @@ def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_t
   # theoretical - 1pt = 0.3528mm, 36 pt = 12.7 mm. 24 pt = 8.5 mm
   if margins is None:
     # For 39.7 is 14 mm theoretical; 60.95 is 21.5mm
-    margins = {"left": "40.7", "right": "40", "top": "39.7", "bottom": "70.94"}
+    margins = {"left": "40.7", "right": "40", "top": "39.7", "bottom": "39.7"}
   command = [
     CALIBRE,
     epub_path,
@@ -80,12 +80,13 @@ def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_t
     '--pdf-add-toc',
     '--pdf-page-numbers',
     # The below fail.
-    '--pdf-header-template', "<span style='width:100%; text-align:center; font-size: 15;'>§_TITLE_ / _TOP_LEVEL_SECTION_ / _SECTION_§</span>",
-    '--pdf-footer-template', "<div style='width:100%; text-align:center; font-size: 15;'>«_PAGENUM_ / _TOTAL_PAGES_»</div>"
+    '--pdf-header-template', "<u style='width:100%; justify-content:center; font-size: 15;'>§_TITLE_ / _TOP_LEVEL_SECTION_ / _SECTION_§</u>",
+    '--pdf-footer-template', "<div style='width:100%; justify-content:center; font-size: 15; text-decoration-line: overline;'>«_PAGENUM_ / _TOTAL_PAGES_»</div>"
   ]
+  # TODO: 2 column pdf - footnotes not being produced - https://bugs.launchpad.net/calibre/+bug/2142731
+
   if paper_size == "a4":
     pass
-    # The below fails - https://bugs.launchpad.net/calibre/+bug/2141822
     # command.extend(["--extra-css", "body { column-count: 2; column-gap: 10px; column-rule-style: solid; column-rule-width:1px;}"])
 
   def _get_non_toc_page_length(command, dest_path):

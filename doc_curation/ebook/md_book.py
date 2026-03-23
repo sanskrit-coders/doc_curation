@@ -46,7 +46,7 @@ def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, b
   # copy directory images to out_path, if it exists.
   if os.path.exists(os.path.join(source_dir, "images")):
     import shutil
-    images_dest = os.path.join(md_path, "images")
+    images_dest = os.path.join(os.path.dirname(md_path), "images")
     shutil.copytree(os.path.join(source_dir, "images"), images_dest, dirs_exist_ok=True)
     logging.info(f"Copied images to {images_dest}")
 

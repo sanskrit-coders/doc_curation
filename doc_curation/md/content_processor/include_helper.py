@@ -308,7 +308,13 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
         details["open"] = ""
   else:
     details = BeautifulSoup(f"{content}", 'html.parser')
-  
+
+  # Guard against missing / invalid include content.
+  if details is None:
+    return
+  # Skip empty tags to avoid bs4 insert/index issues.
+  if getattr(details, "contents", None) == []:
+    return
   if dynamic_loading:
     inc.append("\n\n")
     inc.append(details)

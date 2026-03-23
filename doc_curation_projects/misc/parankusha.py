@@ -15,7 +15,9 @@ BS_BASE = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/
 def deshika_rts(browser):
   base_dir = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/"
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "रहस्यत्रयसारः", "expand:रहस्यत्रयसारः","श्रीगुरुपरंपरासारः"], outdir=os.path.join(base_dir, "mUlam"), ordinal_start=0, source_script=sanscript.TAMIL)
-  parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "42ம் பட்டம் ஶ்ரீமத் அழகியசிங்கர்", "सार-बोधिनी", "expand:सार-बोधिनी","श्रीगुरुपरंपरासारः"], outdir=os.path.join(base_dir, "sAra-bodhinI"), ordinal_start=0, source_script=sanscript.TAMIL)
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "वेदान्तदेशिकाः", "रहस्यत्रयसारः", "expand:रहस्यत्रयसारः","श्रीगुरुपरंपरासारः"], outdir=os.path.join(base_dir, "mUlam/2-script/"), ordinal_start=0)
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "42ம் பட்டம் ஶ்ரீமத் அழகியசிங்கர்", "सार-बोधिनी", "expand:सार-बोधिनी","श्रीगुरुपरंपरासारः"], outdir=os.path.join(base_dir, "sAra-bodhinI"), ordinal_start=0, source_script=sanscript.TAMIL)
+  parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "42ம் பட்டம் ஶ்ரீமத் அழகியசிங்கர்", "सार-बोधिनी", "expand:सार-बोधिनी","श्रीगुरुपरंपरासारः"], outdir=os.path.join(base_dir, "sAra-bodhinI/2-script/"), ordinal_start=0)
 
 
 def brahmasuutra(browser, author, text_id, sub_path):
@@ -200,7 +202,8 @@ def yaamuna(browser):
   # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "உத்தமூர் வீரராகவாசார்யர்", "गूढप्रकाशः", "expand:गूढप्रकाशः", "आत्मसिद्धि"], outdir=os.path.join(base_dir, "vIrarAghava-gUDha-prakAshaH"), ordinal_start=1, comment_mode=False)
 
   # parankusha.dump_to_file(browser=browser, start_nodes=["विद्यास्थानानि", "42ம் பட்டம் ஶ்ரீமத் அழகியசிங்கர்", "गीतार्थसङ्ग्रहप्रकाशिका"], out_file_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAsaH/shlokashaH/bhagavad-gItA-parva/meta/yAmuna-gItArtha-sangrahaH/42-injimeDu-yati-TIkA", source_script=sanscript.TAMIL)
-  parankusha.dump_to_file(browser=browser, start_nodes=["विद्यास्थानानि", "விஷ்ணுதாஸன்", "ஸ்ரீ சதுஶ்ஶ்லோகீ விவரணம்"], out_file_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/chatush-shlokI/ta_viShNudAsaH.md", source_script=sanscript.TAMIL)
+  # parankusha.dump_to_file(browser=browser, start_nodes=["विद्यास्थानानि", "விஷ்ணுதாஸன்", "ஸ்ரீ சதுஶ்ஶ்லோகீ விவரணம்"], out_file_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/chatush-shlokI/ta_viShNudAsaH.md", source_script=sanscript.TAMIL)
+  # parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "சேட்லூர் நரஸிம்ஹாசாரியார் ஸ்வாமி", "गीतार्थसङ्ग्रहरक्षाद्राविडानुवादः"], outdir="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAsaH/shlokashaH/bhagavad-gItA-parva/meta/yAmuna-gItArtha-sangrahaH/seTlUr-narasiMhaH/", ordinal_start=None, comment_mode=False, source_script=sanscript.TAMIL)
 
 
 
@@ -292,21 +295,21 @@ def divya_prabandha(browser):
   parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "உத்தமூர் வீரராகவாசார்யர்", "திருப்பள்ளியெழுச்சி",], outdir="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/uttamUr-vIrarAghavaH/", comment_mode=None, source_script=sanscript.TAMIL, timeout=20)
 
 
-# Current - काञ्ची अण्णङ्कराचारियार्
+# Current - सेवा स्वामि-
 if __name__ == '__main__':
   browser = parankusha.get_logged_in_browser(headless=False)
   # shriibhaashyam(browser=browser)
   # divya_prabandha(browser=browser)
 
 
-  # yaamuna(browser)
+  yaamuna(browser)
   # raamaanuja_misc(browser)
   # deshika_misc(browser)
   # chillarai(browser)
   # deshika_tattvamuktaakalaapa(browser=browser)
   # stotra_misc(browser=browser)
   # deshika_rts(browser=browser)
-  tattva_misc(browser=browser)
+  # tattva_misc(browser=browser)
   # deshika_nyAyasiddhAnjanam(browser=browser)
   # deshika_nyAyaparishuddhiH(browser=browser)
   # upanishat(browser=browser)

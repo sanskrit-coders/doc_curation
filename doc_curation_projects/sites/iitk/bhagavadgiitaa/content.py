@@ -36,37 +36,35 @@ def title_from_folder_path(folder_path):
 def make_content_files(base_dir):
   static_dir_base = base_dir.replace("/content/", "/static/")
   md_files = doc_curation.md.library.get_md_files_from_path(dir_path=base_dir, file_pattern="**/*.md")
+  comment_groups = ["saMskRtam/vishvAsa-prastutiH", "saMskRtam/mUlam", "saMskRtam/rAmAnujaH/sarvASh_TIkAH", "saMskRtam/shankaraH/sarvASh_TIkAH", "saMskRtam/madhvaH/sarvASh_TIkAH", "saMskRtam/abhinava-guptaH/sarvASh_TIkAH", "saMskRtam/vallabhaH/sarvASh_TIkAH", "saMskRtam/shrIdhara-svAmI", "english/sarvASh_TIkAH", "hindI/sarvASh_TIkAH"]
   for md_file in md_files:
     content = ""
     file_path = md_file.file_path
 
-    for alt_title, folder_path in bhagavadgiitaa.iitk_title_to_folder_path.items():
-      if "__________" in folder_path:
-        content += "\n\n_________________\n## %s\n" % alt_title
-        continue
-      title = title_from_folder_path(folder_path=folder_path)
-      logging.info("%s %s", title, folder_path)
-      
-      url = str(file_path).replace(base_dir, "/purANam_vaiShNavam/mahAbhAratam/06-bhIShma-parva/03-bhagavad-gItA-parva/sarva-prastutiH")
-      url = url.replace("sarva-prastutiH", folder_path).replace("//", "/")
-      included_file_path = url.replace("/purANam_vaiShNavam", "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/static")
+    for comment_group in comment_groups:
+
+      url = str(file_path).replace(base_dir, "/mahAbhAratam/vyAsaH/shlokashaH/06-bhIShma-parva/03-bhagavad-gItA-parva/sarva-prastutiH")
+      url = url.replace("sarva-prastutiH", comment_group).replace("//", "/")
+      included_file_path = url.replace("/mahAbhAratam", "/home/vvasuki/gitland/vishvAsa/mahAbhAratam/static")
+      classes = []
+      title = None
       if "vishvAsa-prastutiH" in included_file_path:
-        classes = []
         h1_level = 2 
-      else:
+        title = "विश्वास-प्रस्तुतिः"
+      elif "mUlam" in included_file_path:
         classes = ["collapsed"]
-        h1_level = 3
+        title = "मूलम्"
         
         
       if os.path.exists(included_file_path):
         content += "%s\n" % include_helper.Include(field_names=None, classes=classes, title=title, url=url, h1_level=h1_level).to_html_str()
-    content = regex.sub("(?<=\n)____+\n##[^\n]+\s+(?=____+|$)", "", content)
+    content = regex.sub(r"(?<=\n)____+\n##[^\n]+\s+(?=____+|$)", "", content)
     md_file.replace_content_metadata(new_content=content, dry_run=False)
   include_helper.prefill_includes(dir_path=base_dir)
 
 
 
 if __name__ == '__main__':
-  base_dir = "/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/mahAbhAratam/shlokashaH/bhagavad-gItA-parva/sarva-prastutiH"
+  base_dir = "/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAsaH/shlokashaH/bhagavad-gItA-parva/sarva-prastutiH"
   make_content_files(base_dir=base_dir)
   # arrangement.fix_index_files(dir_path=base_dir, dry_run=False)
