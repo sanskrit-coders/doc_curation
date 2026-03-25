@@ -13,7 +13,7 @@ def rAmAnujIyam():
   pass
   out_path = os.path.join(OUT_PATH_BASE, "rAmAnujIyam")
   # ebook.make_all("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/sarva-prastutiH", metadata={"author": "वेङ्कटनाथः"}, out_path=os.path.join(out_path, "venkaTanAthaH/rahasya-traya-sAraH"), css_path=CSS_PATH, appendix=appendix_dg,)
-  # ebook.make_all("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", out_path=os.path.join(out_path, "yAmunaH/Agama-prAmANyam"), css_path=CSS_PATH, metadata={"author": "यामुनः"}, appendix=appendix_dg, file_split_level=2, booklets=["a4_91:160"], overwrite="pdf")
+  ebook.make_all("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", out_path=os.path.join(out_path, "yAmunaH/Agama-prAmANyam"), css_path=CSS_PATH, metadata={"author": "यामुनः"}, appendix=appendix_dg, file_split_level=2, booklets=["a4_91:160"], overwrite="pdf")
 
   # ebook.make_all(source_dir="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/kumAra-varadaH/artha-sangrahaH", file_split_level=1,  out_path=os.path.join(out_path, "kumAra-varadaH/artha-sangrahaH"), metadata={"author": "कुमार-वरदः"}, css_path=CSS_PATH, appendix=appendix_dg, booklets=["a4"], details_pattern_to_prefix="NONE")
 
@@ -35,7 +35,7 @@ def rAmAnujIyam():
   # ebook.make_all(source_dir="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/venkaTa-nAtha-shAkhA/vaikuNTha-dIxita-prapanna-dharma-sAra-samuchchayaH", file_split_level=1, omit_pattern=".*/00", out_path=os.path.join(out_path, "vaikuNTha-dIxitaH/prapanna-dharma-sAra-samuchchayaH"), metadata={"author": "वैकुण्ठ-दीक्षितः"}, css_path=CSS_PATH, appendix=appendix_dg, detail_pattern_to_remove=r"मूलम्.*|.*परिष्कार्यम्.*", booklets=["a4"])
   # ebook.make_all(source_dir="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAsaH/goraxapura-pAThaH/hindy-anuvAdaH/12_shAntiparva/03_moxadharmaparva/335-351_nArAyaNIyam/347_hayashira-upAkhyAnam_abhinava-ranganAtha-TIkA", file_split_level=1, omit_pattern=".*/00", out_path=os.path.join(out_path, "abhinava-ranganAthaH/hayashira-upAkhyAnam_abhinava-ranganAtha-TIkA"), metadata={"author": "अभिनव-रङ्गनाथः"}, css_path=CSS_PATH, appendix=appendix_dg, detail_pattern_to_remove=r"मूलम्.*|.*परिष्कार्यम्.*", booklets=["a4"])
 
-  ebook.make_all(source_dir="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/prAyashchitta-prapatty-arhatA", file_split_level=1,  out_path=os.path.join(out_path, "vishvAsaH/prAyashchitta-prapatty-arhatA"), metadata={"author": "विश्वासः"}, css_path=CSS_PATH, appendix=appendix_dg, booklets=["a4"], details_pattern_to_prefix="NONE", overwrite="epub")
+  # ebook.make_all(source_dir="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/prAyashchitta-prapatty-arhatA", file_split_level=1,  out_path=os.path.join(out_path, "vishvAsaH/prAyashchitta-prapatty-arhatA"), metadata={"author": "विश्वासः"}, css_path=CSS_PATH, appendix=appendix_dg, booklets=["a4"], details_pattern_to_prefix="NONE", overwrite="epub")
 
 
 

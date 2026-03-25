@@ -450,7 +450,7 @@ def remove_adjascent_duplicates(content):
   return content
 
 
-def get_details(content, title, metadata=None):
+def get_details(content, title=".*", metadata=None):
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
     return []

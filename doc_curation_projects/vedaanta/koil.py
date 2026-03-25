@@ -87,10 +87,20 @@ def misc():
   koil.dump_text(index_url="https://divyaprabandham.koyil.org/index.php/2016/01/ashta-sloki/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/misc/aShTa-shlokI/sArathi-dAsaH/en.md", source_script=None)
   # koil.dump_text(index_url="https://divyaprabandham.koyil.org/index.php/2016/05/ashta-sloki-hindi/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/misc/aShTa-shlokI/sArathi-dAsaH/hi.md", source_script=sanscript.DEVANAGARI)
   # koil.dump_text(index_url="https://divyaprabandham.koyil.org/index.php/2016/01/ashta-sloki-tamil/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/misc/aShTa-shlokI/sArathi-dAsaH/ta.md", source_script=sanscript.TAMIL)
+  # koil.dump_text(index_url="https://granthams.koyil.org/anthimopaya-nishtai-tamil/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/paravastu-bhaTTar-pirAn/antimopAya-niShThA/sarva-prastutiH.md", source_script=sanscript.TAMIL)
+  # koil.dump_text(index_url="https://granthams.koyil.org/charamopaya-nirnayam-tamil/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/nAyanAr-AchAn-piLLai/charamopAya-nirNayaH/sarva-prastutiH.md", source_script=sanscript.TAMIL)
+  # koil.dump_text(index_url="https://granthams.koyil.org/thathva-thrayam-tamil/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/lokAchAryaH/tattva-trayam/sarva-prastutiH.md", source_script=sanscript.TAMIL)
+
+  # koil.dump_text(index_url="https://granthams.koyil.org/yathindhra-matha-dhipikai-tamil/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/parichaya-sanxepAH/shrInivAsaH_yatIndra-mata-dIpikA/sArathi-dAsaH/ta.md", source_script=sanscript.TAMIL)
+  # koil.dump_text(index_url="https://granthams.koyil.org/vedartha-sangraham-tamil/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/vedArtha-sangrahaH/sArathi-dAsaH/ta.md", source_script=sanscript.TAMIL)
+  # koil.dump_text(index_url="https://granthams.koyil.org/yathindhra-pravana-prabhavam-simple-tamil/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/aitihyam/yatIndra-pravaNa-prabhAvaH.md", source_script=sanscript.TAMIL)
+  koil.dump_text(index_url="https://granthams.koyil.org/simple-guide-to-srivaishnavam-tamil/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/shaThakopa-rAmAnuja-dAsaH/intro.md", source_script=sanscript.TAMIL)
 
 
 def divya_prabandha():
   pass
+  # koil.dump_text(index_url="https://granthams.koyil.org/dramidopanishat-prabhava-sarvasvam-tamil/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/aNNangarAchAryaH/dramiDopniShat-prabhAva-sarvasvam.md", source_script=sanscript.TAMIL)
+  koil.dump_text(index_url="https://granthams.koyil.org/dhivyaprabandham-for-beginners-tamil/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sArathi-dAsaH/intro.md", source_script=sanscript.TAMIL)
   # koil.dump_text(index_url="https://divyaprabandham.koyil.org/index.php/2015/06/thiruppallandu/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/01_tiruppallaNDu_tirumoLHi_pEriyaLHvar_1-473/00_tiru-pallANDu/sArathi-dAsaH/en.md", source_script=None)
   # koil.dump_text(index_url="https://divyaprabandham.koyil.org/index.php/2020/06/thiruppallandu-hindi-simple/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/01_tiruppallaNDu_tirumoLHi_pEriyaLHvar_1-473/00_tiru-pallANDu/sArathi-dAsaH/hi.md", source_script=None)
   # koil.dump_text(index_url="https://divyaprabandham.koyil.org/index.php/2020/07/thiruppallandu-kannada-simple/", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/01_tiruppallaNDu_tirumoLHi_pEriyaLHvar_1-473/00_tiru-pallANDu/sArathi-dAsaH/kn.md", source_script=None)
@@ -118,4 +128,4 @@ if __name__ == '__main__':
   # maamuni()
   # misc()
   # arulaaLa()
-  divya_prabandha()
+  # divya_prabandha()
