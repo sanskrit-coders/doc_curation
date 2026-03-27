@@ -1,8 +1,6 @@
 # Can't have look-behind (?<=\n|^) because: "Invalid regular expression: look-behind requires fixed-width pattern" (Which regex environment??)
 from indic_transliteration.sanscript.schemes.brahmic import accent
-from indic_transliteration import sanscript
-
-devanagari = sanscript.SCHEMES[sanscript.DEVANAGARI]
+from indic_transliteration.sanscript.schemes.brahmic import DevanagariScheme
 
 
 PATTERN_NUM_SUTRA = r"(?<=\n)([०-९\.]+) +.+(?=\n|$)"
@@ -32,7 +30,7 @@ DETAILS = r"<details>.+?</details>"
 
 JS_COMMENTS = r"\+\+\+\([\s\S]+?\)\+\+\+"
 
-DEVANAGARI = devanagari.BASE_BLOCK
+DEVANAGARI = DevanagariScheme.PATTERN_BASE_BLOCK
 DEVANAGARI_OR_LATIN_WORD = r"[\u0900-\u097F\w]+"
 # Devanagari patters - see sanscript.brahmic.DevanagariScheme
 ALL_DIGITS = r"[०-९\d೦-೯]"
