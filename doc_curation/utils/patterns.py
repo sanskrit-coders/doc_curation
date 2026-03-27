@@ -1,5 +1,9 @@
 # Can't have look-behind (?<=\n|^) because: "Invalid regular expression: look-behind requires fixed-width pattern" (Which regex environment??)
 from indic_transliteration.sanscript.schemes.brahmic import accent
+from indic_transliteration import sanscript
+
+devanagari = sanscript.SCHEMES[sanscript.DEVANAGARI]
+
 
 PATTERN_NUM_SUTRA = r"(?<=\n)([०-९\.]+) +.+(?=\n|$)"
 PATTERN_SUTRA_DANDA = r"(\S.+)॥ *([०-९\d\.\-–]+) *॥"
@@ -28,17 +32,10 @@ DETAILS = r"<details>.+?</details>"
 
 JS_COMMENTS = r"\+\+\+\([\s\S]+?\)\+\+\+"
 
-DEVANAGARI = r"[\u0900-ॿ]"
-DEVANAGARI_NON_DIGITS = r"[\u0900-॥॰-ॿ]"
-DEVANAGARI_NON_DIGITS_NON_DANDA = r"[\u0900-ॣ॰-ॿ]"
+DEVANAGARI = devanagari.BASE_BLOCK
 DEVANAGARI_OR_LATIN_WORD = r"[\u0900-\u097F\w]+"
-DEVANAGARI_NON_MATRA = r"[\u0900-हॐ-ॡॲ-ॿ़]"
-DEVANAGARI_MATRA = r"[ऺऻा-ॏॢॣ]"
-DEVANAGARI_YOGAVAHA = "[\u0900-\u0903\uA8F2-\uA8F7ᳩ-ᳶ]"
-DEVANAGARI_MATRA_YOGAVAHA = r"[ऺऻा-ॏॢॣ\u0900-\u0903\uA8F2-\uA8F7ᳩ-ᳶ]"
-DEVANAGARI_DIGITS = "[०-९]"
+# Devanagari patters - see sanscript.brahmic.DevanagariScheme
 ALL_DIGITS = r"[०-९\d೦-೯]"
-DEVANAGARI_DANDAS = "[।॥]"
 LOWER_CASE_ISO = "[a-zāīūṛr̥ēōṅñṇṭḍṣśḷṁṃḥḻṉṟäü]"
 UPPER_CASE_ISO = "[A-ZĀĪŪṚR̥ĒŌṄÑṆṬḌṢŚḶṀṂḤḺṈṞÜ]"
 ACCENTS = accent.ACCENTS_PATTERN
@@ -51,6 +48,4 @@ PUNCT = rf"[।॥{NON_DEV_PUNCT}]"
 TAMIL = "[ஂ-௺]"
 TAMIL_ENG_DIGITS = "[ஂ-௺0-9]" # \d matches ०-९ in py, but not in intellij!
 TAMIL_BLOCK = rf"(?<=^|\n)([^\n]*[ஂ-௺][^\n]*\n)+(?=$|\n)"
-
-DEVANAGARI_MANIPRAVALA_MID_K_L = f"(?<=[^\\s्])क(?={DEVANAGARI_MATRA}?ळ)"
 

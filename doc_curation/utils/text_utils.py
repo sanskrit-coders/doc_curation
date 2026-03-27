@@ -3,6 +3,8 @@ import regex
 import editdistance
 from doc_curation.utils import patterns
 
+devanaaagari_scheme = sanscript.SCHEMES[sanscript.DEVANAGARI]
+
 
 def remove_parenthized_text(text):
   text = regex.sub(r"\[[^\]]+?\]", "", text)
@@ -17,7 +19,6 @@ def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True,
   if script is None:
     script = detect.detect(text=text)
   if depunctuate:
-    devanaaagari_scheme = sanscript.SCHEMES[sanscript.DEVANAGARI]
     text = devanaaagari_scheme.remove_svaras(in_string=text)
     text = devanaaagari_scheme.remove_punctuation(in_string=text)
   text = remove_parenthized_text(text)
@@ -40,8 +41,8 @@ def title_from_text(text, num_words=2, target_title_length=24, depunctuate=True,
 def normalized_edit_distance(a, b, strip_svaras=False):
   a = regex.sub(r"\s", "", a)
   b = regex.sub(r"\s", "", b)
-  a = regex.sub(fr"{patterns.DEVANAGARI_DANDAS}|{patterns.DEVANAGARI_DIGITS}|\d|{patterns.PUNCT}", "", a)
-  b = regex.sub(fr"{patterns.DEVANAGARI_DANDAS}|{patterns.DEVANAGARI_DIGITS}|\d|{patterns.PUNCT}", "", b)
+  a = regex.sub(fr"{devanaaagari_scheme.PATTERN_DANDAS}|{devanaaagari_scheme.PATTERN_DIGITS}|\d|{patterns.PUNCT}", "", a)
+  b = regex.sub(fr"{devanaaagari_scheme.PATTERN_DANDAS}|{devanaaagari_scheme.PATTERN_DIGITS}|\d|{patterns.PUNCT}", "", b)
   if strip_svaras:
     a = regex.sub(fr"{patterns.ACCENTS}", "", a)
     b = regex.sub(fr"{patterns.ACCENTS}", "", b)
@@ -84,7 +85,7 @@ def fix_svara_duplicates(text):
 
 
 def svara_post_yogavaaha(text):
-  text = regex.sub(f"({patterns.ACCENTS})({patterns.DEVANAGARI_YOGAVAHA}+)", r"\2\1", text)
+  text = regex.sub(f"({patterns.ACCENTS})({devanaaagari_scheme.PATTERN_YOGAVAHA}+)", r"\2\1", text)
   return text
 
 

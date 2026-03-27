@@ -9,10 +9,13 @@ from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript
 
+
+
+
 def ocr_fix_iast(dir_path):
   pass
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: space_helper.make_paras(x))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_google_ocr_iast_iso(x))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: space_helper.make_paras(x))
 
 def ocr_fix_dev(dir_path, new_line_substitute="\n\n"):
   pass
@@ -22,13 +25,13 @@ def ocr_fix_dev(dir_path, new_line_substitute="\n\n"):
 
 def foxit_ocr_fix(dir_path):
   pass
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_foxit(x))
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_dangling_maatraas(x))
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: space_helper.fix_markup(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_foxit(x))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_dangling_maatraas(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: space_helper.fix_markup(x))
 
 def fix_en_ocr(dir_path):
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: space_helper.make_paras(x))
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.strip_word_continuation_dashes(x))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: space_helper.make_paras(x))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.strip_word_continuation_dashes(x))
 
 
 
@@ -56,20 +59,20 @@ def fix_ttd(dir_path):
 
 def misc_typos(dir_path):
   # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: space_helper.fix_markup(x))
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: space_helper.markdownify_newlines(x))
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: space_helper.remove_fake_linebreaks(x))
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.strip_word_continuation_dashes(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: space_helper.fix_markup(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: space_helper.markdownify_newlines(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: space_helper.remove_fake_linebreaks(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.strip_word_continuation_dashes(x))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.misc_sanskrit_typos(x))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_line_end_dashes(x))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: fix_ttd(x))
 
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_lazy_anusvaara(x))
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.misc_manipravaala_typs(x))
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_avagraha_quotations(x))
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_pandoc_md(x))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: sanskrit_helper.fix_lazy_anusvaara(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.misc_manipravaala_typs(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_avagraha_quotations(x))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_pandoc_md(x))
 
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/social-cultivation/violence/articles/Sacred-ground_Bakker", content_transformer=lambda x, y: content_processor.fix_iast_gb(x))
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/social-cultivation/violence/articles/Sacred-ground_Bakker", content_transformer=lambda x, *args, **kwargs: content_processor.fix_iast_gb(x))
 
 
   pass
@@ -86,7 +89,7 @@ if __name__ == '__main__':
   # ocr_fix_iast("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/kriyA/govindaH_yati-dharma-samuchchayaH/en.md")
   # foxit_ocr_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/svAmi-nArAyaNa-sampradAyaH/vaDatAla-paramparA/darshana-sAra-sangrahaH")
   # misc_typos("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/shata-dUShaNI/sarva-prastutiH")
-  fix_ttd("/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/venkaTAchala-mAhAtmyam_2.md")
+  # fix_ttd("/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/sthala-purANam/venkaTAchala-mAhAtmyam_2.md")
   # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/pAdma-saMhitA/", patterns=["। *\n"], replacement="।  \n")
   # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/bhAgavatam/gauDIya-prastutiH/", patterns=[r"\\?[\|।] *\\?[\|।]"], replacement="॥")
   # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/bhAgavatam/gauDIya-prastutiH/", patterns=[r"\\?[\|।]"], replacement="।")
@@ -95,4 +98,8 @@ if __name__ == '__main__':
   # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/kAraNAgamaH/", patterns=["ळ"], replacement="ल")
 
 
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/meta/nArAyaNa-raghunAthau", content_transformer=lambda x, y: ocr_helper.fix_iast_for_pdfs(x), dry_run=False)
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/meta/nArAyaNa-raghunAthau", content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_iast_for_pdfs(x), dry_run=False)
+
+  devanagari = sanscript.SCHEMES[sanscript.DEVANAGARI]
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/ahobila-14-nArAyaNa-muniH/puruSha-kAra-mImAMsA/meta/sAxAd-vedAnta-rAmAnujaH_shrI-tattva-siddhAnjanam/_index.md", content_transformer=lambda x, *args, **kwargs: sanscript.SCHEMES[sanscript.DEVANAGARI].redo_upapada_sandhis(x), dry_run=False)
+  misc_typos("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/ahobila-14-nArAyaNa-muniH/puruSha-kAra-mImAMsA/meta/sAxAd-vedAnta-rAmAnujaH_shrI-tattva-siddhAnjanam/_index.md")

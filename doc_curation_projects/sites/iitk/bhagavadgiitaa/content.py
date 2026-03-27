@@ -42,7 +42,7 @@ def make_content_files(base_dir):
     file_path = md_file.file_path
 
     for comment_group in comment_groups:
-
+      comment_name = comment_group.replace("/sarvASh_TIkAH", "").replace("saMskRtam/", "")
       url = str(file_path).replace(base_dir, "/mahAbhAratam/vyAsaH/shlokashaH/06-bhIShma-parva/03-bhagavad-gItA-parva/sarva-prastutiH")
       url = url.replace("sarva-prastutiH", comment_group).replace("//", "/")
       included_file_path = url.replace("/mahAbhAratam", "/home/vvasuki/gitland/vishvAsa/mahAbhAratam/static")
@@ -54,7 +54,10 @@ def make_content_files(base_dir):
       elif "mUlam" in included_file_path:
         classes = ["collapsed"]
         title = "मूलम्"
-        
+      elif comment_name in ["english"]:
+        title = "English"
+      else:
+        title = sanscript.transliterate(comment_name, _from=sanscript.OPTITRANS, _to=sanscript.DEVANAGARI)
         
       if os.path.exists(included_file_path):
         content += "%s\n" % include_helper.Include(field_names=None, classes=classes, title=title, url=url, h1_level=h1_level).to_html_str()

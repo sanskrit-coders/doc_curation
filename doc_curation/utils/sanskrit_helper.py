@@ -60,7 +60,7 @@ def fix_bad_vyanjanaantas(text):
   return c
 
 
-def fix_svara_typos(text):
+def fix_accent_typos(text):
   replacements = {
     r"(॒){2,}": r"॒", r"(॑){2,}": r"॑",
     rf"({ACCENTS_PATTERN})(ः)": r"\2\1",

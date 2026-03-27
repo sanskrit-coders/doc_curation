@@ -21,7 +21,7 @@ def fix_old_US_notation(dir_path):
 
 def typo_fix(dir_path):
   pass
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_svara_typos(x))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.fix_accent_typos(x))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.undo_taittirIya_forms(x))
 
 

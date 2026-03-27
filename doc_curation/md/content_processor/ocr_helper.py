@@ -132,7 +132,7 @@ def misc_manipravaala_typos(text):
 def misc_sanskrit_typos(text, strict=False, *args, **kwargs):
   text = misc_manipravaala_typos(text=text)
   text = sanskrit_helper.fix_anunaasikaadi(text=text)
-  text = sanskrit_helper.fix_svara_typos(text=text)
+  text = sanskrit_helper.fix_accent_typos(text=text)
   if strict:
     text = regex.sub("ळ", "ल", text)
     text = regex.sub("ढ़", "ढ", text)
