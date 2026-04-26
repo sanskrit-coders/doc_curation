@@ -87,7 +87,9 @@ def make_lines_end_with_pattern(content, full_line_pattern):
     else:
       lines_out.append(line)
     last_line_complete = current_line_complete
-  return "  \n".join(lines_out)
+  content = "  \n".join(lines_out)
+  content = regex.sub(f" *({full_line_pattern})", r"\1  \n", content)
+  return content
 
 
 def dehyphenate_sanskrit_verse_line_endings(content, script=sanscript.DEVANAGARI):

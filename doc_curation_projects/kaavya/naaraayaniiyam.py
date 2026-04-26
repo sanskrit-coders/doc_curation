@@ -49,7 +49,7 @@ def get_item(id, dir_path):
 def insert_translation(content, *args):
   def replacement_maker(match):
     text = match.group(0)
-    soup = scraping.get_soup(url=f"https://sanskritdocuments.org/sites/completenarayaneeyam/GistHtm/{match.group(2)}gist.htm")
+    (soup, _) = scraping.get_soup(url=f"https://sanskritdocuments.org/sites/completenarayaneeyam/GistHtm/{match.group(2)}gist.htm")
     detail = details_helper.Detail(title="English (Padmini)", content=soup.select_one("body").text).to_md_html()
     text += f"\n\n{detail}\n\n"
     return text

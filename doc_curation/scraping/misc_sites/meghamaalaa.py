@@ -17,7 +17,7 @@ import os, regex
 import aksharamukha
 
 def get_text(url, source_script=sanscript.DEVANAGARI):
-  soup = scraping.get_soup(url=url)
+  (soup, _) = scraping.get_soup(url=url)
   title_tag = soup.select_one("h1.elementor-heading-title")
   if title_tag is not None:
     title = fix_text(text=title_tag.text, source_script=source_script)
@@ -68,7 +68,7 @@ def dump_text(url, dest_path, source_script=sanscript.DEVANAGARI, overwrite=Fals
   md_file.dump_to_file(metadata={"title": title}, content=content, dry_run=dry_run)
 
 def dump_series(url, dest_path, start_index=None, end_index=None, filename_from_title=lambda x:x, source_script=sanscript.DEVANAGARI, overwrite=False):
-  soup = scraping.get_soup(url=url)
+  (soup, _) = scraping.get_soup(url=url)
   logging.info(f"Dumping series starting {url}")
   parts_tag = soup.select_one(".related-posts-meghamala")
   links = list(parts_tag.select("a"))

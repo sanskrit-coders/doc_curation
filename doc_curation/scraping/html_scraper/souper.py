@@ -24,13 +24,11 @@ logging.basicConfig(
 
 
 def get_html(url):
-  soup = scraping.get_soup(url)
+  (soup, result) = scraping.get_soup(url)
   body_element = soup.select("body")
   if len(body_element) == 0:
     logging.warning("Could not get text form %s with soup", url)
-    filehandle = urllib.request.urlopen(url)
-    content = filehandle.read().decode("utf8")
-    filehandle.close()
+    content = result.text
   else:
     content = body_element[0].decode_contents()
   return content
@@ -156,7 +154,8 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_maker=lam
   if os.path.exists(outfile_path) and not overwrite:
     logging.info("skipping: %s - it exists already", outfile_path)
     # We definitely want to return the original html even if the file exists - we may need to navigate to the next element.
-    return scraping.get_soup(url)
+    (soup, _) = scraping.get_soup(url)
+    return soup
   logging.info("Dumping: %s to %s", url, outfile_path)
   html = get_html(url=url)
   unaltered_soup = BeautifulSoup(html, 'html.parser')
@@ -202,7 +201,7 @@ def anchor_url_from_soup_css(soup, css, base_url, pattern=None):
 
 
 def detail_dumper(url, outfile_path, title_prefix, detail_maker, dry_run=False):
-  soup = scraping.get_soup(url=url)
+  (soup, _) = scraping.get_soup(url=url)
   details = detail_maker(soup)
   content = "\n\n".join([d.to_md_html() for d in details])
   md_file = MdFile(file_path=outfile_path)
@@ -278,7 +277,7 @@ def get_indexed_urls(start_url, next_url_getter, url_gatherer, url_file_path=Non
   urls = []
   url = start_url
   while url is not None:
-    soup = scraping.get_soup(url)
+    (soup, _) = scraping.get_soup(url)
     urls.extend(url_gatherer(soup, url))
     url = next_url_getter(soup, url)
   if url_file_path is not None:

@@ -57,7 +57,7 @@ def check_mantra_match(soup, dest_path, strip_svaras=False):
 
 
 def dump_mantra_details(dest_path, url, commentaries_needed, mode=ForceMode.NONE, muula_insertion_mode="all_detail"):
-  soup = scraping.get_soup(url=url)
+  (soup, _) = scraping.get_soup(url=url)
   buttons = soup.select("a.rounded-sm.border-dark")
   if len(buttons) < 2:
     return None
@@ -101,7 +101,7 @@ def dump_mantra_details(dest_path, url, commentaries_needed, mode=ForceMode.NONE
   # for i in range(10):
   #   if len(comments_divs) >= 1:
   #     break
-  #   soup = scraping.get_soup(url=url)
+  #   (soup, _) = scraping.get_soup(url=url)
   #   comments_divs = list(soup.select("div.bhashya-bhag card"))
   # 
   # for comments_div in comments_divs:

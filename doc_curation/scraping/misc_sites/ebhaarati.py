@@ -90,7 +90,7 @@ def dump_article(url, outfile_path, browser=None, title_prefix="", metadata=None
 
 
 def get_metadata(url):
-  soup = scraping.get_soup(url=url)
+  (soup, _) = scraping.get_soup(url=url)
   metadata = {}
   for detail_tag in soup.select(".product__info__main h5"):
     detail_parts = regex.split(r"\s*:\s*", detail_tag.text)

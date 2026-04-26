@@ -18,7 +18,7 @@ BASE_URL = "https://divyaprabandham.koyil.org/"
 def extract_main_content(url, source_script=sanscript.TAMIL):
   """Try to find the main article content"""
   # Most common location in WordPress-style sites
-  soup = scraping.get_soup(url)
+  (soup, _) = scraping.get_soup(url)
   if not soup:
     logging.info("Cannot continue - failed to load main page.")
     exit(1)

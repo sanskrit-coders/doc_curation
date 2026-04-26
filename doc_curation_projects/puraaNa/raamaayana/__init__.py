@@ -16,7 +16,7 @@ def get_adhyaaya_md_files(md_file_path):
 
 def get_adhyaaya_id(p):
     p = str(p)
-    kaanda_index_match = regex.search("/0?(\d)_", p)
+    kaanda_index_match = regex.search(r"/0?(\d)_", p)
     sarga_index_match = regex.search(r"/(\d\d\d)([a-z]?)", p)
     if kaanda_index_match is not None and sarga_index_match is not None:
         sarga_id = f"{int(sarga_index_match.group(1)):03}{sarga_index_match.group(2)}"
@@ -39,5 +39,5 @@ def get_adhyaaya_to_source_file_map():
 def get_doc_data(worksheet_name="गोरक्षपुरपाठः"):
     from curation_utils.google import sheets
     # TODO: The below is deleted.
-    doc_data = sheets.IndexSheet(spreadhsheet_id="1AkjjTATqaY5dVN10OqdNQSa8YBTjtK2_LBV0NoxIB7w", worksheet_name=worksheet_name, id_column="id", google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/sanskritnlp/service_account_key.json')
+    doc_data = sheets.IndexSheet(spreadhsheet_id="1AkjjTATqaY5dVN10OqdNQSa8YBTjtK2_LBV0NoxIB7w", worksheet_name=worksheet_name, id_column="id", google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/proofing/service_account_key.json')
     return doc_data

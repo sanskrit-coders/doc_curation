@@ -29,7 +29,7 @@ def get_title(div):
   return file_helper.clear_bad_chars(title)[:30]
 
 def dump_month(url, dest_path_month):
-  soup = scraping.get_soup(url=url)
+  (soup, _) = scraping.get_soup(url=url)
   content_divs = soup.select("#showData>div")
   for index, div in enumerate(content_divs):
     title = f"{(index + 1):02d} " + get_title(div)
@@ -45,7 +45,7 @@ def dump_month(url, dest_path_month):
 
 def dump_year(year, dest_path):
   url = f"{BASE_URL}/months?year={year}"
-  soup = scraping.get_soup(url=url)
+  (soup, _) = scraping.get_soup(url=url)
   month_urls = [os.path.join(BASE_URL, x["href"]) for x in soup.find_all("a") if x.text.strip() == "Unicode" ]
   num_months = len(month_urls)
   logging.info(f"Months in {year}: {num_months}")

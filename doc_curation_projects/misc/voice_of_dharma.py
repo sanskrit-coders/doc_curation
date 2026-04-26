@@ -47,7 +47,7 @@ def dump_doc(url, out_dir, index, dry_run=False):
         logging.info("Skipping Dumping %s to %s", url, out_file_path)
         return
     logging.info("Dumping %s to %s", url, out_file_path)
-    soup = scraping.get_soup(url)
+    (soup, _) = scraping.get_soup(url)
     if "Not Found" in soup.text:
         logging.warning("%s not found!", url)
         return
@@ -55,7 +55,7 @@ def dump_doc(url, out_dir, index, dry_run=False):
     dump_content(soup=soup, out_file_path=out_file_path, metadata=metadata, dry_run=dry_run)
 
 def dump_docs(index_url, out_dir, dry_run=False):
-    soup = scraping.get_soup(index_url)
+    (soup, _) = scraping.get_soup(index_url)
     out_file_path = os.path.join(out_dir, "_index.md")
     if not os.path.exists(out_file_path):
         dump_content(soup=soup, out_file_path=out_file_path, metadata={}, dry_run=dry_run)

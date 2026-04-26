@@ -14,7 +14,7 @@ from doc_curation.md.library import arrangement
 from doc_curation.utils import patterns
 
 
-def separate_parts(content, exclusion_pattern, inclusion_pattern=patterns.DEVANAGARI, replacement=r"\1\n\n<details><summary>मूलम्</summary>\n\n\2\n</details>\n\n"):
+def separate_parts(content, exclusion_pattern, inclusion_pattern=f"[{patterns.DEVANAGARI}]", replacement=r"\1\n\n<details><summary>मूलम्</summary>\n\n\2\n</details>\n\n"):
   content = regex.sub(rf"({exclusion_pattern})\s*({inclusion_pattern}[\s\S]+?)\s*(?={exclusion_pattern})", replacement, content)
   return content
 

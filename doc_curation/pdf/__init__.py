@@ -140,7 +140,7 @@ def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_pag
 
 
 # Adapted from https://github.com/theeko74/pdfc/blob/master/pdf_compressor.py
-def compress_with_gs(input_file_path, output_file_path, quality='screen'):
+def compress_with_gs(input_file_path, output_file_path=None, quality='screen'):
   """
     Compress PDF using Ghostscript.
     quality: 'screen' (72 dpi, smallest), 'ebook' (150 dpi), 'logging.infoer' (300 dpi), 'prepress', 'default'
@@ -160,6 +160,8 @@ def compress_with_gs(input_file_path, output_file_path, quality='screen'):
   logging.info("Compress PDF...")
   initial_size = os.path.getsize(input_file_path)
   # If output_file_path == input_file_path, the command will fail. Hence the below.
+  if output_file_path is None:
+    output_file_path = input_file_path.replace(".pdf", "_small.pdf")
   output_file_path_tmp = output_file_path.replace(".pdf", ".tmp.pdf")
   try:
     subprocess.call(['gs', '-sDEVICE=pdfwrite', '-dCompatibilityLevel=1.4',

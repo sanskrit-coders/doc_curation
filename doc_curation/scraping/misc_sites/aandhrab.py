@@ -21,8 +21,8 @@ config_aws = doc_curation.configuration['aws']
 
 def dump_kIrtana(url, dest_path, overwrite=False):
   # The below fails
-  # soup = scraping.get_soup(url=url, config_aws=(config_aws["id"], config_aws["key"]))
-  soup = scraping.get_soup(url=url)
+  # (soup, _) = scraping.get_soup(url=url, config_aws=(config_aws["id"], config_aws["key"]))
+  (soup, _) = scraping.get_soup(url=url)
   def _get_text(css):
     node = soup.select_one(css)
     if node is None:
@@ -71,7 +71,7 @@ def dump_from_html_files(src_path, dest_path):
 
 
 def get_article(url):
-  soup = scraping.get_soup(url=url)
+  (soup, _) = scraping.get_soup(url=url)
   title = soup.select_one("font[size='7']").text
   content_tag = soup.select("div.wmsect table td")[-1]
   content = pandoc_helper.get_md_with_pandoc(content_in=str(content_tag), source_format="html")

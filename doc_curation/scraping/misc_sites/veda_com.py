@@ -77,7 +77,7 @@ def check_mantra_match(soup, dest_path, strip_svaras=False):
 
 
 def dump_mantra_details(dest_path, url, comment_detection_str, mode=ForceMode.NONE):
-  soup = scraping.get_soup(url=url)
+  (soup, _) = scraping.get_soup(url=url)
   next_url = urljoin("https://xn--j2b3a4c.com/", soup.select_one("li.next a")["href"])
   if "SKIP" in dest_path:
     logging.warning(f"Skipping dump for {url}")
@@ -123,7 +123,7 @@ def dump_mantra_details(dest_path, url, comment_detection_str, mode=ForceMode.NO
   for i in range(10):
     if len(comments_divs) >= 1:
       break
-    soup = scraping.get_soup(url=url)
+    (soup, _) = scraping.get_soup(url=url)
     comments_divs = soup.select("div.bhashya_show")
 
   comments_divs.extend(soup.select("div.bhashya_hide"))

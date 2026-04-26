@@ -19,7 +19,7 @@ def dump_doc(url, out_dir, index, dry_run=False):
         return 
     logging.info("Dumping %s to %s", url, out_file_path)
     full_url = "http://www.ramakrishnavivekananda.info/vivekananda/" + url
-    soup = scraping.get_soup(full_url)
+    (soup, _) = scraping.get_soup(full_url)
     metadata = {}
     title_elements = soup.select("h2")
     if len(title_elements) > 0:
@@ -40,7 +40,7 @@ def dump_doc(url, out_dir, index, dry_run=False):
 
 def dump_docs(out_dir, dry_run=False):
     index_url = "https://www.ramakrishnavivekananda.info/vivekananda/master_index.htm"
-    soup = scraping.get_soup(index_url)
+    (soup, _) = scraping.get_soup(index_url)
     links = soup.select("a")
     for index, link in enumerate(links[3:]):
         dump_doc(url=link["href"], out_dir=out_dir, index=index, dry_run=dry_run)

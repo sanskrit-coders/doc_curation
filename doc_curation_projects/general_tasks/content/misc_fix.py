@@ -28,12 +28,12 @@ def tamil_nna_fixer(x):
 def fix_whitespaces(dir_path):
   # library.apply_function(fn=MdFile.transform, content_transformer=space_helper.make_paras, dir_path=dir_path)
 
-  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.remove_fake_linebreaks(c), dir_path=dir_path)
+  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, *args, **kargs: space_helper.remove_fake_linebreaks(c), dir_path=dir_path)
 
-  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.remove_excess_newlines(c), dir_path=dir_path)
-  library.apply_function(fn=MdFile.transform, content_transformer=lambda c, *args, **kwargs: space_helper.make_lines_end_with_pattern(c, ".+[।॥]"), dir_path=dir_path)
+  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, *args, **kargs:space_helper.remove_excess_newlines(c), dir_path=dir_path)
+  library.apply_function(fn=MdFile.transform, content_transformer=lambda c, *args, **kwargs: space_helper.make_lines_end_with_pattern(c, "[^।॥]+[।॥]"), dir_path=dir_path)
 
-  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, m:space_helper.markdownify_newlines(c), dir_path=dir_path)
+  # library.apply_function(fn=MdFile.transform, content_transformer=lambda c, *args, **kargs:space_helper.markdownify_newlines(c), dir_path=dir_path)
 
 
   pass
@@ -42,7 +42,7 @@ def fix_whitespaces(dir_path):
 def misc_typos(dir_path):
   # doc_curation.clear_bad_chars(file_path="/home/vvasuki/sanskrit/raw_etexts/mImAMsA/mImAMsA-naya-manjarI.md", dry_run=False)
 
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: sanskrit_helper.fix_anunaasikaadi(x, level=0), dry_run=False, silent_iteration=False)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: sanskrit_helper.fix_anunaasikaadi(x, level=0), dry_run=False, silent_iteration=False)
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: ocr_helper.fix_google_ocr_iast_iso(x))
 
@@ -59,8 +59,8 @@ def misc_typos(dir_path):
 
 if __name__ == '__main__':
   # fix_audio_tags()
-  # misc_typos("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/lokAchAryaH/shrI-vachana-bhUShaNam/sa-hi")
-  # fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/marIchiH/vimAnArchana-kalpaH/000")
+  # misc_typos("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/nAradaH/bhAradvAja-saMhitA")
+  fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/agniveshya-grihya-sUtram.md")
   # section_fix()
 
 
@@ -68,7 +68,7 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/pAdma-saMhitA/", content_transformer=lambda x, y: ocr_helper.fix_mid_shloka_empty_lines(x))
 
 
-  library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/kAvyam/bhAShAntaram/avadhI/tulasI-dAsaH/rAma-charita-mAnasa/goraxapura-pATha/marAThy-anuvAda", patterns=[r"\(हिन्दी\)"], replacement=r"\(मराठी\)", )
+  # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/kAvyam/bhAShAntaram/avadhI/tulasI-dAsaH/rAma-charita-mAnasa/goraxapura-pATha/marAThy-anuvAda", patterns=[r"\(हिन्दी\)"], replacement=r"\(मराठी\)", )
   # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/bhAgavatam/gauDIya-prastutiH/", patterns=[r"\\?[\|।] *\\?[\|।]"], replacement="॥")
   # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/bhAgavatam/gauDIya-prastutiH/", patterns=[r"\\?[\|।]"], replacement="।")
   # library.apply_function(fn=content_processor.replace_texts, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/bhAgavatam/gauDIya-prastutiH/", patterns=[r"\n[\*\\॥। ]+\n"], replacement="\n------------------------------\n")

@@ -32,7 +32,7 @@ def import_bellamkonda():
       id = f"{chapter_index:02d}/{id:02d}"
       md_file_dest = MdFile(file_path=ref_map[id])
       # logging.info(md_file_dest)
-      # md_file_dest.replace_content_metadata(new_content=lambda c: f"{c}\n\n{detail.to_md_html()}\n", dry_run=False)
+      md_file_dest.replace_content_metadata(new_content=lambda c: f"{c}\n\n{detail.to_md_html()}\n", dry_run=False)
 
 
 def combine_shAnkara():
@@ -82,6 +82,12 @@ def combine_hindI():
   combination.combine_to_details(source_paths_or_content=subpaths, dest_path=os.path.join(static_root, "sarvASh_TIkAH"), mode="append", dry_run=False)
 
 
+def fix_muula():
+  pass
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/static/vyAsaH/shlokashaH/06-bhIShma-parva/03-bhagavad-gItA-parva/saMskRtam/mUlam", content_transformer=lambda c, *args, **kwargs: details_helper.wrap_into_detail(content=c, title="मूलम् - प्रसिद्धम्", attributes_str=" open"))
+
+
+
 if __name__ == '__main__':
   pass
   # combine_shAnkara()
@@ -91,4 +97,5 @@ if __name__ == '__main__':
   # combine_abhinavaH()
   # combine_english()
   # combine_hindI()
-  import_bellamkonda()
+  # import_bellamkonda()
+  fix_muula()

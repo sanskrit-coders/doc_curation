@@ -35,7 +35,7 @@ def rv_wiki_dumper(url, outfile_path, dry_run=False, *args, **kwargs):
 
 
 def get_commentaries(url):
-  soup = scraping.get_soup(url)
+  (soup, _) = scraping.get_soup(url)
   bhaashya_tag = soup.select_one(".mw-collapsible-content")
   p_tags = bhaashya_tag.select("p")
   p_texts = [t.text.strip() for t in p_tags]

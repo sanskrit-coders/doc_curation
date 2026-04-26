@@ -36,7 +36,7 @@ def get_post_html(url, entry_css_list=None, browser=None):
   '''get the text body of links'''
   logging.info("Processing post at %s", url)
   if browser is None:
-    soup = scraping.get_soup(url)
+    (soup, _) = scraping.get_soup(url)
   else:
     soup = scraping.scroll_and_get_soup(url=url, browser=browser)
   non_content_tags = soup.select("#jp-post-flair") + soup.select("svg") + soup.select("style") + soup.select("script")

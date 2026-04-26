@@ -75,7 +75,7 @@ def set_filename_from_title(md_file, source_script=None, mixed_languages_in_titl
     current_file_name = os.path.basename(os.path.dirname(md_file.file_path))
   else:
     current_file_name = os.path.basename(md_file.file_path).replace(".md", "")
-  current_file_name = regex.sub(r"^\d+_*", "", current_file_name)
+  current_file_name = regex.sub(r"^[\d\.]+_*", "", current_file_name)
 
   if not overwrite and current_file_name != "":
     return 
@@ -237,7 +237,7 @@ def set_title_from_content(md_file, title_extractor, rename=True, log_level=logg
 
 def fix_field_values(md_files,
                      spreadhsheet_id, worksheet_name, id_column, value_column,
-                     md_file_to_id, md_frontmatter_field_name="title", google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/sanskritnlp/service_account_key.json', post_process_fn=None,
+                     md_file_to_id, md_frontmatter_field_name="title", google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/proofing/service_account_key.json', post_process_fn=None,
                      dry_run=False):
   # logging.debug(adhyaaya_to_mp3_map)
   logging.info("Fixing titles of %d files", len(md_files))

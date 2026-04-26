@@ -39,7 +39,7 @@ format_map = {
 
 
 def dump_all():
-  soup = scraping.get_soup(source_file)
+  (soup, _) = scraping.get_soup(source_file)
   details = html_scraper.soup_to_details(soup=soup, css_selector="body>p",
                                          get_detail_type=lambda tag_classes: html_scraper.get_detail_type(
                                            tag_classes=tag_classes, detail_map=dict(detail_map, **format_map)))

@@ -102,7 +102,7 @@ def content_from_details(details):
 
 
 def get_content(source_path):
-  soup = scraping.get_soup(source_path)
+  (soup, _) = scraping.get_soup(source_path)
   
   fix_tags(soup=soup)
 

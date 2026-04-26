@@ -9,7 +9,7 @@ from curation_utils import scraping, file_helper
 
 
 def get_text(url):
-    soup = scraping.get_soup(url=url)
+    (soup, _) = scraping.get_soup(url=url)
     text = soup.select_one("div.entry-content").text
     text = doc_curation.md.markdownify_plain_text(text)
     title_p = soup.select_one("p[style=\"font-family:https://adishila.com/wpcontent/uploads/2021/06/AdishilaSanBoldB.ttf;font-size:40px;color:#23883D;text-align:center\"]")
@@ -19,7 +19,7 @@ def get_text(url):
 
 
 def dump_all_texts(dest_dir, overwrite=False):
-    soup = scraping.get_soup(url="https://adishila.com/unicode-text/")
+    (soup, _) = scraping.get_soup(url="https://adishila.com/unicode-text/")
     links = soup.select("div.wp-block-file a")
     for link in links:
         (title, text) = get_text(link["href"])

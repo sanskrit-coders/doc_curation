@@ -75,6 +75,7 @@ def fix_accent_typos(text):
     c = regex.sub(pattern, replacement, c)
   return c
 
+
 def undo_taittirIya_forms(text):
   SP_QUOT = r"[\s\"',;*]*"
   # Bad replacements 

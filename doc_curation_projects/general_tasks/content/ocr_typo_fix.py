@@ -67,7 +67,8 @@ def misc_typos(dir_path):
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_line_end_dashes(x))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: fix_ttd(x))
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: sanskrit_helper.fix_lazy_anusvaara(x))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: sanskrit_helper.fix_anunaasikaadi(x, level=0), dry_run=False, silent_iteration=False)
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: sanskrit_helper.fix_lazy_anusvaara(x))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.misc_manipravaala_typs(x))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_avagraha_quotations(x))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_pandoc_md(x))
@@ -101,5 +102,5 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/meta/nArAyaNa-raghunAthau", content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_iast_for_pdfs(x), dry_run=False)
 
   devanagari = sanscript.SCHEMES[sanscript.DEVANAGARI]
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/ahobila-14-nArAyaNa-muniH/puruSha-kAra-mImAMsA/meta/sAxAd-vedAnta-rAmAnujaH_shrI-tattva-siddhAnjanam/_index.md", content_transformer=lambda x, *args, **kwargs: sanscript.SCHEMES[sanscript.DEVANAGARI].redo_upapada_sandhis(x), dry_run=False)
-  misc_typos("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/ahobila-14-nArAyaNa-muniH/puruSha-kAra-mImAMsA/meta/sAxAd-vedAnta-rAmAnujaH_shrI-tattva-siddhAnjanam/_index.md")
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/chillarai-rahasyangaL/rahasya-ratnAvalI", content_transformer=lambda x, *args, **kwargs: sanscript.SCHEMES[sanscript.DEVANAGARI].redo_upapada_sandhis(x), dry_run=False)
+  # misc_typos("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/ahobila-shAkhA/02-ahobila-nArAyaNa-muniH/rahasya-traya-jIvAtuH/gaja-laxmI-samIxA/5_mUlam")

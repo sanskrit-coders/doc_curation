@@ -24,7 +24,7 @@ def get_all_texts():
   url = "https://www.dsbcproject.org/canon-text/browse-by-list/77"
   
   # Send a GET request to the URL
-  soup = scraping.get_soup(url)
+  (soup, _) = scraping.get_soup(url)
   # Find the table containing the texts
   table = soup.find('table')
   
@@ -51,7 +51,7 @@ def get_all_texts():
 
 
 def dump_text_to_file(url, dir_path, title):
-  soup = scraping.get_soup(url)
+  (soup, _) = scraping.get_soup(url)
 
   def _get_meta_info(soup):
     # Find the table on the page
@@ -97,7 +97,7 @@ def dump_text_to_file(url, dir_path, title):
 
 def dump_text_bunch(text, base_path):
   # Send a GET request to the URL
-  soup = scraping.get_soup(text["url"])
+  (soup, _) = scraping.get_soup(text["url"])
   # Find the table containing the texts
   table = soup.find('table')
   if not table:

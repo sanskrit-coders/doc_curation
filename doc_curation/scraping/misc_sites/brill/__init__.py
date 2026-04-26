@@ -14,7 +14,7 @@ def dump_chapter(url, dest_path, dry_run=False, overwrite=False):
   if os.path.exists(dest_path) and not overwrite:
     logging.info(f"Exists {dest_path}! Returning.")
     return 
-  soup = scraping.get_soup(url=url)
+  (soup, _) = scraping.get_soup(url=url)
   title = soup.select_one("h1.title").text
   two_page_divs = list(soup.select("#chapterBody div.tableWrap"))
   if len(two_page_divs) == 0:

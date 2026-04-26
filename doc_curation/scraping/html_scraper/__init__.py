@@ -10,7 +10,7 @@ from curation_utils import scraping
 
 def get_class_counts(html, css_selector):
   if html.startswith('/') or html.startswith('http', 'html.parser'):
-    soup = scraping.get_soup(html)
+    (soup, _) = scraping.get_soup(html)
   else:
     soup = BeautifulSoup(html, 'html.parser')
   tags = soup.select(css_selector)

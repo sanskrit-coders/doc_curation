@@ -131,7 +131,7 @@ def dump(url, outfile_path, main_content_extractor=get_main_content, dry_run=Fal
     return None
   logging.info("Dumping: %s to %s", url, outfile_path)
   if soup is None:
-    soup = scraping.get_soup(url, features='html.parser')
+    (soup, _) = scraping.get_soup(url, features='html.parser')
   full_title = title_from_element(soup, title_css_selector="h3,h4")
   title = metadata_helper.title_from_text(text=full_title, num_words=3, target_title_length=30, script=sanscript.IAST)
   content = get_content(soup=soup, main_content_extractor=main_content_extractor)
@@ -185,7 +185,7 @@ def dump_meta_article(url, outfile_path):
 
 
 def get_cross_page_footnote(url, footnote_id):
-  soup = scraping.get_soup(url, "html.parser")
+  (soup, _) = scraping.get_soup(url, "html.parser")
   souper.insert_divs_between_tags(soup, "hr")
   (main_div, footnote_div) = get_content_divs(soup=soup)
   definitions = get_footnote_definitions(footnote_div)

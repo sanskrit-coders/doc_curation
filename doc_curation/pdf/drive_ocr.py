@@ -14,7 +14,7 @@ from doc_curation.pdf import compress_with_gs, detext_via_jpg, split_into_small_
 import argparse
 
 
-def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf", detext=False, google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/sanskritnlp/service_account_key.json'):
+def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf", detext=False, google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/proofing/ocr_app_oauth.json'):
   """
   small_pdf_pages=1 works best for kannaDa - images uploaded, rather than pdf.
   
@@ -42,7 +42,7 @@ def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf", detext
 
  
 def split_and_ocr_on_drive(pdf_path,
-                           google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/sanskritnlp/service_account_key.json',
+                           google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/proofing/ocr_app_oauth.json',
                            small_pdf_pages=25, start_page=1, end_page=None, pdf_compression_power=0, detext=None):
   """
   OCR some pdf with google drive. Automatically splits into 25 page bits and ocrs them individually.
@@ -98,7 +98,7 @@ def _prepare_pdf(detext, pdf_compression_power, pdf_path):
   return altered_pdf_path
 
 
-def ocr_all(dir_path, file_name_filter=None, google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/sanskritnlp/service_account_key.json'):
+def ocr_all(dir_path, file_name_filter=None, google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/proofing/ocr_app_oauth.json'):
   logging.info("Do the OCR")
   drive_client = drive.get_cached_client(google_key=google_key)
   for f in os.listdir(dir_path):
@@ -128,7 +128,7 @@ def _ocr_pdf_segments(google_key, pdf_segments):
 
 
 def split_to_images_and_ocr(pdf_path,
-                            google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/sanskritnlp/service_account_key.json'):
+                            google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/proofing/ocr_app_oauth.json'):
   final_ocr_path = pdf_path + ".txt"
   if os.path.exists(final_ocr_path):
     logging.warning("Skipping %s: %s exists", pdf_path, final_ocr_path)
@@ -152,7 +152,7 @@ def split_to_images_and_ocr(pdf_path,
 
 def main():
   """
-  Invocation example: /usr/bin/python3 -m doc_curation.pdf.drive_ocr --input_path=/home/vvasuki/Documents/books/granthasangrahaH/Chandas/ --google_key=/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/sanskritnlp/service_account_key.json
+  Invocation example: /usr/bin/python3 -m doc_curation.pdf.drive_ocr --input_path=/home/vvasuki/Documents/books/granthasangrahaH/Chandas/ --google_key=/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/proofing/ocr_app_oauth.json
   
   :return: 
   """

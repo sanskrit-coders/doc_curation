@@ -7,7 +7,7 @@ import regex
 
 def dump_varga(sa_name, kaanda_id, dest_dir, en_name=None):
   url = "http://amara.aupasana.com/varga?varga=%s" % sa_name
-  soup = scraping.get_soup(url)
+  (soup, _) = scraping.get_soup(url)
   content_div = soup.select_one("div.content")
   content = ""
   shloka_id = ""
