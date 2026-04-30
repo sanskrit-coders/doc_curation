@@ -20,7 +20,7 @@ def line_breaker(x):
 
 def make_details(dir_path):
   pass
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.non_detail_parts_to_detail(content=c, title="मूलम्", attributes_str=" open"))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.non_detail_parts_to_detail(content=c, title="श्री-राम-देशिकः - भावार्थः", attributes_str=""))
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.sections_to_details(content=c))
 
 
@@ -31,7 +31,7 @@ def make_details(dir_path):
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_NUM_SUTRA))
 
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.pattern_to_details(content=c, pattern=patterns.TAMIL_BLOCK, title="द्राविडी"))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.pattern_to_details(content=c, pattern=patterns.TAMIL_BLOCK, title="द्राविडी"))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: section_helper.section_headings_to_details(content=c))
 
@@ -64,7 +64,7 @@ def transliterate(dir_path):
 
 
 if __name__ == '__main__':
-  make_details(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/padyam/venkaTa-nAthArya-stutiH/mahAchArya-vaibhava-prakAshikA.md")
+  make_details(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/kumAra-varadaH/piLLaiy-antAdi.md")
   # transliterate(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/rAma-subba-shAstrI/mahA-shaiva-mata-mardanam.md")
   # transform_details(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/rAma-subba-shAstrI/mahA-shaiva-mata-mardanam.md")
   pass
