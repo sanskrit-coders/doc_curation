@@ -174,6 +174,7 @@ def dump_2pane_series(url, dest_path, overwrite=False):
     md = f"Source: [TW]({url})  \n{md}"
     if title is not None and title != prev_title:
       md = f"## {title}\n{md}"
+    prev_title = title
     md_out += f"\n\n{md}"
     url = next_url_getter(soup, url)
     page_count = page_count + 1

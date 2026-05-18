@@ -53,11 +53,15 @@ def vedAH_yajuH():
   # ebook.make_all("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/paddhatiH/shrIvaiShNavaH/gopAla-deshika-shrAddha-prayogaH", metadata={"author": "gopAla-deshikaH"}, file_split_level=1, detail_pattern_to_remove=r"मूलम्.*", out_path=out_path, css_path=CSS_PATH, appendix=appendix_dg, )
 
 
+def vedAH_Rk():
+  out_path = os.path.join(OUT_PATH_BASE, "vedAH_Rk", "AshvalAyanaH/gRhyam")
+  pass
+  ebook.make_all("/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content/shAkalam/sUtram/AshvalAyanaH/gRhyam/sarva-prastutiH", metadata={"author": "आश्वलायनः, Oldenberg"}, file_split_level=1, detail_pattern_to_remove=r"मूलम्.*", out_path=out_path, css_path=CSS_PATH, appendix=appendix_dg, overwrite="pdf")
 
 if __name__ == '__main__':
-  rAmAnujIyam()
+  # rAmAnujIyam()
   # vedAH_yajuH()
-
+  vedAH_Rk()
   # pdf_book.save_grid_a3_pdf(text="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/covers/stitch_print.md", dest_file="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/covers/stitch_print_landscape.pdf", num_rows=4)
 
   # a5_path = "/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/vedAH_yajuH/ApastambaH/dharma-sUtram-en/dharma-sUtram-en_a5.pdf"

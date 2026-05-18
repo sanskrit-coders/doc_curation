@@ -66,10 +66,15 @@ def brahmasUtrAdi():
 
 
 def purANAdi():
+  dvaita.dump_series(url="https://dvaitavedanta.in/category-details/2567/295/sharam/1-shar/upatha", dest_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAsaH/shlokashaH/bhagavad-gItA-parva/TIkA/mAdhvI/bhAShyam/sarva-prastutiH", start_file=None)
+
+  dvaita.dump_series(url="https://dvaitavedanta.in/category-details/2022/567/sharam/2-shar/garana/managa", dest_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAsaH/shlokashaH/bhagavad-gItA-parva/TIkA/mAdhvI/tAtparya-nirNayaH/sarva-prastutiH", start_file=None)
+
+
   # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/10778/10775/parana/sharam/parath/parath", dest_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/bhAgavatam/madhva-tAtparya-nirNayaH/sarva-prastutiH", start_file="01_prathamaskandhaH/10_dashamo-dhyAyaH.md")
   # dvaita.dump_series(url="https://dvaitavedanta.in/category-details/14142/923/itahas/1-yama/malma", dest_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/kAvyam/padyam/madhvaH/yamaka-bhAratam")
   pass
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/bhAgavatam/madhva-tAtparya-nirNayaH/sarva-prastutiH/", content_transformer=lambda c, *args, **kwargs: details_helper.pattern_to_details(content=c, pattern=r"(?<=\n|^)# (.+)(?=\n)", title="मूलम्", attributes_str=" open"))
+  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/bhAgavatam/madhva-tAtparya-nirNayaH/sarva-prastutiH/", content_transformer=lambda c, *args, **kwargs: details_helper.pattern_to_details(content=c, pattern=r"(?<=\n|^)# (.+)(?=\n)", title="मूलम्", attributes_str=" open"))
 
 
 def kAvyAdi():

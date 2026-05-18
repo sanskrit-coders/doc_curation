@@ -1,4 +1,5 @@
 import logging
+import os
 
 from doc_curation.ebook import pdf_book
 from pypdf import PdfReader, PdfWriter, PageObject
@@ -59,7 +60,7 @@ def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_t
   """
   :param input_pdf_path: Path to source PDF.
   :param output_pdf_path: Path to save result.
-  :param sig_pages: Max pages per signature (4 pages per sheet).
+  :param sig_pages: An array.
   :param signature_title: String prefix for the separator page (e.g. "Part"). 
                           If None, no separator is added.
   """
@@ -97,7 +98,7 @@ def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_t
   sig_count = 1
   # Wrap range in tqdm for a progress bar
   for (sig_start, sig_end) in tqdm(sig_bounds, desc="Signatures"):
-    sig_pages = pages_in[sig_start:sig_end]
+    sig_pages = pages_in[sig_start:sig_end + 1]
 
     # --- Add Title Page if prefix is provided ---
     if sig_start != 0 and signature_title is not None:
@@ -147,8 +148,9 @@ def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_t
 
   # 5. Save the result
   if output_pdf_path is None:
-    output_pdf_path = input_pdf_path.replace(".pdf", "_LandShortEdge_booklet.pdf")
+    output_pdf_path = input_pdf_path.replace(".pdf", f"_LandShortEdge_{sig_count-1}P_booklet.pdf")
   # 4. Save the result
+  os.makedirs(os.path.dirname(output_pdf_path), exist_ok=True)
   with open(output_pdf_path, "wb") as out_file:
     writer.write(out_file)
 
@@ -303,3 +305,7 @@ def two_column_page_booklet(input_pdf_path, output_pdf_path=None):
   with open(output_pdf_path, "wb") as out_file:
     writer.write(out_file)
   logging.info(f"Booklet created: {output_pdf_path}")
+
+
+if __name__ == '__main__':
+  to_booklet(input_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/purANam/rAmAyaNam-pullela/2 - Ayodhya-Part1.pdf", output_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/purANam/rAmAyaNam-pullela/output/2_ayodhyA_v1_2sigs.pdf", sig_pages=[427], signature_title="P ", metadata={"title": "अयोध्या-काण्डम् १", "author": "वाल्मीकिः"})

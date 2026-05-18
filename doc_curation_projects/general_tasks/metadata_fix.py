@@ -45,7 +45,7 @@ def file_name_fix(dir_path, overwrite=False, dry_run=False):
 
 
 if __name__ == '__main__':
-  # title_fix("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/dharma-sUtram/sarva-prastutiH", overwrite=False, dry_run=False)
+  title_fix("/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content/shAkalam/sUtram/AshvalAyanaH/gRhyam/sarva-prastutiH", overwrite=False, dry_run=False)
   # library.apply_function(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/tattvam/jIva-gosvAmI/ShaT-sandarbhaH/en/satya-nArAyaNaH", fn=metadata_helper.set_title_from_filename, transliteration_target=sanscript.DEVANAGARI, overwrite=True, dry_run=False)
 
   # file_name_fix("/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/marIchiH/vimAnArchanA-kalpaH/", overwrite=True, dry_run=False)

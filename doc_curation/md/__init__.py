@@ -12,8 +12,9 @@ logging.basicConfig(
 
 
 def markdownify_plain_text(text_in):
-  text = text_in.replace("\n", "  \n")
-  text = regex.sub("^  $", "", text)
+  text = regex.sub(r"(?<=\S) *\n", r"  \n", text_in.strip())
+  text = regex.sub(r"^ +", "", text, flags=regex.MULTILINE)
+  text = regex.sub(r"^ +$", "", text, flags=regex.MULTILINE)
   return text
 
 
