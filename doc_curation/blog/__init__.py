@@ -95,7 +95,7 @@ def get_post_metadata(soup):
 
   title = None
   if len(title_tags) > 0:
-    title = title_tags[0].text.replace('\xa0', ' ')
+    title = title_tags[0].get_text(separator="\n", strip=True).replace('\xa0', ' ')
 
   date = None
 
@@ -145,7 +145,7 @@ def get_post_metadata(soup):
         time_tag = time_tags[0]
         date_string = time_tag.get("datetime", None)
         if date_string is None:
-          date_string = time_tag.text
+          date_string = time_tag.get_text(separator="\n", strip=True)
         date = parser.parse(date_string, fuzzy=True)
       except Exception:
         date = None
@@ -158,7 +158,7 @@ def get_post_metadata(soup):
       if date is None:
         import datefinder
         # non-strict mode goofs up with "May 24, 2026 Like (15) comments (4) 5 Share ... narrates the lives of the 63" TODO: Fix this.
-        matches = list(datefinder.find_dates(post_tags[0].text))
+        matches = list(datefinder.find_dates(post_tags[0].get_text(separator="\n")))
         if len(matches) > 0:
           date = matches[0]
 

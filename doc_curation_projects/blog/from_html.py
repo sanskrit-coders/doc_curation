@@ -78,6 +78,7 @@ def dump_wordpress_monthly():
 
 
 def dump_substack():
+  substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/non-hindu/razib", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://krishnants.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/krishnants", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://mylapore.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/mylapore-devanAthan", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://ramaseshanchandrasekaran.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/ramaseshan", dry_run=False)
@@ -88,7 +89,6 @@ def dump_substack():
 
   substack.scrape_free_articles_from_index_anchors(url="https://tsering.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/bauddham/tsering", dry_run=False)
 
-  substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/non-hindu/razib", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://www.stoneageherbalist.com/?sort=new", dir_path=f"{BASE_PATH}/weblogs/non-hindu/stoneageherbalist", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://frontierdharma.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/hindoohistory_frontierdharma", dry_run=False)
   # substack.scrape_free_articles_from_index_anchors(url="https://hindoohistory.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/hindoohistory", dry_run=False)
