@@ -34,10 +34,10 @@ def word_clouds():
 
 
 def dump_wordpress():
+  wordpress.scrape_index(url="https://vriitrahan.wordpress.com/2021/07/21/archive/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/vriitrahan/")
   wordpress.scrape_index(url="https://manasataramgini.wordpress.com/the-complete-index/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/manasataramgini")
   wordpress.scrape_index(url="https://vansatakopadaya.wordpress.com/index-of-all-posts/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/vansatakopadaya")
   wordpress.scrape_index(url="https://padmavajra.net/index-of-posts/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/padmavajra/")
-  wordpress.scrape_index(url="https://vriitrahan.wordpress.com/2021/07/21/archive/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/vriitrahan/")
   wordpress.scrape_index(url="https://aryaakasha.com/unfiltered-archive/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/aryaakasha/")
   wordpress.scrape_index(url="https://cestlaviepriya.wordpress.com/index/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/cestlaviepriya")
   # wordpress.scrape_index(url="https://agnimaan.wordpress.com/index-of-all-posts/", dry_run=False, dir_path=f"{BASE_PATH}/weblogs/agnimaan")
@@ -78,32 +78,34 @@ def dump_wordpress_monthly():
 
 
 def dump_substack():
+  substack.scrape_free_articles_from_index_anchors(url="https://krishnants.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/krishnants", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://mylapore.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/mylapore-devanAthan", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://ramaseshanchandrasekaran.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/ramaseshan", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://cshc.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/cshc", dry_run=False)
 
   substack.scrape_free_articles_from_index_anchors(url="https://thamizhlabs.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/thamizhlabs", dry_run=False)
 
 
-  substack.scrape_free_articles_from_index_anchors(url="https://tsering.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/bauddham/tsering", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://tsering.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/bauddham/tsering", dry_run=False)
 
-  substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/non-hindu/razib", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://www.stoneageherbalist.com/", dir_path=f"{BASE_PATH}/weblogs/non-hindu/stoneageherbalist", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://frontierdharma.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/hindoohistory_frontierdharma", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/non-hindu/razib", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://www.stoneageherbalist.com/?sort=new", dir_path=f"{BASE_PATH}/weblogs/non-hindu/stoneageherbalist", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://frontierdharma.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/hindoohistory_frontierdharma", dry_run=False)
   # substack.scrape_free_articles_from_index_anchors(url="https://hindoohistory.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/hindoohistory", dry_run=False)
 
-  substack.scrape_free_articles_from_index_anchors(url="https://thedharmadispatch.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/dharma-dispatch", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://jhalazalimsingh.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/jhalazalimsingh", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://williamjames17.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/williamjames17", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://sadashree.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/sadashree", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://thedharmadispatch.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/dharma-dispatch", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://jhalazalimsingh.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/jhalazalimsingh", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://williamjames17.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/williamjames17", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://sadashree.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/sadashree", dry_run=False)
 
-  substack.scrape_free_articles_from_index_anchors(url="https://newsletter.smallbets.co/archive", dir_path=f"{BASE_PATH}/weblogs/non-hindu/smallbets", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://machiavellianhindu.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/machiavellianhindu", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://vikramdialogues.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/vikramdialogues", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://eruditus.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/eruditus", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://nemets.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/non-hindu/nemets", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://rasajournal.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/rasajournal", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://ekavali.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/ekavali", dry_run=False)
-  substack.scrape_free_articles_from_index_anchors(url="https://bharadvajatmaja.substack.com/archive", dir_path=f"{BASE_PATH}/weblogs/bharadvajatmata", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://newsletter.smallbets.co/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/non-hindu/smallbets", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://machiavellianhindu.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/machiavellianhindu", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://vikramdialogues.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/vikramdialogues", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://eruditus.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/eruditus", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://nemets.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/non-hindu/nemets", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://rasajournal.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/rasajournal", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://ekavali.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/ekavali", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://bharadvajatmaja.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/bharadvajatmata", dry_run=False)
 
   pass
 
@@ -119,8 +121,8 @@ if __name__ == '__main__':
   # word_clouds()
   # dump_mags()
   # blog.organize_by_date(dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/sage-bloodlines/bhRguH/dvitIyajanmani_bhRguH/chyavanaH/ApnavAna/aurvaH/jamadagniH/MT_charitram")
+  dump_substack()
   dump_wordpress()
   dump_wordpress_monthly()
-  dump_substack()
   # 
   # blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path=f"{BASE_PATH}/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)

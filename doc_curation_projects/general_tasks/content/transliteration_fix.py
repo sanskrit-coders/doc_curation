@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/pinb-aLHagiya-perumAL-jIyar-vArtA-mAlA.md", content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
 
-  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/01_tiruppallaNDu_tirumoLHi_pEriyaLHvar_1-473/00_tiru-pallANDu/periyav-AchchAn-piLLai.md", source_script=sanscript.TAMIL)
+  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/deshika-prabandhAH/aDaikalap-pattu/sevA-svAmI.md", source_script=sanscript.TAMIL)
 
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/para-mata-bhangaH/mUlam.md", source_script="tamil_subscripted")
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/kumAra-varadaH/gopAlAchArya_kn_sa/1960", source_script="kannada")

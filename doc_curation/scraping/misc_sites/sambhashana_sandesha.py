@@ -11,14 +11,14 @@ from doc_curation.md.file import MdFile
 
 import doc_curation.md
 from curation_utils import scraping, file_helper
-from doc_curation.scraping.html_scraper.souper import get_tags_matching_css
+from doc_curation.scraping.html_scraper.souper import get_tags_matching_first_css
 
 BASE_URL = "https://sambhashanasandesha.in"
 
 
 def get_title(div):
   title_css_list = ["h1", "h2", "h3", "h4", "h5", "h6", "p"]
-  paras = get_tags_matching_css(soup=div, css_selector_list=title_css_list)
+  paras = get_tags_matching_first_css(soup=div, css_selector_list=title_css_list)
   title = " ".join([x.text.strip() for x in itertools.takewhile(lambda x: x.name.lower()[0] == "h", paras)])
   if title == "":
     title = " ".join([x.text.strip() for x in itertools.takewhile(lambda x: x.get("style", "") == "text-align:center", paras)])

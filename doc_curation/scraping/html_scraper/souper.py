@@ -34,13 +34,28 @@ def get_html(url):
   return content
 
 
-def get_tags_matching_css(soup, css_selector_list):
+def get_tags_matching_first_css(soup, css_selector_list):
   for css in css_selector_list:
     tags = soup.select(css)
     if len(tags) > 0:
       return tags
   return []
 
+
+def get_tags_matching_css(soup, css_selector_list):
+  results = []
+  for css in css_selector_list:
+    results.extend(soup.select(css))
+
+  # Deduplicate based on object identity while preserving DOM order
+  seen = set()
+  unique_results = []
+  for tag in results:
+    tag_id = id(tag)  # Always unique for every distinct tag object
+    if tag_id not in seen:
+      seen.add(tag_id)
+      unique_results.append(tag)
+  return unique_results
 
 def tag_replacer(soup, css_selector, tag_name):
   for element in soup.select(css_selector):

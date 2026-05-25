@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import os
 import shutil
@@ -16,9 +17,10 @@ from curation_utils import file_helper
 from curation_utils.file_helper import get_storage_name
 from doc_curation.ebook import pandoc_helper
 from doc_curation.md import library
+from doc_curation.scraping.html_scraper import souper
 from doc_curation.utils import text_utils
 from doc_curation.md.file import MdFile
-from doc_curation.scraping.html_scraper.souper import get_tags_matching_css
+from doc_curation.scraping.html_scraper.souper import get_tags_matching_first_css
 from curation_utils import scraping
 from indic_transliteration import sanscript
 from indic_transliteration.detect import detect
@@ -39,13 +41,16 @@ def get_post_html(url, entry_css_list=None, browser=None):
     (soup, _) = scraping.get_soup(url)
   else:
     soup = scraping.scroll_and_get_soup(url=url, browser=browser)
+  if soup is None:
+    logging.error(f"Can't get soup for {url}")
+    return "", None
   non_content_tags = soup.select("#jp-post-flair") + soup.select("svg") + soup.select("style") + soup.select("script")
   for tag in non_content_tags:
     tag.decompose()
 
   if entry_css_list is None:
     entry_css_list = ["div.entry-content", "div.entrybody", "div.post-entry", "div.post", "div.available-content", "div.entry", "div.main", "div.card-body"]
-  entry_divs = get_tags_matching_css(soup=soup, css_selector_list=entry_css_list)
+  entry_divs = get_tags_matching_first_css(soup=soup, css_selector_list=entry_css_list)
 
   if not entry_divs:
     return (None, soup)
@@ -55,32 +60,107 @@ def get_post_html(url, entry_css_list=None, browser=None):
   return (post_html, soup)
 
 
+import re
+from dateutil import parser
+
+def extract_date_with_regex(text):
+  # Pattern 1: Month Day, Year (e.g., "May 24, 2026", "Feb 07, 2026", "October 5, 2025")
+  # Matches month name (or abbreviation), day (1-2 digits), and year (4 digits)
+  pattern_month_day_year = r'\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-zA-Z]*\.?\s+\d{1,2},?\s+\d{4}\b'
+
+  # Pattern 2: Day Month Year (e.g., "24 May 2026", "07 February 2026")
+  pattern_day_month_year = r'\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-zA-Z]*\.?\s+\d{4}\b'
+
+  # Pattern 3: Standard ISO/YMD Date (e.g., "2026-05-24", "2026/02/07")
+  pattern_iso = r'\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b'
+
+  # Combine patterns
+  combined_pattern = f'({pattern_month_day_year})|({pattern_day_month_year})|({pattern_iso})'
+
+  match = re.search(combined_pattern, text, re.IGNORECASE)
+  if match:
+    matched_str = match.group(0)
+    try:
+      # Parse only the extracted substring with fuzzy=False to prevent noise pollution
+      return parser.parse(matched_str, fuzzy=False)
+    except Exception:
+      pass
+  return None
+
+
 def get_post_metadata(soup):
+  # 1. Extract the title
   title_css_list = [".post-title", ".entry-title", "h1", "h2", ".card-header", "h3", "h4"]
-  title_tags = get_tags_matching_css(soup=soup, css_selector_list=title_css_list)
+  title_tags = get_tags_matching_first_css(soup=soup, css_selector_list=title_css_list)
 
   title = None
   if len(title_tags) > 0:
     title = title_tags[0].text.replace('\xa0', ' ')
-  time_css_list = ["time", ".entry-date", ".post-date", ".published", "div.card-body>center"]
-  time_tags = get_tags_matching_css(soup=soup, css_selector_list=time_css_list)
+
   date = None
-  if len(time_tags) > 0:
-    try:
-      time_tag = time_tags[0]
-      date_string = time_tag.get("datetime", None)
-      if date_string is None:
-        date_string = time_tag.text
-      date = parser.parse(date_string, fuzzy=True)
-    except parser.ParserError:
-      date = None
+
+  # 2. Primary Attempt: Extract from JSON-LD structured metadata (Highly reliable for Substack)
+  json_ld_tags = soup.find_all("script", type="application/ld+json")
+  for tag in json_ld_tags:
+    if tag.string:
+      try:
+        data = json.loads(tag.string)
+        # JSON-LD can be a single dictionary or a list of dictionaries
+        if isinstance(data, dict):
+          date_string = data.get("datePublished")
+        elif isinstance(data, list) and len(data) > 0:
+          date_string = data[0].get("datePublished")
+        else:
+          date_string = None
+        
+        if date_string:
+          date = parser.parse(date_string, fuzzy=True)
+          break
+      except Exception:
+        pass
+
+  # 3. Secondary Attempt: Extract from standard HTML head meta-tags
   if date is None:
-    post_tags = get_tags_matching_css(soup=soup, css_selector_list=["article", ".post"])
+    meta_selectors = [
+      "meta[property='article:published_time']",
+      "meta[name='publication_date']",
+      "meta[name='publish-date']",
+      "meta[property='og:pubdate']"
+    ]
+    for selector in meta_selectors:
+      meta_tag = soup.select_one(selector)
+      if meta_tag and meta_tag.get("content"):
+        try:
+          date = parser.parse(meta_tag["content"], fuzzy=True)
+          break
+        except Exception:
+          pass
+
+  # 4. Tertiary Fallback: Original time element CSS selectors
+  if date is None:
+    time_css_list = ["time", ".entry-date", ".post-date", ".published", "div.card-body>center"]
+    time_tags = get_tags_matching_first_css(soup=soup, css_selector_list=time_css_list)
+    if len(time_tags) > 0:
+      try:
+        time_tag = time_tags[0]
+        date_string = time_tag.get("datetime", None)
+        if date_string is None:
+          date_string = time_tag.text
+        date = parser.parse(date_string, fuzzy=True)
+      except Exception:
+        date = None
+
+  # 5. Final Fallback: Datefinder on raw article text
+  if date is None:
+    post_tags = get_tags_matching_first_css(soup=soup, css_selector_list=["article", ".post"])
     if len(post_tags) > 0:
-      import datefinder
-      matches = list(datefinder.find_dates(post_tags[0].text))
-      if len(matches) > 0:
-        date = matches[0]
+      date = extract_date_with_regex(post_tags[0].get_text(separator="\n"))
+      if date is None:
+        import datefinder
+        # non-strict mode goofs up with "May 24, 2026 Like (15) comments (4) 5 Share ... narrates the lives of the 63" TODO: Fix this.
+        matches = list(datefinder.find_dates(post_tags[0].text))
+        if len(matches) > 0:
+          date = matches[0]
 
   return date, title
 
@@ -118,6 +198,9 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
     post_parsed = False
   else:
     ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list)
+    if soup is None:
+      logging.error(f"Could not get title from {url}")
+      return False
     date_obj, title = get_post_metadata(soup)
     if title is None:
       logging.warning(f"Could not get title from {url}")
@@ -179,10 +262,10 @@ def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdow
   if anchor_css_list is not None:
     if post_html is not None:
       soup = BeautifulSoup(post_html, 'lxml')
-    post_anchors = get_tags_matching_css(soup=soup, css_selector_list=anchor_css_list)
+    post_anchors = souper.get_tags_matching_css(soup=soup, css_selector_list=anchor_css_list)
   else:
-    anchor_css = [".entry-title a", "h1.title a", "h3 a",]
-    post_anchors = get_tags_matching_css(soup=soup, css_selector_list=anchor_css)
+    anchor_css = [".entry-title a", "h1.title a", "h3 a"]
+    post_anchors = souper.get_tags_matching_css(soup=soup, css_selector_list=anchor_css)
 
   post_anchors = [x for x in post_anchors if "href" in x.attrs]
   if urlpattern is not None:

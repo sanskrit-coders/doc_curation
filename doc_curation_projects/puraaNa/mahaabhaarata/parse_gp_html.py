@@ -60,19 +60,19 @@ def romanize(text):
 
 def fix_tags(soup):
   ## First, fix some text
-  tags = souper.get_tags_matching_css(soup=soup, css_selector_list=css_selector_list(format_map["citation_marker"]))
+  tags = souper.get_tags_matching_first_css(soup=soup, css_selector_list=css_selector_list(format_map["citation_marker"]))
   for tag in tags:
     tag.string.replace_with(f"[[{tag.text}]]")
 
-  tags = souper.get_tags_matching_css(soup=soup, css_selector_list=css_selector_list(format_map["footnote_marker"]))
+  tags = souper.get_tags_matching_first_css(soup=soup, css_selector_list=css_selector_list(format_map["footnote_marker"]))
   for tag in tags:
     tag.string.replace_with(f"[^{tag.text}]")
 
-  tags = souper.get_tags_matching_css(soup=soup, css_selector_list=css_selector_list(format_map["footnote_definition_marker"]))
+  tags = souper.get_tags_matching_first_css(soup=soup, css_selector_list=css_selector_list(format_map["footnote_definition_marker"]))
   for tag in tags:
     tag.string.replace_with(f"[^{tag.text}]:")
 
-  tags = souper.get_tags_matching_css(soup=soup, css_selector_list=css_selector_list(format_map["footnote_quote"]))
+  tags = souper.get_tags_matching_first_css(soup=soup, css_selector_list=css_selector_list(format_map["footnote_quote"]))
   for tag in tags:
     if tag.string is None:
       logging.warning(f"Check {tag}")
@@ -80,7 +80,7 @@ def fix_tags(soup):
       tag.string.replace_with(f"'''{tag.text}'''")
 
 
-  tags = souper.get_tags_matching_css(soup=soup, css_selector_list=css_selector_list(format_map["telling_hindi"]))
+  tags = souper.get_tags_matching_first_css(soup=soup, css_selector_list=css_selector_list(format_map["telling_hindi"]))
   for tag in tags:
     tag.string.replace_with(f"_{tag.text}_ ")
 
