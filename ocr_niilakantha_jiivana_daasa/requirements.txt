@@ -16,7 +16,7 @@ protobuf==3.15.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pyparsing==2.4.7
-PyPDF2==1.26.0
+PyPDF2==1.27.5
 python-docx==0.8.10
 pytz==2021.1
 requests==2.25.1
