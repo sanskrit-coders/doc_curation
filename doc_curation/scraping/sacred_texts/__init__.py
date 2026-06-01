@@ -33,7 +33,7 @@ def get_footnote_definitions(footnote_div):
     anchors = tag.findChildren('a', recursive=False)
     if len(anchors) < 2:
       continue
-    footnote_id = anchors[0].get('name')
+    footnote_id = anchors[0].get_html('name')
     anchors[0].decompose()
     definition = get_text(tag).strip()
     if footnote_id is None:
@@ -104,7 +104,7 @@ def get_content(soup, main_content_extractor=get_main_content):
   souper.insert_divs_between_tags(soup, "hr")
   footnote_markers = soup.select("a[href]>font[size='1']")
   for marker in footnote_markers:
-    footnote_id = marker.parent.get("href").replace("#", "")
+    footnote_id = marker.parent.get_html("href").replace("#", "")
     footnote_md = f"[^{footnote_id}]"
     marker.parent.replace_with(footnote_md)
 

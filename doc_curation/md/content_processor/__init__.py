@@ -19,7 +19,7 @@ def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVA
   else:
     text = regex.sub(r"(?<=\+\+\+\()(.+?)(?=\)\+\+\+)", r"{{\1}}", text)
     # Quotes should not be mistaken for transliteration togglers. 
-    text = regex.sub("(?<=\n|^)>", r"≫", text)
+    text = regex.sub(r"(?<=\n|^)>", r"≫", text)
 
     if sanscript.SCHEMES[source_script].is_roman:
       text = regex.sub(r"(?<=<details><summary>)(.*Eng.*)</summary>([\s\S]+?)(?=</details>)", r"{{\1}}</summary>{{\2}}", text)

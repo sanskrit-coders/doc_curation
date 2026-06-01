@@ -23,7 +23,7 @@ def get_canonical_verse_id(soup, chapter_id):
   verse_maps = {
   }
   verse_map = verse_maps.get(chapter_id, {})
-  verse_num = verse_map.get(verse_num, verse_num)
+  verse_num = verse_map.get_html(verse_num, verse_num)
   # gangAnatha jhA seems to follow the canonical numbering (confirmed on ch 3 and 8). No correction needed.
   if chapter_id == "05":
     if verse_num >= 61 and verse_num < 122:

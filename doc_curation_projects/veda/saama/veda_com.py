@@ -16,9 +16,9 @@ def path_maker(url):
   Rk_id = "%04d"  % Rk_id_int
   if Rk_id not in Rk_num_to_name_map:
     Rk_id_prev = "%04d"  % (Rk_id_int - 1)
-    dest_path = os.path.join(saama.TIKA_DIR, Rk_num_to_name_map.get(Rk_id_prev).replace(Rk_id_prev, Rk_id) + ".md")
+    dest_path = os.path.join(saama.TIKA_DIR, Rk_num_to_name_map.get_html(Rk_id_prev).replace(Rk_id_prev, Rk_id) + ".md")
   else:
-    dest_path = os.path.join(saama.TIKA_DIR, Rk_num_to_name_map.get(Rk_id) + ".md")
+    dest_path = os.path.join(saama.TIKA_DIR, Rk_num_to_name_map.get_html(Rk_id) + ".md")
   return (dest_path, mode)
 
 

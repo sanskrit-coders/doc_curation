@@ -50,7 +50,7 @@ def get_date(soup):
 
 def get_thread_messages_selenium(url, browser=thread_browser):
   # Expanding threads forces us to click and trigger javascript loading. Hence we then use selenium, rather than soup.
-  browser.get(url=url)
+  browser.get_html(url=url)
   try:
     expand_link = browser.find_element(value="", by=By.LINK_TEXT)
     expand_link.click()
@@ -116,7 +116,7 @@ def dump_messages_by_subject(messages, subject, dest_dir, url, dry_run=False):
 
 
 def scrape_threads(url, dest_dir, start_url=None, dumper=dump_messages_to_files, browser=base_browser, dry_run=False):
-  browser.get(url=url)
+  browser.get_html(url=url)
   thread_count = 0
   page_count = 0
   while(True):

@@ -14,7 +14,7 @@ def path_maker(url):
   id_bits[1] = "%03d" % int(url.split("/")[-2])
   id = "/".join(id_bits)
   Rk_id_to_name_map = Rk.get_Rk_id_to_name_map_from_muulam()
-  dest_path = os.path.join(Rk.commentary_base, "/".join(id_bits[:-1]), Rk_id_to_name_map.get(id) + ".md")
+  dest_path = os.path.join(Rk.commentary_base, "/".join(id_bits[:-1]), Rk_id_to_name_map.get_html(id) + ".md")
   return (dest_path, mode)
 
 

@@ -107,7 +107,7 @@ def process_catalog_page_selenium(url, out_dir):
   logging.info("Processing catalog %s", url)
   # For some reason, soup does not manage to get the full source. Content of div.catalog_record_body is empty. Hence using selenium.
   
-  browser.get(url=url)
+  browser.get_html(url=url)
   text_links = browser.find_elements(By.LINK_TEXT, "View in Unicode transliteration")
   # The below yields rare transliteration errors, such as  तडिच्चञ्चलमायुश्च कस्य स्याज्जगतो [धृ]तिः ॥ in kulArNavatantra:30.
   # text_links = browser.find_elements_by_link_text("View in Unicode devanagari")

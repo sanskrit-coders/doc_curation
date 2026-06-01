@@ -14,7 +14,7 @@ def get_canonical_verse_number(verse_num, chapter_id):
     # "08": {248: 250, 250: 248 }
   }
   verse_map = verse_maps.get(chapter_id, {})
-  verse_num = verse_map.get(verse_num, verse_num)
+  verse_num = verse_map.get_html(verse_num, verse_num)
   if chapter_id == "11":
     if verse_num > 5 and verse_num <= 226:
       verse_num = verse_num + 1 # धनानि तु यथाशक्ति

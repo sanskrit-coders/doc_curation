@@ -28,7 +28,7 @@ with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'local_config
 def get_logged_in_browser(headless=True):
   configuration_archive = configuration['archive']
   browser = scraping.get_selenium_chrome(headless=headless)
-  browser.get("https://archive.org/account/login")
+  browser.get_html("https://archive.org/account/login")
   username = browser.find_element(By.NAME, "username")
   username.send_keys(configuration_archive["user"])
   browser.find_element(By.NAME, "password").send_keys(configuration_archive["pass"])
@@ -40,7 +40,7 @@ def get_logged_in_browser(headless=True):
 def download_images(url, dest_dir):
   # Use credentials in case of borrowed books.
   browser = get_logged_in_browser(headless=False)
-  browser.get(url=url)
+  browser.get_html(url=url)
   # document.querySelector("ia-book-actions").shadowRoot.querySelector("collapsible-action-group").shadowRoot.querySelector("button") 
   # works in js. But .shandow_root.find_element(By.CSS_SELECTOR, "button") fails in python.
   time.sleep(10)
@@ -57,7 +57,7 @@ def download_images(url, dest_dir):
   # TODO: Directly using the urls does not work. Should open a nearby page in the reader first.
   for image_id in range(1,9999):
     url = url_base % image_id
-    browser.get(url=url)
+    browser.get_html(url=url)
     
     
     if "Error serving request:" in browser.page_source:

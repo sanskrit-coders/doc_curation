@@ -34,7 +34,7 @@ def dump_text(url, out_path, overwrite=True):
     logging.info("Not overwriting %s to %s", url, out_path)
     return
   logging.info("Dumping %s to %s", url, out_path)
-  browser.get(url)
+  browser.get_html(url)
   text_elements = browser.find_elements(By.CSS_SELECTOR, "div.sam")
   if len(text_elements) == 0:
     text_elements = [browser.find_elements(By.CSS_SELECTOR, "table")[-1]]
@@ -50,7 +50,7 @@ def dump_text(url, out_path, overwrite=True):
 
 def dump_book(init_url, out_path, overwrite=True):
   logging.info("Dumping %s to %s", init_url, out_path)
-  browser.get(init_url)
+  browser.get_html(init_url)
 
   divs = browser.find_elements(By.CSS_SELECTOR, "div")
   divs = [div for div in divs if

@@ -34,6 +34,13 @@ logging.basicConfig(
 # Set the logging level for your specific loggers
 logging.getLogger("dateutil").setLevel(logging.WARNING)
 
+
+def remove_non_content_tags(soup):
+  non_content_tags = soup.select("#jp-post-flair") + soup.select("svg") + soup.select("style") + soup.select("script")
+  for tag in non_content_tags:
+    tag.decompose()
+
+
 def get_post_html(url, entry_css_list=None, browser=None):
   '''get the text body of links'''
   logging.info("Processing post at %s", url)
@@ -44,9 +51,6 @@ def get_post_html(url, entry_css_list=None, browser=None):
   if soup is None:
     logging.error(f"Can't get soup for {url}")
     return "", None
-  non_content_tags = soup.select("#jp-post-flair") + soup.select("svg") + soup.select("style") + soup.select("script")
-  for tag in non_content_tags:
-    tag.decompose()
 
   if entry_css_list is None:
     entry_css_list = ["div.entry-content", "div.entrybody", "div.post-entry", "div.post", "div.available-content", "div.entry", "div.main", "div.card-body"]
@@ -109,7 +113,7 @@ def get_post_metadata(soup):
         if isinstance(data, dict):
           date_string = data.get("datePublished")
         elif isinstance(data, list) and len(data) > 0:
-          date_string = data[0].get("datePublished")
+          date_string = data[0].get_html("datePublished")
         else:
           date_string = None
         
@@ -129,7 +133,7 @@ def get_post_metadata(soup):
     ]
     for selector in meta_selectors:
       meta_tag = soup.select_one(selector)
-      if meta_tag and meta_tag.get("content"):
+      if meta_tag and meta_tag.get_html("content"):
         try:
           date = parser.parse(meta_tag["content"], fuzzy=True)
           break
@@ -143,7 +147,7 @@ def get_post_metadata(soup):
     if len(time_tags) > 0:
       try:
         time_tag = time_tags[0]
-        date_string = time_tag.get("datetime", None)
+        date_string = time_tag.get_html("datetime", None)
         if date_string is None:
           date_string = time_tag.get_text(separator="\n", strip=True)
         date = parser.parse(date_string, fuzzy=True)
@@ -270,6 +274,8 @@ def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdow
   post_anchors = [x for x in post_anchors if "href" in x.attrs]
   if urlpattern is not None:
     post_anchors = [anchor for anchor in post_anchors if regex.match(urlpattern, anchor["href"])]
+  post_anchors = [anchor for anchor in post_anchors if "share=" not in anchor["href"]]
+
   processed_urls = []
   for anchor in post_anchors:
     post_url = urljoin(url, anchor["href"])
@@ -309,3 +315,9 @@ def organize_by_date(dir_path, dry_run=False):
       if not dry_run:
         os.makedirs(os.path.dirname(new_path), exist_ok=True)
         shutil.move(md_file.file_path, new_path)
+
+
+if __name__ == '__main__':
+  browser = scraping.get_selenium_chrome(headless=True)
+  soup = scraping.scroll_and_get_soup(url="https://www.razibkhan.com/p/korean-identity-a-story-of-genetic", browser=browser)
+  get_post_metadata(soup=soup)

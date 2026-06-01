@@ -62,7 +62,7 @@ def dump_docs(index_url, out_dir, dry_run=False):
 
     links = soup.select("a")
     for index, link in enumerate(links):
-        href = link.get("href", None)
+        href = link.get_html("href", None)
         text = fix_text(link.text)
         if href and "Back to" not in text and href not in ["http://voiceofdharma.org"]:
             if href.startswith("http"):

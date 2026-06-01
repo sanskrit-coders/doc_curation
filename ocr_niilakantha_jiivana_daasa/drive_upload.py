@@ -51,7 +51,7 @@ class GDrive():
 											fields='id').execute()
 		socket.setdefaulttimeout(300)
 		sg.Print('%s Uploaded ' % file_metadata['name'])
-		return file1.get('id')
+		return file1.get_html('id')
 
 	def upload_merged_doc(self, fileName, filePath):
 		file_metadata = {'name': fileName, 'mimeType': 'application/vnd.google-apps.document'}
