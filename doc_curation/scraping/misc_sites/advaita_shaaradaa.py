@@ -59,7 +59,7 @@ prakarana_texts = ["vivekachudamani", "shrutisarasamuddharanam", "shatashloki", 
 
 
 def get_text(url):
-  browser.get_html(url=url)
+  browser.get(url=url)
   chapter_links = browser.find_elements(By.CSS_SELECTOR, "ul#sidebar > li:not(.special) > a")
   for chapter_link in chapter_links:
     target = chapter_link.get_attribute("href").replace(url, "")

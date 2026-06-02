@@ -16,7 +16,7 @@ def json_obj_to_post(obj, dest_dir, post_field_to_json_field, section_fields, dr
   metadata = {}
   for post_field in post_field_to_json_field:
     json_field = post_field_to_json_field[post_field]
-    value = obj.get_html(json_field, "")
+    value = obj.get(json_field, "")
     if "date" in post_field:
       value = obj[json_field][:len("2020-02-20")]
     if value is not None and value != "":
@@ -24,7 +24,7 @@ def json_obj_to_post(obj, dest_dir, post_field_to_json_field, section_fields, dr
 
   content = ""
   for field in section_fields:
-    if obj.get_html(field, "") == "":
+    if obj.get(field, "") == "":
       continue
     content = "%s\n## %s\n%s\n\n" % (content, field, obj[field].replace("\n", "\n\n"))
 

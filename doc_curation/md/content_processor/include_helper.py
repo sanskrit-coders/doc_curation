@@ -142,7 +142,7 @@ def transform_includes_with_soup(content, metadata, transformer, *args, **kwargs
       # Decomposed include?
       continue
     for parent in parents:
-      if "js_include" in parent.get_html("class", []):
+      if "js_include" in parent.get("class", []):
         top_level_include = False
         break
     if top_level_include:
@@ -263,10 +263,10 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   md_file = MdFile(file_path=file_path)
   (metadata, content) = md_file.read()
   metadata["_file_path"] = file_path
-  if h1_level_offset == "b[]" or inc.get_html("newlevelforh1", 2) == "b[]":
+  if h1_level_offset == "b[]" or inc.get("newlevelforh1", 2) == "b[]":
     h1_level = "b[]"
   else:
-    h1_level = h1_level_offset + int(inc.get_html("newlevelforh1", 2))
+    h1_level = h1_level_offset + int(inc.get("newlevelforh1", 2))
   if "newlevelforh1" not in inc.attrs:
     logging.warning(f"No newlevelforh1 for {file_path} in {container_file_path}")
 
@@ -278,8 +278,8 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
     return 
   content = transform_includes_with_soup(content=content, metadata=metadata, h1_level_offset=h1_level, transformer=prefill_include, dynamic_loading=dynamic_loading, hugo_base_dir=hugo_base_dir)
 
-  title = inc.get_html("title", "")
-  if title == "" and inc.get_html("includetitle", "false").lower() != "false":
+  title = inc.get("title", "")
+  if title == "" and inc.get("includetitle", "false").lower() != "false":
     title = metadata.get("title", "UNKNOWN_TITLE")
     if title == "UNKNOWN_TITLE":
       logging.warning(f"Could not get title for {file_path} in {container_file_path}")

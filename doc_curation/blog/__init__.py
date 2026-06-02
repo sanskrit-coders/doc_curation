@@ -113,7 +113,7 @@ def get_post_metadata(soup):
         if isinstance(data, dict):
           date_string = data.get("datePublished")
         elif isinstance(data, list) and len(data) > 0:
-          date_string = data[0].get_html("datePublished")
+          date_string = data[0].get("datePublished")
         else:
           date_string = None
         
@@ -133,7 +133,7 @@ def get_post_metadata(soup):
     ]
     for selector in meta_selectors:
       meta_tag = soup.select_one(selector)
-      if meta_tag and meta_tag.get_html("content"):
+      if meta_tag and meta_tag.get("content"):
         try:
           date = parser.parse(meta_tag["content"], fuzzy=True)
           break
@@ -147,7 +147,7 @@ def get_post_metadata(soup):
     if len(time_tags) > 0:
       try:
         time_tag = time_tags[0]
-        date_string = time_tag.get_html("datetime", None)
+        date_string = time_tag.get("datetime", None)
         if date_string is None:
           date_string = time_tag.get_text(separator="\n", strip=True)
         date = parser.parse(date_string, fuzzy=True)

@@ -16,11 +16,11 @@ def process_word_meaning_json(in_path, out_path):
   references = {}
 
   # Populate the dictionary
-  for item in data.get_html("results"):
-    ref_id = item.get_html("reference_id")
-    word = item.get_html("word")
-    translation = item.get_html("translation")
-    sort_order = item.get_html("sort_order")
+  for item in data.get("results"):
+    ref_id = item.get("reference_id")
+    word = item.get("word")
+    translation = item.get("translation")
+    sort_order = item.get("sort_order")
 
     # Ensure all required fields are present
     if ref_id is not None and word is not None and translation is not None and sort_order is not None:
@@ -58,13 +58,13 @@ def process_basic_data_json(in_path, out_path):
   id_to_verse = {}
   id_to_ta_meaning = {}
   # Populate the dictionary
-  for item in data.get_html("results"):
-    ref_id = item.get_html("number_full")
-    basic_data = {"uv_id": f"{item.get_html('sc')}_{item.get_html('pathu')}_{item.get_html('thirumozhi')}", "rAga": item.get_html('ragam'), "tAla": item.get_html("thalam"), "bhAva": item.get_html('mood')}
+  for item in data.get("results"):
+    ref_id = item.get("number_full")
+    basic_data = {"uv_id": f"{item.get('sc')}_{item.get('pathu')}_{item.get('thirumozhi')}", "rAga": item.get('ragam'), "tAla": item.get("thalam"), "bhAva": item.get('mood')}
     id_to_basic_data[ref_id] = basic_data
-    id_to_simple_verse[ref_id] = regex.sub("\\n *", "  \n", item.get_html("pasuram_ta"))
-    id_to_verse[ref_id] = regex.sub("\\n *", "  \n", item.get_html("pasuram_ta_c"))
-    id_to_ta_meaning[ref_id] = regex.sub("\\n *", "  \n", item.get_html("meaning_ta"))
+    id_to_simple_verse[ref_id] = regex.sub("\\n *", "  \n", item.get("pasuram_ta"))
+    id_to_verse[ref_id] = regex.sub("\\n *", "  \n", item.get("pasuram_ta_c"))
+    id_to_ta_meaning[ref_id] = regex.sub("\\n *", "  \n", item.get("meaning_ta"))
 
   # Sort the reference IDs to print them in order
   sorted_ref_ids = sorted(id_to_basic_data.keys(), key=lambda x: int(sanscript.transliterate(x, sanscript.DEVANAGARI, sanscript.IAST)))

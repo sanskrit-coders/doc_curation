@@ -269,7 +269,7 @@ def adjascent_inserter(detail_tag, metadata, neighbor_maker, inserter=PageElemen
 
 def add_detail_footnotes(content, remove_detail=False, *args, **kwargs):
   def transformer(detail_tag, *args, **kwargs):
-    if detail_tag.get_html("open") is not None:
+    if detail_tag.get("open") is not None:
       return 
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
     previous_details = detail_tag.find_all_previous(name=detail_tag.name)
@@ -283,7 +283,7 @@ def add_detail_footnotes(content, remove_detail=False, *args, **kwargs):
   if remove_detail:
     # We don't want to affect len(previous_details) in footnote numbering - so we remove the details separately.
     def remover(detail_tag, *args, **kwargs):
-      if detail_tag.get_html("open") is not None:
+      if detail_tag.get("open") is not None:
         return
       detail_tag.decompose()
     content = transform_detail_tags_with_soup(content=content, metadata=None, transformer=remover, details_css=detail_css)

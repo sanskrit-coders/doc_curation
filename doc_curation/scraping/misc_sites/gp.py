@@ -22,7 +22,7 @@ def generator():
 def get_book_browser(url):
   # NOTE to V: Login with FB
   browser = scraping.get_selenium_chrome(headless=False)
-  browser.get_html(url=url)
+  browser.get(url=url)
   time.sleep(6)
   next_element = browser.find_element(By.LINK_TEXT, "पुस्तक पढ़ें")
   browser.execute_script("arguments[0].click();", next_element)

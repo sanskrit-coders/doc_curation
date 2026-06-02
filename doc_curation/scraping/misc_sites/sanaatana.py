@@ -33,7 +33,7 @@ def dump_mbh(dest_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAs
       upaparva_name = regex.sub("parva$", "-parva", upaparva_name)
       adhyayas = soup.select(".adhyaya")
       for adhyaya in tqdm.tqdm(adhyayas, desc="adhyAyas"):
-        id = adhyaya.get_html("id")
+        id = adhyaya.get("id")
         for subid in id.split("_"):
           if subid.startswith("P"):
             parva_id = subid[1:]
@@ -44,14 +44,14 @@ def dump_mbh(dest_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAs
         details = []
         for shloka in adhyaya.select(".shloka"):
           shloka_text = shloka.select_one(".shloka_text")
-          shloka_id = shloka.get_html("id").split("_")[-1][1:]
+          shloka_id = shloka.get("id").split("_")[-1][1:]
           def fix_text(text):
             text = regex.sub(r"\s*\n\s*([।॥])", r"\1  \n", text)
             text = markdownify_plain_text(text)
             return text
           if shloka_text is None:
             text = "TODO: MISSING"
-            logging.warning(f"{text} {shloka.get_html('id')}")
+            logging.warning(f"{text} {shloka.get('id')}")
           else:
             text = fix_text(shloka_text.text)
           detail = Detail(title=f"मूलम् - {shloka_id}", content=text)

@@ -22,7 +22,7 @@ def find_section_by_id(data_list, section_id):
     The dictionary of the matching section, or None if no match is found.
   """
   for section in data_list:
-    if section.get_html('sectionId') == section_id:
+    if section.get('sectionId') == section_id:
       return section
   return None
 

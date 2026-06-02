@@ -16,7 +16,7 @@ logging.basicConfig(
 
 def navigate_to_part(base_page_url, level_3_id, level_4_id=None, level_3_frame="etaindex"):
   browser = selenium_scraper.get_browser()
-  browser.get_html(base_page_url)
+  browser.get(base_page_url)
 
   browser.switch_to.frame("vadd")
   browser.switch_to.frame(level_3_frame)

@@ -21,7 +21,7 @@ browser = scraping.get_selenium_chrome(headless=False)
 
 
 def rewind(init_url):
-    browser.get_html(url=init_url)
+    browser.get(url=init_url)
     first_line_anchor = browser.find_element(By.CSS_SELECTOR, "td.utf>a")
     previous_page_url = first_line_anchor.get_attribute("href")
     if previous_page_url != init_url:
@@ -38,7 +38,7 @@ def dump_text(init_url, out_path, overwrite=True):
     logging.info("Dumping %s to %s", init_url, out_path)
     init_url = rewind(init_url)
     def get_text_and_url(url):
-        browser.get_html(url=url)
+        browser.get(url=url)
         next_url = browser.find_elements(By.CSS_SELECTOR, "td.utf>a")[-1].get_attribute("href")
         if next_url == url:
             logging.info("\nFinished %s.", out_path)

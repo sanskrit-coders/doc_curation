@@ -38,7 +38,7 @@ def dump_series(dest_path, url="https://www.prekshaa.in/archive", search_fields=
 
   if search_fields is not None:
     logging.info(f"Search fields: {search_fields}")
-    browser.get_html(url=url)
+    browser.get(url=url)
     if "search_text" in search_fields:
       browser.find_element(by=By.ID, value="edit-keys").send_keys(search_fields["search_text"])
     _select_search_field(field="author")
