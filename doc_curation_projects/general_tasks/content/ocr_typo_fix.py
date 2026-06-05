@@ -102,5 +102,5 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/meta/nArAyaNa-raghunAthau", content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_iast_for_pdfs(x), dry_run=False)
 
   devanagari = sanscript.SCHEMES[sanscript.DEVANAGARI]
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/siddhi-trayam/sarva-prastutiH/01_AtmasiddhiH.md", content_transformer=lambda x, *args, **kwargs: sanscript.SCHEMES[sanscript.DEVANAGARI].redo_upapada_sandhis(x), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/siddhi-trayam/sarva-prastutiH/02_AtmasiddhiH.md", content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_hyphenation(x), dry_run=False)
   # misc_typos("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/ahobila-shAkhA/02-ahobila-nArAyaNa-muniH/rahasya-traya-jIvAtuH/gaja-laxmI-samIxA/5_mUlam")

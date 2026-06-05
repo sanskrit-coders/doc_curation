@@ -1,5 +1,6 @@
 import regex
 from doc_curation.utils import sanskrit_helper
+from indic_transliteration import sanscript
 
 
 def fix_iast_for_pdfs(text):
@@ -149,6 +150,16 @@ def fix_avagraha_quotations(text):
   text = regex.sub(r"(?<=\s)ऽ", "\"", text)
   text = regex.sub(r"ऽ(?=\s)", "\"", text)
   return text
+
+
+def fix_hyphenation(text):
+  text = sanscript.SCHEMES[sanscript.DEVANAGARI].redo_upapada_sandhis(text)
+  text = regex.sub(r"-([ा-ौ])", r"\1", text)
+  text = regex.sub(r"\*\*(.्) ", r"\1** ", text)
+  text = regex.sub(r"त् च", r"च् च", text)
+  
+  return text
+
 
 def replace_casewise(text, pattern, replacement):
   text = regex.sub(pattern.lower(), replacement.lower(), text)

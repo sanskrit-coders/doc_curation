@@ -24,7 +24,7 @@ if __name__ == '__main__':
   # metadata_helper.ensure_ordinal_in_title(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH/content/Rk/shAkalam/aitareya-brAhmaNam/panchikA_3/adhyAya_13_khaNDaH_1-14", first_file_index=25)
 
   # arrangement.shift_contents(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/vaikhAnasaH/mantra-saMhitA/mUlam/resnick/5/1", start_index=121, substitute_content_offset=4)
-  arrangement.shift_indices(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/vaikhAnasaH/mantra-saMhitA/mUlam/resnick/5/1", start_index=126, new_index_offset=1, dry_run=False)
+  arrangement.shift_indices(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/sampradAyaH/praty-abhijnA/utpaladevaH_Ishvara-pratyabhiJNA-kArikA/vRttiH/mUlam/1_jnAnAdhikAraH/", start_index=3, new_index_offset=1, dry_run=False)
 
   ## Kannada
   # arrangement.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/kannaDa/static/padya/kumAra-vyAsa-bhArata/vishvAsa-prastuti", transliteration_target=sanscript.KANNADA, overwrite=True, dry_run=False)

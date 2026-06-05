@@ -1,5 +1,6 @@
 import logging
 import os
+import shlex
 import subprocess
 
 from doc_curation_projects.puraaNa.bhaagavatam.gp.hindi import dest_path
@@ -12,6 +13,17 @@ from doc_curation.ebook import pdf_book
 
 
 CALIBRE = 'ebook-convert'
+
+
+def print_version():
+  # Print calibre version
+  version_output = subprocess.run(
+    ["ebook-convert", "--version"],
+    capture_output=True,
+    text=True,
+    check=True
+  )
+  logging.info("Calibre version: %s", version_output.stdout.strip())
 
 
 def metadata_to_calibre_args(metadata):
@@ -110,7 +122,8 @@ def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_t
   # options = metadata_to_calibre_args(metadata=metadata)
   # command.extend(options)
   # Execute the command
-  logging.debug(" ".join(command))
+  print_version()
+  logging.debug(" ".join(shlex.quote(arg) for arg in command))
   result = subprocess.run(command, check=True, capture_output=True, text=True)
 
   if move_toc:

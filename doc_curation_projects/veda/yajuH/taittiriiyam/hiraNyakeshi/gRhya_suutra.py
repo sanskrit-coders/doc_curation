@@ -40,7 +40,7 @@ def oldenberg_dest_path_maker(url, base_dir):
   soup = BeautifulSoup(html, 'html.parser')
   title = souper.title_from_element(soup, title_css_selector="h1")
   title = title.replace(" I,", "1,").replace(" II,", "2,")
-  subpath_parts = regex.sub("\D+", " ", title).strip().replace(" ", "_").split("_")
+  subpath_parts = regex.sub(r"\D+", " ", title).strip().replace(" ", "_").split("_")
   subpath_parts = ["%02d" % int(x) for x in subpath_parts]
   subpath = "%s/%s" % (subpath_parts[0], subpath_parts[-1]) 
   return os.path.join(base_dir, subpath + ".md")
@@ -84,14 +84,15 @@ def prep_muula():
 
 
 def fix_includes():
-  include_helper.include_core_with_commentaries(dir_path=os.path.join(content_dir_base,"sarva-prastutiH"), file_pattern="**/[0-9][0-9]*.md", alt_dirs=["oldenberg", "mUlam"], source_dir="vishvAsa-prastutiH")
+  # include_helper.include_core_with_commentaries(dir_path=os.path.join(content_dir_base,"sarva-prastutiH"), file_pattern="**/[0-9][0-9]*.md", alt_dirs=["oldenberg", "mUlam"], source_dir="vishvAsa-prastutiH")
+  include_helper.deincludify(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/hiraNyakeshI/gRhyam/sarva-prastutiH")
 
 
 if __name__ == '__main__':
   # fix_includes()
   # oldenberg_dump()
   # prep_muula()
-  # fix_includes()
-  sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe30/sbe30043.htm", outfile_path=os.path.join(content_dir_base, "meta", "oldenberg.md"))
+  fix_includes()
+  # sacred_texts.dump_meta_article(url="https://www.sacred-texts.com/hin/sbe30/sbe30043.htm", outfile_path=os.path.join(content_dir_base, "meta", "oldenberg.md"))
 
   pass

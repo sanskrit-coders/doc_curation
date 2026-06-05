@@ -328,6 +328,16 @@ def prefill_includes(dir_path, file_name_filter=None, *args, **kwargs):
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, metadata: transform_includes_with_soup(x, metadata, transformer=prefill_include, *args, **kwargs), file_name_filter=file_name_filter)
 
 
+def deincludify(dir_path, *args, **kwargs):
+  # prefill_includes(dir_path=dir_path, *args, **kwargs)
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["</?div.+", r" *[\.…]+\{Loading\}[\.…]+"], replacement="")
+  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"\n\n+"], replacement="\n\n")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"<summary><h\d>"], replacement="<summary>")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"</h\d></summary>"], replacement="</summary>")
+
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r" open><summary>[^<]+"], replacement=" open><summary>विश्वास-प्रस्तुतिः")
+
+
 def alt_include_adder(inc, current_file_path, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/gitland/vishvAsa"):
   """To be used with transform_include_lines.
   

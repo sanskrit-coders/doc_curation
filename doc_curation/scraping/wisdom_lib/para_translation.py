@@ -21,9 +21,9 @@ def get_content(soup):
   content_out = ""
   for para in para_elements:
     # Example sanskrit sUtra text in https://www.wisdomlib.org/hinduism/book/khadira-grihya-sutra/d/doc116673.html 
-    if len(regex.findall("\d+\. ", para.text.strip())) > 2:
+    if len(regex.findall(r"\d+\. ", para.text.strip())) > 2:
       continue
-    para_title = regex.search("(^\d[^ \[.]*)", para.text.strip())
+    para_title = regex.search(r"(^\d[^ \[.]*)", para.text.strip())
     if para_title is not None:
       para_title = para_title.group(1)
       if para_title.isnumeric():

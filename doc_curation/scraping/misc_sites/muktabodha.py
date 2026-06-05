@@ -1,12 +1,16 @@
+import glob
+import json
 import logging
 import os
 
+from matplotlib import scale
 from selenium.webdriver.common.by import By
 
 import doc_curation.utils.sanskrit_helper
 import regex
 from bs4 import BeautifulSoup, Tag
 from curation_utils import scraping, file_helper
+from doc_curation.ebook import pandoc_helper
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import space_helper, footnote_helper
 from doc_curation.md.file import MdFile
@@ -21,7 +25,7 @@ logging.basicConfig(
 
 
 creds = "muktabodha:indology123"
-browser = scraping.get_selenium_chrome(headless=True)
+# browser = scraping.get_selenium_chrome(headless=True)
 
 
 def get_title(title_iast_in):
@@ -54,22 +58,47 @@ def get_file_path(out_dir, title_iast, author_iast=None, catalog_number=None):
   return file_path
 
 
-
 def get_text(url):
+  # TODO: get past the bot-buster
+  (soup, result) = scraping.get_soup(url=url)
+  html = soup.select_one("p")
+  text = pandoc_helper.get_md_with_pandoc(content_in=html)
+  text = sanskrit_helper.fix_lazy_anusvaara(text=text)
+  text = sanskrit_helper.fix_bad_anunaasikas(text)
+  return text
+
+
+def get_local_path(code, lib_path="/home/vvasuki/Downloads/mukta/"):
+  file_paths = glob.glob(f"{lib_path}{code}*")
+  if len(file_paths) > 0:
+    return file_paths[0]
+  else:
+    logging.warning(f"Could not get {code}")
+    return None
+
+
+def get_text_from_pre(url):
   logging.info("Processing %s", url)
   (soup, _) = scraping.get_soup(url=url)
   content = soup.select("pre")[0].text
   content = regex.sub("\nMUKTABODHA INDOLOGICAL.+", "", content)
   content = content.replace("||", "॥").replace("|", "।")
   content = regex.sub("॥[॥।]+", "…", content)
+  content = content.replace("\n", "  \n")
+  content = content.replace("*", r"\*")
   content = regex.sub("\n- *\n", "-  \n", content)
+  content = sanskrit_helper.fix_lazy_anusvaara(text=content)
+  content = sanskrit_helper.fix_bad_anunaasikas(content)
   return content
 
 
 def from_iast_text(url):
-  content = get_text(url=url)
+  content = get_text_from_pre(url=url)
   content = sanscript.transliterate(data=content, _from=sanscript.IAST, _to=sanscript.DEVANAGARI, togglers={}, suspend_on={}, suspend_off={})
   content = content.replace("\"न\्", "ङ्")
+  content = sanskrit_helper.fix_lazy_anusvaara(text=content)
+  content = sanskrit_helper.fix_bad_anunaasikas(content)
+  content = regex.sub("ए-तेxत्स् मय् बे विएwएद् ओन्ल्य् ओन्लिने ओर् दोwन्लोअदेद् फ़ोर् प्रिवते स्तुद्य्। *", "", content)
   return content
 
 
@@ -129,10 +158,6 @@ def process_catalog_page_selenium(url, out_dir):
   text_url = text_links[0].get_attribute("href")
   file = MdFile(file_path=dest_file_path, frontmatter_type="toml")
   text = from_iast_text(url=text_url)
-  text = sanskrit_helper.fix_lazy_anusvaara(text=text)
-  text = sanskrit_helper.fix_bad_anunaasikas(text)
-  text = regex.sub("ए-तेxत्स् मय् बे विएwएद् ओन्ल्य् ओन्लिने ओर् दोwन्लोअदेद् फ़ोर् प्रिवते स्तुद्य्। *", "", text)
-  text = text.replace("\n", "  \n")
   file.dump_to_file(metadata=metadata, content=text, dry_run=False)
 
 
@@ -150,6 +175,38 @@ def get_docs(out_dir):
     url = "https://%s@muktalib7.com/DL_CATALOG_ROOT/DL_CATALOG/DL_CATALOG_USER_INTERFACE/%s" % (creds, link["href"])
     process_catalog_page_selenium(url=url, out_dir=out_dir)
     # exit()
+
+
+def get_code_to_md(out_dir):
+  md_files = library.get_md_files_from_path(out_dir)
+  code_to_md = {}
+  for md_file in md_files:
+    (metadata, content) = md_file.read()
+    code = metadata.get("Catalog number", None)
+    if code is None:
+      logging.warning(f"skipping {md_file}")
+      continue
+    code_to_md[code] = md_file
+  logging.info(f"Got {len(code_to_md)} files.")
+  return code_to_md
+
+
+def scrape_from_json(out_dir, lib_path="/home/vvasuki/Downloads/mukta/"):
+  code_to_md = get_code_to_md(out_dir=out_dir)
+  with open(os.path.join(out_dir, "muktabodha_metadata.json")) as f:
+    lib_metadata = json.load(f)
+    logging.info(f"Offline - {len(code_to_md)} files, online {len(lib_metadata)} files, to get {len(lib_metadata) - len(code_to_md)}.")
+    for (code, metadata) in lib_metadata.items():
+      if code in code_to_md:
+        continue
+      dest_file_path = get_file_path(out_dir=out_dir, title_iast=metadata.get("Uniform title", None), author_iast=metadata.get("Author", None),catalog_number=code)
+      url = f"https://muktabodha-digital-library.org/texts/DEV/{code}"
+      metadata["upstream_url"] = url
+      content = get_text_from_pre(url=get_local_path(code=code, lib_path=lib_path))
+      metadata["title"] = metadata.get("Uniform title", "UNKNOWN")
+      md_file = MdFile(file_path=dest_file_path)
+      md_file.dump_to_file(metadata=metadata, content=content, dry_run=False)
+
 
 def fix_footnotes(dir_path):
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: footnote_helper.inline_comments_to_footnotes(c), dry_run=False)
