@@ -268,7 +268,7 @@ def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdow
       soup = BeautifulSoup(post_html, 'lxml')
     post_anchors = souper.get_tags_matching_css(soup=soup, css_selector_list=anchor_css_list)
   else:
-    anchor_css = [".entry-title a", "h1.title a", "h3 a"]
+    anchor_css = [".entry-title a", "h1.title a", "h2 a", "h3 a"]
     post_anchors = souper.get_tags_matching_css(soup=soup, css_selector_list=anchor_css)
 
   post_anchors = [x for x in post_anchors if "href" in x.attrs]

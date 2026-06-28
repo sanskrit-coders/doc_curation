@@ -141,18 +141,18 @@ def seperate_uvaacha(text):
 
 
 def fix_repha_duplication(text):
-  text = regex.sub("र्क्ख्", "र्ख्", text)
-  text = regex.sub("र्ग्घ्", "र्घ्", text)
-  text = regex.sub("र्च्छ्", "र्छ्", text)
-  text = regex.sub("र्ज्झ्", "र्झ्", text)
-  text = regex.sub("र्त्थ्", "र्थ्", text)
-  text = regex.sub("र्द्ध्", "र्ध्", text)
-  text = regex.sub("र्ड्ढ्", "र्ढ्", text)
-  text = regex.sub("र्प्फ्", "र्फ्", text)
+  text = regex.sub("र्क्ख", "र्ख", text)
+  text = regex.sub("र्ग्घ", "र्घ", text)
+  text = regex.sub("र्च्छ", "र्छ", text)
+  text = regex.sub("र्ज्झ", "र्झ", text)
+  text = regex.sub("र्त्थ", "र्थ", text)
+  text = regex.sub("र्द्ध", "र्ध", text)
+  text = regex.sub("र्ड्ढ", "र्ढ", text)
+  text = regex.sub("र्प्फ", "र्फ", text)
   text = regex.sub("र्ब्भ्", "र्भ्", text)
   text = regex.sub("र्व्व", "र्व", text)
   text = regex.sub("र्य्य", "र्य", text)
-  text = regex.sub(r"र्([ङञणनमयवशषसहल])्\1", r"र्\1", text)
+  text = regex.sub(r"र्([ङञणनमयवशषसहलकगचजतदपब])्\1", r"र्\1", text)
   return text
 
 
@@ -163,3 +163,9 @@ def fix_sacred_texts_transliteration(text):
   text = regex.sub("_(..?)_", italicized_fixer, text)
   text = sacred_texts_scheme.decode_nonitalicized(text)
   return text
+
+
+def fix_intra_word_bolds(content, *args, **kwargs):
+  content = regex.sub(r"([ऀ-ॣ]*)(\*+)([ऀ-ॣ]+)\2([ऀ-ॣ]+)", r"\2\1\3\4\2", content)
+  return content
+

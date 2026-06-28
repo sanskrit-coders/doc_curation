@@ -121,8 +121,7 @@ def get_text(url):
   (soup, result) = scraping.get_soup(url=url)
   html = soup.select_one("p")
   text = pandoc_helper.get_md_with_pandoc(content_in=html)
-  text = sanskrit_helper.fix_lazy_anusvaara(text=text)
-  text = sanskrit_helper.fix_bad_anunaasikas(text)
+  text = fix_devanaagarii(content=text)
   return text
 
 
@@ -135,18 +134,24 @@ def get_local_source(code, lib_path="/home/vvasuki/Downloads/mukta/"):
     return None
 
 
+def fix_devanaagarii(content):
+  content = content.replace("||", "॥").replace("|", "।")
+  content = regex.sub("॥[॥।]+", "…", content)
+  content = sanskrit_helper.fix_lazy_anusvaara(text=content)
+  content = sanskrit_helper.fix_bad_anunaasikas(content)
+  content = sanskrit_helper.fix_repha_duplication(text=content)
+  return content
+
+
 def get_text_from_pre(url):
   logging.info("Processing %s", url)
   (soup, _) = scraping.get_soup(url=url)
   content = soup.select("pre")[0].text
   content = regex.sub("\nMUKTABODHA INDOLOGICAL.+", "", content)
-  content = content.replace("||", "॥").replace("|", "।")
-  content = regex.sub("॥[॥।]+", "…", content)
+  content = fix_devanaagarii(content=content)
   content = content.replace("\n", "  \n")
   content = content.replace("*", r"\*")
   content = regex.sub("\n- *\n", "-  \n", content)
-  content = sanskrit_helper.fix_lazy_anusvaara(text=content)
-  content = sanskrit_helper.fix_bad_anunaasikas(content)
   return content
 
 
@@ -154,8 +159,7 @@ def from_iast_text(url):
   content = get_text_from_pre(url=url)
   content = sanscript.transliterate(data=content, _from=sanscript.IAST, _to=sanscript.DEVANAGARI, togglers={}, suspend_on={}, suspend_off={})
   content = content.replace("\"न\्", "ङ्")
-  content = sanskrit_helper.fix_lazy_anusvaara(text=content)
-  content = sanskrit_helper.fix_bad_anunaasikas(content)
+  content = fix_devanaagarii(content=content)
   content = regex.sub("ए-तेxत्स् मय् बे विएwएद् ओन्ल्य् ओन्लिने ओर् दोwन्लोअदेद् फ़ोर् प्रिवते स्तुद्य्। *", "", content)
   return content
 
@@ -333,8 +337,9 @@ def dump_tradition_to_metadatas(src_dir: str):
     dest_path = tradition_to_path.get(tradition, None)
     if dest_path is None:
       continue
-    dest_path = os.path.join(dest_path,
-                             file_helper.get_storage_name(category_optitrans, source_script=sanscript.IAST) + ".json")
+    dest_path = os.path.join(dest_path, "mukta-bodha-mUlam",
+                                 file_helper.get_storage_name(category_optitrans, source_script=sanscript.IAST) + ".json")
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     with open(dest_path, "w") as f:
       json.dump(code_to_metadata, f, sort_keys=False, ensure_ascii=False, indent=2)
 
@@ -348,7 +353,7 @@ def get_tradition_to_metadatas_actual():
     dest_path = tradition_to_path.get(tradition, None)
     if dest_path is None:
       continue
-    dest_path = os.path.join(dest_path,
+    dest_path = os.path.join(dest_path, "mukta-bodha-mUlam",
                              file_helper.get_storage_name(category_optitrans, source_script=sanscript.IAST) + ".json")
     if os.path.exists(dest_path):
       with open(dest_path) as f:
@@ -362,5 +367,5 @@ if __name__ == '__main__':
   # rearrange_library("/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/mukta")
   pass
   # dump_tradition_to_metadatas("/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/mukta")
-  # get_tradition_to_metadatas_actual()
-  update_website()
+  get_tradition_to_metadatas_actual()
+  # update_website()

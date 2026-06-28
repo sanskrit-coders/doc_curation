@@ -308,4 +308,5 @@ def two_column_page_booklet(input_pdf_path, output_pdf_path=None):
 
 
 if __name__ == '__main__':
-  to_booklet(input_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/purANam/rAmAyaNam-pullela/2 - Ayodhya-Part1.pdf", output_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/purANam/rAmAyaNam-pullela/output/2_ayodhyA_v1_2sigs.pdf", sig_pages=[427], signature_title="P ", metadata={"title": "अयोध्या-काण्डम् १", "author": "वाल्मीकिः"})
+  # to_booklet(input_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/purANam/rAmAyaNam-pullela/2 - Ayodhya-Part1.pdf", output_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/purANam/rAmAyaNam-pullela/output/2_ayodhyA_v1_2sigs.pdf", sig_pages=[427], signature_title="P ", metadata={"title": "अयोध्या-काण्डम् १", "author": "वाल्मीकिः"})
+  two_column_page_booklet(input_pdf_path="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/rAmAnujIyam/yAmunaH/Agama-prAmANyam/Agama-prAmANyam_a5.pdf", output_pdf_path="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/rAmAnujIyam/yAmunaH/Agama-prAmANyam/Agama-prAmANyam_a5_a3_booklet.pdf")
