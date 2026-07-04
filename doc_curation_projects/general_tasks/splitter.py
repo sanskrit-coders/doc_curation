@@ -12,12 +12,12 @@ if __name__ == '__main__':
 
   # ಕನ್ನಡ
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/people/bahvRchaH/misc.md",  dry_run=False, source_script=sanscript.KANNADA,  start_index=None) # 
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/shrI-sampradAyaH/kriyA/venkaTanAthaH/deshika-prabandhAH/gopAlAchArya_kn_sa/1960/v1/_index.md",  dry_run=False, source_script=sanscript.KANNADA, start_index=1) # 
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/shAnkhAntarANi/navya-mangala-varadAchAryaH/lekhA-sangrahaH/2/2_kannaDam.md",  dry_run=False, source_script=sanscript.KANNADA, start_index=20) # 
 
   # देवनागरी
   # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/lokAchArya-shAkhA/varadarAja-sad-anuShThAna-darpaNam/apariShkRtam.md", start_index=13)
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/AraNyakam/sarva-prastutiH/05_taittirIyopaniShat/rAmAnujIyA/6-TikAH/3_anubandhAH.md", target_frontmantter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, start_index=None) 
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/sampradAyaH/praty-abhijnA/utpaladevaH_Ishvara-pratyabhiJNA-kArikA/vRttiH/mUlam", dry_run=False, source_script=sanscript.DEVANAGARI, start_index=1, max_length=40) # 
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/vishvAsa.github.io/content/conversations/YT/shAnkaras/_index.md", target_frontmantter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, start_index=None) 
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/vishvAsa.github.io/content/conversations/YT/shAnkaras/_index.md", dry_run=False, source_script=sanscript.DEVANAGARI, start_index=1, max_length=40) # 
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/manuH/kullUkaH/_index.md",  dry_run=False, source_script=sanscript.DEVANAGARI, start_index=1) # 
   # 
   # IAST
@@ -34,7 +34,7 @@ if __name__ == '__main__':
   ## None Script
   # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/paramparA/kalai-quarrel/kAnchI/varada-tAtArya-survey.md", start_index=0, dest_script=sanscript.IAST)
 
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/DT-tAtAchAryaH/vishiShTAdvaita-siddhiH/1.md", dry_run=False, source_script=None, start_index=1)
-  # 
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/history/kAnchI/varadarAja-mandiram/varada-tAtArya-survey", dry_run=False, source_script=None,  start_index=None, max_length=30)
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/meta/sukthankara-viShNuH/critical-studies/3_EPIC_STUDIES.md", dry_run=False, source_script=None, start_index=1)
+
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/meta/sukthankara-viShNuH/critical-studies.md", dry_run=False, source_script=None,  start_index=None, max_length=30)
   

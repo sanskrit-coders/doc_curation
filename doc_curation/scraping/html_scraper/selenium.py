@@ -1,3 +1,5 @@
+from urllib.parse import urljoin
+
 from selenium.webdriver.support.ui import WebDriverWait
 import logging
 import os
@@ -137,13 +139,16 @@ def click_link_by_text(browser, element_text, ordinal=-1, timeout=5, post_wait=0
     return False
 
 
-def get_urls(browser, dest_dir, list_url, url_css, scroll_pause=2, scroll_btn_css=None, use_url_cache=False):
+def get_urls(browser, dest_dir, list_url, url_css, base_url=None, scroll_pause=2, scroll_btn_css=None, use_url_cache=False):
+  
   url_md_file = MdFile(file_path=os.path.join(dest_dir, "urls.md"))
+  if base_url is None:
+    base_url = urljoin(list_url, '.')
   from curation_utils import scraping as curation_scraping
   if not use_url_cache:
     logging.info(f"NOT Using cache {url_md_file}")
     soup = curation_scraping.scroll_and_get_soup(url=list_url, browser=browser, scroll_pause=scroll_pause, scroll_btn_css=scroll_btn_css)
-    urls = [urljoin(BASE_URL, x["href"]) for x in soup.select(url_css)]
+    urls = [urljoin(base_url, x["href"]) for x in soup.select(url_css)]
     url_md_file.dump_to_file(metadata={"title": "URLs"}, content="\n".join(urls), dry_run=False)
   else:
     logging.info(f"Using cache {url_md_file}")

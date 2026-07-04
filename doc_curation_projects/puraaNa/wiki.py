@@ -21,11 +21,6 @@ def lakshmiinaaraayana():
   library.apply_function(fn=content_processor.replace_texts, dir_path=base_dir, patterns=["(। *){2,}"], replacement="॥")
 
 
-if __name__ == '__main__':
-  pass
-  lakshmiinaaraayana()
-
-
 
 def remainder():
   pass
@@ -49,7 +44,7 @@ def remainder():
   # enumerated.dump_text(url_base="ब्रह्मवैवर्तपुराणम्/खण्डः_३_(गणपतिखण्डः)/अध्यायः", num_parts=46, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANam/brahmavaivarta-purANam/03/", url_id_padding="%02d")
   # enumerated.dump_text(url_base="ब्रह्मवैवर्तपुराणम्/खण्डः_४_(श्रीकृष्णजन्मखण्डः)/अध्यायः", num_parts=133, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANam/brahmavaivarta-purANam/04/", url_id_padding="%03d")
 
-  enumerated.dump_text(url_base="अग्निपुराणम्/अध्यायः", num_parts=383, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANam/brahmANDa-purANam/01/", url_id_padding="%03d")
+  # enumerated.dump_text(url_base="अग्निपुराणम्/अध्यायः", num_parts=383, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANam/brahmANDa-purANam/01/", url_id_padding="%03d")
   # enumerated.dump_text(url_base="ब्रह्माण्डपुराणम्/पूर्वभागः/अध्यायः", num_parts=38, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANam/brahmANDa-purANam/01/", url_id_padding="%02d")
   # enumerated.dump_text(url_base="ब्रह्माण्डपुराणम्/मध्यभागः/अध्यायः", num_parts=74, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANam/brahmANDa-purANam/02/", url_id_padding="%d")
   # enumerated.dump_text(url_base="ब्रह्माण्डपुराणम्/उत्तरभागः/अध्यायः", num_parts=44, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANam/brahmANDa-purANam/03/", url_id_padding="%d")
@@ -64,4 +59,15 @@ def remainder():
   # enumerated.dump_text(url_base="श्रीमद्भागवतपुराणम्/स्कन्धः_१०/उत्तरार्धः/अध्यायः", num_parts=90, dir_path="/home/vvasuki/sanskrit/raw_etexts/purANam/bhAgavata-purANam/10/", url_id_padding="%d")
 
   # enumerated.dump_deep_text(url_text_id="श्रीमद्भागवतपुराणम्", url_leaf_id_padding="%d", dir_path="/home/vvasuki/sanskrit/raw_etexts/purANam/bhAgavata-purANam/", unit_info_file="/home/vvasuki/sanskrit-coders/doc_curation/doc_curation/book_data/puraana/bhaagavatam.json", dry_run=False)
+  # enumerated.dump_text(url_base="स्कन्दपुराणम्/खण्डः_२_(वैष्णवखण्डः)/वैशाखमासमाहात्म्यम्/अध्यायः", num_parts=25, dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/skanda-purANam/sarva-prastutiH/02_vaiShNava-khaNDaH/7_vaishAkha-mAsa-mAhAtmyam", url_id_padding="%02d")
+  
+  wikisource.sanskrit_fixes("/home/vvasuki/gitland/vishvAsa/purANam/content/skanda-purANam/sarva-prastutiH/02_vaiShNava-khaNDaH/7_vaishAkha-mAsa-mAhAtmyam")
+
+
+
+
+if __name__ == '__main__':
+  pass
+  remainder()
+
 

@@ -31,7 +31,7 @@ if __name__ == '__main__':
   # sv()
   # smrti()
   # miimaamsaa()
-  # ebhaarati.dump_all(use_url_cache=True)
-  library.dump_matching_files(dir_path=ebhaarati.DEST_DIR, file_name_filter=lambda x: os.path.basename(x) != "_index.md")
+  ebhaarati.dump_all(use_url_cache=True)
+  # library.dump_matching_files(dir_path=ebhaarati.DEST_DIR, file_name_filter=lambda x: os.path.basename(x) != "_index.md")
   # ebhaarati.dump_all(use_url_cache=False)
   pass

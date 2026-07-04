@@ -27,6 +27,28 @@ def reduce_section_depth(lines_in, hashes_to_reduce):
       yield line
 
 
+def convert_heading_style(text, dash="##", equals="###") -> str:
+  """
+  Convert '=====' style divider headings into Markdown ## headings.
+  
+  Pattern:
+  - A line of text followed by a line of '=' characters (length >= 5).
+  - That text line becomes a '##' heading.
+  - The '=' line is removed.
+  """
+  text = regex.sub("\r", "\n", text)
+  # Regex: capture a line of text followed by a line of '=' characters
+  pattern = regex.compile(r'^(?P<title>[^\n]+)\n={5,}\s*$', regex.MULTILINE)
+  # Replace with Markdown heading
+  text = pattern.sub(rf'{equals} \g<title>', text)
+  # Regex: capture a line of text followed by a line of '=' characters
+  pattern = regex.compile(r'^(?P<title>[^\n]+)\n-{5,}\s*$', regex.MULTILINE)
+  # Replace with Markdown heading
+  text = pattern.sub(rf'{dash} \g<title>', text)
+  text = regex.sub("^[-=]+", "________", text)
+  return text
+
+
 def get_sections(content):
   lines = content.splitlines(keepends=False)
   (lines_till_section, remaining) = get_lines_till_section(lines)
@@ -343,7 +365,7 @@ def headings_to_bold(content,suffix="॥"):
 
 
 def fix_headers(content: str, h1_level: int) -> str:
-  # TODO: Hand jsinclude tags here.
+  # TODO: Hand jsinclude tags heregex.
   # h1_level is taken to mean title header level.
   if h1_level == "b[]":
     content = regex.sub(rf"(?<=\n|^)#+ ([^\n]+) *(?=\n)", rf"**\1**", content)

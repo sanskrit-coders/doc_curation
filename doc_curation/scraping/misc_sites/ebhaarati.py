@@ -1,3 +1,6 @@
+import hashlib
+import time
+
 from selenium.common import WebDriverException
 
 import indic_transliteration
@@ -7,11 +10,13 @@ from curation_utils import scraping
 from urllib.parse import urljoin
 from doc_curation import md
 from doc_curation.md import library
+from doc_curation.md.library import arrangement
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.html_scraper import selenium
 
 from doc_curation.md.file import MdFile, file_helper
 from doc_curation.md.content_processor import ocr_helper, footnote_helper
+from doc_curation.ebook import pandoc_helper
 import logging
 import os, regex
 
@@ -45,14 +50,21 @@ def fix_footnotes(content):
   return content
 
 
-def get_article(url, browser=None, scroll_pause=2):
+def get_article(url, browser=None, scroll_pause=5, pages=None):
   try:
-    soup = scraping.scroll_and_get_soup(url=url, browser=browser, scroll_pause=scroll_pause, element_css="#content")
+    soup = scraping.scroll_and_get_soup(url=url, browser=browser, scroll_pause=scroll_pause, timeout=1500, element_css="#content")
+    # if pages is not None and "End Of Book" not in soup.text:
+    #   # Wait to load page
+    #   logging.info(f"Sleeping to let load {pages} pages")
+    #   time.sleep((lambda p: int(p) + 100 if str(p).isdigit() else 0)(pages))
+
     title_element = soup.select_one("li.title")
     if title_element is None:
       # Pages like https://www.ebharatisampat.in/login.php 
       content = "ERROR - COULD NOT GET TEXT!"
       title = "Unknown"
+      logging.error(f"ERROR - COULD NOT GET TEXT! for {url}")
+      return (None, None, None)
     else:
       title = title_element.text
       content_tag = soup.select("div.page-content")
@@ -75,7 +87,9 @@ def get_article(url, browser=None, scroll_pause=2):
 
 def dump_article(url, outfile_path, browser=None, title_prefix="", metadata=None, dry_run=False):
   logging.info(f"Dumping {outfile_path} from {url}")
-  (page_content, page_title, soup) = get_article(url=url, browser=browser, scroll_pause=2)
+  (page_content, page_title, soup) = get_article(url=url, browser=browser, scroll_pause=5, pages=metadata.get("pages", None))
+  if soup is None:
+    return None
   if outfile_path.endswith(".md"):
     file_path = outfile_path
   else:
@@ -103,7 +117,7 @@ def get_metadata(url):
   metadata["source_url"] = urljoin(BASE_URL, button["href"])
   return metadata
 
-def dump_all(list_url="https://www.ebharatisampat.in/unicodetype.php?cat=All&sub_cat=All&author=All&publisher=All&contributor=All&language=All&sort=DESC", dest_dir=DEST_DIR, scroll_pause=2, use_url_cache=False):
+def dump_all(list_url="https://www.ebharatisampat.in/unicodetype.php?cat=All&sub_cat=All&author=All&publisher=All&contributor=All&language=All&sort=ASC&page=1&limit=10000", dest_dir=DEST_DIR, scroll_pause=2, use_url_cache=False):
   browser = scraping.get_selenium_chrome()
   urls = get_urls(browser, dest_dir, list_url, scroll_pause, use_url_cache)
 
@@ -111,20 +125,40 @@ def dump_all(list_url="https://www.ebharatisampat.in/unicodetype.php?cat=All&sub
   for url in urls:
     metadata = get_metadata(url=url)
     out_path = dest_dir
-    if "DOMAIN" in metadata and metadata["DOMAIN"] != "":
-      out_path = os.path.join(out_path, file_helper.get_storage_name(text=metadata["DOMAIN"]))
-    if "SUB-DOMAIN" in metadata and metadata["SUB-DOMAIN"] != "":
-      out_path = os.path.join(out_path, file_helper.get_storage_name(text=metadata["SUB-DOMAIN"]))
-    if "AUTHOR" in metadata and metadata["AUTHOR"] != "":
-      out_path = os.path.join(out_path, file_helper.get_storage_name(text=metadata["AUTHOR"]))
-    out_path = os.path.join(out_path, file_helper.get_storage_name(text=metadata["TITLE"]) + ".md")
-    if metadata["title"] in ["श्रीस्कान्दमहापुराणम्", "मानसोल्लासः द्वितीयभागः"]:
+    if "domain" in metadata and metadata["domain"].lower() != "":
+      out_path = os.path.join(out_path, file_helper.get_storage_name(text=metadata["domain"].lower()))
+
+    if "sub-domain" in metadata and metadata["sub-domain"].lower() != "":
+      out_path = os.path.join(out_path, file_helper.get_storage_name(text=metadata["sub-domain"].lower()))
+
+    if "author" in metadata and metadata["author"].lower() != "":
+      out_path = os.path.join(out_path, file_helper.get_storage_name(text=metadata["author"].lower()))
+    
+    if "primary commentator" in metadata and metadata["primary commentator"].lower() != "":
+      out_path = os.path.join(out_path, file_helper.get_storage_name(text=metadata["primary commentator"].lower()))
+    
+    if "translator" in metadata and metadata["translator"].lower() != "":
+      out_path = os.path.join(out_path, file_helper.get_storage_name(text=metadata["translator"].lower()))
+    
+    out_path = os.path.join(out_path, file_helper.get_storage_name(text=metadata["title"].lower()) + ".md")
+    
+    if metadata["title"].lower() in ["श्रीस्कान्दमहापुराणम्", "मानसोल्लासः द्वितीयभागः"]:
       logging.warning(f"Skipping {out_path}")
       continue
+
     if os.path.exists(out_path):
-      logging.info(f"Skipping {url} with \n{metadata}")
+      md_file = MdFile(out_path)
+      metadata_md, _ = md_file.read()
+      if metadata["source_url"] == metadata_md["source_url"]: 
+        logging.info(f"Skipping {url} with \n{metadata}")
+          # break
+      else:
+        short = hex(hash(url))[2:6]
+        file_name = os.path.basename(out_path).replace(".md", f"alt_{short}.md")
+        out_path = os.path.join(os.path.dirname(out_path), file_name)
+        dump_article(url=metadata["source_url"], outfile_path=out_path, metadata=metadata, browser=browser)
     else:
-      dump_article(url=metadata["url"], outfile_path=out_path, metadata=metadata, browser=browser)
+      dump_article(url=metadata["source_url"], outfile_path=out_path, metadata=metadata, browser=browser)
     out_paths.append(out_path)
   # dest_files_md = MdFile(file_path=os.path.join(dest_dir, "dest_files.md"))
   # dest_files_md.dump_to_file(metadata={"title": "Dest files"}, content="\n".join(out_paths), dry_run=False)

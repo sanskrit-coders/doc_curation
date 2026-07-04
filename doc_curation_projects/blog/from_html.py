@@ -44,8 +44,14 @@ def dump_wordpress():
 
 def dump_wordpress_monthly():
 
+
   init_year_month_str = "2025/07"
+
+  wordpress.scrape_monthly_indexes(url="https://gairikshita.wordpress.com/2026/06/10/206/", dir_path=f"{BASE_PATH}/weblogs/kastUri-gairikshita", init_year_month_str=init_year_month_str, dry_run=False)
+
   wordpress.scrape_monthly_indexes(url="https://dothemath.ucsd.edu/", dir_path=f"{BASE_PATH}/weblogs/non-hindu/doTheMath", init_year_month_str=init_year_month_str, dry_run=False)
+
+  wordpress.scrape_monthly_indexes(url="https://romaharshana.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/aniketa_romaharshana", init_year_month_str=init_year_month_str, dry_run=False)
 
   # Slow scan
   # wordpress.scrape_monthly_indexes(url="https://svargaonearth.wordpress.com", dir_path=f"{BASE_PATH}/weblogs/non-hindu/svargaOnEarth", init_year_month_str=init_year_month_str, final_year_month_str="current", dry_run=False)
@@ -78,6 +84,9 @@ def dump_wordpress_monthly():
 
 
 def dump_substack():
+  substack.scrape_free_articles_from_index_anchors(url="https://jamvasu.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/singh-AkANkShA", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://mravinderreddy.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/mravinderreddy", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://singhhakanksha02.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/singh-AkANkShA", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://razib.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/non-hindu/razib", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://krishnants.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/krishnants", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://mylapore.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/mylapore-devanAthan", dry_run=False)
@@ -121,8 +130,8 @@ if __name__ == '__main__':
   # word_clouds()
   # dump_mags()
   # blog.organize_by_date(dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/sage-bloodlines/bhRguH/dvitIyajanmani_bhRguH/chyavanaH/ApnavAna/aurvaH/jamadagniH/MT_charitram")
+  dump_substack()
   dump_wordpress()
   dump_wordpress_monthly()
-  dump_substack()
   # 
   # blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path=f"{BASE_PATH}/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)

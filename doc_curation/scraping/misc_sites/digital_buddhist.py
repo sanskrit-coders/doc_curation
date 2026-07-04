@@ -12,6 +12,7 @@ from curation_utils import scraping
 from doc_curation.md import library
 from doc_curation.md.content_processor import space_helper
 from doc_curation.md.file import MdFile
+from doc_curation.md.library import arrangement
 from doc_curation.scraping.html_scraper import souper
 from indic_transliteration import sanscript
 

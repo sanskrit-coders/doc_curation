@@ -28,16 +28,17 @@ def make_details(dir_path):
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_BOLD_LINES))
 
-  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_NUM_SUTRA))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_MULTI_LINE_SHLOKA_DOUBLE_DANDA))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.shlokas_to_muula_viprastuti_details(content=c, pattern=patterns.PATTERN_2LINE_SHLOKA_NUM_END))
 
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.pattern_to_details(content=c, pattern=patterns.TAMIL_BLOCK, title="द्राविडी"))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: section_helper.section_headings_to_details(content=c))
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=details_helper.detail_remover, title_pattern="विश्वास-प्रस्तुतिः.*")
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=details_helper.detail_remover, title_pattern="विश्वास-प्रस्तुतिः.*")
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=details_helper.insert_duplicate_adjascent)
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=details_helper.insert_duplicate_adjascent)
 
 
 
@@ -65,7 +66,7 @@ def transliterate(dir_path):
 
 
 if __name__ == '__main__':
-  # make_details(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content/AshvalAyanI/shAkala-bhedaH/adhika-mantrAH.md")
+  make_details(dir_path="/home/vvasuki/gitland/vishvAsa/purANam/content/shaivam/kAvyam/padyam/ratnAkaraH/haravijayam/06.md")
   # transliterate(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/rAma-subba-shAstrI/mahA-shaiva-mata-mardanam.md")
   # transform_details(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/rAma-subba-shAstrI/mahA-shaiva-mata-mardanam.md")
   pass
