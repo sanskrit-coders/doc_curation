@@ -61,8 +61,10 @@ def insert_definitions_near_use(content, definitions):
     old_content = content
     ref_para_pattern = rf"({regex.escape(definition.group(1))}[\s\S]*?\n)(\n|</details|#)"
     try:
-      content = regex.sub(ref_para_pattern,
-                          rf"\g<1>\n{definition.group(0)}\n\g<2>", content, count=1, timeout=1)
+      def repl(match):
+        return f"{match.group(1)}\n{definition.group(0)}\n{match.group(2)}"  
+      content = regex.sub(ref_para_pattern, repl, content, count=1, timeout=1)
+
     except TimeoutError:
       logging.warning(f"Regex sub timed out trying to find {definition.group(1)}")
       pass
@@ -113,7 +115,7 @@ PLAIN_FN_DEF_2SQ = r"(?<=\n)\[\\?\[(\d+)\\?\]\]\(#.+?\)"
 
 def fix_plain_footnotes(content, def_pattern="(?<=\n)(\d+)\.?(?= )", def_replacement_pattern=r"[^\1]:", ref_pattern=r"(?<=[^\s\d\^\-,\(\);:])(\d+)(?=\D)"):
   """
-  Common def_patterns: (?<=\n)(\d+)\.?(?= ) to r"[^\1]:"
+  Common def_patterns: r"(?<=\n)(\d+)\.?(?= )" to r"[^\1]:"
   r"\((\d+)[\. ]*([^\d\)][^\)]+)\) *" to r"\n[^\1]: \2\n"
   Also see variables above.
   

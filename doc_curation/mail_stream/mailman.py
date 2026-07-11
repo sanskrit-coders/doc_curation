@@ -1,7 +1,7 @@
 """
 Dumps emails from mailman archive to markdown files organized by year/month/subject. ( Example output: https://github.com/hindu-comm/mail_stream_indology) Example invocation at curation_projects/mail_stream_dumper.py in this repo.
 """
-
+import regex
 from joblib import Parallel, delayed
 from tqdm import tqdm
 import email
@@ -15,9 +15,10 @@ import datetime
 
 from bs4 import BeautifulSoup
 
-from curation_utils import file_helper
+from curation_utils import file_helper, scraping
 from curation_utils.file_helper import get_storage_name
 from doc_curation.mail_stream import delete_last_month
+from doc_curation.md import library
 from doc_curation.md.file import MdFile
 
 for handler in logging.root.handlers[:]:
@@ -33,12 +34,39 @@ logging.basicConfig(
 months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
 
+def extract_year_month_numeric(url):
+  # Regex to match a 4-digit year followed by a hyphen and a month name
+  match = regex.search(r'/?(\d{4})-([a-zA-Z]+)/', url)
+
+  if match:
+    year = match.group(1)
+    month_name = match.group(2)
+
+    try:
+      # Convert the month name to a 2-digit MM format
+      month_obj = datetime.datetime.strptime(month_name, "%B")
+      month_numeric = month_obj.strftime("%m")
+      return f"{year}/{month_numeric}"
+    except ValueError:
+      # Handle cases where the string isn't a valid full month name
+      # (e.g., trying %b if it uses short forms like 'Sep')
+      try:
+        month_obj = datetime.datetime.strptime(month_name, "%b")
+        month_numeric = month_obj.strftime("%m")
+        return f"{year}/{month_numeric}"
+      except ValueError:
+        return None
+
+  return None
+
+
+
 def scrape_message(url, message_index, dest_dir, list_id, dry_run=False):
   logging.info("Processing message %s", url)
   page_html = urlopen(url)
   soup = BeautifulSoup(page_html.read(), 'lxml')
 
-  subject = soup.find("h1").text.replace(list_id, "")
+  subject = regex.sub(fr"^{list_id} *", "", soup.find("h1").text)
   author = soup.find("b").text
   date_string = soup.find("i").text
   message_time = time.mktime(email.utils.parsedate(date_string))
@@ -68,31 +96,38 @@ def scrape_message(url, message_index, dest_dir, list_id, dry_run=False):
 
 def scrape_messages_for_month(url, dest_dir_base, list_id, dry_run=False):
   logging.info("Processing %s", url)
-  page_html = urlopen(url)
-  soup = BeautifulSoup(page_html.read(), 'lxml')
+  soup, _ = scraping.get_soup(url)
   [month_str, year] = soup.find("h1").text.split()[:2]
   month_index = months.index(month_str) + 1
 
   dest_dir = os.path.join(dest_dir_base, year, "%02d" % month_index)
-  dir_files = [x[0] for x in os.walk(dest_dir)]
-  if len(dir_files) > 0:
-    logging.info("Skipping %s", dest_dir)
-    return
-
+  dir_files = library.get_md_files_from_path(dir_path=dest_dir, file_name_filter=lambda x:os.path.basename(x) != "_index.md")  
 
   tags = soup.select("ul:nth-of-type(2) a[href]")
+  
+
+  if len(tags) == len(dir_files):
+    logging.info(f"Skipping {dest_dir} with {len(dir_files)} files")
+    return
+
+  logging.info(f"Getting in {dest_dir}  {len(tags) - len(dir_files)} files")
+
   for message_index, anchor in enumerate(tags):
     post_url = urljoin(url, anchor["href"])
     scrape_message(url=post_url, message_index=message_index, dest_dir=dest_dir, list_id=list_id, dry_run=dry_run)
 
 
-def scrape_months(url, dest_dir_base, list_id, jobs=None, dry_run=False):
+def scrape_months(url, dest_dir_base, list_id, jobs=None, start_month=None, end_month=None, dry_run=False):
   # delete_last_month(dest_dir_base)
 
   page_html = urlopen(url)
   soup = BeautifulSoup(page_html.read(), 'lxml')
   tags = soup.select("a[href]")
   month_anchors = [tag for tag in tags if "Thread" in tag.text]
+  if start_month is not None:
+    month_anchors = [tag for tag in month_anchors if extract_year_month_numeric(tag["href"]) >= start_month]
+  if end_month is not None:
+    month_anchors = [tag for tag in month_anchors if extract_year_month_numeric(tag["href"]) <= end_month]
 
   # Number of parallel jobs, default to use all processors
   job_count = -1 if jobs is None else jobs

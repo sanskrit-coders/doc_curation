@@ -1,6 +1,7 @@
 import hashlib
 import time
 
+from pdfreader.types import content
 from selenium.common import WebDriverException
 
 import indic_transliteration
@@ -120,9 +121,25 @@ def get_metadata(url):
 def dump_all(list_url="https://www.ebharatisampat.in/unicodetype.php?cat=All&sub_cat=All&author=All&publisher=All&contributor=All&language=All&sort=ASC&page=1&limit=10000", dest_dir=DEST_DIR, scroll_pause=2, use_url_cache=False):
   browser = scraping.get_selenium_chrome()
   urls = get_urls(browser, dest_dir, list_url, scroll_pause, use_url_cache)
+  urls_done_md_file = MdFile(file_path=os.path.join(dest_dir, "urls.md"))
+  if not os.path.exists(urls_done_md_file.file_path):
+    md_files = library.get_md_files_from_path(dest_dir)
+    urls_done = []
+    for md_file in md_files:
+      metadata, _ = md_file.read()
+      if "source_url" in metadata:
+        urls_done.append(metadata["source_url"])
+    urls_done_md_file.dump_to_file(metadata={"title": "urls done"}, content="\n".join(urls_done), dry_run=False)
+  _, url_list = urls_done_md_file.read()
+  urls_done = url_list.split()
+  logging.info(f"Got {len(urls_done)} out of {len(urls)}")
+  for url in urls_done:
+    urls.remove(url)
+  logging.info(f"Now left with {len(urls)} urls")
 
   out_paths = []
   for url in urls:
+    _, url_list = urls_done_md_file.read()
     metadata = get_metadata(url=url)
     out_path = dest_dir
     if "domain" in metadata and metadata["domain"].lower() != "":
@@ -142,9 +159,6 @@ def dump_all(list_url="https://www.ebharatisampat.in/unicodetype.php?cat=All&sub
     
     out_path = os.path.join(out_path, file_helper.get_storage_name(text=metadata["title"].lower()) + ".md")
     
-    if metadata["title"].lower() in ["श्रीस्कान्दमहापुराणम्", "मानसोल्लासः द्वितीयभागः"]:
-      logging.warning(f"Skipping {out_path}")
-      continue
 
     if os.path.exists(out_path):
       md_file = MdFile(out_path)
@@ -153,16 +167,17 @@ def dump_all(list_url="https://www.ebharatisampat.in/unicodetype.php?cat=All&sub
         logging.info(f"Skipping {url} with \n{metadata}")
           # break
       else:
-        short = hex(hash(url))[2:6]
-        file_name = os.path.basename(out_path).replace(".md", f"alt_{short}.md")
+        short = hashlib.md5(metadata["source_url"].strip().lower().encode('utf-8')).hexdigest()[2:6]
+        file_name = os.path.basename(out_path).replace(".md", f"_alt_{short}.md")
         out_path = os.path.join(os.path.dirname(out_path), file_name)
         dump_article(url=metadata["source_url"], outfile_path=out_path, metadata=metadata, browser=browser)
     else:
       dump_article(url=metadata["source_url"], outfile_path=out_path, metadata=metadata, browser=browser)
     out_paths.append(out_path)
+    urls_done_md_file.replace_content_metadata(new_content=f"{url_list}\n{metadata['source_url']}")
   # dest_files_md = MdFile(file_path=os.path.join(dest_dir, "dest_files.md"))
   # dest_files_md.dump_to_file(metadata={"title": "Dest files"}, content="\n".join(out_paths), dry_run=False)
-  library.dump_matching_files(dir_path=dest_dir, file_name_filter=lambda x: not x.endswith("_index.md"))
+  library.dump_matching_files(dir_path=dest_dir, file_name_filter=lambda x: not os.path.basename(x) == "_index.md")
   pass
 
 

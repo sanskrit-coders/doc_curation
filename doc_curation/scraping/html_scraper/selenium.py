@@ -154,4 +154,5 @@ def get_urls(browser, dest_dir, list_url, url_css, base_url=None, scroll_pause=2
     logging.info(f"Using cache {url_md_file}")
     [_, urls] = url_md_file.read()
     urls = urls.split("\n")
+  urls = [url for url in urls if url != ""]
   return urls
