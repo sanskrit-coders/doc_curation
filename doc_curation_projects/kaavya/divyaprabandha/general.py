@@ -14,7 +14,7 @@ from doc_curation_projects.kaavya import divyaprabandha
 from indic_transliteration import sanscript
 
 def devanaagarify(dir_path, source_script):
-  def content_transformer(c):
+  def content_transformer(c, *args, **kwargs):
     # c = footnote_helper.define_footnotes_near_use(c)
     c = content_processor.transliterate(text=c, source_script=source_script)
     c = sanskrit_helper.fix_lazy_anusvaara(c)
@@ -47,24 +47,25 @@ def from_garani(dir_path):
   # return
 
   # TODO: Manually ensure stray &.t, < and > characters don't exist, lest the mess with details tag processing.
-  
-  
-  # devanaagarify(dir_path, source_script=sanscript.KANNADA)
+
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer= content_processor.separate_tamil)
+  # library.apply_function(fn=content_processor.separate_tamil, dir_path=dir_path)
+  devanaagarify(dir_path, source_script=sanscript.KANNADA)
   # library.apply_function(dir_path=dir_path, fn=metadata_helper.set_title_from_filename, maybe_use_dravidian_variant="yes", dry_run=False)
   # return 
-  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["\n\n\n+"], replacement="\n\n")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["\n\n\n+"], replacement="\n\n")
 
   ## TODO - Manually section - using the below?
   # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["^ತಿರುವಾಯ್.+(ೞಿ|ಳಿ)\s*$"], replacement="")
   # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\n)\\\*\\\*\\\*\\\*.+"], replacement="## ")
   # Check shataka separation manually TODO
-  library.apply_function(fn=MdFile.split_to_bits, dir_path=dir_path, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, title_index_pattern=None) # 
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path=dir_path, frontmatter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, title_index_pattern=None) # 
+  # 
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\n)[०-९]+\..+\n+(?=[०-९]+\.)"], replacement="")
+  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[" (ऱ|न्द)"], replacement=r"\1")
 
-  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"(?<=\n)[०-९]+\..+\n+(?=[०-९]+\.)"], replacement="")
-  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[" (ऱ|न्द)"], replacement=r"\1")
 
-
-  # return
+  return
 
   _undo_structuring(dir_path)
   library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["(?<=\n)(.+=.+)(?=\n)"], replacement=r"\n<details><summary>गरणि-प्रतिपदार्थः</summary>\n\n\1\n</details>\n")
@@ -220,7 +221,7 @@ def reorg_comments(base_dir, dry_run=False):
 if __name__ == '__main__':
   pass
   # insert_garani("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/4k-divya-prabandha/sarva-prastutiH/02_tiruppAvai_aNDaL_474_-503/_index.md")
-  # from_garani("/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/4k-divya-prabandha/sarva-prastutiH/20_tiruveLHuku.Rh.Rhirukkai_tirumangai-ALHvAr_2672")
+  from_garani("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/sarva-prastutiH/10.md")
   # set_id("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
   # update_content("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
   # insert_hart("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH")
@@ -229,6 +230,6 @@ if __name__ == '__main__':
   # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/10_pEriya_tirumOLHi_tirumangai-ALHvAr_948-2031/aNNangarAchAryaH/viLakkav-urai", dry_run=False)
   # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/aNNangarAchAryaH/padav-urai", dry_run=False)
   # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/aNNangarAchAryaH/viLakkav-urai", dry_run=False)
-  reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/uttamUr-vIrarAghavaH/", dry_run=False)
+  # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/uttamUr-vIrarAghavaH/", dry_run=False)
 
   # reorg_comments("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/aNNangarAchAryaH")

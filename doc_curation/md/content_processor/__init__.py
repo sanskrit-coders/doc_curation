@@ -35,6 +35,11 @@ def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVA
   return c
 
 
+def separate_tamil(text, *args, **kwargs):
+  text = regex.sub(r"(?<=[^ஂ-௺\s\*])([ஂ-௺]+ *)+", r" (\g<0>) ", text)
+  return text
+
+
 def replace_texts(md_file, patterns, replacement, flags=0, dry_run=False):
   logging.info("Processing %s", md_file.file_path)
   [metadata, content] = md_file.read()

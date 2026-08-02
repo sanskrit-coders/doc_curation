@@ -157,7 +157,8 @@ def fix_hyphenation(text):
   text = regex.sub(r"-([ा-ौ])", r"\1", text)
   text = regex.sub(r"\*\*(.्) ", r"\1** ", text)
   text = regex.sub(r"त् च", r"च् च", text)
-  
+  text = regex.sub(r"स् (?=[चछश])", r"श् ", text)
+
   return text
 
 

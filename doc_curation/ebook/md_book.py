@@ -64,7 +64,7 @@ def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, b
       metadata, content_appendix = md_file_appendix.read()
       content_appendix = f"# Appendix - {metadata['title']}\n\n{content_appendix}"
       logging.info("Strip appendix figures")
-      content_appendix = regex.sub(r"(?<=\n|^)!\[.*?\]\(.+?\) *\n(\{.+?\})?\n", "", content_appendix)
+      content_appendix = regex.sub(r"(?:^|\n)!\[.*?\]\(.+?\) *\n(\{.+?\})?\n", "", content_appendix)
       # appendix = include_helper.fix_headers(content=appendix, h1_level=2)
       content = f"{content}\n\n{content_appendix}"
  
@@ -74,9 +74,6 @@ def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, b
                         fr'\1{base_url}/\2)', content)
 
 
-    logging.info("Fixing footnotes")
-    content = footnote_helper.to_plain_footnotes(content=content)
-    # min md will have links converted to footnotes. Not here.
 
     logging.info(f"Fixing open details tags for {md_path}")
     content = details_helper.transform_detail_tags_with_soup(content, transformer=details_helper.open_attribute_fixer, details_css="details")
@@ -90,6 +87,11 @@ def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, b
   
     if detail_to_footnote:
       content = details_helper.add_detail_footnotes(content=content, remove_detail=True)
+
+    logging.info("Fixing footnotes")
+    content = footnote_helper.to_plain_footnotes(content=content)
+    # min md will have links converted to footnotes. Not here.
+
     return content
 
   md_file.transform(
@@ -129,6 +131,8 @@ def make_min_full_md(md_path: str, source_dir, detail_pattern_to_remove, detail_
 
     content = footnote_helper.add_for_links(content=content)
     logging.info(f"Added link-footnotes for {md_path_min}")
+    logging.info("Fixing footnotes")
+    content = footnote_helper.to_plain_footnotes(content=content)
     return content
   md_file_min.transform(
     content_transformer=_fix_content,

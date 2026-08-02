@@ -13,6 +13,9 @@ def rAmAnujIyam():
   pass
   out_path = os.path.join(OUT_PATH_BASE, "rAmAnujIyam")
   # ebook.make_all("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/sarva-prastutiH", metadata={"author": "वेङ्कटनाथः"}, out_path=os.path.join(out_path, "venkaTanAthaH/rahasya-traya-sAraH"), css_path=CSS_PATH, appendix=appendix_dg,)
+
+  ebook.make_all("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH", out_path=os.path.join(out_path, "rAmAnujaH/shrI-bhAShyam"), css_path=CSS_PATH, metadata={"author": "रामानुजः"}, appendix=appendix_dg, file_split_level=2, overwrite=".*")
+
   # ebook.make_all("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", out_path=os.path.join(out_path, "yAmunaH/Agama-prAmANyam"), css_path=CSS_PATH, metadata={"author": "यामुनः"}, appendix=appendix_dg, file_split_level=2, booklets=["a4_91:160"], overwrite="pdf")
 
   # ebook.make_all(source_dir="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/kumAra-varadaH/artha-sangrahaH", file_split_level=1,  out_path=os.path.join(out_path, "kumAra-varadaH/artha-sangrahaH"), metadata={"author": "कुमार-वरदः"}, css_path=CSS_PATH, appendix=appendix_dg, booklets=["a4"], details_pattern_to_prefix="NONE")
@@ -59,8 +62,8 @@ def vedAH_Rk():
   ebook.make_all("/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content/shAkalam/sUtram/AshvalAyanaH/gRhyam/sarva-prastutiH", metadata={"author": "आश्वलायनः, Oldenberg"}, file_split_level=1, detail_pattern_to_remove=r"मूलम्.*", out_path=out_path, css_path=CSS_PATH, appendix=appendix_dg, overwrite="pdf")
 
 if __name__ == '__main__':
-  # rAmAnujIyam()
-  vedAH_yajuH()
+  rAmAnujIyam()
+  # vedAH_yajuH()
   # vedAH_Rk()
   # pdf_book.save_grid_a3_pdf(text="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/covers/stitch_print.md", dest_file="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/covers/stitch_print_landscape.pdf", num_rows=4)
 

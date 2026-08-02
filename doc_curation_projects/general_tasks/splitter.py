@@ -16,15 +16,15 @@ if __name__ == '__main__':
 
   # देवनागरी
   # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/rAmAnuja-tAtAryaH/nyAyakalApasangrahaH.md", start_index=1)
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/prakIrNam/bhaTTojI-tattva-kaustubhaH.md", target_frontmantter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, start_index=None) 
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/siddhi-trayam/sarva-prastutiH/02_AtmasiddhiH/_index.md", dry_run=False, source_script=sanscript.DEVANAGARI, start_index=16, max_length=40) # 
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/shrIdhara-viShNu-chittau", target_frontmantter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, start_index=None) 
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/madhu-sUdana-sarasvatI/advaita-siddhiH/2.md", dry_run=False, source_script=sanscript.DEVANAGARI, start_index=1, max_length=40) # 
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/manuH/kullUkaH/_index.md",  dry_run=False, source_script=sanscript.DEVANAGARI, start_index=1) # 
   # 
   # IAST
   # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/kriyA/goudriaan/daily-worship/07_Worship.md", start_index=1, dest_script=sanscript.IAST)
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/paramparA/articles/jayasiMha_theology.md",  dry_run=False, source_script=sanscript.IAST, mixed_languages_in_titles=True, start_index=None) # 
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/shrI-vaishNava-brAhmaNas_rangAchAri/13_Daily_Observances/_index.md",  dry_run=False, source_script=sanscript.IAST, start_index=None, mixed_languages_in_titles=True, deromanize=False) # 
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/shatapatha-brAhmaNam/17_bRhadAraNyakopaniShat/shankaraH/sarva-prastutiH.md",  dry_run=False, source_script=sanscript.IAST, mixed_languages_in_titles=True, start_index=1) # 
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/paramparA/articles/young-non-v1-SVs/00.md",  dry_run=False, source_script=sanscript.IAST, mixed_languages_in_titles=True, start_index=1) # 
 
   ## ISO
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/meta/nArAyaNa-raghunAthau/alt.md",  dry_run=False, source_script=sanscript.ISO) # 
