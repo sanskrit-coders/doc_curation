@@ -8,6 +8,8 @@ import shutil
 import subprocess
 from pathlib import Path
 import xml.etree.ElementTree as ET
+
+import pymupdf
 import random
 from bs4 import BeautifulSoup
 
@@ -37,6 +39,40 @@ PAGE_SIZES = {
   "a4": (595, 842),   # 210 x 297 mm
   "letter": (612, 792) # 8.5 x 11 in
 }
+
+
+
+def get_max_dpi(pdf_path, sample_pages=10):
+  """
+  Returns the maximum DPI found among images in up to `sample_pages`
+  randomly selected pages of the PDF.
+  """
+  doc = pymupdf.open(pdf_path)
+  total_pages = len(doc)
+  pages_to_check = random.sample(range(total_pages), min(sample_pages, total_pages))
+
+  max_dpi = 0.0
+  details = []
+
+  for page_num in pages_to_check:
+    page = doc[page_num]
+    for img in page.get_images(full=True):
+      xref = img[0]
+      pix = pymupdf.Pixmap(doc, xref)
+      width_px, height_px = pix.width, pix.height
+      rect = page.rect
+      width_in, height_in = rect.width / 72, rect.height / 72  # 72 points = 1 inch
+      dpi_x = width_px / width_in
+      dpi_y = height_px / height_in
+      avg_dpi = (dpi_x + dpi_y) / 2
+      details.append((page_num+1, avg_dpi))
+      if avg_dpi > max_dpi:
+        max_dpi = avg_dpi
+    pix = None  # free memory
+
+  doc.close()
+  logging.info(f"max-dpi {max_dpi}")
+  return max_dpi, details
 
 
 
@@ -140,10 +176,10 @@ def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_pag
 
 
 # Adapted from https://github.com/theeko74/pdfc/blob/master/pdf_compressor.py
-def compress_with_gs(input_file_path, output_file_path=None, quality='screen'):
+def compress_with_gs(input_file_path, output_file_path=None, quality='ebook'):
   """
     Compress PDF using Ghostscript.
-    quality: 'screen' (72 dpi, smallest), 'ebook' (150 dpi), 'logging.infoer' (300 dpi), 'prepress', 'default'
+    quality: 'screen' (72 dpi, smallest), 'ebook' (150 dpi), 'printer' (300 dpi), 'prepress', 'default'
     """
 
   # Basic controls

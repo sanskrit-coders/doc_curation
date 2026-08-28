@@ -76,6 +76,8 @@ def dump_wordpress_monthly():
   # NOn-updated. One-time-dump done.
   # wordpress.scrape_monthly_indexes(url="https://musingsofhh.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/musingsofhh", init_year_month_str=None, dry_run=False)
 
+  # wordpress.scrape_monthly_indexes(url="https://visadavaak.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/visadavaak_tk", init_year_month_str="2016/06", dry_run=False)
+
   ## TODO: 
   # https://gairikshita.wordpress.com/
   # https://jigyaasaa.wordpress.com/ - dropdown.
@@ -85,6 +87,11 @@ def dump_wordpress_monthly():
 
 
 def dump_substack():
+  substack.scrape_free_articles_from_index_anchors(url="https://naavalam.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/naavalam", dry_run=False)
+
+  substack.scrape_free_articles_from_index_anchors(url="https://www.newdelhireviewofbooks.in/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/non-hindu/delhi-book-review", dry_run=False)
+  substack.scrape_free_articles_from_index_anchors(url="https://epbutler.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/non-hindu/epbutler", dry_run=False)
+
   substack.scrape_free_articles_from_index_anchors(url="https://www.thelongmemory.in/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/long-memory", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://jamvasu.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/singh-AkANkShA", dry_run=False)
   substack.scrape_free_articles_from_index_anchors(url="https://mravinderreddy.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/mravinderreddy", dry_run=False)

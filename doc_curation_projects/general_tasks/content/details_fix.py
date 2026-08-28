@@ -66,7 +66,7 @@ def transliterate(dir_path):
 
 
 if __name__ == '__main__':
-  make_details(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/sampradAyaH/kaulaH_shAktaH/AgamaH/brahma-yAmala-tantram/01.md")
+  make_details(dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/kAvyam/padyam/shrIvaiShNava-kRtam/venkaTanAthaH/stotram/garuDapanchAshat.md")
   # transliterate(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/rAma-subba-shAstrI/mahA-shaiva-mata-mardanam.md")
   # transform_details(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/rAma-subba-shAstrI/mahA-shaiva-mata-mardanam.md")
   pass

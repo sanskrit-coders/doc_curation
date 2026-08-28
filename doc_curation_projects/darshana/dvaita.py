@@ -7,6 +7,7 @@ from doc_curation.md.library import arrangement
 from doc_curation.scraping.misc_sites import dvaita
 
 from doc_curation.utils import patterns
+from doc_curation.utils import text_utils, sanskrit_helper
 
 
 def misc():
@@ -82,6 +83,9 @@ def kAvyAdi():
 
 
 def upaniShat():
+  dvaita.dump_series(url="https://dvaitavedanta.in/category-details/14242/933/upanas/8-bhat/malma/tataya/ashava", dest_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/shatapatha-brAhmaNam/17_bRhadAraNyakopaniShat/madhvaH/sarva-prastutiH", start_file="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/shatapatha-brAhmaNam/17_bRhadAraNyakopaniShat/madhvaH/sarva-prastutiH/02_TIkA_TippaNi/07_ShaShTho-dhyAyaH/15_suShuptimuktyoH_na_duHkham.md")
+  # return 
+
   dvaita.dump_series(url="https://dvaitavedanta.in/category-details/15940/928/upanas/3-mana/malma/parath", dest_path="/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/paippalAdam/muNDakopaniShat/madhvaH/sarva-prastutiH")
   dvaita.dump_series(url="https://dvaitavedanta.in/category-details/14152/925/upanas/1-iish/malma", dest_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/IshAvAsyopaniShat/madhvaH/sarva-prastutiH")
   dvaita.dump_series(url="https://dvaitavedanta.in/category-details/14165/926/upanas/2-kath/malma/parath/parath", dest_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/AraNyakam/kaThopaniShat/madhvaH/sarva-prastutiH")
@@ -89,9 +93,8 @@ def upaniShat():
   dvaita.dump_series(url="https://dvaitavedanta.in/category-details/15954/930/upanas/5-mana/malma/parath", dest_path="/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/mANDukyopaniShat/madhvaH/sarva-prastutiH")
   dvaita.dump_series(url="https://dvaitavedanta.in/category-details/14224/931/upanas/6-aita/malma/thavat/parath", dest_path="/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content/shAkalam/aitareya-brAhmaNam/upaniShat/madhvaH/sarva-prastutiH")
   dvaita.dump_series(url="https://dvaitavedanta.in/category-details/14233/932/upanas/7-tata/malma/shakas", dest_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/AraNyakam/sarva-prastutiH/05_taittirIyopaniShat/madhvaH/sarva-prastutiH")
-  dvaita.dump_series(url="https://dvaitavedanta.in/category-details/14242/933/upanas/8-bhat/malma/tataya/ashava", dest_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/shatapatha-brAhmaNam/17_bRhadAraNyakopaniShat/madhvaH/sarva-prastutiH")
   dvaita.dump_series(url="https://dvaitavedanta.in/category-details/14295/934/upanas/9-chha/malma/parath", dest_path="/home/vvasuki/gitland/vishvAsa/vedAH_sAma/content/tANDyam/ChAndogyopaniShat/madhvaH/sarva-prastutiH")
-  dvaita.dump_series(url="https://dvaitavedanta.in/category-details/14303/935/upanas/10-tal/malma/parath", dest_path="/home/vvasuki/gitland/vishvAsa/vedAH_sAma/content/jaiminIyam/brAhmaNam/talavakAra-brAhmaNam/kenopaniShat/madhvaH/sarva-prastutiH")
+  dvaita.dump_series(url="https://dvaitavedanta.in/category-details/14303/935/upanas/10-tal/malma/parath", dest_path="/home/vvasuki/gitland/vishvAsa/vedAH_sAma/content/jaiminIyam/AraNyakam/upaniShad-brAhmaNam/04/10_kenopaniShat/madhvaH/sarva-prastutiH")
 
 
 def fix_details(dir_path):
@@ -103,12 +106,14 @@ def fix_details(dir_path):
 
 if __name__ == '__main__':
   pass
-  # arrangement.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/mAdhvam/content/", overwrite=False, dry_run=False)
+  # arrangement.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/shatapatha-brAhmaNam/17_bRhadAraNyakopaniShat/madhvaH/sarva-prastutiH", overwrite=False, dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/mAdhvam/content/", content_transformer=lambda x, metadata: sanskrit_helper.fix_anunaasikaadi(x), dry_run=False, silent_iteration=False)
+
   # fix_details(dir_path="/home/vvasuki/gitland/vishvAsa/mAdhvam/content/kAvyam/nArAyaNa-paNDita-su-madhva-vijayaH/sarva-prastutiH")
   # upaniShat()
   # misc()
   # dashaprakaraNAni()
   # kAvyAdi()
   # brahmasUtrAdi()
-  purANAdi()
+  # purANAdi()
   # arrangement.fix_index_files(dir_path="/home/vvasuki/gitland/vishvAsa/mAdhvam/content/", overwrite=False, dry_run=False)

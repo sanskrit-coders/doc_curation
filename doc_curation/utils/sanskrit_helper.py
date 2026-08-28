@@ -105,6 +105,8 @@ def fix_yaNs(text):
 
 
 def fix_anunaasikaadi(text, level=0, *args, **kwargs):
+  from doc_curation.md.content_processor import ocr_helper
+  text = ocr_helper.misc_manipravaala_typos(text)
   text = fix_bad_anunaasikas(text)
   text = fix_lazy_anusvaara(text)
   if level > 0:

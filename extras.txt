@@ -7,10 +7,12 @@ kraken
 kraken[pdf]
 
 pypdf
+pymupdf
 pikepdf
 pdf2image
 img2pdf
 lxml
+rarfile
 
 aksharamukha
 

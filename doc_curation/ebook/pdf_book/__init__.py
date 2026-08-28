@@ -3,6 +3,10 @@ import logging
 import os
 import os.path
 
+import tempfile
+import rarfile
+import img2pdf
+
 import regex
 from pypdf import PdfReader, PdfWriter
 
@@ -244,3 +248,25 @@ def get_page_index_with_pattern(target_pattern, pdf_path, start_index=0,search_d
 
 
   return -1
+
+
+
+
+def cbr_to_temp_pdf(cbr_path, temp_pdf_path):
+  """Extracts images from a CBR archive and saves them as a PDF."""
+  with tempfile.TemporaryDirectory() as tmp_dir:
+    with rarfile.RarFile(cbr_path) as rf:
+      rf.extractall(tmp_dir)
+
+    # Collect and sort image files alphanumerically
+    image_paths = []
+    for root, _, files in os.walk(tmp_dir):
+      for file in files:
+        if file.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')):
+          image_paths.append(os.path.join(root, file))
+
+    image_paths.sort()  # Ensures pages remain in natural reading order
+
+    # Convert images into a single PDF
+    with open(temp_pdf_path, "wb") as f:
+      f.write(img2pdf.convert(image_paths))

@@ -35,14 +35,14 @@ def fix_anunaasikaadi(dir_path, level=0):
 if __name__ == '__main__':
   pass
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_shaivaH/content/sampradAyaH/kaulaH_shAktaH", content_transformer=lambda x,*args, **kwargs: sanskrit_helper.fix_repha_duplication(x), dry_run=False, silent_iteration=False)
-  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/sangrahAH/pratiShThAnukramaNikA.md", source_script="telugu")
+  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/telugu/rAya-kRShNa-devaH/Amukta-mAlyadA/TIkA/te/vAviLLa-rAmasvAmI.md", source_script="telugu")
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/viShNu-purANam/sarva-prastutiH", source_script=sanscript.IAST)
-  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/static/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/tattva-muktA-kalApaH/sarvASh_TIkAH/1_jaDa-dravya-saraH/017_dvedhA_bhUtAni.md", source_script="kannada")
+  devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/kn/vijaya-rAghavaH/tmp/", source_script="kannada")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/lokAchAryaH/shrI-vachana-bhUShaNam/vyAkhyA", content_transformer=lambda x, y: sanscript.SCHEMES[sanscript.DEVANAGARI].fix_numbered_vargiiya_vyanjanas(x), dry_run=False, silent_iteration=False)
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/pinb-aLHagiya-perumAL-jIyar-vArtA-mAlA.md", content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
 
-  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/static/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/tattva-muktA-kalApaH/sarvASh_TIkAH/1_jaDa-dravya-saraH/017_dvedhA_bhUtAni.md", source_script=sanscript.TAMIL)
+  # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/venkaTa-nAtha-shAkhA/gopAla-deshika-shAkhA/gopAla-deshikaH/Ahnikam_AhnikArtha-prakAshikA/", source_script=sanscript.TAMIL)
 
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/para-mata-bhangaH/mUlam.md", source_script="tamil_subscripted")
 

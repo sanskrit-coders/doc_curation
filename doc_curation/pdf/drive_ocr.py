@@ -60,7 +60,6 @@ def split_and_ocr_on_drive(pdf_path,
   :param pdf_path:
   :param google_key: A json key which can be obtained from https://console.cloud.google.com/iam-admin/serviceaccounts (create a project, a service account, then generate a key via "Actions" column.). Then enable Drive API and perhaps Vision APIs for the project (In case of insufficient API permissions - You may be shown an error message pointing to the webpage where the permissions are to be enabled). PS: Google drive takes some time (few hours?) before you can use it for the first time in a project - till then you will get an error.
   :param small_pdf_pages: Number of pages per segment - an argument used for splitting the pdf into small bits for OCR-ing. 
-  :param pdf_compression_power: 0,1,2,3,4
   :return: 
   """
   final_ocr_path = pdf_path + ".txt"
@@ -68,7 +67,7 @@ def split_and_ocr_on_drive(pdf_path,
     logging.warning("Skipping %s: %s exists", pdf_path, final_ocr_path)
     return
 
-  altered_pdf_path = _prepare_pdf(detext, pdf_compression_power, pdf_path)
+  altered_pdf_path = _prepare_pdf(detext,pdf_path)
 
   pdf_segments = split_into_small_pdfs(pdf_path=altered_pdf_path, small_pdf_pages=small_pdf_pages, start_page=start_page,
                         end_page=end_page)
@@ -81,14 +80,14 @@ def split_and_ocr_on_drive(pdf_path,
   file_helper.clear_bad_chars_in_file(file_path=final_ocr_path)
 
 
-def _prepare_pdf(detext, pdf_compression_power, pdf_path):
+def _prepare_pdf(detext,  pdf_path):
   altered_pdf_path = pdf_path.replace(".pdf", "_tiny.pdf")
-  if pdf_compression_power == 0:
-    altered_pdf_path = pdf_path
+  dpi, _ = pdf.get_max_dpi(pdf_path=pdf_path)
+  if dpi > 300 and not os.path.exists(altered_pdf_path):
+      compress_with_gs(input_file_path=pdf_path, output_file_path=altered_pdf_path)
   else:
-    if not os.path.exists(altered_pdf_path):
-      logging.info("Compressing with power %d" % pdf_compression_power)
-      compress_with_gs(input_file_path=pdf_path, output_file_path=altered_pdf_path, power=pdf_compression_power)
+    altered_pdf_path = pdf_path
+
   if detext:
     logging.info("Detexting")
     altered_pdf_path = pdf_path.replace(".pdf", "_detexted.pdf")

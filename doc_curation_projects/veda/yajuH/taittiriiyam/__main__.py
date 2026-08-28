@@ -25,8 +25,8 @@ def typo_fix(dir_path):
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, y: sanskrit_helper.undo_taittirIya_forms(x))
 
 
-# details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/AraNyakam/sarva-prastutiH/01_aruNa-ketuka-chayanAdi/22_abiShTakA-brAhmaNam/01_yo-pAm_mantrapuShpam.md")
-content_fix("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/saMhitA/Rk/vishvAsa-prastutiH/5/6/01_hiraNyavarNAsh_shuchayaH/")
+details_fix(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH/3/2/01_pavamAnagrahatrayam.md")
+# content_fix("/home/vvasuki/gitland/vishvAsa/vedAH/static/atharva/paippalAdam/saMhitA/vishvAsa-prastutiH/19/024/12_punar_naH_pitaro.md")
 
 
 # fix_old_US_notation("/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/AraNyakam/sarva-prastutiH/04_pitR-medhAdi/01_dAhAntam.md")

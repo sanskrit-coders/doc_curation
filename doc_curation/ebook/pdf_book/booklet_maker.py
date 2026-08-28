@@ -1,6 +1,5 @@
-import logging
 import os
-
+import logging
 from doc_curation.ebook import pdf_book
 from pypdf import PdfReader, PdfWriter, PageObject
 from pypdf import Transformation
@@ -56,13 +55,47 @@ def get_page_separator_overlay(w, h, mid_width=True, mid_height=True, stitch_poi
   return PdfReader(packet).pages[0]
 
 
-def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_title=None, metadata=None):
+
+
+def get_page_transform(page, target_w, target_h, offset_x=0, is_right_page=False, gutter=10):
   """
-  :param input_pdf_path: Path to source PDF.
-  :param output_pdf_path: Path to save result.
-  :param sig_pages: An array.
-  :param signature_title: String prefix for the separator page (e.g. "Part"). 
-                          If None, no separator is added.
+  Computes a transform matrix to scale and center the page to the MAXIMUM 
+  possible size without clipping any content or overshooting boundaries.
+  """
+  # Use mediabox or cropbox for actual page dimensions
+  box = page.cropbox or page.mediabox
+  ll_x = float(box.lower_left[0])
+  ll_y = float(box.lower_left[1])
+  ur_x = float(box.upper_right[0])
+  ur_y = float(box.upper_right[1])
+
+  w = ur_x - ll_x
+  h = ur_y - ll_y
+
+  # Available width slot taking gutter into account
+  slot_w = target_w - gutter
+  slot_h = target_h
+
+  # X starting position of the safe slot area
+  slot_x = offset_x + gutter if is_right_page else offset_x
+
+  # Compute maximum scale while preserving aspect ratio (0% content loss)
+  scale = min(slot_w / w, slot_h / h)
+
+  # Calculate offsets to center the scaled page perfectly in the safe slot
+  scaled_w = w * scale
+  scaled_h = h * scale
+
+  tx = slot_x + (slot_w - scaled_w) / 2.0 - (ll_x * scale)
+  ty = (slot_h - scaled_h) / 2.0 - (ll_y * scale)
+
+  return [scale, 0, 0, scale, tx, ty]
+
+
+def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_title=None, metadata=None, gutter=10):
+  """
+  :param crop_ratio: Fraction of outer page margin to trim (e.g. 0.04 = 4%).
+  :param gutter: Safety margin in points from the central fold line (e.g. 10pt = ~3.5mm).
   """
   if metadata is None:
     metadata = {}
@@ -100,10 +133,8 @@ def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_t
   for (sig_start, sig_end) in tqdm(sig_bounds, desc="Signatures"):
     sig_pages = pages_in[sig_start:sig_end + 1]
 
-    # --- Add Title Page if prefix is provided ---
     if sig_start != 0 and signature_title is not None:
       title_text = f"{metadata.get('title', '')}\n{metadata.get('author', '')}\n{signature_title} {sig_count}"
-      # Add the front of the separator sheet
       sig_pages.insert(0, pdf_book.create_page(title_text, orig_width, orig_height))
 
     # Ensure current signature slice is a multiple of 4 (for the final chunk)
@@ -115,9 +146,8 @@ def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_t
     num_sheets_in_sig = sig_len // 2 # 2 pages (logical) per side of sheet
 
     indices = list(range(num_sheets_in_sig))
-    # 4. Rearrange pages within this signature
-    for i in tqdm(indices):
-      # Booklet logic: alternates (Last, First) then (Second, Last-1)
+
+    for i in tqdm(indices, leave=False):
       if i % 2 == 0:
         left_idx = sig_len - 1 - i
         right_idx = i
@@ -129,33 +159,59 @@ def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_t
       right_page = sig_pages[right_idx]
 
       new_page = PageObject.create_blank_page(width=sheet_width, height=orig_height)
-      new_page.merge_page(left_page)
-      new_page.merge_transformed_page(
-        right_page,
-        [1, 0, 0, 1, orig_width, 0]
+
+      # Left page placement: stops before (orig_width - gutter)
+      matrix_left = get_page_transform(
+        left_page,
+        target_w=orig_width,
+        target_h=orig_height,
+        offset_x=0,
+        is_right_page=False,
+        gutter=gutter
       )
+      new_page.merge_transformed_page(left_page, matrix_left)
+
+      # Right page placement: starts after (orig_width + gutter)
+      matrix_right = get_page_transform(
+        right_page,
+        target_w=orig_width,
+        target_h=orig_height,
+        offset_x=orig_width,
+        is_right_page=True,
+        gutter=gutter
+      )
+      new_page.merge_transformed_page(right_page, matrix_right)
+
       if i in [indices[0], indices[-1]]:
         overlay = get_page_separator_overlay(w=sheet_width, h=orig_height, mid_width=True, mid_height=False, stitch_points=True)
         new_page.merge_page(overlay)
       else:
         overlay = get_page_separator_overlay(w=sheet_width, h=orig_height, mid_width=False, mid_height=False, stitch_points=True)
-        new_page.merge_page(overlay)
-        
 
+      new_page.merge_page(overlay)
       writer.add_page(new_page)
 
     sig_count += 1
 
-  # 5. Save the result
   if output_pdf_path is None:
     output_pdf_path = input_pdf_path.replace(".pdf", f"_LandShortEdge_{sig_count-1}P_booklet.pdf")
-  # 4. Save the result
-  os.makedirs(os.path.dirname(output_pdf_path), exist_ok=True)
+
+  os.makedirs(os.path.dirname(output_pdf_path) or '.', exist_ok=True)
   with open(output_pdf_path, "wb") as out_file:
     writer.write(out_file)
 
   logging.info(f"Created booklet with {sig_count-1} signatures at: {output_pdf_path}")
 
+
+def cbr_to_booklet(cbr_path, output_pdf_path=None, **kwargs):
+  """Wrapper function to handle CBR input directly."""
+  temp_pdf = cbr_path.rsplit(".", 1)[0] + "_temp.pdf"
+  try:
+    pdf_book.cbr_to_temp_pdf(cbr_path, temp_pdf)
+    to_booklet(input_pdf_path=temp_pdf, output_pdf_path=output_pdf_path, **kwargs)
+  finally:
+    if os.path.exists(temp_pdf):
+      os.remove(temp_pdf)
 
 def duplicated_booklet(input_pdf_path, output_pdf_path=None):
   # Speed - 23 min for 400 pg A3.
@@ -308,5 +364,9 @@ def two_column_page_booklet(input_pdf_path, output_pdf_path=None):
 
 
 if __name__ == '__main__':
-  # to_booklet(input_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/purANam/rAmAyaNam-pullela/2 - Ayodhya-Part1.pdf", output_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/purANam/rAmAyaNam-pullela/output/2_ayodhyA_v1_2sigs.pdf", sig_pages=[427], signature_title="P ", metadata={"title": "अयोध्या-काण्डम् १", "author": "वाल्मीकिः"})
-  two_column_page_booklet(input_pdf_path="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/rAmAnujIyam/yAmunaH/Agama-prAmANyam/Agama-prAmANyam_a5.pdf", output_pdf_path="/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/rAmAnujIyam/yAmunaH/Agama-prAmANyam/Agama-prAmANyam_a5_a3_booklet.pdf")
+  pass
+  # to_booklet(input_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/kAvyam/asterix/12- Asterix at the Olympic Games.pdf", output_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/kAvyam/asterix/12-olympics-booklet.pdf", sig_pages=[427], signature_title="P ", metadata={"title": "अयोध्या-काण्डम् १", "author": "वाल्मीकिः"})
+  # cbr_to_booklet(cbr_path="/media/vvasuki/vData/text/granthasangrahaH/kAvyam/asterix/13- Asterix and the Laurel Wreath - (CC).cbr", output_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/kAvyam/asterix/13-laurel-booklet.pdf", sig_pages=[427], signature_title="P ")
+  to_booklet(input_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/kAvyam/asterix/(Asterix Comic) Rene Goscinny, Albert Uderzo - Operation Getafix_ The Book of the Film -Hodder Children's Books (1997).pdf", output_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/kAvyam/asterix/37-op-getafix-booklet.pdf", sig_pages=[427], signature_title="P ")
+
+  # two_column_page_booklet(input_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/kAvyam/asterix/12- Asterix at the Olympic Games.pdf", output_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/kAvyam/asterix/12-olympics-booklet.pdf")

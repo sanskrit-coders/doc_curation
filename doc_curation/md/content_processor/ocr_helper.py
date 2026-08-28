@@ -80,7 +80,7 @@ def fix_google_ocr_devanaagarii(text, new_line_substitute="\n\n"):
   text = regex.sub(r"(?<=\n)[\-=]+ *(?=\n)", "", text)
   text = regex.sub(r"(?<=\n)([०-९\d]+) *(?=\n)", r"[[\1]]", text)
   text = regex.sub("(?<=[ँ-९]):", "ः", text)
-  text = regex.sub(r"(?<=\S ?)\n", new_line_substitute, text)
+  text = regex.sub(r"(?<=\S) ?\n", new_line_substitute, text)
   # text = regex.sub("(?<=[a-zA-Z])\- +(?=[a-zA-Z])", "", text)
   text = strip_word_continuation_dashes(text)
   return text
@@ -156,11 +156,20 @@ def fix_hyphenation(text):
   text = sanscript.SCHEMES[sanscript.DEVANAGARI].redo_upapada_sandhis(text)
   text = regex.sub(r"-([ा-ौ])", r"\1", text)
   text = regex.sub(r"\*\*(.्) ", r"\1** ", text)
-  text = regex.sub(r"त् च", r"च् च", text)
-  text = regex.sub(r"स् (?=[चछश])", r"श् ", text)
-
   return text
 
+
+def fix_gemini_errors(text):
+  text = regex.sub(r"-न्त", r"-अन्त", text)
+  text = fix_hyphenation(text)
+  text = regex.sub(r"त्(?=[ -]च)", r"च्", text)
+  text = regex.sub(r"(?<=च्[ -])श", r"छ", text)
+  text = regex.sub(r"स्(?=[ -][चछश])", r"श्", text)
+  text = regex.sub(r"इति इत्य्", r"इत्य्", text)
+  text = regex.sub(r"अतैव", r"अत एव", text)
+  text = regex.sub(r"्-इ-", r"ि", text)
+
+  return text
 
 def replace_casewise(text, pattern, replacement):
   text = regex.sub(pattern.lower(), replacement.lower(), text)

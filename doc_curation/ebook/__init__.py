@@ -56,13 +56,13 @@ def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata=No
 
   if not os.path.exists(md_path) or regex.match(overwrite, "md"):
     md_file = md_book.prep_full_md(omit_pattern=omit_pattern, md_path=md_path, overwrite=overwrite, source_dir=source_dir, metadata=metadata, base_url="https://vishvAsa.github.io", appendix=appendix)
-
-
-    md_book.make_min_full_md(md_path=md_path, source_dir=source_dir,
-                             detail_pattern_to_extract=detail_pattern_to_extract, detail_pattern_to_remove=detail_pattern_to_remove, details_pattern_to_prefix=details_pattern_to_prefix)
-    overwrite = ".*"
     if cleanup:
       md_book.remove_full_mds(source_dir)
+
+
+    if not os.path.exists(md_path) or regex.match(overwrite, "min_md"):
+      md_book.make_min_full_md(md_path=md_path, source_dir=source_dir, detail_pattern_to_extract=detail_pattern_to_extract, detail_pattern_to_remove=detail_pattern_to_remove, details_pattern_to_prefix=details_pattern_to_prefix)
+    overwrite = ".*"
   else:
     from doc_curation.md.file import MdFile
     md_file = MdFile(md_path)

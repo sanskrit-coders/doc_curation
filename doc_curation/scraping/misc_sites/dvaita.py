@@ -33,7 +33,7 @@ def fix_text(text, source_script):
   text = regex.sub("ॆ", "े", text)
   text = regex.sub("ॊ", "ो", text)
   text = regex.sub("व्द्य", "द्व्य", text)
-  text = sanskrit_helper.fix_bad_anunaasikas(text)
+  text = sanskrit_helper.fix_anunaasikaadi(text)
   text = sanskrit_helper.fix_bad_visargas(text)
   text = sanskrit_helper.fix_bad_vyanjanaantas(text)
 
@@ -101,6 +101,7 @@ def dump_series(url, dest_path, start_file=None, end_index=None, source_script=s
   file_map = {regex.sub("^[^/]+?/", "", item_path) : url for item_path, url in file_map.items()}
   # drop all items until item_path = start_file
   if start_file is not None:
+    start_file = regex.sub(rf"{dest_path}/?", "", start_file)
     try:
       keys = list(file_map.keys())
       start_idx = keys.index(start_file)
@@ -113,4 +114,4 @@ def dump_series(url, dest_path, start_file=None, end_index=None, source_script=s
     item_path = os.path.join(dest_path, item_path)
     index_str = sanscript.transliterate(os.path.basename(item_path).split("_")[0], _to=sanscript.DEVANAGARI, _from=sanscript.IAST)
     dump_text(url=url, index_str=index_str, browser=browser, dest_path=item_path, source_script=source_script, overwrite=overwrite)
-  arrangement.fix_index_files(dir_path=os.path.dirname(item_path), overwrite=False, dry_run=False)
+  arrangement.fix_index_files(dir_path=dest_path, overwrite=False, dry_run=False)

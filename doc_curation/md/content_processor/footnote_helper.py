@@ -113,20 +113,21 @@ PLAIN_FN_DEF_GUTEN = r"\[\\\[(\d+)\\\]\]\(#FN.+?\)"
 PLAIN_FN_REF_2SQ = r"\[\\?\[(\d+)\\?\]\]\(#.+?\)"
 PLAIN_FN_DEF_2SQ = r"(?<=\n)\[\\?\[(\d+)\\?\]\]\(#.+?\)"
 
-def fix_plain_footnotes(content, def_pattern="(?<=\n)(\d+)\.?(?= )", def_replacement_pattern=r"[^\1]:", ref_pattern=r"(?<=[^\s\d\^\-,\(\);:])(\d+)(?=\D)"):
+def fix_plain_footnotes(content, def_pattern=r"(?<=\n)(\d+)\.?(?= )", def_replacement_pattern=r"[^\1]:", ref_pattern=r"(?<=[^\s\d\^\-,\(\);:])(\d+)(?=\D)"):
   """
-  Common def_patterns: r"(?<=\n)(\d+)\.?(?= )" to r"[^\1]:"
-  r"\((\d+)[\. ]*([^\d\)][^\)]+)\) *" to r"\n[^\1]: \2\n"
-  Also see variables above.
-  
-  ref_patterns: r"(?<=[^\s\d\^\-,\(\);:])(\d+)(?=\D)" to r"[^\1]"
-  r"\((\d+)\)"  
   
   
   :param content: 
   :param def_pattern: 
   :return: 
   """
+  # ref_patterns: r"(?<=[^\s\d\^\-,\(\);:])(\d+)(?=\D)" to r"[^\1]"
+  #   r"\((\d+)\)"  
+  #   
+  # Common def_patterns: r"(?<=\n)(\d+)\.?(?= )" to r"[^\1]:"
+  #   r"\((\d+)[\. ]*([^\d\)][^\)]+)\) *" to r"\n[^\1]: \2\n"
+  #   Also see variables above.
+
   if def_pattern is not None:
     logging.info(f"Replacing definitions of pattern {def_pattern}")
     content = regex.sub(def_pattern, def_replacement_pattern, content)
@@ -138,6 +139,8 @@ def fix_plain_footnotes(content, def_pattern="(?<=\n)(\d+)\.?(?= )", def_replace
 
 def to_plain_footnotes(content):
   content = regex.sub(r"\[\^", "[#", content)
+  # [label]: URL "optional title" is a markdown link reference definition. Avoid that confusion.
+  content = regex.sub(r"(?<=\n)\[([^\]]+)\]:", r"- \1 : ", content)
   return content
 
 
@@ -210,9 +213,10 @@ def add_page_id_to_ref_ids(content, page_pattern=r"[\s\S]+?<dg (\d+)/>", *args, 
   """
   
   :param content: 
-  :param page_pattern: Other common patterns r"[\s\S]+?\[\[([\d०-९]+)\]\]"
+  :param page_pattern: 
   :return: 
   """
+  # Other common patterns r"[\s\S]+?\[\[([\d०-९]+)\]\]"
   pages = list(regex.finditer(page_pattern, content))
   if len(pages) == 0:
     content = insert_page_breaks(content)
@@ -258,7 +262,7 @@ def add_for_links(content, prefix="lnk", *args, **kwargs):
   for index, link in enumerate(links):
     footnote = footnotes[index]
     result += content[last_match_end:link.start()]
-    result += f"{link.group(0)}{footnote.get_reference()}"
+    result += f"{link.group(0)} {footnote.get_reference()}"
     last_match_end = link.end()
   result += content[last_match_end:]
   content = result

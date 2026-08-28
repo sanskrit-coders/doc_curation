@@ -59,7 +59,7 @@ def misc_typos(dir_path):
 
 if __name__ == '__main__':
   # fix_audio_tags()
-  misc_typos("/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxaNam/kathA/AtmA_rasAdi/jagannAthaH/rasa-gangA-dharaH.md")
+  misc_typos("/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/paippalAdam/prashnopaniShat/rangarAmAnujaH")
   # fix_whitespaces(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/agniveshya-grihya-sUtram.md")
   # section_fix()
 
