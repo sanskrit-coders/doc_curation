@@ -1,7 +1,7 @@
 import logging
 
 from doc_curation import blog
-from doc_curation.blog import wordpress, substack
+from doc_curation.blog import wordpress, substack, medium
 from doc_curation.scraping.misc_sites import sambhashana_sandesha
 from doc_curation.md.file import MdFile
 from doc_curation.md import library
@@ -86,7 +86,14 @@ def dump_wordpress_monthly():
   pass
 
 
+def dump_medium():
+  medium.scrape_medium_blog(url="https://satyan-sharma.medium.com/", dir_path=f"{BASE_PATH}/weblogs/satyan-sharma")
+
+
 def dump_substack():
+
+  substack.scrape_free_articles_from_index_anchors(url="https://immanentdomain.substack.com/p/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/immanentdomain", dry_run=False)
+
   substack.scrape_free_articles_from_index_anchors(url="https://naavalam.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/naavalam", dry_run=False)
 
   substack.scrape_free_articles_from_index_anchors(url="https://www.newdelhireviewofbooks.in/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/non-hindu/delhi-book-review", dry_run=False)
@@ -139,8 +146,9 @@ if __name__ == '__main__':
   # word_clouds()
   # dump_mags()
   # blog.organize_by_date(dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/sage-bloodlines/bhRguH/dvitIyajanmani_bhRguH/chyavanaH/ApnavAna/aurvaH/jamadagniH/MT_charitram")
-  dump_wordpress_monthly()
-  dump_substack()
-  dump_wordpress()
+  dump_medium()
+  # dump_wordpress_monthly()
+  # dump_substack()
+  # dump_wordpress()
   # 
   # blog.scrape_index_from_anchors(url="https://www.chamuks.in/articles", dir_path=f"{BASE_PATH}/weblogs/chamuks", anchor_css=".card-footer a[href]", dry_run=False)

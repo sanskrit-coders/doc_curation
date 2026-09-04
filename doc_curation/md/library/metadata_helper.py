@@ -305,6 +305,8 @@ def copy_metadata_and_filename(dest_dir, ref_dir, insert_missing_ref_files=False
     target_path = os.path.abspath("%s/%s" % (dest_dir, sub_file_path_ref))
     
     move_file(md_file=md_file, new_file_name=target_path, dry_run=dry_run)
+  arrangement.fix_index_files(dir_path=dest_dir)
+
 
 
 def add_value_to_field(metadata, field, value): 

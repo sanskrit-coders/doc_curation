@@ -183,10 +183,17 @@ def file_name_from_url(url, max_title_length=None):
 def fix_special_markup(content):
   # V![\_4](https://s0.wp.com/latex.php?latex=_4&bg=ffffff&fg=333333&s=0&c=20201002)
   content = regex.sub(r"!\[\\(_\d)\]\(.+?\)", r"\1", content)
+  
+  
+  ## Medium.com stuff
+  content = regex.sub(r"!\[\]\(data:image/svg\+xml;.+", r"", content)
+  content = regex.sub(r"\[\]\(https://medium\.com/m/signin.+", r"", content)
+  content = re.sub(r"##\s*Get\s+.*?stories.*?Remember\s+me\s+for\s+faster\s+sign\s+in", "", content, flags=re.DOTALL | re.IGNORECASE)
+  content = re.sub(r"\n+.*?source=post_page---(?:author|read_next)_recirc[\s\S]*$", "\n", content, flags=re.DOTALL | re.IGNORECASE)
   return content
 
 
-def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entry_css_list=None):
+def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entry_css_list=None, browser=None):
   logging.debug(f"Scraping {url}")
   (title, post_html, date_obj) = (None, None, None)
   
@@ -201,7 +208,7 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
       date_obj = parser.parse(result.group().replace("/", "-"), fuzzy=True)
     post_parsed = False
   else:
-    ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list)
+    ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list, browser=browser)
     if soup is None:
       logging.error(f"Could not get title from {url}")
       return False

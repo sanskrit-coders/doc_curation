@@ -1,3 +1,5 @@
+import os, pandas
+
 import regex
 from doc_curation.utils import sanskrit_helper
 from indic_transliteration import sanscript
@@ -81,7 +83,7 @@ def fix_google_ocr_devanaagarii(text, new_line_substitute="\n\n"):
   text = regex.sub(r"(?<=\n)([०-९\d]+) *(?=\n)", r"[[\1]]", text)
   text = regex.sub("(?<=[ँ-९]):", "ः", text)
   text = regex.sub(r"(?<=\S) ?\n", new_line_substitute, text)
-  # text = regex.sub("(?<=[a-zA-Z])\- +(?=[a-zA-Z])", "", text)
+  # text = regex.sub("(?<=[a-zA-Z])- +(?=[a-zA-Z])", "", text)
   text = strip_word_continuation_dashes(text)
   return text
 
@@ -138,12 +140,12 @@ def misc_sanskrit_typos(text, strict=False, *args, **kwargs):
     text = regex.sub("ळ", "ल", text)
     text = regex.sub("ढ़", "ढ", text)
   text = regex.sub("(?<=[अ-ौ]|[ॎ-ॣ]):", "ः", text)
-  # text = regex.sub("(?<=[ँ-ॣ])\- +(?=[ँ-ॣ])", "", text)
+  # text = regex.sub("(?<=[ँ-ॣ])- +(?=[ँ-ॣ])", "", text)
   return text
 
 
 def fix_line_end_dashes(text):
-  text = regex.sub("(?<=[ँ-ॣ])\- +(?=[ँ-ॣ])", "", text)
+  text = regex.sub("(?<=[ँ-ॣ])- +(?=[ँ-ॣ])", "", text)
   return text
 
 def fix_avagraha_quotations(text):
@@ -162,12 +164,17 @@ def fix_hyphenation(text):
 def fix_gemini_errors(text):
   text = regex.sub(r"-न्त", r"-अन्त", text)
   text = fix_hyphenation(text)
-  text = regex.sub(r"त्(?=[ -]च)", r"च्", text)
+  text = regex.sub(r"त्(?=[ -][चछ])", r"च्", text)
   text = regex.sub(r"(?<=च्[ -])श", r"छ", text)
   text = regex.sub(r"स्(?=[ -][चछश])", r"श्", text)
   text = regex.sub(r"इति इत्य्", r"इत्य्", text)
   text = regex.sub(r"अतैव", r"अत एव", text)
   text = regex.sub(r"्-इ-", r"ि", text)
+  text = regex.sub(r"(?<=ा)[अआ]", r"", text)
+  text = regex.sub(r"(?<=[ँ-०])b", "ब", text)
+  text = regex.sub(r"(?<=[ँ-०])g", "ग", text)
+  text = regex.sub(r"\\u0bca", "ॊ", text)
+  text = regex.sub(r"\\u0bc5", "ॆ", text)
 
   return text
 
@@ -191,12 +198,12 @@ def fix_google_ocr_iast_iso(text):
   text = replace_casewise(text, "õ", "ō")
   text = replace_casewise(text, "Ï|ī|î", "Ī")
   text = replace_casewise(text, "ě", "ē")
-  text = regex.sub(r"(?<=[a-z])\- +(?=[a-z])", "", text)
+  text = regex.sub(r"(?<=[a-z])- +(?=[a-z])", "", text)
   return text
 
 
 def strip_word_continuation_dashes(text):
-  text = regex.sub(r"(?<=\S)\- +(?=\S)", "", text)
+  text = regex.sub(r"(?<=\S)- +(?=\S)", "", text)
   return text
 
 def fix_typos(text):

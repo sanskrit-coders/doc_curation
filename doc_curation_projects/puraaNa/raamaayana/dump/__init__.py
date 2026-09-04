@@ -27,7 +27,7 @@ def fix_metadata_and_paths(base_dir, base_dir_ref, sarga_identifier=get_adhyaaya
 
   paths = sorted(glob.glob(base_dir + "/**/*.md", recursive=True))
   paths = [path for path in paths if os.path.basename(path) != "_index.md" and "0/" not in path]
-  paths = [path for path in paths if regex.match("\d\d\d[_.]", os.path.basename(path))]
+  paths = [path for path in paths if regex.match(r"\d\d\d[_.]", os.path.basename(path))]
   sarga_id_to_path = get_sarga_id_to_path(base_dir_ref=base_dir_ref, sarga_identifier=sarga_identifier)
   for p in paths:
     sarga_id = sarga_identifier(p)
