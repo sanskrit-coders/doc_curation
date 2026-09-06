@@ -1,18 +1,16 @@
-import copy
 import json
-import textwrap
-import io
 import os
 import tempfile
 
-from google.genai.types import GenerateContentResponse
 from google.genai import types
 from pypdf import PdfReader, PdfWriter
 
 from google import genai
+from tqdm import tqdm
 
 from curation_utils import creds
 from doc_curation import llm
+from doc_curation.llm import dump_to_md
 from doc_curation.md.file import MdFile
 
 client = None
@@ -55,51 +53,63 @@ def get_client(api_key_path, cred_path="/home/vvasuki/gitland/vvasuki-git/syscon
   return client
 
 
-def process_file_page_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id="gemini-3.5-flash", api_key_path="gemini.vv"):
+def process_file_page_chunks(file_in, prompt, dest_path, start_page=1, pages_per_chunk=5, model_id="gemini-3.5-flash", api_key_path="gemini.vv"):
   client = get_client(api_key_path=api_key_path)
-  
+
   reader = PdfReader(file_in)
   total_pages = len(reader.pages)
-  
+
   all_metadata = []
   all_text_parts = []
   
+  if start_page > 1 and os.path.exists(dest_path):
+    md_file = MdFile(dest_path)
+    _, content = md_file.read()
+    all_text_parts.append(content)
+
   # Load the detailed prompt once as a system instruction
   config = types.GenerateContentConfig(
-      system_instruction=prompt,
+    system_instruction=prompt,
   )
   chat = client.chats.create(model=model_id, config=config)
-  
-  for i in range(0, total_pages, pages_per_chunk):
+
+  # Convert 1-indexed start_page to 0-indexed for Python logic
+  start_index = max(0, start_page - 1)
+
+  combined_prompt = f"PROMPT 0:  \n{prompt}\n"
+
+  for i in tqdm(range(start_index, total_pages, pages_per_chunk), desc="Processing PDF Chunks"):    
     end_page = min(i + pages_per_chunk, total_pages)
-    
+
     writer = PdfWriter()
     for j in range(i, end_page):
       writer.add_page(reader.pages[j])
-      
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
       temp_path = temp_file.name
       writer.write(temp_file)
-      
+
     try:
       uploaded = client.files.upload(file=temp_path)
-      
+
       # Pass a minimal prompt for each chunk
       chunk_prompt = f"Convert pages {i + 1} to {end_page} into Markdown according to the system instructions."
+      combined_prompt = f"{combined_prompt}\n\nCHUNK PROMPT {i + 1} to {end_page}:  \n{chunk_prompt}\n"
       response = chat.send_message([uploaded, chunk_prompt])
-      
+
       metadata = scrub_response(response.model_dump())
       all_metadata.append({f"pages_{i+1}_to_{end_page}": metadata})
-      
+
       if response.text:
         all_text_parts.append(response.text)
-        
+
     finally:
       if os.path.exists(temp_path):
         os.remove(temp_path)
+
   combined_metadata = json.dumps(all_metadata, ensure_ascii=False, indent=2)
   combined_text = "\n\n".join(all_text_parts)
-  dump_to_md(dest_path, combined_metadata, combined_text)
+  dump_to_md(dest_path, prompt=combined_prompt, metadata=combined_metadata, content=combined_text)
 
 
 def process_file(file_in, prompt, dest_path, model_id="gemini-3.5-flash", api_key_path="gemini.vv"):
@@ -119,23 +129,8 @@ def process_file(file_in, prompt, dest_path, model_id="gemini-3.5-flash", api_ke
     ensure_ascii=False,
     indent=2,
   )
-  dump_to_md(dest_path, metadata, response.text)
+  dump_to_md(dest_path, prompt, metadata, response.text)
   return response
-
-
-def dump_to_md(dest_path, metadata: str, content: str):
-  md_file = MdFile(dest_path)
-  content = textwrap.dedent(f"""
-  <details><summary>Gemini response</summary>
-  
-  ```json
-  {metadata}
-  ```
-  </details>
-  
-  {content}
-  """)
-  md_file.dump_to_file(metadata={"title": "UNK"}, content=content, dry_run=False)
 
 
 if __name__ == '__main__':
