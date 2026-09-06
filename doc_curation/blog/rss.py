@@ -37,7 +37,7 @@ def get_rss_url(profile_url: str) -> str:
     return f"{base_url}/feed"
   return f"{base_url}/feed"
 
-def scrape_medium_blog(profile_url: str, dist_dir: str = "dist_dir"):
+def scrape(profile_url: str, dist_dir: str = "dist_dir"):
   # 1. Create distribution directory if it doesn't exist
   output_path = Path(dist_dir)
   output_path.mkdir(parents=True, exist_ok=True)
@@ -107,4 +107,4 @@ if __name__ == "__main__":
   MEDIUM_PROFILE_URL = "https://satyan-sharma.medium.com/"
   DESTINATION_DIRECTORY = "dist_dir"
 
-  scrape_medium_blog(MEDIUM_PROFILE_URL, DESTINATION_DIRECTORY)
+  scrape(MEDIUM_PROFILE_URL, DESTINATION_DIRECTORY)

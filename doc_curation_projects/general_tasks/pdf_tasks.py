@@ -1,7 +1,7 @@
 import logging
 
 from doc_curation import pdf
-from doc_curation.pdf import drive_ocr, image_ops
+from doc_curation.pdf import drive_ocr, image_ops, llm
 
 # Remove all handlers associated with the root logger object.
 for handler in logging.root.handlers[:]:
@@ -27,7 +27,8 @@ if __name__ == '__main__':
   # drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/koshaH/upasarga-artha-candrika. vol. 1 (pra-sam).pdf", small_pdf_pages=10, detext=False)
   # drive_ocr.split_and_ocr_all( dir_path="/media/vvasuki/vData/text/granthasangrahaH/vedAH/sb", small_pdf_pages=10, detext=False, )
   # pdf.detext_via_jpg(input_file_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/shrIvaiShNavaH/yAmuna/AGAMA PRAMANYAM_sa.pdf")
-  drive_ocr.split_and_ocr_all( dir_path="/media/vvasuki/vData/text/granthasangrahaH/kalpaH", small_pdf_pages=10, detext=False, file_pattern="[!_]*.pdf")
+  # drive_ocr.split_and_ocr_all( dir_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/pAncharAtram/", small_pdf_pages=10, detext=False, file_pattern="[!_]*.pdf")
+  llm.pymupdf_to_markdown("/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/pAncharAtram/thesis/Raddock_Hayashirsha.pdf", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/hayashirShsaH/meta/raddock-thesis.md")
   # pdf.compress_with_gs(input_file_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/shrIvaiShNavaH/ahobilam/Adhyatma-Chintamani_vAdikesari_nArAyaNa_muniH.pdf")
 
   # pdf.crop_pdf_with_json(input_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/pAncharAtram/Pancharatra-pAramyam.pdf", output_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/pAncharAtram/Pancharatra-pAramyam-out.pdf", )

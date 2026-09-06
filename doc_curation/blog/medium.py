@@ -17,7 +17,7 @@ browser = None
 
 
 def article_scraper(url, dir_path, dry_run): 
-  blog.scrape_post_markdown(url=url, dir_path=dir_path, dry_run=dry_run, entry_css_list=["article", "div.body.markup"], browser=browser)
+  return blog.scrape_post_markdown(url=url, dir_path=dir_path, dry_run=dry_run, entry_css_list=["article", "div.body.markup"], browser=browser)
 
 def scrape_medium_blog(url, dir_path, dry_run=False):
   global browser

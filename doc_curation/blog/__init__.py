@@ -188,6 +188,7 @@ def fix_special_markup(content):
   ## Medium.com stuff
   content = regex.sub(r"!\[\]\(data:image/svg\+xml;.+", r"", content)
   content = regex.sub(r"\[\]\(https://medium\.com/m/signin.+", r"", content)
+  content = regex.sub(r".+resize:fill.+", r"", content)
   content = re.sub(r"##\s*Get\s+.*?stories.*?Remember\s+me\s+for\s+faster\s+sign\s+in", "", content, flags=re.DOTALL | re.IGNORECASE)
   content = re.sub(r"\n+.*?source=post_page---(?:author|read_next)_recirc[\s\S]*$", "\n", content, flags=re.DOTALL | re.IGNORECASE)
   return content

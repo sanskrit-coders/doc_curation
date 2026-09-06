@@ -20,3 +20,4 @@ nltk
 translators
 
 anthropic
+google-genai

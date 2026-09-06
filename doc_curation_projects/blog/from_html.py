@@ -45,8 +45,9 @@ def dump_wordpress():
 
 def dump_wordpress_monthly():
 
-  init_year_month_str = "2025/07"
+  wordpress.scrape_monthly_indexes(url="https://thesidhantin.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/thesidhantin", init_year_month_str="2025/03", dry_run=False)
 
+  init_year_month_str = "2025/07"
 
   wordpress.scrape_monthly_indexes(url="https://adbhutam.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/adbhutam_subbu_advaita", init_year_month_str=init_year_month_str, dry_run=False)
 

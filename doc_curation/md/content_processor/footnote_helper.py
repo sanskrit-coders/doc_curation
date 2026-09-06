@@ -144,6 +144,89 @@ def to_plain_footnotes(content):
   return content
 
 
+import re
+import html
+
+
+def fix_sup_footnotes(content: str, *args, **kwargs) -> str:
+  """
+  Convert pymupdf4llm-style HTML/Markdown hybrid footnotes
+  into standard Markdown footnotes.
+  """
+
+  # Decode &lt;sup&gt; etc.
+  content = html.unescape(content)
+
+  # <sup>137</sup> -> [^137]
+  content = re.sub(
+    r"<sup>\s*(\d+)\s*</sup>",
+    r"[^\1]",
+    content,
+    flags=re.I,
+  )
+
+  # <em>foo</em> -> *foo*
+  content = re.sub(
+    r"<em[^>]*>(.*?)</em>",
+    r"*\1*",
+    content,
+    flags=re.I | re.S,
+  )
+
+  lines = content.splitlines()
+
+  footnotes = []
+  body = []
+
+  i = 0
+  while i < len(lines):
+    line = lines[i]
+
+    m = re.match(r"^\s*>\s*(\d+)\s+(.*)$", line)
+
+    if not m:
+      body.append(line)
+      i += 1
+      continue
+
+    num = m.group(1)
+    content = [m.group(2).strip()]
+
+    i += 1
+
+    while i < len(lines):
+      nxt = lines[i]
+
+      if re.match(r"^\s*>\s*\d+\s+", nxt):
+        break
+
+      if (
+          nxt.strip()
+          and not re.fullmatch(r"\d+", nxt.strip())
+      ):
+        content.append(nxt.strip())
+
+      i += 1
+
+    footnotes.append(
+      f"[^{num}]: {' '.join(content)}"
+    )
+
+  result = "\n".join(body)
+
+  # Remove standalone page numbers
+  result = re.sub(
+    r"\n\s*\d{1,4}\s*\n",
+    "\n",
+    result,
+  )
+
+  if footnotes:
+    result += "\n\n---\n\n" + "\n\n".join(footnotes)
+
+  return result
+
+
 def get_max_index(content):
   indexes_old = [0]  # Initialize the list within the function
   indexes_old.extend(int(x.group(1)) for x in regex.finditer(REF_PATTERN, content) if x.group(1).isdigit())
