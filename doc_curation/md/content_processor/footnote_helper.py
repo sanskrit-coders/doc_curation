@@ -227,6 +227,10 @@ def fix_sup_footnotes(content: str, *args, **kwargs) -> str:
   return result
 
 
+def fix_footnotes_llm(content):
+  prompt = "Convert footnotes to markdown format"
+  return content
+
 def get_max_index(content):
   indexes_old = [0]  # Initialize the list within the function
   indexes_old.extend(int(x.group(1)) for x in regex.finditer(REF_PATTERN, content) if x.group(1).isdigit())

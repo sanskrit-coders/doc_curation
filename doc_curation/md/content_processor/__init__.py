@@ -1,4 +1,6 @@
 import logging
+from markdown_it import MarkdownIt
+
 
 import regex
 from bs4 import BeautifulSoup, NavigableString
@@ -141,3 +143,18 @@ def get_quasi_section_int_map(content, pattern, use_ordinal=False):
       source_match_map[ordinal] = source_match
   logging.info(f"Got {len(source_match_map)} source matches ")
   return source_match_map
+
+
+def extract_codeblock(text: str, index: int = 0) -> str:
+  codeblocks = [
+    token.content
+    for token in MarkdownIt().parse(text)
+    if token.type == "fence"
+  ]
+
+  try:
+    return codeblocks[index]
+  except IndexError:
+    raise ValueError(
+      f"Only {len(codeblocks)} code block(s) found; index {index} is out of range"
+    )
