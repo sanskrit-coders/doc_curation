@@ -8,7 +8,7 @@ from doc_curation import llm
 from doc_curation.md.file import MdFile
 
 
-def process_file_ollama_chunks(file_in, prompt, dest_path, start_page=1, pages_per_chunk=5, model_id="qwen2.5:3b"):
+def process_pdf_chunks(file_in, prompt, dest_path, start_page=1, pages_per_chunk=5, model_id="qwen2.5:3b"):
   """Processes a PDF using a local Ollama model by extracting text page-by-page."""
   reader = PdfReader(file_in)
   total_pages = len(reader.pages)
@@ -57,16 +57,14 @@ def process_file_ollama_chunks(file_in, prompt, dest_path, start_page=1, pages_p
 
   combined_text = "\n\n".join(all_text_parts)
 
-  md_file = MdFile(dest_path)
-
-  llm.dump_to_md(dest_path, prompt=prompt, metadata=f"**Model:** {model_id}, **Pages Processed:** {total_pages}", content=combined_text)
+  llm.dump_to_md(dest_path, prompt=prompt, response_headers=f"**Model:** {model_id}, **Pages Processed:** {total_pages}", content=combined_text)
   return all_text_parts
 
 
 if __name__ == '__main__':
   main_prompt = llm.get_prompt("/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md")
 
-  process_file_ollama_chunks(
+  process_pdf_chunks(
     file_in="/media/vvasuki/vData/text/granthasangrahaH/kAvyam/shrIvaiShNavakRtam/yatirAja-vijaya-nATakam.pdf",
     dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/rUpakam/naDAdUr-ghaTikA-shata-varadaH/yatirAja-vijaya-nATakam.md",
     prompt=main_prompt,

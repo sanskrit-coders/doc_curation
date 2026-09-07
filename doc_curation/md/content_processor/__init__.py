@@ -6,6 +6,16 @@ import regex
 from bs4 import BeautifulSoup, NavigableString
 from indic_transliteration import sanscript
 
+# Mute markdown-it core and individual rule loggers (code, fence, blockquote, etc.)
+markdown_loggers = [
+  "markdown_it", "code", "fence", "blockquote", "hr",
+  "list", "reference", "html_block", "heading"
+]
+
+for name in markdown_loggers:
+  logger = logging.getLogger(name)
+  logger.setLevel(logging.WARNING)
+  logger.propagate = False
 
 def transliterate(text, source_script=sanscript.IAST, dest_script=sanscript.DEVANAGARI, aksharamukha_pre_options=None, aksharamukha_post_options=None, *args, **kwargs):
   if source_script.lower().startswith("tamil"):

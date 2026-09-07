@@ -1,7 +1,15 @@
 import json
+
 import os
 import tempfile
+import logging
+import random
 
+import time
+
+import backoff
+
+import regex
 from google.genai import types
 from pypdf import PdfReader, PdfWriter
 
@@ -12,6 +20,12 @@ from curation_utils import creds
 from doc_curation import llm
 from doc_curation.llm import dump_to_md
 from doc_curation.md.file import MdFile
+
+# Silence verbose SDK trace and HTTP debug logs
+for logger_name in ["google", "google.genai", "_trace", "httpx", "httpcore", "_client", "chats"]:
+  logger = logging.getLogger(logger_name)
+  logger.setLevel(logging.WARNING)
+  logger.propagate = False
 
 client = None
 
@@ -53,7 +67,7 @@ def get_client(api_key_path, cred_path="/home/vvasuki/gitland/vvasuki-git/syscon
   return client
 
 
-def process_file_page_chunks(file_in, prompt, dest_path, start_page=1, pages_per_chunk=5, model_id="gemini-3.5-flash", api_key_path="gemini.vv"):
+def process_pdf_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id="gemini-3.5-flash", api_key_path="gemini.vv", overwrite=False):
   client = get_client(api_key_path=api_key_path)
 
   reader = PdfReader(file_in)
@@ -61,11 +75,13 @@ def process_file_page_chunks(file_in, prompt, dest_path, start_page=1, pages_per
 
   all_metadata = []
   all_text_parts = []
-  
-  if start_page > 1 and os.path.exists(dest_path):
+
+  metadata = {"title": "UNK", "continue_page": 1}
+  if not overwrite and os.path.exists(dest_path):
     md_file = MdFile(dest_path)
-    _, content = md_file.read()
+    metadata, content = md_file.read()
     all_text_parts.append(content)
+  start_page = metadata["continue_page"]
 
   # Load the detailed prompt once as a system instruction
   config = types.GenerateContentConfig(
@@ -75,42 +91,123 @@ def process_file_page_chunks(file_in, prompt, dest_path, start_page=1, pages_per
 
   # Convert 1-indexed start_page to 0-indexed for Python logic
   start_index = max(0, start_page - 1)
-
   combined_prompt = f"PROMPT 0:  \n{prompt}\n"
+  try:
+    for i in tqdm(range(start_index, total_pages, pages_per_chunk), desc="Processing PDF Chunks"):
+      end_page = min(i + pages_per_chunk, total_pages)
+  
+      writer = PdfWriter()
+      for j in range(i, end_page):
+        writer.add_page(reader.pages[j])
+  
+      with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+        temp_path = temp_file.name
+        writer.write(temp_file)
+  
+      try:
+        uploaded = client.files.upload(file=temp_path)
+  
+        chunk_prompt = f"Convert pages {i + 1} to {end_page} into Markdown according to the system instructions."
+        response = chat.send_message([uploaded, chunk_prompt])
+  
+        metadata = scrub_response(response.model_dump())
+        all_metadata.append({f"pages_{i+1}_to_{end_page}": metadata})
+  
+        if response.text:
+          all_text_parts.append(response.text)
+          all_text_parts[-1] = regex.sub("```.*", "", all_text_parts[-1])
+  
+      finally:
+        if os.path.exists(temp_path):
+          os.remove(temp_path)
+    metadata.pop("continue_page", None)
+  except Exception as e:
+    metadata["continue_page"] = i+1
+    logging.error(f"\n[Error encountered: {e}]. Saving partial progress up to this point... Continue from start page : {metadata['continue_page']}")
+  
+  finally:
+    combined_metadata = json.dumps(all_metadata, ensure_ascii=False, indent=2)
+    combined_text = "\n\n".join(all_text_parts)
+    dump_to_md(dest_path, prompt=combined_prompt, response_headers=combined_metadata, content=combined_text, metadata=metadata)
 
-  for i in tqdm(range(start_index, total_pages, pages_per_chunk), desc="Processing PDF Chunks"):    
-    end_page = min(i + pages_per_chunk, total_pages)
 
-    writer = PdfWriter()
-    for j in range(i, end_page):
-      writer.add_page(reader.pages[j])
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
-      temp_path = temp_file.name
-      writer.write(temp_file)
+
+
+
+
+def _get_retry_delay(exc, default_delay):
+  """
+  Extract Gemini retryDelay from exception text, e.g.
+
+      'retryDelay': '27s'
+
+  Falls back to the exponential backoff delay.
+  """
+  text = str(exc)
+
+  match = regex.search(r"'retryDelay':\s*'(\d+)s'", text)
+  if match:
+    return int(match.group(1))
+
+  match = regex.search(r"Please retry in ([\d.]+)s", text)
+  if match:
+    return float(match.group(1))
+
+  return default_delay
+
+
+def process_pdf_chunks_with_keys(
+    api_key_path="gemini_friends",
+    max_attempts=None,
+    *args,
+    **kwargs,
+):
+  keys = list(creds.get_toml_value(api_key_path).keys())
+
+  if not keys:
+    raise ValueError(f"No API keys found in {api_key_path}")
+
+  # Start on a random key
+  i = random.randrange(len(keys))
+
+  if max_attempts is None:
+    max_attempts = len(keys) * 3
+
+  for attempt in range(max_attempts):
+    key_name = keys[i % len(keys)]
+    key = f"{api_key_path}.{key_name}"
 
     try:
-      uploaded = client.files.upload(file=temp_path)
+      logging.info("Cred %s", key)
 
-      # Pass a minimal prompt for each chunk
-      chunk_prompt = f"Convert pages {i + 1} to {end_page} into Markdown according to the system instructions."
-      combined_prompt = f"{combined_prompt}\n\nCHUNK PROMPT {i + 1} to {end_page}:  \n{chunk_prompt}\n"
-      response = chat.send_message([uploaded, chunk_prompt])
+      return process_pdf_chunks(
+        api_key_path=key,
+        *args,
+        **kwargs,
+      )
 
-      metadata = scrub_response(response.model_dump())
-      all_metadata.append({f"pages_{i+1}_to_{end_page}": metadata})
+    except Exception as e:
+      base_delay = min(backoff.expo(base=2)(attempt), 300)
+      delay = _get_retry_delay(e, base_delay)
 
-      if response.text:
-        all_text_parts.append(response.text)
+      logging.warning(
+        "Cred %s failed (%s). Sleeping %.1fs then rotating.",
+        key,
+        type(e).__name__,
+        delay,
+      )
 
-    finally:
-      if os.path.exists(temp_path):
-        os.remove(temp_path)
+      logging.debug("Exception: %s", e)
 
-  combined_metadata = json.dumps(all_metadata, ensure_ascii=False, indent=2)
-  combined_text = "\n\n".join(all_text_parts)
-  dump_to_md(dest_path, prompt=combined_prompt, metadata=combined_metadata, content=combined_text)
+      time.sleep(delay)
 
+      # rotate to next key
+      i += 1
+
+  raise RuntimeError(
+    f"Failed after {max_attempts} attempts across {len(keys)} API keys"
+  )
 
 def process_file(file_in, prompt, dest_path, model_id="gemini-3.5-flash", api_key_path="gemini.vv"):
   client = get_client(api_key_path=api_key_path)
@@ -135,4 +232,4 @@ def process_file(file_in, prompt, dest_path, model_id="gemini-3.5-flash", api_ke
 
 if __name__ == '__main__':
   pass
-  process_file_page_chunks(file_in="/media/vvasuki/vData/text/granthasangrahaH/kAvyam/shrIvaiShNavakRtam/yatirAja-vijaya-nATakam.pdf", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/rUpakam/naDAdUr-ghaTikA-shata-varadaH/yatirAja-vijaya-nATakam.md", prompt=llm.get_prompt("/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md") + "Start from the first page, don't skip a single page till the end.", api_key_path="gemini.kv")
+  process_pdf_chunks_with_keys(file_in="/media/vvasuki/vData/text/granthasangrahaH/kAvyam/shrIvaiShNavakRtam/yatirAja-vijaya-nATakam.pdf", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/rUpakam/naDAdUr-ghaTikA-shata-varadaH/yatirAja-vijaya-nATakam.md", prompt=llm.get_prompt("/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md"))
