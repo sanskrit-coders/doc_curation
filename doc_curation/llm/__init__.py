@@ -18,6 +18,6 @@ def dump_to_md(dest_path, prompt:str, response_headers: str, content: str, metad
   ai_details = [details_helper.Detail(title="AI Prompt", content=prompt), details_helper.Detail(title="AI Response Headers", content=response_headers)]
   ai_details = [x.to_md_html() for x in ai_details]
   content = f"{'\n\n'.join(ai_details)}\n\n{content}"
-  if (metadata is None or metadata["title"] == "UNK") and os.path.exists(dest_path):
+  if metadata is None and os.path.exists(dest_path):
     metadata, _ = md_file.read()
   md_file.dump_to_file(metadata=metadata, content=content, dry_run=False)

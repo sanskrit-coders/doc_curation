@@ -6,8 +6,7 @@ import logging
 import random
 
 import time
-
-import backoff
+from google.genai.errors import ClientError
 
 import regex
 from google.genai import types
@@ -116,13 +115,13 @@ def process_pdf_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id="
         if response.text:
           all_text_parts.append(response.text)
           all_text_parts[-1] = regex.sub("```.*", "", all_text_parts[-1])
+          metadata["continue_page"] = end_page + 1
   
       finally:
         if os.path.exists(temp_path):
           os.remove(temp_path)
     metadata.pop("continue_page", None)
   except Exception as e:
-    metadata["continue_page"] = i+1
     logging.error(f"\n[Error encountered: {e}]. Saving partial progress up to this point... Continue from start page : {metadata['continue_page']}")
   
   finally:
@@ -156,6 +155,19 @@ def _get_retry_delay(exc, default_delay):
 
   return default_delay
 
+# Example errors - 
+# 'error': {'code': 429, 'message': 'You exceeded your current quota.... Please retry in 27.065191817s.'}
+def _is_retryable_gemini_error(exc):
+  text = str(exc)
+
+  return (
+      "RESOURCE_EXHAUSTED" in text
+      or "429" in text
+      or "quota" in text.lower()
+      or "rate limit" in text.lower()
+      or "retryDelay" in text
+  )
+
 
 def process_pdf_chunks_with_keys(
     api_key_path="gemini_friends",
@@ -168,11 +180,10 @@ def process_pdf_chunks_with_keys(
   if not keys:
     raise ValueError(f"No API keys found in {api_key_path}")
 
-  # Start on a random key
   i = random.randrange(len(keys))
 
   if max_attempts is None:
-    max_attempts = len(keys) * 3
+    max_attempts = len(keys)
 
   for attempt in range(max_attempts):
     key_name = keys[i % len(keys)]
@@ -187,27 +198,26 @@ def process_pdf_chunks_with_keys(
         **kwargs,
       )
 
-    except Exception as e:
-      base_delay = min(backoff.expo(base=2)(attempt), 300)
+    except ClientError as e:
+      if not _is_retryable_gemini_error(e):
+        raise
+
+      base_delay = min(2 ** attempt, 300)
       delay = _get_retry_delay(e, base_delay)
 
       logging.warning(
-        "Cred %s failed (%s). Sleeping %.1fs then rotating.",
-        key,
-        type(e).__name__,
+        f"Cred {key} exhausted quota/rate limit. "
+        "Sleeping %.1fs and rotating.",
         delay,
       )
 
-      logging.debug("Exception: %s", e)
-
       time.sleep(delay)
-
-      # rotate to next key
       i += 1
 
   raise RuntimeError(
     f"Failed after {max_attempts} attempts across {len(keys)} API keys"
   )
+
 
 def process_file(file_in, prompt, dest_path, model_id="gemini-3.5-flash", api_key_path="gemini.vv"):
   client = get_client(api_key_path=api_key_path)

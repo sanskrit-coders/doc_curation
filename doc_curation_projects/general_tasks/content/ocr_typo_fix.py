@@ -104,5 +104,5 @@ if __name__ == '__main__':
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/rUpakam/sankalpa-sUryodayaH/meta/nArAyaNa-raghunAthau", content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_iast_for_pdfs(x), dry_run=False)
 
   # devanagari = sanscript.SCHEMES[sanscript.DEVANAGARI]
-  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_sAma/content/tANDyam/ChAndogyopaniShat/rangarAmAnujaH/6.md", content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_gemini_errors(x), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/rUpakam/naDAdUr-ghaTikA-shata-varadaH/yatirAja-vijaya-nATakam.md", content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_gemini_errors(x), dry_run=False)
   # misc_typos("/home/vvasuki/gitland/vishvAsa/vedAH_sAma/content/tANDyam/ChAndogyopaniShat/rangarAmAnujaH")
