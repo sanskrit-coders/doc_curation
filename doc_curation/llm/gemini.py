@@ -72,7 +72,7 @@ def process_pdf_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id="
   reader = PdfReader(file_in)
   total_pages = len(reader.pages)
 
-  all_metadata = []
+  full_response_metadata = []
   all_text_parts = []
 
   metadata = {"title": "UNK", "continue_page": 1}
@@ -80,7 +80,7 @@ def process_pdf_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id="
     md_file = MdFile(dest_path)
     metadata, content = md_file.read()
     all_text_parts.append(content)
-  start_page = metadata["continue_page"]
+  start_page = metadata.get("continue_page", 1)
 
   # Load the detailed prompt once as a system instruction
   config = types.GenerateContentConfig(
@@ -109,8 +109,8 @@ def process_pdf_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id="
         chunk_prompt = f"Convert pages {i + 1} to {end_page} into Markdown according to the system instructions."
         response = chat.send_message([uploaded, chunk_prompt])
   
-        metadata = scrub_response(response.model_dump())
-        all_metadata.append({f"pages_{i+1}_to_{end_page}": metadata})
+        chunk_metadata = scrub_response(response.model_dump())
+        full_response_metadata.append({f"pages_{i+1}_to_{end_page}": chunk_metadata})
   
         if response.text:
           all_text_parts.append(response.text)
@@ -125,7 +125,7 @@ def process_pdf_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id="
     logging.error(f"\n[Error encountered: {e}]. Saving partial progress up to this point... Continue from start page : {metadata['continue_page']}")
   
   finally:
-    combined_metadata = json.dumps(all_metadata, ensure_ascii=False, indent=2)
+    combined_metadata = json.dumps(full_response_metadata, ensure_ascii=False, indent=2)
     combined_text = "\n\n".join(all_text_parts)
     dump_to_md(dest_path, prompt=combined_prompt, response_headers=combined_metadata, content=combined_text, metadata=metadata)
 
