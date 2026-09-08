@@ -5,6 +5,8 @@ from doc_curation.md.content_processor import footnote_helper, ocr_helper
 from doc_curation.md.file import MdFile
 from doc_curation.utils import sanskrit_helper
 from indic_transliteration import sanscript, aksharamukha_helper, tamil_tools
+from indic_transliteration.font_converter import gaudiya
+
 
 # 
 def devanaagarify(dir_path, source_script):
@@ -52,5 +54,6 @@ if __name__ == '__main__':
   # devanaagarify(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/gauDIyaH/kAvyam/adhi-gopAla-bhaTTam/gopAla-bhaTTa-shatakam.md", source_script="iast_iso_m")
   # fix_anunaasikaadi(dir_path="/home/vvasuki/gitland/vishvAsa/purANam_vaiShNavam/content/kAvyam/padyam/yadu-giri-sthAnika-selva-piLLai-varyaH/_index.md")
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/english/content/prose/hindu/indologist/max-muller/india_what_it_can_teach_us.md", content_transformer=lambda x, y: sanskrit_helper.fix_sacred_texts_transliteration(x), dry_run=False, silent_iteration=False)
-  # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAmAnuja-sampradAyaH/tattvam/", content_transformer=lambda x, y: tamil_tools.set_tamil_soft_consonants(x), dry_run=False, silent_iteration=False)
+
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAgAnuga-bhakti-parAH/kAvyam/bhakti-vinodaH/navadvIpa-dhAma-mAhAtmyam.md", content_transformer=lambda x, *args, **kwargs: gaudiya.to_iast(x), dry_run=False, silent_iteration=False)
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/tamiL/padyam/shrIvaiShNava/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam", content_transformer=lambda x, y: tamil_tools.fix_naive_ta_transliterations(x), dry_run=False, silent_iteration=False)

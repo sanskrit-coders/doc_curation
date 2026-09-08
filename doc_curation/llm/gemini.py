@@ -6,7 +6,7 @@ import logging
 import random
 
 import time
-from google.genai.errors import ClientError
+from google.genai.errors import APIError, ClientError, ServerError
 
 import regex
 from google.genai import types
@@ -26,7 +26,7 @@ for logger_name in ["google", "google.genai", "_trace", "httpx", "httpcore", "_c
   logger.setLevel(logging.WARNING)
   logger.propagate = False
 
-client = None
+_clients = {}
 
 
 def scrub_response(obj):
@@ -59,11 +59,13 @@ def scrub_response(obj):
   return obj
 
 def get_client(api_key_path, cred_path="/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/tokens.toml"):
-  global client
-  if client is None:
+  # Cache per key-path so rotating api_key_path in
+  # process_pdf_chunks_with_keys actually uses a different key.
+  # (A single global client made rotation a no-op.)
+  if api_key_path not in _clients:
     api_key = creds.get_toml_value(path=cred_path, key=api_key_path)
-    client = genai.Client(api_key=api_key)
-  return client
+    _clients[api_key_path] = genai.Client(api_key=api_key)
+  return _clients[api_key_path]
 
 
 def process_pdf_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id="gemini-3.5-flash", api_key_path="gemini.vv", overwrite=False):
@@ -122,7 +124,8 @@ def process_pdf_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id="
           os.remove(temp_path)
     metadata.pop("continue_page", None)
   except Exception as e:
-    logging.error(f"\n[Error encountered: {e}]. Saving partial progress up to this point... Continue from start page : {metadata['continue_page']}")
+    logging.error(f"\n[Error encountered: {e}]. Saving partial progress up to this point... Continue from start page : {metadata.get('continue_page')}")
+    raise
   
   finally:
     combined_metadata = json.dumps(full_response_metadata, ensure_ascii=False, indent=2)
@@ -155,23 +158,85 @@ def _get_retry_delay(exc, default_delay):
 
   return default_delay
 
-# Example errors - 
+def _should_rotate_key(exc):
+  """Quota/rate-limit errors are per-key: rotating to a fresh key helps.
+
+  Model overload / transient 5xx (e.g. 503 UNAVAILABLE "high demand ...
+  try again later") is global to the model: all keys hit the same
+  overloaded backend, so backoff + retry the SAME key instead.
+  """
+  code = getattr(exc, "code", None)
+  if code == 429:
+    return True
+  if code in (500, 502, 503, 504):
+    return False
+
+  status = str(getattr(exc, "status", "") or "").upper()
+  if status == "RESOURCE_EXHAUSTED":
+    return True
+  if status in ("INTERNAL", "UNAVAILABLE", "DEADLINE_EXCEEDED"):
+    return False
+
+  text = str(exc)
+  text_lower = text.lower()
+  if (
+      "resource_exhausted" in text_lower
+      or "quota" in text_lower
+      or "rate limit" in text_lower
+      or "retrydelay" in text_lower
+      or "please retry in" in text_lower
+      or "429" in text
+  ):
+    return True
+  return False
+
+
+# Example errors -
 # 'error': {'code': 429, 'message': 'You exceeded your current quota.... Please retry in 27.065191817s.'}
 def _is_retryable_gemini_error(exc):
+  # 5xx are transient server-side failures - always retry (same key or rotated,
+  # decided by _should_rotate_key).
+  if isinstance(exc, ServerError):
+    return True
+
+  code = getattr(exc, "code", None)
+  if code in (429, 500, 502, 503, 504):
+    return True
+
+  status = str(getattr(exc, "status", "") or "").upper()
+  if status in ("RESOURCE_EXHAUSTED", "INTERNAL", "UNAVAILABLE", "DEADLINE_EXCEEDED"):
+    return True
+
   text = str(exc)
+  text_lower = text.lower()
 
   return (
-      "RESOURCE_EXHAUSTED" in text
+      "resource_exhausted" in text_lower
       or "429" in text
-      or "quota" in text.lower()
-      or "rate limit" in text.lower()
-      or "retryDelay" in text
+      or "500" in text
+      or "502" in text
+      or "503" in text
+      or "504" in text
+      or "quota" in text_lower
+      or "rate limit" in text_lower
+      or "retrydelay" in text_lower
+      or "internal" in text_lower
+      or "unavailable" in text_lower
+      or "deadline" in text_lower
+      or "overloaded" in text_lower
+      or "try again" in text_lower
+      or "timeout" in text_lower
+      or "timed out" in text_lower
+      or "connection" in text_lower
+      or "reset" in text_lower
+      or "temporarily" in text_lower
   )
 
 
 def process_pdf_chunks_with_keys(
     api_key_path="gemini_friends",
     max_attempts=None,
+    max_transient_retries=8,
     *args,
     **kwargs,
 ):
@@ -189,30 +254,59 @@ def process_pdf_chunks_with_keys(
     key_name = keys[i % len(keys)]
     key = f"{api_key_path}.{key_name}"
 
-    try:
-      logging.info("Cred %s", key)
+    for transient_attempt in range(max_transient_retries + 1):
+      try:
+        logging.info("Cred %s", key)
 
-      return process_pdf_chunks(
-        api_key_path=key,
-        *args,
-        **kwargs,
-      )
+        return process_pdf_chunks(
+          api_key_path=key,
+          *args,
+          **kwargs,
+        )
 
-    except ClientError as e:
-      if not _is_retryable_gemini_error(e):
-        raise
+      except Exception as e:
+        if not _is_retryable_gemini_error(e):
+          raise
 
-      base_delay = min(2 ** attempt, 300)
-      delay = _get_retry_delay(e, base_delay)
+        if _should_rotate_key(e):
+          base_delay = min(2 ** attempt, 300)
+          delay = _get_retry_delay(e, base_delay)
+          logging.warning(
+            f"Cred {key} quota/rate-limit ({e}). "
+            "Sleeping %.1fs and rotating.",
+            delay,
+          )
+          time.sleep(delay)
+          break
 
-      logging.warning(
-        f"Cred {key} exhausted quota/rate limit. "
-        "Sleeping %.1fs and rotating.",
-        delay,
-      )
+        # Model overload / transient 5xx / transport blip (e.g. 503
+        # UNAVAILABLE "high demand ... try again later"): same backend for
+        # every key, so backoff + retry the SAME key.
+        if transient_attempt >= max_transient_retries:
+          base_delay = min(2 ** attempt, 300)
+          delay = _get_retry_delay(e, base_delay)
+          logging.warning(
+            f"Cred {key} overload persists after "
+            f"{max_transient_retries + 1} same-key tries ({e}). "
+            "Sleeping %.1fs and rotating as fallback.",
+            delay,
+          )
+          time.sleep(delay)
+          break
 
-      time.sleep(delay)
-      i += 1
+        base_delay = min(5 * (2 ** transient_attempt), 300)
+        delay = _get_retry_delay(e, base_delay)
+        # Small jitter so concurrent workers don't wake in lockstep.
+        delay = delay + random.uniform(0, 1)
+        logging.warning(
+          f"Model overloaded/transient ({e}). "
+          f"Sleeping {delay:.1f}s and retrying same key {key} "
+          f"(try {transient_attempt + 2}/{max_transient_retries + 1}).",
+        )
+        time.sleep(delay)
+        continue
+
+    i += 1
 
   raise RuntimeError(
     f"Failed after {max_attempts} attempts across {len(keys)} API keys"

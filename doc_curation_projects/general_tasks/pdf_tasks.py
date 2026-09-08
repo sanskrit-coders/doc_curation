@@ -1,7 +1,8 @@
 import logging
 
-from doc_curation import pdf
-from doc_curation.pdf import drive_ocr, image_ops, llm
+from doc_curation.llm import gemini
+from doc_curation import pdf, llm
+from doc_curation.pdf import drive_ocr, image_ops, llm as pdf_llm
 
 # Remove all handlers associated with the root logger object.
 for handler in logging.root.handlers[:]:
@@ -27,8 +28,11 @@ if __name__ == '__main__':
   # drive_ocr.split_and_ocr_all(dir_path="/media/vvasuki/vData/text/granthasangrahaH/koshaH/upasarga-artha-candrika. vol. 1 (pra-sam).pdf", small_pdf_pages=10, detext=False)
   # drive_ocr.split_and_ocr_all( dir_path="/media/vvasuki/vData/text/granthasangrahaH/vedAH/sb", small_pdf_pages=10, detext=False, )
   # pdf.detext_via_jpg(input_file_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/shrIvaiShNavaH/yAmuna/AGAMA PRAMANYAM_sa.pdf")
-  drive_ocr.split_and_ocr_all( dir_path="/media/vvasuki/vData/text/granthasangrahaH/vedAH/taittirIyam", small_pdf_pages=10, detext=False, file_pattern="[!_]*.pdf")
-  # llm.pymupdf_to_markdown("/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/pAncharAtram/thesis/Raddock_Hayashirsha.pdf", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/pAncharAtrAgamaH/hayashirShsaH/meta/raddock-thesis.md")
+  # drive_ocr.split_and_ocr_all( dir_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/gauDIyam/navadvipa-dhama-mahatmya_1st_eng.pdf", small_pdf_pages=20, detext=False, file_pattern="[!_]*.pdf")
+  # llm.pymupdf_to_markdown("/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/gauDIyam/navadvipa-dhama-mahatmya_1st_eng.pdf", "/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/rAgAnuga-bhakti-parAH/kAvyam/bhakti-vinodaH/navadvIpa-dhAma-mAhAtmyam/sarva-prastutiH.md")
+
+  gemini.process_pdf_chunks_with_keys(file_in="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/shrIvaiShNavaH/lokAchAryAdi/svb_mImAMsA-bhAShyam.pdf", dest_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/lokAchArya-shAkhA/lokAchAryaH/shrI-vachana-bhUShaNam/vyAkhyA/mImAMsA/mUlam.md", prompt=llm.get_prompt("/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md"))
+
   # pdf.compress_with_gs(input_file_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/shrIvaiShNavaH/ahobilam/Adhyatma-Chintamani_vAdikesari_nArAyaNa_muniH.pdf")
 
   # pdf.crop_pdf_with_json(input_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/pAncharAtram/Pancharatra-pAramyam.pdf", output_pdf_path="/media/vvasuki/vData/text/granthasangrahaH/AgamaH/vaiShNavaH/pAncharAtram/Pancharatra-pAramyam-out.pdf", )
