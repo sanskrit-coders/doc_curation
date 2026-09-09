@@ -453,7 +453,18 @@ def _call_with_keys(
   if max_attempts is None:
     max_attempts = len(keys)
 
+  # Keys that hit quota exhaustion (429/RESOURCE_EXHAUSTED) are banned for
+  # the rest of the run: their quota won't recover mid-run, so never
+  # rotate back into them.
+  banned = set()
+
   for attempt in range(max_attempts):
+    while keys[i % len(keys)] in banned:
+      i += 1
+      if len(banned) >= len(keys):
+        raise RuntimeError(
+          f"All {len(keys)} API keys quota-exhausted; banned for rest of run: {sorted(banned)}"
+        )
     key_name = keys[i % len(keys)]
     key = f"{api_key_path}.{key_name}"
 
@@ -474,12 +485,17 @@ def _call_with_keys(
         if _should_rotate_key(e):
           base_delay = min(2 ** attempt, 300)
           delay = _get_retry_delay(e, base_delay)
+          banned.add(key_name)
           logging.warning(
             f"Cred {key} quota/rate-limit ({e}). "
-            "Sleeping %.1fs and rotating.",
+            "Sleeping %.1fs, banning it for the rest of the run, and rotating.",
             delay,
           )
           time.sleep(delay)
+          if len(banned) >= len(keys):
+            raise RuntimeError(
+              f"All {len(keys)} API keys quota-exhausted; banned for rest of run: {sorted(banned)}"
+            )
           break
 
         # Model overload / transient 5xx / transport blip (e.g. 503
