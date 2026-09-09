@@ -16,7 +16,9 @@ The function:
 * extracts top-level ``<details><summary>mUlam</summary>`` blocks
   (blocks inside ``div.js_include`` are *not* edited here - the static
   target they point to is edited instead, recursively),
-* aligns the mUla sequence to the pada token sequence using text
+* extracts in-div ``mUla`` blocks (expanded ``js_include`` prefills) and
+  adds the pada-pATha there in place as well,
+* aligns each mUla sequence to the pada token sequence using text
   similarity + sequence order (DP, free prefix/suffix, contiguous cover),
 * inserts ``<details><summary>pada-pAThaH</summary>`` blocks.
 
@@ -26,6 +28,7 @@ Only standard library + ``regex`` + ``bs4`` + ``doc_curation`` are used.
 import difflib
 import logging
 import os
+from functools import lru_cache
 
 import regex
 from bs4 import BeautifulSoup, NavigableString
@@ -83,8 +86,16 @@ def strip_iti(text):
   text = regex.sub(' इ॑त.*ः([॒॑]?)', 'ः\\1', text)
   text = regex.sub('्([॒॑])', '्', text)
   text = regex.sub('न्न्([॒॑]?)', 'न्', text)
+  # standalone upasarga-pada "निरिति" (= निर्, from निस्) carries no "iti X" gloss
+  text = regex.sub('^निरिति([॒॑]?)$', 'निर्\\1', text)
   text = regex.sub('ं॒ ‌', 'ं', text)
   text = regex.sub(' इति॑$', '', text)
+  # "X इति" without visarga/gloss: the iti is a padapATha marker, X is the word
+  # (e.g. मो इति -> मो). Bare इति ("thus") has no space: untouched.
+  text = regex.sub('^(.+) इति$', '\\1', text)
+  # fused "Xu + iti" without gloss (अन्विति -> अनु, स्विति -> सु);
+  # glossed forms (पृत्स्विति पृत्-सु) end otherwise: untouched.
+  text = regex.sub('^(\\S+)्विति([॒॑]?)$', '\\1ु\\2', text)
   text = regex.sub(r'\(३\)', '', text)
   text = regex.sub('ꣳ', 'ँ', text)
   text = regex.sub('([॒॑]?)न्निति[॒॑] .+([॒॑]?)न्', '\\1न्', text)
@@ -109,11 +120,37 @@ def strip_iti(text):
   return text
 
 
-def normalize_for_match(text, is_pada=False):
+def drop_elided_inserts(text):
+  """Drop bracketed/parenthesized chunks, keep within-mantra repetitions.
+
+  Chunks whose content does NOT occur unbracketed elsewhere in the same
+  text are elisions, glosses or markers (``[ये देवाः]``, ``[रक्षोहण...]``,
+  ``(+++)``, ``[8]``) and are dropped with content. Chunks whose content
+  DOES occur unbracketed (e.g. repeated ``[रक्षोघ्ने स्वाहा]``) are expanded.
+  """
+  for _ in range(2):
+    for pat in (r"\([^()]*\)", r"\[[^\[\]]*\]"):
+      def _decide(m, _text=text):
+        inner = m.group(0)[1:-1]
+        inner_norm = normalize_for_match(inner, drop_inserts=False)
+        if not inner_norm:
+          return ""
+        rest = _text[:m.start()] + " " + _text[m.end():]
+        rest_bare = regex.sub(r"\([^()]*\)", "", regex.sub(r"\[[^\[\]]*\]", "", rest))
+        if inner_norm in normalize_for_match(rest_bare, drop_inserts=False):
+          return inner
+        return ""
+      text, _ = regex.subn(pat, _decide, text)
+  text = regex.sub(r"[\[\]\(\)]", "", text)
+  return text
+
+
+def normalize_for_match(text, is_pada=False, drop_inserts=True):
   """Light normalization for fuzzy matching.
 
   * pada tokens first go through :func:`strip_iti`,
-  * markup / glosses / punctuation / labels are removed,
+  * markup / glosses / punctuation / labels are removed, bracketed and
+    parenthesized inserts via :func:`drop_elided_inserts`,
   * accents + visarga are removed (visarga assimilates to s/r in saMhita,
     so dropping it makes ``पतिः + असि`` comparable to ``पतिरसि``).
   """
@@ -121,7 +158,11 @@ def normalize_for_match(text, is_pada=False):
     text = strip_iti(text)
   text = regex.sub(r"\*\*", "", text)
   text = regex.sub(r"\+\+\+.*?\+\+\+", "", text)
-  text = regex.sub(r"[\[\]\(\)]", "", text)
+  # stray "+" is markup cruft (e.g. "[8] +न"); "व्ँ" is this corpus's
+  # anusvara glyph (सव्ँवत्सर = संवत्सर)
+  text = regex.sub(r"\+", "", text)
+  text = regex.sub("\u0935\u094d([ँं])", r"\1", text)
+  text = drop_elided_inserts(text)
   text = regex.sub(r"[।॥]", "", text)
   # labels like 1A, anuvaka markers [20], punctuation
   text = regex.sub(r"[0-9०-९A-Z]", "", text)
@@ -131,16 +172,51 @@ def normalize_for_match(text, is_pada=False):
   return text
 
 
+def _skeleton_class():
+  mapping = {}
+  # Same place of articulation; voicing/aspiration/nasal-place/sibilant-place
+  # are what external sandhi alters (t<->d, m<->n, s<->sh, ...). Vowels,
+  # visarga-reflexes (र्/स्/ो/∅) and lengths are abstracted away here;
+  # the full-string score below keeps lexical precision.
+  for group, rep in [('कखगघ', 'क'), ('चछजझ', 'च'),
+                     ('टठडढ', 'ट'), ('तथदध', 'त'),
+                     ('पफबभ', 'प'),
+                     ('ङञणनमंँᳶ', 'न'),
+                     ('शषस', 'स')]:
+    for ch in group:
+      mapping[ch] = rep
+  return mapping
+
+_SKELETON_MAP = _skeleton_class()
+
+
+@lru_cache(maxsize=65536)
+def consonant_skeleton(s):
+  """Consonant place-skeleton of a normalized string (vowels dropped)."""
+  out = []
+  for ch in s:
+    mapped = _SKELETON_MAP.get(ch)
+    if mapped is not None:
+      out.append(mapped)
+    elif 'क' <= ch <= 'ह':
+      out.append(ch)
+  return ''.join(out)
+
+
 def similarity(a, b):
   if not a or not b:
     return 0.0
-  return difflib.SequenceMatcher(None, a, b).ratio()
+  full = difflib.SequenceMatcher(None, a, b).ratio()
+  sk = difflib.SequenceMatcher(
+      None, consonant_skeleton(a), consonant_skeleton(b)).ratio()
+  return max(full, sk)
 
 
 # ---------------------------------------------------------------------------
 # pada file parsing
 # ---------------------------------------------------------------------------
 
+@lru_cache(maxsize=8)
 def parse_pada_file(pada_path):
   """Parse a padapATha saMhitA file into ordered tokens.
 
@@ -194,6 +270,9 @@ def parse_pada_file(pada_path):
 def infer_pada_file(file_in, pada_base=DEFAULT_PADA_BASE):
   """Infer ``.../saMhitA/<kANDa>/<prapAThaka>.md`` from a sarva-prastuti path."""
   m = regex.search(r"sarva-prastutiH/(\d+)/(\d+)[^/]*", str(file_in))
+  if m is None:
+    # static mantra files mirror the same <kANDa>/<prapAThaka>_* layout
+    m = regex.search(r"saMhitA/(?:yajuH|Rk)/[^/]+/(\d+)/(\d+)", str(file_in))
   if not m:
     raise ValueError(f"Cannot infer kANDa/prapAThaka from {file_in}")
   kanda, prapathaka = m.group(1), m.group(2)
@@ -261,6 +340,23 @@ def _has_pada_after(tag):
   return False
 
 
+def _mula_entry_from_tag(tag):
+  """Build a mula entry dict from a ``<details><summary>mUlam`` tag."""
+  texts = []
+  for child in list(tag.children)[1:]:
+    if isinstance(child, NavigableString):
+      texts.append(str(child))
+    else:
+      texts.append(child.get_text(separator=" "))
+  text = " ".join(texts).strip()
+  return {
+    "tag": tag,
+    "text": text,
+    "norm": normalize_for_match(text, is_pada=False),
+    "already_has_pada": _has_pada_after(tag),
+  }
+
+
 def get_top_mulas(md_path):
   """Return (soup, metadata, content, mula_entries) for top-level mUlas.
 
@@ -289,21 +385,43 @@ def get_top_mulas(md_path):
       continue
     if _is_inside_include(tag):
       continue
-    # text = visible text without summary
-    texts = []
-    for child in list(tag.children)[1:]:
-      if isinstance(child, NavigableString):
-        texts.append(str(child))
-      else:
-        texts.append(child.get_text(separator=" "))
-    text = " ".join(texts).strip()
-    entries.append({
-      "tag": tag,
-      "text": text,
-      "norm": normalize_for_match(text, is_pada=False),
-      "already_has_pada": _has_pada_after(tag),
-    })
+    entries.append(_mula_entry_from_tag(tag))
   return soup, metadata, content, entries
+
+
+def get_div_mula_groups(soup):
+  """Group in-div mUla entries by nearest enclosing ``div.js_include``.
+
+  These are the expanded include prefills. Each group is a dict with
+  ``div`` (the tag), ``url`` and ``entries`` (mula entry dicts as in
+  :func:`get_top_mulas`, in document order). ``मूलम् (संयुक्तम्)`` blocks
+  are excluded, like in :func:`get_top_mulas`.
+  """
+  groups = []
+  index_by_div = {}
+  for tag in soup.select("details"):
+    summary = tag.find("summary")
+    if summary is None:
+      continue
+    title = summary.get_text().strip()
+    if not regex.fullmatch(MULA_TITLE_RE, title):
+      continue
+    if "संयुक्तम्" in title:
+      continue
+    div = None
+    for parent in tag.parents:
+      if getattr(parent, "get", None) is None:
+        continue
+      if "js_include" in (parent.get("class", []) or []):
+        div = parent
+        break
+    if div is None:
+      continue
+    if id(div) not in index_by_div:
+      index_by_div[id(div)] = len(groups)
+      groups.append({"div": div, "url": div.get("url", ""), "entries": []})
+    groups[index_by_div[id(div)]]["entries"].append(_mula_entry_from_tag(tag))
+  return groups
 
 
 def collect_include_targets(md_path, hugo_base=DEFAULT_HUGO_BASE):
@@ -337,12 +455,15 @@ def collect_include_targets(md_path, hugo_base=DEFAULT_HUGO_BASE):
 # alignment (similarity + sequence)
 # ---------------------------------------------------------------------------
 
-def select_pada_window(mula_norms, pada_tokens, max_anuvakas=4):
+def select_pada_window(mula_norms, pada_tokens, max_anuvakas=4, edge_margin=30):
   """Narrow the full pada token list to consecutive anuvakas.
 
   Order-aware prefilter: concatenate normalized mUlas (M) and normalized
   pada tokens (P), find longest common substrings via difflib (fast, C-ish
   for short M), and vote for anuvakas by matched character count.
+  The returned window is padded by ``edge_margin`` tokens on each side:
+  a mantra's span may start with the previous block's tail or end with the
+  next block's head (e.g. anuvaka breaks mid-mantra).
   Returns (window_tokens, window_start_index).
   """
   import bisect
@@ -397,24 +518,57 @@ def select_pada_window(mula_norms, pada_tokens, max_anuvakas=4):
       and ((hi + 1) - lo + 1) <= max_anuvakas:
     hi += 1
   window_anus = anu_order[lo:hi + 1]
-  # token slice
+  # token slice, padded so spans may reach into the previous block's tail
+  # or the next block's head across anuvaka/block boundaries
   indices = [i for i, t in enumerate(pada_tokens) if t.get("anuvaka", "") in set(window_anus)]
   start, end = min(indices), max(indices) + 1
   logging.info("Selected pada anuvakas %s (votes %s)", window_anus,
                {a: votes[a] for a in window_anus})
+  start = max(0, start - edge_margin)
+  end = min(len(pada_tokens), end + edge_margin)
   return pada_tokens[start:end], start
 
 
-def align_mulas_to_padas(mula_norms, pada_norms, max_span=30, gap_penalty=0.02):
+def _no_div_between(a, b):
+  """True if sibling tag b is reachable from a with no div.js_include between.
+
+  Contiguous mUla blocks outside includes are sequential in padapATha
+  order, so their spans must be gapless. Unreachable pairs (different
+  parents) return False: gaps stay allowed (status quo ante).
+  """
+  sib = a.next_sibling
+  while sib is not None and sib is not b:
+    if getattr(sib, "name", None) is not None:
+      if "js_include" in (sib.get("class", []) or []):
+        return False
+      try:
+        nested = sib.find("div", class_="js_include")
+      except Exception:
+        nested = None
+      if nested is not None:
+        return False
+    sib = sib.next_sibling
+  return sib is b
+
+
+def align_mulas_to_padas(mula_norms, pada_norms, max_span=30,
+                         gap_open=0.15, gap_extend=0.001, sequential=None):
   """Align each mUla to a span of pada tokens (similarity + sequence).
 
-  DP with free prefix/suffix and penalized gaps (for mantras that live in
-  ``div.js_include`` targets and are therefore absent from this file's
-  top-level mUla list): each mUla consumes 1..max_span tokens,
-  skipped pada tokens cost ``gap_penalty`` each. Cost = 1 - similarity.
+  DP with free prefix/suffix and affine-penalized gaps: each mUla consumes
+  1..max_span tokens; a skipped stretch (mantras living in ``div.js_include``
+  targets, hence absent from this file's mUla list) costs ``gap_open`` once
+  plus ``gap_extend`` per token. The affine form matters: one long skipped
+  div-region must stay cheaper than one garbage mismatch (cost up to 1.0),
+  while a zero-length gap costs nothing, so genuinely contiguous sequences
+  are unaffected. Cost = 1 - similarity.
 
   Returns (spans, total_cost, gaps) where spans[i] = (start, end) and
   gaps[i] = number of skipped pada tokens just before spans[i].
+
+  ``sequential[j]`` (j >= 1) forces a gapless transition from mula j-1 to
+  mula j (contiguous blocks with no div between); None means gaps allowed
+  everywhere (affine-penalized).
   """
   n, m = len(mula_norms), len(pada_norms)
   if n == 0 or m == 0:
@@ -432,19 +586,30 @@ def align_mulas_to_padas(mula_norms, pada_norms, max_span=30, gap_penalty=0.02):
   par_prev = [[None] * (m + 1) for _ in range(n + 1)]  # end of prev span
   for j in range(m + 1):
     dp[0][j] = 0.0  # free prefix
+  if sequential is None:
+    sequential = [False] * n
   for i in range(1, n + 1):
-    # best_prev[k] = min_{k'<=k} dp[i-1][k'] + gap*(k-k')
+    # best_prev[k] = min(dp[i-1][k], min_{k'<k} dp[i-1][k'] + open + extend*(k-k'))
     best_prev_val = [INF] * (m + 1)
     best_prev_arg = [0] * (m + 1)
-    running_val, running_arg = INF, 0
-    for k in range(m + 1):
-      cand = dp[i - 1][k]
-      if cand < running_val + gap_penalty:
-        running_val, running_arg = cand, k
-      else:
-        running_val = running_val + gap_penalty
-      best_prev_val[k] = running_val
-      best_prev_arg[k] = running_arg
+    if i > 1 and sequential[i - 1]:
+      # contiguous blocks with no div between: hard gapless transition
+      for k in range(m + 1):
+        best_prev_val[k] = dp[i - 1][k]
+        best_prev_arg[k] = k
+    else:
+      run_val, run_arg = INF, 0  # running min of (dp[i-1][k'] - extend*k')
+      for k in range(m + 1):
+        best_v, best_a = dp[i - 1][k], k
+        if run_val < INF:
+          cand = gap_open + gap_extend * k + run_val
+          if cand < best_v:
+            best_v, best_a = cand, run_arg
+        best_prev_val[k] = best_v
+        best_prev_arg[k] = best_a
+        v = dp[i - 1][k] - gap_extend * k
+        if v < run_val:
+          run_val, run_arg = v, k
     for j in range(1, m + 1):
       best, bk, bp = INF, None, None
       for k in range(max(0, j - max_span), j):
@@ -497,56 +662,178 @@ def build_pada_text(span_tokens):
 # file processing
 # ---------------------------------------------------------------------------
 
+def mula_head_token(text):
+  """First whitespace-separated token of markup-cleaned mUla text."""
+  text = regex.sub(r"\+\+\+.*?\+\+\+", "", text)
+  text = drop_elided_inserts(text)
+  text = regex.sub(r"[।॥]", " ", text)
+  text = regex.sub(r"[0-9०-९A-Z]", "", text)
+  text = regex.sub(r"[\u200b\-\u2013\u2014\/\.,;:|\+]+", " ", text)
+  parts = text.split()
+  return parts[0] if parts else ""
+
+
+def leading_carryover(entry_text, span_concat_norm):
+  """Return "X । " prefix if the mUla starts with a short particle missing
+  from the span head (padapATha source has no token for it, e.g. leading
+  \u0906 in "\u0906 \u0928 \u090f\u0924\u0941"), else ''. Conservative: only fires for
+  head tokens of ≤2 chars whose norm is not already the span start.
+  """
+  if not span_concat_norm:
+    return ""
+  head = mula_head_token(entry_text)
+  head_norm = normalize_for_match(head)
+  if not head_norm or len(head_norm) > 2:
+    return ""
+  if span_concat_norm.startswith(head_norm):
+    return ""
+  logging.warning("  carrying over leading particle %r absent from pada span", head)
+  return "%s । " % head
+
+
+def _group_pada_tokens(group, md_path, fallback_tokens, hugo_base):
+  """Pada tokens for a div group: inferred from the div's target file.
+
+  An include block mirrors its target static file, so its mantras are
+  matched against the target's own kANDa/prapAThaka pada source (the
+  corresponding pada-pATha), not the container's. Falls back to the
+  container tokens when the target is unresolvable or out of scope.
+  """
+  url = (group.get("url") or "").strip()
+  if url and include_helper is not None:
+    try:
+      target = include_helper.file_path_from_url(
+          url=url, hugo_base_dir=hugo_base, current_file_path=str(md_path))
+      pada_file = infer_pada_file(target) if target else None
+    except (ValueError, FileNotFoundError) as e:
+      logging.info("Div %s: using container pada (%s)", url, e)
+      pada_file = None
+    except Exception as e:  # pragma: no cover
+      logging.warning("Div %s: include resolution failed: %s", url, e)
+      pada_file = None
+    if pada_file is not None:
+      logging.info("Div %s: matching against %s", url, pada_file)
+      return parse_pada_file(pada_file)
+  return fallback_tokens
+
+
 def process_single_file(md_path, pada_tokens, dry_run=False, max_span=30,
-                        min_avg_sim=0.55):
-  """Add pada details to top-level mUlas of one file. Returns num inserted."""
+                        min_avg_sim=0.55, hugo_base=DEFAULT_HUGO_BASE):
+  """Add pada details to mUlas of one file (top-level + in-div). Returns num inserted."""
   soup, metadata, content, mulas = get_top_mulas(md_path)
-  if not mulas:
-    logging.info("No top-level mUlam in %s", md_path)
+  div_groups = get_div_mula_groups(soup)
+  if not mulas and not div_groups:
+    logging.info("No mUlam in %s", md_path)
     return 0
-  mula_norms = [x["norm"] for x in mulas]
-  # Two-stage: cheap bigram window selection, then exact DP inside window.
-  window_tokens, window_start = select_pada_window(mula_norms, pada_tokens)
-  if not window_tokens:
-    logging.warning("Empty pada window for %s", md_path)
-    return 0
-  window_norms = [t["norm"] for t in window_tokens]
-  spans, total_cost, gaps = align_mulas_to_padas(mula_norms, window_norms, max_span=max_span)
-  sims = []
-  for idx, (a, b) in enumerate(spans):
-    concat = "".join(window_norms[a:b])
-    sims.append(similarity(mula_norms[idx], concat))
-  avg_sim = sum(sims) / len(sims) if sims else 0.0
-  n_gaps = sum(1 for g in gaps if g > 0)
-  logging.info("Aligned %d mUlas in %s (window %d tokens @%d, avg_sim=%.3f, gaps=%d)",
-               len(mulas), md_path, len(window_tokens), window_start, avg_sim, n_gaps)
-  for idx, s in enumerate(sims):
-    extra = f" (+{gaps[idx]} skipped before)" if gaps[idx] else ""
-    if s < 0.5 or gaps[idx] > 0:
-      logging.warning("  low match [%d] sim=%.3f%s mUla=%r pada=%r", idx, s, extra,
-                      mulas[idx]["text"][:60],
-                      " + ".join(t["raw"][:30] for t in window_tokens[spans[idx][0]:spans[idx][1]])[:120])
-  if avg_sim < min_avg_sim:
-    logging.warning("Skipping %s: avg similarity %.3f < %.2f", md_path, avg_sim, min_avg_sim)
-    return 0
+  empties = [m for m in mulas if not m["norm"]]
+  for m in empties:
+    logging.warning("Skipping mUla with empty text after cleanup: %r", m["text"][:60])
+  mulas = [m for m in mulas if m["norm"]]
   inserted = 0
-  for entry, (a, b) in zip(mulas, spans):
-    # Re-check right before inserting: get_top_mulas() ran before alignment,
-    # so re-verify on the live soup to guarantee no duplicate is created.
-    if entry["already_has_pada"] or _has_pada_after(entry["tag"]):
-      if not entry["already_has_pada"]:
-        logging.info("Skipping %r: pada-pATha already present", entry["text"][:40])
+  if mulas:
+    mula_norms = [x["norm"] for x in mulas]
+    # Contiguous blocks (no div between) must map to gapless spans.
+    sequential = [False] + [_no_div_between(mulas[i - 1]["tag"], mulas[i]["tag"])
+                            for i in range(1, len(mulas))]
+    # Two-stage: cheap bigram window selection, then exact DP inside window.
+    window_tokens, window_start = select_pada_window(mula_norms, pada_tokens,
+                                                       edge_margin=max_span)
+    if not window_tokens:
+      logging.warning("Empty pada window for %s", md_path)
+      return 0
+    window_norms = [t["norm"] for t in window_tokens]
+    spans, total_cost, gaps = align_mulas_to_padas(mula_norms, window_norms, max_span=max_span,
+                                                   sequential=sequential)
+    sims = []
+    for idx, (a, b) in enumerate(spans):
+      concat = "".join(window_norms[a:b])
+      sims.append(similarity(mula_norms[idx], concat))
+    avg_sim = sum(sims) / len(sims) if sims else 0.0
+    n_gaps = sum(1 for g in gaps if g > 0)
+    logging.info("Aligned %d mUlas in %s (window %d tokens @%d, avg_sim=%.3f, gaps=%d)",
+                 len(mulas), md_path, len(window_tokens), window_start, avg_sim, n_gaps)
+    for idx, s in enumerate(sims):
+      extra = f" (+{gaps[idx]} skipped before)" if gaps[idx] else ""
+      if s < 0.5:
+        logging.warning("  low match [%d] sim=%.3f%s mUla=%r pada=%r", idx, s, extra,
+                        mulas[idx]["text"][:60],
+                        " + ".join(t["raw"][:30] for t in window_tokens[spans[idx][0]:spans[idx][1]])[:120])
+      elif gaps[idx] > 0:
+        logging.info("  match [%d] sim=%.3f%s mUla=%r", idx, s, extra,
+                     mulas[idx]["text"][:60])
+    if avg_sim < min_avg_sim:
+      logging.warning("Skipping %s: avg similarity %.3f < %.2f", md_path, avg_sim, min_avg_sim)
+      return 0
+    for entry, (a, b), s in zip(mulas, spans, sims):
+      # Re-check right before inserting: get_top_mulas() ran before alignment,
+      # so re-verify on the live soup to guarantee no duplicate is created.
+      if entry["already_has_pada"] or _has_pada_after(entry["tag"]):
+        if not entry["already_has_pada"]:
+          logging.info("Skipping %r: pada-pATha already present", entry["text"][:40])
+        continue
+      if s < 0.5:
+        # Safety net: a low-similarity match is never written, even if the
+        # file-level average looked fine (one garbage span can hide in it).
+        logging.warning("  skipping low match sim=%.3f mUla=%r pada=%r", s,
+                        entry["text"][:60],
+                        " + ".join(t["raw"][:30] for t in window_tokens[a:b])[:120])
+        continue
+      span_tokens = window_tokens[a:b]
+      pada_text = leading_carryover(entry["text"], "".join(window_norms[a:b])) + build_pada_text(span_tokens)
+      if not pada_text:
+        continue
+      new_html = f"<details><summary>{PADA_TITLE}</summary>\n\n{pada_text}\n</details>"
+      new_detail = BeautifulSoup(new_html, "html.parser").find("details")
+      entry["tag"].insert_after(NavigableString("\n\n"))
+      entry["tag"].insert_after(new_detail)
+      entry["tag"].insert_after(NavigableString("\n\n"))
+      inserted += 1
+  # In-div mUlas (expanded js_include prefills): add pada-pATha in place too,
+  # besides the included static file (handled by add_pada recursion).
+  # Each enclosing div is aligned independently - a div prefill mirrors one
+  # static file (usually 1-2 contiguous mantras).
+  for group in div_groups:
+    for e in group["entries"]:
+      if not e["norm"]:
+        logging.warning("Skipping in-div mUla with empty text after cleanup: %r", e["text"][:60])
+    g_all = [e for e in group["entries"] if e["norm"]]
+    if not g_all:
       continue
-    span_tokens = window_tokens[a:b]
-    pada_text = build_pada_text(span_tokens)
-    if not pada_text:
+    # Same nearest-div group = contiguous blocks (nested divs hold other
+    # streams and do not break contiguity): hard gapless throughout.
+    # Already-done entries still participate as tiling anchors.
+    g_norms = [e["norm"] for e in g_all]
+    g_seq = [False] * len(g_all)
+    g_tokens = _group_pada_tokens(group, md_path, pada_tokens, hugo_base)
+    g_window, _ = select_pada_window(g_norms, g_tokens, edge_margin=max_span)
+    if not g_window:
       continue
-    new_html = f"<details><summary>{PADA_TITLE}</summary>\n\n{pada_text}\n</details>"
-    new_detail = BeautifulSoup(new_html, "html.parser").find("details")
-    entry["tag"].insert_after(NavigableString("\n\n"))
-    entry["tag"].insert_after(new_detail)
-    entry["tag"].insert_after(NavigableString("\n\n"))
-    inserted += 1
+    g_wnorms = [t["norm"] for t in g_window]
+    try:
+      g_spans, _, _ = align_mulas_to_padas(g_norms, g_wnorms, max_span=max_span,
+                                           sequential=g_seq)
+    except RuntimeError as e:
+      logging.warning("Skipping in-div mUlas in %s (%s): %s", md_path, group["url"], e)
+      continue
+    for entry, (a, b) in zip(g_all, g_spans):
+      if entry["already_has_pada"] or _has_pada_after(entry["tag"]):
+        continue
+      s = similarity(entry["norm"], "".join(g_wnorms[a:b]))
+      if s < 0.5:
+        logging.warning("  in-div low match sim=%.3f mUla=%r pada=%r (in %s)",
+                        s, entry["text"][:60],
+                        " + ".join(t["raw"][:30] for t in g_window[a:b])[:120],
+                        group["url"])
+        continue
+      pada_text = leading_carryover(entry["text"], "".join(g_wnorms[a:b])) + build_pada_text(g_window[a:b])
+      if not pada_text:
+        continue
+      new_html = f"<details><summary>{PADA_TITLE}</summary>\n\n{pada_text}\n</details>"
+      new_detail = BeautifulSoup(new_html, "html.parser").find("details")
+      entry["tag"].insert_after(NavigableString("\n\n"))
+      entry["tag"].insert_after(new_detail)
+      entry["tag"].insert_after(NavigableString("\n\n"))
+      inserted += 1
   if inserted and not dry_run:
     from doc_curation.md import content_processor
     new_content = content_processor._make_content_from_soup(soup=soup)
@@ -559,7 +846,7 @@ def process_single_file(md_path, pada_tokens, dry_run=False, max_span=30,
 
 def add_pada(file_in, pada_file=None, pada_base=DEFAULT_PADA_BASE,
              hugo_base=DEFAULT_HUGO_BASE, dry_run=False, max_span=30,
-             _visited=None):
+             _visited=None, _depth=0):
   """Add pada-pATha details for ``file_in`` + its static includes.
 
   :param file_in: content file path (str/Path) or MdFile, e.g.
@@ -584,32 +871,29 @@ def add_pada(file_in, pada_file=None, pada_base=DEFAULT_PADA_BASE,
   logging.info("Loaded %d pada tokens from %s", len(pada_tokens), pada_file)
   processed = {}
   processed[file_in] = process_single_file(file_in, pada_tokens, dry_run=dry_run,
-                                           max_span=max_span)
+                                           max_span=max_span, hugo_base=hugo_base)
+  if _depth >= 2:
+    return {"pada_file": pada_file, "processed": processed}
   for target in collect_include_targets(file_in, hugo_base=hugo_base):
-    # recurse with the same pada tokens (same kANDa/prapAThaka window search
-    # is redone per file via free prefix/suffix DP, so Rk/yajuH statics work).
+    # Each static target resolves its OWN pada file (it may live in another
+    # prapAThaka - e.g. 1/7 statics referenced from 1/8 files). Targets
+    # outside Taittiriya-saMhita pada scope (Rk-shAkala, atharva, sUtra)
+    # are skipped: their padas live elsewhere.
     if target in _visited:
       continue
-    _visited.add(target)
+    # NOTE: do NOT pre-mark _visited here - the recursive call marks
+    # file_in itself; pre-marking would trip its already-visited guard
+    # and silently skip the target.
     try:
-      processed[target] = process_single_file(target, pada_tokens,
-                                              dry_run=dry_run, max_span=max_span)
+      sub = add_pada(target, pada_base=pada_base, hugo_base=hugo_base,
+                     dry_run=dry_run, max_span=max_span,
+                     _visited=_visited, _depth=_depth + 1)
+      processed.update(sub["processed"])
+    except (ValueError, FileNotFoundError) as e:
+      logging.info("Skipping %s: %s", target, e)
     except Exception as e:  # pragma: no cover
       logging.warning("Failed %s: %s", target, e)
       processed[target] = 0
-    # one more level for nested includes (e.g. yajuH static -> Rk static)
-    try:
-      for nested in collect_include_targets(target, hugo_base=hugo_base):
-        if nested in _visited:
-          continue
-        _visited.add(nested)
-        try:
-          processed[nested] = process_single_file(nested, pada_tokens,
-                                                  dry_run=dry_run, max_span=max_span)
-        except Exception as e:  # pragma: no cover
-          logging.warning("Failed %s: %s", nested, e)
-    except Exception:  # pragma: no cover
-      pass
   return {"pada_file": pada_file, "processed": processed}
 
 
