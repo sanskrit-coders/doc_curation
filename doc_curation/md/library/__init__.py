@@ -1,3 +1,4 @@
+import inspect
 import logging
 import os
 from pathlib import Path
@@ -9,6 +10,35 @@ from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from doc_curation.utils import text_utils
 from indic_transliteration import sanscript
+
+# First-parameter names identifying callbacks that want a file path (str)
+# rather than an MdFile object - e.g. add_pada(file_in, ...).
+_PATH_LIKE_PARAMS = frozenset(
+  ["file_in", "file_path", "filepath", "path", "filename", "file_name"]
+)
+
+
+def _takes_file_path(fn):
+  """Check if ``fn`` expects a file path (rather than MdFile) as 1st arg.
+
+  Established codebase convention names that argument ``md_file``
+  (or ``self``/``md_files``); path-style callbacks (e.g. ``add_pada``,
+  ``set_ids_for_file``) name it ``file_in``/``file_path``/... or annotate
+  it with ``str``/``Path``.
+  """
+  try:
+    params = list(inspect.signature(fn).parameters.values())
+  except (ValueError, TypeError):
+    return False
+  positional = [p for p in params
+                if p.kind in (inspect.Parameter.POSITIONAL_ONLY,
+                              inspect.Parameter.POSITIONAL_OR_KEYWORD)]
+  if not positional:
+    return False
+  first = positional[0]
+  if first.annotation in (str, Path, os.PathLike):
+    return True
+  return first.name in _PATH_LIKE_PARAMS
 
 
 def import_md_recursive(source_dir, file_extension, source_format=None, dry_run=False):
@@ -52,7 +82,10 @@ def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, 
         start_file_reached = True
     if md_file.get_title() is not None:
       # logging.info("Processing %s", md_file)
-      result = fn(md_file, *args, **kwargs)
+      if _takes_file_path(fn):
+        result = fn(md_file.file_path, *args, **kwargs)
+      else:
+        result = fn(md_file, *args, **kwargs)
       results_map[md_file.file_path] = result
   return results_map
 
