@@ -47,6 +47,7 @@ DEFAULT_HUGO_BASE = "/home/vvasuki/gitland/vishvAsa"
 MULA_TITLE_RE = r"^\s*मूलम्.*$"
 PADA_TITLE = "पद-पाठः"
 PADA_TITLE_RE = r"^\s*पद[\s\-‐‑]*पाठः.*$"
+LABEL_END_PENALTY = 0.5
 ACCENTS_RE = r"[॒॑᳓᳙᳚ꣳꣴ]"
 
 
@@ -551,8 +552,27 @@ def _no_div_between(a, b):
   return sib is b
 
 
+def _block_continues_flags(window_tokens, source_tokens, window_start):
+  """Per-window-token bool: token starts a label block that continues past it.
+
+  A span ending here (with length > 1) has swallowed the next block's head
+  token. Single-token blocks (label immediately followed by the next label
+  or source end, e.g. mantra-final "1 \u0964 \u0905\u0924\u094d\u092f\u0902\u0939\u093e\u0903")
+  yield False: ending there is legitimate.
+  """
+  flags = []
+  for i, t in enumerate(window_tokens):
+    if not t.get("label"):
+      flags.append(False)
+      continue
+    nxt = source_tokens[window_start + i + 1] if window_start + i + 1 < len(source_tokens) else None
+    flags.append(nxt is not None and not nxt.get("label"))
+  return flags
+
+
 def align_mulas_to_padas(mula_norms, pada_norms, max_span=30,
-                         gap_open=0.15, gap_extend=0.001, sequential=None):
+                         gap_open=0.15, gap_extend=0.001, sequential=None,
+                         ends_new_block=None):
   """Align each mUla to a span of pada tokens (similarity + sequence).
 
   DP with free prefix/suffix and affine-penalized gaps: each mUla consumes
@@ -568,7 +588,10 @@ def align_mulas_to_padas(mula_norms, pada_norms, max_span=30,
 
   ``sequential[j]`` (j >= 1) forces a gapless transition from mula j-1 to
   mula j (contiguous blocks with no div between); None means gaps allowed
-  everywhere (affine-penalized).
+  everywhere (affine-penalized). ``ends_new_block`` parallels ``pada_norms``
+  (bool per token, see :func:`_block_continues_flags`); a span ending in
+  such a token (length > 1) has swallowed the next block's head token
+  while its block continues, and costs LABEL_END_PENALTY.
   """
   n, m = len(mula_norms), len(pada_norms)
   if n == 0 or m == 0:
@@ -579,7 +602,10 @@ def align_mulas_to_padas(mula_norms, pada_norms, max_span=30,
   @lru_cache(maxsize=None)
   def span_cost(i, k, j):
     concat = "".join(pada_norms[k:j])
-    return 1.0 - similarity(mula_norms[i], concat)
+    cost = 1.0 - similarity(mula_norms[i], concat)
+    if ends_new_block is not None and j - 1 > k and ends_new_block[j - 1]:
+      cost += LABEL_END_PENALTY
+    return cost
 
   dp = [[INF] * (m + 1) for _ in range(n + 1)]
   par_k = [[None] * (m + 1) for _ in range(n + 1)]  # start of span
@@ -638,6 +664,28 @@ def align_mulas_to_padas(mula_norms, pada_norms, max_span=30,
   spans = list(reversed(spans))
   gaps = list(reversed(gaps))
   return spans, dp[n][best_end], gaps
+
+
+def span_head_ok(entry_text, span_first_norm, carried_over=False):
+  """Check the span starts with the mUla's head word.
+
+  Guards against absorbed previous-block tails (e.g. a stray ``कुरुते``
+  heading the span while the mantra starts with ``सव्वँत्सरे``). Passes if
+  the consonant skeletons share a prefix in either direction (covers
+  sandhi-fused heads like ``यदन्तरिक्षम्…`` vs ``यत्``, where the full
+  similarity is diluted by length) or similarity >= 0.5. Skipped when a
+  leading particle was carried over (head genuinely lives outside the
+  source) or the head is empty.
+  """
+  if carried_over:
+    return True
+  head_norm = normalize_for_match(mula_head_token(entry_text))
+  if not head_norm:
+    return True
+  hs, ss = consonant_skeleton(head_norm), consonant_skeleton(span_first_norm)
+  if hs and ss and (hs.startswith(ss) or ss.startswith(hs)):
+    return True
+  return similarity(head_norm, span_first_norm) >= 0.5
 
 
 def build_pada_text(span_tokens):
@@ -742,8 +790,9 @@ def process_single_file(md_path, pada_tokens, dry_run=False, max_span=30,
       logging.warning("Empty pada window for %s", md_path)
       return 0
     window_norms = [t["norm"] for t in window_tokens]
+    ends_block = _block_continues_flags(window_tokens, pada_tokens, window_start)
     spans, total_cost, gaps = align_mulas_to_padas(mula_norms, window_norms, max_span=max_span,
-                                                   sequential=sequential)
+                                                   sequential=sequential, ends_new_block=ends_block)
     sims = []
     for idx, (a, b) in enumerate(spans):
       concat = "".join(window_norms[a:b])
@@ -779,7 +828,12 @@ def process_single_file(md_path, pada_tokens, dry_run=False, max_span=30,
                         " + ".join(t["raw"][:30] for t in window_tokens[a:b])[:120])
         continue
       span_tokens = window_tokens[a:b]
-      pada_text = leading_carryover(entry["text"], "".join(window_norms[a:b])) + build_pada_text(span_tokens)
+      carried = leading_carryover(entry["text"], "".join(window_norms[a:b]))
+      if not span_head_ok(entry["text"], window_norms[a], carried_over=bool(carried)):
+        logging.warning("  skipping bad head mUla=%r pada-head=%r", entry["text"][:60],
+                        span_tokens[0]["raw"][:40])
+        continue
+      pada_text = carried + build_pada_text(span_tokens)
       if not pada_text:
         continue
       new_html = f"<details><summary>{PADA_TITLE}</summary>\n\n{pada_text}\n</details>"
@@ -805,13 +859,14 @@ def process_single_file(md_path, pada_tokens, dry_run=False, max_span=30,
     g_norms = [e["norm"] for e in g_all]
     g_seq = [False] * len(g_all)
     g_tokens = _group_pada_tokens(group, md_path, pada_tokens, hugo_base)
-    g_window, _ = select_pada_window(g_norms, g_tokens, edge_margin=max_span)
+    g_window, g_start = select_pada_window(g_norms, g_tokens, edge_margin=max_span)
     if not g_window:
       continue
     g_wnorms = [t["norm"] for t in g_window]
     try:
       g_spans, _, _ = align_mulas_to_padas(g_norms, g_wnorms, max_span=max_span,
-                                           sequential=g_seq)
+                                           sequential=g_seq,
+                                           ends_new_block=_block_continues_flags(g_window, g_tokens, g_start))
     except RuntimeError as e:
       logging.warning("Skipping in-div mUlas in %s (%s): %s", md_path, group["url"], e)
       continue
@@ -825,7 +880,13 @@ def process_single_file(md_path, pada_tokens, dry_run=False, max_span=30,
                         " + ".join(t["raw"][:30] for t in g_window[a:b])[:120],
                         group["url"])
         continue
-      pada_text = leading_carryover(entry["text"], "".join(g_wnorms[a:b])) + build_pada_text(g_window[a:b])
+      span_toks = g_window[a:b]
+      carried = leading_carryover(entry["text"], "".join(g_wnorms[a:b]))
+      if not span_head_ok(entry["text"], g_wnorms[a], carried_over=bool(carried)):
+        logging.warning("  skipping bad head mUla=%r pada-head=%r (in %s)", entry["text"][:60],
+                        span_toks[0]["raw"][:40], group["url"])
+        continue
+      pada_text = carried + build_pada_text(span_toks)
       if not pada_text:
         continue
       new_html = f"<details><summary>{PADA_TITLE}</summary>\n\n{pada_text}\n</details>"
