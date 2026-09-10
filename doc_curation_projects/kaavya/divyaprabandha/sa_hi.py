@@ -11,10 +11,10 @@ NOT the global OCR ``###`` running number)::
 
   ## <set>          (dashaka/set separator; each set restarts at 1)
   ### <verse>
-  <details><summary>avatArikA - <verse></summary> ... </details>
-  <details open><summary>mUlam - <verse></summary> ... </details>
-  <details><summary>TIkA - <verse></summary> ... </details>
-  <details><summary>hindI - <verse></summary> ... </details>
+  <details><summary>अवतारिका - <verse></summary> ... </details>
+  <details open><summary>मूलम् - <verse></summary> ... </details>
+  <details><summary>टीका - <verse></summary> ... </details>
+  <details><summary>हिन्दी - <verse></summary> ... </details>
 
 Hindi vs Sanskrit separation: paragraphs are scored -- standalone
 ``hai/mem/haim``-type Hindi function words mark Hindi, ``~N``
@@ -32,9 +32,15 @@ Usage::
 """
 
 import argparse
+import collections
+import logging
 import re
 import sys
 from pathlib import Path
+
+from doc_curation.translation.classifier import (
+  _HINDI_RE, _SANSKRIT_GLUED_RE, _SANSKRIT_RE, classify_paragraph,
+  score_paragraph)
 
 DEVA = "०१२३४५६७८९"
 
@@ -54,78 +60,14 @@ def arab_to_deva(n):
 
 
 # ---------------------------------------------------------------------------
-# Language scoring: Hindi (hai/mem/haim ...) vs Sanskrit (~N/iti/ity ...).
-# Only trailing Devanagari boundaries are required so that sandhi-glued
-# Sanskrit (sarpoyam-iti) still counts while words like itihAsa do not.
-# ---------------------------------------------------------------------------
-
-# NOTE: ये/था/तो/यदि/हम are deliberately absent -- they collide with
-# Sanskrit विषये, तथा/यथा/स्वस्था, ततो, यदि (yadi = "if") and
-# visarga-dropped अहम्. पर is absent (Sanskrit पर); तथा likewise.
-_HINDI_WORDS = (
-  "है|हैं|थी|थे|होगा|होगी|में|ने|को|से|द्वारा|लिये|"
-  "गया|गयी|गये|हुआ|हुई|हुए|रहा|रही|रहे|किया|किये|कहा|कहते|"
-  "बताया|बताते|नहीं|कैसे|क्या|यह|वह|वे|इस|उस|इन|उन|जिन|"
-  "अपनी|अपने|तुम|आप|लोग|वाला|वाली|वाले|और|क्योंकि|लेकिन|"
-  "जब|तब|यहाँ|वहाँ|होता|होती|होते|करना|करें|करो|लो|भी|ही|जो"
-)
-_SANSKRIT_WORDS = (
-  "इति|इत्य|इत्याह|चेत्|ननु|अत्र|तत्र|यत्र|तदा|यथा|कथम्|किम्|किमर्थम्|"
-  "कुतः|तर्हि|यद्वा|अथवा|एवम्|एव|तद्|एतद्|अस्य|तस्य|एतस्य|भवति|"
-  "भवेत्|उच्यते|आह|प्राह|उवाच|अवोचत्|अर्थः|इत्यर्थः|अतः|खलु|हि|"
-  "तु|अपि|अस्ति|नास्ति"
-)
-# Sandhi-glued "-ित्य-" (इत्युक्तम्, इत्याह, ...) has no independent इ;
-# it counts only mid-word before more Devanagari (नित्यता-style Hindi
-# lookalikes are rare here).
-_SANSKRIT_GLUED_RE = re.compile(r"ित्य(?=[\u0900-\u097F])")
-# A lone weak hit (को/के/से ...) proves nothing; singletons only count
-# when they are high-precision markers.
-_STRONG_HINDI = {"है", "हैं", "में", "नहीं", "क्या"}
-_HINDI_RE = re.compile(r"(?:%s)(?![\u0900-\u097F])" % _HINDI_WORDS)
-_SANSKRIT_RE = re.compile(r"(?:%s)(?![\u0900-\u097F])" % _SANSKRIT_WORDS)
-
-
-def score_paragraph(text):
-  """Return (hindi_hits, sanskrit_hits) for a paragraph."""
-  h = len(_HINDI_RE.findall(text))
-  s = 2 * text.count("ऽ") + len(_SANSKRIT_RE.findall(text))
-  return h, s
-
-
-def classify_paragraph(text):
-  """Classify a paragraph as hindi / sanskrit / unknown.
-
-  Standalone hai/mem/haim-type words mark Hindi; ~N (avagraha) and
-  iti/ity/cet-type words mark Sanskrit. Hyphenated line-breaks are
-  rejoined for scoring only (so "त- \\n था" cannot fake a hit). Ties
-  with substance go to Hindi (Sanskrit TIkA almost never accumulates
-  Hindi function words, while Hindi prose often embeds Sanskrit
-  terms); lone weak hits (को/के/से ...) stay unknown.
-  """
-  joined = re.sub(r"-\s*\n\s*", "", text)
-  h_list = _HINDI_RE.findall(joined)
-  h = len(h_list)
-  s = 2 * joined.count("ऽ") + len(_SANSKRIT_RE.findall(joined)) + len(
-    _SANSKRIT_GLUED_RE.findall(joined))
-  if h >= 2 and h >= s:
-    return "hindi"
-  if s > h:
-    return "sanskrit"
-  if h == 1 and s == 0 and h_list[0] in _STRONG_HINDI:
-    return "hindi"
-  if s >= 1:
-    return "sanskrit"
-  return "unknown"
-
-
-# ---------------------------------------------------------------------------
 # Structural patterns.
 # ---------------------------------------------------------------------------
 
 VERSE_END_RE = re.compile(
   r"(?:॥|\|{2}|\.\.|।{2})\s*([०-९0-9ई]*)\s*"
   r"(?:॥|\|{2}|\.\.|।{2}|\|(?![|]))")
+# Bare numberless end ("।।" double single-daNDa, digits lost in print).
+BARE_DANDA_RE = re.compile(r"(?<![०-९0-9।॥|])।।(?![०-९0-9।॥|])")
 # Dangling opener ("...मच्छरीरम् || " with the closer lost in OCR).
 DANGLING_END_RE = re.compile(r"(?:॥|\|{2})\s*$")
 # Mangled OCR verse endings ("F1:", "§") cut the mUlam like real ones.
@@ -144,21 +86,32 @@ def verse_end_num(m):
   except ValueError:
     return None
 MULAM_START_RE = re.compile(
-  r"^\*?\*?\s*(?:मूलम्|मलम्)(?:\s*[-–—:]+\s*|\s+)")
+  r"^(?:\[\[P\d+\]\]\s*)*\*?\*?\s*(?<![\u0900-\u097F])(?:मूलम्|मुलम्|मलम्|मूत्रम्)"
+  r"(?:\s*[-–—:]+\s*|\s+)")
+# OCR variants: अवतारिका, अवंतारिका, अवतरिका, truncated अवतारिक.
+# Dashaka titles likewise vary (05 नवमदर्शक = नवमदशक, OCR श/श).
+_AVAT_CORE = r"अवं?त[ा]?रिका?"
+_TITLE_CORE = r"(?:\S*दशक|\S*दर्शक)"
 AVAT_MARK_RE = re.compile(
-  r"अवं?तारिका\*?\*?\s*[-–—:]+"
-  r"|(?:^|\n)\*?\*?अवं?तारिका\*?\*?\s+(?=[\u0900-\u097F])")
-# Mid-line mUlam markers always start new lines: all observed mid-line
-# occurrences are genuine verse mUlams (no bare commentary mentions use
-# the "mUlam -" form). Mid-line avatArikA markers only split after a
-# daNDa, so "X-दशक - अवतारिका-" titles stay intact.
+  _AVAT_CORE + r"\*?\*?(?:\s+का)?(?:\s*[०-९0-9]+\s*)?\s*[-–—:]+"
+  r"|(?:^|\n)\*?\*?" + _AVAT_CORE + r"\*?\*?\s+(?=[\u0900-\u097F])")
+# Mid-line mUlam markers start new lines only at a word boundary: this
+# blocks ṭīkā pratīka-glosses like "...करः कमलम् - ..." (the मलम् of
+# कमलम्!). Mid-line avatArikA markers only split after a daNDa, so
+# "X-दशक - अवतारिका-" titles stay intact.
 _MIDLINE_MULAM_RE = re.compile(
-  r"\s*(?=\*?\*?(?:मूलम्|मलम्)\s*[-–—:])")
+  r"\s*(?=\*?\*?(?<![\u0900-\u097F])(?:मूलम्|मुलम्|मलम्|मूत्रम्)\s*[-–—:])")
 _MIDLINE_AVAT_RE = re.compile(
   r"(?<=[।.!?])\s*(?=\*?\*?अवतारिका\s*[-–—:])")
-DASHAKA_TITLE_RE = re.compile(r"^[^\n]*दशक\s*-\s*अवतारिका")
+DASHAKA_TITLE_RE = re.compile(
+  r"^[ \t]*\*?[ \t]*(?:\S+[ \t]+)?" + _TITLE_CORE + r"[ \t]*-*[ \t]*" +
+  _AVAT_CORE + r"(?![\u0900-\u097F])")
+CHUNK_SPLIT_RE = re.compile(
+  r"(?m)(?=^[ \t]*\*?[ \t]*(?:\S+[ \t]+)?" + _TITLE_CORE +
+  r"[ \t]*-*[ \t]*" + _AVAT_CORE + r"(?![\u0900-\u097F]))")
 # Flexible ordinals (long/short/fused): prathamA, tRtIya, prathama-gAthA ...
-_ORD = (r"(?:प्रथम|द्वितीय|तृतीय|चतुर्थ|पञ्चम|षष्ठ|सप्तम|अष्टम|नवम|"
+# OCR drops the anunAsika (paJcama -> paMcama: पञ्चम/पंचम).
+_ORD = (r"(?:प्रथम|द्वितीय|तृतीय|चतुर्थ|पञ्चम|पंचम|षष्ठ|सप्तम|अष्टम|नवम|"
         r"दशम|एकादश)[ाी]?")
 GATHA_LABEL_ONLY_RE = re.compile(
   r"^[\s+↑f|i:;.\-–—0-9०-९()\[\]]*" + _ORD +
@@ -178,7 +131,7 @@ EXTRA_START_RES = [
 FOOT_DEF_RE = re.compile(r"^\s*([०-९0-9]+)[.\-)]\s*(.*\S)\s*$")
 FOOT_REF_KEYWORDS_RE = re.compile(
   r"(स०|रा०|वि०|तै०|गी०|तिरु|मुं०|छा०|बृ०|श्वे०|कठ०|पाठ|"
-  r"मूलानुसारी|आकर|इति)")
+  r"मूलानुसारी|आकर|इति|श्रूयते|उच्यते|इत्यप्य|व्याख्यान|अर्थ|भावः)")
 GUJ = "૦૧૨૩૪૫૬૭૮૯"
 _JUNK_LINES = {
   "►", "1", "4", "+", "|", ".", ":", "-", "–", "—", "_", "*", "**", "***",
@@ -243,6 +196,16 @@ def clean_lines(raw_text):
       continue
     if s in _JUNK_LINES:
       continue
+    pn = parse_page_number(s)
+    if pn is not None:
+      # Page numbers run in both scripts (२१३ and 88): keep them all.
+      out.append("[[P%d]]" % pn)
+      continue
+    if not re.search(r"[\u0900-\u097F]", s) and not re.match(
+        r"^\s*(\[\[|\[\^|\+{3}|title)", s):
+      # No Devanagari at all (Tibetan debris, stray latin, long digit
+      # garbage like 1000068): drop.
+      continue
     if any(r.match(s) for r in _DROP_LINE_RES):
       continue
     if _RUNNING_HEAD_RE.match(s):
@@ -257,6 +220,7 @@ def clean_lines(raw_text):
       continue
     pn = parse_page_number(s)
     if pn is not None:
+      # Catches page numbers exposed by bracket/label stripping above.
       out.append("[[P%d]]" % pn)
       continue
     # Leading folio digits glued to content ("1 महासागर...", "१५ 1. देह").
@@ -282,7 +246,7 @@ def is_starter_line(s):
     return True
   if s.startswith("भावार्थ") or re.match(r"^\*?\*?भावार्थ", s):
     return True
-  if re.match(r"^[+↑f]\s+\S", s):
+  if re.match(r"^[+↑f†‡]\s+\S", s):
     return True
   if DASHAKA_TITLE_RE.match(s):
     return True
@@ -375,7 +339,7 @@ def assemble_paragraphs(lines):
     ms = list(VERSE_END_RE.finditer(p))
     head_marked = bool(
       MULAM_START_RE.match(p) or p.startswith("भावार्थ")
-      or re.match(r"^[+↑f]\s+\S", p))
+      or re.match(r"^[+↑f†‡]\s+\S", p))
     if ms and head_marked:
       m = ms[0]
       head, tail = p[:m.end()].strip(), p[m.end():].strip()
@@ -459,8 +423,12 @@ class Verse(object):
     self.hindi = []
     self._comm_raw = []    # ordered commentary paras, classified later
     self._anchor_idx = -1
+    self._orphans = []     # anchorless verses split off in parse
     self._stray_defs = []  # footnote-def paras consumed during recovery
     self._mangled = False  # mUlam end mangled (F1:/§/empty): complete text
+    self._had_num = False  # anchor carried its own ||n|| number
+    self._has_avat = False  # own avatArikA marker found before the anchor
+    self._corrected_from = None  # print number replaced by positional fix
 
 
 def split_mulam_para(p):
@@ -469,8 +437,20 @@ def split_mulam_para(p):
   head runs up to the first proper ``||n||`` ending (``|| ई ||`` reads
   as 9, empty ``|| ||`` stays numberless), or up to a mangled OCR
   ending (``F1:``, ``§``). tail is the rest (usually TIkA start).
+  Leading page markers are preserved at the head.
+
+  Swallow guard: when the head holds a bare numberless ``।।`` before
+  its proper ``||n||``, the true end lost its number in print and the
+  ``||n||`` belongs to a TIkA restatement -- cut at the bare ``।।``
+  (numberless) so TIkA stays out of the mUlam.
   """
-  q = MULAM_START_RE.sub("", p).strip()
+  pre = ""
+  mpage = re.match(r"^(?:\[\[P\d+\]\]\s*)+", p.strip())
+  rest = p.strip()
+  if mpage:
+    pre = mpage.group(0).strip() + " "
+    rest = rest[mpage.end():].strip()
+  q = MULAM_START_RE.sub("", rest).strip()
   ms = list(VERSE_END_RE.finditer(q))
   mangled = None
   if ms:
@@ -478,21 +458,40 @@ def split_mulam_para(p):
   else:
     m = None
   mm = MANGLED_END_RE.search(q)
-  if mm and (m is None or mm.start() < m.start()):
-    head = q[:mm.end()].strip()
+  if mm and (not ms or mm.start() < ms[0].start()):
+    head = pre + q[:mm.end()].strip()
     tail = re.sub(r"^[|lI1:;.\-–—\s]+", "", q[mm.end():]).strip()
     return head, tail, None, True
   if not ms:
+    bm = BARE_DANDA_RE.search(q)
+    if bm:
+      # Numberless anchor hiding "mUlam ।। TIkA ...": cut at the bare
+      # end (genuine numberless ends simply end there instead).
+      return (pre + q[:bm.end()].strip(), q[bm.end():].strip(), None,
+              False)
     dm = DANGLING_END_RE.search(q)
     if dm:
-      return q[:dm.end()].strip(), q[dm.end():].strip(), None, False
-    return q, "", None, False
+      return (pre + q[:dm.end()].strip(), q[dm.end():].strip(), None,
+              False)
+    return pre + q, "", None, False
   m = ms[0]
   num = verse_end_num(m)
-  head = q[:m.end()].strip()
+  head = pre + q[:m.end()].strip()
   tail = q[m.end():].strip()
   if m.group(1) == "ई":
     head += " " + MUDRITA_I_NOTE
+  if num is not None:
+    # Swallow guard: a bare ।। strictly BEFORE the end-match means
+    # the true end lost its number and the ||n|| closes a TIkA
+    # restatement -- cut there (the two ।। of a genuine "।। n ।।"
+    # end are its own opener/closer and never count).
+    bound = len(pre) + m.start()
+    cut = next((bm.end() for bm in BARE_DANDA_RE.finditer(head)
+                if bm.end() <= bound), None)
+    if cut is not None:
+      tail = (head[cut:].strip() + " " + tail).strip()
+      head = head[:cut].strip()
+      return head, tail, None, False
   return head, tail, num, False
 
 
@@ -507,17 +506,27 @@ def find_avat_idx(paras, start, end):
 def strip_avat_mark(p):
   p = re.sub(r"^[।|·:\s]+", "", p).strip()
   p = GATHA_PREFIX_RE.sub("", p).strip()
-  p = re.sub(r"^\*?\*?अवं?तारिका\*?\*?\s*[-–—:]+\s*", "", p).strip()
-  p = re.sub(r"^\*?\*?अवं?तारिका\*?\*?\s+(?=[\u0900-\u097F])", "", p).strip()
+  p = re.sub(r"^\*?\*?" + _AVAT_CORE +
+            r"\*?\*?(?:\s+का)?(?:\s*[०-९0-9]+\s*)?\s*[-–—:]+\s*",
+            "", p).strip()
+  p = re.sub(r"^\*?\*?" + _AVAT_CORE +
+            r"\*?\*?\s+(?=[\u0900-\u097F])", "", p).strip()
   return p
 
 
 def is_hindi_para(q):
   if q.startswith("भावार्थ") or re.match(r"^\*?\*?भावार्थ", q):
     return True
-  if re.match(r"^[+↑f]\s+\S", q):
+  if re.match(r"^[+↑f†‡]\s+\S", q):
     return True
   return classify_paragraph(q) == "hindi"
+
+
+# Exegetical markers: a paragraph with these + a verse number is ṭīkā
+# anvaya/restatement, never a mUlam (genuine mUlams may quote "iti"
+# but never these glossing forms).
+EXEGETICAL_RE = re.compile(
+  r"इत्यर्थ|इति\s*भाव|इत्याह|इत्युक्त|इत्यादि|तात्पर्य|अन्वय")
 
 
 def sort_avats(paras, to_avat, to_hindi):
@@ -533,7 +542,7 @@ def sort_avats(paras, to_avat, to_hindi):
       continue
     if q.startswith("भावार्थ") or re.match(r"^\*?\*?भावार्थ", q):
       to_hindi.append(q)
-    elif re.match(r"^[+↑f]\s+\S", q):
+    elif re.match(r"^[+↑f†‡]\s+\S", q):
       to_hindi.append(q)
     else:
       joined = re.sub(r"-\s*\n\s*", "", q)
@@ -555,7 +564,7 @@ def sort_region(region_paras, to_avat, to_hindi, is_first_of_set):
       continue
     if q.startswith("भावार्थ") or re.match(r"^\*?\*?भावार्थ", q):
       to_hindi.append(q)
-    elif re.match(r"^[+↑f]\s+\S", q):
+    elif re.match(r"^[+↑f†‡]\s+\S", q):
       to_hindi.append(q)
     elif classify_paragraph(q) == "hindi":
       to_hindi.append(q)
@@ -563,20 +572,526 @@ def sort_region(region_paras, to_avat, to_hindi, is_first_of_set):
       to_avat.append(q)
 
 
-def parse_chunk(paras):
+def _nearest_dashaka_num(lines, idx, guard=200):
+  """Numeral of the nearest ``## N`` header (either direction) or None.
+
+  Intro blocks usually follow their ``## N`` header, but sometimes precede
+  it; nearest wins, ties go backward. Beyond ``guard`` lines: None.
+  """
+  best, best_dist, best_back = None, None, True
+  dist = 0
+  for j in range(idx - 1, -1, -1):
+    dist += 1
+    if dist > guard:
+      break
+    m = re.match(r"^##(?!#)\s*(\S+)", lines[j])
+    if m:
+      best, best_dist, best_back = m.group(1), dist, True
+      break
+  dist = 0
+  for j in range(idx + 1, len(lines)):
+    dist += 1
+    if dist > guard:
+      break
+    m = re.match(r"^##(?!#)\s*(\S+)", lines[j])
+    if m:
+      if best is None or dist < best_dist:
+        best, best_dist, best_back = m.group(1), dist, False
+      break
+  return best
+
+
+def _label_span(span, prev):
+  if re.match(r"^\s*(?:\*\*)?भावार्थ", span):
+    return "hi"
+  if re.match(r"^[+↑f†‡]\s+\S", span):
+    return "hi"
+  c = classify_paragraph(span)
+  if c == "hindi":
+    return "hi"
+  if c == "sanskrit":
+    return "sa"
+  return prev
+
+
+def _split_body_sentences(body):
+  """Split details body into offset spans for language labeling.
+
+  Footnote-definition lines (``[^id]: ...``) are masked with spaces
+  (offset-preserving) so their internal daNDas never split them apart,
+  and become their own spans (cut at def boundaries) so neighbours on
+  each side score cleanly; scoring uses the original text. Bracketed
+  marginal/page refs end spans (the language often switches right after
+  them); bare print-marginal digits (में४००, , १-) start spans instead,
+  so trailing punctuation travels forward rather than orphaning. Print
+  hyphen line-breaks also cut (word halves stay unknown and rejoin via
+  continuity, but a switch hiding at the break gets its own span).
+  Homogeneous sides always rejoin into one run, so extra cuts only ever
+  separate genuinely mixed spans.
+  """
+  defs = list(re.finditer(r"(?m)^[ \t]*\[\^[^\]]+\]:[^\n]*", body))
+  masked = []
+  pos = 0
+  for m in defs:
+    masked.append(body[pos:m.start()])
+    masked.append(" " * (m.end() - m.start()))
+    pos = m.end()
+  masked.append(body[pos:])
+  scan = "".join(masked)
+  cuts = set()
+  for m in _SENT_CUT_RE.finditer(scan):
+    cuts.add(m.end())
+  for m in defs:
+    cuts.add(m.start())
+    cuts.add(m.end())
+  # Bare marginals cut BEFORE the digit run, so trailing punctuation
+  # (३, ...) travels with the following span instead of orphaning.
+  for m in _BARE_MARG_RE.finditer(scan):
+    cuts.add(m.start())
+  spans = []
+  pos = 0
+  for end in sorted(cuts):
+    if end <= pos:
+      continue
+    if body[pos:end].strip():
+      spans.append([pos, end])
+    elif spans:
+      spans[-1][1] = end
+    pos = end
+  tail = body[pos:]
+  if tail.strip():
+    spans.append([pos, len(body)])
+  elif spans:
+    spans[-1][1] = len(body)
+  # No merge step: def-only spans rejoin via label continuity.
+  return [(s, e) for s, e in spans]
+
+
+# Marginal/page references where the language often switches without any
+# sentence delimiter (Hindi head + [३२रू + Sanskrit tail): cut after them.
+# Homogeneous sides rejoin into one run, so this only ever separates
+# genuinely mixed spans. Footnote refs ([^...]) never match (caret/_
+# break the numeric core); def lines are masked before scanning anyway.
+_MARG_NUM = r"[0-9०-९]+(?:\s*/\s*[0-9०-९]+)?"
+_MARG_SFX = r"(?:रू|लू|[रल])?"
+# The closing-bracket alternative requires its number NOT to follow a
+# word character or caret, so footnote refs ([^7_0_1], [12x]) never cut.
+_MARGINAL_RE = (
+  r"(?:\[+\s*(?:P\s*[0-9]+|%s)\s*%s\s*\]*|(?<![\u0900-\u097F0-9०-९\w^])%s\s*%s\s*[\]\)]+)"
+  % (_MARG_NUM, _MARG_SFX, _MARG_NUM, _MARG_SFX))
+# Bare print-marginal digits glued to words (में४०० कृत, कर४५२ तीव)
+# or standing as list/marginal markers (, १- भगवान्): cut after them.
+# Legitimate words never contain digits, and homogeneous sides rejoin,
+# so this only separates artifact-glued mixed spans. The glued-side
+# lookbehind admits only Devanagari letters/signs (so verse numbers
+# like ८।१२।३ never cut) and never word characters/carets (so footnote
+# refs like [^7_0_1] never cut).
+_DEV_LETTER = r"\u0905-\u0939\u093E-\u094C\u094D\u0902\u0903"
+# A lone ० glued to a letter is an abbreviation (स०/गी०/रा०), never a
+# marginal, so glued runs must lead with a nonzero digit.
+_BARE_MARG_RE = re.compile(
+  r"(?:(?<=[%s])(?:[1-9][0-9]*|[१-९][०-९]*)-?|(?<![\u0900-\u097F0-9०-९\w^])[0-9०-९]+-)"
+  % _DEV_LETTER)
+_SENT_CUT_RE = re.compile(r"[।॥?!]+|%s|-\s*\n" % _MARGINAL_RE)
+
+
+# Tolerant bare-marker patterns (cf. DASHAKA_TITLE_RE, plus व/ब and
+# शतक variants): `प्रथमदशक-अवतारिका`, `द्वितीयदशक - अवतारिका-`,
+# `चतुर्थदशक - अवतारिक` (truncated), `दशमदशक- अबतारिका`, ...
+_INTRO_SANSKRIT_RE = re.compile(
+  r"^[ \t]*\*?[ \t]*(?:\S+[ \t]+)?\S*(?:दशक|दर्शक|शतक)[ \t]*-*[ \t]*अ[वब]ं?त[ा]?रिका?")
+_INTRO_HINDI_RE = re.compile(r"^(.*(?:दशक|शतक) का सार(?:ार्थ)?\s*-+\s*)(.*)$")
+
+
+def _intro_marker_kind(s):
+  """(title, rest) if stripped line s is a bare intro marker, else (None, "").
+
+  Sanskrit markers stand alone (trailing dashes/spaces only); Hindi
+  markers keep text following the marker on the same line.
+  """
+  if s.startswith(("<", "#", "[", ">", "|")):
+    return None, ""
+  m = _INTRO_SANSKRIT_RE.match(s)
+  if m and not s[m.end():].strip(" \t-–—"):
+    text = s[:m.end()]
+    title = "शतकावतारिका" if ("शतक" in text and "दशक" not in text) else "दशकावतारिका"
+    return title, ""
+  m = _INTRO_HINDI_RE.match(s)
+  if m:
+    # preserve any footnote-ref junk preceding the marker core itself
+    core = re.search(r"(?:\S+\s+)?(?:दशक|शतक) का सार(?:ार्थ)?\s*-+\s*", s)
+    pre = s[:core.start()].strip() if core else ""
+    rest = ((pre + " " + m.group(2)).strip() if pre else m.group(2))
+    return "हिन्दी", rest
+  return None, ""
+
+
+def _wrap_bare_intro_markers(lines):
+  """Wrap bare dashaka/shataka intro marker regions (outside details).
+
+  Returns new line list. Marker regions become plain-titled details
+  blocks (numbering/splitting happens downstream); lines already inside
+  details blocks are untouched.
+  """
+  out = []
+  i, depth, n = 0, 0, len(lines)
+  while i < n:
+    line = lines[i]
+    s = line.strip()
+    kind, rest = _intro_marker_kind(s) if depth <= 0 else (None, "")
+    if kind is None:
+      out.append(line)
+      depth += line.count("<details") - line.count("</details>")
+      i += 1
+      continue
+    j = i + 1
+    if not rest:
+      while j < n and not lines[j].strip():
+        j += 1
+    k = j
+    while k < n:
+      t = lines[k].strip()
+      if t.startswith("###") or t.startswith("## ") or t.startswith("<details") \
+          or t.startswith("<div") or t.startswith("</div"):
+        break
+      if _intro_marker_kind(t)[0] is not None:
+        break
+      k += 1
+    body = ([rest] if rest else []) + lines[j:k]
+    while body and not body[0].strip():
+      body.pop(0)
+    while body and not body[-1].strip():
+      body.pop()
+    if not body:
+      logging.warning("Empty intro marker at line %d, leaving it", i + 1)
+      out.append(line)
+      depth += line.count("<details") - line.count("</details>")
+      i += 1
+      continue
+    out += ["<details><summary>%s</summary>" % kind, ""] + body + ["", "</details>", ""]
+    for consumed in lines[i:k]:
+      depth += consumed.count("<details") - consumed.count("</details>")
+    i = k
+  return out
+
+
+def _join_run_texts(texts):
+  """Join same-language run texts from different blocks.
+
+  Paragraph break by default; a run ending in ``-`` continues across a
+  print hyphen line-break, so it joins with a plain newline instead.
+  """
+  if not texts:
+    return ""
+  cur = texts[0]
+  for t in texts[1:]:
+    cur += ("\n" if cur.rstrip().endswith("-") else "\n\n") + t
+  return cur
+
+
+def split_mixed_avataarikas_content(content):
+  """Split language-mixed dashaka/shataka avatArikA blocks by language.
+
+  All same-language runs in a sequence become ONE details block:
+  Sanskrit runs merge into ``दशकावतारिका``/``शतकावतारिका`` (numbered
+  ``- N``/``हिन्दी - N`` per nearest ``## N`` header), Hindi runs into
+  ``... हिन्दी - N``; blocks emit in first-appearance order. Footnote
+  definitions travel with their runs. Single-block sequences keep
+  existing titles unless renumbering applies. Byte-identical when
+  nothing changes (idempotent). Bare intro markers outside blocks are
+  wrapped first (same titling).
+  """
+  content = "\n".join(_wrap_bare_intro_markers(content.split("\n")))
+  lines = content.split("\n")
+  pat = re.compile(
+    r"<details(?P<attrs>[^>]*)><summary>(?P<title>.*?)</summary>(?P<body>.*?)</details>",
+    re.S)
+  matches = list(pat.finditer(content))
+  # target blocks: avataarika titles or bare हिन्दी
+  targets = []
+  for m in matches:
+    title = m.group("title")
+    base, hindi = None, False
+    mm = re.fullmatch(r"(दशकावतारिका|शतकावतारिका)( हिन्दी)?( - \S+)?", title)
+    if mm:
+      base, hindi = mm.group(1), bool(mm.group(2))
+    elif title == "हिन्दी":
+      base, hindi = None, True
+    else:
+      continue
+    if "<details" in m.group("body"):
+      logging.warning("Skipping nested block: %r", title)
+      continue
+    targets.append({"match": m, "base": base, "hindi": hindi})
+  # group targets separated only by blank lines into sequences
+  seqs, cur = [], []
+  prev_end = None
+  for t in targets:
+    if cur:
+      gap = content[prev_end:t["match"].start()]
+      gap_lines = gap.split("\n")
+      if any(ln.strip() and not ln.strip().startswith("##") and not ln.strip().startswith("###")
+             and not ln.strip().startswith("<") for ln in gap_lines):
+        seqs.append(cur)
+        cur = []
+      elif any(ln.strip().startswith("##") for ln in gap_lines):
+        seqs.append(cur)
+        cur = []
+    cur.append(t)
+    prev_end = t["match"].end()
+  if cur:
+    seqs.append(cur)
+  out, pos = [], 0
+  for seq in seqs:
+    start_line = content.count("\n", 0, seq[0]["match"].start())
+    base = next((t["base"] for t in seq if t["base"] is not None), None)
+    if base is None:
+      logging.warning("Orphan हिन्दी block(s), leaving unnamed")
+      continue
+    num = _nearest_dashaka_num(lines, start_line)
+    if num is None:
+      logging.warning("No ## header near line %d, leaving titles", start_line + 1)
+      continue
+    for t in seq:
+      m = t["match"]
+      attrs, body = m.group("attrs"), m.group("body")
+      spans = _split_body_sentences(body)
+      labels, prev = [], "hi" if t["hindi"] else "sa"
+      for s, e in spans:
+        lab = _label_span(body[s:e], prev)
+        labels.append(lab)
+        prev = lab
+      runs, cur_run = [], []
+      for (s, e), lab in zip(spans, labels):
+        if cur_run and cur_run[0][1] != lab:
+          runs.append(cur_run)
+          cur_run = []
+        cur_run.append(((s, e), lab))
+      if cur_run:
+        runs.append(cur_run)
+      t["attrs"], t["body"], t["runs"] = attrs, body, runs
+    sa_title = "%s - %s" % (base, num)
+    hi_title = "%s हिन्दी - %s" % (base, num)
+    counts = collections.Counter(
+      sa_title if run[0][1] == "sa" else hi_title
+      for t in seq for run in t["runs"])
+    if all(c <= 1 for c in counts.values()):
+      for t in seq:
+        m = t["match"]
+        out.append(content[pos:m.start()])
+        attrs, body, runs = t["attrs"], t["body"], t["runs"]
+        if len(runs) <= 1 and m.group("title") in (sa_title, hi_title):
+          out.append(m.group(0))
+        else:
+          parts = []
+          for run in runs:
+            run_title = sa_title if run[0][1] == "sa" else hi_title
+            text = body[run[0][0][0]:run[-1][0][1]].strip()
+            parts.append("<details%s><summary>%s</summary>\n\n%s\n</details>" % (
+              attrs, run_title, text))
+          out.append("\n\n".join(parts))
+        pos = m.end()
+    else:
+      # Same language runs recur across blocks: merge each language
+      # into a single block, first-appearance order.
+      out.append(content[pos:seq[0]["match"].start()])
+      groups, lab_attrs = {}, {}
+      for t in seq:
+        for run in t["runs"]:
+          lab = run[0][1]
+          groups.setdefault(lab, []).append(
+            t["body"][run[0][0][0]:run[-1][0][1]].strip())
+          lab_attrs.setdefault(lab, t["attrs"])
+      blocks = []
+      for lab, texts in groups.items():
+        title = sa_title if lab == "sa" else hi_title
+        blocks.append("<details%s><summary>%s</summary>\n\n%s\n</details>" % (
+          lab_attrs[lab], title, _join_run_texts(texts)))
+      out.append("\n\n".join(blocks))
+      pos = seq[-1]["match"].end()
+  out.append(content[pos:])
+  return "".join(out)
+
+
+def split_mixed_avataarikas(dir_path, file_pattern="*.md", dry_run=False):
+  """Split language-mixed dashaka/shataka avatArikAs across files.
+
+  Returns {path: changed_bool}. Pure blocks pass through untouched.
+  """
+  results = {}
+  for fp in sorted(Path(dir_path).glob(file_pattern)):
+    if not fp.is_file():
+      continue
+    text = fp.read_text(encoding="utf-8")
+    new_text = split_mixed_avataarikas_content(text)
+    changed = new_text != text
+    results[str(fp)] = changed
+    if changed and not dry_run:
+      fp.write_text(new_text, encoding="utf-8")
+  return results
+
+
+PRATIKA_RE = re.compile(r"^(.+?)(?:ेत्यादि|ेत्यादि|इत्यादि)(?![\u0900-\u097F])")
+# TIkA gloss-dash ("word-word - explanation"): first phrase doubles as
+# a pratIka stem when no इत्यादि form exists (03 set 5 verse 1).
+GLOSS_DASH_RE = re.compile(r"^(.{6,60}?)\s*[-–—:]\s*\S")
+
+
+def despace_find(text, start, needle):
+  """Original offset of needle in text at/after start, ignoring
+  whitespace on both sides; -1 when absent/too short."""
+  ns = re.sub(r"\s+", "", needle)
+  if len(ns) < 6:
+    return -1
+  chars, idxs = [], []
+  for t, ch in enumerate(text):
+    if t < start or re.match(r"\s", ch):
+      continue
+    chars.append(ch)
+    idxs.append(t)
+  flat = "".join(chars)
+  k = flat.find(ns)
+  return idxs[k] if k != -1 else -1
+
+
+def split_embedded_mulams(paras, warnings):
+  """Split avatArikA paras hiding a bare mUlam (no mUlam marker).
+
+  Sometimes the mUlam follows its avatArikA in the same paragraph
+  ("...तृडाधिक्यमाह । | यत्किचित्काले ... ॥ ८॥"). The mUlam start is
+  located via a following TIkA's pratIka ("यत्किचित्काल इत्यादि").
+  Returns (new_paras, pseudo_anchors) with pseudo_anchors as
+  {para_index: local_number}; only fires when no anchor already
+  carries that number.
+  """
+  anchored = set()
+  for p in paras:
+    if MULAM_START_RE.match(p):
+      _, _, num, _ = split_mulam_para(p)
+      if num is not None:
+        anchored.add(num)
+  final, pseudo = [], {}
+  for i, p in enumerate(paras):
+    m_mark = AVAT_MARK_RE.search(p)
+    mend = list(VERSE_END_RE.finditer(p))
+    if not (m_mark and mend) or DASHAKA_TITLE_RE.match(p):
+      final.append(p)
+      continue
+    n = verse_end_num(mend[-1])
+    if n is None or n in anchored:
+      final.append(p)
+      continue
+    stems = []
+    for q in paras[i + 1:i + 7]:
+      qs = q.strip()
+      m = PRATIKA_RE.match(qs)
+      if m:
+        stem = m.group(1).strip()
+        if len(stem) >= 4:
+          stems.append(stem)
+        continue
+      if FOOT_DEF_RE.match(qs) or is_hindi_para(qs) \
+          or MULAM_START_RE.match(qs) \
+          or (AVAT_MARK_RE.search(qs)
+              and not DASHAKA_TITLE_RE.match(qs)):
+        continue
+      g = GLOSS_DASH_RE.match(qs)
+      if g:
+        stem = g.group(1).strip()
+        if len(re.sub(r"\s+", "", stem)) >= 6:
+          stems.append(stem)
+    cut = None
+    for stem in stems:
+      pos = p.find(stem, m_mark.end() + 20)
+      if pos == -1:
+        pos = despace_find(p, m_mark.end() + 20, stem)
+      if pos != -1:
+        cut = pos
+        break
+    if cut is None:
+      final.append(p)
+      continue
+    tail = p[cut:].strip()
+    if len(tail) < 100 or AVAT_MARK_RE.search(tail):
+      # Too short for a verse (a mere quote) or a second unit.
+      final.append(p)
+      continue
+    final.append(p[:cut].strip())
+    final.append(p[cut:].strip())
+    pseudo[len(final) - 1] = n
+    anchored.add(n)
+    warnings.append("split avatArikA-embedded mUlam ||%s|| (pratIka '%s…')"
+                    % (n, stems[0][:20] if stems else "?"))
+  return final, pseudo
+
+
+def substantial_content(paras):
+  """Does this span hold real verse content (not just footnotes)?"""
+  for p in paras:
+    q = p.strip()
+    if not q or FOOT_DEF_RE.match(q) or q.startswith("[[P"):
+      continue
+    if is_hindi_para(q):
+      return True
+    if classify_paragraph(q) == "sanskrit" and len(q) > 60:
+      return True
+  return False
+
+
+def split_orphans(avat_paras, warnings):
+  """Split extra avatArikA markers into orphan (anchorless) verses.
+
+  Returns (own_avats, [orphan Verse, ...]). A second marker separated
+  from the first by substantial content starts an anchorless verse;
+  adjacent markers (double avatArikA) stay with one verse.
+  """
+  marks = [k for k, q in enumerate(avat_paras)
+           if AVAT_MARK_RE.search(q) and not DASHAKA_TITLE_RE.match(q)]
+  if len(marks) <= 1:
+    return avat_paras, []
+  bounds = marks + [len(avat_paras)]
+  segments = []
+  start = bounds[0]
+  for m in bounds[1:-1]:
+    if substantial_content(avat_paras[start:m]):
+      segments.append((start, m))
+      start = m
+  segments.append((start, bounds[-1]))
+  if len(segments) == 1:
+    return avat_paras, []
+  orphans = []
+  for s, e in segments[:-1]:
+    o = Verse()
+    first = strip_avat_mark(avat_paras[s])
+    if first and not GATHA_LABEL_ONLY_RE.match(first):
+      o.avat.append(first)
+    o._comm_raw = list(avat_paras[s + 1:e])
+    orphans.append(o)
+    warnings.append("anchorless verse unit split at avatArikA")
+  return avat_paras[segments[-1][0]:segments[-1][1]], orphans
+
+
+def parse_chunk(paras, pseudo=None, warnings=None):
   """Parse one dashaka chunk -> (intro_paras, [Verse], None).
 
-  Verse spans are anchored on mUlam markers; each verse's avatArikA is
-  searched backwards from its mUlam so consecutive verses never overlap.
-  Commentary stays raw here; recover_chunk() classifies it after
-  mUlam completion / bare-mUlam promotion.
+  Verse spans are anchored on mUlam markers (plus pseudo-anchors from
+  split_embedded_mulams); each verse's avatArikA is searched backwards
+  from its mUlam so consecutive verses never overlap. Commentary stays
+  raw here; recover_chunk() classifies it after mUlam completion /
+  bare-mUlam promotion.
   """
   anchors = []
   for i, p in enumerate(paras):
     if MULAM_START_RE.match(p):
       head, tail, num, mangled = split_mulam_para(p)
       anchors.append({"idx": i, "head": head, "tail": tail, "num": num,
-                      "mangled": mangled})
+                      "mangled": mangled, "bare": False})
+  if pseudo:
+    for idx, num in sorted(pseudo.items()):
+      head, tail, _, _ = split_mulam_para(paras[idx])
+      anchors.append({"idx": idx, "head": head, "tail": tail, "num": num,
+                      "mangled": False, "bare": True})
+    anchors.sort(key=lambda a: a["idx"])
   if not anchors:
     return [], [], paras
   av_idx = []
@@ -595,8 +1110,10 @@ def parse_chunk(paras):
     verse = Verse()
     verse.mulam = a["head"]
     verse.local = a["num"]
+    verse._had_num = a["num"] is not None
     verse._mangled = a["mangled"]
     verse._anchor_idx = a["idx"]
+    verse._has_avat = av_idx[v] is not None
     region_start = comm_end[v - 1] if v > 0 else 0
     region_end = av_idx[v] if av_idx[v] is not None else a["idx"]
     region = paras[region_start:region_end]
@@ -610,10 +1127,15 @@ def parse_chunk(paras):
         intro.append(q)
     else:
       sort_region(region, verse.avat, verse.pre_hindi, False)
-    sort_avats(avat_paras, verse.avat, verse.pre_hindi)
+    own_avats, orphans = split_orphans(avat_paras, warnings or [])
+    sort_avats(own_avats, verse.avat, verse.pre_hindi)
     verse._comm_raw = ([a["tail"]] if a["tail"] else []) + \
       paras[a["idx"] + 1:comm_end[v]]
+    verse._orphans = orphans
+    for o in verse._orphans:
+      verses.append(o)
     verses.append(verse)
+    verse._orphans = []
   return intro, verses, None
 
 
@@ -635,9 +1157,51 @@ MUDRITA_I_NOTE = "<!-- mudrite ||I|| -->"
 
 def correct_six_to_nine(verse, warnings, set_no=None):
   verse.local = 9
+  verse._corrected_from = 6
   verse.mulam = (verse.mulam + " " + MUDRITA_NOTE).strip()
   where = ("set %d " % set_no) if set_no else ""
   warnings.append("%sverse 9 printed as ||6||; heading corrected" % where)
+
+
+def verse_has_hindi_ending(verse, num):
+  """Does the verse hold a Hindi para trailing with ||num||?
+
+  Scans classified pre-mUlam Hindi plus Hindi-looking commentary paras
+  (completion/diversion has not run yet at correction time).
+  """
+  for p in verse.pre_hindi:
+    ms = list(VERSE_END_RE.finditer(p.strip()))
+    if ms and ms[-1].end() >= len(p.strip()) - 2 \
+        and verse_end_num(ms[-1]) == num:
+      return True
+  for p in verse._comm_raw:
+    q = p.strip()
+    if not is_hindi_para(q):
+      continue
+    ms = list(VERSE_END_RE.finditer(q))
+    if ms and ms[-1].end() >= len(q) - 2 \
+        and verse_end_num(ms[-1]) == num:
+      return True
+  return False
+
+
+def correct_print_number(verse, printed, expected, warnings, set_no=None):
+  """Renumber an avatArikA-backed verse by position (backward print only).
+
+  Fires only when the printed number is BACKWARD (printed < expected):
+  the earlier slot is taken, so this unit must be the positional verse
+  (e.g. 04 set 4: avatArikA-backed units printing ||4||/||6|| at slots
+  8/9, with solid true-4/true-6 units earlier). Forward jumps
+  (printed > expected) mean genuinely missing verses: warn only.
+  """
+  verse.local = expected
+  verse._corrected_from = printed
+  note = "<!-- mudrite ||%s|| -->" % arab_to_deva(printed)
+  verse.mulam = (verse.mulam + " " + note).strip()
+  where = ("set %s " % set_no) if set_no else ""
+  warnings.append("%sverse %d printed as ||%s||; heading corrected by "
+                  "position (verify content)" % (
+                    where, expected, arab_to_deva(printed)))
 
 
 def complete_split_mulam(verse, expected, warnings, set_no=None):
@@ -651,7 +1215,14 @@ def complete_split_mulam(verse, expected, warnings, set_no=None):
   if VERSE_END_RE.search(verse.mulam) \
       or DANGLING_END_RE.search(verse.mulam) or verse._mangled:
     return
+  if re.search(r"।।\s*$", verse.mulam):
+    # True end lost its number in print (bare-।। cut or numberless
+    # anchor): nothing numbered may be glued on; take as-is.
+    warnings.append("set %s verse %s: mUlam ends with numberless ।।; "
+                    "taken as-is" % (set_no, expected))
+    return
   pages, hindi_tmp, stray_tmp = [], [], []
+  kept = []  # exegetical TIkA skipped over: preserved for commentary
   consumed = 0
   found = None
   for p in verse._comm_raw:
@@ -672,6 +1243,10 @@ def complete_split_mulam(verse, expected, warnings, set_no=None):
       stray_tmp.append(q)
       consumed += 1
       continue
+    if EXEGETICAL_RE.search(q):
+      # TIkA anvaya/restatement, never a mUlam ending: keep for comm.
+      kept.append(p)
+      continue
     if is_hindi_para(q):
       hindi_tmp.append(q)
       consumed += 1
@@ -685,6 +1260,12 @@ def complete_split_mulam(verse, expected, warnings, set_no=None):
         if num == 6 and expected == 9:
           found += " " + MUDRITA_NOTE
         break
+      if num is not None and num > 11:
+        # Saṅgati/ratnAvalI śloka (e.g. "मुनिराह षष्ठे ॥ ४६ ॥"):
+        # never our verse end; keep for commentary, keep scanning.
+        kept.append(p)
+        consumed += 1
+        continue
       warnings.append("set %s verse %s: unexpected ||%s|| while "
                       "completing mUlam" % (set_no, expected, num))
       return
@@ -698,7 +1279,7 @@ def complete_split_mulam(verse, expected, warnings, set_no=None):
   verse._stray_defs.extend(stray_tmp)
   verse.hindi.extend(hindi_tmp)
   verse.mulam = (verse.mulam + " " + " ".join(pages + [found])).strip()
-  verse._comm_raw = verse._comm_raw[consumed:]
+  verse._comm_raw = kept + verse._comm_raw[consumed:]
 
 
 def bare_mulam_match(q, expected):
@@ -709,7 +1290,9 @@ def bare_mulam_match(q, expected):
     return False
   if MULAM_START_RE.match(q) or FOOT_DEF_RE.match(q):
     return False
-  if q.startswith("भावार्थ") or re.match(r"^[+↑f]\s+\S", q):
+  if EXEGETICAL_RE.search(q):
+    return False  # TIkA anvaya/restatement, never a bare mUlam
+  if q.startswith("भावार्थ") or re.match(r"^[+↑f†‡]\s+\S", q):
     return False
   if classify_paragraph(q) == "hindi":
     return False
@@ -730,15 +1313,132 @@ def fill_local_numbers(verses, start_hint=None):
     prev = verse.local
 
 
+def split_restart_subchunks(paras, warnings):
+  """Split a titled chunk further at verse-number restarts.
+
+  Some dashakas lack their title line; their verses then merge into the
+  previous chunk (..., 10, 11, 1, 2, ...). A restart to 1 (or 2, when
+  ||1|| itself is lost) after 9+ starts a new sub-chunk at the
+  restarted verse's avatArikA (or mUlam when unmarked).
+  """
+  anchors = []
+  for i, p in enumerate(paras):
+    if MULAM_START_RE.match(p):
+      _, _, num, _ = split_mulam_para(p)
+      anchors.append((i, num))
+  if not anchors:
+    return [(paras, None)]
+  filled = []
+  prev = None
+  for _, num in anchors:
+    if num is None:
+      num = (prev + 1) if prev else 1
+    filled.append(num)
+    prev = num
+  # Scan sequence with the systematic ९->६ confusion normalized (a 6
+  # right after an 8 reads as 9): the tail-run check below then sees
+  # through mislabeled verse-9s (08 सप्तम-chunk tail [5..8,6,10,11]).
+  seq = list(filled)
+  for k in range(1, len(seq)):
+    if seq[k] == 6 and seq[k - 1] == 8:
+      seq[k] = 9
+  cuts = [0]
+  for j in range(1, len(anchors)):
+    if seq[j - 1] is not None and seq[j - 1] >= 9 \
+        and seq[j] in (1, 2):
+      cuts.append(j)
+      warnings.append("number-restart split: new set at verse %d "
+                      "(after ||%s||)" % (seq[j], seq[j - 1]))
+      continue
+    if seq[j - 1] is not None and seq[j - 1] >= 9 \
+        and seq[j] is not None and 3 <= seq[j] < seq[j - 1]:
+      # Lost title + lost opening verses (08 सप्तम-chunk tail
+      # [5..11] with phala-verse end): split only when the restarted
+      # run continues sequentially to 11.
+      k = j
+      while k + 1 < len(anchors) and seq[k + 1] == seq[k] + 1:
+        k += 1
+      if seq[k] == 11:
+        cuts.append(j)
+        warnings.append("tail split: verses %d..11 after ||%s|| "
+                        "(missing title?)" % (seq[j], seq[j - 1]))
+  if len(cuts) == 1:
+    return [(paras, None)]
+  sublists = []
+  for g, c in enumerate(cuts):
+    a0 = anchors[c][0]
+    av = find_avat_idx(paras, (anchors[c - 1][0] + 1) if c > 0 else 0, a0)
+    if g == 0:
+      start = 0  # keep title + intro of the first group
+    else:
+      start = av if av is not None else a0
+    if g + 1 < len(cuts):
+      b0 = anchors[cuts[g + 1]][0]
+      avb = find_avat_idx(paras, anchors[cuts[g + 1] - 1][0] + 1, b0)
+      end = avb if avb is not None else b0
+    else:
+      end = len(paras)
+    sub = paras[start:end]
+    sublists.append((sub, None))
+  return sublists
+
+
 def recover_chunk(intro, verses, set_no, warnings):
-  """Fill numbers, fix OCR ९->६, complete split mUlams, promote bare ones."""
-  fill_local_numbers(verses)
-  # 1. Sequential 6 -> 9 correction (anchored verses).
+  """Fill numbers, fix OCR ९->६, complete split mUlams, promote bare ones.
+
+  Numbering is single-pass left-to-right so a corrected verse feeds the
+  next verse's expectation (a filled number never poisons followers).
+  """
+  # 0. Demote false anchors: ṭīkā śloka-quotes introduced by "मूलम् -".
+  # Genuine mUlams never start with "(". A marker with nothing but a
+  # gAthA label ("मूलम् - पंचमी गाथा", mUlam text lost; the label line
+  # itself is dropped in cleanup, leaving a marker-only empty head) is
+  # likewise hollow: the bare mUlam nearby (pseudo-anchor) is the real
+  # verse. Anchors whose number already occurred AND which lack their
+  # own avatArikA are likewise demoted
+  # (duplicate/false prints); the first occurrence always stays.
+  seen_numbers = set()
+  i = 0
+  while i < len(verses):
+    v = verses[i]
+    hollow = GATHA_LABEL_ONLY_RE.match(v.mulam.strip()) \
+      or (v._anchor_idx >= 0 and not v.mulam.strip())
+    if (v.mulam.startswith("(") or hollow) and i > 0:
+      prev = verses[i - 1]
+      prev._comm_raw.extend(v.avat + ([v.mulam] if v.mulam else [])
+                            + v._comm_raw)
+      prev.hindi.extend(v.pre_hindi)
+      prev._stray_defs.extend(v._stray_defs)
+      why = "hollow gAthA-label mUlam" if hollow else "quoted sloka"
+      warnings.append("set %s verse %s: %s as mUlam; demoted "
+                      "to commentary" % (set_no, v.local, why))
+      del verses[i]
+      continue
+    i += 1
+  # 1. Fill + sequential 6 -> 9 correction in one pass. Filled numbers
+  # from any earlier pass are reset first so corrected values feed on.
+  # AvatArikA-backed verses printing a BACKWARD number take their
+  # positional slot (forward jumps = genuinely missing verses: warn).
+  printed = {v.local for v in verses if v._had_num}
   prev = None
   for verse in verses:
-    exp = (prev + 1) if prev else verse.local
+    if not verse._had_num:
+      verse.local = None
+    if verse.local is None:
+      verse.local = (prev + 1) if prev else 1
+    exp = (prev + 1) if prev is not None else verse.local
     if verse.local == 6 and exp == 9:
       correct_six_to_nine(verse, warnings, set_no)
+    elif prev is not None and verse.local != exp and verse.local < exp \
+        and verse._has_avat and exp <= 11 and exp not in printed:
+      correct_print_number(verse, verse.local, exp, warnings, set_no)
+    elif prev is not None and verse.local != exp and verse.local > exp \
+        and verse._has_avat and exp <= 11 and exp not in printed \
+        and verse_has_hindi_ending(verse, exp):
+      # Forward print (02 -> 04) corroborated by the verse's own Hindi
+      # ending with the positional number: same mislabel, correct it
+      # (05 set 7: units printing ||4||/||5|| holding Hindi ||2||/||3||).
+      correct_print_number(verse, verse.local, exp, warnings, set_no)
     elif prev is not None and verse.local != exp:
       warnings.append("set %s: verse ||%s|| out of sequence (expected %s)"
                       % (set_no, verse.local, exp))
@@ -788,9 +1488,12 @@ def recover_chunk(intro, verses, set_no, warnings):
       sort_avats(region[amark:], new.avat, new.pre_hindi)
       verse._comm_raw = region[:amark]
     else:
-      warnings.append("set %s verse %s: bare mUlam, empty avatArikA"
-                      % (set_no, exp_next))
-      verse._comm_raw = region
+      # No avatArikA evidence (likely a TIkA anvaya restatement):
+      # leave the candidate in commentary instead of promoting.
+      warnings.append("set %s: possible bare mUlam ||%s|| without "
+                      "avatArikA; left in TIkA" % (set_no, exp_next))
+      i += 1
+      continue
     # Everything after the bare mUlam belongs to the new verse.
     new._comm_raw = after
     i += 1
@@ -825,7 +1528,9 @@ def collect_verse_defs(lists):
   def is_def(line):
     s = line.strip()
     m = FOOT_DEF_RE.match(s)
-    return bool(m and len(s) < 300
+    if not m or not m.group(2).strip():
+      return False
+    return bool(len(s) < 300
                 and (FOOT_REF_KEYWORDS_RE.search(m.group(2))
                      or len(m.group(2)) < 80))
 
@@ -925,7 +1630,7 @@ def render_verse(verse, set_ara, warnings):
   out.append(avat_md if avat_md else missing)
   out.append("")
   out.append("</details>")
-  out.append("<details open><summary>मूल - %s</summary>" % loc_deva)
+  out.append("<details open><summary>मूलम् - %s</summary>" % loc_deva)
   out.append("")
   out.append(mulam_md if mulam_md else missing)
   out.append("")
@@ -997,6 +1702,8 @@ def relocate_hindi(all_sets, warnings):
           continue
         if n == 6 and v.local == 9:
           continue  # OCR-mislabeled own rendering; keep
+        if v._corrected_from is not None and n == v._corrected_from:
+          continue  # same print mislabel as the corrected mUlam; keep
         tgt = None
         if n == 6 and v.local == 10:
           tgt = by_loc.get((s, 9), [None])[0]  # like its mUlam
@@ -1040,13 +1747,17 @@ def structure_file(in_path, out_path):
     raise SystemExit(
       "input looks already structured (has ## sets + <details>); "
       "run only on raw OCR files")
+  # Frontmatter always stays on top verbatim.
+  fm = re.match(r"\+\+\+\n.*?\n\+\+\+\n?", text, re.S)
+  frontmatter = fm.group(0) if fm else ""
+  text = text[len(frontmatter):]
   # Preamble = already-formatted verses 1-9, cut at the dotted separator.
   dot = re.search(r"(?m)^\.+$\n?", text)
   if dot and "<details" in text[:dot.start()]:
     preamble, raw = text[:dot.start()], text[dot.end():]
   else:
     preamble, raw = "", text
-  parts = []
+  parts = [frontmatter.rstrip()] if frontmatter.strip() else []
   preamble_kept = False
   if preamble:
     lines = preamble.rstrip().split("\n")
@@ -1073,34 +1784,36 @@ def structure_file(in_path, out_path):
   else:
     set_counter = 0
   # Split the raw remainder into dashaka chunks at dashaka titles.
-  chunks = re.split(r"(?m)(?=^[^\n]*दशक\s*-\s*अवतारिका)", raw)
+  chunks = re.split(CHUNK_SPLIT_RE, raw)
   chunks = [c for c in chunks if c.strip()]
   all_sets = []
   for chunk in chunks:
     paras = assemble_paragraphs(clean_lines(chunk))
-    intro, verses, _ = parse_chunk(paras)
-    if not verses:
-      # Pure extra material (should not normally happen).
-      all_sets.append((None, [], [], paras))
-      continue
-    fill_local_numbers(verses)
-    first_local = verses[0].local
-    if set_counter == 1 and first_local in (10, 11):
-      set_no = 1  # continuation of the preamble set
-    elif first_local == 1:
-      set_counter += 1
-      set_no = set_counter
-    elif verses[0].local is not None and set_counter >= 1:
-      # Missing ``||1||`` (OCR gap): still a new set when numbers restart.
-      set_counter += 1
-      set_no = set_counter
-      warnings.append("chunk starts with verse %d; assumed new set %d"
-                      % (first_local, set_no))
-    else:
-      set_no = set_counter or 1
-    intro, verses, extras = recover_chunk(intro, verses, set_no, warnings)
-    all_sets.append((set_no, intro, verses, extras))
-    set_counter = set_no
+    for sub, _sub_pseudo in split_restart_subchunks(paras, warnings):
+      sub, pseudo = split_embedded_mulams(sub, warnings)
+      intro, verses, _ = parse_chunk(sub, pseudo, warnings)
+      if not verses:
+        # Pure extra material (verseless header chunk): keep as plain.
+        all_sets.append((None, [], [], sub))
+        continue
+      fill_local_numbers(verses)
+      first_local = verses[0].local
+      if set_counter == 1 and first_local in (10, 11):
+        set_no = 1  # continuation of the preamble set
+      elif first_local == 1:
+        set_counter += 1
+        set_no = set_counter
+      elif verses[0].local is not None and set_counter >= 1:
+        # Missing ``||1||`` (OCR gap): still a new set when numbers restart.
+        set_counter += 1
+        set_no = set_counter
+        warnings.append("chunk starts with verse %d; assumed new set %d"
+                        % (first_local, set_no))
+      else:
+        set_no = set_counter or 1
+      intro, verses, extras = recover_chunk(intro, verses, set_no, warnings)
+      all_sets.append((set_no, intro, verses, extras))
+      set_counter = set_no
   relocate_hindi(all_sets, warnings)
   for entry in all_sets:
     if entry[0] is None:
