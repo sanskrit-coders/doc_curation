@@ -8,7 +8,7 @@ from google.genai.errors import ServerError
 
 from curation_utils import creds
 
-from .details import process_details
+from .detail_chunker import process_details
 from .keys import (
     _DEFAULT_TOKENS_PATH,
     _MAX_QUOTA_WAIT,
@@ -19,8 +19,8 @@ from .keys import (
     _quota_cooldown_seconds,
     _status_kind,
 )
-from .pdf_chunks import process_pdf_chunks
-from .text_chunks import process_text_chunks
+from .pdf_chunker import process_pdf_chunks
+from .text_chunker import process_text_chunks
 
 
 def _should_rotate_key(exc):

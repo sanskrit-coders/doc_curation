@@ -12,7 +12,7 @@ from doc_curation.md.content_processor import details_helper
 from doc_curation.md.file import MdFile
 
 from .keys import get_client
-from .text_chunks import _as_file_path, _dump_md_file_atomic
+from .text_chunker import _as_file_path, _dump_md_file_atomic
 
 
 DETAIL_SPLIT_MARKER_RE = regex.compile(r"<!--\s*GEMINI-DETAIL-SPLIT\s+(\d+)\s*-->")

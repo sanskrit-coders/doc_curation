@@ -93,6 +93,9 @@ def dump_medium():
 
 def dump_substack():
 
+
+  substack.scrape_free_articles_from_index_anchors(url="https://psugam.substack.com/p/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/psugam", dry_run=False)
+
   substack.scrape_free_articles_from_index_anchors(url="https://immanentdomain.substack.com/p/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/immanentdomain", dry_run=False)
 
   substack.scrape_free_articles_from_index_anchors(url="https://naavalam.substack.com/archive?sort=new", dir_path=f"{BASE_PATH}/weblogs/naavalam", dry_run=False)

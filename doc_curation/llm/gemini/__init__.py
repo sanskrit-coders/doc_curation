@@ -16,12 +16,12 @@ from .keys import (
     _quota_cooldown_seconds,
     _mark_key_status,
 )
-from .pdf_chunks import (
+from .pdf_chunker import (
     scrub_response,
     process_pdf_chunks,
     process_file,
 )
-from .text_chunks import (
+from .text_chunker import (
     TEXT_CONTINUE_MARKER_RE,
     _make_continue_marker,
     _split_resume_body,
@@ -31,7 +31,7 @@ from .text_chunks import (
     _dump_md_file_atomic,
     process_text_chunks,
 )
-from .details import (
+from .detail_chunker import (
     DETAIL_SPLIT_MARKER_RE,
     DETAILS_PROGRESS_KEYS,
     _parse_batches_ledger,
