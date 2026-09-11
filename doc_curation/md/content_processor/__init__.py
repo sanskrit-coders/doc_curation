@@ -72,7 +72,7 @@ def _make_content_from_soup(soup):
   return new_content
 
 def _soup_from_content(content, metadata=None):
-  strange_lt_sign = regex.search("<(?! *[/dsiahfu])", content)
+  strange_lt_sign = regex.search("<(?! *[/dsiahfu!])", content)
   if strange_lt_sign is not None:
     if metadata is None:
       metadata = {}
