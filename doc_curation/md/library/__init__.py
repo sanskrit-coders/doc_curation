@@ -76,7 +76,11 @@ def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, 
   for md_file in tqdm(md_files, desc="Processing files"):
     tqdm.write(f"Processing {md_file.file_path}")
     if start_file is not None and not start_file_reached:
-      if str(md_file.file_path) != start_file:
+      if start_file.startswith("/"):
+        matched = str(md_file.file_path) == start_file
+      else:
+        matched = os.path.basename(md_file.file_path) == start_file
+      if not matched:
         continue
       else:
         start_file_reached = True
