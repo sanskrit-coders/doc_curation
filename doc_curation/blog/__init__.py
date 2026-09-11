@@ -50,7 +50,7 @@ def get_post_html(url, entry_css_list=None, browser=None):
     soup = scraping.scroll_and_get_soup(url=url, browser=browser)
   if soup is None:
     logging.error(f"Can't get soup for {url}")
-    return "", None
+    return None, None
 
   if entry_css_list is None:
     entry_css_list = ["div.entry-content", "div.entrybody", "div.post-entry", "div.post", "div.available-content", "div.entry", "div.main", "div.card-body"]
@@ -174,6 +174,9 @@ def file_name_from_url(url, max_title_length=None):
   parsed_url = urlsplit(url=url)
   path_parts = (parsed_url.path).strip().split("/")
   path_parts = [part for part in path_parts if part != ""]
+  if not path_parts:
+    # Root or empty path (e.g. https://site.com/): fall back to host.
+    path_parts = [parsed_url.netloc]
   # remove slashes, replace with dashes when dealing with urls like https://manasataramgini.wordpress.com/2020/06/08/pandemic-days-the-fizz-is-out-of-the-bottle/
   # https://koenraadelst.blogspot.com/2021/06/resume-spring-2021.html
   post_id = unquote(path_parts[-1])
@@ -227,14 +230,17 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
   
   # post_html could've been computed in order to determine target file name.
   if post_html is None:
-    ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list)
+    ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list, browser=browser)
+    if post_html is None or soup is None:
+      logging.warning(f"Could not get post html : {url}")
+      return False
     date_obj_alt, title = get_post_metadata(soup)
     if date_obj_alt is not None:
       date_obj = date_obj_alt
       file_path = get_file_path(date_obj, dir_path, file_name)
 
-  if post_html is None:
-    logging.warning(f"Could not get post html : {url}")
+  if title is None:
+    logging.warning(f"Could not get title from {url}")
     return False
 
   # Date may have been determined after get_post_html() . So, rechecking.
@@ -271,6 +277,9 @@ def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdow
   from doc_curation.md.library import metadata_helper
   library.apply_function(fn=metadata_helper.truncate_file_name, max_length=50 + len("2020-02-10_"), dry_run=dry_run, dir_path=dir_path)
   ( post_html, soup) = get_post_html(url=url, entry_css_list=entry_css_list, browser=browser)
+  if soup is None:
+    logging.error(f"Could not fetch index page, aborting: {url}")
+    return
   if anchor_css_list is not None:
     if post_html is not None:
       soup = BeautifulSoup(post_html, 'lxml')
@@ -302,12 +311,12 @@ def scrape_index_from_anchors(url, dir_path, article_scraper=scrape_post_markdow
         logging.info(f'Waited for {delay} secs.')
 
   prev_page_anchor = soup.select_one(".nav-previous a")
-  if prev_page_anchor is not None:
+  if prev_page_anchor is not None and "href" in prev_page_anchor.attrs:
     if delay is not None:
       logging.info(f'Waiting for {delay} secs.')
       time.sleep(delay)
       logging.info(f'Waited for {delay} secs.')
-    scrape_index_from_anchors(url=prev_page_anchor["href"], dir_path=dir_path, article_scraper=article_scraper, browser=browser, anchor_css=anchor_css, anchor_filter=anchor_filter, urlpattern=urlpattern, dry_run=dry_run, delay=delay)
+    scrape_index_from_anchors(url=urljoin(url, prev_page_anchor["href"]), dir_path=dir_path, article_scraper=article_scraper, browser=browser, entry_css_list=entry_css_list, anchor_css_list=anchor_css_list, anchor_filter=anchor_filter, urlpattern=urlpattern, dry_run=dry_run, delay=delay)
 
 
 def organize_by_date(dir_path, dry_run=False):
@@ -315,8 +324,10 @@ def organize_by_date(dir_path, dry_run=False):
   for md_file in md_files:
     (metadata, content) = md_file.read()
     if 'date' in metadata:
-      sub_path = "/".join(metadata['date'].split("-")[:-1])
-      new_path = os.path.join(dir_path, sub_path, metadata['date'] + "_" + os.path.basename(md_file.file_path))
+      # TOML/YAML loaders may hand us date/datetime objects, not strings.
+      date_str = str(metadata['date'])
+      sub_path = "/".join(date_str.split("-")[:-1])
+      new_path = os.path.join(dir_path, sub_path, date_str + "_" + os.path.basename(md_file.file_path))
       if new_path == md_file.file_path:
         continue
       logging.info(f"Moving {md_file.file_path} to {new_path}")

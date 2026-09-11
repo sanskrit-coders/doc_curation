@@ -26,5 +26,5 @@ def scrape_free_articles_from_index_anchors(url, dir_path, dry_run=False):
   global browser
   if browser is None:
     browser = scraping.get_selenium_chrome(headless=True)
-  article_scraper = lambda url, dir_path, dry_run: blog.scrape_post_markdown(url=url, dir_path=dir_path, dry_run=dry_run, entry_css_list=[".single-post", "div.body.markup"])
+  article_scraper = lambda url, dir_path, dry_run: blog.scrape_post_markdown(url=url, dir_path=dir_path, dry_run=dry_run, entry_css_list=[".single-post", "div.body.markup"], browser=browser)
   blog.scrape_index_from_anchors(url=url, dir_path=dir_path, entry_css_list=[], anchor_css_list=['a[data-testid="post-preview-title"]', ".portable-archive-list a"], article_scraper=article_scraper, urlpattern=".*/p/[^/]+/?$", anchor_filter=free_article_filter, browser=browser, dry_run=dry_run)

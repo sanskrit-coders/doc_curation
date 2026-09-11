@@ -1,12 +1,14 @@
 import itertools
 import logging
 import os
+from urllib.parse import urljoin
 
 import regex
 from indic_transliteration import sanscript
 
 from curation_utils.file_helper import get_storage_name
 from doc_curation import md
+from doc_curation.ebook import pandoc_helper
 from doc_curation.md.file import MdFile
 
 import doc_curation.md
@@ -30,6 +32,9 @@ def get_title(div):
 
 def dump_month(url, dest_path_month):
   (soup, _) = scraping.get_soup(url=url)
+  if soup is None:
+    logging.error(f"Could not fetch month page, skipping: {url}")
+    return
   content_divs = soup.select("#showData>div")
   for index, div in enumerate(content_divs):
     title = f"{(index + 1):02d} " + get_title(div)
@@ -46,7 +51,10 @@ def dump_month(url, dest_path_month):
 def dump_year(year, dest_path):
   url = f"{BASE_URL}/months?year={year}"
   (soup, _) = scraping.get_soup(url=url)
-  month_urls = [os.path.join(BASE_URL, x["href"]) for x in soup.find_all("a") if x.text.strip() == "Unicode" ]
+  if soup is None:
+    logging.error(f"Could not fetch year index, aborting: {url}")
+    return
+  month_urls = [urljoin(BASE_URL, x["href"]) for x in soup.find_all("a") if x.text.strip() == "Unicode" and "href" in x.attrs]
   num_months = len(month_urls)
   logging.info(f"Months in {year}: {num_months}")
   for index, month_url in enumerate(month_urls):
