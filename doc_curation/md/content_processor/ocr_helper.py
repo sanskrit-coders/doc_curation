@@ -175,6 +175,7 @@ def fix_gemini_errors(text):
   text = regex.sub(r"(?<=[ँ-०])g", "ग", text)
   text = regex.sub(r"\\u0bca", "ॊ", text)
   text = regex.sub(r"\\u0bc5", "ॆ", text)
+  text = regex.sub(r"maय", "माय", text)
 
   return text
 

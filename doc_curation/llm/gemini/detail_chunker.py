@@ -246,6 +246,12 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
   md_file = MdFile(file_in)
   metadata, content = md_file.read()
 
+  # Strip any leftover batch status lines from earlier runs/retries FIRST:
+  # without this, every retry inserts a fresh set of PENDING lines and they
+  # accumulate forever (flips only replace the first occurrence). Fresh
+  # lines for this run's plan are inserted later, before the batch loop.
+  content = regex.sub(r"\n{3,}", "\n\n", BATCH_LINE_RE.sub("", content))
+
   soup = md_content_processor._soup_from_content(content=content, metadata=metadata)
   if soup is None:
     logging.warning(f"Could not parse details in {file_in}; leaving file untouched.")
