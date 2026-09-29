@@ -1,14 +1,13 @@
-"""Plain-text chunk processing with Gemini (in-place)."""
+"""Plain-text chunk processing with LLMs (in-place)."""
 import logging
 import os
 
 import regex
-from google.genai import types
 from tqdm import tqdm
 
 from doc_curation.md.file import MdFile
 
-from .keys import get_client
+from .backend import LlmBackend
 
 
 TEXT_CONTINUE_MARKER_RE = regex.compile(
@@ -112,13 +111,18 @@ def _dump_md_file_atomic(md_file, metadata, content):
   os.replace(tmp_path, md_file.file_path)
 
 
-def process_text_chunks(file_in, prompt, max_chunk_chars=12000, model_id="gemini-3.5-flash", api_key_path="gemini.vv", dry_run=False):
-  """Process a huge text file chunk-by-chunk with Gemini, in place.
+def process_text_chunks(file_in, prompt, max_chunk_chars=12000, model_id=None, api_key_path="gemini.vv", dry_run=False, backend: LlmBackend | None = None, cred_path=None):
+  """Process a huge text file chunk-by-chunk with an LLM, in place.
 
   Splits the file body via _split_text_into_chunks, sends each chunk to
   the chat (system instruction = prompt) in order, and replaces each input
   chunk with the model's output chunk. The input file is overwritten with
   the joined outputs (frontmatter, if any, is preserved verbatim).
+
+  The model backend defaults to Gemini (api_key_path selects the key);
+  pass backend= explicitly (e.g. a Claude backend) to use another
+  provider, in which case api_key_path is ignored. model_id=None selects
+  the backend's default model.
 
   Checkpointing: after every processed chunk the file holds
   <processed outputs> + <!-- GEMINI-TEXT-CONTINUE done=k total=n --> +
@@ -154,12 +158,12 @@ def process_text_chunks(file_in, prompt, max_chunk_chars=12000, model_id="gemini
     logging.debug(f"No text content in {file_in}; returning silently.")
     return ""
 
-  client = get_client(api_key_path=api_key_path)
+  if backend is None:
+    # Lazy import keeps this shared module free of provider imports.
+    from doc_curation.llm.gemini.backend import GeminiBackend
+    backend = GeminiBackend(api_key_path=api_key_path, model_id=model_id, cred_path=cred_path)
 
-  config = types.GenerateContentConfig(
-    system_instruction=prompt,
-  )
-  chat = client.chats.create(model=model_id, config=config)
+  chat = backend.new_chat(system_prompt=prompt, model_id=model_id)
 
   processed_new = []
   try:
@@ -169,9 +173,9 @@ def process_text_chunks(file_in, prompt, max_chunk_chars=12000, model_id="gemini
         f"Process text chunk {done_count + idx + 1} of {total_chunks} "
         f"according to the system instructions:\n\n{chunk_text}"
       )
-      response = chat.send_message(chunk_prompt)
+      text = chat.send_text(chunk_prompt)
 
-      text = regex.sub("```.*", "", response.text or "")
+      text = regex.sub("```.*", "", text or "")
       if not text.strip():
         raise RuntimeError(f"Empty response for chunk {done_count + idx + 1}/{total_chunks}")
       processed_new.append(text)

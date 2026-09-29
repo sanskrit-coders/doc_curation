@@ -1,18 +1,16 @@
-"""PDF chunk processing with Gemini."""
+"""PDF chunk processing with LLMs."""
 import json
 import logging
 import os
 import tempfile
 
 import regex
-from google.genai import types
 from pypdf import PdfReader, PdfWriter
 from tqdm import tqdm
 
 from doc_curation.llm import dump_to_md
+from doc_curation.llm.backend import LlmBackend
 from doc_curation.md.file import MdFile
-
-from .keys import get_client
 
 
 def scrub_response(obj):
@@ -45,8 +43,18 @@ def scrub_response(obj):
   return obj
 
 
-def process_pdf_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id="gemini-3.5-flash", api_key_path="gemini.vv", overwrite=False):
-  client = get_client(api_key_path=api_key_path)
+def process_pdf_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id=None, api_key_path="gemini.vv", overwrite=False, backend: LlmBackend | None = None, cred_path=None):
+  """Process PDF chunks with an LLM, saving markdown to dest_path.
+
+  The model backend defaults to Gemini (api_key_path selects the key);
+  pass backend= explicitly (e.g. a Claude backend) to use another
+  provider, in which case api_key_path is ignored. model_id=None selects
+  the backend's default model.
+  """
+  if backend is None:
+    # Lazy import keeps this shared module free of provider imports.
+    from doc_curation.llm.gemini.backend import GeminiBackend
+    backend = GeminiBackend(api_key_path=api_key_path, model_id=model_id, cred_path=cred_path)
 
   reader = PdfReader(file_in)
   total_pages = len(reader.pages)
@@ -62,10 +70,7 @@ def process_pdf_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id="
   start_page = metadata.get("continue_page", 1)
 
   # Load the detailed prompt once as a system instruction
-  config = types.GenerateContentConfig(
-    system_instruction=prompt,
-  )
-  chat = client.chats.create(model=model_id, config=config)
+  chat = backend.new_chat(system_prompt=prompt, model_id=model_id)
 
   # Convert 1-indexed start_page to 0-indexed for Python logic
   start_index = max(0, start_page - 1)
@@ -83,16 +88,16 @@ def process_pdf_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id="
         writer.write(temp_file)
   
       try:
-        uploaded = client.files.upload(file=temp_path)
-  
+        uploaded = backend.upload_file(temp_path)
+
         chunk_prompt = f"Convert pages {i + 1} to {end_page} into Markdown according to the system instructions."
-        response = chat.send_message([uploaded, chunk_prompt])
-  
-        chunk_metadata = scrub_response(response.model_dump())
+        text = chat.send_parts([uploaded, chunk_prompt])
+
+        chunk_metadata = scrub_response(chat.last_metadata())
         full_response_metadata.append({f"pages_{i+1}_to_{end_page}": chunk_metadata})
-  
-        if response.text:
-          all_text_parts.append(response.text)
+
+        if text:
+          all_text_parts.append(text)
           all_text_parts[-1] = regex.sub("```.*", "", all_text_parts[-1])
           metadata["continue_page"] = end_page + 1
   
@@ -110,22 +115,23 @@ def process_pdf_chunks(file_in, prompt, dest_path, pages_per_chunk=5, model_id="
     dump_to_md(dest_path, prompt=combined_prompt, response_headers=combined_metadata, content=combined_text, metadata=metadata)
 
 
-def process_file(file_in, prompt, dest_path, model_id="gemini-3.5-flash", api_key_path="gemini.vv"):
-  client = get_client(api_key_path=api_key_path)
-  uploaded = client.files.upload(
-    file=file_in
-  )
-  response = client.models.generate_content(
-    model=model_id,
-    contents=[
-      uploaded,
-      prompt
-    ]
+def process_file(file_in, prompt, dest_path, model_id=None, api_key_path="gemini.vv", backend: LlmBackend | None = None, cred_path=None):
+  """Process a single file with an LLM, saving markdown to dest_path.
+
+  Backend resolution mirrors process_pdf_chunks. Returns the output text.
+  """
+  if backend is None:
+    from doc_curation.llm.gemini.backend import GeminiBackend
+    backend = GeminiBackend(api_key_path=api_key_path, model_id=model_id, cred_path=cred_path)
+  uploaded = backend.upload_file(file_in)
+  text, raw_metadata = backend.generate_content(
+    [uploaded, prompt],
+    model_id=model_id,
   )
   metadata = json.dumps(
-    scrub_response(response.model_dump()),
+    scrub_response(raw_metadata),
     ensure_ascii=False,
     indent=2,
   )
-  dump_to_md(dest_path, prompt, metadata, response.text)
-  return response
+  dump_to_md(dest_path, prompt, metadata, text, {"title": os.path.basename(file_in)})
+  return text

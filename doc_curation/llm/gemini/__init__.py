@@ -1,5 +1,6 @@
 """Gemini LLM helpers (flat import surface preserved)."""
 
+from .backend import GeminiBackend, GeminiChat
 from .keys import (
     _DEFAULT_TOKENS_PATH,
     _clients,
@@ -16,12 +17,12 @@ from .keys import (
     _quota_cooldown_seconds,
     _mark_key_status,
 )
-from .pdf_chunker import (
+from doc_curation.llm.pdf_chunker import (
     scrub_response,
     process_pdf_chunks,
     process_file,
 )
-from .text_chunker import (
+from doc_curation.llm.text_chunker import (
     TEXT_CONTINUE_MARKER_RE,
     _make_continue_marker,
     _split_resume_body,
@@ -31,7 +32,7 @@ from .text_chunker import (
     _dump_md_file_atomic,
     process_text_chunks,
 )
-from .detail_chunker import (
+from doc_curation.llm.detail_chunker import (
     DETAIL_SPLIT_MARKER_RE,
     DETAILS_PROGRESS_KEYS,
     _parse_batches_ledger,
@@ -39,7 +40,6 @@ from .detail_chunker import (
     _normalize_detail_pattern,
     _without_details_progress,
     _split_detail_batch,
-    _generate_with_gemini,
     BATCH_LINE_RE,
     _make_batch_line,
     _flip_batch_line,
@@ -57,6 +57,8 @@ from .rotator import (
 )
 
 __all__ = [
+    "GeminiBackend",
+    "GeminiChat",
     "_DEFAULT_TOKENS_PATH",
     "_clients",
     "_get_retry_delay",
@@ -89,7 +91,6 @@ __all__ = [
     "_normalize_detail_pattern",
     "_without_details_progress",
     "_split_detail_batch",
-    "_generate_with_gemini",
     "BATCH_LINE_RE",
     "_make_batch_line",
     "_flip_batch_line",

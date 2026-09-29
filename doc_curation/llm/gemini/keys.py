@@ -31,14 +31,15 @@ def _resolve_secret(value):
   return value
 
 
-def get_client(api_key_path, cred_path="/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/tokens.toml"):
-  # Cache per key-path so rotating api_key_path in
-  # process_pdf_chunks_with_keys actually uses a different key.
-  # (A single global client made rotation a no-op.)
-  if api_key_path not in _clients:
+def get_client(api_key_path, cred_path=None):
+  # Cache per (key, file): the same key name may exist in several files.
+  if cred_path is None:
+    cred_path = _DEFAULT_TOKENS_PATH
+  cache_key = (api_key_path, str(cred_path))
+  if cache_key not in _clients:
     api_key = _resolve_secret(creds.get_toml_value(path=cred_path, key=api_key_path))
-    _clients[api_key_path] = genai.Client(api_key=api_key)
-  return _clients[api_key_path]
+    _clients[cache_key] = genai.Client(api_key=api_key)
+  return _clients[cache_key]
 
 
 def _is_dead_credential_error(exc):
@@ -52,6 +53,10 @@ def _is_dead_credential_error(exc):
   if code in (401, 403):
     return True
 
+  # Duck-typed HTTP status (Anthropic SDK errors carry status_code).
+  if getattr(exc, "status_code", None) in (401, 403):
+    return True
+
   status = str(getattr(exc, "status", "") or "").upper()
   if status in ("UNAUTHENTICATED", "PERMISSION_DENIED"):
     return True
@@ -60,6 +65,9 @@ def _is_dead_credential_error(exc):
   return (
       "api key not valid" in text_lower
       or "api_key_invalid" in text_lower
+      or "invalid_api_key" in text_lower
+      or "invalid api key" in text_lower
+      or "authentication_error" in text_lower
       or "account_state_invalid" in text_lower
       or "deleted or disabled" in text_lower
   )
@@ -137,6 +145,18 @@ def _get_retry_delay(exc, default_delay):
   match = regex.search(r"Please retry in ([\d.]+)s", text)
   if match:
     return float(match.group(1))
+
+  # Explicit server hint (e.g. Anthropic retry-after response header).
+  # Checked after the provider's own text signals so those keep precedence.
+  response = getattr(exc, "response", None)
+  headers = getattr(response, "headers", None)
+  if headers is not None:
+    try:
+      retry_after = headers.get("retry-after", None)
+      if retry_after is not None:
+        return float(retry_after)
+    except (ValueError, TypeError, AttributeError):
+      pass
 
   return default_delay
 

@@ -8,7 +8,7 @@ from google.genai.errors import ServerError
 
 from curation_utils import creds
 
-from .detail_chunker import process_details
+from doc_curation.llm.detail_chunker import process_details
 from .keys import (
     _DEFAULT_TOKENS_PATH,
     _MAX_QUOTA_WAIT,
@@ -19,8 +19,8 @@ from .keys import (
     _quota_cooldown_seconds,
     _status_kind,
 )
-from .pdf_chunker import process_pdf_chunks
-from .text_chunker import process_text_chunks
+from doc_curation.llm.pdf_chunker import process_pdf_chunks
+from doc_curation.llm.text_chunker import process_text_chunks
 
 
 def _should_rotate_key(exc):
@@ -36,6 +36,13 @@ def _should_rotate_key(exc):
   if code in (500, 502, 503, 504):
     return False
 
+  # Duck-typed HTTP status (Anthropic SDK errors carry status_code).
+  status_code = getattr(exc, "status_code", None)
+  if status_code == 429:
+    return True
+  if status_code in (500, 502, 503, 504, 529):
+    return False
+
   status = str(getattr(exc, "status", "") or "").upper()
   if status == "RESOURCE_EXHAUSTED":
     return True
@@ -48,6 +55,7 @@ def _should_rotate_key(exc):
       "resource_exhausted" in text_lower
       or "quota" in text_lower
       or "rate limit" in text_lower
+      or "rate_limit" in text_lower
       or "retrydelay" in text_lower
       or "please retry in" in text_lower
       or "429" in text
@@ -66,6 +74,10 @@ def _is_retryable_gemini_error(exc):
   if code in (429, 500, 502, 503, 504):
     return True
 
+  # Duck-typed HTTP status (Anthropic SDK errors carry status_code).
+  if getattr(exc, "status_code", None) in (429, 500, 502, 503, 504, 529):
+    return True
+
   status = str(getattr(exc, "status", "") or "").upper()
   if status in ("RESOURCE_EXHAUSTED", "INTERNAL", "UNAVAILABLE", "DEADLINE_EXCEEDED"):
     return True
@@ -80,8 +92,10 @@ def _is_retryable_gemini_error(exc):
       or "502" in text
       or "503" in text
       or "504" in text
+      or "529" in text
       or "quota" in text_lower
       or "rate limit" in text_lower
+      or "rate_limit" in text_lower
       or "retrydelay" in text_lower
       or "internal" in text_lower
       or "unavailable" in text_lower
@@ -96,7 +110,7 @@ def _is_retryable_gemini_error(exc):
   )
 
 
-def _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked):
+def _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked, product="Gemini"):
   """End-of-run error alert for dead credentials. Never raises (a reporting
   failure must not mask the run's own outcome). Statuses are recorded at
   ban time; this only informs."""
@@ -104,7 +118,7 @@ def _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked):
     return
   skipped = [k for k in dead_found if k not in dead_marked]
   message = (
-    f"Dead Gemini API credentials detected under {api_key_path}: "
+    f"Dead {product} API credentials detected under {api_key_path}: "
     f"{', '.join(dead_found)}. "
   )
   if dead_marked:
@@ -205,9 +219,10 @@ def _call_with_keys(
       try:
         logging.info("Cred %s", key)
 
-        result = func(
+        return func(
           *args,
           api_key_path=key,
+          cred_path=keys_file,
           **kwargs,
         )
         if key_name in flagged:

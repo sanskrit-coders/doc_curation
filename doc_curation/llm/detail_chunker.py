@@ -1,17 +1,16 @@
-"""Per-<details>-block processing with Gemini (in-place)."""
+"""Per-<details>-block processing with LLMs (in-place)."""
 import logging
 import os
 import tempfile
 
 import regex
-from google.genai import types
 from tqdm import tqdm
 
 from doc_curation.md import content_processor as md_content_processor
 from doc_curation.md.content_processor import details_helper
 from doc_curation.md.file import MdFile
 
-from .keys import get_client
+from .backend import LlmBackend
 from .text_chunker import _as_file_path, _dump_md_file_atomic
 
 
@@ -92,19 +91,16 @@ def _split_detail_batch(processed_batch, expected):
   return outputs
 
 
-def _generate_with_gemini(system_prompt, user_text, model_id, api_key_path):
-  """Single Gemini chat exchange with no files involved.
+def _generate_text(backend, system_prompt, user_text, model_id):
+  """Single model exchange over an injected backend (no files involved).
 
   Batches always go as one message, so unlike process_text_chunks there is
   no chunking, no CONTINUE markers, and no temp files.
   """
-  client = get_client(api_key_path=api_key_path)
-  config = types.GenerateContentConfig(system_instruction=system_prompt)
-  chat = client.chats.create(model=model_id, config=config)
-  response = chat.send_message(user_text)
-  text = regex.sub("```.*", "", response.text or "")
+  chat = backend.new_chat(system_prompt=system_prompt, model_id=model_id)
+  text = regex.sub("```.*", "", chat.send_text(user_text) or "")
   if not text.strip():
-    raise RuntimeError("Empty response from Gemini")
+    raise RuntimeError("Empty response from model")
   return text
 
 
@@ -203,12 +199,17 @@ def _write_batch_checkpoint(file_in, detail_pattern, batch_num, nbatches, batch,
   return new_content
 
 
-def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000, model_id="gemini-3.5-flash", api_key_path="gemini.vv", dry_run=False, fallback_per_detail=True):
-  """Process matching <details> blocks of a markdown file with Gemini, in place.
+def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000, model_id=None, api_key_path="gemini.vv", dry_run=False, fallback_per_detail=True, backend: LlmBackend | None = None, cred_path=None):
+  """Process matching <details> blocks of a markdown file with an LLM, in place.
 
   Only top-level <details> blocks whose <summary> title matches
   detail_pattern (regex.search; None matches all details) are processed;
   everything else in the file is left untouched.
+
+  The model backend defaults to Gemini (api_key_path selects the key);
+  pass backend= explicitly (e.g. a Claude backend) to use another
+  provider, in which case api_key_path is ignored. model_id=None selects
+  the backend's default model.
 
   For efficiency, matched detail contents are gathered into batches (each
   batch holding as many whole details as fit in max_chunk_chars, so batch
@@ -364,6 +365,10 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
     startup_metadata = dict(metadata) if start else _without_details_progress(metadata)
     _dump_md_file_atomic(
       md_file, startup_metadata, md_content_processor._make_content_from_soup(soup=soup))
+  if backend is None:
+    # Lazy import keeps this shared module free of provider imports.
+    from doc_curation.llm.gemini.backend import GeminiBackend
+    backend = GeminiBackend(api_key_path=api_key_path, model_id=model_id, cred_path=cred_path)
   with tqdm(total=total, initial=start, desc="Processing Details", unit="detail") as pbar:
     for batch_num, batch in enumerate(batches, start=1):
       expected = [index for index, _ in batch]
@@ -389,7 +394,7 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
         except Exception as e:
           logging.warning(f"Could not mark batch {batch_num} IN PROGRESS in {file_in} ({e}); continuing.")
       try:
-        processed_batch = _generate_with_gemini(batch_prompt, user_text, model_id, api_key_path)
+        processed_batch = _generate_text(backend, batch_prompt, user_text, model_id)
 
         try:
           outputs = _split_detail_batch(processed_batch, expected)
@@ -409,12 +414,12 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
           )
           outputs = {}
           for index, item in batch:
-            outputs[index] = _generate_with_gemini(
+            outputs[index] = _generate_text(
+              backend,
               prompt,
               "Process text chunk 1 of 1 according to the system instructions:\n\n"
               + item[1].content.strip(),
               model_id,
-              api_key_path,
             ).strip()
         for index, (tag, detail) in batch:
           details_helper.detail_content_replacer_soup(tag, outputs[index])
