@@ -32,6 +32,17 @@ def _split_resume_body(body):
   return body[:m.start()].strip(), body[m.end():].strip(), done, total
 
 
+def _read_done_prefix(file_in):
+  """Current processed-output prefix from disk (up to the continue marker),
+  or None if no marker is present. Read-only."""
+  md_file = MdFile(file_in)
+  _, content = md_file.read()
+  resume = _split_resume_body(content)
+  if resume is None:
+    return None
+  return resume[0]
+
+
 def _split_oversized_para(para, max_chunk_chars):
   """Split a single para exceeding max_chunk_chars at sentence/word bounds.
 
@@ -126,7 +137,10 @@ def process_text_chunks(file_in, prompt, max_chunk_chars=12000, model_id=None, a
 
   Checkpointing: after every processed chunk the file holds
   <processed outputs> + <!-- GEMINI-TEXT-CONTINUE done=k total=n --> +
-  <remaining original chunks>. On failure the latest checkpoint is already
+  <remaining original chunks>. The done part is re-read from disk at each
+  write, so concurrent edits to already-processed outputs are preserved
+  and only the newly processed chunk is appended. On failure the latest
+  checkpoint is already
   on disk (provided at least one chunk completed, otherwise the input is
   untouched), so re-running resumes after the marker instead of redoing
   processed chunks. The marker is removed on full success. Returns the
@@ -166,6 +180,16 @@ def process_text_chunks(file_in, prompt, max_chunk_chars=12000, model_id=None, a
   chat = backend.new_chat(system_prompt=prompt, model_id=model_id)
 
   processed_new = []
+  def done_with_latest():
+    """Fresh disk done-prefix plus only the latest output.
+
+    Preserves concurrent edits to already-processed outputs; falls back
+    to the in-memory prefix when no marker is on disk yet.
+    """
+    disk_done = _read_done_prefix(file_in)
+    if disk_done is None:
+      return "\n\n".join(([done_prefix] if done_prefix else []) + processed_new)
+    return ((disk_done + "\n\n") if disk_done else "") + processed_new[-1]
   try:
     for idx in tqdm(range(len(chunks)), desc="Processing Text Chunks"):
       chunk_text = chunks[idx]
@@ -181,13 +205,12 @@ def process_text_chunks(file_in, prompt, max_chunk_chars=12000, model_id=None, a
       processed_new.append(text)
 
       # Checkpoint so a later attempt resumes after the marker.
-      prefix = "\n\n".join(([done_prefix] if done_prefix else []) + processed_new)
       remaining = chunks[idx + 1:]
       if remaining and not dry_run:
         marker = _make_continue_marker(done_count + idx + 1, total_chunks)
         _dump_md_file_atomic(
           md_file, metadata,
-          prefix + "\n\n" + marker + "\n\n" + "\n\n".join(remaining),
+          done_with_latest() + "\n\n" + marker + "\n\n" + "\n\n".join(remaining),
         )
   except Exception as e:
     done_so_far = done_count + len(processed_new)
@@ -207,7 +230,9 @@ def process_text_chunks(file_in, prompt, max_chunk_chars=12000, model_id=None, a
       )
     raise
 
-  combined_text = "\n\n".join(([done_prefix] if done_prefix else []) + processed_new)
   if not dry_run:
+    combined_text = done_with_latest()
     _dump_md_file_atomic(md_file, metadata, combined_text)
+  else:
+    combined_text = "\n\n".join(([done_prefix] if done_prefix else []) + processed_new)
   return combined_text
