@@ -70,6 +70,15 @@ def _is_retryable_gemini_error(exc):
   if isinstance(exc, ServerError):
     return True
 
+  # Timeout/connection exception types often carry empty messages - match
+  # on the class name too (covers httpx/httpx2/anthropic/stdlib). These
+  # surface after the SDKs' own retries give up on a stalled request.
+  type_name = type(exc).__name__.lower()
+  if "timeout" in type_name or "timedout" in type_name:
+    return True
+  if "connecterror" in type_name or "connectionerror" in type_name:
+    return True
+
   code = getattr(exc, "code", None)
   if code in (429, 500, 502, 503, 504):
     return True

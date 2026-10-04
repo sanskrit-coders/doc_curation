@@ -2,6 +2,7 @@
 import logging
 import os
 import tempfile
+import time
 
 import regex
 from tqdm import tqdm
@@ -91,17 +92,28 @@ def _split_detail_batch(processed_batch, expected):
   return outputs
 
 
-def _generate_text(backend, system_prompt, user_text, model_id):
+def _generate_text(backend, system_prompt, user_text, model_id, empty_retries=2):
   """Single model exchange over an injected backend (no files involved).
 
   Batches always go as one message, so unlike process_text_chunks there is
-  no chunking, no CONTINUE markers, and no temp files.
+  no chunking, no CONTINUE markers, and no temp files. Empty responses
+  (transient model flakiness) are retried on a fresh chat a few times
+  before giving up.
   """
-  chat = backend.new_chat(system_prompt=system_prompt, model_id=model_id)
-  text = regex.sub("```.*", "", chat.send_text(user_text) or "")
-  if not text.strip():
-    raise RuntimeError("Empty response from model")
-  return text
+  delay = 5
+  for attempt in range(1 + empty_retries):
+    chat = backend.new_chat(system_prompt=system_prompt, model_id=model_id)
+    text = regex.sub("```.*", "", chat.send_text(user_text) or "")
+    if text.strip():
+      return text
+    if attempt < empty_retries:
+      logging.warning(
+        f"Empty response from model (attempt {attempt + 1}/{1 + empty_retries}); "
+        f"retrying in {delay}s."
+      )
+      time.sleep(delay)
+      delay = min(delay * 2, 60)
+  raise RuntimeError("Empty response from model")
 
 
 BATCH_LINE_RE = regex.compile(

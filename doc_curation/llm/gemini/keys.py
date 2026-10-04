@@ -11,6 +11,9 @@ from curation_utils import creds
 
 _DEFAULT_TOKENS_PATH = inspect.signature(creds.get_toml_value).parameters["path"].default
 
+# Per-request timeout for model calls. See get_client for why it must stay finite.
+REQUEST_TIMEOUT_MS = 600_000
+
 # Silence verbose SDK trace and HTTP debug logs
 for logger_name in ["google", "google.genai", "_trace", "httpx", "httpcore", "_client", "chats"]:
   logger = logging.getLogger(logger_name)
@@ -38,7 +41,12 @@ def get_client(api_key_path, cred_path=None):
   cache_key = (api_key_path, str(cred_path))
   if cache_key not in _clients:
     api_key = _resolve_secret(creds.get_toml_value(path=cred_path, key=api_key_path))
-    _clients[cache_key] = genai.Client(api_key=api_key)
+    # Finite timeout (ms): None means httpx waits forever, so a frozen
+    # socket (e.g. laptop sleep/wake killing the TCP connection, stalled
+    # server) hangs the run with no error and no retry. 600s comfortably
+    # exceeds legitimate multi-minute generations; the SDK retries
+    # timeouts internally, then they surface to our backoff loop.
+    _clients[cache_key] = genai.Client(api_key=api_key, http_options={"timeout": REQUEST_TIMEOUT_MS})
   return _clients[cache_key]
 
 

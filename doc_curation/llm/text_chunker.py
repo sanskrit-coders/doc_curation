@@ -1,6 +1,7 @@
 """Plain-text chunk processing with LLMs (in-place)."""
 import logging
 import os
+import time
 
 import regex
 from tqdm import tqdm
@@ -197,9 +198,18 @@ def process_text_chunks(file_in, prompt, max_chunk_chars=12000, model_id=None, a
         f"Process text chunk {done_count + idx + 1} of {total_chunks} "
         f"according to the system instructions:\n\n{chunk_text}"
       )
-      text = chat.send_text(chunk_prompt)
-
-      text = regex.sub("```.*", "", text or "")
+      text = None
+      empty_delay = 5
+      for empty_attempt in range(3):
+        text = regex.sub("```.*", "", chat.send_text(chunk_prompt) or "")
+        if text.strip():
+          break
+        logging.warning(
+          f"Empty response for chunk {done_count + idx + 1}/{total_chunks} "
+          f"(attempt {empty_attempt + 1}/3); retrying in {empty_delay}s."
+        )
+        time.sleep(empty_delay)
+        empty_delay = min(empty_delay * 2, 60)
       if not text.strip():
         raise RuntimeError(f"Empty response for chunk {done_count + idx + 1}/{total_chunks}")
       processed_new.append(text)
