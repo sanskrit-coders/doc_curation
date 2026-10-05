@@ -45,6 +45,12 @@ def _split_frontmatter(text):
 
 
 def _norm_for_match(s):
+  # Anunāsika normalization for sandhi-tolerant matching (e.g. pratika
+  # त्वंपदञ्च vs mūla त्वं पदं च): homorganic nasal codas (ङ् ञ् ण् न् म्) and
+  # candrabindu all become ं. Spaces are ignored throughout. Bare nasals
+  # carrying vowels (न, मा, …) are untouched.
+  s = re.sub(r"[ङञणनम]्", "ं", s)
+  s = s.replace("ँ", "ं")
   t = re.sub(r"\[\[([^|\]]+)\|([^]]+)\]\]", r"\1 \2", s)
   t = re.sub(r"[\[\]]", "", t)
   return re.sub(r"[\s\-\u2013\u2014\(\)।॥,;:\.\"]", "", t)
@@ -136,6 +142,33 @@ def _short_mula(mula_text, limit=80):
   return re.sub(r"\s+", " ", mula_text).strip()[:limit]
 
 
+def _marker_candidates(b, m, max_words=3):
+  """Pratika candidates for one iti-marker match: ``[single]`` or ``[single, run]``.
+
+  ``b`` is the searched text, ``m`` an :data:`ITI_MARKER_RE` match. Returns
+  None when the hit is unusable (a mid-word continuation like स्थितिः, or no
+  preceding words). ``single`` is the bare last word (the fused stem); when
+  the run holds more words the full run follows, so single-word pratikas
+  match even inside longer runs.
+  """
+  after = b[m.end():]
+  if after and re.match(r"[ऀ-ॿ]", after[0]) and not after.startswith(_ITI_CONTINUATIONS):
+    return None
+  seg = re.split(r"[-–—।॥:;\n]+", b[:m.start()])[-1]
+  words = [w for w in re.findall(r"[ऀ-ॿ]+", seg) if re.search(r"[अ-ह]", w)]
+  if not words:
+    return None
+  run = words[-max_words:]
+  cands = []
+  for p in (run[-1], " ".join(run) if len(run) > 1 else None):
+    if p is None:
+      continue
+    p = _clean_base(p)
+    if len(_norm_for_match(p)) >= 2 and p not in cands:
+      cands.append(p)
+  return cands or None
+
+
 def _extract_pratikas(tika_block, max_words=3):
   """All potential pratikas in a tika block, in order of appearance.
 
@@ -155,51 +188,157 @@ def _extract_pratikas(tika_block, max_words=3):
   if not b:
     return []
   cands = []
-
-  def _add(p):
-    p = _clean_base(p)
-    if len(_norm_for_match(p)) >= 2 and p not in cands:
-      cands.append(p)
-
   for m in re.finditer(ITI_MARKER_RE, b):
-    after = b[m.end():]
-    if after and re.match(r"[ऀ-ॿ]", after[0]) and not after.startswith(_ITI_CONTINUATIONS):
-      continue
-    seg = re.split(r"[-–—।॥:;\n]+", b[:m.start()])[-1]
-    words = [w for w in re.findall(r"[ऀ-ॿ]+", seg) if re.search(r"[अ-ह]", w)]
-    if not words:
-      continue
-    run = words[-max_words:]
-    _add(run[-1])
-    if len(run) > 1:
-      _add(" ".join(run))
+    for p in _marker_candidates(b, m, max_words) or ():
+      if p not in cands:
+        cands.append(p)
   if not cands:
     words = re.findall(r"[ऀ-ॿ]{2,}", b)[:2]
-    _add(" ".join(words))
+    p = _clean_base(" ".join(words))
+    if len(_norm_for_match(p)) >= 2 and p not in cands:
+      cands.append(p)
   return cands
 
 
-def _build_TIkA_pratika_map(blocks):
-  """Ordered map of tika-blocks to pratika lists, in commentary order.
+def _sentence_spans(text):
+  """(start, end) spans of danda-terminated sentences in raw-text order.
 
-  Returns a deque of ``(block, pratikas)`` tuples, one per block, with
-  pratikas from :func:`_extract_pratikas`. Block order is identical to
-  ``blocks`` order.
+  Mirrors :func:`_split_commentary_sentences` boundaries (split on ।/॥ runs,
+  each run closing the preceding sentence; trailing undelimited text forms a
+  final sentence) but keeps raw-text offsets, so chunks sliced on these spans
+  stay sentence-atomic for :func:`verify_sentence_order`. Spans tile the text
+  contiguously.
+  """
+  spans = []
+  pos = 0
+  for m in re.finditer(r"[।॥]+", text):
+    if text[pos:m.start()].strip():
+      spans.append((pos, m.end()))
+    elif spans:
+      s, _ = spans[-1]
+      spans[-1] = (s, m.end())
+    else:
+      spans.append((pos, m.end()))
+    pos = m.end()
+  if text[pos:].strip():
+    spans.append((pos, len(text)))
+  elif spans and pos < len(text):
+    spans[-1] = (spans[-1][0], len(text))
+  return spans
+
+
+def _split_block_at_pratikas(block, max_words=3):
+  """Split a tika block into pratika-headed chunks, in order.
+
+  Each accepted iti-marker starts a new chunk at its sentence: a chunk holds
+  whole sentences from its opening marker's sentence up to the next chunk's
+  start (so no sentence ever spans two chunks), with preamble sentences
+  before the first marker joining the first chunk. Chunk pratikas are the
+  union of their opening sentence's marker candidates. A block with no
+  accepted marker stays whole (fallback pratikas, as before).
+  Returns ``[(chunk_text, pratikas)]``.
+  """
+  from bisect import bisect_right
+  b = block.strip()
+  if not b:
+    return []
+  marks = []
+  for m in re.finditer(ITI_MARKER_RE, b):
+    mc = _marker_candidates(b, m, max_words)
+    if mc:
+      marks.append((m.start(), mc))
+  if not marks:
+    return [(b, _extract_pratikas(b, max_words))]
+  spans = _sentence_spans(b)
+  starts = [s for s, _ in spans]
+  sent_of = [max(bisect_right(starts, s) - 1, 0) for s, _ in marks]
+  bounds = sorted(set(sent_of))
+  chunks = []
+  for ci, s0 in enumerate(bounds):
+    s_end = (bounds[ci + 1] - 1) if ci + 1 < len(bounds) else (len(spans) - 1)
+    # First chunk starts at the block start so preamble sentences before the
+    # first marker join it (never drop them); later chunks tile contiguously.
+    seg_start = spans[0][0] if ci == 0 else spans[s0][0]
+    text = b[seg_start:spans[s_end][1]].strip()
+    prs = []
+    for (_, mc), si in zip(marks, sent_of):
+      if si == s0:
+        for p in mc:
+          if p not in prs:
+            prs.append(p)
+    if text:
+      chunks.append((text, prs))
+  return chunks
+
+
+def _build_TIkA_pratika_map(blocks):
+  """Ordered map of pratika-headed chunks to pratika lists, in order.
+
+  Each block from ``blocks`` is split via :func:`_split_block_at_pratikas`;
+  returns a deque of ``(chunk, pratikas)`` tuples in commentary order.
   """
   ordered = deque()
-  for _i, b in enumerate(blocks):
-    pratikas = _extract_pratikas(b)
-    ordered.append((b, pratikas))
-    logging.info("pratika map %d: %r (block head: %r).", _i, pratikas, b[:80])
+  _i = 0
+  for b in blocks:
+    for chunk, pratikas in _split_block_at_pratikas(b):
+      ordered.append((chunk, pratikas))
+      logging.info("pratika map %d: %r (block head: %r).", _i, pratikas, chunk[:80])
+      _i += 1
   return ordered
+
+
+def _longest_match_sequence(blocks_pratikas, mula_texts, start_idx):
+  """Longest increasing (block, mula) match sequence, earliest placements.
+
+  ``blocks_pratikas[i]`` is the pratika list of block ``i``; block ``i`` may
+  sit under mula ``j`` (>= ``start_idx``) if any pratika matches (same rule
+  as :func:`_pratika_in_mula`). Returns ``[(block_idx, mula_idx)]`` with both
+  strictly increasing and of maximum possible length; among all longest
+  sequences (different choices of which tika blocks to leave unmatched) the
+  lexicographically smallest placement is applied, i.e. each placed block
+  sits under its earliest mula compatible with still reaching that length.
+  """
+  from functools import lru_cache
+  n, m = len(blocks_pratikas), len(mula_texts)
+  cand = []
+  for pratikas in blocks_pratikas:
+    cand.append([j for j in range(start_idx, m)
+                 if any(_pratika_in_mula(pr, mula_texts[j]) for pr in pratikas)])
+
+  @lru_cache(maxsize=None)
+  def suf(i, lo):
+    # Max further placements using blocks[i:] with mulas >= lo.
+    if i >= n:
+      return 0
+    best = suf(i + 1, lo)
+    for j in cand[i]:
+      if j < lo:
+        continue
+      v = 1 + suf(i + 1, j + 1)
+      if v > best:
+        best = v
+    return best
+
+  need = suf(0, start_idx)
+  seq, lo = [], start_idx
+  for i in range(n):
+    for j in cand[i]:
+      if j < lo:
+        continue
+      if len(seq) + 1 + suf(i + 1, j + 1) == need:
+        seq.append((i, j))
+        lo = j + 1
+        break
+  return seq
 
 
 def _pratika_in_mula(pratika, mula_text, prefix_len=5):
   """Sandhi-tolerant existence check: normalized containment.
 
-  Exact normalized containment wins; otherwise the first ``prefix_len``
-  normalized chars must occur in the mula (suffix sandhi like म्/ं, ञ्च/ंच
-  often differs while the stem matches).
+  Normalization (see :func:`_norm_for_match`) ignores spaces and unifies
+  anunāsikas to ं, so e.g. pratika त्वंपदञ्च matches mūla त्वं पदं च exactly.
+  Otherwise the first ``prefix_len`` normalized chars must occur in the mula
+  (other suffix sandhi often differs while the stem matches).
   """
   npr = _norm_for_match(pratika)
   nm = _norm_for_match(mula_text)
@@ -247,18 +386,24 @@ def _get_ordered_tika_blocks(commentary_file):
 def interleave_TIkA_below_mUla(dest_file, commentary_file):
   """Insert commentary as tika below each mulam block.
 
-  - Builds an ordered map of tika-blocks to pratika lists via
-    :func:`_build_TIkA_pratika_map`; tika-block order is identical to that in
-    ``commentary_file`` (see :func:`_get_ordered_tika_blocks`).
+  - Builds an ordered map of pratika-headed chunks to pratika lists via
+    :func:`_build_TIkA_pratika_map` (blocks from ``commentary_file``, see
+    :func:`_get_ordered_tika_blocks`, each split at its iti-markers via
+    :func:`_split_block_at_pratikas`); chunk order is identical to
+    commentary order.
   - Finds the last existing tika block in ``dest_file``; only mulas after it
     are considered (earlier gaps are left untouched).
-  - Takes each block in commentary order and scans forward from the current
-    mula for the first mula where any of its pratikas
-    (:func:`_pratika_in_mula`) holds; inserts the block directly below that
-    mula and continues past it. An unmatched block is consumed, not stalling
-    later blocks: if a previous block already matched, it is appended to that
-    previous matched block's tika; leading unmatched blocks (before any
-    match) are prepended to the first matched block's tika.
+  - Places a longest increasing (block, mula) match sequence
+    (:func:`_longest_match_sequence`): each placed block sits under a mula
+    where any of its pratikas (:func:`_pratika_in_mula`) holds, mulas increase
+    with commentary order, and no longer placeable subset exists. An unmatched
+    block is consumed, not stalling later blocks: if a previous block already
+    matched, it is appended to that previous matched block's tika; leading
+    unmatched blocks (before any match) are prepended to the first matched
+    block's tika.
+  - The placed subset is a longest increasing (block, mula) match sequence
+    (:func:`_longest_match_sequence`): over all ways of choosing which tika
+    blocks to leave unmatched, the one placing the most blocks is applied.
   - If nothing ever matches, all blocks go into a single tika under the final
     mula (at EOF, so sentence order is preserved).
   """
@@ -290,31 +435,28 @@ def interleave_TIkA_below_mUla(dest_file, commentary_file):
   logging.info("interleave: %d tika blocks, %d mulas, starting at mula %d (last tika at %s).",
                len(ordered), len(mula_matches), start_idx, last_tika_mula)
   all_pratikas = [pratikas for _, pratikas in ordered]
+  seq = _longest_match_sequence(all_pratikas, mula_texts, start_idx)
+  logging.info("interleave longest sequence: %d of %d blocks placed.", len(seq), len(ordered))
+  placed = {bi: mj for bi, mj in seq}
   to_insert = {}  # mula_idx -> list of block texts, in commentary order.
   matched = []  # (hit pratika, mula_idx).
   attached = []  # (block pratikas, mula_idx) appended to a previous matched tika.
   pending_leading = []  # (block, pratikas) unmatched before any match.
   last_placed = None
-  ptr = start_idx
-  for block, pratikas in ordered:
-    hit_idx, hit_pr = None, None
-    for j in range(ptr, len(mula_matches)):
-      pr = next((p for p in pratikas if _pratika_in_mula(p, mula_texts[j])), None)
-      if pr is not None:
-        hit_idx, hit_pr = j, pr
-        break
-    if hit_idx is not None:
+  for bi, (block, pratikas) in enumerate(ordered):
+    if bi in placed:
+      mj = placed[bi]
+      hit = next((p for p in pratikas if _pratika_in_mula(p, mula_texts[mj])), None)
       texts = [b for b, _ in pending_leading] + [block]
       if pending_leading:
         logging.info("interleave: prepending %d leading unmatched blocks to mula %r.",
-                     len(pending_leading), _short_mula(mula_texts[hit_idx]))
+                     len(pending_leading), _short_mula(mula_texts[mj]))
         pending_leading = []
-      to_insert[hit_idx] = texts
-      matched.append((hit_pr, hit_idx))
+      to_insert[mj] = texts
+      matched.append((hit, mj))
       logging.info("interleave: mula %r <- pratika %r.",
-                   _short_mula(mula_texts[hit_idx]), hit_pr[:60])
-      last_placed = hit_idx
-      ptr = hit_idx + 1
+                   _short_mula(mula_texts[mj]), (hit or "")[:60])
+      last_placed = mj
     elif last_placed is not None:
       to_insert[last_placed].append(block)
       attached.append((pratikas, last_placed))
@@ -583,4 +725,8 @@ def realign_TIkA_below_mUla(dest_file, start_string, commentary_file=None):
 
 
 if __name__ == '__main__':
-  pass 
+  pass
+  remove_commentary_blocks(dest_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/06_AnandamayAdhikaraNam.md", start_string="उपरितनवाक्यापर्यालोचनां दर्शयति")
+  interleave_TIkA_below_mUla(dest_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/06_AnandamayAdhikaraNam.md", commentary_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shruta-prakAshikA/mUlam_rA/1/1/06_AnandamayAdhikaraNam.md")
+  verify_sentence_order(dest_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/06_AnandamayAdhikaraNam.md", commentary_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shruta-prakAshikA/mUlam_rA/1/1/06_AnandamayAdhikaraNam.md", start_string="उपरितनवाक्यापर्यालोचनां दर्शयति")
+  # realign_TIkA_below_mUla(dest_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/06_AnandamayAdhikaraNam.md")
