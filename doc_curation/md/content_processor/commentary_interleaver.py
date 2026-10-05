@@ -1,55 +1,47 @@
-"""Interleave commentary below mūla blocks as ṭīkā.
+"""Interleave commentary below mula blocks as tika.
 
-Learned from Śrī-bhāṣya Anandamayādhikaraṇa + Śruta-prakāśikā work.
-Uses :mod:`details_helper` (Detail/get_details/transform/insert/MdFile)
-whenever possible; custom pratīka logic where no helper exists.
-Helpers give one empty line; spec here requires two, so post-process
-newlines to ``\\n\\n\\n`` (documented below) while still building via Detail.
+Simplified engine:
+
+- ``interleave_TIkA_below_mUla`` builds an ordered map of tika-blocks to
+  pratikas in commentary-file order, then walks mulas after the last existing
+  tika, inserting the next tika-block when its pratika exists in the mula.
+  Leftovers are appended under the final mula.
+- ``verify_sentence_order`` checks commentary sentence order in dest.
+- ``remove_commentary_blocks`` deletes tika blocks from a marker to EOF.
+- ``realign_TIkA_below_mUla`` extracts tika blocks into a temp file, strips
+  them from dest, then reinserts via ``interleave_TIkA_below_mUla``.
 """
 import logging
 import re
+from collections import deque
 
-try:  # Use helpers whenever possible; fallback to raw for minimal envs.
-  # NB: insert_adjascent_element/adjascent_inserter insert same neighbor for all
-  # and one empty line; per-mūla different ṭīkā + two-empty-line spec needs direct
-  # insert_after with custom "\n\n\n" spacers (documented in _interleave_soup),
-  # still using Detail/get_details/get_nieghbor_detail/transform/MdFile below.
-  from doc_curation.md.content_processor.details_helper import (
-    Detail,
-    get_details,
-    get_nieghbor_detail,
-    transform_details_with_soup,
-  )
+try:
+  from doc_curation.md.content_processor.details_helper import get_details
   from doc_curation.md.file import MdFile
   _HAS_HELPERS = True
 except ImportError:  # pragma: no cover - minimal env without bs4/yamldown.
-  Detail = None
   get_details = None
-  get_nieghbor_detail = None
-  transform_details_with_soup = None
   MdFile = None
   _HAS_HELPERS = False
 
 MULA_RE = r"<details><summary>मूलम्</summary>(.*?)</details>"
-TIKA_TAG = "<details><summary>टीका</summary>"
-TIKA_FMT = "\n\n\n<details><summary>टीका</summary>\n\n\n%s\n</details>"
+TIKA_RE = r"<details><summary>टीका</summary>(.*?)</details>"
+TIKA_FMT = "\n\n<details><summary>टीका</summary>\n\n%s\n</details>"
 
-# User hint: ([िइेी])त(ि|्य) separates chunks & finds pratīkas.
-DASH_SPACED_RE = r"-\s*([ऀ-ॿ]+(?:\s+[ऀ-ॿ]+){0,2}?)\s*([िइेी]त(?:ि|्य))"
-LONG_SUFFIX = r"(?:ेत्यनेन|ित्यनेन|ीत्यनेन|ेत्यादिना|ित्यादिना|ीत्यादिना|ेत्यादि|ित्यादि|ीत्यादि|ेत्युक्तम्|ित्युक्तम्|ीत्युक्तम्|ेत्युक्त|ित्युक्त|ीत्युक्त)"
+# Pratika cues: dash-led, long-suffix (etyanena/etyadina/...), verb-led.
+DASH_AFTER_RE = r"-\s*([ऀ-ॿ]+(?:\s+[ऀ-ॿ]+){0,2}?)\s*[िइेी]त(?:ि|्य)"
+DASH_BEFORE_RE = r"([ऀ-ॿ]+(?:\s+[ऀ-ॿ]+){0,2}?)\s*[िइेी]त(?:ि|्य)\s*-\s*"
+LONG_SUFFIX = (
+  r"(?:ेत्यनेन|ित्यनेन|ीत्यनेन|ेत्यादिना|ित्यादिना|ीत्यादिना|ेत्यादि|ित्यादि"
+  r"|ीत्यादि|ेत्युक्तम्|ित्युक्तम्|ीत्युक्तम्|ेत्युक्त|ित्युक्त|ीत्युक्त)"
+)
 LONG_SPACED_RE = rf"([ऀ-ॿ]+(?:\s+[ऀ-ॿ]+){{0,2}}?){LONG_SUFFIX}"
 VERB_RE = (
-    # General verb (any Dev ending in ति, e.g. दूषयति/परिहरति/मुदाहरति) + specific
-    # माह/आह/उक्तम् (ending in ह/म्, not ति): introduces pratīka without dash,
-    # e.g. दूषयति राद्धान्ते चेति (verb दूषयति, no dash). Suffix includes plain
-    # dependent/independent iti (ेति/िति/ीति/इति/ेत्य/ित्य) + lookahead (not \b,
-    # since \b fails after dependent vowel-sign Mn + space).
-    r"(?:माह|मुदाहरति|उक्तम्|(?:^|\s)आह|[ऀ-ॿ]*ति)\s+"
-    r"([ऀ-ॿ]+(?:\s+[ऀ-ॿ]+){0,2}?)"
-    r"\s*(?:इत्युक्तम्|इत्यादिना|इत्यनेन|ीत्युक्तम्|ीत्यादिना|ीत्यनेन|[िइेी]त(?:ि|्य))(?=\s|[।॥]|$)"
+  r"(?:माह|मुदाहरति|उक्तम्|(?:^|\s)आह|[ऀ-ॿ]*ति)\s+"
+  r"([ऀ-ॿ]+(?:\s+[ऀ-ॿ]+){0,2}?)"
+  r"\s*(?:इत्युक्तम्|इत्यादिना|इत्यनेन|ीत्युक्तम्|ीत्यादिना|ीत्यनेन"
+  r"|[िइेी]त(?:ि|्य))(?=\s|[।॥]|$)"
 )
-ITI_WORD_RE = r"([ऀ-ॿ]+(?:\s+[ऀ-ॿ]+){0,2}?)\s*([िइेी]त(?:ि|्य))(?=\s|[।॥]|$)"
-SHORT_WHITELIST = {"तथ", "तथा", "यथ", "यथा", "एवम", "एवम्", "तत्र"}
 
 
 def _split_frontmatter(text):
@@ -59,22 +51,10 @@ def _split_frontmatter(text):
   return "", text
 
 
-def _norm_mula(s):
-  s = re.sub(r"\[\[([^|\]]+)\|([^]]+)\]\]", r"\1 \2", s)
-  s = re.sub(r"[\[\]]", "", s)
-  return re.sub(r"[\s\-\u2013\u2014\(\)।॥,;:\.\"]", "", s)
-
-
-def _norm_space(s):
-  return re.sub(r"[\s\-]", "", s)
-
-
-def _fix_stray_latin(s):
-  s = s.replace("[[ye|ये]]", "[[ये|ये]]")
-  # Isolated 'ye' inside Devanāgarī context -> 'ये'.
-  if re.search(r"[ऀ-ॿ]", s):
-    s = re.sub(r"(?<=[ऀ-ॿ\s।॥,;:\.\-\[\]\(\)\"'])ye(?=[ऀ-ॿ\s।॥,;:\.\-\[\]\(\)\"'])", "ये", s)
-  return s
+def _norm_for_match(s):
+  t = re.sub(r"\[\[([^|\]]+)\|([^]]+)\]\]", r"\1 \2", s)
+  t = re.sub(r"[\[\]]", "", t)
+  return re.sub(r"[\s\-\u2013\u2014\(\)।॥,;:\.\"]", "", t)
 
 
 def _split_commentary_sentences(commentary_body):
@@ -92,325 +72,454 @@ def _split_commentary_sentences(commentary_body):
   return sents
 
 
-def _extract_bases(sent):
+def _map_to_commentary(dest_norms, comm_norms, fuzzy_threshold=0.85):
+  """Map dest sentence norms to commentary indexes (ordering aid for verify).
+
+  Exact normalized matches consume duplicate commentary indexes in dest order;
+  leftovers fall back to difflib fuzzy match (>= threshold, best ratio wins).
+  Returns a list of (cpos|None, fuzzy_flag) parallel to dest_norms.
+  """
+  import difflib
+  from collections import defaultdict, deque as _deque
+  index = defaultdict(_deque)
+  buckets = defaultdict(list)
+  for i, n in enumerate(comm_norms):
+    if len(n) < 2:
+      continue
+    index[n].append(i)
+    buckets[len(n) // 10].append((i, n))
   out = []
-  for pat, kind in [(DASH_SPACED_RE, "dash"), (LONG_SPACED_RE, "long"), (VERB_RE, "verb")]:
-    for m in re.finditer(pat, sent):
-      base = m.group(1).strip("- ")
-      if len(base) >= 2 and not any(b == base for _, b, _ in out):
-        out.append((m.group(0).strip(), base, kind))
-  for m in re.finditer(ITI_WORD_RE, sent):
-    base = m.group(1).strip()
-    if len(base) >= 2 and not any(b == base for _, b, _ in out):
-      out.append((m.group(0).strip(), base, "iti"))
+  for n in dest_norms:
+    if len(n) >= 2 and n in index and index[n]:
+      out.append((index[n].popleft(), False))
+      continue
+    best = None
+    if len(n) >= 2:
+      cands = []
+      b = len(n) // 10
+      for bb in (b - 1, b, b + 1):
+        cands.extend(buckets.get(bb, ()))
+      for i, cn in cands:
+        if abs(len(cn) - len(n)) > max(12, int(0.4 * len(n))):
+          continue
+        r = difflib.SequenceMatcher(None, n, cn, autojunk=False).ratio()
+        if r >= fuzzy_threshold and (best is None or r > best[0]):
+          best = (r, i)
+    out.append((best[1], True) if best is not None else (None, False))
   return out
 
 
-def _longest_in_target(prat_norm, target_norm, min_len=2):
-  for L in [12, 10, 8, 6, 5, 4, 3, 2]:
-    if L > len(prat_norm) or L < min_len:
-      continue
-    if prat_norm[:L] in target_norm:
-      return L
-  return 0
+def _attribute_tikas(dest_body):
+  """Parse dest body; return (mula_texts, tika_entries, mula_spans).
 
-
-def _count_containing(sub, normed):
-  return sum(1 for nm in normed if sub in nm) if sub else 0
-
-
-def _best_match(prat_base, cur_idx, normed, backward=5, forward=30):
-  bn = _norm_space(prat_base)
-  cands = [bn]
-  if bn in ("तथ", "यथ"):
-    cands.append(bn + "ा")
-  best, best_key = None, None
-  lo = max(0, cur_idx - backward)
-  hi = min(len(normed), cur_idx + forward + 1)
-  for cand in cands:
-    for mi in range(lo, hi):
-      L = _longest_in_target(cand, normed[mi], min_len=2)
-      if L < 2:
-        continue
-      sub = cand[:L]
-      cnt = _count_containing(sub, normed)
-      # Frequency guard: generic (cnt>5, e.g. सामानाधिकरण्य) needs long (>=8) or short-whitelist tiny window.
-      if cnt > 5:
-        if L < 8 and not (len(cand) <= 4 and (cand in SHORT_WHITELIST or cand[:3] in ("तथ", "यथ"))):
-          continue
-        if len(cand) <= 4 and abs(mi - cur_idx) > 3:
-          continue
-      key = (L, -abs(mi - cur_idx))
-      if best_key is None or key > best_key:
-        best_key, best = key, (mi, L)
-  return best if best else (None, None)
-
-
-def _distinctive_words(sent, normed, min_len=6, max_cnt=5):
-  words = re.findall(r"[ऀ-ॿ]{5,}", sent)
-  out, seen = [], set()
-  for w in words:
-    if len(w) < min_len or w in seen:
-      continue
-    seen.add(w)
-    for L in [10, 8, 6]:
-      if L > len(w):
-        continue
-      sub = w[:L]
-      if 1 <= _count_containing(sub, normed) <= max_cnt:
-        out.append((w, sub))
-        break
-  out.sort(key=lambda x: -len(x[0]))
-  return out
-
-
-def _make_tika_html(txt):
-  # Uses Detail (helpers) for base; post-process to two empty lines (spec requires
-  # two, Detail gives one).
-  txt = _fix_stray_latin(txt)
-  if _HAS_HELPERS and Detail is not None:
-    html = Detail(title="टीका", content=txt.strip()).to_md_html()
-    return html.replace("<summary>टीका</summary>\n\n", "<summary>टीका</summary>\n\n\n", 1)
-  return TIKA_FMT % txt.strip()
-
-
-def _fix_latin_via_helper(content):
-  # Script integrity for mūla/ṭīkā only (excludes English Translation which legitimately has Latin).
-  if not (_HAS_HELPERS and transform_details_with_soup is not None):
-    return re.sub(
-      r"<details><summary>(?:मूलम्|टीका)</summary>.*?</details>",
-      lambda mo: mo.group(0).replace("[[ye|ये]]", "[[ये|ये]]"),
-      content,
-      flags=re.DOTALL,
-    )
-
-  def _fix_str(s, *a, **k):
-    if not re.search(r"[ऀ-ॿ]", s):
-      return s
-    s = s.replace("[[ye|ये]]", "[[ये|ये]]")
-    return re.sub(r"\bye\b", "ये", s)
-
-  return transform_details_with_soup(
-    content, content_str_transformer=_fix_str, title_pattern=r"मूलम्.*|टीका"
-  )
-
-
-def _compute_assign(matches_texts, sents):
-  """Greedy pratīka-driven assignment shared by raw/soup paths."""
-  normed = [_norm_mula(t) for t in matches_texts]
-  assign, cur = {}, 0
-  started = False
-  for si, sent in enumerate(sents[:12]):
-    for _, base, _ in _extract_bases(sent):
-      bn = _norm_space(base)
-      if len(bn) < 7:
-        continue
-      for L in [10, 8, 7]:
-        if L > len(bn):
-          continue
-        hits = [mi for mi, nm in enumerate(normed) if bn[:L] in nm]
-        if len(hits) == 1:
-          cur = hits[0]
-          started = True
-          break
-      if started:
-        break
-    if started:
-      for pj in range(max(0, si - 5), si):
-        for _, b2, _ in _extract_bases(sents[pj]):
-          mi2, _ = _best_match(b2, cur, normed, backward=10, forward=0)
-          if mi2 is not None and mi2 < cur:
-            assign.setdefault(mi2, []).append(pj)
-      break
-  for si, sent in enumerate(sents):
-    if any(si in v for v in assign.values()):
-      continue
-    best_mi, best_L = None, 0
-    for _, base, _ in _extract_bases(sent):
-      mi, L = _best_match(base, cur, normed, backward=5, forward=30)
-      if mi is None:
-        continue
-      bn = _norm_space(base)
-      if _count_containing(bn[:L], normed) > 5 and L < 8 and not (
-        len(bn) <= 4 and (bn in SHORT_WHITELIST or bn[:3] in ("तथ", "यथ"))
-      ):
-        continue
-      if L > best_L or (L == best_L and best_mi is not None and abs(mi - cur) < abs(best_mi - cur)):
-        best_mi, best_L = mi, L
-    if best_mi is None:
-      for w, sub in _distinctive_words(sent, normed):
-        cand = None
-        for d in range(0, 11):
-          for mi in {cur - d, cur + d}:
-            if 0 <= mi < len(normed) and sub in normed[mi] and (cand is None or abs(mi - cur) < abs(cand - cur)):
-              cand = mi
-          if cand is not None and d >= 3:
-            break
-        if cand is not None:
-          best_mi = cand
-          break
-    if best_mi is None:
-      assign.setdefault(cur, []).append(si)
+  tika_entries: list of dicts {span, mula_j, body} in document order, each tika
+  attributed to its preceding mula (spec inserts directly below).
+  """
+  mula_pat = re.compile(MULA_RE, re.DOTALL)
+  all_pat = re.compile(r"<details><summary>(मूलम्|टीका)</summary>(.*?)</details>", re.DOTALL)
+  items = list(all_pat.finditer(dest_body))
+  mula_texts, owner, cur = [], {}, None
+  for ii, m in enumerate(items):
+    if m.group(1) == "मूलम्":
+      owner[ii] = len(mula_texts)
+      mula_texts.append(m.group(2))
+      cur = len(mula_texts) - 1
     else:
-      cur = best_mi
-      assign.setdefault(cur, []).append(si)
-  return assign
+      owner[ii] = cur
+  entries = [
+    {"span": (m.start(), m.end()), "mula_j": owner[ii], "body": m.group(2)}
+    for ii, m in enumerate(items) if m.group(1) == "टीका"
+  ]
+  spans = [(m.start(), m.end()) for m in mula_pat.finditer(dest_body)]
+  return mula_texts, entries, spans
 
 
-def _interleave_raw(dest_body, matches, sents):
-  normed = [_norm_mula(m.group(1)) for m in matches]
-  # Reuse _compute_assign via texts for consistency (matches_texts = raw inners).
-  assign = _compute_assign([m.group(1) for m in matches], sents)
-  to_insert = {}
-  for mula_idx, sidxs in assign.items():
-    m = matches[mula_idx]
-    _, e = m.span()
-    nxt = matches[mula_idx + 1].start() if mula_idx + 1 < len(matches) else len(dest_body)
-    if TIKA_TAG in dest_body[e:nxt]:
-      continue
-    txt = " ".join(sents[i].strip() for i in sorted(sidxs))
-    txt = _fix_stray_latin(txt)
-    if txt.strip():
-      to_insert[mula_idx + 1] = txt
-  if not to_insert:
-    return dest_body, 0
-  parts, prev = [], 0
-  for idx, m in enumerate(matches):
-    s, e = m.span()
-    nxt_start = matches[idx + 1].start() if idx + 1 < len(matches) else len(dest_body)
-    between = dest_body[e:nxt_start]
-    parts.append(dest_body[prev:e])
-    if (idx + 1) in to_insert:
-      parts.append("\n\n\n<details><summary>टीका</summary>\n\n\n" + to_insert[idx + 1] + "\n</details>")
-      parts.append(between)
-      prev = nxt_start
-    else:
-      parts.append(between)
-      prev = nxt_start
-  return "".join(parts), len(to_insert)
+def _clean_base(b):
+  return b.strip("- ").split("।")[0].split("॥")[0].strip()
+
+
+def _extract_pratika(tika_block):
+  """Return the pratika string for a tika block (may be '')."""
+  b = re.sub(r"^#\d+ lines are missing\.\s*", "", tika_block.strip(), flags=re.MULTILINE)
+  if not b:
+    return ""
+  cands = []
+  for pat in (DASH_BEFORE_RE, DASH_AFTER_RE, LONG_SPACED_RE, VERB_RE):
+    for m in re.finditer(pat, b):
+      base = _clean_base(m.group(1))
+      if len(base) >= 2:
+        cands.append((m.start(), base))
+  if cands:
+    cands.sort(key=lambda x: x[0])
+    return cands[0][1]
+  words = re.findall(r"[ऀ-ॿ]{2,}", b)[:2]
+  return _clean_base(" ".join(words))
+
+
+def _pratika_in_mula(pratika, mula_text, prefix_len=5):
+  """Sandhi-tolerant existence check: normalized containment.
+
+  Exact normalized containment wins; otherwise the first ``prefix_len``
+  normalized chars must occur in the mula (suffix sandhi like म्/ं, ञ्च/ंच
+  often differs while the stem matches).
+  """
+  npr = _norm_for_match(pratika)
+  nm = _norm_for_match(mula_text)
+  if len(npr) < 2 or len(nm) < 2:
+    return False
+  if npr in nm:
+    return True
+  if len(npr) > prefix_len and npr[:prefix_len] in nm:
+    return True
+  return False
+
+
+def _get_ordered_tika_blocks(commentary_file):
+  """Return tika-block texts in commentary-file order.
+
+  If the file holds ``<details><summary>टीका</summary>`` blocks (e.g. a temp
+  file from :func:`realign_TIkA_below_mUla`), those bodies define the blocks.
+  Otherwise the plain body (frontmatter + missing-lines markers stripped) is
+  split into paragraphs on blank lines, then fragment paras not ending in
+  ``।``/``॥`` are merged with the next para so no sentence spans two blocks
+  (otherwise :func:`verify_sentence_order` would report phantom missing).
+  """
+  with open(commentary_file, encoding="utf-8") as f:
+    comm_raw = f.read()
+  comm_body = _split_frontmatter(comm_raw)[1]
+  tika_bodies = [
+    m.group(1) for m in re.finditer(TIKA_RE, comm_body, flags=re.DOTALL)
+  ]
+  if tika_bodies:
+    return [b.strip() for b in tika_bodies if b.strip()]
+  comm_body = re.sub(r"^#\d+ lines are missing\.\s*", "", comm_body, flags=re.MULTILINE)
+  paras = [p.strip() for p in re.split(r"\n\s*\n", comm_body)]
+  paras = [p for p in paras if p]
+  blocks, buf = [], ""
+  for para in paras:
+    buf = (buf + " " + para).strip() if buf else para
+    if re.search(r"[।॥]\s*[\"'”’\]\)»]*\s*$", buf):
+      blocks.append(buf)
+      buf = ""
+  if buf:
+    blocks.append(buf)
+  return blocks
 
 
 def interleave_TIkA_below_mUla(dest_file, commentary_file):
-  """Insert commentary as ṭīkā below each mūlam block.
+  """Insert commentary as tika below each mulam block.
 
-  - Every ``<details><summary>मूलम्</summary>`` in ``dest_file`` (ignores
-    ``मूलम् (संयुक्तम्)``); inserts directly below, two empty lines,
-    ``<details><summary>टीका</summary>\\n\\n\\nTEXT\\n</details>``.
-  - Keeps existing ṭīkās (only fills missing); verbatim except stray-Latin fix
-    (``ye``→``ये``); preserves tags/spacing/svara; no extra commentary.
-  - Sequential but never forced: pratīka (``([िइेी])त(ि|्य)`` + dash/verb/long/
-    sūtra-exact/content-distinctive, multi-word with spaces, sandhi-tolerant
-    prefix fallback, ं/म् preserved e.g. सोऽयम्/सोऽयं, frequency cnt<=5,
-    short whitelist तथ/यथा/एवम्/तत्र, backward 5 / forward 30, longest wins)
-    decides; trailing ``- X चेति`` goes to next (e.g. अयोग्यता→next),
-    leading examples go further-down single mūla listing all (दण्डी/शुक्लेन/
-    नीलम्/नीलोत्पल→later), previous-block details appearing later move back
-    (विरोधाभावात्/देशान्तर…→previous), stay-on-current for elaboration,
-    śruti/colophon left empty (collective). Logs appendix (entirely-wrong /
-    head-tail-extra, missing).
+  - Builds an ordered map of tika-blocks to pratikas; tika-block order is
+    identical to that in ``commentary_file`` (see :func:`_get_ordered_tika_blocks`).
+  - Finds the last existing tika block in ``dest_file``; only mulas after it
+    are considered (earlier gaps are left untouched).
+  - For each such mula in document order, peeks at the next pratika: if
+    :func:`_pratika_in_mula` holds, inserts the corresponding tika block
+    directly below the mula and pops it out of the ordered map; otherwise the
+    mula is left empty and the same pratika is tried against the next mula.
+  - Repeats till mulas are exhausted or the ordered map is empty.
+  - Appends any remaining tika-blocks (joined in order) as a single tika
+    block under the final mula in the dest file (at EOF, so sentence order is
+    preserved).
   """
-  # Helpers path first (uses Detail/get_details/transform/insert/MdFile).
-  if _HAS_HELPERS:
-    try:
-      return _interleave_soup(dest_file, commentary_file)
-    except Exception as exc:  # Fall back to raw on soup failure.
-      logging.warning("Soup path failed (%s); falling back to raw.", exc)
-  # Raw fallback (stdlib only): frontmatter-preserving plain I/O + regex.
   with open(dest_file, encoding="utf-8") as f:
     dest_raw = f.read()
-  with open(commentary_file, encoding="utf-8") as f:
-    comm_raw = f.read()
   dest_head, dest_body = _split_frontmatter(dest_raw)
   mula_pat = re.compile(MULA_RE, re.DOTALL)
-  matches = list(mula_pat.finditer(dest_body))
-  if not matches:
+  mula_matches = list(mula_pat.finditer(dest_body))
+  if not mula_matches:
     logging.warning("No mūlam blocks in %s", dest_file)
     return
-  sents = _split_commentary_sentences(_split_frontmatter(comm_raw)[1])
-  if not sents:
-    logging.warning("No commentary sentences in %s", commentary_file)
+  mula_texts = [m.group(1) for m in mula_matches]
+  _, tika_entries, _ = _attribute_tikas(dest_body)
+  owned = [e["mula_j"] for e in tika_entries if e["mula_j"] is not None]
+  last_tika_mula = max(owned) if owned else None
+  start_idx = (last_tika_mula + 1) if last_tika_mula is not None else 0
+  if start_idx >= len(mula_matches):
+    logging.info("All mulas already have tikas in %s; nothing to fill.", dest_file)
+    # Still allow leftover-append below if commentary has blocks? No mulas to
+    # walk, so everything would be leftovers; that path is handled by realign
+    # (which strips first). Here there is nothing to do.
     return
-  combined_body, n = _interleave_raw(dest_body, matches, sents)
-  if not n:
-    logging.info("Nothing to insert for %s", dest_file)
+  blocks = _get_ordered_tika_blocks(commentary_file)
+  if not blocks:
+    logging.warning("No tika blocks in %s", commentary_file)
     return
-  combined_body = _fix_latin_via_helper(combined_body)
+  # Ordered map: deque of (block, pratika) in commentary order.
+  ordered = deque((b, _extract_pratika(b)) for b in blocks)
+  logging.info("interleave: %d tika blocks, %d mulas, starting at mula %d (last tika at %s).",
+               len(ordered), len(mula_matches), start_idx, last_tika_mula)
+  for _i, (_b, _pr) in enumerate(ordered):
+    logging.info("interleave pratika %d: %r (block head: %r).", _i, _pr, _b[:80])
+  all_pratikas = [pr for _, pr in ordered]
+  to_insert = {}
+  matched = []
+  for mula_idx in range(start_idx, len(mula_matches)):
+    if not ordered:
+      break
+    block, pratika = ordered[0]
+    if _pratika_in_mula(pratika, mula_texts[mula_idx]):
+      to_insert[mula_idx] = block.strip()
+      ordered.popleft()
+      matched.append((pratika, mula_idx))
+      logging.info("interleave: mula %d <- pratika %r.", mula_idx, pratika[:60])
+  parts, prev = [], 0
+  for idx, m in enumerate(mula_matches):
+    s, e = m.span()
+    nxt_start = mula_matches[idx + 1].start() if idx + 1 < len(mula_matches) else len(dest_body)
+    between = dest_body[e:nxt_start]
+    parts.append(dest_body[prev:e])
+    if idx in to_insert:
+      parts.append(TIKA_FMT % to_insert[idx])
+      parts.append(between)
+      prev = nxt_start
+    else:
+      parts.append(between)
+      prev = nxt_start
+  new_body = "".join(parts)
+  unmatched = list(ordered)
+  if ordered:
+    remaining = "\n\n".join(b.strip() for b, _ in ordered)
+    new_body = new_body.rstrip() + "\n" + (TIKA_FMT % remaining) + "\n"
+    logging.info("interleave: appended %d remaining blocks under final mula.", len(ordered))
+  for _pr, _mi in matched:
+    logging.info("interleave matched: pratika %r -> mula %d.", _pr, _mi)
+  for _b, _pr in unmatched:
+    logging.info("interleave unmatched (leftover): pratika %r (block head: %r).", _pr, _b[:80])
   with open(dest_file, "w", encoding="utf-8") as f:
-    f.write(dest_head + combined_body)
-  logging.info("Inserted %d ṭīkās into %s (mūlas=%d).", n, dest_file, len(matches))
+    f.write(dest_head + new_body)
+  logging.info("Inserted %d ṭīkās into %s (mūlas=%d, leftovers=%d).",
+               len(to_insert), dest_file, len(mula_matches), len(unmatched))
+  return {"inserted": len(to_insert), "matched": matched,
+          "unmatched": [(b, pr) for b, pr in unmatched],
+          "pratikas": [pr for _, pr in list(to_insert.items())] if False else None}
 
 
-def _interleave_soup(dest_file, commentary_file):
-  """Soup path using details_helper (Detail/get_details/transform/insert/MdFile).
+def verify_sentence_order(dest_file, commentary_file, start_marker=DEFAULT_ORDER_MARKER):
+  """Verify tika sentence order strictly follows commentary order.
 
-  Same greedy assignment via :func:`_compute_assign`; detection/creation/
-  existing-check/Latin-fix/file-I/O via helpers. Spacing post-processed to
-  two empty lines (helpers default to one) to meet spec.
+  - Reads tika blocks in document order via details_helper.get_details
+    (regex fallback when helpers are unavailable) and splits them with the
+    shared splitter; reads commentary sentences the same way.
+  - Scope starts at ``start_marker`` (a commentary sentence; default covers
+    everything from Shrutyantara-paryalocana onward, skipping head-extra
+    intro material): only dest sentences mapped at/after the marker are
+    checked, in dest order.
+  - Mapping is verbatim normalized (_norm_for_match) with difflib fuzzy
+    fallback (>= 0.85, e.g. typo-fixed variants); shared _map_to_commentary.
+  - FAILS on order decreases (dest has B right after A with cpos(B) <= cpos(A),
+    e.g. cpos 321 followed by 314) and on missing sentences (commentary cpos
+    strictly inside the scope range with zero dest mappings anywhere, e.g.
+    cpos 320-321 absent between 319 and 322, or 322-326 absent between 321
+    and 327). Unmapped dest sentences and fuzzy mappings are reported (not
+    failures). Returns a report dict; logs human-readable appendix lines.
   """
-  from bs4 import NavigableString
-
-  dest_md = MdFile(file_path=dest_file)
-  metadata, dest_content = dest_md.read()
+  if _HAS_HELPERS:
+    from doc_curation.md.content_processor.details_helper import get_details as _get_details
+    from doc_curation.md.file import MdFile as _MdFile
+    dest_md = _MdFile(file_path=dest_file)
+    metadata, dest_content = dest_md.read()
+    tika_items = _get_details(dest_content, title="टीका", metadata=metadata)
+    tika_bodies = [det.content for _, det in tika_items]
+  else:
+    with open(dest_file, encoding="utf-8") as f:
+      dest_raw = f.read()
+    _, dest_content = _split_frontmatter(dest_raw)
+    tika_bodies = [
+      m.group(1) for m in
+      re.finditer(r"<details><summary>टीका</summary>(.*?)</details>", dest_content, flags=re.DOTALL)
+    ]
+  dest_sents, dest_norms = [], []
+  for body in tika_bodies:
+    for s in _split_commentary_sentences(body):
+      t = s.strip()
+      if not t:
+        continue
+      n = _norm_for_match(t)
+      if len(n) < 2:
+        continue
+      dest_sents.append(t)
+      dest_norms.append(n)
   with open(commentary_file, encoding="utf-8") as f:
     comm_raw = f.read()
-  # MdFile strips frontmatter already for dest; commentary may still have it if plain read.
-  comm_body = _split_frontmatter(comm_raw)[1] if comm_raw.lstrip().startswith("+++") else comm_raw
-  # get_details needs full content (with frontmatter? No, body only? MdFile content excludes frontmatter. Good.)
-  from doc_curation.md import content_processor as _cp
+  comm_body = _split_frontmatter(comm_raw)[1]
+  comm_sents = _split_commentary_sentences(comm_body)
+  comm_norms = [_norm_for_match(s) for s in comm_sents]
+  marker_cpos = None
+  marker_norm = _norm_for_match(start_marker)
+  for i, n in enumerate(comm_norms):
+    if n == marker_norm:
+      marker_cpos = i
+      break
+  if marker_cpos is None:
+    for i, n in enumerate(comm_norms):
+      if marker_norm and marker_norm in n:
+        marker_cpos = i
+        break
+  if marker_cpos is None:
+    logging.warning("verify: start marker not found; checking whole file.")
+    marker_cpos = 0
+  mapped = _map_to_commentary(dest_norms, comm_norms)
+  scope = [(k, c, dest_sents[k]) for k, (c, _fz) in enumerate(mapped) if c is not None and c >= marker_cpos]
+  violations, duplicates = [], []
+  for a_i in range(len(scope) - 1):
+    _ka, ca, ta = scope[a_i]
+    _kb, cb, tb = scope[a_i + 1]
+    if cb < ca:
+      exp = comm_sents[ca + 1] if ca + 1 < len(comm_sents) else ""
+      violations.append({
+        "seq": a_i, "prev_cpos": ca, "prev_tail": ta[-60:],
+        "curr_cpos": cb, "curr_head": tb[:80], "expected_cpos": ca + 1, "expected_head": exp[:80],
+      })
+    elif cb == ca:
+      duplicates.append({"seq": a_i, "cpos": ca, "head": tb[:80]})
+  covered = set(c for _, c, _ in scope)
+  covered.update(c for c, _fz in mapped if c is not None)
+  missing = []
+  if scope:
+    lo = min(c for _, c, _ in scope)
+    hi = max(c for _, c, _ in scope)
+    for c in range(lo + 1, hi):
+      if len(comm_norms[c]) < 2:
+        continue  # lone-danda splitter artifacts are not sentences
+      if c not in covered:
+        missing.append({"cpos": c, "head": comm_sents[c][:80] if c < len(comm_sents) else ""})
+  unmapped = [(k, dest_sents[k][:80]) for k, (c, _fz) in enumerate(mapped) if c is None]
+  fuzzy_n = sum(1 for _c, fz in mapped if fz)
+  ok = not violations and not missing
+  logging.info("verify_sentence_order: %s (%d tikas, %d sents, %d checked from cpos %d; violations=%d duplicates=%d missing=%d unmapped=%d fuzzy=%d)",
+               "OK" if ok else "FAILED", len(tika_bodies), len(dest_sents), len(scope),
+               marker_cpos, len(violations), len(duplicates), len(missing), len(unmapped), fuzzy_n)
+  for v in violations:
+    logging.info("  order violation: after cpos %d %r dest has cpos %d %r; commentary has cpos %d %r",
+                 v["prev_cpos"], v["prev_tail"], v["curr_cpos"], v["curr_head"],
+                 v["expected_cpos"], v["expected_head"])
+  for m in missing:
+    logging.info("  missing: commentary cpos %d %r absent from all tikas", m["cpos"], m["head"])
+  for d in duplicates[:5]:
+    logging.info("  duplicate (info): cpos %d repeated in dest order: %r", d["cpos"], d["head"])
+  return {"ok": ok, "marker_cpos": marker_cpos, "n_tikas": len(tika_bodies),
+          "n_sents": len(dest_sents), "n_checked": len(scope),
+          "violations": violations, "missing": missing, "duplicates": duplicates,
+          "unmapped_count": len(unmapped), "unmapped_samples": unmapped[:5],
+          "fuzzy_mapped": fuzzy_n}
 
-  soup = _cp._soup_from_content(content=dest_content, metadata=metadata)
-  if soup is None:
-    raise ValueError("soup parse failed")
-  details = get_details(dest_content, title="मूलम्", metadata=metadata)
-  # Ignore संयुक्तम् for insertion (step 1); keep order.
-  mula_items = [(tag, det) for tag, det in details if "संयुक्तम्" not in (det.title or "")]
-  if not mula_items:
-    logging.warning("No mūlam blocks in %s", dest_file)
-    return
-  matches_texts = [det.content for _, det in mula_items]
-  sents = _split_commentary_sentences(comm_body)
-  if not sents:
-    logging.warning("No commentary sentences in %s", commentary_file)
-    return
-  assign = _compute_assign(matches_texts, sents)
-  # Existing-tika check via immediate next sibling details (uses helper).
-  to_insert = {}
-  for mula_idx, (tag, det) in enumerate(mula_items):
-    nxt = get_nieghbor_detail(tag, seek_before=False)
-    if nxt is not None:
-      from doc_curation.md.content_processor.details_helper import Detail as _D
 
-      nd = _D.from_soup_tag(nxt)
-      if nd is not None and (nd.title or "").strip() == "टीका":
-        continue
-    if mula_idx not in assign or not assign[mula_idx]:
-      continue
-    txt = " ".join(sents[i].strip() for i in sorted(assign[mula_idx]))
-    # _fix_stray_latin via string (transform pass later covers soup text nodes too).
-    from doc_curation.md.content_processor.details_helper import Detail as _D2
+def remove_commentary_blocks(dest_file, start_string):
+  """Remove tika blocks from the one containing start_string to end of file.
 
-    _ = _D2  # keep import used (Detail creation below uses module-global Detail).
-    txt = _fix_stray_latin(txt)
-    if txt.strip():
-      to_insert[mula_idx] = txt
-  if not to_insert:
-    logging.info("Nothing to insert for %s", dest_file)
-    return
-  # Per-mūla different insertion via Detail.to_soup (helper) + "\n\n\n" spacers.
-  # Spec needs two empty lines (helpers default to one); custom "\n\n\n" here
-  # meets spec for new blocks while existing blocks (one empty line) stay untouched.
-  for mula_idx, (tag, det) in enumerate(mula_items):
-    if mula_idx not in to_insert:
-      continue
-    tika_html = _make_tika_html(to_insert[mula_idx])
-    from bs4 import BeautifulSoup as _BS
-    from bs4 import NavigableString as _NS
+  - Locates the FIRST ``<details><summary>टीका</summary>`` block (document
+    order) whose normalized content contains the normalized ``start_string``
+    (verbatim _norm_for_match containment).
+  - Deletes that block and every LATER tika block. Mula blocks and other
+    detail types (Translation etc.) are kept intact. Leftover blank spacers
+    collapse; tags/spacing/svara elsewhere preserved byte-identically.
+  - Returns a report dict; logs removed counts + affected mula range.
+  """
+  with open(dest_file, encoding="utf-8") as f:
+    dest_raw = f.read()
+  dest_head, dest_body = _split_frontmatter(dest_raw)
+  tika_pat = re.compile(r"<details><summary>टीका</summary>(.*?)</details>", re.DOTALL)
+  matches = list(tika_pat.finditer(dest_body))
+  if not matches:
+    logging.info("remove_commentary_blocks: no tika blocks in %s; nothing to do.", dest_file)
+    return {"ok": True, "changed": False, "removed": 0}
+  marker = _norm_for_match(start_string)
+  cut = None
+  for idx, m in enumerate(matches):
+    if marker and marker in _norm_for_match(m.group(1)):
+      cut = idx
+      break
+  if cut is None:
+    logging.warning("remove_commentary_blocks: start string not found in any tika: %r",
+                    start_string[:60])
+    return {"ok": False, "changed": False, "removed": 0}
+  # Mula owner of first removed tika (appendix; parsing only).
+  _mt, _entries, _sp = _attribute_tikas(dest_body)
+  _from_mula, _last_mula = None, None
+  if len(_entries) == len(matches):
+    _owner_by_span = {e["span"]: e["mula_j"] for e in _entries}
+    _first = matches[cut]
+    _from_mula = _owner_by_span.get((_first.start(), _first.end()))
+    _owned = [e["mula_j"] for e in _entries if e["mula_j"] is not None]
+    _last_mula = max(_owned) if _owned else None
+  else:
+    logging.warning("remove_commentary_blocks: parse counts differ; mula range unknown.")
+  new_body = dest_body
+  for m in reversed(matches[cut:]):
+    s, e = m.span()
+    ps = s
+    if new_body[max(0, s - 3):s] == "\n\n\n":
+      ps = s - 3
+    elif new_body[max(0, s - 2):s] == "\n\n":
+      ps = s - 2
+    new_body = new_body[:ps] + new_body[e:]
+  with open(dest_file, "w", encoding="utf-8") as f:
+    f.write(dest_head + new_body)
+  left = len(tika_pat.findall(new_body))
+  logging.info("remove_commentary_blocks: removed %d tika blocks (%d left) from mula %s to %s in %s (start: %r).",
+               len(matches) - cut, left, _from_mula, _last_mula, dest_file, start_string[:60])
+  return {"ok": True, "changed": True, "removed": len(matches) - cut, "left": left,
+          "from_tika_index": cut, "from_mula": _from_mula, "to_mula": _last_mula}
 
-    neighbor_tag = _BS(tika_html, "html.parser").select_one("details")
-    # insert_after puts newest immediately after tag; reverse to get tag, spacer, neighbor.
-    tag.insert_after(neighbor_tag)
-    tag.insert_after(_NS("\n\n\n"))
-  new_content = _cp._make_content_from_soup(soup=soup)
-  new_content = _fix_latin_via_helper(new_content)
-  dest_md.replace_content_metadata(new_content=new_content)
-  logging.info("Inserted %d ṭīkās into %s (mūlas=%d).", len(to_insert), dest_file, len(mula_items))
+
+def realign_TIkA_below_mUla(dest_file, start_string, commentary_file=None):
+  """Realign misplaced tikas by reinserting them in pratika order.
+
+  - Extracts existing tika-block bodies from ``dest_file``, starting at the
+    first tika containing ``start_string``, into a temp file (details blocks,
+    commentary order preserved).
+  - Strips those blocks from ``dest_file`` via :func:`remove_commentary_blocks`.
+  - Reinserts via :func:`interleave_TIkA_below_mUla` using ``commentary_file``
+    when given (and existing), else the temp file holding the extracted blocks.
+  """
+  import os
+  import tempfile
+  with open(dest_file, encoding="utf-8") as f:
+    dest_raw = f.read()
+  _, dest_body = _split_frontmatter(dest_raw)
+  tika_pat = re.compile(TIKA_RE, re.DOTALL)
+  matches = list(tika_pat.finditer(dest_body))
+  if not matches:
+    logging.info("realign: no tika blocks in %s; nothing to do.", dest_file)
+    return {"ok": True, "changed": False, "removed": 0}
+  marker = _norm_for_match(start_string)
+  cut = None
+  for idx, m in enumerate(matches):
+    if marker and marker in _norm_for_match(m.group(1)):
+      cut = idx
+      break
+  if cut is None:
+    logging.warning("realign: start string not found in any tika: %r", start_string[:60])
+    return {"ok": False, "changed": False, "removed": 0}
+  extracted = [m.group(1).strip() for m in matches[cut:] if m.group(1).strip()]
+  tmpdir = "/tmp/opencode"
+  try:
+    os.makedirs(tmpdir, exist_ok=True)
+  except OSError:
+    tmpdir = tempfile.gettempdir()
+  fd, temp_path = tempfile.mkstemp(prefix="tika_collated_", suffix=".md", dir=tmpdir, text=True)
+  with os.fdopen(fd, "w", encoding="utf-8") as f:
+    for body in extracted:
+      f.write("<details><summary>टीका</summary>\n\n%s\n</details>\n\n" % body)
+  logging.info("realign: extracted %d tika blocks to %s.", len(extracted), temp_path)
+  remove_commentary_blocks(dest_file, start_string)
+  if commentary_file is not None and os.path.exists(commentary_file):
+    source = commentary_file
+  else:
+    source = temp_path
+  logging.info("realign: reinserting into %s from %s.", dest_file, source)
+  interleave_TIkA_below_mUla(dest_file, source)
+  try:
+    os.remove(temp_path)
+  except OSError:
+    pass
+  return {"ok": True, "changed": True, "removed": len(extracted), "source": source}
+
+
+if __name__ == '__main__':
+  pass
+  remove_commentary_blocks(dest_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/06_AnandamayAdhikaraNam.md", start_string="उपरितनवाक्यापर्यालोचनां दर्शयति")
+  interleave_TIkA_below_mUla(dest_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/06_AnandamayAdhikaraNam.md", commentary_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shruta-prakAshikA/mUlam_rA/1/1/06_AnandamayAdhikaraNam.md")
+  verify_sentence_order(dest_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/06_AnandamayAdhikaraNam.md", commentary_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shruta-prakAshikA/mUlam_rA/1/1/06_AnandamayAdhikaraNam.md", start_marker="उपरितनवाक्यापर्यालोचनां दर्शयति")
+  # realign_TIkA_below_mUla(dest_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/06_AnandamayAdhikaraNam.md") 
