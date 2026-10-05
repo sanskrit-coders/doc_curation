@@ -35,6 +35,26 @@ ITI_MARKER_RE = r"([िइेी])त(ि|्य)"
 # ेत्यादिना, ेत्यनेन): accepted; any other Devanagari continuation (e.g. the
 # visarga in स्थितिः) means the hit is mid-word, not a marker.
 _ITI_CONTINUATIONS = ("ुक्तम्", "ुक्त", "ादिना", "ादि", "नेन", "ेव", "ेतत्")
+# Quotative-frame verbs: a pratika begins AFTER these (e.g. दर्शयितुं
+# सकलेतरप्रमाणविषया इत्युक्तम् quotes सकलेतरप्रमाणविषया, not दर्शयितुं).
+# Etc.: extend freely; the full run is still emitted as fallback, so an
+# over-eager stop only costs a variant, never recall.
+_META_VERBS = frozenset([
+  "आह", "दर्शयति", "दर्शयितुं", "दर्शयते",
+  "परिहरति", "परिहरते", "आक्षिपति",
+  "उपपादयति", "व्याचष्टे", "विवृणोति", "अनुवदति", "प्रतिवक्ति",
+  "दूषयति", "निरस्यति", "उपन्यस्यति", "प्रतिपादयति", "विशदयति",
+  "सङ्गमयति", "अवतारयति", "समर्थयति", "खण्डयति",
+  "ब्रवीति", "वदति", "कथयति", "पठति", "उद्धरति", "निर्दिशति",
+])
+# fused "...X + आह" frames: deictic/interrogative + āha ("says here...").
+# Abutting the marker, the stem IS the pratika (अत्राहेति -> अत्र);
+# mid-run, the frame word ends the pratika's left context (stop, exclude).
+_AAHA_FUSED = {
+  "अत्राह": "अत्र", "तत्राह": "तत्र", "यत्राह": "यत्र", "कुत्राह": "कुत्र",
+  "अन्यत्राह": "अन्यत्र", "सर्वत्राह": "सर्वत्र", "एकत्राह": "एकत्र",
+  "किमाह": "किम्", "कथमाह": "कथम्",
+}
 
 
 def _split_frontmatter(text):
@@ -44,16 +64,42 @@ def _split_frontmatter(text):
   return "", text
 
 
-def _norm_for_match(s):
-  # Anunāsika normalization for sandhi-tolerant matching (e.g. pratika
-  # त्वंपदञ्च vs mūla त्वं पदं च): homorganic nasal codas (ङ् ञ् ण् न् म्) and
-  # candrabindu all become ं. Spaces are ignored throughout. Bare nasals
-  # carrying vowels (न, मा, …) are untouched.
+_SEP_RE = re.compile(r"[\s\-\u2013\u2014\(\)।॥,;:\.\"]")
+
+# A pratika matching more mulas than this cannot locate one (unless long).
+_MAX_MULA_HITS = 5
+_LONG_PRATIKA_LEN = 8
+
+
+def _norm_parts(s):
+  """(normalized, word-start offsets) for sandhi-tolerant matching.
+
+  Normalization output is identical to :func:`_norm_for_match` (anunāsikas
+  to ं, spaces/punctuation stripped); offsets mark mula-word starts in
+  normalized space, so pratikas must match at a word start and never mid-word
+  (e.g. विशेष must not match inside निर्विशेष).
+  """
   s = re.sub(r"[ङञणनम]्", "ं", s)
   s = s.replace("ँ", "ं")
-  t = re.sub(r"\[\[([^|\]]+)\|([^]]+)\]\]", r"\1 \2", s)
-  t = re.sub(r"[\[\]]", "", t)
-  return re.sub(r"[\s\-\u2013\u2014\(\)।॥,;:\.\"]", "", t)
+  s = re.sub(r"\[\[([^|\]]+)\|([^]]+)\]\]", r"\1 \2", s)
+  out = []
+  starts = set()
+  at_start = True
+  for ch in s:
+    if ch == "[" or ch == "]":
+      continue
+    if _SEP_RE.match(ch):
+      at_start = True
+      continue
+    if at_start:
+      starts.add(len(out))
+      at_start = False
+    out.append(ch)
+  return "".join(out), frozenset(starts)
+
+
+def _norm_for_match(s):
+  return _norm_parts(s)[0]
 
 
 def _split_commentary_sentences(commentary_body):
@@ -143,13 +189,17 @@ def _short_mula(mula_text, limit=80):
 
 
 def _marker_candidates(b, m, max_words=3):
-  """Pratika candidates for one iti-marker match: ``[single]`` or ``[single, run]``.
+  """Pratika candidates for one iti-marker match, in order: single word,
+  post-frame run, full run.
 
   ``b`` is the searched text, ``m`` an :data:`ITI_MARKER_RE` match. Returns
   None when the hit is unusable (a mid-word continuation like स्थितिः, or no
-  preceding words). ``single`` is the bare last word (the fused stem); when
-  the run holds more words the full run follows, so single-word pratikas
-  match even inside longer runs.
+  preceding words). Emitted variants are the bare last word (the fused stem),
+  the run after the nearest quotative frame, and the full run. Frames ending
+  the run early are dash/danda stops, standalone :data:`_META_VERBS`
+  (pratika begins after दर्शयति/परिहरति/आह…), and fused “…X + आह” words
+  (pratika begins after them); an abutting deictic “…Xत्राह” contributes its
+  stem instead (अत्राहेति -> अत्र).
   """
   after = b[m.end():]
   if after and re.match(r"[ऀ-ॿ]", after[0]) and not after.startswith(_ITI_CONTINUATIONS):
@@ -158,9 +208,23 @@ def _marker_candidates(b, m, max_words=3):
   words = [w for w in re.findall(r"[ऀ-ॿ]+", seg) if re.search(r"[अ-ह]", w)]
   if not words:
     return None
-  run = words[-max_words:]
+  words = list(words)
+  if not b[m.start() - 1].isspace() and words[-1] in _AAHA_FUSED:
+    words[-1] = _AAHA_FUSED[words[-1]]
+
+  def _is_frame(w):
+    return (w in _META_VERBS or w in _AAHA_FUSED
+            or (w.endswith("माह") and len(w) > 3))
+
+  cut = 0
+  for k in range(len(words) - 1):
+    if _is_frame(words[k]):
+      cut = k + 1
+  postmeta = words[cut:][-max_words:]
+  full = words[-max_words:]
   cands = []
-  for p in (run[-1], " ".join(run) if len(run) > 1 else None):
+  for p in (words[-1], " ".join(postmeta) if len(postmeta) > 1 else None,
+            " ".join(full) if len(full) > 1 else None):
     if p is None:
       continue
     p = _clean_base(p)
@@ -287,23 +351,184 @@ def _build_TIkA_pratika_map(blocks):
   return ordered
 
 
-def _longest_match_sequence(blocks_pratikas, mula_texts, start_idx):
-  """Longest increasing (block, mula) match sequence, earliest placements.
+def _segmented_total(cand, fixed, n_blocks, n_mulas, start_idx):
+  """Longest total with ``fixed`` ({block_idx: mula_idx}) forced.
 
-  ``blocks_pratikas[i]`` is the pratika list of block ``i``; block ``i`` may
-  sit under mula ``j`` (>= ``start_idx``) if any pratika matches (same rule
-  as :func:`_pratika_in_mula`). Returns ``[(block_idx, mula_idx)]`` with both
-  strictly increasing and of maximum possible length; among all longest
-  sequences (different choices of which tika blocks to leave unmatched) the
-  lexicographically smallest placement is applied, i.e. each placed block
-  sits under its earliest mula compatible with still reaching that length.
+  Fixed anchors pin disjoint ranges; each segment between them is optimized
+  independently, so the sum (+ anchors) is the longest count honoring them.
+  """
+  anchors = [(bi, mj) for bi, mj in sorted(fixed.items())]
+  bounds = [(-1, start_idx - 1)] + anchors + [(n_blocks, n_mulas)]
+  total = len(fixed)
+  for (bi0, m0), (bi1, m1) in zip(bounds, bounds[1:]):
+    seg = list(range(bi0 + 1, bi1))
+    if not seg:
+      continue
+    sub = [[j for j in cand[i] if m0 < j < m1] for i in seg]
+    total += len(_longest_match_sequence(sub))
+  return total
+
+
+def _compat_fixed(cand_fixed, cand, n_blocks, n_mulas, start_idx):
+  """Fixed placements kept only when compatible with the longest count.
+
+  Greedily keeps anchors in commentary order: an anchor stays iff forcing it
+  (with anchors kept so far) still reaches the unconstrained longest total.
+  Incompatible anchors rejoin the normal pool (attach/place by DP) instead of
+  costing placements.
+  """
+  free_total = _segmented_total(cand, {}, n_blocks, n_mulas, start_idx)
+  kept = {}
+  for bi in sorted(cand_fixed):
+    trial = dict(kept)
+    trial[bi] = cand_fixed[bi]
+    if _segmented_total(cand, trial, n_blocks, n_mulas, start_idx) == free_total:
+      kept = trial
+    else:
+      logging.info("interleave: fixed block %d -> mula %d dropped (costs count).",
+                   bi, cand_fixed[bi])
+  if len(kept) < len(cand_fixed):
+    logging.info("interleave: kept %d of %d fixed anchors at longest total %d.",
+                 len(kept), len(cand_fixed), free_total)
+  return kept
+
+
+def _exact_pairs(all_pratikas, norm_prats, norm_mulas, start_idx):
+  """All (block_idx, mula_idx) unique-exact pairs, in block order, plus hits.
+
+  A pair qualifies when some pratika of the block occurs EXACTLY (full
+  length, word start) in exactly one mula in range: such a pratika
+  unambiguously locates its mula, whatever its length. A block may contribute
+  several pairs; conflicting ones are resolved downstream, never reordered.
+  Returns ``(pairs, hit_of)`` with ``hit_of[(bi, mj)]`` the raw pratika.
+  """
+  m = len(norm_mulas)
+  sole = {}
+  for nprs in norm_prats:
+    for npr in nprs:
+      if npr not in sole:
+        hits = [j for j in range(start_idx, m)
+                if any(norm_mulas[j][0].startswith(npr, o) for o in norm_mulas[j][1])]
+        sole[npr] = hits[0] if len(hits) == 1 else None
+  pairs = []
+  hit_of = {}
+  for bi, (plist, nprs) in enumerate(zip(all_pratikas, norm_prats)):
+    seen_m = set()
+    for p, npr in zip(plist, nprs):
+      mj = sole[npr]
+      if mj is not None and mj not in seen_m:
+        seen_m.add(mj)
+        pairs.append((bi, mj))
+        hit_of.setdefault((bi, mj), p)
+  return pairs, hit_of
+
+
+def _lis_select(pairs):
+  """Longest strictly-increasing subsequence of block-ordered pairs.
+
+  ``pairs`` ascending by block idx. Returns the chosen ``[(bi, mj)]``; ties
+  prefer smallest end-mula (leaves most room downstream), then smallest
+  end-block. Deterministic.
+  """
+  n = len(pairs)
+  if not pairs:
+    return []
+  dp = [1] * n
+  par = [-1] * n
+  for i in range(n):
+    bi, mi = pairs[i]
+    for k in range(i):
+      bk, mk = pairs[k]
+      if bk < bi and mk < mi and dp[k] + 1 > dp[i]:
+        dp[i] = dp[k] + 1
+        par[i] = k
+  best = max(dp)
+  end = min([i for i in range(n) if dp[i] == best],
+            key=lambda i: (pairs[i][1], pairs[i][0]))
+  out = []
+  while end != -1:
+    out.append(pairs[end])
+    end = par[end]
+  return out[::-1]
+
+
+def _select_anchors(all_pratikas, norm_prats, norm_mulas, cand, n_blocks, n_mulas,
+                    start_idx):
+  """Fixed anchors ``{block_idx: (mula_idx, raw_hit)}``, longest-compatible.
+
+  Unique-exact pairs (:func:`_exact_pairs`) feed a longest increasing subset
+  (:func:`_lis_select`, smallest-end-mula ties, so e.g. ``473@254`` beats
+  ``447@265``); survivors keeping the longest count stay fixed
+  (:func:`_compat_fixed`), and dropped pairs must not suppress alternatives,
+  so selection repeats without them until stable (excluded set grows
+  monotonically: terminates).
+  """
+  pairs, hit_of = _exact_pairs(all_pratikas, norm_prats, norm_mulas, start_idx)
+  excl = set()
+  kept = {}
+  for _round in range(25):
+    pool = [p for p in pairs if p not in excl]
+    sel = _lis_select(pool)
+    trial = _compat_fixed({bi: mj for bi, mj in sel}, cand, n_blocks, n_mulas,
+                          start_idx)
+    dropped = [(bi, mj) for (bi, mj) in sel if bi not in trial]
+    kept = {bi: (mj, hit_of[(bi, mj)]) for bi, mj in trial.items()}
+    if not dropped:
+      break
+    excl.update(dropped)
+    logging.info("interleave: re-selecting anchors without %d costly pairs.", len(dropped))
+  else:
+    logging.warning("interleave: anchor fixpoint did not converge; using last kept set.")
+  return kept
+
+
+def _match_candidates(blocks_pratikas, mula_texts, start_idx):
+  """Candidate mula lists per block under anchored, gated matching.
+
+  A block may sit under mula ``j`` (>= ``start_idx``) if any of its pratikas
+  matches there by :func:`_pratika_in_norm_mula`, except pratikas matching
+  more than :data:`_MAX_MULA_HITS` mulas (too promiscuous to locate one,
+  unless at least :data:`_LONG_PRATIKA_LEN` chars long). Returns
+  ``(cand, usable, norm_prats, norm_mulas)``: ``cand[i]`` is the sorted mula
+  list for block ``i``; ``usable`` maps normalized pratika to its gate
+  verdict; the ``norm_*`` parallels feed hit logging without recomputation.
+  """
+  norm_mulas = [_norm_parts(t) for t in mula_texts]
+  norm_prats = [[_norm_for_match(p) for p in plist] for plist in blocks_pratikas]
+  m = len(mula_texts)
+  occ = {}
+  for nprs in norm_prats:
+    for npr in nprs:
+      if npr not in occ:
+        occ[npr] = sum(1 for j in range(start_idx, m)
+                       if _pratika_in_norm_mula(npr, *norm_mulas[j]))
+  usable = {npr: (c <= _MAX_MULA_HITS or len(npr) >= _LONG_PRATIKA_LEN)
+            for npr, c in occ.items()}
+  gated = sorted(npr for npr, ok in usable.items() if not ok)
+  if gated:
+    logging.info("interleave: %d promiscuous pratikas gated out (e.g. %r).",
+                 len(gated), gated[:8])
+  cand = []
+  for nprs in norm_prats:
+    js = []
+    for j in range(start_idx, m):
+      nm, starts = norm_mulas[j]
+      if any(usable[npr] and _pratika_in_norm_mula(npr, nm, starts) for npr in nprs):
+        js.append(j)
+    cand.append(js)
+  return cand, usable, norm_prats, norm_mulas
+
+
+def _longest_match_sequence(cand):
+  """Longest increasing (block, mula) index sequence, earliest placements.
+
+  ``cand[i]`` is the sorted candidate mula list for block ``i``. Returns
+  ``[(block_idx, mula_idx)]`` with both strictly increasing and of maximum
+  possible length; among all longest sequences the lexicographically smallest
+  placement is applied.
   """
   from functools import lru_cache
-  n, m = len(blocks_pratikas), len(mula_texts)
-  cand = []
-  for pratikas in blocks_pratikas:
-    cand.append([j for j in range(start_idx, m)
-                 if any(_pratika_in_mula(pr, mula_texts[j]) for pr in pratikas)])
+  n = len(cand)
 
   @lru_cache(maxsize=None)
   def suf(i, lo):
@@ -319,8 +544,8 @@ def _longest_match_sequence(blocks_pratikas, mula_texts, start_idx):
         best = v
     return best
 
-  need = suf(0, start_idx)
-  seq, lo = [], start_idx
+  need = suf(0, -1)
+  seq, lo = [], -1
   for i in range(n):
     for j in cand[i]:
       if j < lo:
@@ -332,23 +557,110 @@ def _longest_match_sequence(blocks_pratikas, mula_texts, start_idx):
   return seq
 
 
-def _pratika_in_mula(pratika, mula_text, prefix_len=5):
-  """Sandhi-tolerant existence check: normalized containment.
+# Coverage: fraction of a (long) pratika that must match at a mula word start.
+_COVERAGE_NUM = 4
+_COVERAGE_DEN = 5
+_COVERAGE_CAP = 12
+# Edit path (longer pratikas only): prefix of at least max(_EDIT_MIN_LEN,
+# len - _EDIT_TAIL_PAD) chars must align within _EDIT_CUTOFF (typos and
+# adjacent transpositions mid-string, which cost 1 under OSA; tails stay
+# free).
+_EDIT_MIN_LEN = 10
+_EDIT_TAIL_PAD = 6
+_EDIT_CUTOFF = 3
 
-  Normalization (see :func:`_norm_for_match`) ignores spaces and unifies
-  anunāsikas to ं, so e.g. pratika त्वंपदञ्च matches mūla त्वं पदं च exactly.
-  Otherwise the first ``prefix_len`` normalized chars must occur in the mula
-  (other suffix sandhi often differs while the stem matches).
+
+def _anchored_edit_distance(npr, nm, o, max_dist, i_min=0):
+  """Min edit distance over pratika prefixes, anchored at mula offset ``o``.
+
+  Aligns ``npr`` starting exactly at ``o`` (no skipping on either side up
+  front); the end is free on both sides, but only prefixes of length at least
+  ``i_min`` count. Adjacent transpositions cost 1 (OSA). Banded to
+  ``max_dist`` with early exit; returns a value > ``max_dist`` when the
+  cutoff is exceeded.
   """
-  npr = _norm_for_match(pratika)
-  nm = _norm_for_match(mula_text)
+  m = len(npr)
+  if i_min > m:
+    return max_dist + 1
+  n = min(len(nm) - o, m + max_dist)
+  if n < 0:
+    return max_dist + 1
+  INF = max_dist + 1
+  best = INF
+  prevprev = [INF] * (n + 1)
+  prev = [INF] * (n + 1)
+  prev[0] = 0
+  for i in range(1, m + 1):
+    cur = [INF] * (n + 1)
+    lo = max(1, i - max_dist)
+    hi = min(n, i + max_dist)
+    ch = npr[i - 1]
+    rowmin = INF
+    for j in range(lo, hi + 1):
+      cost = 0 if ch == nm[o + j - 1] else 1
+      v = prev[j] + 1
+      ins = cur[j - 1] + 1
+      if ins < v:
+        v = ins
+      sub = prev[j - 1] + cost
+      if sub < v:
+        v = sub
+      if (i > 1 and j > 1 and ch == nm[o + j - 2]
+          and npr[i - 2] == nm[o + j - 1]):
+        tr = prevprev[j - 2] + 1
+        if tr < v:
+          v = tr
+      cur[j] = v
+      if v < rowmin:
+        rowmin = v
+    if i >= i_min and rowmin < best:
+      best = rowmin
+    if rowmin > max_dist:
+      return INF if best > max_dist else best
+    prevprev, prev = prev, cur
+  return best
+
+
+def _pratika_in_norm_mula(npr, nm, starts):
+  """Anchored match on pre-normalized strings: coverage or bounded edit.
+
+  Most pratika characters must match (barring whitespace, punctuation and
+  anunāsika normalization, all already stripped): short pratikas (< 5 chars)
+  must match fully, longer ones need ``_COVERAGE_NUM/_COVERAGE_DEN`` of their
+  characters, capped at ``_COVERAGE_CAP``. Longer pratikas (≥
+  ``_EDIT_MIN_LEN``) additionally match on bounded edit distance (typos and
+  adjacent transpositions mid-string, e.g. commentary भेदव्यपेदशाच्च vs sūtra
+  भेदव्यपदेशाच्च). Every hit must begin at a mula word start from ``starts``.
+  """
   if len(npr) < 2 or len(nm) < 2:
     return False
-  if npr in nm:
-    return True
-  if len(npr) > prefix_len and npr[:prefix_len] in nm:
-    return True
+  if len(npr) < 5:
+    need = len(npr)
+  else:
+    need = min(((_COVERAGE_NUM * len(npr)) + (_COVERAGE_DEN - 1)) // _COVERAGE_DEN,
+               _COVERAGE_CAP)
+  needle = npr[:need]
+  for o in starts:
+    if nm.startswith(needle, o):
+      return True
+  if len(npr) >= _EDIT_MIN_LEN:
+    i_min = max(_EDIT_MIN_LEN, len(npr) - _EDIT_TAIL_PAD)
+    for o in starts:
+      if _anchored_edit_distance(npr, nm, o, _EDIT_CUTOFF, i_min) <= _EDIT_CUTOFF:
+        return True
   return False
+
+
+def _pratika_in_mula(pratika, mula_text):
+  """Sandhi-tolerant existence check: anchored coverage on raw strings.
+
+  Same rule as :func:`_pratika_in_norm_mula` (finds e.g. त्वंपदञ्च in त्वं पदं
+  च). Corpus-frequency gating (promiscuous pratikas cannot locate a mula)
+  lives in :func:`_match_candidates`, which sees all mulas at once.
+  """
+  npr = _norm_for_match(pratika)
+  nm, starts = _norm_parts(mula_text)
+  return _pratika_in_norm_mula(npr, nm, starts)
 
 
 def _get_ordered_tika_blocks(commentary_file):
@@ -393,17 +705,21 @@ def interleave_TIkA_below_mUla(dest_file, commentary_file):
     commentary order.
   - Finds the last existing tika block in ``dest_file``; only mulas after it
     are considered (earlier gaps are left untouched).
-  - Places a longest increasing (block, mula) match sequence
+  - High-confidence pratika matches are fixed first (:func:`_select_anchors`):
+    unique-exact pairs feed a longest increasing subset, kept only when the
+    longest count survives (:func:`_compat_fixed`, re-selected without costly
+    pairs until stable); incompatible ones rejoin the pool. The longest
+    increasing sequence is then computed per segment between fixed anchors
     (:func:`_longest_match_sequence`): each placed block sits under a mula
-    where any of its pratikas (:func:`_pratika_in_mula`) holds, mulas increase
-    with commentary order, and no longer placeable subset exists. An unmatched
-    block is consumed, not stalling later blocks: if a previous block already
-    matched, it is appended to that previous matched block's tika; leading
-    unmatched blocks (before any match) are prepended to the first matched
-    block's tika.
-  - The placed subset is a longest increasing (block, mula) match sequence
-    (:func:`_longest_match_sequence`): over all ways of choosing which tika
-    blocks to leave unmatched, the one placing the most blocks is applied.
+    where any of its pratikas holds (anchored word-start coverage per
+    :func:`_pratika_in_norm_mula` — most pratika characters must match,
+    barring normalized spaces/punctuation/anunāsikas; longer pratikas also get
+    a bounded edit path; promiscuous pratikas gated out per
+    :func:`_match_candidates`), mulas increase with commentary order, and no
+    longer placeable subset exists within any segment. An unmatched block is
+    consumed, not stalling later blocks: if a previous block already matched,
+    it is appended to that previous matched block's tika; leading unmatched
+    blocks (before any match) are prepended to the first matched block's tika.
   - If nothing ever matches, all blocks go into a single tika under the final
     mula (at EOF, so sentence order is preserved).
   """
@@ -435,9 +751,27 @@ def interleave_TIkA_below_mUla(dest_file, commentary_file):
   logging.info("interleave: %d tika blocks, %d mulas, starting at mula %d (last tika at %s).",
                len(ordered), len(mula_matches), start_idx, last_tika_mula)
   all_pratikas = [pratikas for _, pratikas in ordered]
-  seq = _longest_match_sequence(all_pratikas, mula_texts, start_idx)
-  logging.info("interleave longest sequence: %d of %d blocks placed.", len(seq), len(ordered))
-  placed = {bi: mj for bi, mj in seq}
+  cand, usable, norm_prats, norm_mulas = _match_candidates(all_pratikas, mula_texts, start_idx)
+  n_blocks, n_mulas = len(ordered), len(mula_matches)
+  fixed = _select_anchors(all_pratikas, norm_prats, norm_mulas, cand,
+                          n_blocks, n_mulas, start_idx)
+  # Longest sequence per segment between fixed anchors (fixed endpoints pin
+  # the ranges, so segments are independent).
+  anchors = [(bi, mj) for bi, (mj, _) in sorted(fixed.items())]
+  bounds = [(-1, start_idx - 1)] + anchors + [(n_blocks, n_mulas)]
+  placed, hit_for = {}, {}
+  for bi, (mj, hit) in fixed.items():
+    placed[bi] = mj
+    hit_for[bi] = hit
+  for (bi0, m0), (bi1, m1) in zip(bounds, bounds[1:]):
+    seg = list(range(bi0 + 1, bi1))
+    if not seg:
+      continue
+    sub = [[j for j in cand[i] if m0 < j < m1] for i in seg]
+    for li, mj in _longest_match_sequence(sub):
+      placed[seg[li]] = mj
+  logging.info("interleave: %d fixed + longest sequence: %d of %d blocks placed.",
+               len(fixed), len(placed), len(ordered))
   to_insert = {}  # mula_idx -> list of block texts, in commentary order.
   matched = []  # (hit pratika, mula_idx).
   attached = []  # (block pratikas, mula_idx) appended to a previous matched tika.
@@ -446,7 +780,13 @@ def interleave_TIkA_below_mUla(dest_file, commentary_file):
   for bi, (block, pratikas) in enumerate(ordered):
     if bi in placed:
       mj = placed[bi]
-      hit = next((p for p in pratikas if _pratika_in_mula(p, mula_texts[mj])), None)
+      hit = hit_for.get(bi)
+      if hit is None:
+        nm, starts = norm_mulas[mj]
+        for p, npr in zip(pratikas, norm_prats[bi]):
+          if usable[npr] and _pratika_in_norm_mula(npr, nm, starts):
+            hit = p
+            break
       texts = [b for b, _ in pending_leading] + [block]
       if pending_leading:
         logging.info("interleave: prepending %d leading unmatched blocks to mula %r.",
