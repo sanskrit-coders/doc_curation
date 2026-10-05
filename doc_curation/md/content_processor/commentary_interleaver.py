@@ -31,10 +31,14 @@ TIKA_FMT = "\n\n<details><summary>टीका</summary>\n\n%s\n</details>"
 # Pratika cue: the iti-marker itself (iti/ity forms). A potential pratika is
 # the run of Devanagari words immediately preceding each marker.
 ITI_MARKER_RE = r"([िइेी])त(ि|्य)"
-# Long quotative continuations fused after the marker (e.g. इत्युक्तम्,
-# ेत्यादिना, ेत्यनेन): accepted; any other Devanagari continuation (e.g. the
-# visarga in स्थितिः) means the hit is mid-word, not a marker.
-_ITI_CONTINUATIONS = ("ुक्तम्", "ुक्त", "ादिना", "ादि", "नेन", "ेव", "ेतत्")
+# Long quotative continuations fused after the marker: इत्युक्तम्/ेत्यादिना/
+# ेत्यनेन forms, plus इत्यत्र ("where X [is said]"), इत्याह ("says X") and
+# इत्यर्थः ("X means…") — the preceding word is the pratika in each case.
+# Any other Devanagari continuation (e.g. the visarga in स्थितिः) means the
+# hit is mid-word, not a marker.
+_ITI_CONTINUATIONS = ("ुक्तम्", "ुक्त", "ादिना", "ादि", "नेन", "ेव", "ेतत्",
+                      "त्र", "ाह", "र्थ")
+_ITI_CONTINUATIONS_BY_LEN = tuple(sorted(_ITI_CONTINUATIONS, key=len, reverse=True))
 # Quotative-frame verbs: a pratika begins AFTER these (e.g. दर्शयितुं
 # सकलेतरप्रमाणविषया इत्युक्तम् quotes सकलेतरप्रमाणविषया, not दर्शयितुं).
 # Etc.: extend freely; the full run is still emitted as fallback, so an
@@ -291,14 +295,24 @@ def _sentence_spans(text):
   return spans
 
 
+def _marker_end(b, m_end):
+  """End offset of an iti-marker including a fused long continuation, if any."""
+  for cont in _ITI_CONTINUATIONS_BY_LEN:
+    if b.startswith(cont, m_end):
+      return m_end + len(cont)
+  return m_end
+
+
 def _split_block_at_pratikas(block, max_words=3):
   """Split a tika block into pratika-headed chunks, in order.
 
   Each accepted iti-marker starts a new chunk at its sentence: a chunk holds
   whole sentences from its opening marker's sentence up to the next chunk's
   start (so no sentence ever spans two chunks), with preamble sentences
-  before the first marker joining the first chunk. Chunk pratikas are the
-  union of their opening sentence's marker candidates. A block with no
+  before the first marker joining the first chunk. Within the opening
+  sentence, a pratika towards the end (marker + continuation followed only by
+  punctuation to the sentence end) is taken to be that sentence's ONLY
+  pratika; otherwise all of the sentence's markers count. A block with no
   accepted marker stays whole (fallback pratikas, as before).
   Returns ``[(chunk_text, pratikas)]``.
   """
@@ -310,12 +324,19 @@ def _split_block_at_pratikas(block, max_words=3):
   for m in re.finditer(ITI_MARKER_RE, b):
     mc = _marker_candidates(b, m, max_words)
     if mc:
-      marks.append((m.start(), mc))
+      marks.append((m.start(), m.end(), mc))
   if not marks:
     return [(b, _extract_pratikas(b, max_words))]
   spans = _sentence_spans(b)
   starts = [s for s, _ in spans]
-  sent_of = [max(bisect_right(starts, s) - 1, 0) for s, _ in marks]
+  sent_of = [max(bisect_right(starts, s) - 1, 0) for s, _, _ in marks]
+  # End-pratika disambiguation per marker sentence: a marker (plus fused
+  # continuation) followed only by punctuation to the sentence end governs
+  # alone; at most one per sentence can qualify.
+  end_marker_of = {}
+  for idx, ((s, e, mc), si) in enumerate(zip(marks, sent_of)):
+    if not re.search(r"[अ-ह]", b[_marker_end(b, e):spans[si][1]]):
+      end_marker_of[si] = idx
   bounds = sorted(set(sent_of))
   chunks = []
   for ci, s0 in enumerate(bounds):
@@ -325,11 +346,14 @@ def _split_block_at_pratikas(block, max_words=3):
     seg_start = spans[0][0] if ci == 0 else spans[s0][0]
     text = b[seg_start:spans[s_end][1]].strip()
     prs = []
-    for (_, mc), si in zip(marks, sent_of):
-      if si == s0:
-        for p in mc:
-          if p not in prs:
-            prs.append(p)
+    for idx, ((_, _, mc), si) in enumerate(zip(marks, sent_of)):
+      if si != s0:
+        continue
+      if s0 in end_marker_of and idx != end_marker_of[s0]:
+        continue
+      for p in mc:
+        if p not in prs:
+          prs.append(p)
     if text:
       chunks.append((text, prs))
   return chunks
@@ -519,38 +543,67 @@ def _match_candidates(blocks_pratikas, mula_texts, start_idx):
   return cand, usable, norm_prats, norm_mulas
 
 
+def _usable_in_range(seg, norm_prats, norm_mulas, m0, m1):
+  """Gate verdicts counted within mula range ``(m0, m1)``.
+
+  Same rule as the global gate (:func:`_match_candidates`): usable iff the
+  pratika pair-matches at most :data:`_MAX_MULA_HITS` mulas in range (or is
+  long). A globally promiscuous pratika (e.g. अत, तथ) revives where sentence
+  order narrows it to few candidates, so short pratikas match their
+  appropriate nearby mula instead of never matching at all.
+  """
+  seen = set()
+  usable = {}
+  for i in seg:
+    for npr in norm_prats[i]:
+      if npr in seen:
+        continue
+      seen.add(npr)
+      c = sum(1 for j in range(m0 + 1, m1)
+              if _pratika_in_norm_mula(npr, *norm_mulas[j]))
+      usable[npr] = (c <= _MAX_MULA_HITS or len(npr) >= _LONG_PRATIKA_LEN)
+  return usable
+
+
 def _longest_match_sequence(cand):
   """Longest increasing (block, mula) index sequence, earliest placements.
 
   ``cand[i]`` is the sorted candidate mula list for block ``i``. Returns
   ``[(block_idx, mula_idx)]`` with both strictly increasing and of maximum
   possible length; among all longest sequences the lexicographically smallest
-  placement is applied.
+  placement is applied. Iterative DP (no recursion: hundreds of blocks would
+  overflow the stack).
   """
-  from functools import lru_cache
   n = len(cand)
-
-  @lru_cache(maxsize=None)
-  def suf(i, lo):
-    # Max further placements using blocks[i:] with mulas >= lo.
-    if i >= n:
-      return 0
-    best = suf(i + 1, lo)
-    for j in cand[i]:
-      if j < lo:
-        continue
-      v = 1 + suf(i + 1, j + 1)
-      if v > best:
-        best = v
-    return best
-
-  need = suf(0, -1)
+  if n == 0:
+    return []
+  lo_vals = {-1}
+  for js in cand:
+    for j in js:
+      lo_vals.add(j + 1)
+  lo_sorted = sorted(lo_vals)
+  # suf_rows[i][lo] = max further placements using blocks[i:] with mulas >= lo.
+  suf_rows = [None] * (n + 1)
+  suf_rows[n] = {lo: 0 for lo in lo_sorted}
+  for i in range(n - 1, -1, -1):
+    cur = {}
+    for lo in lo_sorted:
+      best = suf_rows[i + 1][lo]
+      for j in cand[i]:
+        if j < lo:
+          continue
+        v = 1 + suf_rows[i + 1][j + 1]
+        if v > best:
+          best = v
+      cur[lo] = best
+    suf_rows[i] = cur
+  need = suf_rows[0][-1]
   seq, lo = [], -1
   for i in range(n):
     for j in cand[i]:
       if j < lo:
         continue
-      if len(seq) + 1 + suf(i + 1, j + 1) == need:
+      if len(seq) + 1 + suf_rows[i + 1][j + 1] == need:
         seq.append((i, j))
         lo = j + 1
         break
@@ -715,11 +768,13 @@ def interleave_TIkA_below_mUla(dest_file, commentary_file):
     :func:`_pratika_in_norm_mula` — most pratika characters must match,
     barring normalized spaces/punctuation/anunāsikas; longer pratikas also get
     a bounded edit path; promiscuous pratikas gated out per
-    :func:`_match_candidates`), mulas increase with commentary order, and no
-    longer placeable subset exists within any segment. An unmatched block is
-    consumed, not stalling later blocks: if a previous block already matched,
-    it is appended to that previous matched block's tika; leading unmatched
-    blocks (before any match) are prepended to the first matched block's tika.
+    :func:`_match_candidates` but revived per segment where order narrows them
+    to few candidates per :func:`_usable_in_range`), mulas increase with
+    commentary order, and no longer placeable subset exists within any
+    segment. An unmatched block is consumed, not stalling later blocks: if a
+    previous block already matched, it is appended to that previous matched
+    block's tika; leading unmatched blocks (before any match) are prepended
+    to the first matched block's tika.
   - If nothing ever matches, all blocks go into a single tika under the final
     mula (at EOF, so sentence order is preserved).
   """
@@ -763,11 +818,23 @@ def interleave_TIkA_below_mUla(dest_file, commentary_file):
   for bi, (mj, hit) in fixed.items():
     placed[bi] = mj
     hit_for[bi] = hit
+  usable_by_block = {}
   for (bi0, m0), (bi1, m1) in zip(bounds, bounds[1:]):
     seg = list(range(bi0 + 1, bi1))
     if not seg:
       continue
-    sub = [[j for j in cand[i] if m0 < j < m1] for i in seg]
+    seg_usable = _usable_in_range(seg, norm_prats, norm_mulas, m0, m1)
+    for bi in seg:
+      usable_by_block[bi] = seg_usable
+    sub = []
+    for i in seg:
+      js = []
+      for j in range(m0 + 1, m1):
+        nm, starts = norm_mulas[j]
+        if any(seg_usable[npr] and _pratika_in_norm_mula(npr, nm, starts)
+               for npr in norm_prats[i]):
+          js.append(j)
+      sub.append(js)
     for li, mj in _longest_match_sequence(sub):
       placed[seg[li]] = mj
   logging.info("interleave: %d fixed + longest sequence: %d of %d blocks placed.",
@@ -782,9 +849,10 @@ def interleave_TIkA_below_mUla(dest_file, commentary_file):
       mj = placed[bi]
       hit = hit_for.get(bi)
       if hit is None:
+        use = usable_by_block.get(bi, usable)
         nm, starts = norm_mulas[mj]
         for p, npr in zip(pratikas, norm_prats[bi]):
-          if usable[npr] and _pratika_in_norm_mula(npr, nm, starts):
+          if use.get(npr, False) and _pratika_in_norm_mula(npr, nm, starts):
             hit = p
             break
       texts = [b for b, _ in pending_leading] + [block]
