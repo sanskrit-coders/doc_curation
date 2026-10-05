@@ -138,6 +138,11 @@ def _clean_base(b):
   return b.strip("- ").split("।")[0].split("॥")[0].strip()
 
 
+def _short_mula(mula_text, limit=80):
+  """One-line snippet of a mula for logs."""
+  return re.sub(r"\s+", " ", mula_text).strip()[:limit]
+
+
 def _extract_pratika(tika_block):
   """Return the pratika string for a tika block (may be '')."""
   b = re.sub(r"^#\d+ lines are missing\.\s*", "", tika_block.strip(), flags=re.MULTILINE)
@@ -262,7 +267,8 @@ def interleave_TIkA_below_mUla(dest_file, commentary_file):
       to_insert[mula_idx] = block.strip()
       ordered.popleft()
       matched.append((pratika, mula_idx))
-      logging.info("interleave: mula %d <- pratika %r.", mula_idx, pratika[:60])
+      logging.info("interleave: mula %r <- pratika %r.",
+                   _short_mula(mula_texts[mula_idx]), pratika[:60])
   parts, prev = [], 0
   for idx, m in enumerate(mula_matches):
     s, e = m.span()
@@ -283,7 +289,8 @@ def interleave_TIkA_below_mUla(dest_file, commentary_file):
     new_body = new_body.rstrip() + "\n" + (TIKA_FMT % remaining) + "\n"
     logging.info("interleave: appended %d remaining blocks under final mula.", len(ordered))
   for _pr, _mi in matched:
-    logging.info("interleave matched: pratika %r -> mula %d.", _pr, _mi)
+    logging.info("interleave matched: pratika %r -> mula %r.",
+                 _pr, _short_mula(mula_texts[_mi]))
   for _b, _pr in unmatched:
     logging.info("interleave unmatched (leftover): pratika %r (block head: %r).", _pr, _b[:80])
   with open(dest_file, "w", encoding="utf-8") as f:
@@ -292,27 +299,26 @@ def interleave_TIkA_below_mUla(dest_file, commentary_file):
                len(to_insert), dest_file, len(mula_matches), len(unmatched))
   return {"inserted": len(to_insert), "matched": matched,
           "unmatched": [(b, pr) for b, pr in unmatched],
-          "pratikas": [pr for _, pr in list(to_insert.items())] if False else None}
+          "pratikas": all_pratikas}
 
 
-def verify_sentence_order(dest_file, commentary_file, start_marker=DEFAULT_ORDER_MARKER):
+def verify_sentence_order(dest_file, commentary_file, start_string=None):
   """Verify tika sentence order strictly follows commentary order.
 
   - Reads tika blocks in document order via details_helper.get_details
     (regex fallback when helpers are unavailable) and splits them with the
     shared splitter; reads commentary sentences the same way.
-  - Scope starts at ``start_marker`` (a commentary sentence; default covers
-    everything from Shrutyantara-paryalocana onward, skipping head-extra
-    intro material): only dest sentences mapped at/after the marker are
-    checked, in dest order.
+  - If ``start_string`` is given, scope starts at the first commentary
+    sentence whose normalized form contains it (else the whole file is
+    checked from the beginning when ``start_string`` is None): only dest
+    sentences mapped at/after the scope start are checked, in dest order.
   - Mapping is verbatim normalized (_norm_for_match) with difflib fuzzy
     fallback (>= 0.85, e.g. typo-fixed variants); shared _map_to_commentary.
-  - FAILS on order decreases (dest has B right after A with cpos(B) <= cpos(A),
-    e.g. cpos 321 followed by 314) and on missing sentences (commentary cpos
-    strictly inside the scope range with zero dest mappings anywhere, e.g.
-    cpos 320-321 absent between 319 and 322, or 322-326 absent between 321
-    and 327). Unmapped dest sentences and fuzzy mappings are reported (not
-    failures). Returns a report dict; logs human-readable appendix lines.
+  - FAILS on order decreases (dest has B right after A with cpos(B) <= cpos(A))
+    and on missing sentences (commentary cpos strictly inside the scope range
+    with zero dest mappings anywhere). Unmapped dest sentences and fuzzy
+    mappings are reported (not failures). Returns a report dict; logs
+    human-readable appendix lines.
   """
   if _HAS_HELPERS:
     from doc_curation.md.content_processor.details_helper import get_details as _get_details
@@ -345,20 +351,23 @@ def verify_sentence_order(dest_file, commentary_file, start_marker=DEFAULT_ORDER
   comm_body = _split_frontmatter(comm_raw)[1]
   comm_sents = _split_commentary_sentences(comm_body)
   comm_norms = [_norm_for_match(s) for s in comm_sents]
-  marker_cpos = None
-  marker_norm = _norm_for_match(start_marker)
-  for i, n in enumerate(comm_norms):
-    if n == marker_norm:
-      marker_cpos = i
-      break
-  if marker_cpos is None:
+  if start_string is None:
+    marker_cpos = 0
+  else:
+    marker_cpos = None
+    marker_norm = _norm_for_match(start_string)
     for i, n in enumerate(comm_norms):
-      if marker_norm and marker_norm in n:
+      if n == marker_norm:
         marker_cpos = i
         break
-  if marker_cpos is None:
-    logging.warning("verify: start marker not found; checking whole file.")
-    marker_cpos = 0
+    if marker_cpos is None:
+      for i, n in enumerate(comm_norms):
+        if marker_norm and marker_norm in n:
+          marker_cpos = i
+          break
+    if marker_cpos is None:
+      logging.warning("verify: start string not found; checking whole file.")
+      marker_cpos = 0
   mapped = _map_to_commentary(dest_norms, comm_norms)
   scope = [(k, c, dest_sents[k]) for k, (c, _fz) in enumerate(mapped) if c is not None and c >= marker_cpos]
   violations, duplicates = [], []
@@ -518,8 +527,4 @@ def realign_TIkA_below_mUla(dest_file, start_string, commentary_file=None):
 
 
 if __name__ == '__main__':
-  pass
-  remove_commentary_blocks(dest_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/06_AnandamayAdhikaraNam.md", start_string="उपरितनवाक्यापर्यालोचनां दर्शयति")
-  interleave_TIkA_below_mUla(dest_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/06_AnandamayAdhikaraNam.md", commentary_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shruta-prakAshikA/mUlam_rA/1/1/06_AnandamayAdhikaraNam.md")
-  verify_sentence_order(dest_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/06_AnandamayAdhikaraNam.md", commentary_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shruta-prakAshikA/mUlam_rA/1/1/06_AnandamayAdhikaraNam.md", start_marker="उपरितनवाक्यापर्यालोचनां दर्शयति")
-  # realign_TIkA_below_mUla(dest_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/06_AnandamayAdhikaraNam.md") 
+  pass 
