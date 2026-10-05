@@ -28,20 +28,13 @@ MULA_RE = r"<details><summary>मूलम्</summary>(.*?)</details>"
 TIKA_RE = r"<details><summary>टीका</summary>(.*?)</details>"
 TIKA_FMT = "\n\n<details><summary>टीका</summary>\n\n%s\n</details>"
 
-# Pratika cues: dash-led, long-suffix (etyanena/etyadina/...), verb-led.
-DASH_AFTER_RE = r"-\s*([ऀ-ॿ]+(?:\s+[ऀ-ॿ]+){0,2}?)\s*[िइेी]त(?:ि|्य)"
-DASH_BEFORE_RE = r"([ऀ-ॿ]+(?:\s+[ऀ-ॿ]+){0,2}?)\s*[िइेी]त(?:ि|्य)\s*-\s*"
-LONG_SUFFIX = (
-  r"(?:ेत्यनेन|ित्यनेन|ीत्यनेन|ेत्यादिना|ित्यादिना|ीत्यादिना|ेत्यादि|ित्यादि"
-  r"|ीत्यादि|ेत्युक्तम्|ित्युक्तम्|ीत्युक्तम्|ेत्युक्त|ित्युक्त|ीत्युक्त)"
-)
-LONG_SPACED_RE = rf"([ऀ-ॿ]+(?:\s+[ऀ-ॿ]+){{0,2}}?){LONG_SUFFIX}"
-VERB_RE = (
-  r"(?:माह|मुदाहरति|उक्तम्|(?:^|\s)आह|[ऀ-ॿ]*ति)\s+"
-  r"([ऀ-ॿ]+(?:\s+[ऀ-ॿ]+){0,2}?)"
-  r"\s*(?:इत्युक्तम्|इत्यादिना|इत्यनेन|ीत्युक्तम्|ीत्यादिना|ीत्यनेन"
-  r"|[िइेी]त(?:ि|्य))(?=\s|[।॥]|$)"
-)
+# Pratika cue: the iti-marker itself (iti/ity forms). A potential pratika is
+# the run of Devanagari words immediately preceding each marker.
+ITI_MARKER_RE = r"([िइेी])त(ि|्य)"
+# Long quotative continuations fused after the marker (e.g. इत्युक्तम्,
+# ेत्यादिना, ेत्यनेन): accepted; any other Devanagari continuation (e.g. the
+# visarga in स्थितिः) means the hit is mid-word, not a marker.
+_ITI_CONTINUATIONS = ("ुक्तम्", "ुक्त", "ादिना", "ादि", "नेन", "ेव", "ेतत्")
 
 
 def _split_frontmatter(text):
@@ -143,22 +136,62 @@ def _short_mula(mula_text, limit=80):
   return re.sub(r"\s+", " ", mula_text).strip()[:limit]
 
 
-def _extract_pratika(tika_block):
-  """Return the pratika string for a tika block (may be '')."""
+def _extract_pratikas(tika_block, max_words=3):
+  """All potential pratikas in a tika block, in order of appearance.
+
+  A potential pratika is the run of up to ``max_words`` Devanagari words
+  immediately preceding an iti-marker ``([िइेी])त(ि|्य)`` — e.g. तथ in तथेति,
+  शास्त्रैक in शास्त्रैकेति, तत्सम्बन्धितया प्रकरणान्तरेष्वप in
+  ...प्रकरणान्तरेष्वपीति, सकलेतरप्रमाणविषया in ...विषया इत्युक्तम्, एवम् in
+  एवमिति, ...प्रकृत in ...प्रकृतेत्यनेन. The run never crosses a dash or
+  sentence stop, and the marker must end the word or continue into a
+  recognized long suffix (see ``_ITI_CONTINUATIONS``), so mid-word hits like
+  स्थितिः are ignored. Both the bare last word and the full run are emitted,
+  so single-word pratikas match even inside longer runs. Falls back to the
+  block's first two Devanagari words when no marker is found, so every
+  non-empty block still yields a candidate.
+  """
   b = re.sub(r"^#\d+ lines are missing\.\s*", "", tika_block.strip(), flags=re.MULTILINE)
   if not b:
-    return ""
+    return []
   cands = []
-  for pat in (DASH_BEFORE_RE, DASH_AFTER_RE, LONG_SPACED_RE, VERB_RE):
-    for m in re.finditer(pat, b):
-      base = _clean_base(m.group(1))
-      if len(base) >= 2:
-        cands.append((m.start(), base))
-  if cands:
-    cands.sort(key=lambda x: x[0])
-    return cands[0][1]
-  words = re.findall(r"[ऀ-ॿ]{2,}", b)[:2]
-  return _clean_base(" ".join(words))
+
+  def _add(p):
+    p = _clean_base(p)
+    if len(_norm_for_match(p)) >= 2 and p not in cands:
+      cands.append(p)
+
+  for m in re.finditer(ITI_MARKER_RE, b):
+    after = b[m.end():]
+    if after and re.match(r"[ऀ-ॿ]", after[0]) and not after.startswith(_ITI_CONTINUATIONS):
+      continue
+    seg = re.split(r"[-–—।॥:;\n]+", b[:m.start()])[-1]
+    words = [w for w in re.findall(r"[ऀ-ॿ]+", seg) if re.search(r"[अ-ह]", w)]
+    if not words:
+      continue
+    run = words[-max_words:]
+    _add(run[-1])
+    if len(run) > 1:
+      _add(" ".join(run))
+  if not cands:
+    words = re.findall(r"[ऀ-ॿ]{2,}", b)[:2]
+    _add(" ".join(words))
+  return cands
+
+
+def _build_TIkA_pratika_map(blocks):
+  """Ordered map of tika-blocks to pratika lists, in commentary order.
+
+  Returns a deque of ``(block, pratikas)`` tuples, one per block, with
+  pratikas from :func:`_extract_pratikas`. Block order is identical to
+  ``blocks`` order.
+  """
+  ordered = deque()
+  for _i, b in enumerate(blocks):
+    pratikas = _extract_pratikas(b)
+    ordered.append((b, pratikas))
+    logging.info("pratika map %d: %r (block head: %r).", _i, pratikas, b[:80])
+  return ordered
 
 
 def _pratika_in_mula(pratika, mula_text, prefix_len=5):
@@ -214,18 +247,20 @@ def _get_ordered_tika_blocks(commentary_file):
 def interleave_TIkA_below_mUla(dest_file, commentary_file):
   """Insert commentary as tika below each mulam block.
 
-  - Builds an ordered map of tika-blocks to pratikas; tika-block order is
-    identical to that in ``commentary_file`` (see :func:`_get_ordered_tika_blocks`).
+  - Builds an ordered map of tika-blocks to pratika lists via
+    :func:`_build_TIkA_pratika_map`; tika-block order is identical to that in
+    ``commentary_file`` (see :func:`_get_ordered_tika_blocks`).
   - Finds the last existing tika block in ``dest_file``; only mulas after it
     are considered (earlier gaps are left untouched).
-  - For each such mula in document order, peeks at the next pratika: if
-    :func:`_pratika_in_mula` holds, inserts the corresponding tika block
-    directly below the mula and pops it out of the ordered map; otherwise the
-    mula is left empty and the same pratika is tried against the next mula.
-  - Repeats till mulas are exhausted or the ordered map is empty.
-  - Appends any remaining tika-blocks (joined in order) as a single tika
-    block under the final mula in the dest file (at EOF, so sentence order is
-    preserved).
+  - Takes each block in commentary order and scans forward from the current
+    mula for the first mula where any of its pratikas
+    (:func:`_pratika_in_mula`) holds; inserts the block directly below that
+    mula and continues past it. An unmatched block is consumed, not stalling
+    later blocks: if a previous block already matched, it is appended to that
+    previous matched block's tika; leading unmatched blocks (before any
+    match) are prepended to the first matched block's tika.
+  - If nothing ever matches, all blocks go into a single tika under the final
+    mula (at EOF, so sentence order is preserved).
   """
   with open(dest_file, encoding="utf-8") as f:
     dest_raw = f.read()
@@ -250,25 +285,44 @@ def interleave_TIkA_below_mUla(dest_file, commentary_file):
   if not blocks:
     logging.warning("No tika blocks in %s", commentary_file)
     return
-  # Ordered map: deque of (block, pratika) in commentary order.
-  ordered = deque((b, _extract_pratika(b)) for b in blocks)
+  # Ordered map of tika-blocks to pratika lists, in commentary-file order.
+  ordered = _build_TIkA_pratika_map(blocks)
   logging.info("interleave: %d tika blocks, %d mulas, starting at mula %d (last tika at %s).",
                len(ordered), len(mula_matches), start_idx, last_tika_mula)
-  for _i, (_b, _pr) in enumerate(ordered):
-    logging.info("interleave pratika %d: %r (block head: %r).", _i, _pr, _b[:80])
-  all_pratikas = [pr for _, pr in ordered]
-  to_insert = {}
-  matched = []
-  for mula_idx in range(start_idx, len(mula_matches)):
-    if not ordered:
-      break
-    block, pratika = ordered[0]
-    if _pratika_in_mula(pratika, mula_texts[mula_idx]):
-      to_insert[mula_idx] = block.strip()
-      ordered.popleft()
-      matched.append((pratika, mula_idx))
+  all_pratikas = [pratikas for _, pratikas in ordered]
+  to_insert = {}  # mula_idx -> list of block texts, in commentary order.
+  matched = []  # (hit pratika, mula_idx).
+  attached = []  # (block pratikas, mula_idx) appended to a previous matched tika.
+  pending_leading = []  # (block, pratikas) unmatched before any match.
+  last_placed = None
+  ptr = start_idx
+  for block, pratikas in ordered:
+    hit_idx, hit_pr = None, None
+    for j in range(ptr, len(mula_matches)):
+      pr = next((p for p in pratikas if _pratika_in_mula(p, mula_texts[j])), None)
+      if pr is not None:
+        hit_idx, hit_pr = j, pr
+        break
+    if hit_idx is not None:
+      texts = [b for b, _ in pending_leading] + [block]
+      if pending_leading:
+        logging.info("interleave: prepending %d leading unmatched blocks to mula %r.",
+                     len(pending_leading), _short_mula(mula_texts[hit_idx]))
+        pending_leading = []
+      to_insert[hit_idx] = texts
+      matched.append((hit_pr, hit_idx))
       logging.info("interleave: mula %r <- pratika %r.",
-                   _short_mula(mula_texts[mula_idx]), pratika[:60])
+                   _short_mula(mula_texts[hit_idx]), hit_pr[:60])
+      last_placed = hit_idx
+      ptr = hit_idx + 1
+    elif last_placed is not None:
+      to_insert[last_placed].append(block)
+      attached.append((pratikas, last_placed))
+      logging.info("interleave: appended unmatched block (pratikas %r) to previous matched mula %r.",
+                   pratikas, _short_mula(mula_texts[last_placed]))
+    else:
+      pending_leading.append((block, pratikas))
+      logging.info("interleave: no match yet; holding block (pratikas %r) as leading.", pratikas)
   parts, prev = [], 0
   for idx, m in enumerate(mula_matches):
     s, e = m.span()
@@ -276,30 +330,32 @@ def interleave_TIkA_below_mUla(dest_file, commentary_file):
     between = dest_body[e:nxt_start]
     parts.append(dest_body[prev:e])
     if idx in to_insert:
-      parts.append(TIKA_FMT % to_insert[idx])
+      parts.append(TIKA_FMT % "\n\n".join(t.strip() for t in to_insert[idx]))
       parts.append(between)
       prev = nxt_start
     else:
       parts.append(between)
       prev = nxt_start
   new_body = "".join(parts)
-  unmatched = list(ordered)
-  if ordered:
-    remaining = "\n\n".join(b.strip() for b, _ in ordered)
-    new_body = new_body.rstrip() + "\n" + (TIKA_FMT % remaining) + "\n"
-    logging.info("interleave: appended %d remaining blocks under final mula.", len(ordered))
+  leftovers = []
+  if pending_leading and last_placed is None:
+    # Nothing ever matched: keep all blocks together under the final mula.
+    leftovers = [b for b, _ in pending_leading]
+    new_body = new_body.rstrip() + "\n" + (TIKA_FMT % "\n\n".join(t.strip() for t in leftovers)) + "\n"
+    logging.info("interleave: appended %d unmatched blocks under final mula.", len(leftovers))
   for _pr, _mi in matched:
     logging.info("interleave matched: pratika %r -> mula %r.",
                  _pr, _short_mula(mula_texts[_mi]))
-  for _b, _pr in unmatched:
-    logging.info("interleave unmatched (leftover): pratika %r (block head: %r).", _pr, _b[:80])
+  for _prs, _mi in attached:
+    logging.info("interleave attached: pratikas %r appended to mula %r.",
+                 _prs, _short_mula(mula_texts[_mi]))
   with open(dest_file, "w", encoding="utf-8") as f:
     f.write(dest_head + new_body)
-  logging.info("Inserted %d ṭīkās into %s (mūlas=%d, leftovers=%d).",
-               len(to_insert), dest_file, len(mula_matches), len(unmatched))
-  return {"inserted": len(to_insert), "matched": matched,
-          "unmatched": [(b, pr) for b, pr in unmatched],
-          "pratikas": all_pratikas}
+  logging.info("Inserted %d ṭīkās into %s (mūlas=%d, matched=%d, attached=%d, leftovers=%d).",
+               len(to_insert), dest_file, len(mula_matches), len(matched),
+               len(attached), len(leftovers))
+  return {"inserted": len(to_insert), "matched": matched, "attached": attached,
+          "leftovers": leftovers, "pratikas": all_pratikas}
 
 
 def verify_sentence_order(dest_file, commentary_file, start_string=None):
