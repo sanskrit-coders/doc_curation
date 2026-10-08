@@ -59,6 +59,9 @@ _AAHA_FUSED = {
   "अन्यत्राह": "अन्यत्र", "सर्वत्राह": "सर्वत्र", "एकत्राह": "एकत्र",
   "किमाह": "किम्", "कथमाह": "कथम्",
 }
+# yaṆ-sandhi reversal map (consonant + halant + K -> restored vowel): e.g.
+# commentary तत्त्विति = तत्तु + इति, अपि त्विति contains अपि तु.
+_YAN_RESTORE = {"व": "ु", "य": "ि", "र": "ृ", "ल": "ि"}
 
 
 def _split_frontmatter(text):
@@ -199,8 +202,12 @@ def _marker_candidates(b, m, max_words=3):
   ``b`` is the searched text, ``m`` an :data:`ITI_MARKER_RE` match. Returns
   None when the hit is unusable (a mid-word continuation like स्थितिः, or no
   preceding words). Emitted variants are the bare last word (the fused stem),
-  the run after the nearest quotative frame, and the full run. Frames ending
-  the run early are dash/danda stops, standalone :data:`_META_VERBS`
+  the run after the nearest quotative frame, and the full run, with yaṇ twins
+  first where applicable: a fused “…C + halant + K + dependent-ि marker”
+  (e.g. तत्त्विति = तत्तु + इति, अपि त्विति containing अपि तु) also emits the
+  vowel-restored twin list (:data:`_YAN_RESTORE`), since juxtaposed originals
+  (सत्त्व + इति) share the shape and gating/matching sort them out. Frames
+  ending the run early are dash/danda stops, standalone :data:`_META_VERBS`
   (pratika begins after दर्शयति/परिहरति/आह…), and fused “…X + आह” words
   (pratika begins after them); an abutting deictic “…Xत्राह” contributes its
   stem instead (अत्राहेति -> अत्र).
@@ -213,27 +220,36 @@ def _marker_candidates(b, m, max_words=3):
   if not words:
     return None
   words = list(words)
-  if not b[m.start() - 1].isspace() and words[-1] in _AAHA_FUSED:
+  abut = m.start() > 0 and not b[m.start() - 1].isspace()
+  if abut and words[-1] in _AAHA_FUSED:
     words[-1] = _AAHA_FUSED[words[-1]]
+    yan_lists = [words]
+  elif (abut and m.group(1) == "ि"
+        and (ym := re.search("[क-ह]\u094d([यवरल])$", words[-1]))):
+    stem = words[-1][:ym.start(1) - 1] + _YAN_RESTORE[ym.group(1)]
+    yan_lists = [words[:-1] + [stem], words]
+  else:
+    yan_lists = [words]
 
   def _is_frame(w):
     return (w in _META_VERBS or w in _AAHA_FUSED
             or (w.endswith("माह") and len(w) > 3))
 
-  cut = 0
-  for k in range(len(words) - 1):
-    if _is_frame(words[k]):
-      cut = k + 1
-  postmeta = words[cut:][-max_words:]
-  full = words[-max_words:]
   cands = []
-  for p in (words[-1], " ".join(postmeta) if len(postmeta) > 1 else None,
-            " ".join(full) if len(full) > 1 else None):
-    if p is None:
-      continue
-    p = _clean_base(p)
-    if len(_norm_for_match(p)) >= 2 and p not in cands:
-      cands.append(p)
+  for wl in yan_lists:
+    cut = 0
+    for k in range(len(wl) - 1):
+      if _is_frame(wl[k]):
+        cut = k + 1
+    postmeta = wl[cut:][-max_words:]
+    full = wl[-max_words:]
+    for p in (wl[-1], " ".join(postmeta) if len(postmeta) > 1 else None,
+              " ".join(full) if len(full) > 1 else None):
+      if p is None:
+        continue
+      p = _clean_base(p)
+      if len(_norm_for_match(p)) >= 2 and p not in cands:
+        cands.append(p)
   return cands or None
 
 
