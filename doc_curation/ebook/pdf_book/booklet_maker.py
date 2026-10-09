@@ -4,6 +4,7 @@ from doc_curation.ebook import pdf_book
 from pypdf import PdfReader, PdfWriter, PageObject
 from pypdf import Transformation
 from pypdf.annotations import Line
+from pypdf.generic import NameObject
 from tqdm import tqdm
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm  # Import cm for easy conversion
@@ -92,6 +93,58 @@ def get_page_transform(page, target_w, target_h, offset_x=0, is_right_page=False
   return [scale, 0, 0, scale, tx, ty]
 
 
+def _set_viewer_preferences(writer, duplex=None):
+  """Embed print intent so viewers/CUPS pre-select duplex and tray by size.
+
+  :param duplex: one of None, "/Simplex", "/DuplexFlipShortEdge",
+    "/DuplexFlipLongEdge".
+  """
+  if duplex is None:
+    return
+  try:
+    vp = writer.create_viewer_preferences()
+    vp.duplex = NameObject(duplex)
+    # Let the printer pick the tray matching the sheet MediaBox (A3 vs A4).
+    vp.pick_tray_by_pdfsize = True
+  except Exception as e:
+    logging.warning(f"Could not set ViewerPreferences duplex={duplex}: {e}")
+
+
+def _finalize_and_write(writer, output_pdf_path, metadata=None, duplex=None):
+  """Dedup shared objects, attach metadata + print intent, then write.
+
+  Must be called just before writer.write(). Fixes pypdf merge artefacts
+  (duplicated resource keys like /x21, circular references) seen when the
+  same source page / overlay is merged into multiple sheets.
+  """
+  if metadata:
+    try:
+      pdf_meta = {}
+      if metadata.get("title"):
+        pdf_meta["/Title"] = str(metadata.get("title"))
+      if metadata.get("author"):
+        pdf_meta["/Author"] = str(metadata.get("author"))
+      if pdf_meta:
+        writer.add_metadata(pdf_meta)
+    except Exception as e:
+      logging.warning(f"Could not write PDF metadata {metadata}: {e}")
+  _set_viewer_preferences(writer, duplex=duplex)
+  try:
+    # Merge identical indirect objects shared by booklet imposition.
+    writer.compress_identical_objects(remove_duplicates=True, remove_unreferenced=True)
+  except TypeError:
+    try:
+      # Older pypdf: no kwargs.
+      writer.compress_identical_objects()
+    except Exception as e:
+      logging.warning(f"compress_identical_objects failed: {e}")
+  except Exception as e:
+    logging.warning(f"compress_identical_objects failed: {e}")
+  os.makedirs(os.path.dirname(output_pdf_path) or '.', exist_ok=True)
+  with open(output_pdf_path, "wb") as out_file:
+    writer.write(out_file)
+
+
 def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_title=None, metadata=None, gutter=10):
   """
   :param crop_ratio: Fraction of outer page margin to trim (e.g. 0.04 = 4%).
@@ -112,10 +165,12 @@ def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_t
   pages_in = list(reader.pages)
   total_padded = len(pages_in)
 
-  # 2. Determine pages per signature
+  # 2. Determine pages per signature (copy: never mutate caller's list)
   sig_bounds = []
   if sig_pages is None:
     sig_pages = [total_padded]
+  else:
+    sig_pages = list(sig_pages)
 
   while sum(sig_pages) < total_padded:
     sig_pages.append(sig_pages[-1])
@@ -129,23 +184,32 @@ def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_t
 
   # 3. Process signatures
   sig_count = 1
+  logging.info(f"Booklet sheet size: {sheet_width} x {orig_height} pts "
+               f"(2x {orig_width} x {orig_height}). Load matching paper "
+               f"(e.g. Ledger/A3) and print with fit-to-page.")
   # Wrap range in tqdm for a progress bar
   for (sig_start, sig_end) in tqdm(sig_bounds, desc="Signatures"):
-    sig_pages = pages_in[sig_start:sig_end + 1]
+    sig_slice = pages_in[sig_start:sig_end + 1]
 
     if sig_start != 0 and signature_title is not None:
       title_text = f"{metadata.get('title', '')}\n{metadata.get('author', '')}\n{signature_title} {sig_count}"
-      sig_pages.insert(0, pdf_book.create_page(title_text, orig_width, orig_height))
+      sig_slice.insert(0, pdf_book.create_page(title_text, orig_width, orig_height))
 
     # Ensure current signature slice is a multiple of 4 (for the final chunk)
-    while len(sig_pages) % 4 != 0:
+    while len(sig_slice) % 4 != 0:
       blank = PageObject.create_blank_page(width=orig_width, height=orig_height)
-      sig_pages.append(blank)
+      sig_slice.append(blank)
 
-    sig_len = len(sig_pages)
+    sig_len = len(sig_slice)
     num_sheets_in_sig = sig_len // 2 # 2 pages (logical) per side of sheet
 
     indices = list(range(num_sheets_in_sig))
+
+    # Build separator overlays once per signature and reuse (read-only
+    # sources). Previously one was rebuilt per sheet and merged twice on
+    # first/last sheets, duplicating resources.
+    overlay_outer = get_page_separator_overlay(w=sheet_width, h=orig_height, mid_width=True, mid_height=False, stitch_points=True)
+    overlay_inner = get_page_separator_overlay(w=sheet_width, h=orig_height, mid_width=False, mid_height=False, stitch_points=True)
 
     for i in tqdm(indices, leave=False):
       if i % 2 == 0:
@@ -155,8 +219,8 @@ def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_t
         left_idx = i
         right_idx = sig_len - 1 - i
 
-      left_page = sig_pages[left_idx]
-      right_page = sig_pages[right_idx]
+      left_page = sig_slice[left_idx]
+      right_page = sig_slice[right_idx]
 
       new_page = PageObject.create_blank_page(width=sheet_width, height=orig_height)
 
@@ -182,12 +246,7 @@ def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_t
       )
       new_page.merge_transformed_page(right_page, matrix_right)
 
-      if i in [indices[0], indices[-1]]:
-        overlay = get_page_separator_overlay(w=sheet_width, h=orig_height, mid_width=True, mid_height=False, stitch_points=True)
-        new_page.merge_page(overlay)
-      else:
-        overlay = get_page_separator_overlay(w=sheet_width, h=orig_height, mid_width=False, mid_height=False, stitch_points=True)
-
+      overlay = overlay_outer if i in (indices[0], indices[-1]) else overlay_inner
       new_page.merge_page(overlay)
       writer.add_page(new_page)
 
@@ -196,9 +255,8 @@ def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_t
   if output_pdf_path is None:
     output_pdf_path = input_pdf_path.replace(".pdf", f"_LandShortEdge_{sig_count-1}P_booklet.pdf")
 
-  os.makedirs(os.path.dirname(output_pdf_path) or '.', exist_ok=True)
-  with open(output_pdf_path, "wb") as out_file:
-    writer.write(out_file)
+  _finalize_and_write(writer, output_pdf_path, metadata=metadata,
+                      duplex="/DuplexFlipShortEdge")
 
   logging.info(f"Created booklet with {sig_count-1} signatures at: {output_pdf_path}")
 
@@ -277,8 +335,10 @@ def duplicated_booklet(input_pdf_path, output_pdf_path=None):
   # 4. Save the result
   if output_pdf_path is None:
     output_pdf_path = input_pdf_path.replace(".pdf", "_dup_PortLongEdge_booklet.pdf")
-  with open(output_pdf_path, "wb") as out_file:
-    writer.write(out_file)
+  logging.info(f"Duplicated booklet sheet size: {orig_width * 2} x {orig_height * 2} pts. "
+               f"Load matching paper and print with fit-to-page.")
+  _finalize_and_write(writer, output_pdf_path, metadata=None,
+                      duplex="/DuplexFlipLongEdge")
   logging.info(f"Duplicated booklet created: {output_pdf_path}")
 
 # Example Usage:
@@ -350,16 +410,21 @@ def two_column_page_booklet(input_pdf_path, output_pdf_path=None):
     # Slot BR: tx=sheet_w, ty=orig_height
     back_page.merge_transformed_page(padded_pages[idx_br_b], Transformation().rotate(180).translate(tx=sheet_w, ty=orig_height))
 
-    # Add lines 
-    overlay = get_page_separator_overlay(sheet_w, sheet_h, mid_width=True, mid_height=True)
-    front_page.merge_page(overlay)
-    back_page.merge_page(overlay)
+    # Add lines (separate overlay objects for front/back: never merge the
+    # same source overlay twice into one page, and avoid sharing one
+    # overlay object across pages where possible).
+    overlay_front = get_page_separator_overlay(sheet_w, sheet_h, mid_width=True, mid_height=True)
+    front_page.merge_page(overlay_front)
+    overlay_back = get_page_separator_overlay(sheet_w, sheet_h, mid_width=True, mid_height=True)
+    back_page.merge_page(overlay_back)
 
 
   if output_pdf_path is None:
     output_pdf_path = input_pdf_path.replace(".pdf", "_2col_PortLongEdge_booklet.pdf")
-  with open(output_pdf_path, "wb") as out_file:
-    writer.write(out_file)
+  logging.info(f"2-col booklet sheet size: {sheet_w} x {sheet_h} pts. "
+               f"Load matching paper and print with fit-to-page.")
+  _finalize_and_write(writer, output_pdf_path, metadata=None,
+                      duplex="/DuplexFlipLongEdge")
   logging.info(f"Booklet created: {output_pdf_path}")
 
 

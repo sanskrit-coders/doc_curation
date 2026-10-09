@@ -3,7 +3,6 @@ import os
 import shlex
 import subprocess
 
-from doc_curation_projects.puraaNa.bhaagavatam.gp.hindi import dest_path
 from pypdf import PdfReader, PdfWriter
 import regex
 
