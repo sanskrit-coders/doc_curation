@@ -70,7 +70,10 @@ def make_all(source_dir, out_path, omit_pattern=None, css_path=None, metadata=No
 
 
 
-  if os.path.exists(epub_path) and not regex.match(overwrite, "epub"):
+  # Always (re)build the no-TOC/2-column EPUBs when PDFs are requested: the
+  # PDF stage converts _min_notoc_2cols.epub, which may be missing or stale
+  # even if the main EPUB is fresh.
+  if os.path.exists(epub_path) and not regex.match(overwrite, "epub") and not regex.match(overwrite, "pdf"):
     logging.info(f"Skipping {epub_path} as it already exists.")
   else:
     epub_from_md_file(md_path=md_path, epub_path=epub_path, metadata=metadata, file_split_level=file_split_level, toc_depth=toc_depth, css_path=css_path, scripts=scripts, overwrite=overwrite)

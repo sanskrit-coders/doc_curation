@@ -1,13 +1,143 @@
 import logging
 import os
+import re
+import shutil
+import tempfile
+import zipfile
 from typing import Any
 from indic_transliteration import sanscript
 import regex
+import xml.etree.ElementTree as ET
 
 from doc_curation.ebook import calibre_helper
 
 from doc_curation.ebook.pandoc_helper import pandoc_from_md_file
 from doc_curation.md.file import MdFile
+
+
+_OPF_NS = "http://www.idpf.org/2007/opf"
+_EPUB_NS = {"opf": _OPF_NS, "dc": "http://purl.org/dc/elements/1.1/"}
+ET.register_namespace("opf", _OPF_NS)
+ET.register_namespace("dc", "http://purl.org/dc/elements/1.1/")
+
+
+def merge_chapter_files(epub_path, keep_first_n=1):
+  """Join linear spine XHTML chapters into a single flow.
+
+  Calibre's PDF engine emits a full blank page at the end of every chapter
+  file when the stylesheet uses multi-column layout (column-count: 2), while
+  single-column output flows continuously. Joining removes those blank pages
+  at chapter ends.
+
+  The first ``keep_first_n`` linear files (typically the title page) are kept
+  as-is; the rest are spliced into the next file. Nav/non-linear spine items
+  are untouched; links to merged files are rewritten to the surviving file;
+  OPF manifest/spine/guide entries for removed files are pruned.
+
+  :return: (num_joined, num_removed)
+  """
+  with zipfile.ZipFile(epub_path, "r") as zin:
+    names = zin.namelist()
+    mimetype = zin.read("mimetype") if "mimetype" in names else None
+    blobs = {n: zin.read(n) for n in names}
+  container = ET.fromstring(blobs["META-INF/container.xml"])
+  opf_path = container.find(".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile").get("full-path")
+  opf_dir = os.path.dirname(opf_path)
+  opf = ET.fromstring(blobs[opf_path])
+
+  def href_to_name(href):
+    return os.path.normpath(os.path.join(opf_dir, href)).replace("\\", "/")
+
+  manifest = {}
+  for item in opf.find("opf:manifest", _EPUB_NS):
+    manifest[item.get("id")] = (item.get("href"), item.get("media-type"), item)
+  files = []
+  for itemref in opf.find("opf:spine", _EPUB_NS):
+    idref = itemref.get("idref")
+    if itemref.get("linear", "yes") == "no":
+      continue
+    href, media_type, _el = manifest[idref]
+    if "nav" in (_el.get("properties") or "").split():
+      continue
+    if media_type in ("application/xhtml+xml", "text/html"):
+      files.append((idref, href_to_name(href)))
+  targets = files[keep_first_n:]
+  if len(targets) < 2:
+    logging.info(f"No chapters to join in {epub_path}.")
+    return (len(targets), 0)
+
+  def body_inner(blob):
+    text = blob.decode("utf-8")
+    match = re.search(r"<body[^>]*>(.*)</body>", text, flags=re.DOTALL | re.IGNORECASE)
+    if not match:
+      raise ValueError(f"No <body> in {epub_path}")
+    return match.group(1)
+
+  _first_id, first_name = targets[0]
+  combined = body_inner(blobs[first_name])
+  for _id, name in targets[1:]:
+    combined += "\n" + body_inner(blobs[name])
+  first_text = blobs[first_name].decode("utf-8")
+  first_text = re.sub(r"</body>", combined + "\n</body>", first_text, count=1, flags=re.IGNORECASE)
+  blobs[first_name] = first_text.encode("utf-8")
+
+  removed_names = {n for _i, n in targets[1:]}
+  removed_ids = {i for i, _n in targets[1:]}
+  first_base = os.path.basename(first_name)
+  for name, blob in list(blobs.items()):
+    if not name.endswith((".xhtml", ".html", ".ncx")):
+      continue
+    try:
+      text = blob.decode("utf-8")
+    except UnicodeDecodeError:
+      continue
+    original = text
+    for _i, removed_name in targets[1:]:
+      base = os.path.basename(removed_name)
+      text = text.replace(f"{base}#", f"{first_base}#").replace(f'"{base}"', f'"{first_base}"').replace(f"'{base}'", f"'{first_base}'")
+    if text != original:
+      blobs[name] = text.encode("utf-8")
+
+  manifest_el = opf.find("opf:manifest", _EPUB_NS)
+  for item in list(manifest_el):
+    if item.get("id") in removed_ids:
+      manifest_el.remove(item)
+  spine_el = opf.find("opf:spine", _EPUB_NS)
+  for itemref in list(spine_el):
+    if itemref.get("idref") in removed_ids:
+      spine_el.remove(itemref)
+  guide_el = opf.find("opf:guide", _EPUB_NS)
+  if guide_el is not None:
+    removed_bases = {os.path.basename(n) for n in removed_names}
+    for ref in list(guide_el):
+      if os.path.basename(ref.get("href", "").split("#")[0]) in removed_bases:
+        guide_el.remove(ref)
+  blobs[opf_path] = b'<?xml version="1.0" encoding="utf-8"?>\n' + ET.tostring(opf, encoding="utf-8")
+
+  for name in [n for n in blobs if n in removed_names]:
+    del blobs[name]
+
+  fd, temp_epub = tempfile.mkstemp(suffix=".epub")
+  os.close(fd)
+  try:
+    with zipfile.ZipFile(temp_epub, "w") as zout:
+      if mimetype is not None:
+        zinfo = zipfile.ZipInfo("mimetype")
+        zinfo.compress_type = zipfile.ZIP_STORED
+        zout.writestr(zinfo, mimetype)
+      for name, blob in blobs.items():
+        if name == "mimetype":
+          continue
+        zout.writestr(name, blob)
+    shutil.move(temp_epub, epub_path)
+  finally:
+    try:
+      if os.path.exists(temp_epub):
+        os.remove(temp_epub)
+    except Exception:
+      pass
+  logging.info(f"Joined {len(targets)} chapters into {first_name}, removed {len(removed_names)} files in {epub_path}.")
+  return (len(targets), len(removed_names))
 
 
 def epub_from_md_file(md_path, epub_path, css_path=None, metadata={}, file_split_level=4, toc_depth=6, appendix=None, scripts=[sanscript.ISO], overwrite=".*"):
@@ -21,11 +151,10 @@ def epub_from_md_file(md_path, epub_path, css_path=None, metadata={}, file_split
 
   pandoc_extra_args = _make_extra_args(file_split_level=file_split_level, toc_depth=toc_depth)
   source_dir = os.path.dirname(md_path)
+  md_path_min = epub_path.replace(".epub", "_min.md")
 
   if not os.path.exists(epub_path) or regex.match(overwrite, "epub"):
     make_script_epubs(epub_path=epub_path, md_path=md_path, metadata=metadata, pandoc_extra_args=pandoc_extra_args, scripts=scripts)
-
-    md_path_min = epub_path.replace(".epub", "_min.md")
 
     epub_path_min = epub_path.replace(".epub", "_min.epub")
     pandoc_extra_args = _make_extra_args(file_split_level=1)
@@ -44,6 +173,18 @@ def epub_from_md_file(md_path, epub_path, css_path=None, metadata={}, file_split
       pandoc_extra_args = _make_extra_args(file_split_level=1, css_path=css_path.replace(".css", "_2col.css"))
       epub_path_min_2cols = epub_path.replace(".epub", "_min_notoc_2cols.epub")
       make_script_epubs(epub_path=epub_path_min_2cols, md_path=md_path_min, metadata=metadata, pandoc_extra_args=pandoc_extra_args, scripts=scripts)
+      # Calibre's PDF engine emits a full blank page at the end of every
+      # chapter file when the stylesheet uses multi-column layout
+      # (column-count: 2), while single-column output flows continuously.
+      # Join the 2-column chapters into one flow so no blank pages appear
+      # at chapter ends. (https://bugs.launchpad.net/calibre/+bug/2142731 follow-up.)
+      for script in scripts:
+        if script is None:
+          _epub_2col = epub_path_min_2cols
+        else:
+          _epub_2col = os.path.join(os.path.dirname(epub_path_min_2cols), script, os.path.basename(epub_path_min_2cols))
+        if os.path.exists(_epub_2col):
+          merge_chapter_files(epub_path=_epub_2col)
 
 
   make_deprecated = False

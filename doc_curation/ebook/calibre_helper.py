@@ -14,6 +14,31 @@ from doc_curation.ebook import pdf_book
 CALIBRE = 'ebook-convert'
 
 
+def _is_header_footer_only_page(page):
+  """True if a PDF page holds no content lines beyond the calibre
+  header (``§...§``) and footer (``«num / total»``) templates.
+
+  Used to drop the blank trailing page calibre leaves at the end of
+  multi-column chapter flow. Returns False on any extraction error
+  (never drop a page we cannot read).
+  """
+  try:
+    text = page.extract_text() or ""
+  except Exception as e:
+    logging.warning(f"Could not extract text for blank check: {e}")
+    return False
+  for line in text.splitlines():
+    stripped = line.strip()
+    if not stripped:
+      continue
+    if "«" in stripped:
+      continue
+    if stripped.startswith("§") and stripped.endswith("§"):
+      continue
+    return False
+  return True
+
+
 def print_version():
   # Print calibre version
   version_output = subprocess.run(
@@ -94,7 +119,7 @@ def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_t
     '--pdf-header-template', "<u style='width:100%; justify-content:center; font-size: 15;'>§_TITLE_ / _TOP_LEVEL_SECTION_ / _SECTION_§</u>",
     '--pdf-footer-template', "<div style='width:100%; justify-content:center; font-size: 15; text-decoration-line: overline;'>«_PAGENUM_ / _TOTAL_PAGES_»</div>"
   ]
-  # TODO: 2 column pdf - footnotes not being produced - https://bugs.launchpad.net/calibre/+bug/2142731
+
 
   if paper_size == "a4":
     pass
@@ -141,6 +166,13 @@ def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_t
       # Add content pages (from page 1 up to the start of TOC)
       for page in reader.pages[1:non_toc_page_length]:
         writer.add_page(page)
+
+    # Calibre emits a full blank page at the end of multi-column chapter flow
+    # (one flow remains even after joining chapters). Drop content-empty
+    # trailing pages: only header (§...§) / footer («num / total») lines.
+    while len(writer.pages) > 1 and _is_header_footer_only_page(writer.pages[-1]):
+      writer.remove_page(len(writer.pages) - 1)
+      logging.info("Dropped a blank trailing page.")
 
     # Safely overwrite the original file now that the reader is closed
     with open(dest_path, "wb") as f:
