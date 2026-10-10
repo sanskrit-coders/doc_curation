@@ -110,7 +110,19 @@ class MdFile(object):
         return None
 
   def read(self) -> Tuple[Dict, str]:
-    file_helper.clear_bad_chars_in_file(file_path=self.file_path, dry_run=False)
+    # Clean bad chars in memory and write back ONLY on actual change:
+    # a plain read must not rewrite the file (mtime churn on every touch).
+    try:
+      with open(self.file_path, "r", encoding="utf-8") as _text_file:
+        _raw_text = _text_file.read()
+    except Exception:
+      # Undecodable bytes etc: fall back to legacy in-place cleanup.
+      file_helper.clear_bad_chars_in_file(file_path=self.file_path, dry_run=False)
+    else:
+      _clean_text = file_helper.clear_bad_chars(s=_raw_text)
+      if _clean_text != _raw_text:
+        with open(self.file_path, "w", encoding="utf-8") as _text_file:
+          _text_file.write(_clean_text)
     actual_frontmatter_type = self.get_frontmatter_type()
     if self.frontmatter_type is None:
       self.frontmatter_type = actual_frontmatter_type

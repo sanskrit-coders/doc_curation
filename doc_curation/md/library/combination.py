@@ -10,6 +10,10 @@ from doc_curation.md.file import MdFile
 from doc_curation.md.library import get_md_files_from_path
 from indic_transliteration import sanscript
 
+# Re-exported for backwards compatibility; implementation lives in
+# doc_curation.md.content_processor.commentary_merger.
+from doc_curation.md.content_processor.commentary_merger import merge_translations, remove_spurious_mula_variants, prune_index_only_dirs, dedupe_vr_blocks, cleanup_grouping_artifacts, scan_grouping_artifacts, split_grouped_translations, align_parallel_units, transfer_nukta_marks
+
 
 def combine_select_files_in_dir(md_file, source_fnames, title_format="## %s\n", dry_run=False):
   dir_path = os.path.dirname(md_file.file_path)

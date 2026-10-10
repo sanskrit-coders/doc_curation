@@ -13,6 +13,45 @@ from doc_curation.ebook import pdf_book
 
 CALIBRE = 'ebook-convert'
 
+# First calibre release containing Kovid's fix for the 2-column
+# chapter-end blank pages (https://bugs.launchpad.net/bugs/2170285,
+# commit 28b8f41 "Fix #2170285", in master after 9.16.0). The chapter-merge
+# workaround below is skipped on versions that already contain the fix.
+CALIBRE_VERSION_WITH_2170285_FIX = (9, 17)
+
+_calibre_version_cache = None
+
+
+def calibre_version():
+  """Installed calibre version as an (major, minor, patch) int tuple.
+
+  Parsed from ``ebook-convert --version`` ("ebook-convert (calibre 9.16.0)").
+  Returns None if the version cannot be determined (callers then keep the
+  workarounds enabled).
+  """
+  global _calibre_version_cache
+  if _calibre_version_cache is None:
+    try:
+      out = subprocess.run([CALIBRE, "--version"], capture_output=True, text=True, check=True).stdout
+      match = regex.search(r"calibre (\d+)\.(\d+)(?:\.(\d+))?", out)
+      _calibre_version_cache = tuple(int(g) if g is not None else 0 for g in match.groups()) if match else None
+    except Exception as e:
+      logging.warning(f"Could not determine calibre version, keeping workarounds enabled: {e}")
+      _calibre_version_cache = None
+  return _calibre_version_cache
+
+
+def has_2170285_fix():
+  """True if the installed calibre already fixes the 2-column blank pages.
+
+  Kovid's fix (separate column-spanning page-breaker from the anchors div so
+  the anchors page is correctly deleted) is in master after 9.16.0 and slated
+  for the next release. Verify after upgrading: convert an UNMERGED
+  multi-chapter 2-column EPUB and confirm no header/footer-only pages.
+  """
+  version = calibre_version()
+  return version is not None and version >= CALIBRE_VERSION_WITH_2170285_FIX
+
 
 def _is_header_footer_only_page(page):
   """True if a PDF page holds no content lines beyond the calibre
@@ -167,12 +206,19 @@ def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_t
       for page in reader.pages[1:non_toc_page_length]:
         writer.add_page(page)
 
-    # Calibre emits a full blank page at the end of multi-column chapter flow
-    # (one flow remains even after joining chapters). Drop content-empty
-    # trailing pages: only header (§...§) / footer («num / total») lines.
-    while len(writer.pages) > 1 and _is_header_footer_only_page(writer.pages[-1]):
-      writer.remove_page(len(writer.pages) - 1)
-      logging.info("Dropped a blank trailing page.")
+    # Calibre emits a full blank page at the end of multi-column chapter flow:
+    # one per chapter-file boundary plus a trailing one. Drop all
+    # content-empty pages (only the §...§ header / «num / total» footer
+    # lines). Note: baked «PAGENUM / TOTAL» footers then overcount by the
+    # number dropped - accepted, blank-free output takes priority.
+    kept = [p for p in writer.pages if not _is_header_footer_only_page(p)]
+    dropped = len(writer.pages) - len(kept)
+    if dropped:
+      writer2 = PdfWriter()
+      for p in kept:
+        writer2.add_page(p)
+      writer = writer2
+      logging.info(f"Dropped {dropped} blank page(s).")
 
     # Safely overwrite the original file now that the reader is closed
     with open(dest_path, "wb") as f:

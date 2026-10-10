@@ -84,6 +84,68 @@ def _to_devanagari(text):
   return text
 
 
+_NUKTA = "़"
+# Precomposed nukta letters -> base (Devanagari block U+0958-U+095F).
+_NUKTA_MAP = {"क़": "क", "ख़": "ख", "ग़": "ग", "ज़": "ज",
+              "ड़": "ड", "ढ़": "ढ", "ण़": "ण", "त़": "त"}
+
+
+def _strip_nukta(text):
+  """Remove nukta markings for comparison (NFC first, so decomposed forms compose)."""
+  import unicodedata
+  text = unicodedata.normalize("NFC", text or "")
+  text = text.replace(_NUKTA, "")
+  for marked, base in _NUKTA_MAP.items():
+    text = text.replace(marked, base)
+  return text
+
+
+def transfer_nukta_marks(dest_text, src_text):
+  """Copy src's explicit nukta/flap markings onto aligned-equal spans of dest.
+
+  Compares nukta-stripped forms with difflib; spans equal modulo markings
+  take the src (marked) form, differing spans keep the dest form. Returns
+  the new dest text, or None when nothing would change.
+  """
+  import unicodedata
+  import difflib
+  if not dest_text or not src_text:
+    return None
+
+  def _strip_map(s):
+    nfc = unicodedata.normalize("NFC", s)
+    out, mp = [], []
+    for i, ch in enumerate(nfc):
+      if ch == _NUKTA:
+        continue
+      elif ch in _NUKTA_MAP:
+        out.append(_NUKTA_MAP[ch])
+        mp.append(i)
+      else:
+        out.append(ch)
+        mp.append(i)
+    return "".join(out), nfc, mp
+
+  ds, dn, dmap = _strip_map(dest_text)
+  ss, sn, smap = _strip_map(src_text)
+
+  def _span(s, mp, a, b):
+    if a >= b:
+      return ""
+    return s[mp[a]:mp[b - 1] + 1]
+
+  res = []
+  for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, ds, ss).get_opcodes():
+    if tag == "equal":
+      res.append(_span(sn, smap, j1, j2))
+    else:
+      res.append(_span(dn, dmap, i1, i2))
+  new_text = "".join(res)
+  if new_text != dest_text:
+    return new_text
+  return None
+
+
 def _normalize_mula_for_comparison(text):
   """Normalize mula text so that trivial typographic variation is ignored.
 
@@ -110,6 +172,18 @@ def _normalize_mula_for_comparison(text):
   text = text.replace("ँ", "ं")
   # panchama + halant -> anusvAra (all contexts; comparison only).
   text = regex.sub(r"[ङञणनम]्", "ं", text)
+  # Lazy anusvAra: explicit varga nasal preferred (बन्द over बंद). Expand
+  # anusvAra before sparsha consonants to the explicit nasal+halant form.
+  # Runs AFTER the collapse above, so both directions converge (idempotent).
+  text = regex.sub("ं(?=[कखगघ])", "ङ्", text)
+  text = regex.sub("ं(?=[चछजझ])", "ञ्", text)
+  text = regex.sub("ं(?=[टठडढ])", "ण्", text)
+  text = regex.sub("ं(?=[तथदधन])", "न्", text)
+  text = regex.sub("ं(?=[पफबभम])", "म्", text)
+  # Nukta is a print-convention marker in these corpora (Marathi prints mark
+  # ड़/ढ़ explicitly where Hindi prints plain ड/ढ); strip for comparison.
+  # Real transfer of explicit markings is done by transfer_nukta_marks().
+  text = _strip_nukta(text)
   # Hyphens/dashes in mUla text are print artifacts: line-break hyphenation
   # (e.g. "प्रयासै-\nर्बाहौ" vs "प्रयासैर्बाहौ") or readability splits, never
   # phonemic. Ignore them, like spacing variation below.
@@ -445,6 +519,103 @@ def decide_variant(d_units, v_units, neighbor_scope, d_verses=None):
   if not kept:
     return ("skip", [], moves)
   return ("record_partial", kept, moves)
+
+
+def align_parallel_units(dest_norms, alt_norms, fuzzy_threshold=0.85, min_len=20):
+  """Order-preserving alignment of two parallel ordered unit lists.
+
+  dest_norms/alt_norms: normalized strings in corpus order. Returns
+  (groups, unmatched_alt, notes): groups = [(dest_idx, [alt_idx, ...])]
+  covering every matched alt unit exactly once (1:1, 1:N and N:1 groupings
+  allowed); unmatched_alt = [alt_idx] with no dest counterpart; notes =
+  [(alt_idx, dest_idx, kind)] for non-monotonic Tier-2 pairings (review).
+
+  Strategy: difflib backbone (non-crossing exact runs; immune to greedy
+  leapfrogging on duplicate refrains), then gap-local subset pairing, then
+  gap-local fuzzy pairing (>= fuzzy_threshold, min_len chars). Leftover
+  units (compilations/front-matter quoting scattered verses) get a global
+  exact/subset Tier-2 pass. Unpairable units go to unmatched_alt.
+  """
+  import difflib
+  alt_to_dest = {}
+  used_dest = set()
+  notes = []
+  # Tier 1: difflib backbone (non-crossing exact runs).
+  sm = difflib.SequenceMatcher(None, list(dest_norms), list(alt_norms), autojunk=False)
+  for tag, i1, i2, j1, j2 in sm.get_opcodes():
+    if tag != "equal":
+      continue
+    for i, j in zip(range(i1, i2), range(j1, j2)):
+      if dest_norms[i] and alt_norms[j]:
+        alt_to_dest[j] = i
+        used_dest.add(i)
+  # Tier 1b+1c: resolve gaps between backbone anchors.
+  anchors = sorted(alt_to_dest.items())  # [(alt_j, dest_i)]
+  boundaries = [(-1, -1)] + anchors + [(len(alt_norms), len(dest_norms))]
+  for b in range(len(boundaries) - 1):
+    (aj0, di0) = boundaries[b]
+    (aj1, di1) = boundaries[b + 1]
+    gap_alts = [j for j in range(aj0 + 1, aj1) if j not in alt_to_dest]
+    gap_dests = [i for i in range(di0 + 1, di1) if i not in used_dest]
+    for j in gap_alts:
+      a = alt_norms[j]
+      if not a:
+        continue
+      # Subset either direction (grouped units).
+      found = None
+      if len(a) >= min_len:
+        for i in gap_dests:
+          d = dest_norms[i]
+          if not d:
+            continue
+          if a in d or d in a:
+            found = i
+            break
+      # Fuzzy within gap bounds.
+      if found is None:
+        best, best_i = 0.0, None
+        for i in gap_dests:
+          d = dest_norms[i]
+          if not d or min(len(a), len(d)) < min_len:
+            continue
+          r = difflib.SequenceMatcher(None, a, d).ratio()
+          if r > best:
+            best, best_i = r, i
+        if best >= fuzzy_threshold:
+          found = best_i
+      if found is not None:
+        alt_to_dest[j] = found
+        used_dest.add(found)
+  # Tier 2: global exact/subset for leftovers (compilations quoting
+  # scattered verses). Proportional hint disambiguates duplicates.
+  n_alt = len(alt_norms)
+  n_dest = len(dest_norms)
+  for j in sorted(set(range(n_alt)) - set(alt_to_dest)):
+    a = alt_norms[j]
+    if not a:
+      continue
+    hint = int(j * n_dest / max(n_alt, 1))
+    cands = [i for i, d in enumerate(dest_norms) if d and i not in used_dest and d == a]
+    kind = "nonmonotonic-exact"
+    if not cands and len(a) >= min_len:
+      cands = [i for i, d in enumerate(dest_norms)
+               if d and i not in used_dest and (a in d or d in a)]
+      kind = "nonmonotonic-subset"
+    if cands:
+      i = min(cands, key=lambda x: abs(x - hint))
+      alt_to_dest[j] = i
+      used_dest.add(i)
+      notes.append((j, i, kind))
+  # Assemble groups in dest order; unmatched alts separate.
+  dest_to_alts = {}
+  for j, i in sorted(alt_to_dest.items(), key=lambda x: x[1]):
+    dest_to_alts.setdefault(i, []).append(j)
+  groups = []
+  for i in sorted(dest_to_alts):
+    groups.append((i, sorted(dest_to_alts[i])))
+  unmatched_alt = sorted(set(range(n_alt)) - set(alt_to_dest)
+                         - {j for j, a in enumerate(alt_norms) if not a})
+  return (groups, unmatched_alt, notes)
 
 
 def _alt_neighbor_scope(alt_verse_units):

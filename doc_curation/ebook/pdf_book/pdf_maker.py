@@ -23,11 +23,12 @@ def make_script_pdfs(epub_path, scripts, booklets, metadata, *args, **kwargs):
 
     # Calibre's PDF engine emits a full blank page at the end of every chapter
     # file when the stylesheet uses multi-column layout. Join the 2-column
-    # chapters into one flow here (also done at EPUB creation time) so this
-    # holds even when the EPUBs were built earlier. Local import avoids a
-    # circular import via doc_curation.ebook.__init__.
+    # chapters into chunked flows here (also done at EPUB creation time) so
+    # this holds even when the EPUBs were built earlier. Skipped once calibre
+    # contains Kovid's fix (https://bugs.launchpad.net/bugs/2170285).
+    # Local import avoids a circular import via doc_curation.ebook.__init__.
     from doc_curation.ebook.epub import merge_chapter_files
-    if os.path.exists(epub_path_min_2cols):
+    if os.path.exists(epub_path_min_2cols) and not calibre_helper.has_2170285_fix():
       merge_chapter_files(epub_path=epub_path_min_2cols)
   
     # Not moving TOC here - https://bugs.launchpad.net/calibre/+bug/2141822

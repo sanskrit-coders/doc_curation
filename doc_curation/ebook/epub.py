@@ -21,8 +21,8 @@ ET.register_namespace("opf", _OPF_NS)
 ET.register_namespace("dc", "http://purl.org/dc/elements/1.1/")
 
 
-def merge_chapter_files(epub_path, keep_first_n=1):
-  """Join linear spine XHTML chapters into a single flow.
+def merge_chapter_files(epub_path, keep_first_n=1, max_files_per_chapter=6):
+  """Join linear spine XHTML chapters into fewer, larger flows.
 
   Calibre's PDF engine emits a full blank page at the end of every chapter
   file when the stylesheet uses multi-column layout (column-count: 2), while
@@ -30,9 +30,13 @@ def merge_chapter_files(epub_path, keep_first_n=1):
   at chapter ends.
 
   The first ``keep_first_n`` linear files (typically the title page) are kept
-  as-is; the rest are spliced into the next file. Nav/non-linear spine items
-  are untouched; links to merged files are rewritten to the surviving file;
-  OPF manifest/spine/guide entries for removed files are pruned.
+  as-is; the rest are spliced in consecutive runs of at most
+  ``max_files_per_chapter`` files, each run into its first file. Runs are
+  capped because a single gigantic chapter (e.g. 26 files / ~11 MB merged)
+  hangs calibre's QtWebEngine renderer in 2-column mode while smaller merged
+  files convert fine. Nav/non-linear spine items are untouched; links to
+  merged files are rewritten to their run's surviving file; OPF
+  manifest/spine/guide entries for removed files are pruned.
 
   :return: (num_joined, num_removed)
   """
@@ -74,16 +78,27 @@ def merge_chapter_files(epub_path, keep_first_n=1):
     return match.group(1)
 
   _first_id, first_name = targets[0]
-  combined = body_inner(blobs[first_name])
-  for _id, name in targets[1:]:
-    combined += "\n" + body_inner(blobs[name])
-  first_text = blobs[first_name].decode("utf-8")
-  first_text = re.sub(r"</body>", combined + "\n</body>", first_text, count=1, flags=re.IGNORECASE)
-  blobs[first_name] = first_text.encode("utf-8")
+  # Split into consecutive runs so no merged file grows gigantic.
+  runs = [targets[i:i + max_files_per_chapter] for i in range(0, len(targets), max_files_per_chapter)]
 
-  removed_names = {n for _i, n in targets[1:]}
-  removed_ids = {i for i, _n in targets[1:]}
-  first_base = os.path.basename(first_name)
+  removed_names = set()
+  removed_ids = set()
+  redirect = {}  # removed basename -> surviving basename of its run
+  for run in runs:
+    _rid, run_first = run[0]
+    run_base = os.path.basename(run_first)
+    combined = body_inner(blobs[run_first])
+    for _id, name in run[1:]:
+      combined += "\n" + body_inner(blobs[name])
+      removed_names.add(name)
+      removed_ids.add(_id)
+      redirect[os.path.basename(name)] = run_base
+    run_text = blobs[run_first].decode("utf-8")
+    # Replacement function: chapter HTML contains backslashes (e.g. \m),
+    # which re.sub would otherwise parse as escapes in the replacement.
+    run_text = re.sub(r"</body>", lambda _m: combined + "\n</body>", run_text, count=1, flags=re.IGNORECASE)
+    blobs[run_first] = run_text.encode("utf-8")
+
   for name, blob in list(blobs.items()):
     if not name.endswith((".xhtml", ".html", ".ncx")):
       continue
@@ -92,9 +107,8 @@ def merge_chapter_files(epub_path, keep_first_n=1):
     except UnicodeDecodeError:
       continue
     original = text
-    for _i, removed_name in targets[1:]:
-      base = os.path.basename(removed_name)
-      text = text.replace(f"{base}#", f"{first_base}#").replace(f'"{base}"', f'"{first_base}"').replace(f"'{base}'", f"'{first_base}'")
+    for removed_base, survivor_base in redirect.items():
+      text = text.replace(f"{removed_base}#", f"{survivor_base}#").replace(f'"{removed_base}"', f'"{survivor_base}"').replace(f"'{removed_base}'", f"'{survivor_base}'")
     if text != original:
       blobs[name] = text.encode("utf-8")
 
@@ -136,7 +150,7 @@ def merge_chapter_files(epub_path, keep_first_n=1):
         os.remove(temp_epub)
     except Exception:
       pass
-  logging.info(f"Joined {len(targets)} chapters into {first_name}, removed {len(removed_names)} files in {epub_path}.")
+  logging.info(f"Joined {len(targets)} chapters into {len(runs)} files (from {first_name}), removed {len(removed_names)} files in {epub_path}.")
   return (len(targets), len(removed_names))
 
 
@@ -176,15 +190,19 @@ def epub_from_md_file(md_path, epub_path, css_path=None, metadata={}, file_split
       # Calibre's PDF engine emits a full blank page at the end of every
       # chapter file when the stylesheet uses multi-column layout
       # (column-count: 2), while single-column output flows continuously.
-      # Join the 2-column chapters into one flow so no blank pages appear
-      # at chapter ends. (https://bugs.launchpad.net/calibre/+bug/2142731 follow-up.)
-      for script in scripts:
-        if script is None:
-          _epub_2col = epub_path_min_2cols
-        else:
-          _epub_2col = os.path.join(os.path.dirname(epub_path_min_2cols), script, os.path.basename(epub_path_min_2cols))
-        if os.path.exists(_epub_2col):
-          merge_chapter_files(epub_path=_epub_2col)
+      # Join the 2-column chapters into chunked flows so no blank pages
+      # appear at chapter ends. Skipped once calibre contains Kovid's fix
+      # (https://bugs.launchpad.net/bugs/2170285) - see has_2170285_fix().
+      if calibre_helper.has_2170285_fix():
+        logging.info("Skipping 2-column chapter merge, calibre already contains the 2170285 fix.")
+      else:
+        for script in scripts:
+          if script is None:
+            _epub_2col = epub_path_min_2cols
+          else:
+            _epub_2col = os.path.join(os.path.dirname(epub_path_min_2cols), script, os.path.basename(epub_path_min_2cols))
+          if os.path.exists(_epub_2col):
+            merge_chapter_files(epub_path=_epub_2col)
 
 
   make_deprecated = False
