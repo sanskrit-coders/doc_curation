@@ -949,12 +949,17 @@ def verify_marathi_merged(plan, hindi_dir):
     except Exception:
       continue
     file_norms[p] = cm._normalize_mula_for_comparison(c or "")
-  # Marathi unit -> group anchor Hindi block.
+  # Marathi unit -> group anchor Hindi block + full span blocks.
+  # (Span, not anchor-only: a grouped Marathi unit may legitimately cover
+  # several Hindi blocks; the merge itself compares span-level.)
   unit_anchor = {}
+  unit_span_blocks = {}
   for g in plan["grouped"]:
     his = sorted(g["his"])
+    span = [hindi_blocks[i] for i in his]
     for mj in g["mjs"]:
       unit_anchor[mj] = hindi_blocks[his[-1]]
+      unit_span_blocks[mj] = span
   merged, gaps = [], []
   for mj, u in enumerate(marathi_units):
     if mj in plan["unmatched"]:
@@ -977,12 +982,15 @@ def verify_marathi_merged(plan, hindi_dir):
         issues.append("translation-missing")
     # Variant side: differing reading must be recorded in the anchor file
     # (or identical to Hindi, modulo nukta transfer already applied).
+    # Compare against the whole Hindi span of the unit's group (cf. merge).
     mtext = (u["mula"]["body"] or "").strip()
     if mtext:
-      # Hindi counterpart span = anchor block's mula text.
-      htext = (hb["mula"]["body"] if hb["mula"] is not None else hb["match_text"]) or ""
+      span = unit_span_blocks.get(mj, [hb])
+      htext = " ".join(((b["mula"]["body"] if b["mula"] is not None else b["match_text"]) or "") for b in span)
       if cm._normalize_mula_for_comparison(htext) != cm._normalize_mula_for_comparison(mtext):
-        if cm._normalize_mula_for_comparison(mtext) not in fnorm:
+        span_files = {b["file"] for b in span}
+        span_norm = " ".join(file_norms.get(p, "") for p in sorted(span_files))
+        if cm._normalize_mula_for_comparison(mtext) not in span_norm:
           issues.append("reading-unrecorded")
     if issues:
       gaps.append({"file": u["file"], "kind": u["kind"], "numbers": u["numbers"],
@@ -1221,6 +1229,13 @@ def _apply_file_edits(path, actions, dry_run=False, stats=None):
       reading_norm = cm._normalize_mula_for_comparison(a["reading"])
       if not reading_norm or reading_norm in whole_norm:
         continue  # already recorded
+      # Grouped duplicate units can double a reading already recorded once
+      # (same halves twice): skip when every significant half is present.
+      halves = [h for h in regex.split(r'[।॥]+', a["reading"]) if h.strip()]
+      sig = [cm._normalize_mula_for_comparison(h) for h in halves]
+      sig = [h for h in sig if len(h) >= 12]
+      if sig and all(h in whole_norm for h in sig):
+        continue  # already recorded (modulo grouping/doubling)
       if not q.get(a["ident"]):
         continue
       anchor = q[a["ident"]].popleft()
