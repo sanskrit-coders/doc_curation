@@ -4,10 +4,9 @@ import logging
 import os
 import shutil
 import time
-import urllib
 from urllib.parse import urlsplit, urljoin, unquote
-from urllib.request import urlopen, Request
-import dateutil.parser as parser
+import re
+from dateutil import parser
 import doc_curation.md.library
 
 import regex
@@ -22,8 +21,6 @@ from doc_curation.utils import text_utils
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper.souper import get_tags_matching_first_css
 from curation_utils import scraping
-from indic_transliteration import sanscript
-from indic_transliteration.detect import detect
 
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)
@@ -64,8 +61,6 @@ def get_post_html(url, entry_css_list=None, browser=None):
   return (post_html, soup)
 
 
-import re
-from dateutil import parser
 
 def extract_date_with_regex(text):
   # Pattern 1: Month Day, Year (e.g., "May 24, 2026", "Feb 07, 2026", "October 5, 2025")

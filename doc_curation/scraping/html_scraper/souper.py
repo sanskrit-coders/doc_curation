@@ -6,15 +6,12 @@ from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import urljoin
 
-import doc_curation.md.content_processor.footnote_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
 import regex
 from bs4 import BeautifulSoup, Tag, Comment, NavigableString
 
-from doc_curation import md
 
 from curation_utils import file_helper, scraping
-from curation_utils import scraping
-from doc_curation.md import content_processor, library
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement
 
@@ -198,7 +195,7 @@ def dump_text_from_element(url, outfile_path, text_css_selector, title_maker=lam
   if footnote_definier is not None:
     footnote_md = footnote_definier(unaltered_soup)
     content = "%s\n\n%s" % (content, footnote_md)
-    content = doc_curation.md.content_processor.footnote_helper.define_footnotes_near_use(content=content)
+    content = footnote_helper.define_footnotes_near_use(content=content)
 
   md_file.dump_to_file(content=content, metadata=metadata, dry_run=dry_run)
 

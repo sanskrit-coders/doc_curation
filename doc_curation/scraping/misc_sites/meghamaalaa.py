@@ -3,18 +3,15 @@ from indic_transliteration import sanscript
 from collections import OrderedDict
 
 from curation_utils import scraping
-from urllib.parse import urljoin
-from doc_curation import md
 from doc_curation.md.library import arrangement
-from doc_curation.md import library, content_processor
+from doc_curation.md import content_processor
 from doc_curation.md.content_processor import space_helper
 from curation_utils.file_helper import get_storage_name
-from doc_curation.utils import text_utils, sanskrit_helper
+from doc_curation.utils import sanskrit_helper
 
 from doc_curation.md.file import MdFile
 import logging
 import os, regex
-import aksharamukha
 
 def get_text(url, source_script=sanscript.DEVANAGARI):
   (soup, _) = scraping.get_soup(url=url)

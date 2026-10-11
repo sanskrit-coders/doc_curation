@@ -1,4 +1,3 @@
-import codecs
 import logging
 import os
 
@@ -6,15 +5,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.remote_connection import LOGGER
 
 from curation_utils import scraping
-from doc_curation.md import library
-from doc_curation.scraping.html_scraper import souper
-
-
-from doc_curation.md.library import metadata_helper
-from doc_curation.md.file import MdFile, file_helper
-from doc_curation.md.content_processor import ocr_helper
-import logging
-import os, regex
+from doc_curation.md.file import MdFile
+from doc_curation.md.library import arrangement, metadata_helper
 
 
 LOGGER.setLevel(logging.WARNING)

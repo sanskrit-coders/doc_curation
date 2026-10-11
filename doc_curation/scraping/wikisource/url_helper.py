@@ -1,5 +1,4 @@
 import logging
-import urllib.parse
 
 from indic_transliteration import sanscript
 

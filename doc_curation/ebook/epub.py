@@ -12,7 +12,6 @@ import xml.etree.ElementTree as ET
 from doc_curation.ebook import calibre_helper
 
 from doc_curation.ebook.pandoc_helper import pandoc_from_md_file
-from doc_curation.md.file import MdFile
 
 
 _OPF_NS = "http://www.idpf.org/2007/opf"
@@ -231,6 +230,7 @@ def make_script_epubs(epub_path, md_path, metadata: dict[Any, Any], pandoc_extra
     
 
 def make_epubs_recursively(source_dir, out_path, recursion_depth=None, dry_run=False, cleanup=True, *args, **kwargs):
+  from doc_curation.ebook import make_all
   if out_path is None:
     out_path = source_dir
   if recursion_depth is not None:

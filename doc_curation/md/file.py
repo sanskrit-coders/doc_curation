@@ -2,14 +2,12 @@ import codecs
 import itertools
 import logging
 import os
-import subprocess
 import unicodedata
 from typing import Tuple, Dict
 
 import regex
 import toml
 import yamldown
-from attr.validators import is_callable
 
 # Remove all handlers associated with the root logger object.
 from curation_utils import file_helper

@@ -1,17 +1,13 @@
-import itertools
 import logging
 import os
 
-import regex
 from selenium.webdriver.common.by import By
 
-from doc_curation import scraping
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome import options
 
 from doc_curation.md.file import MdFile
-from indic_transliteration import sanscript
 
 opts = options.Options()
 opts.headless = True

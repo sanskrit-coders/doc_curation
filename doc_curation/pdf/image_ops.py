@@ -4,7 +4,6 @@ Modify contrast of pdf
 
 """
 import os
-from argparse import ArgumentParser
 import io
 
 from PIL import ImageEnhance

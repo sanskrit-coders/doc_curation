@@ -2,19 +2,11 @@ import json
 import logging
 import os
 import time
-import traceback
 
 from selenium.webdriver.common.by import By
 
-from doc_curation import book_data
-from doc_curation.md import library
-from doc_curation.md.file import MdFile
-from doc_curation.scraping.html_scraper import selenium
-from doc_curation.scraping.html_scraper.selenium import click_link_by_text
-from indic_transliteration import sanscript
-from selenium.common.exceptions import NoSuchElementException
 
-from curation_utils import scraping, file_helper
+from curation_utils import scraping
 
 logging.basicConfig(
   level=logging.DEBUG,

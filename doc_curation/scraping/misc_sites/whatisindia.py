@@ -1,18 +1,15 @@
 import codecs
-import logging
 import os
 from pathlib import Path
 
 import regex
 from bs4 import BeautifulSoup
 
-import doc_curation.md
 from curation_utils import file_helper
 from doc_curation.ebook import pandoc_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from doc_curation.scraping.html_scraper import souper
-from indic_transliteration import sanscript
 
 
 def get_text(src_file):

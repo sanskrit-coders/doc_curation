@@ -1,6 +1,5 @@
 import logging
 import os
-from indic_transliteration import sanscript
 
 import regex
 from doc_curation.ebook.epub import epub_from_md_file
@@ -8,7 +7,6 @@ from doc_curation.ebook.epub import epub_from_md_file
 
 from doc_curation.ebook import pandoc_helper, md_book
 from doc_curation.ebook.pdf_book import pdf_maker
-from doc_curation.ebook.pandoc_helper import pandoc_dump_md
 
 
 def get_book_path(source_dir, out_path):
@@ -25,7 +23,7 @@ def get_book_path(source_dir, out_path):
 
 def from_dir(source_dir, out_path, omit_pattern=None, pandoc_extra_args=None, dest_format="html", appendix=None, cleanup=True, overwrite=".*"):
 
-  make_all(source_dir=source_dir, out_path=out_path, omit_pattern=omit_pattern, converter=lambda x,y: pandoc_helper.pandoc_from_md_file(x, y, dest_format=dest_format, pandoc_extra_args=pandoc_extra_args, content_maker=prep_content, appendix=appendix), dest_format=dest_format, cleanup=cleanup, overwrite=overwrite)
+  make_all(source_dir=source_dir, out_path=out_path, omit_pattern=omit_pattern, converter=lambda x,y: pandoc_helper.pandoc_from_md_file(x, y, dest_format=dest_format, pandoc_extra_args=pandoc_extra_args, appendix=appendix), dest_format=dest_format, cleanup=cleanup, overwrite=overwrite)
 
 
 def make_out_path(author, dir_path, out_path=f"/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/vv_ebook_pub/"):

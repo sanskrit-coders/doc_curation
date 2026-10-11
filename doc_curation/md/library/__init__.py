@@ -7,7 +7,6 @@ import regex
 
 from curation_utils import file_helper
 from doc_curation.md.file import MdFile
-from doc_curation.md.library import metadata_helper
 from doc_curation.utils import text_utils
 from indic_transliteration import sanscript
 
@@ -173,7 +172,6 @@ def list_matching_files(dir_path, content_condition=None, file_pattern="**/*.md"
 
 def list_files_with_missing_details(src_dir, detail_title, expected_detail_count=1):
   from doc_curation.md.content_processor import details_helper
-  from doc_curation.md.library import arrangement
   src_md_files = get_md_files_from_path(dir_path=src_dir)
   files = []
   for src_md_file in src_md_files:

@@ -1,11 +1,8 @@
-import json
-import textwrap
 import requests
 from pypdf import PdfReader
 from tqdm import tqdm
 
 from doc_curation import llm
-from doc_curation.md.file import MdFile
 
 
 def process_pdf_chunks(file_in, prompt, dest_path, start_page=1, pages_per_chunk=5, model_id="qwen2.5:3b"):

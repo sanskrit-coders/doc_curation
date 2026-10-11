@@ -1,22 +1,15 @@
-import bs4
-from bs4 import NavigableString
 from indic_transliteration import sanscript
-from collections import OrderedDict
 
 from curation_utils import scraping
-from urllib.parse import urljoin
-from doc_curation import md
 from doc_curation.ebook import pandoc_helper
-from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import space_helper
 from curation_utils.file_helper import get_storage_name
-from doc_curation.utils import text_utils, sanskrit_helper
+from doc_curation.utils import sanskrit_helper
 
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement
 import logging
 import os, regex
-import aksharamukha
 
 
 SCROLL_PAUSE = 6

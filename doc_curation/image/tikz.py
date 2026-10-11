@@ -20,7 +20,7 @@ class cmds(object):
   pdf2svg = 'pdf2svg texput.pdf out.svg'
 
 
-latex_doc ='''
+latex_doc =r'''
 \documentclass[border=2bp]{standalone}
 \usepackage{tikz}
 \\begin{document}

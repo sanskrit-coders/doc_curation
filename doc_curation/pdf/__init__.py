@@ -7,7 +7,6 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-import xml.etree.ElementTree as ET
 
 import pymupdf
 import random
@@ -16,7 +15,6 @@ from bs4 import BeautifulSoup
 
 import json
 import pypdf
-import os
 from pikepdf import Pdf
 
 from curation_utils import list_helper

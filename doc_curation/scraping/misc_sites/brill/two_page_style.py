@@ -1,8 +1,9 @@
-from doc_curation import md
+from doc_curation.ebook import pandoc_helper
 from doc_curation.scraping.misc_sites.brill import get_devanaagarii_page_md, fix_footnote_refs, get_footnote_def_md
-from doc_curation.md.content_processor import details_helper, footnote_helper
+from doc_curation.md.content_processor import details_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
 
-import logging, warnings
+import logging
 
 
 def get_two_page_md(two_page_div):

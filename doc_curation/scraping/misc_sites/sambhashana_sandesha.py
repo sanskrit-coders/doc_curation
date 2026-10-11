@@ -3,15 +3,12 @@ import logging
 import os
 from urllib.parse import urljoin
 
-import regex
 from indic_transliteration import sanscript
 
 from curation_utils.file_helper import get_storage_name
-from doc_curation import md
 from doc_curation.ebook import pandoc_helper
 from doc_curation.md.file import MdFile
 
-import doc_curation.md
 from curation_utils import scraping, file_helper
 from doc_curation.scraping.html_scraper.souper import get_tags_matching_first_css
 

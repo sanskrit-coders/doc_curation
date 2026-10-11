@@ -1,16 +1,16 @@
 from curation_utils.file_helper import get_storage_name
-from doc_curation.md import library, content_processor
+from doc_curation.ebook import pandoc_helper
+from doc_curation.md import content_processor
 from doc_curation.md.content_processor import details_helper
 from doc_curation.md.library import metadata_helper, arrangement
 from doc_curation.utils import sanskrit_helper
 from indic_transliteration import sanscript
 from curation_utils import scraping
 from urllib.parse import urljoin
-from doc_curation import md
 from doc_curation.scraping.html_scraper import souper
 
 
-from doc_curation.md.file import MdFile, file_helper
+from doc_curation.md.file import MdFile
 import logging
 import os, regex, doc_curation
 
@@ -110,6 +110,7 @@ def dump_series(url, dest_path, a_css, title=None, dry_run=False):
   anchor_tags = soup.select(a_css)
   anchor_tags.reverse()
   page_urls = [urljoin("https://www.prekshaa.in/", a["href"]) for a in anchor_tags]
+  content = ""
   for index, page_url in enumerate(page_urls):
     (page_content, page_title) = get_article(url=page_url)
     

@@ -1,6 +1,5 @@
 import regex
 from indic_transliteration import sanscript, sacred_texts_scheme
-from indic_transliteration.sanscript.schemes.brahmic import accent
 from indic_transliteration.sanscript.schemes.brahmic.accent import ACCENTS_PATTERN
 
 
@@ -79,14 +78,14 @@ def fix_accent_typos(text):
 def undo_taittirIya_forms(text):
   SP_QUOT = r"[\s\"',;*]*"
   # Bad replacements 
-  # पृथग्ग्रहणम् rf"({ACCENT_PATTERN}?)ग्ग्\1": r"ँ\1",
+  # पृथग्ग्रहणम् rf"({ACCENTS_PATTERN}?)ग्ग्\1": r"ँ\1",
   
   replacements = {
-    r"[᳚᳛]": r"॑", r"२?[ꣲ-ꣷ]": r"ँ", r"ग्ं": r"ँ", rf"({ACCENT_PATTERN})(ग्)?ग्\1": r"ँ\1", 
+    r"[᳚᳛]": r"॑", r"२?[ꣲ-ꣷ]": r"ँ", r"ग्ं": r"ँ", rf"({ACCENTS_PATTERN})(ग्)?ग्\1": r"ँ\1", 
     rf"ख्({SP_QUOT}[सष])": r"क्\1", rf"थ्({SP_QUOT}[सष])": r"त्\1", rf"फ्({SP_QUOT}[सष])": r"प्\1",
-    fr"({ACCENT_PATTERN})र्\1": r"\1र्",
-    rf"(न्)?न्({ACCENT_PATTERN})": r"\2न्", rf"न्न्({ACCENT_PATTERN}?){SP_QUOT}।": r"\1न् ।",
-    rf"({ACCENT_PATTERN})(\S्)\1": r"\1\2", 
+    fr"({ACCENTS_PATTERN})र्\1": r"\1र्",
+    rf"(न्)?न्({ACCENTS_PATTERN})": r"\2न्", rf"न्न्({ACCENTS_PATTERN}?){SP_QUOT}।": r"\1न् ।",
+    rf"({ACCENTS_PATTERN})(\S्)\1": r"\1\2", 
   }
   # To test - "(॑|॒)(\S्)+\1": r"\1\2"
   c = text

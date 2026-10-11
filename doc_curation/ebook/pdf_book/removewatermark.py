@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # Not working as of 202205
-import io
 import os
 import re
 import subprocess

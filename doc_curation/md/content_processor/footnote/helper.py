@@ -2,7 +2,6 @@ import textwrap
 
 import regex
 import logging
-from collections import defaultdict
 
 REF_PATTERN = r"\[\^([^\]\n]+?) *\]"
 DEF_ENDING = r"(?=$|\n\[\^|\n<|\n#|\n\n)"

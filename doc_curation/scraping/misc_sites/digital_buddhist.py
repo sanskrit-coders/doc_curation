@@ -6,15 +6,14 @@ from curation_utils import file_helper
 import os
 
 import requests
-from bs4 import BeautifulSoup
 
 from curation_utils import scraping
-from doc_curation.md import library
-from doc_curation.md.content_processor import space_helper
+from doc_curation.md import library  # noqa: F401  # used in commented code
+from doc_curation.md.content_processor import space_helper  # noqa: F401  # used in commented code
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement
 from doc_curation.scraping.html_scraper import souper
-from indic_transliteration import sanscript
+from indic_transliteration import sanscript  # noqa: F401  # used in commented code
 
 
 BASE_AGAMA = "/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/bauddhaH/"

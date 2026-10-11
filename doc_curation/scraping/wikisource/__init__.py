@@ -4,9 +4,9 @@ Wikisource scraping.
 from urllib.parse import urljoin
 
 from doc_curation.md import library
-from doc_curation.md.file import MdFile
+from doc_curation.md.file import MdFile  # noqa: F401  # used in commented code
 from doc_curation.md.library import metadata_helper
-from doc_curation.utils import sanskrit_helper
+from doc_curation.utils import sanskrit_helper  # noqa: F401  # used in commented code
 
 
 def next_url_getter(soup, url, next_url_text):

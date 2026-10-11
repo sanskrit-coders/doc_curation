@@ -1,9 +1,7 @@
-import logging
 import os
 
 import regex
 
-from doc_curation.md import content_processor
 from doc_curation.md.library import combination
 from doc_curation.scraping import wisdom_lib
 

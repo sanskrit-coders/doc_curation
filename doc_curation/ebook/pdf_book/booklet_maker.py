@@ -3,12 +3,10 @@ import logging
 from doc_curation.ebook import pdf_book
 from pypdf import PdfReader, PdfWriter, PageObject
 from pypdf import Transformation
-from pypdf.annotations import Line
 from pypdf.generic import NameObject
 from tqdm import tqdm
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm  # Import cm for easy conversion
-from reportlab.lib.pagesizes import portrait
 import io
 
 

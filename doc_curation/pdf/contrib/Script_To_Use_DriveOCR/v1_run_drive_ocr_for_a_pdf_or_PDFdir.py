@@ -6,10 +6,9 @@
 # 
 import logging
 import os
-from doc_curation import pdf
 from doc_curation.pdf import drive_ocr
 import sys
-from pdf2image import pdfinfo_from_path, convert_from_path
+from pdf2image import pdfinfo_from_path
 from pikepdf import Pdf
 from pathlib import Path
 from curation_utils import list_helper

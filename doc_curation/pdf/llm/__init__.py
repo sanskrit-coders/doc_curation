@@ -1,6 +1,6 @@
 import pymupdf4llm
 
-from doc_curation.md.content_processor import footnote_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 

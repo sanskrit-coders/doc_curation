@@ -15,9 +15,9 @@ import datetime
 
 from bs4 import BeautifulSoup
 
-from curation_utils import file_helper, scraping
+from curation_utils import scraping
 from curation_utils.file_helper import get_storage_name
-from doc_curation.mail_stream import delete_last_month
+from doc_curation.mail_stream import delete_last_month  # noqa: F401  # used in commented code
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
 

@@ -1,10 +1,8 @@
-import codecs
 import logging
 import os
 
 import pypandoc
 import regex
-from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.remote_connection import LOGGER
 from selenium.webdriver.support.expected_conditions import presence_of_element_located
@@ -12,8 +10,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from curation_utils import scraping
 from doc_curation.md.file import MdFile
-from doc_curation.md import library
-from doc_curation.md.library import arrangement, metadata_helper
+from doc_curation.md.library import metadata_helper
 from doc_curation.scraping.html_scraper import souper
 
 

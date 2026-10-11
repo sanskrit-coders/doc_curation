@@ -2,7 +2,7 @@ from curation_utils import scraping
 from urllib.parse import urljoin
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
-from doc_curation import md
+from doc_curation.ebook import pandoc_helper
 import time
 
 from doc_curation.md.file import MdFile

@@ -1,18 +1,17 @@
 import logging
 import os
 
-import doc_curation.md.content_processor.footnote_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
 import regex
 from bs4 import BeautifulSoup, NavigableString, Tag
 from doc_curation.scraping import wisdom_lib
 
-from doc_curation.md import library, content_processor
+from doc_curation.md import library
 
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 
 from doc_curation.scraping.html_scraper import souper
-from indic_transliteration import sanscript
 
 
 def get_content(soup):
@@ -40,7 +39,7 @@ def get_content(soup):
     content_out += "\n\n"
 
   content_out += wisdom_lib.footnote_extractor(soup=soup)
-  content_out = doc_curation.md.content_processor.footnote_helper.define_footnotes_near_use(content=content_out)
+  content_out = footnote_helper.define_footnotes_near_use(content=content_out)
   content_out = content_out.replace("", " - ")
   return content_out
 
@@ -77,7 +76,7 @@ def dump_serially(start_url, base_dir, dest_path_maker, dry_run=False):
 
 
 def split(base_dir):
-  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=doc_curation.md.content_processor.footnote_helper.define_footnotes_near_use, dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=footnote_helper.define_footnotes_near_use, dry_run=False)
   library.apply_function(dir_path=base_dir, fn=metadata_helper.set_title_from_filename, transliteration_target=None, dry_run=False)
   library.apply_function(fn=MdFile.split_to_bits, dir_path=base_dir, dry_run=False, source_script=None, title_index_pattern=None)
 

@@ -1,22 +1,18 @@
 import hashlib
-import time
+import time  # noqa: F401  # used in commented code
 
-from pdfreader.types import content
 from selenium.common import WebDriverException
 
-import indic_transliteration
-from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript, detect
 from curation_utils import scraping
 from urllib.parse import urljoin
-from doc_curation import md
 from doc_curation.md import library
 from doc_curation.md.library import arrangement
-from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.html_scraper import selenium
 
 from doc_curation.md.file import MdFile, file_helper
-from doc_curation.md.content_processor import ocr_helper, footnote_helper
+from doc_curation.md.content_processor import ocr_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
 from doc_curation.ebook import pandoc_helper
 import logging
 import os, regex

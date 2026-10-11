@@ -1,14 +1,13 @@
 import os.path
 
 import regex
-import sys
+import sys  # noqa: F401  # used in commented code
 import tqdm
 
 from curation_utils import file_helper, scraping
 from doc_curation.md.content_processor import transliterate
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement
-from doc_curation.scraping.html_scraper import souper
 from indic_transliteration import sanscript
 
 

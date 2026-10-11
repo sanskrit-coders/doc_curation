@@ -3,8 +3,9 @@ import textwrap
 import logging
 from indic_transliteration import sanscript
 from curation_utils import scraping
-from doc_curation import md
-from doc_curation.md.content_processor import details_helper, footnote_helper
+from doc_curation.ebook import pandoc_helper
+from doc_curation.md.content_processor import details_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
 from doc_curation.md.file import MdFile
 from tqdm import tqdm
 

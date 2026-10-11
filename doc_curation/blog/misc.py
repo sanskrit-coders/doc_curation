@@ -1,5 +1,3 @@
-from doc_curation import blog
-from curation_utils import scraping
 import logging
 
 for handler in logging.root.handlers[:]:

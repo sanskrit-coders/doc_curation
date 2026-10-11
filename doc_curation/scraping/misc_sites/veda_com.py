@@ -1,6 +1,5 @@
 import logging
 import os
-import textwrap
 from urllib.parse import urljoin
 import requests
 import regex
@@ -8,10 +7,8 @@ from doc_curation.utils import text_utils, patterns
 from doc_curation.md.file import MdFile
 from doc_curation.md.content_processor import details_helper
 from doc_curation.md.library import metadata_helper
-import editdistance
 
-import doc_curation.md
-from curation_utils import scraping, file_helper
+from curation_utils import scraping
 from enum import Flag, auto
 
 class ForceMode(Flag):

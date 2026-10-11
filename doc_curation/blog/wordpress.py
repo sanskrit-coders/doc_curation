@@ -1,8 +1,5 @@
-import glob
 import itertools
 import logging
-import os
-import shutil
 from datetime import datetime
 
 import dateutil.parser as parser
@@ -10,7 +7,6 @@ from dateutil.relativedelta import relativedelta
 
 from doc_curation import blog
 from doc_curation.blog import scrape_index_from_anchors
-from doc_curation.md import library
 import regex
 
 for handler in logging.root.handlers[:]:

@@ -228,7 +228,7 @@ def _call_with_keys(
       try:
         logging.info("Cred %s", key)
 
-        return func(
+        result = func(
           *args,
           api_key_path=key,
           cred_path=keys_file,

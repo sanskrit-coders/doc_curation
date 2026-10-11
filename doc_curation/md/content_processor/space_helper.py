@@ -18,7 +18,7 @@ def remove_fake_linebreaks(content, *args, **kwargs):
 
 
 def fix_indented_quotations(content, *args, **kwargs):
-  from doc_curation.md.content_processor import footnote_helper
+  from doc_curation.md.content_processor.footnote import helper as footnote_helper
   # Footnote definitions use indentations - so better to extract those beforehand.
   content, definitions = footnote_helper.extract_definitions(content=content)
   content = regex.sub(r"(?<=\n|^)[ \t]+", r"> ", content)

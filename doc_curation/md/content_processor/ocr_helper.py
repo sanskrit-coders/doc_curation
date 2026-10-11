@@ -1,6 +1,8 @@
-import os, pandas
+import os
 
+import pandas
 import regex
+import tqdm
 from doc_curation.utils import sanskrit_helper
 from indic_transliteration import sanscript
 
@@ -214,7 +216,7 @@ def fix_typos(text):
   for typo in tqdm.tqdm(typos_df.index):
     ta_words = typos_df.loc[typo, "typo"].split(",")
     for ta_word in ta_words:
-      text = text.replace(ta_word, sa_word)
+      text = text.replace(ta_word, typo)
   return text
 
 

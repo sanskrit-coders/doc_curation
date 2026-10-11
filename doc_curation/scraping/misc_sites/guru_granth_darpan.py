@@ -1,15 +1,12 @@
-import logging
-import os
+import os  # noqa: F401  # used in commented code
 
-import regex
 from doc_curation.md.file import MdFile
 
 from indic_transliteration import sanscript
 from doc_curation.md import library
 from doc_curation.md.content_processor import details_helper
-from doc_curation.md.library import combination
+from doc_curation.md.library import combination  # noqa: F401  # used in commented code
 from doc_curation.scraping.html_scraper import souper
-from curation_utils import scraping, file_helper
 
 
 def _add_detail(type, content, details):

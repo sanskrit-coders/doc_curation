@@ -1,5 +1,3 @@
-import copy
-import json
 import logging
 import os
 import time
@@ -7,11 +5,11 @@ import traceback
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.select import Select
+from selenium.webdriver.support.select import Select  # noqa: F401  # used in commented code
 
 import doc_curation
 from doc_curation import book_data
-from doc_curation.md import library, content_processor
+from doc_curation.md import content_processor
 from doc_curation.md.file import MdFile
 from doc_curation.md.content_processor import details_helper
 from doc_curation.md.library import arrangement
@@ -288,7 +286,7 @@ def get_structured_text(browser, start_nodes, base_dir, unit_info_file, comment_
       text = browse_get_text(browser=browser, comment_mode=comment_mode, source_script=source_script, start_nodes=None)
       md_file = MdFile(file_path=out_file_path)
       detail = details_helper.Detail(title=detail_title, content=text)
-      md_file.transform(content_transformer=lambda c, *args, **kwargs: details_helper.insert_adjascent_element(content=c, metadata=m, title=prev_detail_title, new_element=detail))
+      md_file.transform(content_transformer=lambda c, m, *args, **kwargs: details_helper.insert_adjascent_element(content=c, metadata=m, title=prev_detail_title, new_element=detail))
     else:
       text_name = deduce_text_name(browser)
       dump_to_file(browser=browser, comment_mode=comment_mode, out_file_path=out_file_path, text_name=text_name, start_nodes=None, source_script=source_script)

@@ -8,8 +8,6 @@ from bs4 import BeautifulSoup
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, \
   ElementNotInteractableException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions
-from selenium.webdriver.support.wait import WebDriverWait
 from tqdm import tqdm
 
 from curation_utils import scraping

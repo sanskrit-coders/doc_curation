@@ -1,16 +1,11 @@
 import logging
 import os
-import shutil
 
 import doc_curation.md.library
 import regex
 
-from curation_utils import file_helper
 
-from curation_utils.file_helper import get_storage_name
-from doc_curation.md import content_processor
 from doc_curation.md.file import MdFile
-from indic_transliteration import sanscript
 from doc_curation.utils import text_utils
 
 

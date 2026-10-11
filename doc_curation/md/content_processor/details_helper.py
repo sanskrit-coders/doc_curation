@@ -13,7 +13,7 @@ from bs4.element import PageElement
 from doc_curation.md import content_processor
 from doc_curation.md import library
 from doc_curation.md.content_processor import get_quasi_section_int_map
-from doc_curation.md.content_processor.footnote_helper import Footnote
+from doc_curation.md.content_processor.footnote.helper import Footnote
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.utils import patterns
@@ -516,7 +516,7 @@ def count_details(content, metadata, *args, **kwargs):
   return content
 
 
-def rearrange_details(content, metadata, titles, *args, **kwargs):
+def rearrange_details(content, metadata, titles, *args, if_adjacent=False, **kwargs):
   # UNTESTED
   # Stray usage of < can fool the soup parser. Hence the below.
   if "details" not in content:
@@ -526,6 +526,8 @@ def rearrange_details(content, metadata, titles, *args, **kwargs):
     return content
   # Don't pick up details within details.
   details = soup.find_all(lambda x: x.name == 'details' and x.find_parent("details") is None)
+  if if_adjacent:
+    return _rearrange_adjacent_details(soup=soup, details=details, titles=titles)
   final_details = []
   title_to_detail = collections.defaultdict(lambda:collections.defaultdict(list))
   for detail in details:
@@ -556,6 +558,250 @@ def rearrange_details(content, metadata, titles, *args, **kwargs):
   #   detail.decompose()
   content_out = content_processor._make_content_from_soup(soup=soup)
   return content_out
+
+
+def _rearrange_adjacent_details(soup, details, titles):
+  """Reorder only directly-adjacent details, in place.
+
+  Top-level details are partitioned into runs: consecutive details separated
+  by whitespace alone whose titles are all in `titles`. Anything else (other
+  titles, headings, text, footnote definitions) splits runs and is never
+  crossed. Within each run, details are stably sorted by `titles` order.
+  Single-element and already-ordered runs are untouched. Idempotent.
+  """
+  def _title(tag):
+    summary = tag.select_one("summary")
+    return summary.text.strip() if summary is not None else ""
+
+  def _gap_is_blank(a, b):
+    sib = a.next_sibling
+    while sib is not None and sib is not b:
+      if not (isinstance(sib, NavigableString) and not str(sib).strip()):
+        return False
+      sib = sib.next_sibling
+    return sib is b
+
+  runs, cur = [], []
+  for tag in details:
+    if _title(tag) in titles and cur and _gap_is_blank(cur[-1], tag):
+      cur.append(tag)
+    elif _title(tag) in titles:
+      if cur:
+        runs.append(cur)
+      cur = [tag]
+    else:
+      if cur:
+        runs.append(cur)
+        cur = []
+  if cur:
+    runs.append(cur)
+  changed = False
+  for run in runs:
+    ordered = sorted(run, key=lambda t: titles.index(_title(t)))
+    if [id(t) for t in ordered] == [id(t) for t in run]:
+      continue
+    parent = run[0].parent
+    nxt = run[-1].next_sibling
+    for tag in run:
+      tag.extract()
+    for tag in ordered:
+      if nxt is not None:
+        nxt.insert_before(tag)
+      else:
+        parent.append(tag)
+    changed = True
+  if changed:
+    return _normalize_spaces(content_processor._make_content_from_soup(soup=soup))
+  return content_processor._make_content_from_soup(soup=soup)
+
+
+def merge_details(content, titles):
+  """Merge source details into the corresponding target detail of the same unit.
+
+  titles[0] is the target title (eg. "अनुवाद (हिन्दी)"); titles[1:] are source
+  titles (eg. "पादटिप्पनी"). Each source block's content is appended to the
+  nearest preceding target-titled block in the same verse unit (units are split
+  at विश्वास-प्रस्तुतिः blocks; wrapper blocks such as सर्वाष् टीकाः are
+  transparent); if no target precedes it, the nearest following target in the
+  unit is used instead. Source blocks are removed. Units without any target
+  block are left untouched. Idempotent.
+  """
+  if "details" not in (content or "") or not titles:
+    return content
+  if isinstance(titles, str):
+    titles = [titles]
+  target_title = titles[0].strip()
+  source_titles = {t.strip() for t in titles[1:]}
+  if not source_titles:
+    return content
+  tag_re = regex.compile(r"</details>|<details[^>]*>")
+  summary_re = regex.compile(r"<summary>(.*?)</summary>", flags=regex.DOTALL)
+
+  def split_top_level(text, base=0):
+    spans, depth, start = [], 0, None
+    for m in tag_re.finditer(text):
+      if m.group().startswith("</"):
+        if depth > 0:
+          depth -= 1
+          if depth == 0:
+            spans.append((base + start, base + m.end()))
+            start = None
+      else:
+        if depth == 0:
+          start = m.start()
+        depth += 1
+    return spans
+
+  def title_of(s, e):
+    m = summary_re.search(content[s:e])
+    return (m.group(1) or "").strip() if m else ""
+
+  # Flat unit-flow sequence, descending into wrappers (one level).
+  seq = []
+  for (s, e) in split_top_level(content):
+    t = title_of(s, e)
+    inner_start = content.find("</summary>", s, e)
+    inner_start = inner_start + len("</summary>") if inner_start != -1 else e
+    if t and t not in source_titles and t != target_title and inner_start < e:
+      inner = content[inner_start:e]
+      kids = [k for k in split_top_level(inner, base=inner_start)
+              if title_of(*k)]
+      if kids and all(title_of(*k) != "विश्वास-प्रस्तुतिः" for k in kids):
+        seq.extend([(ks, ke, title_of(ks, ke), True) for (ks, ke) in kids])
+        continue
+    seq.append((s, e, t, False))
+  # Units split at विश्वास-प्रस्तुतिः.
+  units, cur = [], []
+  for item in seq:
+    if item[2] == "विश्वास-प्रस्तुतिः":
+      if cur:
+        units.append(cur)
+      cur = []
+    else:
+      cur.append(item)
+  if cur:
+    units.append(cur)
+
+  def inner_of(s, e):
+    m = summary_re.search(content[s:e])
+    close = content.rfind("</details>", s, e)
+    if m is None or close == -1:
+      return ""
+    return content[s + m.end():close]
+
+  # (target_span, [source_spans]) in document order.
+  merges = []
+  for u in units:
+    targets = [i for (i, x) in enumerate(u) if x[2] == target_title]
+    if not targets:
+      continue
+    for (i, x) in enumerate(u):
+      if x[2] not in source_titles:
+        continue
+      prev = [t for t in targets if t < i]
+      tgt = prev[-1] if prev else min([t for t in targets if t > i])
+      merges.append((u[tgt], x))
+  if not merges:
+    return content
+  # Group sources per target, preserving document order.
+  by_target = collections.OrderedDict()
+  for (tgt, src) in merges:
+    by_target.setdefault((tgt[0], tgt[1]), []).append(src)
+  edits = []
+  for ((ts, te), srcs) in by_target.items():
+    m = summary_re.search(content[ts:te])
+    close = content.rfind("</details>", ts, te)
+    mend = ts + m.end()
+    head = content[ts:mend]
+    body = content[mend:close].rstrip()
+    for (ss, se, _st, _w) in srcs:
+      src_body = inner_of(ss, se).strip()
+      if src_body:
+        body = body + "\n\n" + src_body
+    edits.append((ts, te, head + body + "\n</details>"))
+    for (ss, se, _st, _w) in srcs:
+      edits.append((ss, se, ""))
+  out = content
+  for (s, e, rep) in sorted(edits, key=lambda x: -x[0]):
+    out = out[:s] + rep + out[e:]
+  out = _normalize_spaces(out)
+  return out
+
+
+def lift_details_out_of_wrapper(content, titles, wrapper_title="सर्वाष् टीकाः"):
+  """Move matching child details out of wrapper blocks, placing them above.
+
+  Direct children of top-level <details><summary>wrapper_title</summary> blocks
+  whose stripped summary title is in `titles` are lifted out and placed
+  immediately above their wrapper, in original order. If a wrapper is left with
+  no children (and no other content), it is removed. Child block text
+  (including attributes like `open`) is preserved byte-for-byte. Everything
+  else — including already-outside blocks — is untouched. Idempotent.
+  """
+  if "<details" not in (content or "") or not titles:
+    return content
+  if isinstance(titles, str):
+    titles = [titles]
+  wanted = {t.strip() for t in titles}
+  tag_re = regex.compile(r"</details>|<details[^>]*>")
+  summary_re = regex.compile(r"<summary>(.*?)</summary>", flags=regex.DOTALL)
+
+  def split_level(text, base=0, level=0):
+    """Spans at relative depth `level` (top-level = 0)."""
+    spans, depth, start = [], 0, None
+    for m in tag_re.finditer(text):
+      if m.group().startswith("</"):
+        if depth > 0:
+          depth -= 1
+          if depth == level and start is not None:
+            spans.append((base + start, base + m.end()))
+            start = None
+      else:
+        if depth == level:
+          start = m.start()
+        depth += 1
+    return spans
+
+  def title_of(s, e):
+    m = summary_re.search(content[s:e])
+    return (m.group(1) or "").strip() if m else ""
+
+  edits = []
+  for (s, e) in split_level(content):
+    if title_of(s, e) != wrapper_title:
+      continue
+    m = summary_re.search(content[s:e])
+    whead_end = s + m.end()
+    close = content.rfind("</details>", s, e)
+    inner = content[whead_end:close]
+    kids = split_level(inner, base=whead_end, level=0)
+    # (absolute spans of direct children with titles)
+    kids = [(ks, ke) for (ks, ke) in kids if title_of(ks, ke)]
+    if not kids:
+      continue
+    lifts = [(ks, ke) for (ks, ke) in kids if title_of(ks, ke) in wanted]
+    if not lifts:
+      continue
+    keeps = [(ks, ke) for (ks, ke) in kids if title_of(ks, ke) not in wanted]
+    # Non-details residue inside wrapper (stray text)?
+    rest = inner
+    for (ks, ke) in sorted(kids, reverse=True):
+      rest = rest[:ks - whead_end] + rest[ke - whead_end:]
+    lifted = "\n\n".join(content[ks:ke] for (ks, ke) in lifts)
+    if keeps or rest.strip():
+      kept = "\n\n".join(content[ks:ke] for (ks, ke) in keeps)
+      body = (kept + ("\n\n" + rest.strip() if rest.strip() else ""))
+      new_wrapper = content[s:whead_end] + "\n\n" + body + "\n</details>"
+      edits.append((s, e, lifted + "\n\n" + new_wrapper))
+    else:
+      edits.append((s, e, lifted))
+  if not edits:
+    return content
+  out = content
+  for (s, e, rep) in sorted(edits, key=lambda x: -x[0]):
+    out = out[:s] + rep + out[e:]
+  out = _normalize_spaces(out)
+  return out
 
 
 def merge_successive(content, title_filter=".*"):

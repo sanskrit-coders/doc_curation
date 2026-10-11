@@ -2,13 +2,9 @@ import datetime
 
 import dateutil.parser as parser
 from doc_curation import blog
-from curation_utils import scraping
 import logging
-import os
-import re
 from pathlib import Path
 import feedparser
-import requests
 import trafilatura
 
 from doc_curation.md.file import MdFile

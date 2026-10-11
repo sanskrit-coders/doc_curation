@@ -1,8 +1,8 @@
 import regex
 import subprocess, tempfile, os
-import shutil
 from curation_utils import file_helper
-from doc_curation.md.content_processor import footnote_helper, quote_helper, details_helper
+from doc_curation.md.content_processor import quote_helper, details_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
 
 
 def md_links_to_latex(content: str) -> str:

@@ -5,7 +5,6 @@ import logging
 import toml
 
 import os
-import json
 
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)

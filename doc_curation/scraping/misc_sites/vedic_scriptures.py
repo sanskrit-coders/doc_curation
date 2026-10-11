@@ -1,16 +1,13 @@
 import logging
 import os
-import textwrap
 from urllib.parse import urljoin
-import requests
 import regex
 from doc_curation.utils import text_utils, patterns
 from doc_curation.md.file import MdFile
 from doc_curation.md.content_processor import details_helper
 from doc_curation.md.library import metadata_helper
-import editdistance
 
-from curation_utils import scraping, file_helper
+from curation_utils import scraping
 from enum import Flag, auto
 
 class ForceMode(Flag):
@@ -106,8 +103,8 @@ def dump_mantra_details(dest_path, url, commentaries_needed, mode=ForceMode.NONE
   # 
   # for comments_div in comments_divs:
   #   comment_details.extend(comments_from_div(comments_div, commentaries_needed=commentaries_needed))
-  # 
-  # new_content = "\n\n".join([x.to_html() for x in comment_details])
+  #
+  new_content = "\n\n".join([x.to_html() for x in comment_details])
   if not os.path.exists(dest_path):
     md_file.dump_to_file(metadata={}, content=new_content, dry_run=False)
   else:

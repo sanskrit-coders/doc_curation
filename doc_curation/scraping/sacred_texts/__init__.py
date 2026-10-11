@@ -3,13 +3,11 @@ import os
 
 from indic_transliteration import sanscript, sacred_texts_scheme
 
-import doc_curation.md.content_processor.footnote_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
 import regex
 from bs4 import NavigableString, BeautifulSoup
 
-import doc_curation.md.library.arrangement
 from curation_utils import scraping
-from doc_curation.md import library, content_processor
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper, arrangement
 from doc_curation.scraping.html_scraper import souper
@@ -112,7 +110,7 @@ def get_content(soup, main_content_extractor=get_main_content):
   content_out = main_content_extractor(main_div)
   if footnote_div is not None:
     content_out += get_footnote_def_text(footnote_div)
-  content_out = doc_curation.md.content_processor.footnote_helper.define_footnotes_near_use(content=content_out)
+  content_out = footnote_helper.define_footnotes_near_use(content=content_out)
   content_out = regex.sub("\n\n+", "\n\n", content_out)
   return content_out
 

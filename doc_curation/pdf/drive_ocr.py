@@ -10,7 +10,7 @@ from pathlib import Path
 from curation_utils import file_helper
 from doc_curation import pdf
 from doc_curation.pdf import compress_with_gs, detext_via_jpg, split_into_small_pdfs, _get_ocr_dir, \
-  detext_with_pdfimages
+  detext_with_pdfimages  # noqa: F401  # used in commented code
 import argparse
 
 

@@ -176,7 +176,6 @@ def drop_sections(md_file, title_condition):
     lines_out.append("\n## %s" % section.title)
     lines_out.extend(section.lines)
   return "\n".join(lines_out)
-  md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
 
 
 def deromanize_section_numbers(content):

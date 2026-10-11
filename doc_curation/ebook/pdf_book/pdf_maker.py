@@ -1,6 +1,5 @@
 from doc_curation.ebook import calibre_helper
 from doc_curation.ebook.pdf_book import booklet_maker
-from doc_curation.ebook import pdf_book
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 import os, regex

@@ -25,8 +25,8 @@ This script requires Inkscape (tested with 0.48)
  * distorted or destroyed in any manner whatsoever without further attribution or
  * notice to the creator. Constructive feedback is always welcome nevertheless.
 """
-import argparse, sys, os, subprocess, cmd
-import re, lxml
+import argparse, sys, os, subprocess
+import re
 
 
 #constants (feel free to change these to your favorite defaults)

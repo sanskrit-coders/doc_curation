@@ -1,10 +1,7 @@
-import os
 
 import regex
 
-import doc_curation.md.library.arrangement
 from doc_curation.md import library
-from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement, metadata_helper
 from doc_curation.scraping.html_scraper import souper
 

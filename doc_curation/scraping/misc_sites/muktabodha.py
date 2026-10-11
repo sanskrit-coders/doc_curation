@@ -7,16 +7,14 @@ from collections import defaultdict
 from functools import lru_cache
 
 import tqdm
-from matplotlib import scale
 from selenium.webdriver.common.by import By
 
-import doc_curation.utils.sanskrit_helper
 import regex
 from bs4 import BeautifulSoup, Tag
 from curation_utils import scraping, file_helper
 from doc_curation.ebook import pandoc_helper
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import space_helper, footnote_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement
 from doc_curation.utils import sanskrit_helper

@@ -10,9 +10,7 @@ import img2pdf
 import regex
 from pypdf import PdfReader, PdfWriter
 
-import io
 from fpdf import FPDF
-from pypdf import PdfReader
 
 from doc_curation.md.file import MdFile
 
@@ -20,7 +18,7 @@ from doc_curation.md.file import MdFile
 SKT_FONT = '/home/vvasuki/gitland/indic-transliteration/sanskrit-fonts/fonts/ttf-devanagari/TiroDevanagariSanskrit-Regular.ttf'
 
 try:
-  import uharfbuzz
+  import uharfbuzz  # noqa: F401  # availability check with logging below
   logging.info("HarfBuzz detected! Sanskrit shaping is ACTIVE.")
 except ImportError:
   logging.warning("HarfBuzz NOT detected. Sanskrit shaping will be BROKEN.")

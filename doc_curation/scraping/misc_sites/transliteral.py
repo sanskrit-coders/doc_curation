@@ -1,16 +1,12 @@
-import logging
 import os
 
-import regex
 from doc_curation.md.file import MdFile
 from doc_curation.utils import sanskrit_helper
 
 from indic_transliteration import sanscript
 from doc_curation.md import library
-from doc_curation.md.content_processor import details_helper
-from doc_curation.md.library import combination, metadata_helper
+from doc_curation.md.library import arrangement, metadata_helper
 from doc_curation.scraping.html_scraper import souper
-from curation_utils import scraping, file_helper
 
 
 

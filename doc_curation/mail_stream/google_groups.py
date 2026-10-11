@@ -1,8 +1,6 @@
-import codecs
 import logging
 import os
 from collections import namedtuple
-from datetime import datetime
 from urllib.parse import urljoin
 
 from dateutil import parser
@@ -15,10 +13,8 @@ from selenium.webdriver.remote.remote_connection import LOGGER
 from curation_utils import scraping, file_helper
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.wait import WebDriverWait
-
-from doc_curation import md
+from doc_curation.ebook import pandoc_helper
 from doc_curation.md.file import MdFile
-from doc_curation.scraping.html_scraper import souper
 
 LOGGER.setLevel(logging.WARNING)
 from urllib3.connectionpool import log as urllibLogger
@@ -70,7 +66,7 @@ def get_thread_messages_selenium(url, browser=thread_browser):
     if author_tag is None:
       # logging.warning("Could not get author")
       # Section within a message. As in https://groups.google.com/g/bvparishat/c/eHLaHN4heY4
-      messages[-1] = messages[-1]._replace(content=f"{messages[-1].content}\n\n{content}")
+      messages[-1] = messages[-1]._replace(content=f"{messages[-1].content}\n\n{soup.text}")
       continue
     else:
       author = author_tag.text

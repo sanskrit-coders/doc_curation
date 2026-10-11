@@ -1,7 +1,6 @@
 import logging
 import os
 
-import regex
 from doc_curation.md.file import MdFile
 
 import doc_curation.md

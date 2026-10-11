@@ -1,14 +1,12 @@
 import logging
 
 import doc_curation.md.library
-from bs4 import BeautifulSoup, NavigableString
 
 import regex
 
 from indic_transliteration import sanscript
-import regex
 
-from doc_curation.md import content_processor, library
+from doc_curation.md import content_processor
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement
 from doc_curation.utils import patterns
@@ -46,6 +44,84 @@ def transliterate_init_ids(content, id_pattern=r"॥ *([०-९]+) *॥", source
       content = regex.sub(particular_id_pattern, replacement, content, count=1)
   
   return content
+
+
+def wrap_commentaries_in_details(content, block_name="सर्वाष् टीकाः", exclude=["विश्वास-प्रस्तुतिः"]):
+  """Wrap runs of non-excluded top-level <details> blocks in a named wrapper block.
+
+  Consecutive top-level <details> blocks (separated only by whitespace) whose
+  summary title matches none of the `exclude` regexes nor `block_name` itself
+  are grouped, and each maximal group is wrapped as::
+
+    <details><summary>{block_name}</summary>
+
+    <original blocks joined by blank lines>
+    </details>
+
+  :param exclude: regexes (strings, compiled on the fly, or pre-compiled
+    patterns with a ``search`` method) matched with ``search`` against the
+    stripped summary title. A block is excluded when any regex matches, eg.
+    ``exclude=[r"^विश्वास-प्रस्तुतिः"]`` skips ``विश्वास-प्रस्तुतिः`` as well
+    as suffixed variants like ``विश्वास-प्रस्तुतिः - DP_१ - ०१``. Anchor with
+    ``^...$`` for exact-title matching.
+
+  Excluded blocks (eg. विश्वास-प्रस्तुतिः), pre-existing wrapper blocks and any
+  non-whitespace content (headings, audio embeds, bare text) break groups and
+  are left in place. Inner block text is preserved byte-for-byte. Idempotent:
+  re-running leaves already-wrapped content untouched.
+  """
+  exclude_res = []
+  for e in (exclude or []):
+    exclude_res.append(e if hasattr(e, "search") else regex.compile(str(e)))
+  open_re = regex.compile(r"<details[^>]*>")
+  tag_re = regex.compile(r"</details>|<details[^>]*>")
+  summary_re = regex.compile(r"<summary>(.*?)</summary>", flags=regex.DOTALL)
+  # Top-level spans via depth tracking (handles pre-wrapped nested blocks).
+  spans = []
+  depth = 0
+  start = None
+  for m in tag_re.finditer(content or ""):
+    if m.group().startswith("</"):
+      if depth > 0:
+        depth -= 1
+        if depth == 0 and start is not None:
+          spans.append((start, m.end()))
+          start = None
+    else:
+      if depth == 0:
+        start = m.start()
+      depth += 1
+  if not spans:
+    return content
+
+  def title_of(span_text):
+    m = summary_re.search(span_text)
+    return (m.group(1) or "").strip() if m else ""
+
+  titles = [title_of(content[s:e]) for (s, e) in spans]
+  wrappable = [(not any(p.search(t) for p in exclude_res) and t != block_name) for t in titles]
+
+  parts = []
+  pos = 0
+  i = 0
+  n = len(spans)
+  while i < n:
+    if not wrappable[i]:
+      parts.append(content[pos:spans[i][1]])
+      pos = spans[i][1]
+      i += 1
+      continue
+    j = i
+    while (j + 1 < n and wrappable[j + 1]
+           and not content[spans[j][1]:spans[j + 1][0]].strip()):
+      j += 1
+    inner = "\n\n".join(content[spans[k][0]:spans[k][1]] for k in range(i, j + 1))
+    parts.append(content[pos:spans[i][0]])
+    parts.append(f"<details><summary>{block_name}</summary>\n\n{inner}\n</details>")
+    pos = spans[j][1]
+    i = j + 1
+  parts.append(content[pos:])
+  return "".join(parts)
 
 
 def move_detail_to_matching_file(dest_dir, source_file, dest_id_maker=None, dest_pattern="<details.+?summary>मूलम्</summary>[\s\S]+?॥ *([०-९]+) *॥\s*</details>\n*", source_pattern="(?<=\n|^)([\d०-९೦-೯]+).+\n", overwrite_pattern=None, overwrite_mode=None, dry_run=False):
