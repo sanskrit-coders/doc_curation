@@ -1,3 +1,4 @@
+from doc_curation import translation
 from doc_curation.md import library
 from doc_curation.md.content_processor import details_helper
 from doc_curation.md.file import MdFile
@@ -5,11 +6,11 @@ from doc_curation.utils import text_utils
 
 
 def translate_sentences(base_dir, source_language="es", dest_language="en"):
-  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: details_helper.sentences_to_translated_details(c, source_language=source_language, dest_language=dest_language), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: translation.sentences_to_translated_details(c, source_language=source_language, dest_language=dest_language), dry_run=False)
 
 
 def translate_details(base_dir, source_language, dest_language, src_detail_pattern="English"):
-  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: details_helper.add_translation(c, source_language=source_language, dest_language=dest_language, src_detail_pattern=src_detail_pattern), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: translation.add_translation_detail(c, source_language=source_language, dest_language=dest_language, src_detail_pattern=src_detail_pattern), dry_run=False)
 
 
 def translate_partwise(base_dir, source_language, dest_language):

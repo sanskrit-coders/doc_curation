@@ -5,8 +5,6 @@ import os
 import textwrap
 from collections import defaultdict
 
-import doc_curation.md.content_processor.space_helper
-import doc_curation.translation
 import regex
 from bs4 import BeautifulSoup, NavigableString
 from bs4.element import PageElement
@@ -18,7 +16,6 @@ from doc_curation.md.file import MdFile
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.utils import patterns
 from indic_transliteration import sanscript
-from tqdm import tqdm
 
 
 class Detail(object):
@@ -1019,81 +1016,6 @@ def shlokas_to_muula_viprastuti_details(content, shloka_processor=lambda x:x, pa
   except TimeoutError as x:
     print(x)
     logging.fatal(f"pattern: {pattern}")
-  return content
-
-
-def sentences_to_translated_details(content, source_language="en", dest_language="es"):
-  from nltk.tokenize import sent_tokenize
-  if f"<details><summary>{dest_language}</summary>" in content:
-    logging.debug("Skipping translation because <summary>%s</summary>", dest_language)
-    return content
-  subcontents = regex.split(r"((?<=\n|^)[#\-<!]+[^\n]+(?=\n|$))", content)
-  content_out = ""
-  for subcontent in tqdm(subcontents, desc='Sec', ):
-    if regex.match(r"[#\-<! ]+", subcontent):
-      translation = doc_curation.translation.translate(text=subcontent, source_language=source_language, dest_language=dest_language)
-      content_out += f"{subcontent}  \n  {{{translation}}}\n"
-      continue
-    soup = content_processor._soup_from_content(content=subcontent)
-    if soup is None:
-      return subcontent
-    for element in soup.select_one("body").children:
-      if isinstance(element, NavigableString):
-        tokenizer_language = {"en": "english", "es": "spanish"}
-        sentences = sent_tokenize(element.text, language=tokenizer_language[source_language])
-        detail_pairs = []
-        for sentence in tqdm(sentences, desc='Sent', ):
-          detail_muula = Detail(title = source_language, content=sentence)
-          translation = doc_curation.translation.translate(text=sentence, source_language=source_language, dest_language=dest_language)
-          detail_trans = Detail(title = dest_language, content=translation)
-          detail_pairs.append([detail_muula, detail_trans])
-        detail_pairs.reverse()
-        for [detail_muula, detail_trans] in detail_pairs:
-          element.insert_after(NavigableString("\n\n"))
-          element.insert_after(detail_trans.to_soup())
-          element.insert_after(NavigableString("\n\n"))
-          element.insert_after(detail_muula.to_soup(attributes_str="open"))
-        element.extract()
-        if element.name == "details":
-          detail = Detail.from_soup_tag(detail_tag=element)
-          translation = doc_curation.translation.translate(text=detail.content, source_language=source_language, dest_language=dest_language)
-          detail_trans = Detail(title = f"{detail.title} {dest_language}", content=translation)
-          element.insert_after(NavigableString("\n\n"))
-          element.insert_after(detail_trans.to_soup())
-          element.insert_after(NavigableString("\n\n"))
-    subcontent = content_processor._make_content_from_soup(soup=soup)
-    content_out = content_out + subcontent + "\n\n"
-  content_out = _normalize_spaces(content_out)
-  return content_out
-
-
-def add_translation(content, src_detail_pattern="English", source_language="en", dest_language="es"):
-  def _title_from_detail(detail):
-    title = f"{detail.title} {dest_language}"
-    if detail.title == "English":
-      title = "Español"
-    return title
-  soup = content_processor._soup_from_content(content=content)
-  if soup is None:
-    return content
-  content_modified = False
-  elements = [element for element in soup.select_one("body").children if element.name == "details" and regex.match(src_detail_pattern, Detail.from_soup_tag(detail_tag=element).title)]
-  dest_elements = [element for element in soup.select_one("body").children if element.name == "details" and _title_from_detail(Detail.from_soup_tag(detail_tag=elements[0])) == Detail.from_soup_tag(detail_tag=element).title]
-  if len(dest_elements) > 0:
-    logging.debug("Skipping translation")
-    return content
-  for element in tqdm(elements):
-    detail = Detail.from_soup_tag(detail_tag=element)
-    title = _title_from_detail(detail)
-    translation = doc_curation.translation.translate(text=detail.content, source_language=source_language, dest_language=dest_language)
-    translation = regex.sub(r"\[^", fr"\[^{dest_language}", translation)
-    translation = regex.sub(r"(?<=\n|^) (\[^.+?\]:|>)", fr"\1", translation)
-    detail_trans = Detail(title=title, content=translation)
-    element.insert_after(detail_trans.to_soup())
-    content_modified = True
-  if content_modified:
-    content = content_processor._make_content_from_soup(soup=soup)
-    content = _normalize_spaces(content)
   return content
 
 
