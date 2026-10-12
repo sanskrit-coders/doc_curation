@@ -4,7 +4,7 @@ import regex
 
 from doc_curation_projects.smRti.manu import content
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper, details_helper
+from doc_curation.md.content_processor import include_helper, details as details_helper
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 

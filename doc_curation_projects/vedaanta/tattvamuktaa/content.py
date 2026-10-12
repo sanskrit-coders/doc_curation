@@ -1,7 +1,7 @@
 import os
 
 from doc_curation.md.library import metadata_helper, arrangement
-from doc_curation.md.content_processor import details_helper
+from doc_curation.md.content_processor import details as details_helper
 from doc_curation.utils import patterns
 import regex
 from doc_curation.md import library, content_processor

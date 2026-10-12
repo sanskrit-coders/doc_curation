@@ -4,7 +4,7 @@ from shutil import copyfile
 from indic_transliteration import sanscript
 import regex
 from doc_curation.md import content_processor
-from doc_curation.md.content_processor import details_helper, embed_helper
+from doc_curation.md.content_processor import details as details_helper, embed_helper
 from doc_curation.md.content_processor.footnote import helper as footnote_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library.combination import make_full_text_md

@@ -1,7 +1,7 @@
 from curation_utils.file_helper import get_storage_name
 from doc_curation.ebook import pandoc_helper
 from doc_curation.md import content_processor
-from doc_curation.md.content_processor import details_helper
+from doc_curation.md.content_processor import details as details_helper
 from doc_curation.md.library import metadata_helper, arrangement
 from doc_curation.utils import sanskrit_helper
 from indic_transliteration import sanscript

@@ -4,7 +4,7 @@ from doc_curation_projects.veda.atharva import shaunakam
 import os, regex, logging
 from doc_curation.md import library, content_processor
 from doc_curation.md.library import arrangement
-from doc_curation.md.content_processor import details_helper
+from doc_curation.md.content_processor import details as details_helper
 from urllib.parse import urljoin
 
 

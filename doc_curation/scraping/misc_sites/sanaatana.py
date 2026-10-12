@@ -5,7 +5,7 @@ import tqdm
 
 from curation_utils import scraping
 from doc_curation.md import markdownify_plain_text
-from doc_curation.md.content_processor.details_helper import Detail
+from doc_curation.md.content_processor.details import Detail
 from doc_curation.md.file import MdFile
 from doc_curation.md.library.arrangement import fix_index_files
 from doc_curation.utils import sanskrit_helper

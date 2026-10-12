@@ -5,7 +5,7 @@ import os
 import shutil
 from collections import OrderedDict
 
-from doc_curation.md.content_processor.details_helper import Detail
+from doc_curation.md.content_processor.details import Detail
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from doc_curation_projects.puraaNa import raamaayana

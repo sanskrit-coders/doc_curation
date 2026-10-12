@@ -2,8 +2,8 @@ import glob
 import json
 
 from doc_curation.md import library
-from doc_curation.md.content_processor import details_helper
-from doc_curation.md.content_processor.details_helper import Detail
+from doc_curation.md.content_processor import details as details_helper
+from doc_curation.md.content_processor.details import Detail
 from doc_curation.md.file import MdFile
 
 

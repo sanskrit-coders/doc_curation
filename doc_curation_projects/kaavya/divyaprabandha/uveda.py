@@ -2,7 +2,7 @@ import json
 
 import regex
 
-from doc_curation.md.content_processor import details_helper, transliterate
+from doc_curation.md.content_processor import details as details_helper, transliterate
 from doc_curation.md.file import MdFile
 from doc_curation_projects.kaavya.divyaprabandha import general
 from indic_transliteration import sanscript

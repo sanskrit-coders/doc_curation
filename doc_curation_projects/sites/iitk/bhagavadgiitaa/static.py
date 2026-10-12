@@ -5,7 +5,7 @@ from indic_transliteration import sanscript
 import os.path
 from doc_curation.md.library import combination, arrangement
 from doc_curation.md import library
-from doc_curation.md.content_processor import details_helper
+from doc_curation.md.content_processor import details as details_helper
 
 STATIC_ROOT = "/home/vvasuki/gitland/vishvAsa/mahAbhAratam/static/vyAsaH/shlokashaH/06-bhIShma-parva/03-bhagavad-gItA-parva"
 

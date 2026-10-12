@@ -4,7 +4,7 @@ import os
 import regex
 
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import ocr_helper, details_helper
+from doc_curation.md.content_processor import ocr_helper, details as details_helper
 
 from doc_curation.md.library import arrangement
 from doc_curation.md.file import MdFile

@@ -5,7 +5,7 @@ from bs4 import NavigableString
 from tqdm import tqdm
 
 from doc_curation.md import content_processor
-from doc_curation.md.content_processor.details_helper import Detail, _normalize_spaces
+from doc_curation.md.content_processor.details import Detail, _normalize_spaces
 
 
 def translate(text, source_language="en", dest_language="es", translator="google"):
@@ -35,7 +35,7 @@ def sentences_to_translated_details(content, source_language="en", dest_language
   content_out = ""
   for subcontent in tqdm(subcontents, desc='Sec', ):
     if regex.match(r"[#\-<! ]+", subcontent):
-      translation = doc_curation.translation.translate(text=subcontent, source_language=source_language, dest_language=dest_language)
+      translation = translate(text=subcontent, source_language=source_language, dest_language=dest_language)
       content_out += f"{subcontent}  \n  {{{translation}}}\n"
       continue
     soup = content_processor._soup_from_content(content=subcontent)
@@ -48,7 +48,7 @@ def sentences_to_translated_details(content, source_language="en", dest_language
         detail_pairs = []
         for sentence in tqdm(sentences, desc='Sent', ):
           detail_muula = Detail(title = source_language, content=sentence)
-          translation = doc_curation.translation.translate(text=sentence, source_language=source_language, dest_language=dest_language)
+          translation = translate(text=sentence, source_language=source_language, dest_language=dest_language)
           detail_trans = Detail(title = dest_language, content=translation)
           detail_pairs.append([detail_muula, detail_trans])
         detail_pairs.reverse()
@@ -60,7 +60,7 @@ def sentences_to_translated_details(content, source_language="en", dest_language
         element.extract()
         if element.name == "details":
           detail = Detail.from_soup_tag(detail_tag=element)
-          translation = doc_curation.translation.translate(text=detail.content, source_language=source_language, dest_language=dest_language)
+          translation = translate(text=detail.content, source_language=source_language, dest_language=dest_language)
           detail_trans = Detail(title = f"{detail.title} {dest_language}", content=translation)
           element.insert_after(NavigableString("\n\n"))
           element.insert_after(detail_trans.to_soup())

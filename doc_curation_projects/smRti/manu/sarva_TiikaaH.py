@@ -3,7 +3,7 @@ from pathlib import Path
 
 import regex
 
-from doc_curation.md.content_processor import details_helper
+from doc_curation.md.content_processor import details as details_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import combination, arrangement
 

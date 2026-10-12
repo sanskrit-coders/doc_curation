@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from doc_curation_projects import veda
 from doc_curation_projects.veda import suutra
 from doc_curation.md import library
-from doc_curation.md.content_processor import section_helper, include_helper, details_helper
+from doc_curation.md.content_processor import section_helper, include_helper, details as details_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from doc_curation.scraping import sacred_texts

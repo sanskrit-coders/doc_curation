@@ -8,7 +8,7 @@ from selenium.webdriver.remote.remote_connection import LOGGER
 
 from curation_utils import scraping
 from doc_curation.md import library
-from doc_curation.md.content_processor import details_helper
+from doc_curation.md.content_processor import details as details_helper
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 

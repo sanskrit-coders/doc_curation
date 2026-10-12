@@ -1,7 +1,7 @@
 from doc_curation.md import library
 import os.path
 from doc_curation.md import content_processor
-from doc_curation.md.content_processor import include_helper, details_helper
+from doc_curation.md.content_processor import include_helper, details as details_helper
 from doc_curation.md.file import MdFile
 
 import regex

@@ -4,7 +4,7 @@ from doc_curation.md.file import MdFile
 
 from indic_transliteration import sanscript
 from doc_curation.md import library
-from doc_curation.md.content_processor import details_helper
+from doc_curation.md.content_processor import details as details_helper
 from doc_curation.md.library import combination  # noqa: F401  # used in commented code
 from doc_curation.scraping.html_scraper import souper
 

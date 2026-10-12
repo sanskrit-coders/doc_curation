@@ -47,7 +47,7 @@ def soup_to_details(soup, css_selector, get_detail_type):
     if len(details) > 0 and details[-1].title == detail_type:
       details[-1].content = f"{details[-1].content.strip()}  \n{tag.text.strip()}\n"
     else:
-      from doc_curation.md.content_processor.details_helper import Detail
+      from doc_curation.md.content_processor.details import Detail
       details.append(Detail(title=detail_type, content=tag.text.strip()))
   return details
 

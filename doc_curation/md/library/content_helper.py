@@ -35,7 +35,7 @@ def copy_contents(src_dir, dest_dir, detail_title=None, dest_content_condition=N
       logging.info(f"Skipping {path_suffix} - Condition not met.\n{skipped_files[path_suffix]}")
       continue
     if detail_title is not None:
-      from doc_curation.md.content_processor import details_helper
+      from doc_curation.md.content_processor import details as details_helper
       (tag, detail) = details_helper.get_detail(content=content_src, metadata=metadata_src, title=detail_title)
       new_content = detail.content
     else:

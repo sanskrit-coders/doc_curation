@@ -86,7 +86,7 @@ def combine_to_details(source_paths_or_content, dest_path, source_path_to_title=
       if subpath.startswith("/"):
         subpath = subpath[1:]
       (metadata, content) = md_file.read()
-      from doc_curation.md.content_processor import details_helper
+      from doc_curation.md.content_processor import details as details_helper
       if content.strip() != "":
         if ready_content is not None:
           final_content_map[subpath] += f"\n{ready_content}\n"

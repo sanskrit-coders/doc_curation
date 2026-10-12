@@ -1,7 +1,7 @@
 import doc_curation.utils.sanskrit_helper
 import regex
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import details_helper, ocr_helper, space_helper, section_helper
+from doc_curation.md.content_processor import details as details_helper, ocr_helper, space_helper, section_helper
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.misc_sites import ebhaarati
 from doc_curation.utils import patterns, sanskrit_helper

@@ -1,7 +1,7 @@
 import os
 
 from doc_curation.md import library
-from doc_curation.md.content_processor import details_helper, ocr_helper, space_helper
+from doc_curation.md.content_processor import details as details_helper, ocr_helper, space_helper
 from doc_curation.md.content_processor import section_helper
 from doc_curation.md.file import MdFile
 from doc_curation_projects.veda.yajuH.vaajasaneyi import shatapatha

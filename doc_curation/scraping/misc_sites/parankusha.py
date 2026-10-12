@@ -11,7 +11,7 @@ import doc_curation
 from doc_curation import book_data
 from doc_curation.md import content_processor
 from doc_curation.md.file import MdFile
-from doc_curation.md.content_processor import details_helper
+from doc_curation.md.content_processor import details as details_helper
 from doc_curation.md.library import arrangement
 from doc_curation.scraping.html_scraper import selenium
 from doc_curation.scraping.html_scraper.selenium import click_link_by_text

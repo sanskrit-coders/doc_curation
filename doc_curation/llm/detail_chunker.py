@@ -8,7 +8,7 @@ import regex
 from tqdm import tqdm
 
 from doc_curation.md import content_processor as md_content_processor
-from doc_curation.md.content_processor import details_helper
+from doc_curation.md.content_processor import details as details_helper
 from doc_curation.md.file import MdFile
 
 from .backend import LlmBackend

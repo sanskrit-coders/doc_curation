@@ -323,7 +323,7 @@ def merge_sections(md_file, md_files, out_path=None, section_hasher=lambda x: sa
 
 
 def section_contents_to_details(content, title):
-  from doc_curation.md.content_processor import details_helper
+  from doc_curation.md.content_processor import details as details_helper
   (lines_till_section, sections) = get_sections(content=content)
 
   def _make_detail(lines):
@@ -343,7 +343,7 @@ def section_contents_to_details(content, title):
 
 
 def section_headings_to_details(content, prev_detail_title="मूलम्(.*)", title="विषयः", inserter=PageElement.insert_after):
-  from doc_curation.md.content_processor import details_helper
+  from doc_curation.md.content_processor import details as details_helper
   (lines_till_section, sections) = get_sections(content=content)
 
   new_content = "\n".join(lines_till_section)

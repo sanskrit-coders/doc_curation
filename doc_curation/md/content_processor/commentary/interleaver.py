@@ -16,7 +16,7 @@ import re
 from collections import deque
 
 try:
-  from doc_curation.md.content_processor.details_helper import get_details
+  from doc_curation.md.content_processor.details import get_details
   from doc_curation.md.file import MdFile
   _HAS_HELPERS = True
 except ImportError:  # pragma: no cover - minimal env without bs4/yamldown.
@@ -943,7 +943,7 @@ def verify_sentence_order(dest_file, commentary_file, start_string=None):
     human-readable appendix lines.
   """
   if _HAS_HELPERS:
-    from doc_curation.md.content_processor.details_helper import get_details as _get_details
+    from doc_curation.md.content_processor.details import get_details as _get_details
     from doc_curation.md.file import MdFile as _MdFile
     dest_md = _MdFile(file_path=dest_file)
     metadata, dest_content = dest_md.read()

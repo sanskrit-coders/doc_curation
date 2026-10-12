@@ -64,7 +64,7 @@ def shift_contents(dir_path, substitute_content_offset, start_index=None, end_in
 
 
 def shift_details(dir_path, substitute_content_offset, detail_title, start_index=None, end_index=None, index_position=0, dry_run=False):
-  from doc_curation.md.content_processor import details_helper
+  from doc_curation.md.content_processor import details as details_helper
   def replacer(md_file, content):
     (_, detail) = details_helper.get_detail(content=content, metadata={}, title=detail_title)
     (metadata, md_content) = md_file.read()
