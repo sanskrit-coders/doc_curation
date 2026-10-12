@@ -3,9 +3,8 @@ import os
 import regex
 
 from doc_curation import llm
-from doc_curation.llm import claude
+from doc_curation.llm import claude, gemini, opencode
 from doc_curation.md import library, content_processor
-from doc_curation.llm.gemini.rotator import process_details_with_keys, process_text_chunks_with_keys
 from doc_curation.md.content_processor import include as include_helper, section_helper, details as details_helper, ocr_helper, space_helper
 from doc_curation.md.content_processor.footnote import helper
 from doc_curation.utils import patterns, sanskrit_helper
@@ -109,11 +108,12 @@ if __name__ == '__main__':
 
   # devanagari = sanscript.SCHEMES[sanscript.DEVANAGARI]
 
+  library.apply_function(fn=opencode.process_details_with_keys, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/shankaraH/brahma-sUtrANi/sarva-prastutiH/01/01/06_AnandamayAdhikaraNam.md", prompt=llm.get_prompt("/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md"), model_id="opencode-go/step-5-preview-free", dry_run=False)
 
-  library.apply_function(fn=process_text_chunks_with_keys, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/tattvam/shrInivAsaH/brahma-sUtra-bhAShyam/2004_saMskaraNam/01", prompt=llm.get_prompt("/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md"), dry_run=False)
-  # library.apply_function(fn=process_text_chunks_with_keys, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/bellamkoNDa-rAma-rAyaH/vedAnta-sangrahaH.md", prompt=llm.get_prompt("/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/interleave-translation/mUla_and_En_translation.md"), dry_run=False)
+  # library.apply_function(fn=gemini.process_text_chunks_with_keys, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_vaiShNavaH/content/vaikhAnasaH/tattvam/shrInivAsaH/brahma-sUtra-bhAShyam/2004_saMskaraNam/01", prompt=llm.get_prompt("/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md"), dry_run=False)
+  # library.apply_function(fn=gemini.process_text_chunks_with_keys, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/bellamkoNDa-rAma-rAyaH/vedAnta-sangrahaH.md", prompt=llm.get_prompt("/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/interleave-translation/mUla_and_En_translation.md"), dry_run=False)
 
-  # library.apply_function(fn=process_details_with_keys, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/sa_hi/10/", prompt=llm.get_prompt("/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/bare-hyphenator.md"), detail_pattern="मूलम्.*|.+वतारिका - .+|टीका.+", dry_run=False, start_file="02.md") 
+  # library.apply_function(fn=gemini.process_details_with_keys, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/sa_hi/10/", prompt=llm.get_prompt("/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/bare-hyphenator.md"), detail_pattern="मूलम्.*|.+वतारिका - .+|टीका.+", dry_run=False, start_file="02.md")
 
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/sa_hi/08", content_transformer=lambda x, *args, **kwargs: ocr_helper.fix_gemini_errors(x), dry_run=False)

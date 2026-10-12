@@ -53,7 +53,7 @@ def _opencode_pdf_chunks_fn(*args, api_key_path=None, model_id=None, cred_path=N
   return process_pdf_chunks(*args, backend=backend, **kwargs)
 
 
-def process_text_chunks_with_keys(file_in, *args, api_key_path="opencode", cred_path=None,
+def process_text_chunks_with_keys(file_in, *args, api_key_path="opencode_go", cred_path=None,
                                   model_id=None, max_attempts=None, max_transient_retries=8,
                                   **kwargs):
   """Process a text file chunk-by-chunk; model_id picks any opencode model
@@ -64,7 +64,7 @@ def process_text_chunks_with_keys(file_in, *args, api_key_path="opencode", cred_
                          product="Opencode", **kwargs)
 
 
-def process_details_with_keys(file_in, *args, api_key_path="opencode", cred_path=None,
+def process_details_with_keys(file_in, *args, api_key_path="opencode_go", cred_path=None,
                               model_id=None, max_attempts=None, max_transient_retries=8,
                               **kwargs):
   """Process <details> blocks; model_id picks any opencode model
@@ -74,7 +74,7 @@ def process_details_with_keys(file_in, *args, api_key_path="opencode", cred_path
                          max_transient_retries=max_transient_retries, **kwargs)
 
 
-def process_pdf_chunks_with_keys(file_in, *args, api_key_path="opencode", cred_path=None,
+def process_pdf_chunks_with_keys(file_in, *args, api_key_path="opencode_go", cred_path=None,
                                  model_id=None, max_attempts=None, max_transient_retries=8,
                                  **kwargs):
   """Process PDF chunks; model_id picks any opencode model

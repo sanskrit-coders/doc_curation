@@ -5,6 +5,7 @@ from indic_transliteration import sanscript
 import regex
 from doc_curation.md import content_processor
 from doc_curation.md.content_processor import details as details_helper, embed_helper
+from doc_curation.md.content_processor import section_helper  # noqa: F401  # used in commented code
 from doc_curation.md.content_processor.footnote import helper as footnote_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library.combination import make_full_text_md
@@ -66,7 +67,7 @@ def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, b
       content_appendix = f"# Appendix - {metadata['title']}\n\n{content_appendix}"
       logging.info("Strip appendix figures")
       content_appendix = regex.sub(r"(?:^|\n)!\[.*?\]\(.+?\) *\n(\{.+?\})?\n", "", content_appendix)
-      # appendix = include_helper.fix_headers(content=appendix, h1_level=2)
+      # content_appendix = section_helper.fix_headers(content=content_appendix, h1_level=2)
       content = f"{content}\n\n{content_appendix}"
  
     logging.info(f"Fixing links and metadata")

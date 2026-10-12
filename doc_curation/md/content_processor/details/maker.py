@@ -185,6 +185,101 @@ def shlokas_to_muula_viprastuti_details(content, shloka_processor=lambda x:x, pa
     logging.fatal(f"pattern: {pattern}")
   return content
 
+def translation_details(translation, notes=None,
+                        translation_title="Translation",
+                        notes_title="Translation - Notes"):
+  """Translation [+ Notes] detail blocks for one already-placed sentence.
+
+  Companion to :func:`generic_sanskrit_vipra_mUla`: the caller inserts the
+  returned blocks directly above the sentence's ``मूलम्`` block.
+  """
+  translation = (translation or "").strip()
+  parts = [Detail(title=translation_title, content=translation).to_md_html()]
+  if (notes or "").strip():
+    parts.append(Detail(title=notes_title, content=notes.strip()).to_md_html())
+  return "\n\n".join(parts)
+
+
+def generic_sanskrit_vipra_mUla(content, start_text=None,
+                               vishvaasa_title="विश्वास-प्रस्तुतिः",
+                               muula_title="मूलम्"):
+  """Wrap each sentence of bare Sanskrit text in विश्वास + मूलम् blocks.
+
+  Takes ```content`` (a full file body or section), and for every
+  non-detail paragraph after ``start_text`` splits it with
+  :func:`doc_curation.utils.sanskrit_helper.split_to_sentences` and
+  replaces each sentence with an (open) विश्वास-प्रस्तुतिः block plus a
+  मूलम् block — no translations involved (those are inserted later,
+  above each मूलम् block, once mapped).
+
+  :param content: markdown text.
+  :param start_text: only text after this marker's line is processed;
+    ``None`` processes from the top (leading ``+++`` frontmatter and
+    markdown headings are always skipped).
+  :return: new markdown text (input untouched where there is nothing to
+    wrap: details blocks, headings, non-Devanagari paragraphs).
+  """
+  from doc_curation.utils.sanskrit_helper import split_to_sentences
+
+  if start_text:
+    idxs = [m.start() for m in regex.finditer(regex.escape(start_text),
+                                              content)]
+    if not idxs:
+      raise ValueError(f"start_text {start_text!r} not found in content.")
+    line_end = content.find("\n", idxs[-1])
+    cut = len(content) if line_end == -1 else line_end + 1
+    head, rest = content[:cut], content[cut:]
+  else:
+    m = regex.match(r"^\+\+\+.*?\+\+\+\n?", content, flags=regex.DOTALL)
+    head = m.group(0) if m else ""
+    rest = content[len(head):]
+
+  out = []
+  for seg in regex.split(r"(<details\b.*?</details>)", rest,
+                         flags=regex.DOTALL):
+    if not seg:
+      continue
+    if seg.strip().startswith("<details"):
+      out.append(seg)
+      continue
+    chunks = []
+    for tok in regex.split(r"(\n\s*\n)", seg):
+      if not tok.strip() or regex.fullmatch(r"\n\s*\n", tok):
+        chunks.append(tok)
+        continue
+      if tok.strip().startswith("#") \
+          or not regex.search(r"[\u0900-\u097F]", tok):
+        chunks.append(tok)  # headings / non-Sanskrit: as-is
+        continue
+      # Line-level pass: `--` attribution lines (e.g.
+      # --वैयासिकन्यायमाला, often glued to a para by single newlines)
+      # and `#` headings pass through verbatim; other runs are wrapped.
+      runs, cur = [], []
+      for line in tok.split("\n"):
+        if line.strip().startswith(("--", "#")):
+          if cur:
+            runs.append(("txt", "\n".join(cur)))
+            cur = []
+          runs.append(("raw", line))
+        else:
+          cur.append(line)
+      if cur:
+        runs.append(("txt", "\n".join(cur)))
+      parts = []
+      for kind, chunk in runs:
+        if kind == "raw" or not regex.search(r"[\u0900-\u097F]", chunk):
+          parts.append(chunk)
+        else:
+          groups = [
+            Detail(title=vishvaasa_title, content=s).to_md_html() + "\n\n"
+            + Detail(title=muula_title, content=s).to_md_html()
+            for s in [x for x in split_to_sentences(chunk) if x.strip()]]
+          parts.append("\n\n".join(groups) if groups else chunk)
+      chunks.append("\n".join(parts))
+    out.append("".join(chunks))
+  return head + "".join(out)
+
+
 def wrap_into_detail(content, title, attributes_str=None):
   content_out = content.strip()
   if content_out == "":
