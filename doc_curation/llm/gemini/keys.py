@@ -75,6 +75,7 @@ def _is_dead_credential_error(exc):
       or "api_key_invalid" in text_lower
       or "invalid_api_key" in text_lower
       or "invalid api key" in text_lower
+      or "invalid credential" in text_lower
       or "authentication_error" in text_lower
       or "account_state_invalid" in text_lower
       or "deleted or disabled" in text_lower

@@ -2,8 +2,9 @@
 
 Chunkers (pdf/text/detail) program against this interface instead of any
 provider SDK, so the same file-processing machinery works for Gemini,
-Claude, or anything implementing the protocol. Provider backends live in
-``doc_curation.llm.gemini.backend`` and ``doc_curation.llm.claude.backend``.
+Claude, Opencode, or anything implementing the protocol. Provider backends
+live in ``doc_curation.llm.gemini.backend``,
+``doc_curation.llm.claude.backend`` and ``doc_curation.llm.opencode.backend``.
 """
 import abc
 from typing import Any

@@ -45,21 +45,24 @@ def process_text_chunks_with_keys(file_in, *args, api_key_path="claude", cred_pa
                                   max_attempts=None, max_transient_retries=8, **kwargs):
   return _call_with_keys(_claude_text_chunks_fn, file_in, *args, api_key_path=api_key_path,
                          cred_path=cred_path, max_attempts=max_attempts,
-                         max_transient_retries=max_transient_retries, **kwargs)
+                         max_transient_retries=max_transient_retries,
+                         product="Claude", **kwargs)
 
 
 def process_details_with_keys(file_in, *args, api_key_path="claude", cred_path=None,
                               max_attempts=None, max_transient_retries=8, **kwargs):
   return _call_with_keys(_claude_details_fn, file_in, *args, api_key_path=api_key_path,
                          cred_path=cred_path, max_attempts=max_attempts,
-                         max_transient_retries=max_transient_retries, **kwargs)
+                         max_transient_retries=max_transient_retries,
+                         product="Claude", **kwargs)
 
 
 def process_pdf_chunks_with_keys(file_in, *args, api_key_path="claude", cred_path=None,
                                  max_attempts=None, max_transient_retries=8, **kwargs):
   return _call_with_keys(_claude_pdf_chunks_fn, file_in, *args, api_key_path=api_key_path,
                          cred_path=cred_path, max_attempts=max_attempts,
-                         max_transient_retries=max_transient_retries, **kwargs)
+                         max_transient_retries=max_transient_retries,
+                         product="Claude", **kwargs)
 
 
 __all__ = [

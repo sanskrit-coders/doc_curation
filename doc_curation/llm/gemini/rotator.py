@@ -147,6 +147,7 @@ def _call_with_keys(
     cred_path=None,
     max_attempts=None,
     max_transient_retries=8,
+    product="Gemini",
     **kwargs,
 ):
   keys_file = cred_path if cred_path is not None else _DEFAULT_TOKENS_PATH
@@ -217,7 +218,7 @@ def _call_with_keys(
     while keys[i % len(keys)] in banned:
       i += 1
       if len(banned) >= len(keys):
-        _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked)
+        _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked, product)
         raise RuntimeError(
           f"All {len(keys)} API keys banned for rest of run: {sorted(banned)}"
         )
@@ -241,7 +242,7 @@ def _call_with_keys(
               logging.info(f"Cred {key} works again; cleared its status flag in {keys_file}.")
           except Exception as status_error:
             logging.warning(f"Could not clear status flag in {keys_file}: {status_error}")
-        _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked)
+        _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked, product)
         return result
 
       except Exception as e:
@@ -262,14 +263,30 @@ def _call_with_keys(
             f"Cred {key} is dead, banning for rest of run and rotating: {e}",
           )
           if len(banned) >= len(keys):
-            _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked)
+            _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked, product)
             raise RuntimeError(
               f"All {len(keys)} API keys dead/banned for rest of run: {sorted(banned)}"
             )
           break
 
+        if getattr(e, "rotate_without_persist", False):
+          # Provider-side refusal scoped to this key+model (e.g. a workspace
+          # policy block): rotate for this run, but persist nothing (the
+          # key itself may be fine for other models).
+          banned.add(key_name)
+          logging.warning(
+            f"Cred {key} refused for this model ({e}). "
+            "Banning it for the rest of the run (no status recorded) and rotating.",
+          )
+          if len(banned) >= len(keys):
+            _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked, product)
+            raise RuntimeError(
+              f"All {len(keys)} API keys banned for rest of run: {sorted(banned)}"
+            )
+          break
+
         if not _is_retryable_gemini_error(e):
-          _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked)
+          _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked, product)
           raise
 
         if _should_rotate_key(e):
@@ -288,7 +305,7 @@ def _call_with_keys(
           )
           time.sleep(delay)
           if len(banned) >= len(keys):
-            _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked)
+            _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked, product)
             raise RuntimeError(
               f"All {len(keys)} API keys banned for rest of run: {sorted(banned)}"
             )
@@ -323,7 +340,7 @@ def _call_with_keys(
 
     i += 1
 
-  _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked)
+  _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked, product)
   raise RuntimeError(
     f"Failed after {max_attempts} attempts across {len(keys)} API keys"
   )
