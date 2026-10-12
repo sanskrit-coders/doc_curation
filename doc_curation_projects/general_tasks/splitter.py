@@ -1,7 +1,7 @@
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
-from doc_curation.md.content_processor import include_helper, section_helper, details as details_helper
+from doc_curation.md.content_processor import include as include_helper, section_helper, details as details_helper
 
 if __name__ == '__main__':
   pass

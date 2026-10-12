@@ -1,7 +1,7 @@
 import regex
 
 from doc_curation.md import library
-from doc_curation.md.content_processor import include_helper
+from doc_curation.md.content_processor import include as include_helper
 from doc_curation_projects.veda.yajuH import taittiriiyam
 
 def migrate_and_include_mantras(dir_path):

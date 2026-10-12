@@ -6,7 +6,7 @@ import regex
 from bs4 import BeautifulSoup
 
 from doc_curation.md import library
-from doc_curation.md.content_processor import include_helper
+from doc_curation.md.content_processor import include as include_helper
 from doc_curation.md.file import MdFile
 
 

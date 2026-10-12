@@ -115,7 +115,7 @@ def make_per_src_folder_content_files(dest_path, main_source_path, aux_source_li
     dest_file_path_to_source_paths[dest_file_path] = main_source_paths
   
   main_source_dir = os.path.basename(main_source_path)
-  from doc_curation.md.content_processor import include_helper
+  from doc_curation.md.content_processor import include as include_helper
   from doc_curation.md.library import metadata_helper
   for dest_file_path, main_source_paths in dest_file_path_to_source_paths.items():
     md_file = MdFile(file_path=dest_file_path)

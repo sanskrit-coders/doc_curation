@@ -4,7 +4,7 @@ import doc_curation.utils.sanskrit_helper
 import regex
 
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper, section_helper, details as details_helper, ocr_helper, \
+from doc_curation.md.content_processor import include as include_helper, section_helper, details as details_helper, ocr_helper, \
   footnote_helper, space_helper
 from doc_curation.utils import patterns
 from doc_curation.md.file import MdFile

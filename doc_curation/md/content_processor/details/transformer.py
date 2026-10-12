@@ -166,7 +166,7 @@ def dedetailsify(content, title_pattern=None, title_maker=None, *args, **kwargs)
   return content
 
 def transliterate_details(content, source_script, dest_script=sanscript.DEVANAGARI, title=None):
-  def transformer(detail_tag):
+  def transformer(detail_tag, *args, **kwargs):
     detail = Detail.from_soup_tag(detail_tag=detail_tag)
     new_text = content_processor.transliterate(text=detail.content, source_script=source_script, dest_script=dest_script)
     new_text = f"\n\n{new_text}\n"
@@ -174,7 +174,7 @@ def transliterate_details(content, source_script, dest_script=sanscript.DEVANAGA
       child.extract()
     list(detail_tag.children)[0].insert_after(new_text)
 
-  return transform_detail_tags_with_soup(content=content, metadata=None, title=title, content_transformer=transformer)
+  return transform_detail_tags_with_soup(content=content, transformer=transformer, title_pattern=title)
 
 def insert_duplicate_adjascent(content, old_title_pattern="मूलम्(.*)", new_title=r"विश्वास-प्रस्तुतिः\1", inserter=PageElement.insert_before, content_transformer=lambda x:x, *args, **kwargs):
   if new_title in content:

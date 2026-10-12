@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 import doc_curation.md.library.arrangement
 from curation_utils import dir_helper
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper
+from doc_curation.md.content_processor import include as include_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from doc_curation.md.content_processor import details as details_helper

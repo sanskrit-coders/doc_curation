@@ -3,7 +3,7 @@ import logging
 
 import regex
 from doc_curation.md import content_processor
-from doc_curation.md.content_processor import include_helper, details as details_helper
+from doc_curation.md.content_processor import include as include_helper, details as details_helper
 
 
 def migrate_and_include_mantra_details(md_file, title_pattern="विश्वास-प्रस्तुतिः", comment_title_pattern="मूलम्.*|.*भाष्यम्|.*टीका|Keith", mantra_dir="Rk", dry_run=False):

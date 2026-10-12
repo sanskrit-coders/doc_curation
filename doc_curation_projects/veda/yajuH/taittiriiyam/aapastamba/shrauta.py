@@ -4,7 +4,7 @@ import regex
 
 from doc_curation.md import library
 from doc_curation.md.library import combination
-from doc_curation.md.content_processor import include_helper
+from doc_curation.md.content_processor import include as include_helper
 
 
 STATIC_ROOT = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sUtram/ApastambaH/shrautam"

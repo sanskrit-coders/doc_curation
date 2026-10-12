@@ -2,7 +2,7 @@ import regex
 
 from doc_curation_projects.smRti.yaajnavalkya import content
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include_helper
+from doc_curation.md.content_processor import include as include_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 

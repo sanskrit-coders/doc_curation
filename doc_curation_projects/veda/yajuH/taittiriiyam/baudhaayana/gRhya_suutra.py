@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 import doc_curation.md.library.arrangement
 from doc_curation.md import library
-from doc_curation.md.content_processor import include_helper
+from doc_curation.md.content_processor import include as include_helper
 from doc_curation.md.library import metadata_helper
 from doc_curation.scraping.html_scraper import souper
 from doc_curation.scraping.wisdom_lib import para_translation

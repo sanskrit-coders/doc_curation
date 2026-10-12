@@ -4,10 +4,9 @@ import os
 import doc_curation.md.library
 import regex
 
-import doc_curation.md.content_processor.include_helper
 import doc_curation.md.library.arrangement
 from doc_curation.md import library
-from doc_curation.md.content_processor import include_helper
+from doc_curation.md.content_processor import include as include_helper
 
 from doc_curation.md.library import arrangement
 from doc_curation_projects.sites.iitk import bhagavadgiitaa

@@ -5,7 +5,7 @@ from collections import defaultdict
 import regex
 from tqdm import tqdm
 
-from doc_curation.md.content_processor import include_helper
+from doc_curation.md.content_processor import include as include_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import get_md_files_from_path
 from indic_transliteration import sanscript

@@ -6,7 +6,7 @@ from doc_curation.utils import patterns
 import regex
 from doc_curation.md import library, content_processor
 from doc_curation.md.file import MdFile
-from doc_curation.md.content_processor import include_helper
+from doc_curation.md.content_processor import include as include_helper
 from indic_transliteration import sanscript
 
 CONTENT_DIR = "/home/vvasuki/gitland/vishvAsa/AgamaH/content/AryaH/hinduism/branches/brAhmaH/shrI-sampradAyaH/venkaTanAthaH/tattva-muktA-kalApaH/"

@@ -537,11 +537,9 @@ def _sim(pivot_en, sa_text, en_sent):
     score += _gloss_bonus(sa_n, set(_tokens(en_sent)))
   except Exception:
     pass
-  # Transliteration substring bonus for glued compounds (sūtra quotes).
-  try:
-    score += _substr_bonus(sa_text, en_sent)
-  except Exception:
-    pass
+  # NOTE: transliteration *substring* bonus (_substr_bonus) stays unused:
+  # it fires too noisily on long philosophical sentences.  Glued-compound
+  # cases (sūtra quotes ↔ headings) are handled structurally instead.
   # Scripture-reference anchors (strong): (तै. उ. २।७।१) ↔ (Taitt. Up. II, 7).
   try:
     if _refs_sa(sa_text) & _refs_en(en_sent):
@@ -681,12 +679,15 @@ def _sa_sutra_no(sa_text):
 
 
 def _is_sutra_sa(sa_text):
-  """True if an SA block is/starts with sūtra text: short first sentence
-  that is numbered (॥ N ॥) or a short quotation (sūtra quote)."""
+  """True if an SA block starts with a bare sūtra quote (for leftover heading
+  pairing): short first sentence opening with a quotation mark and free of
+  citation parens.  (Multi-line verse-shape alone does NOT qualify — a
+  two-sentence conclusion ending ॥N॥ is a section close, not sūtra text.)
+  """
   t = _norm_sa_for_match(sa_text)
-  if _sa_sutra_no(t) is not None:
-    return True
   first = regex.split(r"[।?!;]\s*", t, maxsplit=1)[0]
+  if "(" in first or ")" in first or "[" in first:
+    return False  # citation-dense, not a bare sūtra quote
   if len(first.split()) <= 12 and regex.match(r"\s*[‘'\"“]", first):
     return True
   return False
@@ -717,12 +718,88 @@ def _substr_bonus(sa_text, en_sent):
   return min(0.6, 0.2 * hit)
 
 
+def _flagged_rows(nb, m, sim, takes_b):
+  """Body-row indices needing review: empties and weak spans."""
+  need = set()
+  idx = 0
+  for r, k in enumerate(takes_b):
+    span = sim[r][idx:idx + k] if k else []
+    row_best = max(sim[r]) if m else 0.0
+    if k == 0 or (span and sum(span) / len(span) < 0.25) or row_best < 0.4:
+      need.add(r)
+    idx += k
+  return need
+
+
+def _refine_spans(takes_b, bt, en, sim, refine_fn):
+  """Run refine_fn on low-confidence spans; splice validated takes back."""
+  nb, m = len(bt), len(en)
+  need = _flagged_rows(nb, m, sim, takes_b)
+  if not need:
+    return takes_b
+  # Maximal flagged runs, expanded ±1 row for boundary context, merged.
+  runs, cur = [], None
+  for r in sorted(need):
+    a, b = max(0, r - 1), min(nb - 1, r + 1)
+    if cur is not None and a <= cur[1] + 1:
+      cur[1] = max(cur[1], b)
+    else:
+      if cur is not None:
+        runs.append(tuple(cur))
+      cur = [a, b]
+  if cur is not None:
+    runs.append(tuple(cur))
+  # EN offsets of current takes.
+  offs = [0] * (nb + 1)
+  for r, k in enumerate(takes_b):
+    offs[r + 1] = offs[r] + k
+  takes_b = list(takes_b)
+  for a, b in runs:
+    s, e = offs[a], offs[b + 1]
+    span = {
+      "sa_texts": bt[a:b + 1],
+      "en_units": en[s:e],
+      "sa_start": a,
+      "en_start": s,
+    }
+    try:
+      new_takes = refine_fn(span)
+    except Exception as ex:
+      logging.warning("refine_fn failed on rows %d-%d: %s", a, b, ex)
+      continue
+    if (isinstance(new_takes, (list, tuple))
+            and len(new_takes) == b - a + 1
+            and all(isinstance(k, int) and k >= 0 for k in new_takes)
+            and sum(new_takes) == e - s):
+      takes_b[a:b + 1] = list(new_takes)
+    else:
+      logging.warning("refine_fn invalid takes on rows %d-%d; kept", a, b)
+  return takes_b
+
+
 def sequentially_match_to_translation(texts, translation_text,
                                       source_language="sa",
                                       dest_language="en", translator="google",
-                                      use_pivot=True, max_en_per_sa=10):
+                                      use_pivot=False, max_en_per_sa=10,
+                                      refine_fn=None):
   """Align each Sanskrit sentence to a contiguous English span, in order.
 
+  Token-minimal by design: the default path (``use_pivot=False``,
+  ``refine_fn=None``) calls no MT/LLM at all — pure local signals
+  (anchors, gloss lexicon, transliteration overlap) + monotonic DP.
+  Measured on six Śaṅkara-bhāṣya adhikaraṇas (373 sentences): ~31%
+  exact, mean token-F1 ~0.55 (use_pivot=True measured *worse* on file
+  09: F1 0.84→0.75, plus ~2s/sentence flakes — Google sa→en diction
+  mismatches Thibaut; keep it opt-in only with reliable MT).
+
+  :param refine_fn: optional ``fn(span) -> list[int]`` called ONLY on
+    low-confidence spans, where ``span`` is a dict with ``sa_texts``
+    (list), ``en_units`` (candidate window), ``sa_start``/``en_start``
+    offsets; must return takes (non-negative ints, one per SA text,
+    summing to ``len(en_units)``).  Invalid returns keep the DP takes.
+    This is the high-accuracy lever: an LLM sees just the flagged span
+    (a fraction of file tokens), output is a few integers.  See
+    ``_refine_spans``/``_flagged_rows``.
   :param texts: list of Sanskrit sentences (e.g. from
     :func:`doc_curation.utils.sanskrit_helper.split_to_sentences`).
   :param translation_text: full English translation (e.g. concatenated
@@ -762,10 +839,20 @@ def sequentially_match_to_translation(texts, translation_text,
   attach = {}  # sa_idx -> heading unit text
   drop_j = set()
   if headings:
+    def _single_sentence(t):
+      try:
+        if _sa_split is not None:
+          return len(_sa_split(_norm_sa_for_match(t))) == 1
+      except Exception:
+        pass
+      return len(t.split()) <= 25
     used_h = set()
     for i, t in enumerate(texts):
       no = _sa_sutra_no(t)
-      if no is None:
+      # Conclusions closing a section ("…सिद्धम् ॥ ३१ ॥" over two
+      # sentences, file 09's "…उपपादिताः ॥ २३ ॥") own no heading:
+      # only single-sentence sūtra statements claim their number.
+      if no is None or not _single_sentence(t):
         continue
       for k, (num, u, j) in enumerate(headings):
         if num == no and k not in used_h:
@@ -773,77 +860,103 @@ def sequentially_match_to_translation(texts, translation_text,
           used_h.add(k)
           drop_j.add(j)
           break
+    # Leftover headings (no ॥N॥ partner): pair ONLY in the unambiguous
+    # case — exactly one unmatched heading and exactly one unmatched
+    # short-quote SA (e.g. files 08/09: heading ↔ ‘...’ restatement).
+    # Multi-heading ambiguity (file 06) is left sequential.
     left_h = [k for k in range(len(headings)) if k not in used_h]
-    left_sa = [i for i, t in enumerate(texts)
+    if len(left_h) == 1:
+      cands = [i for i, t in enumerate(texts)
                if i not in attach and _is_sutra_sa(t)]
-    for k, i in zip(left_h, left_sa):
-      attach[i] = headings[k][1]
-      drop_j.add(headings[k][2])
+      if len(cands) == 1:
+        k = left_h[0]
+        attach[cands[0]] = headings[k][1]
+        drop_j.add(headings[k][2])
+    # NOTE: broader order-pairing was tried and reverted: _is_sutra_sa
+    # over-matches short quoted blocks and misplaces headings.
   en = [u for j, u in enumerate(en) if j not in drop_j]
   m = len(en)
 
-  # Adaptive granularity: when EN units < SA sentences, forced "" spans
-  # are unavoidable, so split the longest EN units at safe clause
-  # boundaries until counts balance (manual alignment splits the same
-  # long Thibaut sentences).  Untouched when m >= n.
-  if m < n:
-    en = _close_deficit(en, n - m)
+  # Attached SAs (sūtra ↔ heading) are consumed by their heading alone —
+  # the DP partitions only the unattached body (forcing ≥1 body sentence
+  # onto a heading-translation would steal neighbours and cascade).
+  attached = set(attach)
+  body_idx = [i for i in range(n) if i not in attached]
+  nb = len(body_idx)
+  if nb == 0:
+    return [(attach[i] if i in attach else "") for i in range(n)]
+
+  # Adaptive granularity (disabled by default: splitting long EN units at
+  # ";" fires too noisily and regressed 07/10/11; manual clause splits
+  # are judgment calls.  Enable explicitly for EN<SA files if needed.)
+  if False and m < nb:
+    en = _close_deficit(en, nb - m)
     m = len(en)
 
+  bt = [texts[i] for i in body_idx]
+
   def _sims(pivots):
-    return [[_sim(pivots[i], texts[i], en[j]) for j in range(m)]
-            for i in range(n)]
+    return [[_sim(pivots[r], bt[r], en[j]) for j in range(m)]
+            for r in range(nb)]
 
   # Pass 1: local signals only (zero API cost).
-  sim = _sims([""] * n)
-  takes = _run_dp(n, m, sim, max_en_per_sa)
+  sim = _sims([""] * nb)
+  takes_b = _run_dp(nb, m, sim, max_en_per_sa)
 
   # Pass 2: pivot MT only for uncertain spans (empty takes or weak best
   # match), keeping API/token spend to a fraction of the file.
+  # NOTE: measured *harmful* with stock Google sa→en on file 09
+  # (F1 0.84→0.75: MT diction mismatches Thibaut); default off.
   if use_pivot:
     need = set()
-    if takes is None:
-      need = set(range(n))
+    if takes_b is None:
+      need = set(range(nb))
     else:
       idx = 0
-      for i, k in enumerate(takes):
-        span = sim[i][idx:idx + k] if k else []
-        row_best = max(sim[i]) if m else 0.0
+      for r, k in enumerate(takes_b):
+        span = sim[r][idx:idx + k] if k else []
+        row_best = max(sim[r]) if m else 0.0
         if k == 0 or (span and sum(span) / len(span) < 0.25) or row_best < 0.4:
-          need.add(i)
+          need.add(r)
         idx += k
     # Pivot the uncertain SAs plus immediate neighbours (boundary context).
     want = set()
-    for i in need:
-      want.update({max(0, i - 1), i, min(n - 1, i + 1)})
-    pivots = [""] * n
-    for i in sorted(want):
-      pivots[i] = _pivot_english(
-        _norm_sa_for_match(texts[i]), source_language, dest_language,
+    for r in need:
+      want.update({max(0, r - 1), r, min(nb - 1, r + 1)})
+    pivots = [""] * nb
+    for r in sorted(want):
+      pivots[r] = _pivot_english(
+        _norm_sa_for_match(bt[r]), source_language, dest_language,
         translator, True)
     if any(pivots):
       sim = _sims(pivots)
-      takes = _run_dp(n, m, sim, max_en_per_sa)
+      takes_b = _run_dp(nb, m, sim, max_en_per_sa)
 
-  if takes is None:
+  if takes_b is None:
     logging.warning("matcher DP failed; falling back to even split")
-    out, idx = [], 0
-    for i in range(n):
-      take = max(0, min(m - idx - (n - i - 1), max(1, round(m / max(1, n)))))
-      span = " ".join(en[idx:idx + take])
-      if i in attach:
-        span = (attach[i] + " " + span).strip()
-      out.append(span)
+    takes_b = []
+    idx = 0
+    for r in range(nb):
+      take = max(0, min(m - idx - (nb - r - 1), max(1, round(m / max(1, nb)))))
+      takes_b.append(take)
       idx += take
-    while len(out) < n:
-      out.append("")
-    return out[:n]
 
-  out, idx = [], 0
-  for i, k in enumerate(takes):
-    span = " ".join(en[idx:idx + k])
-    if i in attach:
-      span = (attach[i] + " " + span).strip()
-    out.append(span)
+  # Confidence + optional LLM refinement of flagged spans only.
+  if refine_fn is not None:
+    takes_b = _refine_spans(
+      takes_b, bt, en, sim, refine_fn)
+
+  out_b, idx = [], 0
+  for k in takes_b:
+    out_b.append(" ".join(en[idx:idx + k]))
     idx += k
+
+  # Expand back: attached SAs get their heading alone.
+  out = []
+  it = iter(out_b)
+  for i in range(n):
+    if i in attach:
+      out.append(attach[i])
+    else:
+      out.append(next(it))
   return out

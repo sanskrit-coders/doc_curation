@@ -7,7 +7,7 @@ import doc_curation.md.library.metadata_helper
 import regex
 
 from doc_curation.md import content_processor, library
-from doc_curation.md.content_processor import include_helper
+from doc_curation.md.content_processor import include as include_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 from indic_transliteration import sanscript

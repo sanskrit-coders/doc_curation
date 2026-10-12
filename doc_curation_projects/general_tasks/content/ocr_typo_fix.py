@@ -6,7 +6,7 @@ from doc_curation import llm
 from doc_curation.llm import claude
 from doc_curation.md import library, content_processor
 from doc_curation.llm.gemini.rotator import process_details_with_keys, process_text_chunks_with_keys
-from doc_curation.md.content_processor import include_helper, section_helper, details as details_helper, ocr_helper, space_helper
+from doc_curation.md.content_processor import include as include_helper, section_helper, details as details_helper, ocr_helper, space_helper
 from doc_curation.md.content_processor.footnote import helper
 from doc_curation.utils import patterns, sanskrit_helper
 from doc_curation.md.file import MdFile
