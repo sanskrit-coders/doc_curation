@@ -12,22 +12,44 @@ from doc_curation.md.content_processor import details as details_helper
 from doc_curation.md.file import MdFile
 
 from .backend import LlmBackend
-from .text_chunker import _as_file_path, _dump_md_file_atomic
+from .text_chunker import _as_file_path, _dump_md_file_atomic, _provider_tag, TAG_PATTERN
 
 
-DETAIL_SPLIT_MARKER_RE = regex.compile(r"<!--\s*GEMINI-DETAIL-SPLIT\s+(\d+)\s*-->")
+# Provider-tagged so files never claim the wrong provider; the tag is
+# matched loosely, so legacy bare "GEMINI" markers still parse on resume.
+# Tag is non-capturing to keep split()'s group indices stable.
+DETAIL_SPLIT_MARKER_RE = regex.compile(rf"<!--\s*{TAG_PATTERN}-DETAIL-SPLIT\s+(\d+)\s*-->")
 
 
-DETAILS_PROGRESS_KEYS = (
-  "gemini_details_pattern",
-  "gemini_details_done",  # legacy single count; migrated to gemini_batches_done
-  "gemini_batches_done",  # list like ["1-5", "6-11"]: completed detail ranges
-  "gemini_details_total",
-)
+# Progress keys. New files use the provider-neutral "llm_*" names; the
+# legacy "gemini_*" names are still read so in-flight runs resume, and all
+# are stripped once a file finishes.
+PROGRESS_PATTERN_KEY = "llm_details_pattern"
+PROGRESS_TOTAL_KEY = "llm_details_total"
+PROGRESS_LEDGER_KEY = "llm_batches_done"
+PROGRESS_DONE_KEY = "llm_details_done"  # legacy single count; migrated to ledger
+_LEGACY_PROGRESS = {
+  PROGRESS_PATTERN_KEY: "gemini_details_pattern",
+  PROGRESS_TOTAL_KEY: "gemini_details_total",
+  PROGRESS_LEDGER_KEY: "gemini_batches_done",
+  PROGRESS_DONE_KEY: "gemini_details_done",
+}
+DETAILS_PROGRESS_KEYS = tuple(_LEGACY_PROGRESS) + tuple(_LEGACY_PROGRESS.values())
+
+
+def _progress_get(metadata, key, default=None):
+  """Read a progress value under its new name, falling back to legacy."""
+  if key in metadata:
+    return metadata[key]
+  return metadata.get(_LEGACY_PROGRESS[key], default)
+
+
+def _progress_has(metadata, key):
+  return key in metadata or _LEGACY_PROGRESS[key] in metadata
 
 
 def _parse_batches_ledger(value):
-  """Parse a gemini_batches_done ledger into [(start, end), ...] or None.
+  """Parse an llm_batches_done ledger into [(start, end), ...] or None.
 
   Requires well-formed contiguous ranges starting at 1.
   """
@@ -49,8 +71,8 @@ def _parse_batches_ledger(value):
   return ranges
 
 
-def _make_detail_split_marker(index):
-  return f"<!-- GEMINI-DETAIL-SPLIT {index:04d} -->"
+def _make_detail_split_marker(index, tag="Llm"):
+  return f"<!-- {tag}-DETAIL-SPLIT {index:04d} -->"
 
 
 def _normalize_detail_pattern(detail_pattern):
@@ -117,16 +139,16 @@ def _generate_text(backend, system_prompt, user_text, model_id, empty_retries=2)
 
 
 BATCH_LINE_RE = regex.compile(
-  r"^@@GEMINI-BATCH\s+(\d+)/(\d+)\s+details\s+(\d+)-(\d+)\s+(PENDING|IN PROGRESS|DONE)@@\s*$",
+  rf"^@@{TAG_PATTERN}-BATCH\s+(\d+)/(\d+)\s+details\s+(\d+)-(\d+)\s+(PENDING|IN PROGRESS|DONE)@@\s*$",
   regex.MULTILINE,
 )
 
 
-def _make_batch_line(batch_num, nbatches, first, last, state):
-  return f"@@GEMINI-BATCH {batch_num}/{nbatches} details {first}-{last} {state}@@"
+def _make_batch_line(batch_num, nbatches, first, last, state, tag="Llm"):
+  return f"@@{tag}-BATCH {batch_num}/{nbatches} details {first}-{last} {state}@@"
 
 
-def _flip_batch_line(file_in, batch_num, nbatches, first, last, old_state, new_state):
+def _flip_batch_line(file_in, batch_num, nbatches, first, last, old_state, new_state, tag="Llm"):
   """Best-effort status flip of one batch line (PENDING->IN PROGRESS).
 
   Pure string surgery on freshly re-read content; never touches details.
@@ -135,8 +157,8 @@ def _flip_batch_line(file_in, batch_num, nbatches, first, last, old_state, new_s
   """
   md_file = MdFile(file_in)
   metadata, content = md_file.read()
-  old = _make_batch_line(batch_num, nbatches, first, last, old_state)
-  new = _make_batch_line(batch_num, nbatches, first, last, new_state)
+  old = _make_batch_line(batch_num, nbatches, first, last, old_state, tag)
+  new = _make_batch_line(batch_num, nbatches, first, last, new_state, tag)
   if old not in content:
     logging.warning(f"Batch line for batch {batch_num} not found in {file_in}; skipping status flip.")
     return
@@ -144,7 +166,8 @@ def _flip_batch_line(file_in, batch_num, nbatches, first, last, old_state, new_s
 
 
 def _write_batch_checkpoint(file_in, detail_pattern, batch_num, nbatches, batch, outputs,
-                            expected_titles, ledger_ranges, pattern_key, total, done_so_far):
+                            expected_titles, ledger_ranges, pattern_key, total, done_so_far,
+                            tag="Llm"):
   """Checkpoint one batch with read-modify-write, atomically.
 
   Re-reads the input file fresh (never trusting possibly-stale in-memory
@@ -192,10 +215,10 @@ def _write_batch_checkpoint(file_in, detail_pattern, batch_num, nbatches, batch,
   new_content = md_content_processor._make_content_from_soup(soup=soup)
   first, last = batch[0][0], batch[-1][0]
   for old_state in ("IN PROGRESS", "PENDING"):
-    old_line = _make_batch_line(batch_num, nbatches, first, last, old_state)
+    old_line = _make_batch_line(batch_num, nbatches, first, last, old_state, tag)
     if old_line in new_content:
       new_content = new_content.replace(
-        old_line, _make_batch_line(batch_num, nbatches, first, last, "DONE"), 1)
+        old_line, _make_batch_line(batch_num, nbatches, first, last, "DONE", tag), 1)
       break
   else:
     logging.warning(f"Batch line for batch {batch_num} not found in {file_in}; skipping DONE flip.")
@@ -204,9 +227,9 @@ def _write_batch_checkpoint(file_in, detail_pattern, batch_num, nbatches, batch,
     _dump_md_file_atomic(md_file, _without_details_progress(metadata), new_content)
   else:
     progress = _without_details_progress(metadata)
-    progress["gemini_details_pattern"] = pattern_key
-    progress["gemini_details_total"] = total
-    progress["gemini_batches_done"] = [f"{a}-{b}" for a, b in ledger_ranges]
+    progress[PROGRESS_PATTERN_KEY] = pattern_key
+    progress[PROGRESS_TOTAL_KEY] = total
+    progress[PROGRESS_LEDGER_KEY] = [f"{a}-{b}" for a, b in ledger_ranges]
     _dump_md_file_atomic(md_file, progress, new_content)
   return new_content
 
@@ -228,7 +251,7 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
   boundaries always align with detail boundaries) and each batch goes to
   the model as a single chat message - no temp files, no chunk files, no
   external state of any kind. Details in a batch are separated by
-  `<!-- GEMINI-DETAIL-SPLIT NNNN -->` marker lines which the model is
+  `<!-- PROVIDER/MODEL-DETAIL-SPLIT NNNN -->` marker lines which the model is
   instructed (via an appended prompt note) to reproduce exactly; the
   processed batch is split back on those markers and each output is
   placed into its own detail block.
@@ -245,11 +268,11 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
   checkpoint re-reads the file fresh, applies just that batch's outputs
   onto the current on-disk state (verifying the matched detail set and
   titles still line up, aborting otherwise), and writes atomically with an
-  updated per-batch gemini_batches_done ledger like ["1-5", "6-11"] in
+  updated per-batch llm_batches_done ledger like ["1-5", "6-11"] in
   frontmatter — so partial results are visible immediately, concurrent
   edits elsewhere survive, and a later run resumes after the completed
   prefix instead of redoing it. Every batch also gets a visible
-  `@@GEMINI-BATCH k/N details a-b STATE@@` status line in the file itself
+  `@@PROVIDER/MODEL-BATCH k/N details a-b STATE@@` status line in the file itself
   (PENDING at plan time, IN PROGRESS while its call runs so readers steer
   clear, DONE after); all status lines are stripped on full success along
   with the ledger. With dry_run=True nothing is written. Returns the
@@ -300,10 +323,10 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
   pattern_key = _normalize_detail_pattern(detail_pattern)
   start = 0
   ledger_ranges = []
-  if "gemini_batches_done" in metadata or "gemini_details_done" in metadata:
-    ledger = _parse_batches_ledger(metadata.get("gemini_batches_done"))
+  if _progress_has(metadata, PROGRESS_LEDGER_KEY) or _progress_has(metadata, PROGRESS_DONE_KEY):
+    ledger = _parse_batches_ledger(_progress_get(metadata, PROGRESS_LEDGER_KEY))
     if ledger is None:
-      legacy_done = metadata.get("gemini_details_done", 0)
+      legacy_done = _progress_get(metadata, PROGRESS_DONE_KEY, 0)
       if isinstance(legacy_done, bool):
         legacy_done = 0
       if isinstance(legacy_done, int) and 0 < legacy_done <= total:
@@ -311,8 +334,8 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
         logging.info(f"Migrating legacy progress count ({legacy_done}) to batch ledger.")
     if (
       ledger is not None
-      and metadata.get("gemini_details_pattern", "") == pattern_key
-      and metadata.get("gemini_details_total", 0) == total
+      and _progress_get(metadata, PROGRESS_PATTERN_KEY, "") == pattern_key
+      and _progress_get(metadata, PROGRESS_TOTAL_KEY, 0) == total
     ):
       start = ledger[-1][1]
       ledger_ranges = list(ledger)
@@ -335,8 +358,14 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
   for index, (tag, detail) in enumerate(matched[start:], start=start + 1):
     if DETAIL_SPLIT_MARKER_RE.search(detail.content):
       raise RuntimeError(
-        f"Detail '{detail.title}' already contains a GEMINI-DETAIL-SPLIT marker; refusing to proceed."
+        f"Detail '{detail.title}' already contains a DETAIL-SPLIT marker; refusing to proceed."
       )
+
+  if backend is None:
+    # Lazy import keeps this shared module free of provider imports.
+    from doc_curation.llm.gemini.backend import GeminiBackend
+    backend = GeminiBackend(api_key_path=api_key_path, model_id=model_id, cred_path=cred_path)
+  marker_tag = _provider_tag(backend)
 
   # Group whole pending details into batches fitting max_chunk_chars so
   # that process_text_chunks never cuts a batch mid-marker. Global indices
@@ -346,7 +375,7 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
   batches = []
   current_batch, current_len = [], 0
   for index, item in pending:
-    piece = f"{_make_detail_split_marker(index)}\n\n{item[1].content.strip()}"
+    piece = f"{_make_detail_split_marker(index, marker_tag)}\n\n{item[1].content.strip()}"
     if len(piece) > max_chunk_chars:
       if current_batch:
         batches.append(current_batch)
@@ -372,24 +401,20 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
     for line_batch_num, line_batch in enumerate(batches, start=1):
       line_first, line_last = line_batch[0][0], line_batch[-1][0]
       line_batch[0][1][0].insert_before(
-        "\n\n" + _make_batch_line(line_batch_num, nbatches, line_first, line_last, "PENDING") + "\n\n"
+        "\n\n" + _make_batch_line(line_batch_num, nbatches, line_first, line_last, "PENDING", marker_tag) + "\n\n"
       )
     startup_metadata = dict(metadata) if start else _without_details_progress(metadata)
     _dump_md_file_atomic(
       md_file, startup_metadata, md_content_processor._make_content_from_soup(soup=soup))
-  if backend is None:
-    # Lazy import keeps this shared module free of provider imports.
-    from doc_curation.llm.gemini.backend import GeminiBackend
-    backend = GeminiBackend(api_key_path=api_key_path, model_id=model_id, cred_path=cred_path)
   with tqdm(total=total, initial=start, desc="Processing Details", unit="detail") as pbar:
     for batch_num, batch in enumerate(batches, start=1):
       expected = [index for index, _ in batch]
       first, last = expected[0], expected[-1]
       batch_text = "\n\n".join(
-        f"{_make_detail_split_marker(index)}\n\n{item[1].content.strip()}" for index, item in batch
+        f"{_make_detail_split_marker(index, marker_tag)}\n\n{item[1].content.strip()}" for index, item in batch
       )
       batch_prompt = (
-        f"{prompt}\n\nIMPORTANT: Lines of the form {_make_detail_split_marker(1)} "
+        f"{prompt}\n\nIMPORTANT: Lines of the form {_make_detail_split_marker(1, marker_tag)} "
         f"separate {len(batch)} independent passage(s). Reproduce each such separator line "
         f"EXACTLY as given, unmodified, in order. Only modify the text between them."
       )
@@ -402,7 +427,7 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
         # Mark IN PROGRESS before the long call so a reader knows to steer
         # clear; best-effort, the ledger stays the truth.
         try:
-          _flip_batch_line(file_in, batch_num, nbatches, first, last, "PENDING", "IN PROGRESS")
+          _flip_batch_line(file_in, batch_num, nbatches, first, last, "PENDING", "IN PROGRESS", marker_tag)
         except Exception as e:
           logging.warning(f"Could not mark batch {batch_num} IN PROGRESS in {file_in} ({e}); continuing.")
       try:
@@ -412,7 +437,7 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
           outputs = _split_detail_batch(processed_batch, expected)
         except RuntimeError as e:
           debug_path = os.path.join(
-            tempfile.gettempdir(), f"gemini_detail_batch_mismatch_{safe_base}_batch{batch_num}.md"
+            tempfile.gettempdir(), f"llm_detail_batch_mismatch_{safe_base}_batch{batch_num}.md"
           )
           with open(debug_path, "w", encoding="utf-8") as f:
             f.write(processed_batch)
@@ -455,7 +480,7 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
         ledger_ranges.append((first, last))
         new_content = _write_batch_checkpoint(
           file_in, detail_pattern, batch_num, nbatches, batch, outputs, expected_titles,
-          ledger_ranges, pattern_key, total, done_so_far,
+          ledger_ranges, pattern_key, total, done_so_far, marker_tag,
         )
         if done_so_far >= total:
           logging.info(f"Finished {file_in}: all {total} details processed; progress record removed.")

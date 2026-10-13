@@ -30,6 +30,7 @@ class GeminiChat(LlmChat):
 
 class GeminiBackend(LlmBackend):
   DEFAULT_MODEL = "gemini-3.5-flash"
+  PROVIDER_TAG = "Gemini"
 
   def __init__(self, api_key_path="gemini.vv", model_id=None, cred_path=None):
     self.api_key_path = api_key_path

@@ -97,11 +97,13 @@ def _sniff_log(data_home):
   return ""
 
 
-def _run_opencode(*, api_key, data_home, model, message, files, session_id, timeout):
+def _run_opencode(*, api_key, data_home, model, message, files, session_id, timeout, variant=None):
   """One ``opencode run`` call; returns (text, metadata). Raises OpencodeError."""
   if shutil.which("opencode") is None:
     raise OpencodeError("opencode binary not found on PATH")
   cmd = ["opencode", "run", "-m", model, "--format", "json"]
+  if variant:
+    cmd += ["--variant", variant]
   if session_id:
     cmd += ["-s", session_id]
   # NOTE: message must precede -f flags; -f greedily consumes following args.
@@ -160,6 +162,19 @@ def _run_opencode(*, api_key, data_home, model, message, files, session_id, time
           err_code = data[key]
           break
   if proc.returncode != 0 or not texts:
+    reasoning = tokens.get("reasoning", 0) if isinstance(tokens, dict) else 0
+    output = tokens.get("output", 0) if isinstance(tokens, dict) else 0
+    if proc.returncode == 0 and not err_texts and reasoning and not output:
+      # The model thought itself silent: a reasoning model can burn its
+      # whole output-token budget on chain-of-thought and emit nothing.
+      # Retrying the same way won't help; steer the caller instead.
+      raise OpencodeError(
+        f"opencode run produced no answer: model {model} spent its entire token "
+        f"budget on reasoning ({reasoning} reasoning tokens, 0 output) and never "
+        f"emitted text. Use a lower reasoning effort (variant=), a non-reasoning "
+        f"model, or smaller chunks/batches. session {session}.",
+        status_code=None,
+      )
     blob = "\n".join([*err_texts, proc.stderr or "", *stdout_tail[-10:], _sniff_log(data_home)])
     code = err_code if err_code is not None else _classify_output(blob)
     detail = "failed (exit %d)" % proc.returncode if proc.returncode != 0 else "produced no text"
@@ -174,12 +189,13 @@ def _run_opencode(*, api_key, data_home, model, message, files, session_id, time
 
 
 class OpencodeChat(LlmChat):
-  def __init__(self, api_key, data_home, system_prompt, model, timeout):
+  def __init__(self, api_key, data_home, system_prompt, model, timeout, variant=None):
     self._api_key = api_key
     self._data_home = data_home
     self._system = system_prompt
     self._model = model
     self._timeout = timeout
+    self._variant = variant
     self._session_id = None
     self._metadata = {}
     self._first = True
@@ -191,7 +207,7 @@ class OpencodeChat(LlmChat):
     text, metadata = _run_opencode(
       api_key=self._api_key, data_home=self._data_home, model=self._model,
       message=message, files=files, session_id=self._session_id,
-      timeout=self._timeout)
+      timeout=self._timeout, variant=self._variant)
     if metadata.get("session"):
       self._session_id = metadata["session"]
     self._metadata = metadata
@@ -211,13 +227,17 @@ class OpencodeChat(LlmChat):
 
 class OpencodeBackend(LlmBackend):
   DEFAULT_MODEL = "opencode-go/muse-spark-1.3-contributor"
+  PROVIDER_TAG = "Opencode"
 
   def __init__(self, api_key_path="opencode.vv_zen", model_id=None, cred_path=None,
-               timeout=REQUEST_TIMEOUT):
+               timeout=REQUEST_TIMEOUT, variant=None):
     self.api_key_path = api_key_path
     self.model = self._normalize_model(model_id)
     self.cred_path = cred_path
     self.timeout = timeout
+    # Provider-specific reasoning effort (e.g. "minimal", "high", "max").
+    # Useful for reasoning models that overspend their token budget.
+    self.variant = variant
     os.makedirs(UPLOAD_BASE, exist_ok=True)
     # Isolated auth/session state for this backend instance.
     self._data_home = tempfile.mkdtemp(prefix="opencode-", dir=UPLOAD_BASE)
@@ -237,7 +257,7 @@ class OpencodeBackend(LlmBackend):
 
   def new_chat(self, system_prompt, model_id=None):
     return OpencodeChat(self.client.api_key, self._data_home, system_prompt,
-                    model_id or self.model, self.timeout)
+                        model_id or self.model, self.timeout, self.variant)
 
   def upload_file(self, path):
     # Stage a copy under the allowlisted base: the caller's temp file may
@@ -258,5 +278,5 @@ class OpencodeBackend(LlmBackend):
     text, metadata = _run_opencode(
       api_key=self.client.api_key, data_home=self._data_home, model=model,
       message="\n\n".join(texts), files=files, session_id=None,
-      timeout=self.timeout)
+      timeout=self.timeout, variant=self.variant)
     return text, metadata

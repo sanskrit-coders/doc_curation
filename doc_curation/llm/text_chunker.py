@@ -11,13 +11,28 @@ from doc_curation.md.file import MdFile
 from .backend import LlmBackend
 
 
+# Markers carry a provider tag (e.g. "Opencode/muse-spark-1.3-contributor",
+# "Gemini/gemini-3.5-flash") so a file never claims the wrong provider. The
+# tag is matched loosely so markers written by any provider (including the
+# legacy bare "GEMINI") are still recognised on resume.
+TAG_PATTERN = r"[^\s>]+?"
+
 TEXT_CONTINUE_MARKER_RE = regex.compile(
-  r"<!--\s*GEMINI-TEXT-CONTINUE(?:\s+done=(\d+)\s+total=(\d+))?\s*-->"
+  rf"<!--\s*{TAG_PATTERN}-TEXT-CONTINUE(?:\s+done=(\d+)\s+total=(\d+))?\s*-->"
 )
 
 
-def _make_continue_marker(done, total):
-  return f"<!-- GEMINI-TEXT-CONTINUE done={done} total={total} -->"
+def _provider_tag(backend):
+  """Marker tag for a backend: ``Provider/model`` (space-free, marker-safe)."""
+  provider = getattr(backend, "PROVIDER_TAG", None) or type(backend).__name__
+  provider = regex.sub(r"[^A-Za-z0-9_.+-]", "", str(provider))
+  model = str(getattr(backend, "model", "") or "").split("/")[-1]
+  model = regex.sub(r"[^A-Za-z0-9_.+-]", "", model)
+  return f"{provider}/{model}" if model else (provider or "Llm")
+
+
+def _make_continue_marker(done, total, tag="Llm"):
+  return f"<!-- {tag}-TEXT-CONTINUE done={done} total={total} -->"
 
 
 def _split_resume_body(body):
@@ -137,7 +152,7 @@ def process_text_chunks(file_in, prompt, max_chunk_chars=12000, model_id=None, a
   the backend's default model.
 
   Checkpointing: after every processed chunk the file holds
-  <processed outputs> + <!-- GEMINI-TEXT-CONTINUE done=k total=n --> +
+  <processed outputs> + <!-- PROVIDER/MODEL-TEXT-CONTINUE done=k total=n --> +
   <remaining original chunks>. The done part is re-read from disk at each
   write, so concurrent edits to already-processed outputs are preserved
   and only the newly processed chunk is appended. On failure the latest
@@ -179,6 +194,7 @@ def process_text_chunks(file_in, prompt, max_chunk_chars=12000, model_id=None, a
     backend = GeminiBackend(api_key_path=api_key_path, model_id=model_id, cred_path=cred_path)
 
   chat = backend.new_chat(system_prompt=prompt, model_id=model_id)
+  tag = _provider_tag(backend)
 
   processed_new = []
   def done_with_latest():
@@ -217,7 +233,7 @@ def process_text_chunks(file_in, prompt, max_chunk_chars=12000, model_id=None, a
       # Checkpoint so a later attempt resumes after the marker.
       remaining = chunks[idx + 1:]
       if remaining and not dry_run:
-        marker = _make_continue_marker(done_count + idx + 1, total_chunks)
+        marker = _make_continue_marker(done_count + idx + 1, total_chunks, tag)
         _dump_md_file_atomic(
           md_file, metadata,
           done_with_latest() + "\n\n" + marker + "\n\n" + "\n\n".join(remaining),

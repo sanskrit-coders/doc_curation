@@ -74,6 +74,7 @@ class ClaudeChat(LlmChat):
 class ClaudeBackend(LlmBackend):
   DEFAULT_MODEL = "claude-sonnet-4-5"
   DEFAULT_MAX_TOKENS = 8192
+  PROVIDER_TAG = "Claude"
 
   def __init__(self, api_key_path="claude.default", model_id=None, max_tokens=None, cred_path=None):
     self.api_key_path = api_key_path

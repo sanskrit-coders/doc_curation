@@ -31,6 +31,10 @@ class LlmBackend(abc.ABC):
 
   #: Used when callers don't specify a model.
   DEFAULT_MODEL: str = ""
+  #: Short provider label used to tag markers/status lines written into
+  #: files, so a file processed with one provider is not labelled with
+  #: another's name.
+  PROVIDER_TAG: str = "Llm"
 
   @abc.abstractmethod
   def new_chat(self, system_prompt: str, model_id: str | None = None) -> LlmChat:
