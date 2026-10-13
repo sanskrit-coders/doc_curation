@@ -1,7 +1,7 @@
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor import details as details_helper
 from doc_curation.md.file import MdFile
-from doc_curation.utils import sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
 from indic_transliteration.sanscript.schemes.brahmic import accent
 
 

@@ -114,7 +114,9 @@ def _prompt_for_batch(core_batch, c_start, en_window, e_start,
     f"core[{c_start + i}]: {s}" for i, s in enumerate(core_batch))
   en_lines = "\n".join(
     f"tr[{e_start + j}]: {s}" for j, s in enumerate(en_window))
-  return f"""Align each core text below, IN ORDER, to a contiguous span of the translation sentences below. Spans must be sequential and cover translation sentences {e_start}..{len(en_window) + e_start - 1} with no gaps and no overlaps (an empty span repeats the next start). This continues a longer alignment: core texts 0..{total_core - 1} map into translation sentences 0..{total_en - 1}; previous batches already fixed everything before core {c_start} / translation {e_start}.
+  return f"""Align each core text below, IN ORDER, to a contiguous span of the translation sentences below. Spans must be sequential and cover translation sentences {e_start}..{len(en_window) + e_start - 1} with no gaps and no overlaps. This continues a longer alignment: core texts 0..{total_core - 1} map into translation sentences 0..{total_en - 1}; previous batches already fixed everything before core {c_start} / translation {e_start}.
+
+Map EVERY core text to at least one translation sentence. An empty span (start repeating the next start) is allowed ONLY for lines with genuinely no counterpart, e.g. colophons like 'इति ...॥७॥' — never as a shortcut for hard sentences. Skimming sentences over with empty spans is the failure mode to avoid: read each core text against the window and place it deliberately.
 
 CORE TEXTS:
 {core_lines}
@@ -179,12 +181,17 @@ def _validate_batch(starts, next_en, c_start, c_end, e_start, e_end,
     raise ValueError(f"next_en {next_en} outside [{lo}, {hi}]")
   if is_last and next_en != total_en:
     raise ValueError(f"last batch next_en {next_en} != {total_en} (drop)")
+  if not is_last and e_start < total_en and next_en <= e_start:
+    raise ValueError(
+      f"batch consumed no translation units (next_en {next_en} <= window "
+      f"start {e_start} with {total_en - e_start} units left); attach the "
+      "window head to the batch instead of stalling")
   return norm, next_en
 
 
 def seq_match_texts_to_translation(
     texts, translation_text, generate_fn,
-    batch_core_chars=6000, window_en_chars=8000, max_retries=2):
+    batch_core_chars=1500, window_en_chars=8000, max_retries=2):
   """Align core texts to translation spans via batched LLM index mapping.
 
   :param texts: core sentences in order (any language).
@@ -283,6 +290,12 @@ def _map_batch(core_batch, c, en_window, e, n, m, generate_fn, max_retries):
       norm, next_en = _validate_batch(
         starts, next_en, c, c + len(core_batch), e, e + len(en_window),
         c + len(core_batch) == n, m)
+      empties = sum(
+        1 for k in range(len(core_batch))
+        if (norm[c + k + 1] if k + 1 < len(core_batch) else next_en)
+        == norm[c + k])
+      logging.info("matcher batch core[%d:%d] -> en[%d:%d] (%d empties)",
+                   c, c + len(core_batch), e, next_en, empties)
       return norm, next_en
     except ValueError as ex:
       err = str(ex)
@@ -399,6 +412,9 @@ def _bare_paras(rest):
 
 def _has_bare_devanagari(rest):
   bare = regex.sub(r"<details\b.*?</details>", "", rest, flags=regex.DOTALL)
+  # Skip markdown headings and `--` attribution lines: like
+  # generic_sanskrit_vipra_mUla, those are never sentences to wrap.
+  bare = regex.sub(r"(?m)^\s*(#{1,6}\s.*|--.*)$", "", bare)
   return bool(regex.search(r"[\u0900-\u097F]{2,}", bare))
 
 
@@ -637,7 +653,7 @@ def _finalize_appendix(md_path, total_core, total_paras, used_files,
 
 
 def insert_translation_details(md_path, translation_dir_path, start_file=None,
-                               generate_fn=None, batch_core_chars=6000,
+                               generate_fn=None, batch_core_chars=1500,
                                window_en_chars=8000, max_retries=2,
                                dry_run=False):
   """Map translations onto pre-made मूलम् sentences and insert them.

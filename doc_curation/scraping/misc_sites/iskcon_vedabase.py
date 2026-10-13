@@ -4,7 +4,7 @@ from doc_curation.md import library, content_processor
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper, arrangement
 from doc_curation.scraping.html_scraper import souper
-from doc_curation.utils import sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
 from indic_transliteration import sanscript
 
 

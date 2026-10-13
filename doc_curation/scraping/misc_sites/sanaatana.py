@@ -8,7 +8,7 @@ from doc_curation.md import markdownify_plain_text
 from doc_curation.md.content_processor.details import Detail
 from doc_curation.md.file import MdFile
 from doc_curation.md.library.arrangement import fix_index_files
-from doc_curation.utils import sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
 from indic_transliteration import sanscript
 import logging
 

@@ -4,7 +4,7 @@ from curation_utils import scraping
 from doc_curation.ebook import pandoc_helper
 from doc_curation.md.content_processor import space_helper
 from curation_utils.file_helper import get_storage_name
-from doc_curation.utils import sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
 
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement

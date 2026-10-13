@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import get_md_files_from_path
-from doc_curation.utils.sanskrit_helper import fix_lazy_anusvaara
+from doc_curation.sanskrit import fix_lazy_anusvaara
 from indic_transliteration import sanscript
 
 VARIANT_SEPARATOR = "_________________"

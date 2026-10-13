@@ -17,7 +17,7 @@ from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor.footnote import helper as footnote_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement
-from doc_curation.utils import sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
 from indic_transliteration import sanscript
 
 for handler in logging.root.handlers[:]:

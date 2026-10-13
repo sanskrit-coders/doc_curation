@@ -10,9 +10,10 @@ from curation_utils import creds
 
 from doc_curation.llm.gemini.keys import _DEFAULT_TOKENS_PATH, _resolve_secret
 
-# Matches the other backends (gemini 600s, claude 600s): a stall must
-# always surface instead of hanging the run forever.
-REQUEST_TIMEOUT = 600.0
+# Reasoning models (e.g. step-5-preview) routinely take many minutes per
+# batch, so the ceiling is higher than the other backends'. Still finite,
+# so a stall surfaces instead of hanging the run forever.
+REQUEST_TIMEOUT = 1800.0
 
 _clients = {}
 

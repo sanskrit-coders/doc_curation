@@ -7,7 +7,8 @@ from doc_curation.md.library import arrangement
 from doc_curation.scraping.misc_sites import dvaita
 
 from doc_curation.utils import patterns
-from doc_curation.utils import text_utils, sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
+from doc_curation.utils import text_utils
 
 
 def misc():

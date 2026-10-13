@@ -1,10 +1,10 @@
 import os
-
-import doc_curation.utils.sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
 import regex
 
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include as include_helper, section_helper, details as details_helper, ocr_helper, footnote_helper, ambuda_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
+from doc_curation.md.content_processor import include as include_helper, section_helper, details as details_helper, ocr_helper, ambuda_helper
 from doc_curation.utils import patterns
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
@@ -36,7 +36,7 @@ def sarva_prastuti():
   # 
   # library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: details_helper.transliterate_details(c, source_script=sanscript.TAMIL, title="तमिऴ्"), dry_run=False)
   # library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: details_helper.insert_duplicate_before(c, m), dry_run=False)
-  # library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: doc_curation.utils.sanskrit_helper.fix_lazy_anusvaara(c), dry_run=False)
+  # library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: sanskrit_helper.fix_lazy_anusvaara(c), dry_run=False)
   library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda x, y: aksharamukha_helper.manipravaalify(x), dry_run=False)
 
 

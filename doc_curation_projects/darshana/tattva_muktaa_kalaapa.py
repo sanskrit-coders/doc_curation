@@ -4,7 +4,9 @@ import os.path
 from indic_transliteration import sanscript
 
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import details as details_helper, footnote_helper, commentary_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
+from doc_curation.md.content_processor.commentary import helper as commentary_helper
+from doc_curation.md.content_processor import details as details_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper
 

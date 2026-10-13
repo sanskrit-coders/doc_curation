@@ -1,9 +1,10 @@
 import doc_curation.utils
 import regex
 from doc_curation.md import content_processor, library
-from doc_curation.md.content_processor import footnote_helper, ocr_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
+from doc_curation.md.content_processor import ocr_helper
 from doc_curation.md.file import MdFile
-from doc_curation.utils import sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
 from indic_transliteration import sanscript, aksharamukha_helper, tamil_tools
 from indic_transliteration.font_converter import gaudiya
 
@@ -15,7 +16,7 @@ def devanaagarify(dir_path, source_script):
     c = content_processor.transliterate(text=c, source_script=source_script)
     if source_script == sanscript.TAMIL:
       c = aksharamukha_helper.manipravaalify(c)
-    c = doc_curation.utils.sanskrit_helper.fix_lazy_anusvaara(c)
+    c = sanskrit_helper.fix_lazy_anusvaara(c)
     c = regex.sub(r"\|\|", "॥", c)
     c = regex.sub(r"\|", "।", c)
 

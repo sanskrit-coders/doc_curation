@@ -1,11 +1,10 @@
 import os
-
-import doc_curation.utils.sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
 import regex
 
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include as include_helper, section_helper, details as details_helper, ocr_helper, \
-  footnote_helper, space_helper
+from doc_curation.md.content_processor import include as include_helper, section_helper, details as details_helper, ocr_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
 from doc_curation.utils import patterns
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper

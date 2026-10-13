@@ -83,7 +83,7 @@ def fix_cross_page_footnotes(dry_run=False):
     if old_content.strip() == content.strip():
       continue
     content = regex.sub("sbe\d\d\d\d.htm(egg_\d+)", r"\1", content)
-    from doc_curation.md.content_processor import footnote_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
     content = footnote_helper.define_footnotes_near_use(content=content)
     md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
 

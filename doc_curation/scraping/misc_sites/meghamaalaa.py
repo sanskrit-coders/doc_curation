@@ -7,7 +7,7 @@ from doc_curation.md.library import arrangement
 from doc_curation.md import content_processor
 from doc_curation.md.content_processor import space_helper
 from curation_utils.file_helper import get_storage_name
-from doc_curation.utils import sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
 
 from doc_curation.md.file import MdFile
 import logging

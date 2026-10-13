@@ -18,6 +18,7 @@ from doc_curation.llm.text_chunker import process_text_chunks
 
 from .backend import OpencodeBackend, OpencodeChat, OpencodeError, OpencodeFileRef, OpencodeTimeoutError
 from .keys import get_client
+from .translation_matcher import insert_translation_details
 
 
 def _opencode_text_chunks_fn(*args, api_key_path=None, model_id=None, cred_path=None, variant=None,
@@ -67,12 +68,18 @@ def process_text_chunks_with_keys(file_in, *args, api_key_path="opencode_go", cr
 
 
 def process_details_with_keys(file_in, *args, api_key_path="opencode_go", cred_path=None,
-                              model_id=None, variant=None, max_attempts=None,
+                              model_id=None, variant=None, per_detail=False, max_attempts=None,
                               max_transient_retries=8, **kwargs):
   """Process <details> blocks; model_id picks any opencode model
-  (default: opencode-go/muse-spark-1.3-contributor)."""
+  (default: opencode-go/muse-spark-1.3-contributor).
+
+  per_detail=True forces one marker-free model call per detail (no
+  batching), which suits reasoning models that mishandle long batched
+  calls; max_chunk_chars is ignored in that mode.
+  """
   return _call_with_keys(_opencode_details_fn, file_in, *args, api_key_path=api_key_path,
-                         cred_path=cred_path, model_id=model_id, variant=variant, max_attempts=max_attempts,
+                         cred_path=cred_path, model_id=model_id, variant=variant,
+                         per_detail=per_detail, max_attempts=max_attempts,
                          max_transient_retries=max_transient_retries, **kwargs)
 
 
@@ -93,6 +100,7 @@ __all__ = [
     "OpencodeFileRef",
     "OpencodeTimeoutError",
     "get_client",
+    "insert_translation_details",
     "process_text_chunks",
     "process_details",
     "process_pdf_chunks",

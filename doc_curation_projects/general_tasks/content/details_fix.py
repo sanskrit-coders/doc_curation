@@ -1,10 +1,12 @@
-import doc_curation.utils.sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
 import regex
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import details as details_helper, ocr_helper, space_helper, section_helper, footnote_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
+from doc_curation.md.content_processor import details as details_helper, ocr_helper, space_helper, section_helper
 from doc_curation.md.file import MdFile
 from doc_curation.scraping.misc_sites import ebhaarati
-from doc_curation.utils import patterns, sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
+from doc_curation.utils import patterns
 from indic_transliteration import tamil_tools, aksharamukha_helper, sanscript
 from indic_transliteration.sanscript.schemes.brahmic import accent
 

@@ -1,6 +1,7 @@
 """Gemini LLM helpers (flat import surface preserved)."""
 
 from .backend import GeminiBackend, GeminiChat
+from .translation_matcher import insert_translation_details
 from .keys import (
     _DEFAULT_TOKENS_PATH,
     _clients,
@@ -59,6 +60,7 @@ from .rotator import (
 __all__ = [
     "GeminiBackend",
     "GeminiChat",
+    "insert_translation_details",
     "_DEFAULT_TOKENS_PATH",
     "_clients",
     "_get_retry_delay",

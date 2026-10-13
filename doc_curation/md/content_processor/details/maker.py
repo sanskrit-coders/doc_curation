@@ -120,7 +120,8 @@ def sections_to_details(content, pattern=r"(?<=\n|^)\###+ +(\S.+)\s+(\S[^\#<]+?)
   return content
 
 def shlokas_to_details(content, pattern=None, title_base="टीका"):
-  from doc_curation.utils import patterns, sanskrit_helper
+  from doc_curation import sanskrit as sanskrit_helper
+  from doc_curation.utils import patterns
   if f">{title_base}" in content:
     return content
   content = sanskrit_helper.seperate_uvaacha(text=content)
@@ -154,7 +155,8 @@ def shlokas_to_muula_viprastuti_details(content, shloka_processor=lambda x:x, pa
     logging.warning("विश्वास-प्रस्तुतिः found. Returning")
     content = regex.sub(r"(?<=/details>|^)\s*([^<]+?)\s*(?=<details|$)", lambda x: shlokas_to_muula_viprastuti_details(content=x.group(0), pattern=pattern, id_position=id_position), content)
     return content
-  from doc_curation.utils import patterns, sanskrit_helper
+  from doc_curation import sanskrit as sanskrit_helper
+  from doc_curation.utils import patterns
   content = sanskrit_helper.seperate_uvaacha(text=content)
   if pattern is None:
     pattern = patterns.PATTERN_2LINE_SHLOKA
@@ -207,7 +209,7 @@ def generic_sanskrit_vipra_mUla(content, start_text=None,
 
   Takes ```content`` (a full file body or section), and for every
   non-detail paragraph after ``start_text`` splits it with
-  :func:`doc_curation.utils.sanskrit_helper.split_to_sentences` and
+  :func:`doc_curation.sanskrit.split_to_sentences` and
   replaces each sentence with an (open) विश्वास-प्रस्तुतिः block plus a
   मूलम् block — no translations involved (those are inserted later,
   above each मूलम् block, once mapped).
@@ -219,7 +221,7 @@ def generic_sanskrit_vipra_mUla(content, start_text=None,
   :return: new markdown text (input untouched where there is nothing to
     wrap: details blocks, headings, non-Devanagari paragraphs).
   """
-  from doc_curation.utils.sanskrit_helper import split_to_sentences
+  from doc_curation.sanskrit import split_to_sentences
 
   if start_text:
     idxs = [m.start() for m in regex.finditer(regex.escape(start_text),
@@ -296,3 +298,7 @@ def non_detail_parts_to_detail(content, title, attributes_str=""):
   content = _normalize_spaces(content)
   
   return content
+
+
+if __name__ == '__main__':
+  library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/07_antaradhikaraNam.md", content_transformer=lambda c, *args, **kwargs: generic_sanskrit_vipra_mUla(c))

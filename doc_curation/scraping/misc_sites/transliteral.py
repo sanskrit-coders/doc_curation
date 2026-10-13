@@ -1,7 +1,7 @@
 import os
 
 from doc_curation.md.file import MdFile
-from doc_curation.utils import sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
 
 from indic_transliteration import sanscript
 from doc_curation.md import library

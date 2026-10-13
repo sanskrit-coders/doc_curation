@@ -4,10 +4,12 @@ import os
 import editdistance
 import regex
 
-from doc_curation.utils import sanskrit_helper, text_utils
+from doc_curation import sanskrit as sanskrit_helper
+from doc_curation.utils import text_utils
 from curation_utils import file_helper
 from doc_curation.md import library, content_processor
-from doc_curation.md.content_processor import include as include_helper, footnote_helper, details as details_helper, section_helper
+from doc_curation.md.content_processor.footnote import helper as footnote_helper
+from doc_curation.md.content_processor import include as include_helper, details as details_helper, section_helper
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import metadata_helper, combination, arrangement
 from doc_curation_projects.kaavya import divyaprabandha

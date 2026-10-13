@@ -1,4 +1,5 @@
 from doc_curation import translation
+from doc_curation.llm import opencode
 from doc_curation.md import library
 from doc_curation.md.content_processor import details as details_helper
 from doc_curation.md.file import MdFile
@@ -14,14 +15,18 @@ def translate_details(base_dir, source_language, dest_language, src_detail_patte
 
 
 def translate_partwise(base_dir, source_language, dest_language):
-  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: doc_curation.translation.translate_partwise(text=c, source_language=source_language, dest_language=dest_language), dry_run=False)
+  library.apply_function(fn=MdFile.transform, dir_path=base_dir, content_transformer=lambda c, m: translation.translate_partwise(text=c, source_language=source_language, dest_language=dest_language), dry_run=False)
 
 
 if __name__ == '__main__':
+  opencode.insert_translation_details(
+    md_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/07_antaradhikaraNam.md",
+    translation_dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/en/thibaut/1/1",
+    start_file="20.md", model_id="opencode/muse-spark-1.3-contributor-free", variant="xhigh", )
   # translate_details(base_dir="/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/goraxapura-pAThaH/hindy-anuvAdaH/1_bAlakANDam", source_language="hi", dest_language="es", src_detail_pattern="(.*हिन्दी.*)|(भागसूचना)")
 
   # translate_sentences(base_dir="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/castellano/rangapuri-rAmAyaNam/", source_language="es", dest_language="en")
-  translate_sentences(base_dir="/home/vvasuki/gitland/vishvAsa/notes/content/power/sustainability/articles/tom_murphy/2024-08-02_mm-10-ditch-the-bad.md", source_language="en", dest_language="es")
+  # translate_sentences(base_dir="/home/vvasuki/gitland/vishvAsa/notes/content/power/sustainability/articles/tom_murphy/2024-08-02_mm-10-ditch-the-bad.md", source_language="en", dest_language="es")
 
   # translate_partwise(base_dir="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/castellano/rangapuri-rAmAyaNam/0_Meta/01_Contenido/07_El_Libro_del_Gobernante_Ideal.md", source_language="es", dest_language="en")
   pass

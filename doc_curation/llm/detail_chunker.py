@@ -138,6 +138,25 @@ def _generate_text(backend, system_prompt, user_text, model_id, empty_retries=2)
   raise RuntimeError("Empty response from model")
 
 
+def _generate_per_detail(backend, prompt, batch, model_id):
+  """Marker-free per-detail generation: one model call per detail.
+
+  Maps 1:1 by construction, so it never depends on the model reproducing
+  separator markers. Used for the forced-per-detail mode and as the
+  marker-mismatch fallback.
+  """
+  outputs = {}
+  for index, item in batch:
+    outputs[index] = _generate_text(
+      backend,
+      prompt,
+      "Process text chunk 1 of 1 according to the system instructions:\n\n"
+      + item[1].content.strip(),
+      model_id,
+    ).strip()
+  return outputs
+
+
 BATCH_LINE_RE = regex.compile(
   rf"^@@{TAG_PATTERN}-BATCH\s+(\d+)/(\d+)\s+details\s+(\d+)-(\d+)\s+(PENDING|IN PROGRESS|DONE)@@\s*$",
   regex.MULTILINE,
@@ -234,7 +253,7 @@ def _write_batch_checkpoint(file_in, detail_pattern, batch_num, nbatches, batch,
   return new_content
 
 
-def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000, model_id=None, api_key_path="gemini.vv", dry_run=False, fallback_per_detail=True, backend: LlmBackend | None = None, cred_path=None):
+def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000, model_id=None, api_key_path="gemini.vv", dry_run=False, fallback_per_detail=True, per_detail=False, backend: LlmBackend | None = None, cred_path=None):
   """Process matching <details> blocks of a markdown file with an LLM, in place.
 
   Only top-level <details> blocks whose <summary> title matches
@@ -262,7 +281,9 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
   redone detail-by-detail with marker-free calls, which map 1:1 by
   construction; the raw mismatched output is saved to a debug file in the
   temp dir and its path logged. With fallback_per_detail=False a mismatch
-  raises immediately.
+  raises immediately. Pass per_detail=True to force marker-free
+  single-detail calls from the start (no batching; max_chunk_chars is then
+  ignored) - useful for reasoning models that mishandle long batched calls.
 
   Progress is checkpointed to the input file after every batch: each
   checkpoint re-reads the file fresh, applies just that batch's outputs
@@ -372,23 +393,28 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
   # are preserved for markers and numbering.
   expected_titles = {index: detail.title for index, (_, detail) in enumerate(matched, start=1)}
   pending = list(enumerate(matched, start=1))[start:]
-  batches = []
-  current_batch, current_len = [], 0
-  for index, item in pending:
-    piece = f"{_make_detail_split_marker(index, marker_tag)}\n\n{item[1].content.strip()}"
-    if len(piece) > max_chunk_chars:
-      if current_batch:
+  if per_detail:
+    # Force one model call per detail (no batching), so the model never
+    # has to reproduce separator markers. Ignores max_chunk_chars.
+    batches = [[(index, item)] for index, item in pending]
+  else:
+    batches = []
+    current_batch, current_len = [], 0
+    for index, item in pending:
+      piece = f"{_make_detail_split_marker(index, marker_tag)}\n\n{item[1].content.strip()}"
+      if len(piece) > max_chunk_chars:
+        if current_batch:
+          batches.append(current_batch)
+          current_batch, current_len = [], 0
+        batches.append([(index, item)])
+      elif current_batch and current_len + 2 + len(piece) > max_chunk_chars:
         batches.append(current_batch)
-        current_batch, current_len = [], 0
-      batches.append([(index, item)])
-    elif current_batch and current_len + 2 + len(piece) > max_chunk_chars:
+        current_batch, current_len = [(index, item)], len(piece)
+      else:
+        current_batch.append((index, item))
+        current_len += (2 if current_len else 0) + len(piece)
+    if current_batch:
       batches.append(current_batch)
-      current_batch, current_len = [(index, item)], len(piece)
-    else:
-      current_batch.append((index, item))
-      current_len += (2 if current_len else 0) + len(piece)
-  if current_batch:
-    batches.append(current_batch)
 
   safe_base = regex.sub(r"[^A-Za-z0-9_.-]+", "_", os.path.basename(file_in))
   done_so_far = start
@@ -431,33 +457,29 @@ def process_details(file_in, prompt, detail_pattern=None, max_chunk_chars=12000,
         except Exception as e:
           logging.warning(f"Could not mark batch {batch_num} IN PROGRESS in {file_in} ({e}); continuing.")
       try:
-        processed_batch = _generate_text(backend, batch_prompt, user_text, model_id)
+        if per_detail:
+          # Marker-free: one call per detail, mapped 1:1 by construction.
+          outputs = _generate_per_detail(backend, prompt, batch, model_id)
+        else:
+          processed_batch = _generate_text(backend, batch_prompt, user_text, model_id)
 
-        try:
-          outputs = _split_detail_batch(processed_batch, expected)
-        except RuntimeError as e:
-          debug_path = os.path.join(
-            tempfile.gettempdir(), f"llm_detail_batch_mismatch_{safe_base}_batch{batch_num}.md"
-          )
-          with open(debug_path, "w", encoding="utf-8") as f:
-            f.write(processed_batch)
-          if not fallback_per_detail:
-            logging.error(f"Batch {batch_num}: {e}. Debug output saved at {debug_path}.")
-            raise RuntimeError(f"Batch {batch_num}: {e}; leaving {file_in} untouched.") from e
-          logging.warning(
-            f"Batch {batch_num} (details {expected}): {e}. The model dropped/altered the "
-            f"separator markers - raw batch output saved at {debug_path}. "
-            f"Falling back to per-detail calls for this batch."
-          )
-          outputs = {}
-          for index, item in batch:
-            outputs[index] = _generate_text(
-              backend,
-              prompt,
-              "Process text chunk 1 of 1 according to the system instructions:\n\n"
-              + item[1].content.strip(),
-              model_id,
-            ).strip()
+          try:
+            outputs = _split_detail_batch(processed_batch, expected)
+          except RuntimeError as e:
+            debug_path = os.path.join(
+              tempfile.gettempdir(), f"llm_detail_batch_mismatch_{safe_base}_batch{batch_num}.md"
+            )
+            with open(debug_path, "w", encoding="utf-8") as f:
+              f.write(processed_batch)
+            if not fallback_per_detail:
+              logging.error(f"Batch {batch_num}: {e}. Debug output saved at {debug_path}.")
+              raise RuntimeError(f"Batch {batch_num}: {e}; leaving {file_in} untouched.") from e
+            logging.warning(
+              f"Batch {batch_num} (details {expected}): {e}. The model dropped/altered the "
+              f"separator markers - raw batch output saved at {debug_path}. "
+              f"Falling back to per-detail calls for this batch."
+            )
+            outputs = _generate_per_detail(backend, prompt, batch, model_id)
         for index, (tag, detail) in batch:
           details_helper.detail_content_replacer_soup(tag, outputs[index])
         done_so_far += len(batch)

@@ -2,8 +2,7 @@ import codecs
 import itertools
 import logging
 import os
-
-import doc_curation.utils.sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
 import regex
 from bs4 import BeautifulSoup
 from indic_transliteration import sanscript, aksharamukha_helper
@@ -45,7 +44,7 @@ def dump_devanaagarii(source_html, dest_file, overwrite=False):
       text = aksharamukha_helper.transliterate_tamil(text=text, source_script="ISO")
     else:
       text = sanscript.transliterate(data=text, _from=sanscript.IAST, _to=sanscript.DEVANAGARI)
-      text = doc_curation.utils.sanskrit_helper.fix_lazy_anusvaara(text)
+      text = sanskrit_helper.fix_lazy_anusvaara(text)
     text = "%s\n\n## पाठः\n%s" % (intro, text)
     out_file = MdFile(file_path=dest_file, frontmatter_type="toml")
     out_file.dump_to_file(metadata=metadata, content=text, dry_run=False)

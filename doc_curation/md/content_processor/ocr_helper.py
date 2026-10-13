@@ -3,7 +3,7 @@ import os
 import pandas
 import regex
 import tqdm
-from doc_curation.utils import sanskrit_helper
+from doc_curation import sanskrit as sanskrit_helper
 from indic_transliteration import sanscript
 
 
