@@ -9,30 +9,35 @@ numbers, no Devanagari handling).  All provider calls live in
 
 Token-minimal protocol (single sweep, cursor-based):
 
-1. The translation is split locally into numbered units (sentences);
-   footnote definitions (``[^x]:``) stay atomic.
+1. The translation is used UNSPLIT, as plain canonical text (dash-glue
+   separated, whitespace kept); footnote-definition blocks (``[^x]:``)
+   are excised up front and consulted only for Notes.
 2. Core texts are walked in order in batches sized by character budget.
    Each LLM call sends the next unmapped core batch plus the next
    unmapped translation window starting exactly where the last confirmed
-   mapping ended — position is carried by integer cursors, never by
+   mapping ended — position travels by integer word cursors, never by
    re-sending settled text.
- 3. The model returns *positions only*: ``{"starts": {core_idx: en_idx},
-    "skip": [...], "carry": [...], "next_en": int}``.  Span ends are
-    implied by the next start (the last core of a batch ends at
-    ``next_en``), so output is a handful of integers instead of copied
-    text (which also guarantees the takes stay verbatim).  ``carry``
-    names cores that additionally display the pivot unit ending the
-    previous span (display only; cursors still advance once).
+ 3. The model returns *positions only*: ``{"starts": {core_idx: word_idx},
+    "skip": [...], "next_en": int}`` — indices into its own whitespace
+    split of the plain window text (verified against the told string
+    count), shifted to global by the caller.  Span ends are implied by
+    the next start (the last core of a batch ends at ``next_en``), so
+    output is a handful of integers instead of copied text (which also
+    guarantees the takes stay canonical-text verbatim).  Because spans
+    are word ranges, the model splits sentences as it pleases —
+    clause-level splits land precisely, with no carry/overlap machinery.
  4. Each reply is validated (exact key set, ints in range, non-decreasing,
-    first start == window start, every non-skipped core takes >= 1 unit,
-    ``next_en`` sane); on failure only that
+    first start == window start, every non-skipped core takes >= 1 word,
+    ``next_en`` sane, early stopping always allowed — where the
+    translation ends is the model's call, reported, never forced); on
+    failure only that
     batch is retried with the error appended.  After ``max_retries`` it
     raises rather than silently misaligning (cf. detail_chunker).
  5. Cores the model explicitly lists in ``"skip"`` (genuinely no English
-    counterpart: colophons, verse fragments already covered by a
-    neighbour's span, untranslated passages) get NO Translation block —
-    only a ``<!-- TRANSLATION-SKIPPED -->`` marker — so output never
-    contains empty Translation blocks; skips are reported in the Appendix.
+    words rendering them: colophons, bare interjections, untranslated
+    passages) get NO Translation block — only a
+    ``<!-- TRANSLATION-SKIPPED -->`` marker — so output never contains
+    empty Translation blocks; skips are reported in the Appendix.
  6. Scope bounds (``end_file`` / ``end_after``) truncate the stream when
     the md file's scope ends before the translation directory does, so
     the final batch is never forced to swallow foreign tail material.
@@ -50,211 +55,99 @@ import regex
 from doc_curation.md.content_processor.details.maker import (
   translation_details)
 
-# Generic English abbreviations (no domain knowledge baked in).
-_ABBREVS = (
-  "Up", "Br", "Cḥ", "Ch", "Taitt", "Tait", "Bha", "Sū", "Su",
-  "Ṛk", "Rk", "Kau", "Kaus", "Mu", "Mun", "Mund", "Śve", "Sve", "Sv",
-  "Pra", "Prau", "Ke", "Kena", "Ka", "Kat", "Katha", "Kh", "Brah",
-  "Ār", "Ar", "Smṛ", "Smr", "Gītā", "Gita", "Chā", "Cha", "Śat", "Sat",
-  "Tai", "Brh", "Samh", "Sam",
-  "Mr", "Mrs", "Ms", "Dr", "Prof", "St", "vs", "etc", "viz", "cf",
-  "pp", "vol", "trans", "ed", "sec", "fig", "ch", "e", "i",
-)
+def _canon_text(s):
+  """Canonical translation text: the text exactly as the model sees it.
 
-
-def _split_units_with_spans(body):
-  """[(unit_text, start, end)] with raw offsets into ``body`` (LF newlines).
-
-  Unit TEXTS are byte-identical to :func:`_split_translation_units` on
-  the same input; spans cover the stripped unit text so tag insertion at
-  a span end never touches content.  ``\\r`` input is unsupported here
-  (callers fall back); all other logic — footnote defs kept whole,
-  dangling line-wrap merge, abbreviation/enumeration/paren guards —
-  mirrors the text splitter exactly.
+  CR/LF become LF, space/tab runs collapse, a space is inserted
+  beforehand where dash-glue joins words (``karman.--But,`` gains a
+  space beforehand: ``karman. --But,`` — single hyphens in words like
+  ``well-known`` are untouched), ends stripped; newlines are KEPT (paragraph structure survives for
+  footnote-def detection).  Word indices throughout this module are
+  positions in ``text.split()`` — i.e. splitting by regex ``\\s`` —
+  and the prompt tells the model exactly this rule, so its counts
+  match.  Takes rebuilt with ``" ".join`` are canonical-text verbatim
+  (they may show `` -- `` where the source had ``--``).
   """
-  # Paragraphs with exact spans (blank-line runs are separators) —
-  # EXCEPT a blank line inside (...) whose paren closes within LOOKAHEAD
-  # chars (refs like "(Br̥. Up.\n\nIII, 7, 22)" wrap across lines; splitting
-  # there shreds them into garbage fragments).  An unbalanced paren (e.g.
-  # Thibaut's unclosed "(cp.") still breaks normally — swallowing the rest
-  # of the file would be far worse.  A stray ")" at depth 0 is ignored.
-  LOOKAHEAD = 400
-  paras = []  # (text, start, end), text unstripped
-  pstart, depth, i, n = 0, 0, 0, len(body)
-  while i < n:
-    ch = body[i]
-    if ch == "(":
-      depth += 1
-      i += 1
-    elif ch == ")":
-      depth = max(0, depth - 1)
-      i += 1
-    elif ch == "\n":
-      m = regex.match(r"\n\s*\n", body[i:])
-      if not m:
-        i += 1
-        continue
-      split_here = depth == 0
-      if not split_here:
-        # Inside parens: suppress only if they balance soon.
-        d, j, closed = depth, i, False
-        lim = min(n, i + LOOKAHEAD)
-        while j < lim:
-          if body[j] == "(":
-            d += 1
-          elif body[j] == ")":
-            d -= 1
-            if d == depth - 1:
-              closed = True
-              break
-          j += 1
-        split_here = not closed
-      if split_here:
-        if body[pstart:i].strip():
-          paras.append((body[pstart:i], pstart, i))
-        i += len(m.group(0))
-        pstart = i
-      else:
-        i += 1
-    else:
-      i += 1
-  if body[pstart:].strip():
-    paras.append((body[pstart:], pstart, n))
-  # Normalize to stripped text with trimmed span.
-  normed = []
-  for part, s, e in paras:
-    stripped = part.strip()
-    lead = len(part) - len(part.lstrip())
-    normed.append((stripped, s + lead, e - (len(part) - len(part.rstrip()))))
-  paras = normed
+  t = (s or "").replace("\r\n", "\n").replace("\r", "\n")
+  t = regex.sub(r"[ \t]+", " ", t)
+  t = regex.sub(r"(\S)(--|—|–)", r"\1 \2", t)
+  return t.strip()
 
-  # Footnote defs stay whole; dangling (unterminated) paras merge forward.
-  groups = []  # ("mix", [(text, base)]) or ("def", [(text, base)])
-  buf_text, buf_base = [], []
-  for text, start, _ in paras:
-    if regex.match(r"\[\^[^\]]+\]:", text):
-      if buf_text:
-        groups.append(("mix", list(zip(buf_text, buf_base))))
-        buf_text, buf_base = [], []
-      groups.append(("def", [(text, start)]))
-      continue
-    buf_text.append(text)
-    buf_base.append(start)
-    if regex.search(r"[.?!;:][\"'’”\)\]]?\s*$", " ".join(buf_text)):
-      groups.append(("mix", list(zip(buf_text, buf_base))))
-      buf_text, buf_base = [], []
-  if buf_text:
-    groups.append(("mix", list(zip(buf_text, buf_base))))
 
-  out = []
-  for kind, items in groups:
-    if kind == "def":
-      (text, start), = items
-      out.append((regex.sub(r"\s+", " ", text),
-                  start, start + len(text)))
-      continue
-    # Logical stream = stripped components joined by single spaces.
-    runs = []  # (logical_start, raw_start, length)
-    logical_parts, loff = [], 0
-    for text, base in items:
-      logical_parts.append(text)
-      runs.append((loff, base, len(text)))
-      loff += len(text) + 1  # +1 join space
-    logical = " ".join(logical_parts)
+#: Position-tag format carrying per-file consumed-word counts (see
+#: :func:`_pos_tag`).  Legacy bare tags are stripped by the same regex.
+def _pos_tag(n):
+  """Position-tag text recording ``n`` consumed words in its file."""
+  return f"<!-- TRANSLATION-MATCH-POS words={n} -->"
 
-    def _to_raw(lpos):
-      # Map a logical offset to raw; join-spaces map to the left end.
-      for ls, rs, ln in runs:
-        if lpos < ls + ln:
-          return rs + (lpos - ls)
-      rs, ln = runs[-1][1], runs[-1][2]
-      return rs + ln
 
-    # Protected paren spans (same assumption as before: no nesting).
-    prot = []
-    for m in regex.finditer(r"\([^()]*\)", logical):
-      prot.append(m.span())
+def _strip_pos_tags(body):
+  """Remove position tags (legacy and word-count variants)."""
+  return regex.sub(
+    r"<!--\s*TRANSLATION-MATCH-POS(?:\s+words=\d+)?\s*-->", "", body)
 
-    def _in_prot(p):
-      return any(s <= p < e for s, e in prot)
 
-    # Candidate terminators with the same guards as the text splitter.
-    # As before, a split is suppressed when the starter begins with `(`
-    # (a masked paren used to break the starter lookahead there, gluing
-    # refs like `(III, 13, 7)` to the preceding sentence).
-    cuts = []  # logical offsets just PAST each terminator char
-    for m in regex.finditer(r"[.?!;]", logical):
-      p = m.start()
-      if _in_prot(p):
-        continue
-      ch = logical[p]
-      if ch == ".":
-        # Abbreviation guard.
-        hit = False
-        for ab in _ABBREVS:
-          if regex.search(r"\b%s\.$" % regex.escape(ab),
-                          logical[max(0, p - 8):p + 1]):
-            hit = True
-            break
-        if hit:
-          continue
-        # Enumeration guard: start or post-terminator digits.
-        pre = logical[max(0, p - 14):p + 1]
-        if regex.search(r"(?:^|[.?!]\s+)\d{1,3}\.$", pre):
-          continue
-      # Starter lookahead (identical to text splitter).
-      rest = logical[p + 1:]
-      ws = regex.match(r"\s+", rest)
-      after = rest[len(ws.group(0)):] if ws else rest
-      if not after:
-        cuts.append(p + 1)
-        continue
-      if after.startswith("("):
-        continue
-      if regex.match(r"[\"'‘“\(\[]?[A-Z0-9\[\(]", after):
-        cuts.append(p + 1)
-    # Assemble units; text = collapsed raw span (== text-splitter output).
-    prev = 0
-    for c in cuts:
-      seg_raw_s = _to_raw(prev)
-      seg_raw_e = _to_raw(c)
-      seg_text = regex.sub(r"\s+", " ", logical[prev:c].strip())
-      if seg_text:
-        # Trim span to non-whitespace (leading/trailing ws collapses away).
-        a = prev
-        while a < c and logical[a] in " \t\n":
-          a += 1
-        b = c
-        while b > a and logical[b - 1] in " \t\n":
-          b -= 1
-        out.append((seg_text, _to_raw(a), _to_raw(b)))
-      prev = c
-    tail_text = regex.sub(r"\s+", " ", logical[prev:].strip())
-    if tail_text:
-      a = prev
-      while a < len(logical) and logical[a] in " \t\n":
-        a += 1
-      out.append((tail_text, _to_raw(a), _to_raw(len(logical))))
+def _footnote_defs_from_text(body):
+  """``{marker: def text}`` for ``[^x]:`` definition blocks in raw body."""
+  defs = {}
+  for m in regex.finditer(r"\[\^[^\]]+\]:.*?(?=\n\s*\n|\Z)", body,
+                          flags=regex.DOTALL):
+    text = _canon_text(m.group(0))
+    mk = regex.match(r"(\[\^[^\]]+\]):", text).group(1)
+    defs.setdefault(mk, text)
+  return defs
+
+
+def _def_spans(body):
+  """Raw ``(start, end)`` spans of ``[^x]:`` definition blocks."""
+  return [m.span()
+          for m in regex.finditer(r"\[\^[^\]]+\]:.*?(?=\n\s*\n|\Z)", body,
+                                  flags=regex.DOTALL)]
+
+
+def _content_spans(body):
+  """Raw ``(start, end)`` spans of content words in canonical ``body``.
+
+  ``body`` must already be canonical (:func:`_canon_text`) with
+  position tags stripped; footnote-def ranges are excluded.
+  """
+  excluded = _def_spans(body)
+  return [(w.start(), w.end()) for w in regex.finditer(r"\S+", body)
+          if not any(s <= w.start() < e for s, e in excluded)]
+
+
+def _content_words(body):
+  """Content-word list (see :func:`_content_spans`); canonicalizes."""
+  t = _canon_text(_strip_pos_tags(body or ""))
+  return [t[s:e] for s, e in _content_spans(t)]
+
+
+def _load_translation_data(translation_paths):
+  """``{path: (frontmatter, body, word_spans, defs)}`` fresh from disk.
+
+  ``body`` is the canonical body (:func:`_canon_text`) with position
+  tags stripped (footnote defs and paragraph structure intact); ``word_spans`` are raw ``(start, end)`` spans
+  of content words (def ranges excluded) so tag moves never touch
+  content; ``defs`` maps footnote markers to def text for Notes blocks.
+  """
+  out = {}
+  for path in translation_paths:
+    with open(path, encoding="utf-8") as f:
+      raw = f.read()
+    m = regex.match(r"^(\+\+\+.*?\+\+\+)\n?", raw, flags=regex.DOTALL)
+    front = m.group(1) + "\n\n" if m else ""
+    body = raw[len(m.group(0)) if m else 0:]
+    body = _canon_text(_strip_pos_tags(body))
+    defs = _footnote_defs_from_text(body)
+    spans = _content_spans(body)
+    out[path] = (front, body, spans, defs)
   return out
 
 
-def _split_translation_units(translation_text):
-  """Split translation into numbered sentence units (local, no LLM).
-
-  Footnote definitions stay whole; dangling line-wrap paragraphs (no
-  terminal punctuation) are merged with the next paragraph so wraps
-  don't become phantom sentences.  Units with no word character at all
-  (stray separators like ``…`` or ``--``) are dropped: they carry no
-  content and would otherwise become degenerate one-glyph takes.
-  """
-  text = (translation_text or "").replace("\r\n", "\n")
-  return [t for t, _, _ in _split_units_with_spans(text)
-          if regex.search(r"\w", t, flags=regex.UNICODE)]
-
-
-def _one_line(s, limit=None):
-  s = regex.sub(r"\s+", " ", (s or "").strip())
-  return s if limit is None or len(s) <= limit else s
+def _file_words(files_data, path):
+  """Content-word list for one loaded file."""
+  _, body, spans, _ = files_data[path]
+  return [body[s:e] for s, e in spans]
 
 
 def _load_batch_prompt_template():
@@ -273,36 +166,39 @@ def _load_batch_prompt_template():
 
 
 def _prompt_for_batch(core_batch, c_start, en_window, e_start,
-                      total_core, total_en, prev_unit=None):
+                      total_core, total_en, prev_text=None):
   core_lines = "\n".join(
     f"core[{c_start + i}]: {s}" for i, s in enumerate(core_batch))
-  en_lines = "\n".join(
-    f"tr[{e_start + j}]: {s}" for j, s in enumerate(en_window))
-  anchor = (f"\nThe previously consumed sentence tr[{e_start - 1}] was: "
-            f"{prev_unit}\nYour first span must continue AFTER it.\n"
-            if prev_unit else "")
+  # Plain canonical text, deliberately NOT pre-numbered: the model splits
+  # it by regex \s itself and reports positions into its own split
+  # (verified against e_window_count), which keeps prompts small.
+  en_text = " ".join(en_window)
+  anchor = (f"\nThe translation continues from these trailing words "
+            f"(already consumed — do NOT take them again): {prev_text}\n"
+            f"Your first span must continue AFTER them.\n"
+            if prev_text else "")
   c_end = c_start + len(core_batch)
   pace = round(c_end * total_en / max(total_core, 1))
   pacing = (f"\nPACING: after this batch {c_end} of {total_core} cores will "
             f"be placed; you should then have consumed roughly {pace} of "
-            f"{total_en} translation sentences. If your next_en falls far "
+            f"{total_en} translation words. If your next_en falls far "
             f"short of that, you are starving later cores — widen spans "
             f"and skip less. (A tight verse cluster may locally consume "
             f"less; do not overcorrect for one.)\n")
   return _load_batch_prompt_template().substitute(
     total_core_m1=total_core - 1, total_core=total_core,
     total_en_m1=total_en - 1, total_en=total_en, c_start=c_start,
-    c_last=c_end - 1, e_start=e_start, e_window_end=e_start + len(en_window),
-    anchor=anchor, pacing=pacing, core_lines=core_lines, en_lines=en_lines)
+    c_last=c_end - 1, e_start=e_start, e_window_count=len(en_window),
+    anchor=anchor, pacing=pacing, core_lines=core_lines, en_words=en_text)
 
 
 def _parse_mapping(reply):
-  """Extract (starts, skip, carry, next_en) from model output.
+  """Extract (starts, skip, next_en) from model output.
 
-  ``skip`` is optional in the reply (defaults to ``[]``): core indices
-  with genuinely no counterpart, whose span must be empty.  ``carry``
-  is likewise optional: cores that additionally display the immediately
-  preceding unit (pivot tails), without consuming it twice.
+  Word indices throughout: ``starts`` maps each core to the FIRST word
+  of its span, ``next_en`` is the first word after the batch's last
+  span.  ``skip`` is optional (defaults to ``[]``): core indices with
+  genuinely no words rendering them, whose span must be empty.
   """
   text = (reply or "").strip()
   m = regex.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=regex.DOTALL)
@@ -329,27 +225,23 @@ def _parse_mapping(reply):
     skip = sorted(set(int(v) for v in raw_skip))
   except (TypeError, ValueError):
     raise ValueError("'skip' entries must be integers")
-  raw_carry = data.get("carry", [])
-  if raw_carry is None:
-    raw_carry = []
-  if not isinstance(raw_carry, list):
-    raise ValueError(f"'carry' must be a list of core indices: {text[:200]!r}")
-  try:
-    carry = sorted(set(int(v) for v in raw_carry))
-  except (TypeError, ValueError):
-    raise ValueError("'carry' entries must be integers")
-  return starts, skip, carry, next_en
+  return starts, skip, next_en
 
 
-def _validate_batch(starts, skip, carry, next_en, c_start, c_end, e_start,
-                    e_end, is_last, total_en):
-  """Normalize to ({int: int}, [int], [int], int), or raise ValueError.
+def _validate_batch(starts, skip, next_en, c_start, c_end, wlen,
+                    remaining):
+  """Normalize to ({int: int}, [int], int), or raise ValueError.
 
-  Every non-skipped core must take a non-empty span; every skipped core
-  must take an empty span.  Lazy empty spans (not in ``skip``) are
-  rejected so the model cannot skim hard sentences.  Carried cores
-  additionally display the immediately preceding unit (pivot tail) —
-  display only; cursors still advance once.
+  All indices are WINDOW-RELATIVE (0-based positions in the model's
+  own whitespace split of the window text); the caller shifts them to
+  global.  Spans tile the window head word for word: the first start
+  must be 0, starts are non-decreasing, and every non-skipped core
+  takes at least one word (lazy empty spans are rejected so the model
+  cannot skim hard sentences).  Nothing is dropped or duplicated:
+  core ``i``'s take is exactly words ``[start[i], start[i+1])`` (the
+  last ends at ``next_en``), so clause-level splits land precisely.
+  Stopping early is always allowed — where the translation ends is the
+  model's call; the leftover tail is reported, never force-consumed.
   """
   try:
     norm = {int(k): int(v) for k, v in starts.items()}
@@ -362,64 +254,54 @@ def _validate_batch(starts, skip, carry, next_en, c_start, c_end, e_start,
   skip_set = set(skip)
   if not skip_set <= set(want):
     raise ValueError(f"skip {skip} outside batch core range {want}")
-  carry_set = set(carry)
-  if not carry_set <= set(want):
-    raise ValueError(f"carry {carry} outside batch core range {want}")
-  if carry_set & skip_set:
-    raise ValueError(
-      f"cores {sorted(carry_set & skip_set)} are both skipped and carried; "
-      "skipped cores get no block, so there is nothing to display the "
-      "pivot unit under — un-skip them and carry instead")
   if not isinstance(next_en, int) or isinstance(next_en, bool):
     raise ValueError("next_en must be an integer")
   prev = None
   for i in want:
     v = norm[i]
-    if not e_start <= v <= e_end:
-      raise ValueError(f"core {i} start {v} outside window [{e_start}, {e_end}]")
+    if not 0 <= v <= wlen:
+      raise ValueError(
+        f"core {i} start {v} outside window [0, {wlen}] "
+        f"(your split holds {wlen} strings)")
     if prev is not None and v < prev:
       raise ValueError(f"starts not non-decreasing at core {i}")
     prev = v
-  if norm[want[0]] != e_start:
+  if norm[want[0]] != 0:
     raise ValueError(
-      f"first start {norm[want[0]]} != window start {e_start} (gap)")
+      f"first start {norm[want[0]]} != window start 0 "
+      "(words before it would drop silently)")
   for i in want:
-    if i in carry_set and norm[i] < 1:
-      raise ValueError(
-        f"core {i} is carried but starts at stream head (0); there is "
-        "no preceding unit to display")
     end_i = norm[i + 1] if i + 1 < c_end else next_en
     width = end_i - norm[i]
     if i in skip_set:
       if width != 0:
         raise ValueError(
-          f"core {i} is skipped but takes {width} sentence(s); "
+          f"core {i} is skipped but takes {width} word(s); "
           "skipped cores must have empty spans")
-    elif width < 1 and i not in carry_set:
+    elif width < 1:
       raise ValueError(
         f"core {i} has an empty span but is not in 'skip'; either give it "
-        "at least one sentence or name it in 'skip' with genuine cause")
-  lo, hi = norm[want[-1]], e_end
+        "at least one word or name it in 'skip' with genuine cause")
+  lo, hi = norm[want[-1]], wlen
   if not lo <= next_en <= hi:
     raise ValueError(f"next_en {next_en} outside [{lo}, {hi}]")
-  if is_last and next_en != total_en:
-    raise ValueError(f"last batch next_en {next_en} != {total_en} (drop)")
-  if (not is_last and e_start < total_en and next_en <= e_start
-      and len(skip_set) < len(want)):
+  if remaining > 0 and next_en <= 0 and len(skip_set) < len(want):
     raise ValueError(
-      f"batch consumed no translation units (next_en {next_en} <= window "
-      f"start {e_start} with {total_en - e_start} units left); attach the "
-      "window head to the batch instead of stalling")
-  return norm, sorted(skip_set), sorted(carry_set), next_en
+      f"batch consumed no translation words (stream has {remaining} "
+      "words left here); attach the window head to the batch instead "
+      "of stalling")
+  return norm, sorted(skip_set), next_en
 
 
 def seq_match_texts_to_translation(
     texts, translation_text, generate_fn,
     batch_core_chars=800, window_en_chars=8000, max_retries=2):
-  """Align core texts to translation spans via batched LLM index mapping.
+  """Align core texts to translation spans via batched LLM word mapping.
 
   :param texts: core sentences in order (any language).
-  :param translation_text: full translation text.
+  :param translation_text: full translation text, UNSPLIT (the model
+    splits it as it pleases: takes are word spans, so clause-level
+    splits land precisely).
   :param generate_fn: ``fn(prompt_text) -> str`` (e.g. wrapping
     ``LlmBackend.generate_content``); called once per batch plus
     retries of failed batches only.
@@ -428,27 +310,25 @@ def seq_match_texts_to_translation(
   :param max_retries: retries of an invalid batch reply (with the
     validation error appended); then RuntimeError.
   :return: list of translation strings, ``len == len(texts)``; each is
-    the verbatim window sentences joined with single spaces (``""``
+    the verbatim window words joined with single spaces (``""``
     for empty spans).
   """
   texts = [regex.sub(r"\s+", " ", (t or "").strip()) for t in (texts or [])]
   n = len(texts)
   if n == 0:
     return []
-  units = _split_translation_units(translation_text or "")
-  # Footnote definitions are metadata, not sequence positions: excluded
-  # from the sweep (look them up by marker for Notes blocks instead).
-  en = [u for u in units if not regex.match(r"\[\^[^\]]+\]:", u)]
+  # Footnote definitions are metadata, not sequence positions: excised
+  # before word-splitting (look them up by marker for Notes blocks).
+  en = _content_words(_strip_pos_tags(translation_text or ""))
   m = len(en)
   if m == 0:
     return ["" for _ in texts]
   if n == 1:
-    return [regex.sub(r"\s+", " ", (translation_text or "").strip())]
+    return [_canon_text(translation_text)]
 
   # Precompute char lengths for budgeting.
   core_lens = [len(t) for t in texts]
-  en_lens = [len(u) for u in en]
-  total_en_chars = sum(en_lens) or 1
+  en_lens = [len(w) + 1 for w in en]
 
   out_takes = {}  # core idx -> (start, end) with end exclusive
   c, e = 0, 0
@@ -457,7 +337,7 @@ def seq_match_texts_to_translation(
       # Translation exhausted: remaining cores map to empty spans,
       # no LLM call needed.
       logging.info("matcher tail cores[%d:%d] exhausted "
-                   "(en cursor %d >= %d units): %d skipped, no LLM call",
+                   "(en cursor %d >= %d words): %d skipped, no LLM call",
                    c, n, e, m, n - c)
       for i in range(c, n):
         out_takes[i] = (m, m)
@@ -471,14 +351,14 @@ def seq_match_texts_to_translation(
                          en_lens, e, m, window_en_chars)
     is_last = (c_end == n)
     if is_last:
-      e_end = m  # final batch must cover the tail: no drops allowed
-    anchor = regex.sub(r"\s+", " ", en[e - 1])[:300] if e > 0 else None
-    norm, _skipped, carried, next_en = _map_batch(
+      e_end = m  # final batch sees to the stream end (maximal context;
+      # stopping early stays allowed — unmatched tail is reported)
+    prev = " ".join(en[max(0, e - 25):e]) if e > 0 else None
+    norm, _skipped, next_en = _map_batch(
       texts[c:c_end], c, en[e:e_end], e, n, m, generate_fn, max_retries,
-      prev_unit=anchor)
-    carry_set = set(carried)
+      prev_text=prev)
     for i in range(c, c_end):
-      s = norm[i] - (1 if i in carry_set else 0)
+      s = norm[i]
       e_next = norm[i + 1] if i + 1 < c_end else next_en
       out_takes[i] = (s, e_next)
     c, e = c_end, next_en
@@ -495,7 +375,7 @@ def _plan_window(batch_chars, rem_core_chars, en_lens, e, m,
   """End index (exclusive) of the EN window for a batch.
 
   Proportional to the batch's share of remaining core text, plus
-  headroom, capped; always ≥1 unit.
+  headroom, capped; always ≥1 word.
   """
   rem_core = rem_core_chars or 1
   rem_en = sum(en_lens[e:]) or 1
@@ -508,49 +388,58 @@ def _plan_window(batch_chars, rem_core_chars, en_lens, e, m,
 
 
 def _map_batch(core_batch, c, en_window, e, n, m, generate_fn, max_retries,
-               prev_unit=None):
-  """Map one batch; returns (norm, skipped, carried, next_en).
+               prev_text=None):
+  """Map one batch; returns (norm {core: word_start}, skipped, next_en).
 
-  Retries narrowly. ``prev_unit`` (the already-consumed sentence just
-  before this window, if any) is shown to the model as a continuity
-  anchor; it is never re-sent as mappable text.  Carried cores display
-  the pivot unit ending the previous span above their own take (cursors
-  still advance once).
+  Retries narrowly.  ``prev_text`` (trailing already-consumed words
+  just before this window, if any) is shown to the model as a
+  continuity anchor; those words are never re-taken.
   """
   prompt = _prompt_for_batch(core_batch, c, en_window, e, n, m,
-                             prev_unit=prev_unit)
+                             prev_text=prev_text)
   reply, err = None, None
   for _ in range(max_retries + 1):
     try:
       reply = generate_fn(prompt if err is None else prompt + (
         f"\n\nYour previous reply was invalid: {err} "
         "Reply again with ONLY the corrected JSON."))
-      starts, skip, carry, next_en = _parse_mapping(reply)
-      norm, skipped, carried, next_en = _validate_batch(
-        starts, skip, carry, next_en, c, c + len(core_batch),
-        e, e + len(en_window), c + len(core_batch) == n, m)
+      starts, skip, next_en = _parse_mapping(reply)
+      # Validated in the model's window-relative indices, then shifted
+      # to global: everything downstream (takes, cursors, markers, tags)
+      # is global, while retry errors stay in the model's own language.
+      norm, skipped, next_en = _validate_batch(
+        starts, skip, next_en, c, c + len(core_batch),
+        len(en_window), m - e)
+      norm = {k: v + e for k, v in norm.items()}
+      next_en += e
       # Free diagnostics (no extra LLM calls): flag pile-ups while the
       # cursors still tell where they happened.
       widths = [((norm[c + k + 1] if k + 1 < len(core_batch) else next_en)
                  - norm[c + k]) for k in range(len(core_batch))]
       widest = max(widths) if widths else 0
-      if widest > 10:
+      if widest > 200:
         k = widths.index(widest)
         logging.warning(
-          "matcher batch core[%d:%d]: core %d takes %d units "
+          "matcher batch core[%d:%d]: core %d takes %d words "
           "(en[%d:%d]) — possible pile-up/overshoot, verify placement",
           c, c + len(core_batch), c + k, widest, norm[c + k],
           norm[c + k] + widest)
-      if c + len(core_batch) == n and next_en - e > max(10, m // 2):
-        logging.warning(
-          "matcher batch core[%d:%d]: final batch consumes %d of %d "
-          "units — the stream likely overshoots the file's scope "
-          "(consider end_file/end_after)", c, c + len(core_batch),
-          next_en - e, m)
-      logging.info("matcher batch core[%d:%d] -> en[%d:%d] (%d skipped, "
-                   "%d carried)", c, c + len(core_batch), e, next_en,
-                   len(skipped), len(carried))
-      return norm, skipped, carried, next_en
+      if c + len(core_batch) < n:
+        # Starvation check against the paced share: systematic
+        # under-consumption piles up into a forced blob at the end
+        # (the final batch must consume everything left).  Verse
+        # clusters legitimately run lean, so this is only a warning.
+        paced = (len(core_batch) / max(n - c, 1)) * (m - e)
+        if paced >= 10 and next_en - e < paced / 3:
+          logging.warning(
+            "matcher batch core[%d:%d] consumes %d of %d remaining "
+            "words (paced share ~%d) — later cores may starve, or the "
+            "stream overshoots the file's scope (consider "
+            "end_file/end_after)", c, c + len(core_batch), next_en - e,
+            m - e, round(paced))
+      logging.info("matcher batch core[%d:%d] -> en[%d:%d] (%d skipped)",
+                   c, c + len(core_batch), e, next_en, len(skipped))
+      return norm, skipped, next_en
     except ValueError as ex:
       err = str(ex)
       logging.warning("matcher batch [%d,%d) invalid (%s), retrying",
@@ -561,36 +450,41 @@ def _map_batch(core_batch, c, en_window, e, n, m, generate_fn, max_retries,
 
 
 
-def _normalize_anchor(s):
-  """Collapse whitespace + casefold for anchor matching."""
-  return regex.sub(r"\s+", " ", s or "").strip().casefold()
+def _match_end_anchor(words, end_after):
+  """Exclusive end word-count of the stream for an ``end_after`` anchor.
 
-
-def _match_end_anchor(en, end_after):
-  """Exclusive end index (count) of the stream for an ``end_after`` anchor.
-
-  The anchor is a distinctive phrase from the last in-scope translation
-  unit (any script: verse fragment, section heading, colophon echo).  It
-  is matched locally by substring search — no LLM, no domain knowledge
-  in code.  Returns ``match_idx + 1`` so the stream truncates right
-  after the anchor unit.  Zero or multiple matches raise ValueError
-  (fail-stop: callers pass a longer anchor).
+  The anchor is a distinctive phrase from the last in-scope stretch
+  (any script: verse fragment, section heading, colophon echo),
+  matched locally by substring search on the canonical word-joined
+  text — no LLM, no domain knowledge in code.  The stream truncates at
+  the next word boundary after the anchor.  Zero or multiple matches
+  raise ValueError (fail-stop: callers pass a longer anchor).
   """
-  want = _normalize_anchor(end_after)
-  if not want:
+  anchor = (end_after or "").strip()
+  if not anchor:
     raise ValueError("end_after anchor is empty")
-  hits = [i for i, u in enumerate(en) if want in _normalize_anchor(u)]
+  text = " ".join(words)
+  hits = [m.start() for m in regex.finditer(regex.escape(anchor), text)]
+  if not hits:
+    folded, want = text.casefold(), anchor.casefold()
+    hits = [m.start() for m in regex.finditer(regex.escape(want), folded)]
+    # Casefolding can shift offsets for exotic scripts; the advance to
+    # the next whitespace below absorbs small shifts (Latin/Devanagari
+    # folds are length-preserving).
   if not hits:
     raise ValueError(
-      f"end_after anchor {end_after!r} matches no translation unit "
-      f"(stream has {len(en)} units)")
+      f"end_after anchor {end_after!r} matches nowhere "
+      f"(stream has {len(words)} words)")
   if len(hits) > 1:
     preview = "; ".join(
-      f"{i}: {en[i][:60]!r}" for i in hits[:5])
+      f"word~{len(text[:h].split(' '))}: {text[h:h + 60]!r}" for h in hits[:5])
     raise ValueError(
-      f"end_after anchor {end_after!r} matches {len(hits)} units "
+      f"end_after anchor {end_after!r} matches {len(hits)} places "
       f"({preview}); pass a longer, unambiguous anchor")
-  return hits[0] + 1
+  h = hits[0] + len(anchor)
+  gap = regex.search(r"\s", text[h:])
+  cut = len(text) if gap is None else h + gap.start()
+  return len(text[:cut].split(" ")) if text[:cut].strip() else 0
 
 
 def _translation_files_sorted(translation_path, start_file=None,
@@ -717,49 +611,6 @@ def _has_bare_devanagari(rest):
   return bool(regex.search(r"[\u0900-\u097F]{2,}", bare))
 
 
-def _load_translation_units(translation_paths):
-  """{path: (frontmatter, [body units])} reread fresh from disk every call.
-
-  Any position-tag line is stripped (it is metadata, not content).
-  """
-  out = {}
-  for path in translation_paths:
-    with open(path, encoding="utf-8") as f:
-      raw = f.read()
-    m = regex.match(r"^(\+\+\+.*?\+\+\+)\n?", raw, flags=regex.DOTALL)
-    front = m.group(1) + "\n\n" if m else ""
-    body = raw[len(m.group(0)) if m else 0:]
-    # Strip the position tag BEFORE splitting: otherwise a dangling junk
-    # para (e.g. "…") merges forward with the tag line, smuggles \w into
-    # the unit past the junk filter, and survives _strip_pos_tag as a
-    # contentless husk (a future degenerate take).
-    body = body.replace(TRANSLATION_POS_TAG, "")
-    out[path] = (front, _strip_pos_tag(_split_translation_units(body)))
-  return out
-
-
-def _flatten_units(files_units, used_paths):
-  """(en_stream (non-def units), positions [(path, unit_idx)])."""
-  en, pos = [], []
-  for path in used_paths:
-    _, units = files_units[path]
-    for ui, u in enumerate(units):
-      if regex.match(r"\[\^[^\]]+\]:", u):
-        continue
-      en.append(u)
-      pos.append((path, ui))
-  return en, pos
-
-
-def _footnote_defs_from_units(all_units):
-  defs = {}
-  for u in all_units:
-    m = regex.match(r"(\[\^[^\]]+\]):", u)
-    if m:
-      defs.setdefault(m.group(1), u)
-  return defs
-
-
 def _has_unmapped_mula(text):
   """True if some मूलम् block lacks a Translation block directly above."""
   return any(not mapped for _, _, mapped in _mula_entries(text))
@@ -790,70 +641,47 @@ def _split_leading_mapped(text):
   return text, ""  # unreachable when entries are consistent
 
 
-#: Position tag written into translation files: everything before it is
-#: consumed; the next LLM input starts right after it.  Always kept on
-#: blank-line boundaries so sentence splitting is unaffected.  Consumed
-#: heads and footnote defs are never deleted or reordered — the tag is
-#: purely inserted (or moved).
-TRANSLATION_POS_TAG = "<!-- TRANSLATION-MATCH-POS -->"
-
-
-def _strip_pos_tag(units):
-  """Drop the position tag from split units (whole or glued-in)."""
-  out = []
-  for u in units:
-    if u.strip() == TRANSLATION_POS_TAG:
-      continue
-    if TRANSLATION_POS_TAG in u:
-      u = u.replace(TRANSLATION_POS_TAG, "").strip()
-      if not u:
-        continue
-    out.append(u)
-  return out
-
-
-def _update_pos_tags(files_units, used_paths, next_en):
-  """Advance position tags to the global ``next_en`` cursor.
+def _update_pos_tags(files_data, used_paths, next_en):
+  """Advance position tags to the global ``next_en`` word cursor.
 
   Returns basenames of files whose tag moved.  Files fully before the
   cursor get the tag at end, the file holding it after its consumed
-  units, later files keep/omit theirs (tag at 0 is written explicitly
-  so the next input position is unambiguous everywhere).
+  words, later files at start (tag at 0 is written explicitly so the
+  next input position is unambiguous everywhere).  Only the tag line
+  moves — bodies (defs, formatting, bytes) are otherwise preserved.
+  Tags are write-only breadcrumbs for humans; the md progress marker
+  holds the true cursors.
   """
   bounds, start = {}, 0
   for path in used_paths:
-    _, units = files_units[path]
-    cnt = sum(1 for u in units if not regex.match(r"\[\^[^\]]+\]:", u))
-    bounds[path] = (start, start + cnt)
-    start += cnt
+    _, _, spans, _ = files_data[path]
+    bounds[path] = (start, start + len(spans))
+    start += len(spans)
   changed = []
   for path in used_paths:
+    front, body, spans, _ = files_data[path]
     s, e = bounds[path]
     new_pos = min(max(next_en - s, 0), e - s)
-    _, units = files_units[path]
-    out, seen, placed = [], 0, new_pos <= 0
-    if placed:
-      out.append(TRANSLATION_POS_TAG)
-    for u in units:
-      out.append(u)
-      if not placed and not regex.match(r"\[\^[^\]]+\]:", u):
-        seen += 1
-        if seen >= new_pos:
-          out.append(TRANSLATION_POS_TAG)
-          placed = True
-    if not placed:
-      out.append(TRANSLATION_POS_TAG)
-    old = "\n\n".join(units)
-    new = "\n\n".join(out)
-    if old != new:
-      front, _ = files_units[path]
-      _write_translation_file(path, front, out)
+    tag = _pos_tag(new_pos)
+    if new_pos <= 0:
+      new_body = tag + "\n\n" + body.lstrip("\n") if body.strip() else tag + "\n"
+    elif new_pos >= len(spans):
+      new_body = body.rstrip("\n") + "\n\n" + tag + "\n"
+    else:
+      off = spans[new_pos - 1][1]
+      new_body = (body[:off].rstrip() + "\n\n" + tag + "\n\n"
+                  + body[off:].lstrip())
+    if new_body != body:
+      tmp = path + ".tmp"
+      with open(tmp, "w", encoding="utf-8") as f:
+        f.write(front + new_body)
+      os.replace(tmp, path)
       changed.append(os.path.basename(path))
   return changed
 
 
 def _appendix_text(total_core, total_paras, used_files, done_text, tagged,
-                   scope=None):
+                   scope=None, unmatched=0):
   """Appendix block; counts Notes/skipped blocks in done_text."""
   notes = len(regex.findall(r"<summary>Translation - Notes</summary>",
                             done_text))
@@ -869,21 +697,15 @@ def _appendix_text(total_core, total_paras, used_files, done_text, tagged,
     "(no counterpart found).\n")
   if scope:
     text += f"- Scope: {scope}.\n"
+  if unmatched:
+    text += (f"- {unmatched} trailing translation words unmatched "
+             "(beyond file scope, per the model — not an error).\n")
   if empty:
     text += (f"- WARNING: {empty} empty Translation blocks (unexpected; "
              "skips should leave no block behind).\n")
   if tagged:
     text += ("position tags advanced in: " + ", ".join(tagged) + ".\n")
   return text + "</details>\n"
-
-
-def _write_translation_file(path, frontmatter, units):
-  """Rewrite one translation file (frontmatter + blank-joined units)."""
-  body = "\n\n".join(units).strip() + "\n" if units else ""
-  tmp = path + ".tmp"
-  with open(tmp, "w", encoding="utf-8") as f:
-    f.write(frontmatter + body)
-  os.replace(tmp, path)
 
 
 def _atomic_write(path, content):
@@ -1007,12 +829,12 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
   was skipped) raises RuntimeError; reruns on finished files are no-ops.
 
   Translation-file carryover: every translation file carries a
-  ``<!-- TRANSLATION-MATCH-POS -->`` tag marking where the next LLM
-  input starts (units before it are consumed).  The EN stream is rebuilt
-  from disk every batch honoring those tags, so unmatched tail
-  sentences of a file automatically continue the next call's window;
-  after each mapped batch the tags advance in the files themselves
-  (consumed heads are never deleted; footnote defs never move).
+  ``<!-- TRANSLATION-MATCH-POS -->`` tag recording consumed words;
+  the EN word stream is rebuilt from disk every batch honoring those
+  tags, so unmatched tail words of a file automatically continue the
+  next call's window; after each mapped batch the tags advance in the
+  files themselves (consumed heads are never deleted; footnote defs
+  never move).
 
   :param md_path: md file rewritten in place.
   :param translation_dir_path: directory of translation ``*.md`` files,
@@ -1024,9 +846,9 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
     does, so the final batch is not forced to swallow foreign tail
     material (e.g. later sūtras for a later adhikaraṇa file).
   :param end_after: distinctive phrase from the last in-scope
-    translation unit (any script), matched locally by substring search;
-    the stream truncates right after its unit.  Refines ``end_file``
-    when the scope ends mid-file.  Zero/multiple matches raise
+    stretch (any script), matched locally by substring search on the
+    word-joined text; the stream truncates at the next word boundary
+    after it.  Refines ``end_file`` when the scope ends mid-file.  Zero/multiple matches raise
     ValueError (fail-stop); ``None`` consumes to the end of ``end_file``.
   :param generate_fn: ``fn(prompt_text) -> str``.
   :param dry_run: map everything but write nothing (no md, tag, or
@@ -1080,11 +902,8 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
     if not dry_run:
       # Fresh md run: stale position tags would mislead the next input,
       # so reset them to 0 before mapping anything.
-      files_units = _load_translation_units(used_paths)
-      for path in used_paths:
-        front, units = files_units[path]
-        _write_translation_file(
-          path, front, [TRANSLATION_POS_TAG] + units)
+      files_data = _load_translation_data(used_paths)
+      _update_pos_tags(files_data, used_paths, 0)
   else:
     (done_core, next_en, total_core, _total_en_marked, _paras_marked,
      marked_files) = marker
@@ -1134,19 +953,21 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
       if dry_run:
         mem_todo = cur_todo
 
-    # Translation stream rebuilt from disk every batch (honors tags and
-    # any external edits; unmatched tails carry over into the window).
-    # Footnote defs come from the FULL stream (a take may cite a def
-    # defined past the scope anchor); mappable units stop at the anchor.
-    files_units = _load_translation_units(used_paths)
-    en, _ = _flatten_units(files_units, used_paths)
-    all_units = [u for path in used_paths for u in files_units[path][1]]
-    footnote_defs = _footnote_defs_from_units(all_units)
-    full_m = len(en)
+    # Translation word stream rebuilt from disk every batch (honors
+    # tags and any external edits; unmatched tail words continue into the
+    # window).  Footnote defs come from the FULL files (a take may cite
+    # a def defined past the scope anchor); mappable words stop at it.
+    files_data = _load_translation_data(used_paths)
+    words_all = [w for p in used_paths for w in _file_words(files_data, p)]
+    footnote_defs = {}
+    for p in used_paths:
+      footnote_defs.update(files_data[p][3])
+    full_m = len(words_all)
     if end_after is not None:
-      en = en[:_match_end_anchor(en, end_after)]
+      words_all = words_all[:_match_end_anchor(words_all, end_after)]
+    en = words_all
     m = len(en)
-    en_lens = [len(u) for u in en]
+    en_lens = [len(w) + 1 for w in en]
 
     # Todo मूलम् sentences from the todo text (source of truth).
     # A leading run of already-mapped blocks may linger here (older
@@ -1186,24 +1007,24 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
       skipped_flags = [True] * len(batch_texts)
       next_en_new = m
       logging.info("matcher tail cores[%d:%d] exhausted "
-                   "(en cursor %d >= %d units): %d skipped, no LLM call",
+                   "(en cursor %d >= %d words): %d skipped, no LLM call",
                    g0, g1, e, m, len(batch_texts))
     else:
       e_end = _plan_window(sum(len(t) for t in batch_texts),
                            sum(len(t) for t in todo_texts),
                            en_lens, e, m, window_en_chars)
       if g1 == total_core:
-        e_end = m  # final batch covers the tail: no drops allowed
-      anchor = regex.sub(r"\s+", " ", en[e - 1])[:300] if e > 0 else None
-      norm, skipped, carried, next_en_new = _map_batch(
+        e_end = m  # final batch sees to the stream end (maximal context;
+        # stopping early stays allowed — unmatched tail is reported)
+      prev = " ".join(en[max(0, e - 25):e]) if e > 0 else None
+      norm, skipped, next_en_new = _map_batch(
         batch_texts, g0, en[e:e_end], e, total_core, m,
-        generate_fn, max_retries, prev_unit=anchor)
+        generate_fn, max_retries, prev_text=prev)
       skip_set = set(skipped)
-      carry_set = set(carried)
       skipped_flags = [(g0 + k) in skip_set for k in range(len(batch_texts))]
       translations = []
       for k in range(len(batch_texts)):
-        s = norm[g0 + k] - (1 if (g0 + k) in carry_set else 0)
+        s = norm[g0 + k]
         e_next = norm[g0 + k + 1] if k + 1 < len(batch_texts) else next_en_new
         translations.append("" if skipped_flags[k]
                             else " ".join(en[s:e_next]))
@@ -1283,7 +1104,7 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
         new_done_core, total_core, next_en_new, m, total_paras, used_files)
       _atomic_write(md_path, cur_header + done_combined
                     + "\n\n" + marker_txt + "\n\n" + todo_new + "\n")
-      for b in _update_pos_tags(files_units, used_paths, next_en_new):
+      for b in _update_pos_tags(files_data, used_paths, next_en_new):
         if b not in tagged:
           tagged.append(b)
     else:
@@ -1292,13 +1113,13 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
       scope = None
       if end_after is not None:
         scope = (f"translation stream scoped by end_after {end_after!r} "
-                 f"to units [0,{m}) of {full_m}")
+                 f"to words [0,{m}) of {full_m}")
       appendix = _appendix_text(
         total_core, total_paras, used_files, done_combined + todo_tail,
-        tagged, scope)
+        tagged, scope, unmatched=m - next_en_new)
       _atomic_write(md_path, cur_header + done_combined + todo_tail + "\n\n"
                     + appendix + "\n")
-      for b in _update_pos_tags(files_units, used_paths, next_en_new):
+      for b in _update_pos_tags(files_data, used_paths, next_en_new):
         if b not in tagged:
           tagged.append(b)
       done_core, next_en = new_done_core, next_en_new

@@ -24,7 +24,7 @@ import logging
 import time
 
 from doc_curation.llm.translation_matcher import (
-  _prompt_for_batch, _split_translation_units)
+  _content_words, _prompt_for_batch)
 
 #: Default models to probe (bare names are treated as opencode-go/*).
 DEFAULT_MODELS = (
@@ -107,8 +107,8 @@ def build_prompt(core_texts, translation_text, slp1=False):
     core = [dev_to_slp1(t) for t in core]
     if not all(core):
       raise RuntimeError("SLP1 translocation failed; cannot build prompt.")
-  en_units = _split_translation_units(translation_text)
-  return _prompt_for_batch(core, 0, en_units, 0, len(core), len(en_units)
+  en_words = _content_words(translation_text)
+  return _prompt_for_batch(core, 0, en_words, 0, len(core), len(en_words)
                            ) + MINIMAL_OUTPUT_SUFFIX
 
 
