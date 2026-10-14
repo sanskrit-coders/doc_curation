@@ -16,7 +16,8 @@ Token-minimal protocol (single sweep, cursor-based):
    Each LLM call sends the next unmapped core batch plus the next
    unmapped translation window starting exactly where the last confirmed
    mapping ended — position travels by integer word cursors, never by
-   re-sending settled text.
+   re-sending settled text.  The following batch's cores ride along as
+   read-only lookahead so a batch never swallows their content.
  3. The model returns *positions only*: ``{"starts": {core_idx: word_idx},
     "skip": [...], "next_en": int}`` — indices into its own whitespace
     split of the plain window text (verified against the told string
@@ -166,13 +167,24 @@ def _load_batch_prompt_template():
 
 
 def _prompt_for_batch(core_batch, c_start, en_window, e_start,
-                      total_core, total_en, prev_text=None):
+                      total_core, total_en, prev_text=None, upcoming=None):
+  """``upcoming`` is ``(start_idx, [texts])`` for the next batch's cores
+  (read-only context), or ``None``/``[]`` on the last batch."""
   core_lines = "\n".join(
     f"core[{c_start + i}]: {s}" for i, s in enumerate(core_batch))
   # Plain canonical text, deliberately NOT pre-numbered: the model splits
   # it by regex \s itself and reports positions into its own split
   # (verified against e_window_count), which keeps prompts small.
   en_text = " ".join(en_window)
+  upcoming_block = ""
+  if upcoming:
+    u_start, u_texts = upcoming
+    upcoming_lines = "\n".join(
+      f"core[{u_start + i}]: {s}" for i, s in enumerate(u_texts))
+    upcoming_block = (
+      "\nUPCOMING CORES (context only — place NOTHING here, just do not "
+      "swallow their content into this batch's spans):\n"
+      f"{upcoming_lines}\n")
   anchor = (f"\nThe translation continues from these trailing words "
             f"(already consumed — do NOT take them again): {prev_text}\n"
             f"Your first span must continue AFTER them.\n"
@@ -189,7 +201,8 @@ def _prompt_for_batch(core_batch, c_start, en_window, e_start,
     total_core_m1=total_core - 1, total_core=total_core,
     total_en_m1=total_en - 1, total_en=total_en, c_start=c_start,
     c_last=c_end - 1, e_start=e_start, e_window_count=len(en_window),
-    anchor=anchor, pacing=pacing, core_lines=core_lines, en_words=en_text)
+    anchor=anchor, pacing=pacing, core_lines=core_lines, en_words=en_text,
+    upcoming=upcoming_block)
 
 
 def _parse_mapping(reply):
@@ -354,9 +367,10 @@ def seq_match_texts_to_translation(
       e_end = m  # final batch sees to the stream end (maximal context;
       # stopping early stays allowed — unmatched tail is reported)
     prev = " ".join(en[max(0, e - 25):e]) if e > 0 else None
+    upcoming = _peek_batch(texts, core_lens, c_end, n, batch_core_chars)
     norm, _skipped, next_en = _map_batch(
       texts[c:c_end], c, en[e:e_end], e, n, m, generate_fn, max_retries,
-      prev_text=prev)
+      prev_text=prev, upcoming=upcoming)
     for i in range(c, c_end):
       s = norm[i]
       e_next = norm[i + 1] if i + 1 < c_end else next_en
@@ -387,16 +401,32 @@ def _plan_window(batch_chars, rem_core_chars, en_lens, e, m,
   return e_end
 
 
+def _peek_batch(texts, lens, start, total, budget):
+  """``(start, [texts])`` of the batch beginning at ``start``.
+
+  Same budget rule as batching (at least one text); ``None`` when
+  ``start`` is already at the end.  Used for read-only lookahead.
+  """
+  if start >= total:
+    return None
+  u_end = start + 1
+  while u_end < total and sum(lens[start:u_end + 1]) <= budget:
+    u_end += 1
+  return (start, texts[start:u_end])
+
+
 def _map_batch(core_batch, c, en_window, e, n, m, generate_fn, max_retries,
-               prev_text=None):
+               prev_text=None, upcoming=None):
   """Map one batch; returns (norm {core: word_start}, skipped, next_en).
 
   Retries narrowly.  ``prev_text`` (trailing already-consumed words
   just before this window, if any) is shown to the model as a
-  continuity anchor; those words are never re-taken.
+  continuity anchor; those words are never re-taken.  ``upcoming`` is
+  ``(start_idx, [texts])`` for the next batch's cores (read-only
+  context against cross-batch gobbling).
   """
   prompt = _prompt_for_batch(core_batch, c, en_window, e, n, m,
-                             prev_text=prev_text)
+                             prev_text=prev_text, upcoming=upcoming)
   reply, err = None, None
   for _ in range(max_retries + 1):
     try:
@@ -1017,9 +1047,13 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
         e_end = m  # final batch sees to the stream end (maximal context;
         # stopping early stays allowed — unmatched tail is reported)
       prev = " ".join(en[max(0, e - 25):e]) if e > 0 else None
+      todo_lens = [len(t) for t in todo_texts]
+      peek = _peek_batch(todo_texts, todo_lens, n_sent, len(todo_texts),
+                         batch_core_chars)
+      upcoming = (g1, peek[1]) if peek is not None else None
       norm, skipped, next_en_new = _map_batch(
         batch_texts, g0, en[e:e_end], e, total_core, m,
-        generate_fn, max_retries, prev_text=prev)
+        generate_fn, max_retries, prev_text=prev, upcoming=upcoming)
       skip_set = set(skipped)
       skipped_flags = [(g0 + k) in skip_set for k in range(len(batch_texts))]
       translations = []
