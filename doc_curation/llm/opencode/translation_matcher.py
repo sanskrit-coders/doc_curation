@@ -11,7 +11,7 @@ from .backend import OpencodeBackend
 
 def seq_match_texts_to_translation(
     texts, translation_text, model_id=None, api_key_path="opencode.vv_zen",
-    cred_path=None, timeout=None, **matcher_kwargs):
+    cred_path=None, timeout=None, variant=None, **matcher_kwargs):
   """Align ``texts`` to ``translation_text`` using an opencode model.
 
   :param model_id: e.g. ``"opencode-go/muse-spark-1.3-contributor"``
@@ -24,6 +24,8 @@ def seq_match_texts_to_translation(
   :return: list of translation strings, ``len == len(texts)``.
   """
   kwargs = {} if timeout is None else {"timeout": timeout}
+  if variant is not None:
+    kwargs["variant"] = variant
   backend = OpencodeBackend(api_key_path=api_key_path, model_id=model_id,
                             cred_path=cred_path, **kwargs)
 
@@ -36,22 +38,33 @@ def seq_match_texts_to_translation(
 
 
 def insert_translation_details(md_path, translation_dir_path, start_file=None,
-                             model_id=None, api_key_path="opencode.vv_zen",
-                             cred_path=None, timeout=None, **matcher_kwargs):
+                             end_file=None, end_after=None, model_id=None, api_key_path="opencode.vv_zen",
+                             cred_path=None, timeout=None, variant=None,
+                             **matcher_kwargs):
   """Interleave translations into ``md_path`` (in place) via opencode model.
 
   Assumes :func:`doc_curation.md.content_processor.details.maker.generic_sanskrit_vipra_mUla`
   has already run (every sentence already sits in its own मूलम् block):
   gathers the मूलम् sentences, maps them with
   :func:`seq_match_texts_to_translation`, and inserts just the Translation
-  [/ Notes] details above each corresponding मूलम् block.
+  [/ Notes] details above each corresponding मूलम् block.  Cores with no
+  counterpart are skipped (marker only, no empty block); see the base
+  module for the protocol.
 
   :param translation_dir_path: directory of translation ``*.md`` files,
     or a single translation ``*.md`` file path.
   :param start_file: basename to start from; ``None`` starts first.
-  :return: dict summary (sentences, paragraphs, notes, empty, files).
+  :param end_file: basename to stop at (inclusive); ``None`` runs to the
+    last file.
+  :param end_after: distinctive phrase from the last in-scope unit,
+    matched locally (no LLM); the stream truncates after its unit.
+  :param variant: reasoning-effort variant for the CLI call, if any.
+  :return: dict summary (sentences, paragraphs, notes, empty, skipped,
+    files).
   """
   kwargs = {} if timeout is None else {"timeout": timeout}
+  if variant is not None:
+    kwargs["variant"] = variant
   backend = OpencodeBackend(api_key_path=api_key_path, model_id=model_id,
                             cred_path=cred_path, **kwargs)
 
@@ -60,5 +73,5 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
     return text
 
   return _base.insert_translation_details(
-    md_path, translation_dir_path, start_file, generate_fn,
-    **matcher_kwargs)
+    md_path, translation_dir_path, start_file=start_file, end_file=end_file,
+    end_after=end_after, generate_fn=generate_fn, **matcher_kwargs)

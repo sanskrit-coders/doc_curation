@@ -22,7 +22,9 @@ if __name__ == '__main__':
   opencode.insert_translation_details(
     md_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/07_antaradhikaraNam.md",
     translation_dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/en/thibaut/1/1",
-    start_file="20.md", model_id="opencode/muse-spark-1.3-contributor-free", variant="xhigh", )
+    start_file="20.md", end_file="22.md",
+    end_after="Here terminates the adhikaraṇa of the 'one within.'",
+    model_id="opencode/muse-spark-1.3-contributor-free",)
   # translate_details(base_dir="/home/vvasuki/gitland/vishvAsa/rAmAyaNam/content/vAlmIkIyam/goraxapura-pAThaH/hindy-anuvAdaH/1_bAlakANDam", source_language="hi", dest_language="es", src_detail_pattern="(.*हिन्दी.*)|(भागसूचना)")
 
   # translate_sentences(base_dir="/home/vvasuki/gitland/vishvAsa/bhAShAntaram/content/castellano/rangapuri-rAmAyaNam/", source_language="es", dest_language="en")
