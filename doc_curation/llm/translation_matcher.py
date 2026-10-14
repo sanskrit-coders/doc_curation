@@ -17,10 +17,12 @@ Token-minimal protocol (single sweep, cursor-based):
    mapping ended — position is carried by integer cursors, never by
    re-sending settled text.
  3. The model returns *positions only*: ``{"starts": {core_idx: en_idx},
-    "skip": [...], "next_en": int}``.  Span ends are implied by the next
-    start (the last core of a batch ends at ``next_en``), so output is a
-    handful of integers instead of copied text (which also guarantees the
-    takes stay verbatim).
+    "skip": [...], "carry": [...], "next_en": int}``.  Span ends are
+    implied by the next start (the last core of a batch ends at
+    ``next_en``), so output is a handful of integers instead of copied
+    text (which also guarantees the takes stay verbatim).  ``carry``
+    names cores that additionally display the pivot unit ending the
+    previous span (display only; cursors still advance once).
  4. Each reply is validated (exact key set, ints in range, non-decreasing,
     first start == window start, every non-skipped core takes >= 1 unit,
     ``next_en`` sane); on failure only that
@@ -41,6 +43,7 @@ Token-minimal protocol (single sweep, cursor-based):
 import json
 import logging
 import os
+import string
 
 import regex
 
@@ -254,6 +257,21 @@ def _one_line(s, limit=None):
   return s if limit is None or len(s) <= limit else s
 
 
+def _load_batch_prompt_template():
+  """Read the batch-prompt template from its sibling md file (fresh each call).
+
+  The prose lives in ``translation_matcher_prompt.md`` next to this
+  module so it can be edited without code changes; a leading HTML
+  comment documents the ``$placeholders`` and is stripped before use.
+  """
+  path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                      "translation_matcher_prompt.md")
+  with open(path, encoding="utf-8") as f:
+    raw = f.read()
+  body = regex.sub(r"\A\s*<!--.*?-->\s*", "", raw, flags=regex.DOTALL)
+  return string.Template(body.rstrip("\n"))
+
+
 def _prompt_for_batch(core_batch, c_start, en_window, e_start,
                       total_core, total_en, prev_unit=None):
   core_lines = "\n".join(
@@ -271,32 +289,20 @@ def _prompt_for_batch(core_batch, c_start, en_window, e_start,
             f"short of that, you are starving later cores — widen spans "
             f"and skip less. (A tight verse cluster may locally consume "
             f"less; do not overcorrect for one.)\n")
-  return f"""Align the core texts below, IN ORDER, with the translation sentences below. This continues a longer alignment: core texts 0..{total_core - 1} map into translation sentences 0..{total_en - 1}; everything before core {c_start} / sentence {e_start} is already fixed. Match the translation sentences to the cores in the order they appear: read each core text, find where its English rendering begins, and continue from there.
-{anchor}{pacing}
-RULES:
-- Partition, no gaps, no overlaps: the spans of the taken cores tile translation sentences {e_start}..next_en in order (core i's span runs up to the next core's start; the last taken core's span runs up to next_en). You may stop (next_en) before the window end; leftover sentences carry over to the next batch.
-- Every core EITHER takes at least one translation sentence OR is named in "skip". A core with an empty span that is NOT in "skip" is invalid.
-- Skip ONLY cores with genuinely no English counterpart here: colophons like 'इति ...', verse fragments whose content a neighbouring core's span already covers, or passages the translation demonstrably does not render. Dumping hard sentences into "skip" to avoid reading them is the failure mode to avoid: place each core deliberately against the window.
-
-CORE TEXTS:
-{core_lines}
-
-TRANSLATION SENTENCES:
-{en_lines}
-
-Reply with ONLY this JSON (no prose, no fences needed but fences allowed):
-{{"starts": {{"{c_start}": {e_start}, ...}}, "skip": [], "next_en": <int>}}
-- "starts" must contain exactly the core indices {c_start}..{c_start + len(core_batch) - 1}, each mapping to the FIRST translation sentence of its span (integer in [{e_start}, {e_start + len(en_window)})).
-- Starts must be non-decreasing; the first start must equal {e_start}.
-- "skip": core indices (subset of the batch) whose span is EMPTY — i.e. their start repeats the next boundary, consuming nothing. Use only for the genuine no-counterpart cases above.
-- "next_en" is the first translation index AFTER this batch's last span (integer in [last start, {e_start + len(en_window)}])."""
+  return _load_batch_prompt_template().substitute(
+    total_core_m1=total_core - 1, total_core=total_core,
+    total_en_m1=total_en - 1, total_en=total_en, c_start=c_start,
+    c_last=c_end - 1, e_start=e_start, e_window_end=e_start + len(en_window),
+    anchor=anchor, pacing=pacing, core_lines=core_lines, en_lines=en_lines)
 
 
 def _parse_mapping(reply):
-  """Extract (starts, skip, next_en) from model output.
+  """Extract (starts, skip, carry, next_en) from model output.
 
   ``skip`` is optional in the reply (defaults to ``[]``): core indices
-  with genuinely no counterpart, whose span must be empty.
+  with genuinely no counterpart, whose span must be empty.  ``carry``
+  is likewise optional: cores that additionally display the immediately
+  preceding unit (pivot tails), without consuming it twice.
   """
   text = (reply or "").strip()
   m = regex.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=regex.DOTALL)
@@ -323,16 +329,27 @@ def _parse_mapping(reply):
     skip = sorted(set(int(v) for v in raw_skip))
   except (TypeError, ValueError):
     raise ValueError("'skip' entries must be integers")
-  return starts, skip, next_en
+  raw_carry = data.get("carry", [])
+  if raw_carry is None:
+    raw_carry = []
+  if not isinstance(raw_carry, list):
+    raise ValueError(f"'carry' must be a list of core indices: {text[:200]!r}")
+  try:
+    carry = sorted(set(int(v) for v in raw_carry))
+  except (TypeError, ValueError):
+    raise ValueError("'carry' entries must be integers")
+  return starts, skip, carry, next_en
 
 
-def _validate_batch(starts, skip, next_en, c_start, c_end, e_start, e_end,
-                    is_last, total_en):
-  """Normalize to ({int: int}, [int], int), or raise ValueError.
+def _validate_batch(starts, skip, carry, next_en, c_start, c_end, e_start,
+                    e_end, is_last, total_en):
+  """Normalize to ({int: int}, [int], [int], int), or raise ValueError.
 
   Every non-skipped core must take a non-empty span; every skipped core
   must take an empty span.  Lazy empty spans (not in ``skip``) are
-  rejected so the model cannot skim hard sentences.
+  rejected so the model cannot skim hard sentences.  Carried cores
+  additionally display the immediately preceding unit (pivot tail) —
+  display only; cursors still advance once.
   """
   try:
     norm = {int(k): int(v) for k, v in starts.items()}
@@ -345,6 +362,14 @@ def _validate_batch(starts, skip, next_en, c_start, c_end, e_start, e_end,
   skip_set = set(skip)
   if not skip_set <= set(want):
     raise ValueError(f"skip {skip} outside batch core range {want}")
+  carry_set = set(carry)
+  if not carry_set <= set(want):
+    raise ValueError(f"carry {carry} outside batch core range {want}")
+  if carry_set & skip_set:
+    raise ValueError(
+      f"cores {sorted(carry_set & skip_set)} are both skipped and carried; "
+      "skipped cores get no block, so there is nothing to display the "
+      "pivot unit under — un-skip them and carry instead")
   if not isinstance(next_en, int) or isinstance(next_en, bool):
     raise ValueError("next_en must be an integer")
   prev = None
@@ -359,6 +384,10 @@ def _validate_batch(starts, skip, next_en, c_start, c_end, e_start, e_end,
     raise ValueError(
       f"first start {norm[want[0]]} != window start {e_start} (gap)")
   for i in want:
+    if i in carry_set and norm[i] < 1:
+      raise ValueError(
+        f"core {i} is carried but starts at stream head (0); there is "
+        "no preceding unit to display")
     end_i = norm[i + 1] if i + 1 < c_end else next_en
     width = end_i - norm[i]
     if i in skip_set:
@@ -366,7 +395,7 @@ def _validate_batch(starts, skip, next_en, c_start, c_end, e_start, e_end,
         raise ValueError(
           f"core {i} is skipped but takes {width} sentence(s); "
           "skipped cores must have empty spans")
-    elif width < 1:
+    elif width < 1 and i not in carry_set:
       raise ValueError(
         f"core {i} has an empty span but is not in 'skip'; either give it "
         "at least one sentence or name it in 'skip' with genuine cause")
@@ -381,7 +410,7 @@ def _validate_batch(starts, skip, next_en, c_start, c_end, e_start, e_end,
       f"batch consumed no translation units (next_en {next_en} <= window "
       f"start {e_start} with {total_en - e_start} units left); attach the "
       "window head to the batch instead of stalling")
-  return norm, sorted(skip_set), next_en
+  return norm, sorted(skip_set), sorted(carry_set), next_en
 
 
 def seq_match_texts_to_translation(
@@ -444,11 +473,12 @@ def seq_match_texts_to_translation(
     if is_last:
       e_end = m  # final batch must cover the tail: no drops allowed
     anchor = regex.sub(r"\s+", " ", en[e - 1])[:300] if e > 0 else None
-    norm, _skipped, next_en = _map_batch(
+    norm, _skipped, carried, next_en = _map_batch(
       texts[c:c_end], c, en[e:e_end], e, n, m, generate_fn, max_retries,
       prev_unit=anchor)
+    carry_set = set(carried)
     for i in range(c, c_end):
-      s = norm[i]
+      s = norm[i] - (1 if i in carry_set else 0)
       e_next = norm[i + 1] if i + 1 < c_end else next_en
       out_takes[i] = (s, e_next)
     c, e = c_end, next_en
@@ -479,11 +509,13 @@ def _plan_window(batch_chars, rem_core_chars, en_lens, e, m,
 
 def _map_batch(core_batch, c, en_window, e, n, m, generate_fn, max_retries,
                prev_unit=None):
-  """Map one batch; returns (norm {core: en_start}, skipped [core], next_en).
+  """Map one batch; returns (norm, skipped, carried, next_en).
 
   Retries narrowly. ``prev_unit`` (the already-consumed sentence just
   before this window, if any) is shown to the model as a continuity
-  anchor; it is never re-sent as mappable text.
+  anchor; it is never re-sent as mappable text.  Carried cores display
+  the pivot unit ending the previous span above their own take (cursors
+  still advance once).
   """
   prompt = _prompt_for_batch(core_batch, c, en_window, e, n, m,
                              prev_unit=prev_unit)
@@ -493,10 +525,10 @@ def _map_batch(core_batch, c, en_window, e, n, m, generate_fn, max_retries,
       reply = generate_fn(prompt if err is None else prompt + (
         f"\n\nYour previous reply was invalid: {err} "
         "Reply again with ONLY the corrected JSON."))
-      starts, skip, next_en = _parse_mapping(reply)
-      norm, skipped, next_en = _validate_batch(
-        starts, skip, next_en, c, c + len(core_batch), e, e + len(en_window),
-        c + len(core_batch) == n, m)
+      starts, skip, carry, next_en = _parse_mapping(reply)
+      norm, skipped, carried, next_en = _validate_batch(
+        starts, skip, carry, next_en, c, c + len(core_batch),
+        e, e + len(en_window), c + len(core_batch) == n, m)
       # Free diagnostics (no extra LLM calls): flag pile-ups while the
       # cursors still tell where they happened.
       widths = [((norm[c + k + 1] if k + 1 < len(core_batch) else next_en)
@@ -515,9 +547,10 @@ def _map_batch(core_batch, c, en_window, e, n, m, generate_fn, max_retries,
           "units — the stream likely overshoots the file's scope "
           "(consider end_file/end_after)", c, c + len(core_batch),
           next_en - e, m)
-      logging.info("matcher batch core[%d:%d] -> en[%d:%d] (%d skipped)",
-                   c, c + len(core_batch), e, next_en, len(skipped))
-      return norm, skipped, next_en
+      logging.info("matcher batch core[%d:%d] -> en[%d:%d] (%d skipped, "
+                   "%d carried)", c, c + len(core_batch), e, next_en,
+                   len(skipped), len(carried))
+      return norm, skipped, carried, next_en
     except ValueError as ex:
       err = str(ex)
       logging.warning("matcher batch [%d,%d) invalid (%s), retrying",
@@ -1162,14 +1195,15 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
       if g1 == total_core:
         e_end = m  # final batch covers the tail: no drops allowed
       anchor = regex.sub(r"\s+", " ", en[e - 1])[:300] if e > 0 else None
-      norm, skipped, next_en_new = _map_batch(
+      norm, skipped, carried, next_en_new = _map_batch(
         batch_texts, g0, en[e:e_end], e, total_core, m,
         generate_fn, max_retries, prev_unit=anchor)
       skip_set = set(skipped)
+      carry_set = set(carried)
       skipped_flags = [(g0 + k) in skip_set for k in range(len(batch_texts))]
       translations = []
       for k in range(len(batch_texts)):
-        s = norm[g0 + k]
+        s = norm[g0 + k] - (1 if (g0 + k) in carry_set else 0)
         e_next = norm[g0 + k + 1] if k + 1 < len(batch_texts) else next_en_new
         translations.append("" if skipped_flags[k]
                             else " ".join(en[s:e_next]))
