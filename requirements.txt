@@ -18,3 +18,5 @@ tqdm
 roman
 editdistance
 datefinder
+marisa-trie
+

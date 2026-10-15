@@ -57,24 +57,71 @@ Separator choice per boundary:
   is a known compound (dictionary prefix) or a recognised suffix/idiom
   (``-Adi``, ``-antara``, ``-artha``, ``-zabda``, ``madhv-ari``...).
 
-Fast: ~O(L^2) dict lookups per token with memoised validation; dictionary
-cached as a pickle in ``/tmp`` after first load (~600k headwords).
+Fast: ~O(L^2) dict lookups per token with memoised validation; the wordlist
+lives in a memory-efficient marisa-trie at
+``doc_curation/data/sanskrit-words.trie`` (built on first use from
+``words_sa_dev.txt``, ~600k headwords, ~2.5 MB).
 Already-hyphenated compounds are left untouched (pieces adjacent to ``-`` are
 not re-processed), so running on pre-split प्रस्तुति-style text is safe.
 """
 
-import bisect
 import os
-import pickle
 import regex
+import marisa_trie
 from indic_transliteration import sanscript
 
 _DICT_TXT = "/home/vvasuki/gitland/indic-dict/dicts/stardict-sanskrit/wordlists/words_sa_dev.txt"
-_CACHE_PKL = "/tmp/sanskrit_hyphenator_dict_hk3.pkl"
+_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+_TRIE_PATH = os.path.join(_DATA_DIR, "sanskrit-words.trie")
 
-_WORDS_HK = None
-_COUNTS_HK = None
-_SORTED_HK = None
+_SEED_WORDS = (
+    "ca", "vA", "hi", "tu", "api", "iti", "eva", "evam", "iva",
+    "ati", "adhi", "anu", "upa", "pari", "prati", "sam", "vi",
+    "na", "saH", "tat", "etat", "yat", "kim", "idam", "adas",
+    "asmin", "tasmin", "yad", "tad", "etad", "sat", "asat",
+    "asti", "santi", "bhavati", "gacCati", "ukta", "uktam",
+    "dharma", "artha", "hetu", "brahma", "zabda", "Adi",
+)
+_SEED_COUNT = 3
+
+_TRIE = None
+
+
+class _WordTrie:
+  """Word -> source-count map backed by a compact marisa RecordTrie.
+
+  Supports ``word in trie`` (membership), ``trie.count(word)`` (frequency
+  proxy used by the reliability guards) and ``trie.has_prefix(s)`` (compound
+  detection in separator choice).
+  """
+
+  __slots__ = ("_rt", "_counts", "_prefixes")
+
+  def __init__(self, rt):
+    self._rt = rt
+    self._counts = {}
+    self._prefixes = {}
+
+  def __contains__(self, word):
+    return word in self._rt
+
+  def count(self, word):
+    c = self._counts.get(word)
+    if c is None:
+      rec = self._rt.get(word)
+      c = rec[0][0] if rec else 0
+      self._counts[word] = c
+    return c
+
+  def has_prefix(self, prefix):
+    hit = self._prefixes.get(prefix)
+    if hit is None:
+      hit = False
+      for _ in self._rt.iterkeys(prefix):
+        hit = True
+        break
+      self._prefixes[prefix] = hit
+    return hit
 
 
 def _get_scheme_map():
@@ -82,23 +129,11 @@ def _get_scheme_map():
                              sanscript.SCHEMES[sanscript.HK])
 
 
-def _load_words():
-  global _WORDS_HK, _COUNTS_HK, _SORTED_HK
-  if _WORDS_HK is not None:
-    return _WORDS_HK
+def _build_trie():
+  """Build the marisa word trie from the stardict wordlist + seed words."""
+  smap = _get_scheme_map()
+  counts = {}
   try:
-    if os.path.exists(_CACHE_PKL) and os.path.exists(_DICT_TXT):
-      if os.path.getmtime(_CACHE_PKL) >= os.path.getmtime(_DICT_TXT):
-        with open(_CACHE_PKL, "rb") as f:
-          _WORDS_HK, _COUNTS_HK = pickle.load(f)
-          _SORTED_HK = sorted(_WORDS_HK)
-          return _WORDS_HK
-  except Exception:
-    pass
-  words_hk = set()
-  counts_hk = {}
-  try:
-    smap = _get_scheme_map()
     with open(_DICT_TXT, encoding="utf-8") as f:
       for line in f:
         line = line.strip()
@@ -113,46 +148,52 @@ def _load_words():
           hk = sanscript.transliterate(w, scheme_map=smap)
         except Exception:
           continue
-        if hk:
-          words_hk.add(hk)
-          if nsrc > counts_hk.get(hk, 0):
-            counts_hk[hk] = nsrc
+        if hk and nsrc > counts.get(hk, 0):
+          counts[hk] = nsrc
   except FileNotFoundError:
     pass
-  words_hk.update([
-      "ca", "vA", "hi", "tu", "api", "iti", "eva", "evam", "iva",
-      "ati", "adhi", "anu", "upa", "pari", "prati", "sam", "vi",
-      "na", "saH", "tat", "etat", "yat", "kim", "idam", "adas",
-      "asmin", "tasmin", "yad", "tad", "etad", "sat", "asat",
-      "asti", "santi", "bhavati", "gacCati", "ukta", "uktam",
-      "dharma", "artha", "hetu", "brahma", "zabda", "Adi",
-  ])
-  for w in list(words_hk):
-    counts_hk.setdefault(w, 3)
-  _WORDS_HK = words_hk
-  _COUNTS_HK = counts_hk
-  _SORTED_HK = sorted(words_hk)
-  try:
-    with open(_CACHE_PKL, "wb") as f:
-      pickle.dump((words_hk, counts_hk), f)
-  except Exception:
-    pass
-  return _WORDS_HK
+  for w in _SEED_WORDS:
+    counts.setdefault(w, _SEED_COUNT)
+  rt = marisa_trie.RecordTrie(
+      "H", [(w, (min(c, 65535),)) for w, c in counts.items()])
+  os.makedirs(_DATA_DIR, exist_ok=True)
+  tmp = _TRIE_PATH + ".tmp"
+  rt.save(tmp)
+  os.replace(tmp, _TRIE_PATH)
+  return rt
+
+
+def rebuild_word_trie():
+  """Force-rebuild ``doc_curation/data/sanskrit-words.trie`` from the
+  stardict wordlist (also done automatically when the trie is stale)."""
+  global _TRIE
+  _TRIE = _WordTrie(_build_trie())
+  return _TRIE
+
+
+def _load_words():
+  global _TRIE
+  if _TRIE is not None:
+    return _TRIE
+  if (os.path.exists(_TRIE_PATH)
+      and (not os.path.exists(_DICT_TXT)
+           or os.path.getmtime(_TRIE_PATH) >= os.path.getmtime(_DICT_TXT))):
+    rt = marisa_trie.RecordTrie("H")
+    rt.load(_TRIE_PATH)
+  else:
+    rt = _build_trie()
+  _TRIE = _WordTrie(rt)
+  return _TRIE
 
 
 def _count_of(hk):
-  if _COUNTS_HK is None:
-    _load_words()
-  return _COUNTS_HK.get(hk, 0)
+  return _load_words().count(hk)
 
 
 def _prefix_in_dict(s):
-  if _SORTED_HK is None:
-    _load_words()
   if not s:
     return False
-  i = bisect.bisect_left(_SORTED_HK, s)
-  return i < len(_SORTED_HK) and _SORTED_HK[i].startswith(s)
+  return _load_words().has_prefix(s)
 
 
 # Closed classes (HK).
@@ -222,11 +263,20 @@ _WEAK_RIGHTS = _AVYAYAS | _PRONOUNS | frozenset([
 
 def _stem_valid(hk):
   """Strip a known ending, restore stem-final, dict-check."""
+  hit = _CACHE_STEM.get(hk)
+  if hit is not None:
+    return hit
+  res = _stem_valid_uncached(hk)
+  _CACHE_STEM[hk] = res
+  return res
+
+
+def _stem_valid_uncached(hk):
   words = _load_words()
   for end in _SUP_ENDINGS:
-    if len(hk) <= len(end) + 1:
-      continue
     if not hk.endswith(end):
+      continue
+    if len(hk) <= len(end) + 1:
       continue
     pre = hk[:len(hk) - len(end)]
     if not pre or pre in _AVYAYAS:
@@ -251,11 +301,20 @@ def _piece_ending_ok(hk, end):
 def _stem_valid_piece(hk):
   """Stricter stem check for split pieces: endings of length >= 2 (or
   M/H/m with a long base); rejects shrapnel like kasm/inn/rANi."""
+  hit = _CACHE_STEM_PIECE.get(hk)
+  if hit is not None:
+    return hit
+  res = _stem_valid_piece_uncached(hk)
+  _CACHE_STEM_PIECE[hk] = res
+  return res
+
+
+def _stem_valid_piece_uncached(hk):
   words = _load_words()
   for end in _SUP_ENDINGS:
-    if not _piece_ending_ok(hk, end):
-      continue
     if not hk.endswith(end):
+      continue
+    if not _piece_ending_ok(hk, end):
       continue
     pre = hk[:len(hk) - len(end)]
     if not pre or pre in _AVYAYAS:
@@ -269,6 +328,15 @@ def _stem_valid_piece(hk):
 
 
 def _stem_base_piece(hk):
+  hit = _CACHE_STEM_BASE_PIECE.get(hk)
+  if hit is not None:
+    return hit or None
+  res = _stem_base_piece_uncached(hk)
+  _CACHE_STEM_BASE_PIECE[hk] = res or ""
+  return res
+
+
+def _stem_base_piece_uncached(hk):
   words = _load_words()
   for end in _SUP_ENDINGS:
     if not _piece_ending_ok(hk, end):
@@ -289,6 +357,10 @@ def _stem_base_piece(hk):
 _CACHE_CORE = {}
 _CACHE_RELIABLE = {}
 _CACHE_STEM = {}
+_CACHE_STEM_PIECE = {}
+_CACHE_STEM_BASE_PIECE = {}
+_CACHE_YAN_LEFT = {}
+_CACHE_TOKEN = {}
 _CACHE_VIS_RESTORE = {}
 _CACHE_YAN_RESTORE = {}
 _CACHE_WITNESS = {}
@@ -556,6 +628,15 @@ def _merger_exps(mv):
 def _yan_restored_left(left_surface):
   """If left_surface ends in a semivowel y/v that restores to a dictionary
   word (ity->iti, nandy->nandi), return that word (yaN parse witness)."""
+  hit = _CACHE_YAN_LEFT.get(left_surface)
+  if hit is not None:
+    return hit or None
+  res = _yan_restored_left_uncached(left_surface)
+  _CACHE_YAN_LEFT[left_surface] = res or ""
+  return res
+
+
+def _yan_restored_left_uncached(left_surface):
   words = _load_words()
   if left_surface.endswith("y"):
     for vv in ("i", "I"):
@@ -571,6 +652,16 @@ def _yan_restored_left(left_surface):
 def is_veto_split(hk_full, cpos):
   """True if splitting at cpos cuts a dIrgha/guNa/vRddhi merger of two
   exact dictionary words. Absolute veto (instruction precedence rule)."""
+  key = (hk_full, cpos)
+  hit = _CACHE_VETO.get(key)
+  if hit is not None:
+    return hit
+  res = _is_veto_split_uncached(hk_full, cpos)
+  _CACHE_VETO[key] = res
+  return res
+
+
+def _is_veto_split_uncached(hk_full, cpos):
   if cpos <= 0 or cpos >= len(hk_full):
     return False
   words = _load_words()
@@ -617,9 +708,22 @@ def is_veto_split(hk_full, cpos):
   return False
 
 
+_CACHE_GLOBAL_MERGER = {}
+_CACHE_VETO = {}
+
+
 def has_global_merger(hk):
   """Whole token explainable as one dIrgha/guNa/vRddhi merger of two exact
   dictionary words -> never split (e.g. dayArdra, dharmArtha, svaprakAzAdvitIya)."""
+  hit = _CACHE_GLOBAL_MERGER.get(hk)
+  if hit is not None:
+    return hit
+  res = _has_global_merger_uncached(hk)
+  _CACHE_GLOBAL_MERGER[hk] = res
+  return res
+
+
+def _has_global_merger_uncached(hk):
   words = _load_words()
   n = len(hk)
   for p in range(1, n):
@@ -923,6 +1027,15 @@ def _segment(hk, strict):
 
 
 def _hyphenate_hk_token(hk):
+  hit = _CACHE_TOKEN.get(hk)
+  if hit is not None:
+    return hit
+  res = _hyphenate_hk_token_uncached(hk)
+  _CACHE_TOKEN[hk] = res
+  return res
+
+
+def _hyphenate_hk_token_uncached(hk):
   whole = _whole_kind(hk)
   # Very long "simplex" analyses are implausible: such tokens are compounds
   # with an inflectional tail (…karmajJAnatayA) - treat as compound.
