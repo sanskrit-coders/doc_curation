@@ -3,7 +3,7 @@ import copy
 import logging
 
 import regex
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup, Comment, NavigableString
 from bs4.element import PageElement
 from doc_curation.md import content_processor
 from doc_curation.md.content_processor.details.common import _denumerify, _get_number, _normalize_spaces
@@ -14,7 +14,7 @@ from doc_curation.scraping.html_scraper import souper
 from indic_transliteration import sanscript
 
 
-def transform_details_with_soup(content, content_str_transformer=None, title_transformer=None, title_pattern=None, details_css="body>details", *args, **kwargs):
+def transform_details_with_soup(content, content_str_transformer=None, title_transformer=None, title_pattern=None, start_string=None, details_css="body>details", *args, **kwargs):
   metadata = kwargs.get("metadata", None)
 
   # Stray usage of < can fool the soup parser. Keep this as a cheap guard,
@@ -29,7 +29,14 @@ def transform_details_with_soup(content, content_str_transformer=None, title_tra
   # Note - fixes only top level details (by default selector).
   details = soup.select(details_css)
 
+  started = start_string is None
   for detail_tag in details:
+    if not started:
+      if start_string in detail_tag.get_text():
+        started = True
+      else:
+        continue
+
     if title_pattern is not None and not regex.fullmatch(title_pattern, detail_tag.select_one("summary").text):
         continue
 
@@ -39,6 +46,8 @@ def transform_details_with_soup(content, content_str_transformer=None, title_tra
       # Transform descendant text nodes, excluding anything inside <summary>.
       # Snapshot the strings since we'll mutate the tree during replacement.
       for s in list(detail_tag.find_all(string=True)):
+        if isinstance(s, Comment):
+          continue
         if isinstance(s, NavigableString):
           if s.parent is not None and s.parent.name == "summary":
             continue
@@ -167,14 +176,68 @@ def dedetailsify(content, title_pattern=None, title_maker=None, *args, **kwargs)
 
 def transliterate_details(content, source_script, dest_script=sanscript.DEVANAGARI, title=None):
   def transformer(detail_tag, *args, **kwargs):
-    detail = Detail.from_soup_tag(detail_tag=detail_tag)
-    new_text = content_processor.transliterate(text=detail.content, source_script=source_script, dest_script=dest_script)
-    new_text = f"\n\n{new_text}\n"
-    for child in list(detail_tag.children)[1:]:
-      child.extract()
-    list(detail_tag.children)[0].insert_after(new_text)
+    for s in list(detail_tag.find_all(string=True)):
+      if isinstance(s, Comment):
+        continue
+      if s.parent is not None and s.parent.name == "summary":
+        continue
+      if str(s).strip() == "":
+        continue
+      s.replace_with(content_processor.transliterate(text=str(s), source_script=source_script, dest_script=dest_script))
 
   return transform_detail_tags_with_soup(content=content, transformer=transformer, title_pattern=title)
+
+def restore_mUla(content, title_pattern="विश्वास-प्रस्तुतिः", start_text=None):
+  """Restore title_pattern detail bodies from their following मूलम् details.
+
+  The title_pattern presentation is auto-derived from the raw मूलम् reading; when
+  a faulty derivation corrupts it, this copies the clean मूलम् body back. Details
+  are processed in document order, from the one holding ``start_text`` onward
+  (all details when ``start_text`` is None); details without a following मूलम्
+  are left untouched.
+  """
+  if "<details" not in content:
+    return content
+  soup = content_processor._soup_from_content(content=content)
+  if soup is None:
+    return content
+  details = soup.select("body>details")
+
+  started = start_text is None
+  for i, detail_tag in enumerate(details):
+    summary = detail_tag.select_one("summary")
+    if summary is None:
+      continue
+    if not started:
+      if start_text in detail_tag.get_text():
+        started = True
+      else:
+        continue
+    if summary.text.strip() != title_pattern:
+      continue
+
+    mUla_tag = None
+    for nxt in details[i + 1:]:
+      nxt_summary = nxt.select_one("summary")
+      if nxt_summary is None:
+        continue
+      nxt_title = nxt_summary.text.strip()
+      if nxt_title == "मूलम्":
+        mUla_tag = nxt
+        break
+      if nxt_title == title_pattern:
+        break
+    if mUla_tag is None:
+      logging.warning("restore_mUla: no following मूलम् detail for: %s", summary.text.strip())
+      continue
+
+    mUla_content = "".join(x.text for x in list(mUla_tag.children)[1:]).strip()
+    for child in list(detail_tag.children):
+      if child is not summary:
+        child.extract()
+    summary.insert_after(f"\n\n{mUla_content}\n")
+
+  return content_processor._make_content_from_soup(soup=soup)
 
 def insert_duplicate_adjascent(content, old_title_pattern="मूलम्(.*)", new_title=r"विश्वास-प्रस्तुतिः\1", inserter=PageElement.insert_before, content_transformer=lambda x:x, *args, **kwargs):
   if new_title in content:

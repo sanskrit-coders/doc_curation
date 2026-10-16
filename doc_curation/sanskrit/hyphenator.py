@@ -294,7 +294,7 @@ def _piece_ending_ok(hk, end):
   if len(end) >= 2:
     return len(hk) > len(end) + 2
   if end in ("M", "H", "m"):
-    return len(hk) > len(end) + 4
+    return len(hk) > len(end) + 3
   return False
 
 
@@ -427,7 +427,7 @@ def _core_valid(hk_piece, piece_mode=False):
   if piece_mode:
     if _stem_valid_piece(hk_piece):
       return ("stem", hk_piece)
-    if has_global_merger(hk_piece):
+    if merger_chain_valid(hk_piece):
       # un-splittable merger surface inside a larger compound (alpAsthira)
       return ("merger", hk_piece)
   elif _stem_valid(hk_piece):
@@ -518,6 +518,7 @@ def _left_final_witness(lhk):
 
 
 _RELIABLE_MIN = 2
+_STEM_BASE_MIN = 5
 
 
 def _restores_of(hk):
@@ -582,11 +583,11 @@ def _reliable(hk, depth=2):
       return True
     if _stem_valid_piece(cand):
       base = _stem_base_piece(cand)
-      if base and _count_of(base) >= _RELIABLE_MIN:
+      if base and _count_of(base) >= _STEM_BASE_MIN:
         return True
   if _stem_valid_piece(hk):
     base = _stem_base_piece(hk)
-    if base and _count_of(base) >= _RELIABLE_MIN:
+    if base and _count_of(base) >= _STEM_BASE_MIN:
       return True
   if depth > 0:
     for up in _UPASARGAS:
@@ -601,6 +602,8 @@ def _reliable(hk, depth=2):
 
 
 def _piece_reliable(piece, kind, under):
+  if kind == "merger":
+    return True
   return _reliable(piece)
 
 
@@ -752,6 +755,71 @@ def _has_global_merger_uncached(hk):
   return False
 
 
+_MERGER_MIN = 5
+_CACHE_CHAIN = {}
+
+
+def merger_chain_valid(hk):
+  """True if ``hk`` is a chain of dictionary words joined only by
+  dIrgha/guNa/vRddhi mergers (sakaletara = sakala+itara, jJAnAnandaika =
+  jJAna+Ananda+eka).  At most one middle word may be unattested, provided
+  both of its junctions lean on a well-attested neighbour."""
+  hit = _CACHE_CHAIN.get(hk)
+  if hit is not None:
+    return hit
+  res = _merger_chain_uncached(hk)
+  _CACHE_CHAIN[hk] = res
+  return res
+
+
+def _chain_word_ok(s):
+  return (len(s) >= 3 and s not in _BARE_SUFFIXES
+          and s not in _AVYAYAS and s not in _PRONOUNS
+          and s.lower() not in _UPASARGAS
+          and _count_of(s) >= _MERGER_MIN)
+
+
+def _merger_chain_uncached(hk):
+  n = len(hk)
+  if n < 4:
+    return False
+  seen = set()
+  stack = [(0, "", 0, 0, 0)]
+  while stack:
+    q, rv, pending, wild, junc = stack.pop()
+    if (q, rv, pending, wild, junc) in seen:
+      continue
+    seen.add((q, rv, pending, wild, junc))
+    for r in range(q + 1, n + 1):
+      base = rv + hk[q:r]
+      if r == n:
+        if junc >= 1 and _chain_word_ok(base):
+          return True
+        continue
+      for mlen in (1, 2):
+        if r + mlen > n:
+          continue
+        mv = hk[r:r + mlen]
+        if mlen == 1 and mv not in "AIUeo":
+          continue
+        exps = _merger_exps(mv)
+        if not exps:
+          continue
+        for lv, rv2 in exps:
+          lknown = _chain_word_ok(base + lv)
+          if pending and not lknown:
+            continue
+          if wild and junc + 1 > 3:
+            continue
+          if lknown:
+            stack.append((r + mlen, rv2, 0, wild, junc + 1))
+          elif (q > 0 and wild == 0 and 2 <= r - q <= 12
+                and not any(c in "AIUeo" for c in hk[q:r])
+                and "ai" not in hk[q:r] and "au" not in hk[q:r]):
+            stack.append((r + mlen, rv2, 1, 1, junc + 1))
+  return False
+
+
 # ---- HK units ----
 
 _ASPIRATE_FIRST = frozenset(list("kgcjTDtdpb"))
@@ -828,8 +896,6 @@ def _sep(left_hk, right_hk, left_under, right_under, whole_hk=None):
   if ru.startswith(_META_SUFFIXES):
     return "-"
   if k == "yan" and ru.startswith("ari") and lu != "iti":
-    return "-"
-  if k == "visarga" and left_hk.endswith(("z", "S")) and right_hk[0] in "zSscC":
     return "-"
   # Particles / pronouns / verbs after a sandhi boundary are separate padas.
   if ru in _AVYAYAS or ru in _PRONOUNS:
@@ -928,9 +994,10 @@ def _segment(hk, strict):
         lkind = info[i][2] if info[i] else None
         # Right-side pieces must be surface-complete words (never restored):
         # a restored right piece (e.g. az->aH) is always a junk shard.
-        if kind not in ("exact", "stem", "avagraha", "merger"):
+        if kind not in ("exact", "stem", "avagraha", "merger",
+                        "visarga", "visarga-o"):
           continue
-        if i > 0 and piece.endswith(("z", "S")):
+        if i > 0 and piece.endswith(("z", "S")) and kind not in ("visarga", "visarga-o"):
           continue
         # Sandhi-witness requirement - a boundary may only be cut when it is
         # phonologically witnessed by the sandhi type.
@@ -939,11 +1006,14 @@ def _segment(hk, strict):
             continue
           if lkind not in ("exact", "stem", "merger"):
             continue
-          if kind not in ("exact", "stem", "merger"):
+          if kind not in ("exact", "stem", "merger", "visarga", "visarga-o"):
             continue
         elif bkind == "m-vowel":
           pass
         elif bkind in ("visarga", "visarga-o"):
+          if kind == "merger":
+            # merged units (asyaiva) never begin at a visarga joint
+            continue
           if lkind not in ("visarga", "visarga-o") and not _has_visarga_restore(lhk):
             continue
           if strict and lkind == "exact" and not lhk.endswith("s"):

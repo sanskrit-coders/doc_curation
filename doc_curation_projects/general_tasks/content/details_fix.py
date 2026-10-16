@@ -4,6 +4,7 @@ from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor.footnote import helper as footnote_helper
 from doc_curation.md.content_processor import details as details_helper, ocr_helper, space_helper, section_helper
 from doc_curation.md.file import MdFile
+from doc_curation.sanskrit import hyphenator
 from doc_curation.scraping.misc_sites import ebhaarati
 from doc_curation import sanskrit as sanskrit_helper
 from doc_curation.utils import patterns
@@ -47,7 +48,9 @@ def make_details(dir_path):
 def transform_details(dir_path):
   pass
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.transform_details_with_soup(content=c,content_str_transformer=lambda x, *args, **kwargs : ocr_helper.fix_gemini_errors(x), title_pattern="[^ह].*"))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.transform_details_with_soup(content=c,content_str_transformer=lambda x, *args, **kwargs : ocr_helper.fix_gemini_errors(x), title_pattern="[^ह].*"))
+
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.transform_details_with_soup(content=c,content_str_transformer=lambda x, *args, **kwargs : hyphenator.hyphene(x), title_pattern="विश्वास-.*", start_string="त्रिगुणात्मकप्रकृति-परिणामरूपभूतसङ्घातः"))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.transform_detail_contents_with_soup(content=c, metadata=m, transformer=tamil_nna_fixer, title_pattern="सा.*"))
 
@@ -68,7 +71,7 @@ def transliterate(dir_path):
 
 
 if __name__ == '__main__':
+  transform_details("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/07_antaradhikaraNam.md")
   # make_details(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/sa_hi")
   # transliterate(dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/rAma-subba-shAstrI/mahA-shaiva-mata-mardanam.md")
-  # transform_details(dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/sa_hi/08")
   pass

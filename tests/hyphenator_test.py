@@ -1,6 +1,12 @@
+import re
+
 import pytest
 
 from doc_curation.sanskrit.hyphenator import hyphene
+
+
+def _segments(text):
+  return [p for p in re.split(r"[ -]+", text) if p]
 
 
 def test_non_separable_mergers():
@@ -43,6 +49,20 @@ def test_samasa_and_inflected_words():
   assert hyphene("वृत्तस्य") == "वृत्तस्य"
   assert hyphene("क्षणिकत्वम्") == "क्षणिकत्वम्"
   assert hyphene("सर्वज्ञ") == "सर्वज्ञ"
+
+
+def test_reference_compound_sentence():
+  # Sri-bhasya prastuti reference sentence (space/hyphen choice is free, the
+  # segmentation is not): long merged chains (sakala+itara -> sakaletara)
+  # must be kept joined and only separable joints cut.
+  text = ("एतदुक्तं भवति – परस्यैव ब्रह्मणो "
+          "निखिलहेयप्रत्यनीकानन्तज्ञानानन्दैकस्वरूपतया सकलेतरविलक्षणस्य "
+          "स्वाभाविकानविधकातिशयासङ्ख्येयकल्याणगुणगणाश्च सन्ति।")
+  expected = ("एतद् उक्तं भवति – परस्यैव ब्रह्मणो "
+              "निखिल-हेय-प्रत्यनीकानन्त-ज्ञानानन्दैक-स्वरूपतया "
+              "सकलेतर-विलक्षणस्य "
+              "स्वाभाविकानविधकातिशयासङ्ख्येय- -कल्याण-गुण-गणाश् च सन्ति।")
+  assert _segments(hyphene(text)) == _segments(expected)
 
 
 def test_idempotent():
