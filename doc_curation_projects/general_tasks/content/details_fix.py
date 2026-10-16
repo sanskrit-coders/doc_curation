@@ -50,7 +50,7 @@ def transform_details(dir_path):
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.transform_details_with_soup(content=c,content_str_transformer=lambda x, *args, **kwargs : ocr_helper.fix_gemini_errors(x), title_pattern="[^ह].*"))
 
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.transform_details_with_soup(content=c,content_str_transformer=lambda x, *args, **kwargs : hyphenator.hyphene(x), title_pattern="विश्वास-.*", start_string="त्रिगुणात्मकप्रकृति-परिणामरूपभूतसङ्घातः"))
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.transform_details_with_soup(content=c,content_str_transformer=lambda x, *args, **kwargs : hyphenator.hyphene(x), title_pattern="विश्वास-.*", start_string="देवतिर्यङ्मनुष्याख्या"))
 
   # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.transform_detail_contents_with_soup(content=c, metadata=m, transformer=tamil_nna_fixer, title_pattern="सा.*"))
 

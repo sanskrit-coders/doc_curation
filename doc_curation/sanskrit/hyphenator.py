@@ -60,17 +60,29 @@ Separator choice per boundary:
 Fast: ~O(L^2) dict lookups per token with memoised validation; the wordlist
 lives in a memory-efficient marisa-trie at
 ``doc_curation/data/sanskrit-words.trie`` (built on first use from
-``words_sa_dev.txt``, ~600k headwords, ~2.5 MB).
+``words_sa_dev.txt``, ~600k headwords, ~2.5 MB; counts are raised by DCS
+corpus-frequency tiers from ``dcs-frequency.babylon``).
 Already-hyphenated compounds are left untouched (pieces adjacent to ``-`` are
 not re-processed), so running on pre-split प्रस्तुति-style text is safe.
 """
 
+import math
 import os
 import regex
 import marisa_trie
 from indic_transliteration import sanscript
+import logging
+
+for handler in logging.root.handlers[:]:
+  logging.root.removeHandler(handler)
+logging.basicConfig(
+  level=logging.DEBUG,
+  format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
+
 
 _DICT_TXT = "/home/vvasuki/gitland/indic-dict/dicts/stardict-sanskrit/wordlists/words_sa_dev.txt"
+_DCS_BABYLON = ("/home/vvasuki/gitland/indic-dict/dicts/stardict-sanskrit-kAvya/"
+                "dcs-frequency/dcs-frequency.babylon")
 _DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 _TRIE_PATH = os.path.join(_DATA_DIR, "sanskrit-words.trie")
 
@@ -129,8 +141,57 @@ def _get_scheme_map():
                              sanscript.SCHEMES[sanscript.HK])
 
 
+def _dcs_tier(total):
+  """Map DCS corpus frequency to the same scale as stardict source counts."""
+  if total >= 500:
+    return 21
+  if total >= 100:
+    return 11
+  if total >= 30:
+    return 7
+  if total >= 10:
+    return 5
+  if total >= 3:
+    return 3
+  if total >= 2:
+    return 2
+  return 1
+
+
+def _parse_dcs(smap):
+  """Headword -> total corpus frequency from the DCS frequency babylon."""
+  if not os.path.exists(_DCS_BABYLON):
+    return {}
+  try:
+    with open(_DCS_BABYLON, encoding="utf-8") as f:
+      text = f.read()
+  except OSError:
+    return {}
+  totals = {}
+  for block in regex.split(r"\n\s*\n", text):
+    block = block.strip()
+    if not block or block.startswith("#"):
+      continue
+    head = block.split("\n", 1)[0].strip()
+    if not head or " " in head or "\t" in head or len(head) > 40:
+      continue
+    if any(ch < "\u0900" or ch > "\u097f" for ch in head):
+      continue
+    m = regex.search(r"Total:\s*(\d+)", block)
+    if not m:
+      continue
+    try:
+      hk = sanscript.transliterate(head, scheme_map=smap)
+    except Exception:
+      continue
+    if hk:
+      totals[hk] = totals.get(hk, 0) + int(m.group(1))
+  return totals
+
+
 def _build_trie():
-  """Build the marisa word trie from the stardict wordlist + seed words."""
+  """Build the marisa word trie from the stardict wordlist + DCS frequency
+  babylon + seed words."""
   smap = _get_scheme_map()
   counts = {}
   try:
@@ -152,6 +213,10 @@ def _build_trie():
           counts[hk] = nsrc
   except FileNotFoundError:
     pass
+  for hk, total in _parse_dcs(smap).items():
+    tier = _dcs_tier(total)
+    if tier > counts.get(hk, 0):
+      counts[hk] = tier
   for w in _SEED_WORDS:
     counts.setdefault(w, _SEED_COUNT)
   rt = marisa_trie.RecordTrie(
@@ -175,9 +240,9 @@ def _load_words():
   global _TRIE
   if _TRIE is not None:
     return _TRIE
+  sources = [p for p in (_DICT_TXT, _DCS_BABYLON) if os.path.exists(p)]
   if (os.path.exists(_TRIE_PATH)
-      and (not os.path.exists(_DICT_TXT)
-           or os.path.getmtime(_TRIE_PATH) >= os.path.getmtime(_DICT_TXT))):
+      and all(os.path.getmtime(_TRIE_PATH) >= os.path.getmtime(p) for p in sources)):
     rt = marisa_trie.RecordTrie("H")
     rt.load(_TRIE_PATH)
   else:
@@ -218,14 +283,14 @@ _UPASARGAS = tuple(sorted([
 ], key=len, reverse=True))
 
 # Whitelist for very short pieces (HK len < 3).
-_SHORT_OK = frozenset(["ca", "vA", "hi", "tu", "na", "te", "me", "oM"])
+_SHORT_OK = frozenset(["ca", "vA", "hi", "tu", "na", "te", "me", "oM", "jA"])
 
 # sup/tiG endings used by the light stemmer (longest first).
 _SUP_ENDINGS = tuple(sorted([
     "ByAm", "ByaH", "bhyAm", "bhyah", "BhiH", "ezu", "nAm", "sya",
     "yoH", "oH", "eH", "EH", "AnAm", "Ani", "Ini", "Uni",
     "Aya", "Ayai", "AyAH", "yAH",
-    "At", "Ad", "aH", "AH", "An", "e", "O", "ena", "enA",
+    "At", "Ad", "aH", "AH", "An", "Am", "e", "O", "ena", "enA",
     "inA", "unA", "AyA", "ayA",     "aye", "ave", "asya",
     # tiG endings (verbs)
     "ante", "anti", "ate", "nte", "nti", "te", "ti", "It", "us", "uH",
@@ -237,8 +302,8 @@ _STEM_FINALS = ("a", "A", "i", "I", "u", "U", "f", "t", "d", "n", "s", "as")
 
 # pure endings that must never appear as standalone split pieces
 _BARE_SUFFIXES = frozenset([
-    "sya", "ByAm", "ByaH", "bhyAm", "bhyah", "BhiH", "ezu", "zu",
-    "nAm", "yoH", "oH", "eH", "EH", "Aya", "Ayai", "AyAH",
+    "sya", "ByAm", "ByaH", "bhyaH", "Byah", "bhyAm", "bhyah", "BhiH", "ezu", "zu",
+    "nAm", "yoH", "oH", "eH", "EH", "Aya", "Ayai", "AyAH", "aiH", "auH",
     "At", "Ad", "An", "ena", "enA", "inA", "unA", "AyA", "ayA",
     "aye", "ave", "AsAm", "tva", "tvAt", "tA", "tvam", "tvaM", "vat",
     "mat", "vAn", "mAn", "vatI", "vant", "mant", "nAm", "nAM", "mAtram",
@@ -370,6 +435,11 @@ def _core_valid(hk_piece, piece_mode=False):
   """Core validation (no upasarga strip, no length guard)."""
   words = _load_words()
   if hk_piece in words:
+    if (piece_mode and len(hk_piece) <= 4 and hk_piece[-1] in ("M", "m")
+        and hk_piece not in _PRONOUNS and hk_piece not in _AVYAYAS
+        and hk_piece not in _UPASARGAS):
+      # inflected shards like naM/vaM are not usable as split pieces
+      return (None, hk_piece)
     return ("exact", hk_piece)
   if hk_piece.startswith("'"):
     rest = hk_piece[1:]
@@ -383,10 +453,14 @@ def _core_valid(hk_piece, piece_mode=False):
       cand = hk_piece[:-1] + v
       if cand in words:
         return ("yan", cand)
+      if piece_mode and merger_chain_valid(cand):
+        return ("yan", cand)
   if len(hk_piece) >= 3 and hk_piece.endswith("v"):
     for v in ("u", "U"):
       cand = hk_piece[:-1] + v
       if cand in words:
+        return ("yan", cand)
+      if piece_mode and merger_chain_valid(cand):
         return ("yan", cand)
   if len(hk_piece) >= 3 and hk_piece.endswith("o"):
     cand = hk_piece[:-1] + "aH"
@@ -424,6 +498,12 @@ def _core_valid(hk_piece, piece_mode=False):
     cand = flip + hk_piece[1:]
     if cand in words:
       return ("t-assim", cand)
+  if len(hk_piece) >= 4 and hk_piece.endswith("M"):
+    # anusvAra surface of an m-final form (etaM <- etam); short shards like
+    # naM/vaM stay excluded by the length guard
+    cand = hk_piece[:-1] + "m"
+    if cand in words:
+      return ("stem", cand)
   if piece_mode:
     if _stem_valid_piece(hk_piece):
       return ("stem", hk_piece)
@@ -572,10 +652,29 @@ def _reliable(hk, depth=2):
       return hit
   if depth < 0:
     return False
-  if _count_of(hk) >= _RELIABLE_MIN:
+  cnt = _count_of(hk)
+  if cnt >= 3:
     if depth == 2:
       _CACHE_RELIABLE[hk] = True
     return True
+  if cnt >= _RELIABLE_MIN:
+    base = _stem_base_piece(hk)
+    if base and _count_of(base) >= _STEM_BASE_MIN:
+      if depth == 2:
+        _CACHE_RELIABLE[hk] = True
+      return True
+    if hk.endswith("H") and hk[:-1] in _load_words() and _count_of(hk[:-1]) >= _STEM_BASE_MIN:
+      if depth == 2:
+        _CACHE_RELIABLE[hk] = True
+      return True
+    for cand in _restores_of(hk):
+      if _count_of(cand) >= 3 or (
+          _count_of(cand) >= _RELIABLE_MIN
+          and _stem_base_piece(cand)
+          and _count_of(_stem_base_piece(cand)) >= _STEM_BASE_MIN):
+        if depth == 2:
+          _CACHE_RELIABLE[hk] = True
+        return True
   for cand in _restores_of(hk):
     if _count_of(cand) >= _RELIABLE_MIN:
       if depth == 2:
@@ -604,6 +703,15 @@ def _reliable(hk, depth=2):
 def _piece_reliable(piece, kind, under):
   if kind == "merger":
     return True
+  if kind == "yan" and under and merger_chain_valid(under):
+    return True
+  if (kind == "stem" and piece.endswith("M") and under
+      and _count_of(under) >= _RELIABLE_MIN):
+    return True
+  if kind in ("visarga", "visarga-o") and under and under not in _load_words():
+    base = _stem_base_piece(under)
+    if not base or len(base) < 4:
+      return False  # yadAs->yadAH: restore leans on a tiny closed-class base
   return _reliable(piece)
 
 
@@ -619,8 +727,8 @@ _GUNA_MAP = {
     "o": [("a", "u"), ("A", "u"), ("a", "U"), ("A", "U")],
 }
 _VRDDHI_MAP = {
-    "ai": [("a", "e"), ("A", "e"), ("a", "e")],
-    "au": [("a", "o"), ("A", "o"), ("a", "o")],
+    "ai": [("a", "e"), ("A", "e"), ("a", "ai"), ("A", "ai")],
+    "au": [("a", "o"), ("A", "o"), ("a", "au"), ("A", "au")],
 }
 
 
@@ -664,6 +772,16 @@ def is_veto_split(hk_full, cpos):
   return res
 
 
+def _veto_side_ok(s):
+  """A veto witness word may be exact or a light inflection of a common one."""
+  if s in _load_words():
+    return True
+  if _stem_valid_piece(s):
+    base = _stem_base_piece(s)
+    return bool(base) and _count_of(base) >= _STEM_BASE_MIN
+  return False
+
+
 def _is_veto_split_uncached(hk_full, cpos):
   if cpos <= 0 or cpos >= len(hk_full):
     return False
@@ -681,7 +799,7 @@ def _is_veto_split_uncached(hk_full, cpos):
     left_pre = hk_full[:cpos - mlen]
     right_rest = hk_full[cpos:]
     for lv, rv in exps:
-      if (left_pre + lv) in words and (rv + right_rest) in words:
+      if (left_pre + lv) in words and _veto_side_ok(rv + right_rest):
         return True
   # Case R: merger vowel starts the right piece.
   # If the char before the split is a semivowel whose yaN-restore is a more
@@ -699,6 +817,14 @@ def _is_veto_split_uncached(hk_full, cpos):
       continue
     left_pre = hk_full[:cpos]
     right_rest = hk_full[cpos + mlen:]
+    # Ambiguous t-assim reading (tadeva = tad+eva, yadAste = yad+Aste): the
+    # same surface reads as a consonant-final word + vowel-initial word, so
+    # the merger witness is not decisive.
+    if (hk_full[cpos - 1] in "dtn" and left_pre in words
+        and _count_of(left_pre) >= 5
+        and (mv + right_rest) in words
+        and _count_of(mv + right_rest) >= 5):
+      continue
     for lv, rv in exps:
       lu = left_pre + lv
       ru = rv + right_rest
@@ -741,6 +867,14 @@ def _has_global_merger_uncached(hk):
         continue
       left_pre = hk[:p]
       right_rest = hk[p + mlen:]
+      # Ambiguous t-assim reading: yadAste = yad+Aste and tadeva = tad+eva
+      # share the surface with a merger parse, so the merger witness is not
+      # decisive; leave the token to the internal splitter.
+      if (hk[p - 1] in "dtn" and left_pre in words
+          and _count_of(left_pre) >= 5
+          and (hk[p:p + mlen] + right_rest) in words
+          and _count_of(hk[p:p + mlen] + right_rest) >= 5):
+        continue
       yan_left = None
       if hk[p - 1] in ("y", "v"):
         yan_left = _yan_restored_left(hk[:p])
@@ -755,7 +889,7 @@ def _has_global_merger_uncached(hk):
   return False
 
 
-_MERGER_MIN = 5
+_MERGER_MIN = 6
 _CACHE_CHAIN = {}
 
 
@@ -773,10 +907,35 @@ def merger_chain_valid(hk):
 
 
 def _chain_word_ok(s):
-  return (len(s) >= 3 and s not in _BARE_SUFFIXES
-          and s not in _AVYAYAS and s not in _PRONOUNS
-          and s.lower() not in _UPASARGAS
-          and _count_of(s) >= _MERGER_MIN)
+  """Merger-chain component: a well-attested word, never a closed-class or
+  suffix shard.  Short components need proportionally more attestation
+  (ape/Iti/naM do not qualify, eka/Adi do)."""
+  n = len(s)
+  if n < 3 or s in _BARE_SUFFIXES or s in _AVYAYAS or s.lower() in _UPASARGAS:
+    return False
+  if s in _PRONOUNS and n < 4:
+    return False
+  cnt = _count_of(s)
+  if n == 3:
+    return cnt >= 20
+  return cnt >= _MERGER_MIN
+
+
+def _chain_end_ok(base, apo):
+  """Final chain component: strict for merger chains; after an avagraha
+  joint a restorable consonant-final word (abhivadan = abhi + vadan) is
+  accepted too."""
+  if _chain_word_ok(base):
+    return True
+  if not apo:
+    return False
+  n = len(base)
+  if (n < 4 or base in _BARE_SUFFIXES or base in _AVYAYAS
+      or base in _PRONOUNS or base.lower() in _UPASARGAS):
+    return False
+  if base[-1] in _VOWELS or base[-1] in ("H", "o"):
+    return False
+  return _reliable(base)
 
 
 def _merger_chain_uncached(hk):
@@ -784,27 +943,32 @@ def _merger_chain_uncached(hk):
   if n < 4:
     return False
   seen = set()
-  stack = [(0, "", 0, 0, 0)]
+  stack = [(0, "", 0, 0, 0, 0)]
   while stack:
-    q, rv, pending, wild, junc = stack.pop()
-    if (q, rv, pending, wild, junc) in seen:
+    q, rv, pending, wild, junc, apo = stack.pop()
+    if (q, rv, pending, wild, junc, apo) in seen:
       continue
-    seen.add((q, rv, pending, wild, junc))
+    seen.add((q, rv, pending, wild, junc, apo))
     for r in range(q + 1, n + 1):
       base = rv + hk[q:r]
       if r == n:
-        if junc >= 1 and _chain_word_ok(base):
+        if 1 <= junc <= 3 and _chain_end_ok(base, apo):
           return True
         continue
       for mlen in (1, 2):
         if r + mlen > n:
           continue
         mv = hk[r:r + mlen]
-        if mlen == 1 and mv not in "AIUeo":
-          continue
-        exps = _merger_exps(mv)
-        if not exps:
-          continue
+        if mlen == 1 and mv == "'":
+          # avagraha joint: left word unchanged, right word drops initial a
+          exps = (("", "a"),)
+        else:
+          if mlen == 1 and mv not in "AIUeo":
+            continue
+          exps = _merger_exps(mv)
+          if not exps:
+            continue
+        apo2 = 1 if mv == "'" else apo
         for lv, rv2 in exps:
           lknown = _chain_word_ok(base + lv)
           if pending and not lknown:
@@ -812,11 +976,11 @@ def _merger_chain_uncached(hk):
           if wild and junc + 1 > 3:
             continue
           if lknown:
-            stack.append((r + mlen, rv2, 0, wild, junc + 1))
-          elif (q > 0 and wild == 0 and 2 <= r - q <= 12
+            stack.append((r + mlen, rv2, 0, wild, junc + 1, apo2))
+          elif (q > 0 and wild == 0 and junc + 1 <= 3 and 2 <= r - q <= 8
                 and not any(c in "AIUeo" for c in hk[q:r])
                 and "ai" not in hk[q:r] and "au" not in hk[q:r]):
-            stack.append((r + mlen, rv2, 1, 1, junc + 1))
+            stack.append((r + mlen, rv2, 1, 1, junc + 1, apo2))
   return False
 
 
@@ -875,7 +1039,7 @@ def _boundary_kind(left_hk, right_hk):
     return "m-vowel"
   if lc in _VOWELS or lc in ("ai", "au"):
     return "vowel-cons"
-  if lc in "kgcjTDtdpbN":
+  if lc in "kgcjTDtdpbNn":
     if rc not in _VOWELS and rc != "'":
       return "t-assim"
     return "cons-vowel"
@@ -896,6 +1060,8 @@ def _sep(left_hk, right_hk, left_under, right_under, whole_hk=None):
   if ru.startswith(_META_SUFFIXES):
     return "-"
   if k == "yan" and ru.startswith("ari") and lu != "iti":
+    return "-"
+  if k == "yan" and merger_chain_valid(lu):
     return "-"
   # Particles / pronouns / verbs after a sandhi boundary are separate padas.
   if ru in _AVYAYAS or ru in _PRONOUNS:
@@ -927,6 +1093,14 @@ _QUALITY = {
     "exact": 30, "yan": 22, "visarga-o": 22, "visarga": 22,
     "avagraha": 22, "t-assim": 22, "merger": 24, "stem": 8, "upasarga": 6,
 }
+
+
+def _freq_quality(cnt):
+  """Graded frequency preference: log-scaled, capped so that kind choices
+  and length still dominate.  Higher count -> cheaper piece."""
+  if cnt <= 0:
+    return 0
+  return min(int(3 * math.log2(cnt + 1)), 21)
 
 
 def _segment(hk, strict):
@@ -994,9 +1168,10 @@ def _segment(hk, strict):
         lkind = info[i][2] if info[i] else None
         # Right-side pieces must be surface-complete words (never restored):
         # a restored right piece (e.g. az->aH) is always a junk shard.
-        if kind not in ("exact", "stem", "avagraha", "merger",
-                        "visarga", "visarga-o"):
+        if kind not in ("exact", "stem", "avagraha", "merger", "visarga", "yan"):
           continue
+        if kind == "visarga" and not piece.endswith(("z", "S")):
+          continue  # restored H->r shards (yar, yam) are never valid rights
         if i > 0 and piece.endswith(("z", "S")) and kind not in ("visarga", "visarga-o"):
           continue
         # Sandhi-witness requirement - a boundary may only be cut when it is
@@ -1006,7 +1181,7 @@ def _segment(hk, strict):
             continue
           if lkind not in ("exact", "stem", "merger"):
             continue
-          if kind not in ("exact", "stem", "merger", "visarga", "visarga-o"):
+          if kind not in ("exact", "stem", "merger", "visarga", "yan"):
             continue
         elif bkind == "m-vowel":
           pass
@@ -1054,12 +1229,20 @@ def _segment(hk, strict):
         else:
           continue
       q = _QUALITY[kind] + 3 * min(len(piece), 20)
+      if kind == "stem" and under:
+        q += min(_count_of(under), 20)  # frequent base -> plausible inflected form
+      cnt = _count_of(under) if under else 0
+      if cnt <= 0:
+        cnt = _count_of(piece)
+      q += _freq_quality(cnt)
       extra = 0
       if piece in _PRONOUNS or piece in _AVYAYAS:
         extra -= 4  # independent particles/pronouns favour a clean cut
       if i > 0:
         if bkind in _HIGH_KINDS:
           extra -= 10  # bonus for genuine sandhi boundary
+        if bkind == "m-vowel":
+          extra -= 6  # M + vowel is a high-precision split
         if j == m:
           extra -= 6  # prefer splitting off a clean final pada
       cost = dp[i] + 100 - q + extra
@@ -1196,3 +1379,8 @@ def hyphene(text, show_progress=False):
 hyphen = hyphene
 hyphenate = hyphene
 hyphenate_text = hyphene
+
+
+if __name__ == '__main__':
+  pass
+  logging.info(hyphene("नामानि कृत्वाऽभिवदन्यदास्ते (तै.य.आर.३.१२), वेदाहमेतं पुरुषं महान्तम्।"))

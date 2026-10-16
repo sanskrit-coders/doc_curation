@@ -65,6 +65,27 @@ def test_reference_compound_sentence():
   assert _segments(hyphene(text)) == _segments(expected)
 
 
+def test_reference_compound_sentence_tadvad():
+  # Second Sri-bhasya prastuti reference: ai/au-merged chains (svAbhimata-
+  # anurUpaika) plus a long simplex-concatenation compound that must split
+  # member by member (ananta-guNa-gaNa-nidhi-divya-rUpam).
+  text = ("तद्वदेव स्वाभिमतानुरूपैकरूपाचिन्त्यदिव्याद्भुतनित्यनिरवद्य"
+          "निरतिशयौज्ज्वल्यसौन्दर्यसौगन्ध्यसौकुमार्यलावण्ययौवनाद्यनन्तगुणगणनिधि"
+          "दिव्यरूपमपि स्वाभाविकमस्ति।")
+  expected = ("तद्वद् एव स्वाभिमतानुरूपैक-रूपाचिन्त्य-दिव्याद्भुत-नित्य-निरवद्य"
+              "-निरतिशयौज्ज्वल्य-सौन्दर्य-सौगन्ध्य-सौकुमार्य-लावण्य-यौवनाद्य्-"
+              "अनन्त-गुण-गण-निधि-दिव्य-रूपम् अपि स्वाभाविकम् अस्ति।")
+  assert _segments(hyphene(text)) == _segments(expected)
+
+
+def test_reference_compound_sentence_jagatAm_upakArAya():
+  # vi.pu. 6.7.70: jagatAm + upakArAya is an m-vowel pada split (jagatAm is
+  # a count-1 inflection of jagat); karmanimittajA splits at plain joints.
+  text = "जगतामुपकाराय  न सा कर्मनिमित्तजा"
+  expected = "जगताम् उपकाराय  न सा कर्म-निमित्त-जा"
+  assert hyphene(text) == expected
+
+
 def test_idempotent():
   for text in ["इत्य् एवम्", "मध्व्-अरिः", "हेतु-भावे", "नमस् ते",
                "रामो ऽस्ति", "फलम् अश्नुते", "धर्मार्थ"]:
