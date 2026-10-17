@@ -1,0 +1,136 @@
+# Sources of the rAmAnujIya vocabulary tries built by
+# doc_curation/sanskrit/hyphenator.py (``rebuild_ra_trie()``):
+#
+#   rAmAnujIya.trie         - words + stems harvested from these sources;
+#   rAmAnujIya-splits.trie  - the corpus's own prastuti segmentations
+#                             (joined surface -> hyphenated form).
+#
+# A source path is a .md file or a directory (walked recursively for *.md).
+# Files named ``_index.md`` are never ingested.  Sources are listed
+# alphabetically.
+#
+# Ingestion rules (per file):
+#
+# * ``included_details`` lists the accepted
+#   ``<details><summary>LABEL</summary>`` label prefixes of the source
+#   (prefix matching: ``विश्वास-प्रस्तुतिः`` also matches its
+#   ``- सावधानम्!`` style variants).  Only matching bodies are ingested;
+#   मूलम् (merged plain text), translations (English, हिं, द्राविडम् ...) and
+#   unpublished notes are thus skipped.  ``नीलमेघः (सं)`` deliberately
+#   excludes the bare Hindi ``नीलमेघः`` commentary.
+# * A file with NO accepted detail block - and every file of a source
+#   without an ``included_details`` field - contributes all its Devanagari
+#   text instead (absence indicates all Sanskrit text should be ingested).
+#   Non-Devanagari tokens (citations, transliteration, Tamil, Hindi),
+#   ``+++(...)+++`` annotation spans and HTML tags are dropped either way.
+# * Prastuti text is pada-split with ``-`` at samAsa joints: hyphen pieces
+#   are recorded as words, and every multi-piece token is memorised as a
+#   segmentation vote (most frequent form wins; surfaces the corpus leaves
+#   unhyphenated at least 3 times are marked never-split).
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/kAvyam/content/laxyam/padyam/subhAShitam/venkaTanAthaH/vairAgya-panchakam.md"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAsaH/shlokashaH/bhagavad-gItA-parva/meta/yAmuna-gItArtha-sangrahaH/sarva-prastutiH.md"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/lokAchArya-shAkhA/embAr-govindArya-nitya-granthaH.md"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/lokAchArya-shAkhA/shAstra-virodha-samayAchara-patrika.md"
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/lokAchArya-shAkhA/vAdi-bhIkara-nityArAdhana-vidhiH.md"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/rAmAnujaH/nitya-granthaH/sarva-prastutiH.md"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/vangi-vaMsheshvara-kArikA"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/venkaTa-nAtha-shAkhA/gopAla-deshika-shAkhA/koLHiyAla-ranga-rAmAnujaH/heyopAdeya-darpaNaH"
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/venkaTa-nAtha-shAkhA/vAtsya-varada-paramArtha-shloka-dvayam.md"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/venkaTa-nAtha-shAkhA/vAtsya-varadaH/prapanna-pArijAtaH/sarva-prastutiH"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/venkaTa-nAtha-shAkhA/venkaTanAthaH/nyAsaH/nyAsa-tilakam/sarva-prastutiH.md"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kriyA/yAmunaH/stotra-ratnam/sarva-prastutiH"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/parAshara-bhaTTaH/aShTa-shlokI/sarva-prastutiH.md"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/parichaya-sanxepAH/shrInivAsaH_yatIndra-mata-dIpikA/sarva-prastutiH"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH"
+# 08_AkAshAdhikaraNam.md and later are held out for evaluation.
+until = "1_ayoga-vyavachChedaH/08_AkAshAdhikaraNam.md"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/vedArtha-sangrahaH/sarva-prastutiH"
+# The bare नीलमेघः details here are Hindi commentary; they must not match.
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/shAnkhAntarANi/navya-mangala-varadAchAryaH/06_satyAnveShaNam.md"
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/shAnkhAntarANi/navya-mangala-varadAchAryaH/private/visaMpAditA_satya-siddhiH"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/shAnkhAntarANi/vAdikesari-saumya-sundara-jAmAtR-muniH_devarAjaH/adhyAtma-chintA/sarva-prastutiH.md"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/bukka-paTTana-venkaTaH/vedAnta-kArikAvalI/sarva-prastutiH"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/kRShNamAchAryoktA_mata-prakriyA"
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/sarva-prastutiH"
+# vishvAsa-prastutiH here is maNiprAvALa (Devanagari-written Tamil mixed
+# in): not used.  Only the Sanskrit नीलमेघः (सं) and विश्वास-टिप्पनी
+# details are ingested (the bare नीलमेघः prefix would also match the
+# Hindi commentary of vedArtha-sangrahaH, hence the (सं) marker).
+included_details = ["नीलमेघः (सं)", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/chatush-shlokI/sarva-prastutiH"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/siddhi-trayam/sarva-prastutiH/02_Atma-siddhiH"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
+path = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/ApastambaH/gRhyam/paddhatiH/shrIvaiShNavaH/gopAla-deshika-shrAddha-prayogaH"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
