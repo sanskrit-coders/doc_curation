@@ -72,7 +72,12 @@ layered as
   (~600k, ~2.5 MB);
 * ``rAmAnujIya-splits.trie`` - the corpus's own segmentations (joined
   surface -> hyphenated form; empty = attestably unsplit).  Consulted
-  first by ``hyphenate_word`` and reusable as whole DP pieces.
+  first by ``hyphenate_word`` and reusable as whole DP pieces;
+* ``rAmAnujIya-ngram.trie`` - junction letter-context counts from the same
+  corpus (longest context decides; >=2:1 attested hyphenation).  On a memo
+  miss it refines the DP result: adds corpus-attested hyphens
+  (``आकाशादि-विशेष-शब्दैर्``) and prefers ``-`` over `` `` at joints the
+  corpus hyphenates (``जगत्-कारणे``).
 
 Already-hyphenated compounds are left untouched (pieces adjacent to ``-`` are
 not re-processed), so running on pre-split प्रस्तुति-style text is safe.
@@ -83,6 +88,7 @@ import math
 import os
 import regex
 import tomllib
+import unicodedata
 import marisa_trie
 from indic_transliteration import sanscript
 import logging
@@ -103,9 +109,17 @@ _TRIE_PATH = os.path.join(_DATA_DIR, "sanskrit-words.trie")
 _DCS_TRIE_PATH = os.path.join(_DATA_DIR, "dcs-frequency.trie")
 _RA_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya.trie")
 _RA_FORMS_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-splits.trie")
+_RA_NGRAM_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-ngram.trie")
 _RA_SOURCES_TOML = os.path.join(_DATA_DIR, "rAmAnujIya-sources.toml")
 
 _RA_BOOST = 20
+# Junction n-gram refinement: a boundary is hyphenated when the corpus's
+# longest attested local letter context (up to _RA_NGRAM_MAX_K letters on
+# each side) is split-dominant.  See ``_ngram_refine``.
+_RA_NGRAM_MAX_K = 3
+_RA_NGRAM_MIN_SPLITS = 1
+_RA_NGRAM_MIN_SUPPORT = 3  # required when backing off to a shorter context
+_RA_NGRAM_RATIO = 2  # splits >= ratio * plains
 
 _SEED_WORDS = (
     "ca", "vA", "hi", "tu", "api", "iti", "eva", "evam", "iva",
@@ -121,6 +135,7 @@ _TRIE = None
 _TRIE_DCS = None
 _TRIE_RA = None
 _TRIE_RA_FORMS = None
+_TRIE_RA_NGRAM = None
 _LAYERED = None
 
 
@@ -460,6 +475,80 @@ def _build_ra_forms_trie(split_votes, plain_counts):
   return trie
 
 
+def _ngram_ctx(surface, pos, k):
+  """k letters before + k after the junction ``pos`` (no edge padding: the
+  context is simply shorter near the token edges, as in training)."""
+  return surface[pos - k:pos], surface[pos:pos + k]
+
+
+def _ngram_add(tables, surface, pos, is_split, weight):
+  """Accumulate one junction occurrence into the per-k context tables."""
+  L = len(surface)
+  for k in range(1, min(_RA_NGRAM_MAX_K, pos, L - pos) + 1):
+    key = "%s\x1f%s" % _ngram_ctx(surface, pos, k)
+    cell = tables.get(key)
+    if cell is None:
+      cell = tables[key] = [0, 0]
+    cell[0 if is_split else 1] += weight
+
+
+def _form_positions(form):
+  """``(joined surface, split positions)`` of a hyphenated form.
+
+  Uses the extractor's own reassembly (``_VOWEL_TO_MATRA``: a piece-final
+  virama + next-piece independent vowel merge into the plain surface), so the
+  positions are expressed in the joined surface's own coordinates.  A
+  boundary absorbed by such a merge has no surface position and is dropped.
+  """
+  pieces = form.split("-")
+  joined = ""
+  pos = []
+  for i, p in enumerate(pieces):
+    if joined.endswith("\u094d") and p[:1] in _VOWEL_TO_MATRA:
+      if pos:
+        pos[-1] = None
+      joined = joined[:-1] + _VOWEL_TO_MATRA[p[:1]] + p[1:]
+    else:
+      joined += p
+    if i < len(pieces) - 1:
+      pos.append(len(joined))
+  return joined, [p for p in pos if p]
+
+
+def _build_ra_ngram_trie(split_votes, plain_counts):
+  """Junction letter-context counts -> ``rAmAnujIya-ngram.trie``.
+
+  For every internal junction of every corpus surface (up to
+  ``_RA_NGRAM_MAX_K`` letters on each side, key ``left\\x1fright``) the
+  counts ``(n_split, n_plain)`` are recorded: hyphenated occurrences vote
+  split at their hyphens (and plain at the remaining junctions), plain
+  occurrences vote plain everywhere.  The trie lets ``_ngram_refine``
+  hyphenate unseen surfaces where the local convention is unambiguous.
+  """
+  tables = {}
+  for joined_key, votes in split_votes.items():
+    for form, n in votes.items():
+      joined, pos = _form_positions(form)
+      if joined != joined_key:
+        continue
+      posset = set(pos)
+      L = len(joined)
+      for p in range(1, L):
+        _ngram_add(tables, joined, p, p in posset, n)
+  for tok, n in plain_counts.items():
+    for p in range(1, len(tok)):
+      _ngram_add(tables, tok, p, False, n)
+  entries = []
+  for key, (ns, nn) in tables.items():
+    entries.append((key, (min(ns, 0xFFFFFFFF), min(nn, 0xFFFFFFFF))))
+  trie = marisa_trie.RecordTrie("II", entries)
+  os.makedirs(_DATA_DIR, exist_ok=True)
+  tmp = _RA_NGRAM_TRIE_PATH + ".tmp"
+  trie.save(tmp)
+  os.replace(tmp, _RA_NGRAM_TRIE_PATH)
+  return trie
+
+
 def _build_ra_trie(smap, base_layers):
   """Words + stems from the rAmAnujIya prastuti corpus -> ``rAmAnujIya.trie``.
 
@@ -570,22 +659,23 @@ def rebuild_dcs_trie():
 
 
 def rebuild_ra_trie():
-  """Force-rebuild ``data/vocabulary/sanskrit/rAmAnujIya{,-splits}.trie``
+  """Force-rebuild ``data/vocabulary/sanskrit/rAmAnujIya{,-splits,-ngram}.trie``
   from the sources declared in
   ``data/vocabulary/sanskrit/rAmAnujIya-sources.toml``."""
-  global _TRIE_RA, _TRIE_RA_FORMS, _LAYERED
+  global _TRIE_RA, _TRIE_RA_FORMS, _TRIE_RA_NGRAM, _LAYERED
   _load_words()
   layers = (_TRIE, _TRIE_DCS)
   _TRIE_RA = _WordTrie(_build_ra_trie(_get_scheme_map(), layers))
   counts, split_votes, plain_counts = _extract_ra_corpus()
   _TRIE_RA_FORMS = _build_ra_forms_trie(split_votes, plain_counts)
+  _TRIE_RA_NGRAM = _build_ra_ngram_trie(split_votes, plain_counts)
   _LAYERED = None
   _invalidate_trie_caches()
   return _TRIE_RA
 
 
 def _load_words():
-  global _TRIE, _TRIE_DCS, _TRIE_RA, _TRIE_RA_FORMS, _LAYERED
+  global _TRIE, _TRIE_DCS, _TRIE_RA, _TRIE_RA_FORMS, _TRIE_RA_NGRAM, _LAYERED
   if _LAYERED is not None:
     return _LAYERED
   smap = _get_scheme_map()
@@ -619,10 +709,18 @@ def _load_words():
   else:
     _, split_votes, plain_counts = _extract_ra_corpus()
     rt_forms = _build_ra_forms_trie(split_votes, plain_counts)
+  if (os.path.exists(_RA_NGRAM_TRIE_PATH)
+      and os.path.getmtime(_RA_NGRAM_TRIE_PATH) >= ra_mtime):
+    rt_ngram = marisa_trie.RecordTrie("II")
+    rt_ngram.load(_RA_NGRAM_TRIE_PATH)
+  else:
+    _, split_votes, plain_counts = _extract_ra_corpus()
+    rt_ngram = _build_ra_ngram_trie(split_votes, plain_counts)
   _TRIE = _WordTrie(rt_words)
   _TRIE_DCS = _WordTrie(rt_dcs)
   _TRIE_RA = _WordTrie(rt_ra)
   _TRIE_RA_FORMS = rt_forms
+  _TRIE_RA_NGRAM = rt_ngram
   _LAYERED = _LayeredWords(_TRIE, _TRIE_DCS, _TRIE_RA)
   return _LAYERED
 
@@ -1807,6 +1905,112 @@ def _hyphenate_hk_token_uncached(hk):
 _DEV_DISJ_RE = regex.compile(r"(?<=[\u0915-\u0939]\u094d)(?=[\u0905-\u0914])")
 
 
+def _ngram_cell(wleft, wright):
+  """Longest *attested* junction context: ``((ns, nn), k, kmax)`` or None.
+
+  ``wleft``/``wright`` are the surface letters adjacent to the junction (the
+  caller passes at most ``_RA_NGRAM_MAX_K`` each side).  The longest context
+  present in the trie decides - an attested negative context (e.g.
+  ``कान|विध`` against the tempting ``ान|वि``) blocks the shorter, noisier
+  context.  ``k < kmax`` marks a backoff to a shorter context.
+  """
+  _load_words()
+  trie = _TRIE_RA_NGRAM
+  if trie is None:
+    return None
+  kmax = min(_RA_NGRAM_MAX_K, len(wleft), len(wright))
+  for k in range(kmax, 0, -1):
+    vals = trie.get(("%s\x1f%s" % (wleft[-k:], wright[:k])).encode("utf-8"))
+    if vals:
+      return vals[0], k, kmax
+  return None
+
+
+def _ngram_votes_hyphen(wleft, wright):
+  """True when the corpus hyphenates this junction unambiguously.
+
+  Requires at least 2 split occurrences per plain one; a backoff to a
+  shorter-than-available context additionally needs ``_RA_NGRAM_MIN_SUPPORT``
+  instances (one-off witnesses like ``विपरीत|व्याप्तो`` must not generalise
+  to ``ग्रहीतव्यः``).
+  """
+  hit = _ngram_cell(wleft, wright)
+  if hit is None:
+    return False
+  (ns, nn), k, kmax = hit
+  if k < kmax and ns + nn < _RA_NGRAM_MIN_SUPPORT:
+    return False
+  return ns >= _RA_NGRAM_MIN_SPLITS and ns >= _RA_NGRAM_RATIO * nn
+
+
+def _ngram_refine(word, hk, out):
+  """Add corpus-attested hyphens to a generic DP result.
+
+  At every junction the DP did not split, a hyphen is added when the corpus's
+  local letter context votes for a cut; a space separator is upgraded to a
+  hyphen when the same evidence holds.  Merger vetoes from ``is_veto_split``
+  apply unchanged, and nothing is ever merged back.
+  """
+  if _TRIE_RA_NGRAM is None:
+    _load_words()
+    if _TRIE_RA_NGRAM is None:
+      return out
+  if len(word) < 4:
+    return out
+  if out.replace("-", "").replace(" ", "") != word:
+    # The DP re-expanded a sandhi joint (tadvad eva for tadvadeva): the two
+    # outputs live in different coordinate systems - leave it alone.
+    return out
+  if has_global_merger(hk):
+    # Non-separable merger chains (svaprakAzAdvitIya) are absolute-veto
+    # tokens: never touch them, even at non-merger junctions.
+    return out
+  cuts = {}
+  pos = 0
+  for ch in out:
+    if ch in ("-", " "):
+      cuts[pos] = ch
+    else:
+      pos += 1
+  K = _RA_NGRAM_MAX_K
+  changed = False
+  for p in range(1, len(word)):
+    if unicodedata.category(word[p]) in ("Mn", "Mc"):
+      continue  # a cut may not precede a dependent sign (mAtrA/virama)
+    sep = cuts.get(p)
+    if sep == "-":
+      continue
+    wleft, wright = word[max(0, p - K):p], word[p:p + K]
+    if not _ngram_votes_hyphen(wleft, wright):
+      continue
+    try:
+      pre = sanscript.transliterate(word[:p], sanscript.DEVANAGARI,
+                                    sanscript.HK)
+    except Exception:
+      continue
+    if not pre or not hk.startswith(pre):
+      continue
+    if is_veto_split(hk, len(pre)):
+      continue
+    cuts[p] = "-"
+    if sep != "-":
+      changed = True
+  if not changed:
+    return out
+  pieces, seps = [], []
+  start = 0
+  for p in sorted(cuts):
+    pieces.append(word[start:p])
+    seps.append(cuts[p])
+    start = p
+  pieces.append(word[start:])
+  out = [pieces[0]]
+  for s, p in zip(seps, pieces[1:]):
+    out.append(s)
+    out.append(p)
+  return "".join(out)
+
+
 def hyphenate_word(word):
   """Hyphenate a single Devanagari word (no spaces). Idempotent."""
   if not word or len(word) < 2:
@@ -1833,19 +2037,21 @@ def hyphenate_word(word):
     return word
   hyph_hk = _hyphenate_hk_token(hk)
   if hyph_hk == hk:
-    return word
-  parts = regex.split(r"([ \-])", hyph_hk)
-  out = []
-  for pt in parts:
-    if pt in (" ", "-") or pt == "":
-      out.append(pt)
-    else:
-      try:
-        out.append(sanscript.transliterate(pt, sanscript.HK,
-                                           sanscript.DEVANAGARI))
-      except Exception:
-        out.append(pt)
-  return "".join(out)
+    out = word
+  else:
+    parts = regex.split(r"([ \-])", hyph_hk)
+    out_parts = []
+    for pt in parts:
+      if pt in (" ", "-") or pt == "":
+        out_parts.append(pt)
+      else:
+        try:
+          out_parts.append(sanscript.transliterate(pt, sanscript.HK,
+                                                   sanscript.DEVANAGARI))
+        except Exception:
+          out_parts.append(pt)
+    out = "".join(out_parts)
+  return _ngram_refine(word, hk, out)
 
 
 _WORD_RE = regex.compile(r"[ऀ-ॣऽ]+")

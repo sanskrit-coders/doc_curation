@@ -3,7 +3,10 @@
 #
 #   rAmAnujIya.trie         - words + stems harvested from these sources;
 #   rAmAnujIya-splits.trie  - the corpus's own prastuti segmentations
-#                             (joined surface -> hyphenated form).
+#                             (joined surface -> hyphenated form);
+#   rAmAnujIya-ngram.trie   - junction letter-context counts from the same
+#                             segmentations (longest attested context
+#                             decides; >=2:1 hyphens wins a junction).
 #
 # A source path is a .md file or a directory (walked recursively for *.md).
 # Files named ``_index.md`` are never ingested.  Sources are listed
