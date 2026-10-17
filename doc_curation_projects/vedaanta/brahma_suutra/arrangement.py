@@ -60,5 +60,5 @@ if __name__ == '__main__':
   # library.apply_function(fn=metadata_helper.set_filename_from_title, dir_path=ref_dir, skip_dirs=False, source_script=sanscript.DEVANAGARI, overwrite=True, dry_run=False)
   # library.apply_function(fn=metadata_helper.set_title_from_filename, dir_path=ref_dir, overwrite=True, dry_run=False)
 
-  # metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/40a-yatiH_maNi-pravALa-dIpikA", ref_dir=ref_dir, sub_path_id_maker=lambda x: os.path.basename(x), dry_run=True)
-  adhikaraNa_sAra()
+  metadata_helper.copy_metadata_and_filename(dest_dir="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shruta-prakAshikA/mUlam_rA", ref_dir=ref_dir, sub_path_id_maker=lambda x: os.path.basename(x), dry_run=True)
+  # adhikaraNa_sAra()

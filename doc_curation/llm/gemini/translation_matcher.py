@@ -51,8 +51,8 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
   :param start_file: basename to start from; ``None`` starts first.
   :param end_file: basename to stop at (inclusive); ``None`` runs to the
     last file.
-  :param end_after: distinctive phrase from the last in-scope unit,
-    matched locally (no LLM); the stream truncates after its unit.
+  :param end_after: distinctive phrase or regex from the last in-scope
+    unit, matched locally (no LLM); the stream truncates after its match.
   :return: dict summary (sentences, paragraphs, notes, empty, skipped,
     files).
   """

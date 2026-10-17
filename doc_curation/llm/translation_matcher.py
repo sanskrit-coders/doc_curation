@@ -484,34 +484,44 @@ def _match_end_anchor(words, end_after):
   """Exclusive end word-count of the stream for an ``end_after`` anchor.
 
   The anchor is a distinctive phrase from the last in-scope stretch
-  (any script: verse fragment, section heading, colophon echo),
-  matched locally by substring search on the canonical word-joined
-  text — no LLM, no domain knowledge in code.  The stream truncates at
-  the next word boundary after the anchor.  Zero or multiple matches
-  raise ValueError (fail-stop: callers pass a longer anchor).
+  (any script: verse fragment, section heading, colophon echo), treated
+  as a **regex** and matched locally on the canonical word-joined text —
+  no LLM, no domain knowledge in code.  Plain phrases work unchanged
+  (they match themselves); patterns like ``r"Here terminates .+?\\."``
+  are supported.  Matching is case-sensitive first, then case-insensitive
+  (mirroring the previous behaviour).  The stream truncates at the next
+  word boundary after the match.  Empty / zero / multiple matches raise
+  ValueError (fail-stop: callers pass a more specific pattern).
   """
   anchor = (end_after or "").strip()
   if not anchor:
     raise ValueError("end_after anchor is empty")
   text = " ".join(words)
-  hits = [m.start() for m in regex.finditer(regex.escape(anchor), text)]
-  if not hits:
-    folded, want = text.casefold(), anchor.casefold()
-    hits = [m.start() for m in regex.finditer(regex.escape(want), folded)]
-    # Casefolding can shift offsets for exotic scripts; the advance to
-    # the next whitespace below absorbs small shifts (Latin/Devanagari
-    # folds are length-preserving).
-  if not hits:
+
+  def _find(flags):
+    try:
+      pattern = regex.compile(anchor, flags)
+    except regex.error as e:
+      raise ValueError(
+        f"end_after pattern {end_after!r} is not a valid regex: {e}") from e
+    return list(pattern.finditer(text))
+
+  matches = _find(0)
+  if not matches:
+    matches = _find(regex.IGNORECASE)
+  if not matches:
     raise ValueError(
-      f"end_after anchor {end_after!r} matches nowhere "
+      f"end_after pattern {end_after!r} matches nowhere "
       f"(stream has {len(words)} words)")
-  if len(hits) > 1:
+  if len(matches) > 1:
     preview = "; ".join(
-      f"word~{len(text[:h].split(' '))}: {text[h:h + 60]!r}" for h in hits[:5])
+      f"word~{len(text[:m.start()].split(' '))}: {text[m.start():m.start() + 60]!r}"
+      for m in matches[:5])
     raise ValueError(
-      f"end_after anchor {end_after!r} matches {len(hits)} places "
-      f"({preview}); pass a longer, unambiguous anchor")
-  h = hits[0] + len(anchor)
+      f"end_after pattern {end_after!r} matches {len(matches)} places "
+      f"({preview}); pass a more specific pattern")
+  match = matches[0]
+  h = match.end()
   gap = regex.search(r"\s", text[h:])
   cut = len(text) if gap is None else h + gap.start()
   return len(text[:cut].split(" ")) if text[:cut].strip() else 0
@@ -875,10 +885,11 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
     last file.  Use when the md file's scope ends before the directory
     does, so the final batch is not forced to swallow foreign tail
     material (e.g. later sūtras for a later adhikaraṇa file).
-  :param end_after: distinctive phrase from the last in-scope
-    stretch (any script), matched locally by substring search on the
-    word-joined text; the stream truncates at the next word boundary
-    after it.  Refines ``end_file`` when the scope ends mid-file.  Zero/multiple matches raise
+  :param end_after: distinctive phrase or **regex** from the last
+    in-scope stretch (any script), matched locally (case-sensitive then
+    case-insensitive) on the word-joined text; the stream truncates at
+    the next word boundary after the match.  Refines ``end_file`` when
+    the scope ends mid-file.  Empty/zero/multiple matches raise
     ValueError (fail-stop); ``None`` consumes to the end of ``end_file``.
   :param generate_fn: ``fn(prompt_text) -> str``.
   :param dry_run: map everything but write nothing (no md, tag, or
