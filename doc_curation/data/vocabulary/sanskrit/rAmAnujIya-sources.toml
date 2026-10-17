@@ -6,7 +6,10 @@
 #                             (joined surface -> hyphenated form);
 #   rAmAnujIya-ngram.trie   - junction letter-context counts from the same
 #                             segmentations (longest attested context
-#                             decides; >=2:1 hyphens wins a junction).
+#                             decides; >=2:1 hyphens wins a junction);
+#   rAmAnujIya-surfaces.trie - hyphen pieces + plain tokens (halant-final
+#                             pieces must be corpus surfaces: सर्व्/अपास्/
+#                             तसम् style dictionary husks are vetoed).
 #
 # A source path is a .md file or a directory (walked recursively for *.md).
 # Files named ``_index.md`` are never ingested.  Sources are listed

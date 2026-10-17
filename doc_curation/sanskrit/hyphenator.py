@@ -77,7 +77,11 @@ layered as
   corpus (longest context decides; >=2:1 attested hyphenation).  On a memo
   miss it refines the DP result: adds corpus-attested hyphens
   (``आकाशादि-विशेष-शब्दैर्``) and prefers ``-`` over `` `` at joints the
-  corpus hyphenates (``जगत्-कारणे``).
+  corpus hyphenates (``जगत्-कारणे``);
+* ``rAmAnujIya-surfaces.trie`` - the corpus's hyphen pieces + plain tokens.
+  A halant-final piece taken as a dictionary word or inferred stem
+  (``सर्व्`` = √सर्व्, ``अपास्``, ``तसम्``) is vetoed unless the corpus
+  itself uses that surface.
 
 Already-hyphenated compounds are left untouched (pieces adjacent to ``-`` are
 not re-processed), so running on pre-split प्रस्तुति-style text is safe.
@@ -110,6 +114,7 @@ _DCS_TRIE_PATH = os.path.join(_DATA_DIR, "dcs-frequency.trie")
 _RA_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya.trie")
 _RA_FORMS_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-splits.trie")
 _RA_NGRAM_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-ngram.trie")
+_RA_SURFACES_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-surfaces.trie")
 _RA_SOURCES_TOML = os.path.join(_DATA_DIR, "rAmAnujIya-sources.toml")
 
 _RA_BOOST = 20
@@ -136,6 +141,7 @@ _TRIE_DCS = None
 _TRIE_RA = None
 _TRIE_RA_FORMS = None
 _TRIE_RA_NGRAM = None
+_TRIE_RA_SURFACES = None
 _LAYERED = None
 
 
@@ -234,8 +240,32 @@ def _dcs_tier(total):
   return 1
 
 
+def _dcs_label_is_vedic(label):
+  """Whether a DCS source label names Vedic (brAhmaNa/upaniSad/mantra era)
+  literature.  Classical sources (mahAbhArata, purANa, kAvya, Ayurveda,
+  tAntra, ...) are of course never Vedic here."""
+  if label in _DCS_VEDIC_LABELS:
+    return True
+  return label.endswith(_DCS_VEDIC_SUFFIXES)
+
+
+_DCS_VEDIC_LABELS = frozenset([
+    "Brahmana", "Upanishad", "Mantra", "Dharmasutra", "Grhyasutra",
+    "Nirukta", "गोपथब्राह्मण", "शतपथब्राह्मण", "ऋग्वेदवेदाङ्गज्योतिष",
+    "निरुक्त", "लगध", "सायणमाधवाचार्य", "कौशिकसूत्र",
+    "कौशिकसूत्रदारिलभाष्य",
+])
+_DCS_VEDIC_SUFFIXES = ("ब्राह्मण", "उपनिषद्", "उपनिषत्", "धर्मसूत्र",
+                       "गृह्यसूत्र")
+
+
 def _parse_dcs(smap):
-  """Headword -> total corpus frequency from the DCS frequency babylon."""
+  """Headword -> total corpus frequency from the DCS frequency babylon.
+
+  Vedic-only headwords are excluded: forms attested exclusively in the
+  brAhmaNa/upaniSad/mantra layer (e.g. the aorists ``अदधि``, ``अध्याभू``)
+  are not admissible evidence for classical-sanskrit split decisions.
+  """
   if not os.path.exists(_DCS_BABYLON):
     return {}
   try:
@@ -255,6 +285,11 @@ def _parse_dcs(smap):
       continue
     m = regex.search(r"Total:\s*(\d+)", block)
     if not m:
+      continue
+    labels = [l.strip() for l in
+              regex.findall(r"([^\n<>\-]+?)\s*-\s*\d+<BR>",
+                            block.replace("<BR><BR>", "\n")) if l.strip()]
+    if labels and not any(not _dcs_label_is_vedic(l) for l in labels):
       continue
     try:
       hk = sanscript.transliterate(head, scheme_map=smap)
@@ -549,6 +584,35 @@ def _build_ra_ngram_trie(split_votes, plain_counts):
   return trie
 
 
+def _build_ra_surfaces_trie(counts, plain_counts, smap):
+  """Corpus surface tokens (hyphen pieces + unhyphenated tokens) -> trie.
+
+  The prastuti convention's own vocabulary of *surfaces*: this is what may
+  be carved as a halant-final piece (``तद्``, ``जगत्``, ``फलम्``,
+  ``शब्दैर्``).  Dictionary root entries (``सर्व्``), exotic headwords
+  (``अपास्``) and stem inferences (``तसम्``) that never surface in the
+  corpus as such are vetoed instead.
+  """
+  merged = {}
+  for table in (counts, plain_counts):
+    for dev, n in table.items():
+      merged[dev] = merged.get(dev, 0) + n
+  entries = []
+  for dev, n in merged.items():
+    try:
+      hk = sanscript.transliterate(dev, scheme_map=smap)
+    except Exception:
+      continue
+    if hk:
+      entries.append((hk, (min(n, 0xFFFF),)))
+  trie = marisa_trie.RecordTrie("H", entries)
+  os.makedirs(_DATA_DIR, exist_ok=True)
+  tmp = _RA_SURFACES_TRIE_PATH + ".tmp"
+  trie.save(tmp)
+  os.replace(tmp, _RA_SURFACES_TRIE_PATH)
+  return trie
+
+
 def _build_ra_trie(smap, base_layers):
   """Words + stems from the rAmAnujIya prastuti corpus -> ``rAmAnujIya.trie``.
 
@@ -634,7 +698,8 @@ def _invalidate_trie_caches():
   for c in (_CACHE_CORE, _CACHE_RELIABLE, _CACHE_STEM, _CACHE_STEM_PIECE,
             _CACHE_STEM_BASE_PIECE, _CACHE_YAN_LEFT, _CACHE_TOKEN,
             _CACHE_VIS_RESTORE, _CACHE_YAN_RESTORE, _CACHE_WITNESS,
-            _CACHE_RA_FORM, _CACHE_MEMO_PIECE, _CACHE_MEMO_SEPS):
+            _CACHE_RA_FORM, _CACHE_MEMO_PIECE, _CACHE_MEMO_SEPS,
+            _CACHE_SURFACE):
     c.clear()
 
 
@@ -659,23 +724,25 @@ def rebuild_dcs_trie():
 
 
 def rebuild_ra_trie():
-  """Force-rebuild ``data/vocabulary/sanskrit/rAmAnujIya{,-splits,-ngram}.trie``
-  from the sources declared in
+  """Force-rebuild the ``rAmAnujIya*`` tries from the sources declared in
   ``data/vocabulary/sanskrit/rAmAnujIya-sources.toml``."""
-  global _TRIE_RA, _TRIE_RA_FORMS, _TRIE_RA_NGRAM, _LAYERED
+  global _TRIE_RA, _TRIE_RA_FORMS, _TRIE_RA_NGRAM, _TRIE_RA_SURFACES, _LAYERED
   _load_words()
   layers = (_TRIE, _TRIE_DCS)
   _TRIE_RA = _WordTrie(_build_ra_trie(_get_scheme_map(), layers))
   counts, split_votes, plain_counts = _extract_ra_corpus()
   _TRIE_RA_FORMS = _build_ra_forms_trie(split_votes, plain_counts)
   _TRIE_RA_NGRAM = _build_ra_ngram_trie(split_votes, plain_counts)
+  _TRIE_RA_SURFACES = _build_ra_surfaces_trie(counts, plain_counts,
+                                              _get_scheme_map())
   _LAYERED = None
   _invalidate_trie_caches()
   return _TRIE_RA
 
 
 def _load_words():
-  global _TRIE, _TRIE_DCS, _TRIE_RA, _TRIE_RA_FORMS, _TRIE_RA_NGRAM, _LAYERED
+  global _TRIE, _TRIE_DCS, _TRIE_RA, _TRIE_RA_FORMS, _TRIE_RA_NGRAM, \
+      _TRIE_RA_SURFACES, _LAYERED
   if _LAYERED is not None:
     return _LAYERED
   smap = _get_scheme_map()
@@ -716,11 +783,19 @@ def _load_words():
   else:
     _, split_votes, plain_counts = _extract_ra_corpus()
     rt_ngram = _build_ra_ngram_trie(split_votes, plain_counts)
+  if (os.path.exists(_RA_SURFACES_TRIE_PATH)
+      and os.path.getmtime(_RA_SURFACES_TRIE_PATH) >= ra_mtime):
+    rt_surfaces = marisa_trie.RecordTrie("H")
+    rt_surfaces.load(_RA_SURFACES_TRIE_PATH)
+  else:
+    counts, _, plain_counts = _extract_ra_corpus()
+    rt_surfaces = _build_ra_surfaces_trie(counts, plain_counts, smap)
   _TRIE = _WordTrie(rt_words)
   _TRIE_DCS = _WordTrie(rt_dcs)
   _TRIE_RA = _WordTrie(rt_ra)
   _TRIE_RA_FORMS = rt_forms
   _TRIE_RA_NGRAM = rt_ngram
+  _TRIE_RA_SURFACES = rt_surfaces
   _LAYERED = _LayeredWords(_TRIE, _TRIE_DCS, _TRIE_RA)
   return _LAYERED
 
@@ -743,6 +818,31 @@ def _ra_split_form(dev_word):
 
 def _count_of(hk):
   return _load_words().count(hk)
+
+
+def _halant_final(hk_piece):
+  """True when the piece renders with a final consequent virama (bare
+  consonant): ``tad``, ``jagat``, ``phalam``, ``sarv``.  Visarga (``H``),
+  anusvAra (``M``), vowels and avagraha do not count."""
+  if not hk_piece:
+    return False
+  ch = hk_piece[-1]
+  if ch in _VOWELS or ch in ("H", "M", "'"):
+    return False
+  return ch.isalpha()
+
+
+def _surface_attested(hk_piece):
+  """Corpus (hyphen pieces + plain tokens) attests this exact surface."""
+  _load_words()
+  trie = _TRIE_RA_SURFACES
+  if trie is None:
+    return True  # no corpus data loaded: do not veto
+  hit = _CACHE_SURFACE.get(hk_piece)
+  if hit is None:
+    hit = hk_piece in trie
+    _CACHE_SURFACE[hk_piece] = hit
+  return hit
 
 
 def _prefix_in_dict(s):
@@ -922,6 +1022,7 @@ _CACHE_WITNESS = {}
 _CACHE_RA_FORM = {}
 _CACHE_MEMO_PIECE = {}
 _CACHE_MEMO_SEPS = {}
+_CACHE_SURFACE = {}
 
 
 def _memo_form_seps(form):
@@ -1722,6 +1823,14 @@ def _segment(hk, strict):
         if base:
           under = base
       if kind != "memo" and not _piece_reliable(piece, kind, under):
+        continue
+      # An internal halant-final piece (dictionary "exact" or inferred
+      # "stem") must be a surface the corpus itself uses: root entries
+      # (सर्व् = √सर्व्), exotic headwords (अपास्) and stem husks (तसम्)
+      # are impossible padas.  Restore-based kinds (visarga/yan/...,
+      # दुष्प्रकृतेर् -> दुष्प्रकृतेः) keep their own witnesses.
+      if (j < m and kind in ("exact", "stem") and _halant_final(piece)
+          and not _surface_attested(piece)):
         continue
       if j < m and under in _AVYAYAS and kind == "exact" and len(piece) <= 3:
         continue

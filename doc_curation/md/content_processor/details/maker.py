@@ -301,4 +301,5 @@ def non_detail_parts_to_detail(content, title, attributes_str=""):
 
 
 if __name__ == '__main__':
+  pass
   library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/07_antaradhikaraNam.md", content_transformer=lambda c, *args, **kwargs: generic_sanskrit_vipra_mUla(c))
