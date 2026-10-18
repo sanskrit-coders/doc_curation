@@ -82,6 +82,18 @@ layered as
   A halant-final piece taken as a dictionary word or inferred stem
   (``सर्व्`` = √सर्व्, ``अपास्``, ``तसम्``) is vetoed unless the corpus
   itself uses that surface.
+* ``rAmAnujIya-seps.trie`` - separator memory: for every junction of every
+  hyphenated corpus token, votes for ``-`` (a within-samAsa joint) versus
+  ``–`` (the boundary between upapadas of a samAsa where the upapadas are
+  themselves samAsas; spelled ``--`` in older text, sometimes with a space
+  between the dashes in very long chains, and normalised to the preferred
+  ``–``).  Dash-dominant junctions render with ``–``; memoised forms keep
+  the corpus's own separators verbatim (``_memo_form_seps``).
+* ``rAmAnujIya-badsplits.trie`` - negative split memory: junction contexts
+  the analyzer, run over the corpus with the memo bypassed, cuts where the
+  corpus keeps the text whole (or cuts where the corpus form cuts
+  elsewhere).  Evidence >= ``_RA_BADSPLITS_MIN`` vetoes a boundary the
+  corpus n-gram does not sanction, weaker evidence only penalises it.
 
 Already-hyphenated compounds are left untouched (pieces adjacent to ``-`` are
 not re-processed), so running on pre-split प्रस्तुति-style text is safe.
@@ -115,6 +127,8 @@ _RA_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya.trie")
 _RA_FORMS_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-splits.trie")
 _RA_NGRAM_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-ngram.trie")
 _RA_SURFACES_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-surfaces.trie")
+_RA_BADSPLITS_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-badsplits.trie")
+_RA_SEPS_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-seps.trie")
 _RA_SOURCES_TOML = os.path.join(_DATA_DIR, "rAmAnujIya-sources.toml")
 
 _RA_BOOST = 20
@@ -125,6 +139,27 @@ _RA_NGRAM_MAX_K = 3
 _RA_NGRAM_MIN_SPLITS = 1
 _RA_NGRAM_MIN_SUPPORT = 3  # required when backing off to a shorter context
 _RA_NGRAM_RATIO = 2  # splits >= ratio * plains
+
+# Negative split memory (``_build_ra_badsplits``): junction letter contexts
+# of splits the analyzer itself produced over surfaces the corpus never splits
+# that way.  Longest attested context decides; >= _RA_BADSPLITS_MIN evidence
+# vetoes a boundary, weaker evidence only costs _RA_BADSPLITS_UNIT per unit.
+_RA_BADSPLITS_MAX_K = 3
+_RA_BADSPLITS_MIN = 2
+_RA_BADSPLITS_UNIT = 4
+# The piece ending at a cut is only policed up to this length: beyond the
+# scoring horizon a "piece" is just an unsplit sponge, not a shard to veto.
+_RA_BADSPLITS_MAX_PIECE = 20
+
+# Separator glyphs in prastuti-style text: '-' is a within-samAsa joint,
+# '–' (spelled '--' in older corpus text; preferred over it) separates
+# upapadas of a samAsa where the upapadas themselves are samAsas - long
+# chains may write it with a space between the dashes ("भूत-- -जड"), and
+# ' ' separates padas outright.
+_SEP_SPLIT_RE = regex.compile(r"[-–—]+")
+_SEP_CAPTURE_RE = regex.compile(r"([-–—]+)")
+_RENDER_SPLIT_RE = regex.compile(r"([ \-–—])")
+_SEP_GLYPHS = (" ", "-", "–", "—")
 
 _SEED_WORDS = (
     "ca", "vA", "hi", "tu", "api", "iti", "eva", "evam", "iva",
@@ -142,6 +177,8 @@ _TRIE_RA = None
 _TRIE_RA_FORMS = None
 _TRIE_RA_NGRAM = None
 _TRIE_RA_SURFACES = None
+_TRIE_BADSPLITS = None
+_TRIE_SEPS = None
 _LAYERED = None
 
 
@@ -424,9 +461,12 @@ def _extract_ra_corpus():
     for body in _ra_file_bodies(text, src["included_details"]):
       body = _ANNO_RE.sub(" ", body)
       body = regex.sub(r"<[^>]*>", " ", body)
-      # line-seam "- -" (pada boundary): treat as a plain joint so that the
-      # joined surface of the whole chain is recorded.
-      body = regex.sub(r"[-–—]\s+[-–—]", "-", body)
+      # Space-separated dashes ("भूत-- -जड", "रूप- -सत्त्व"): the upapada
+      # separator of a very long samAsa, written with an inner space for
+      # readability.  The junction keeps its dash class - normalise to the
+      # preferred "--" glyph so the joined surface is recorded and the seps
+      # builder votes '–' there.
+      body = regex.sub(r"[-–—]+\s+[-–—]+", "--", body)
       # "X-+V" editor junctions over a merged mUla: merge final a/ā with
       # the following independent vowel (…अनुरूप-+एक… = …अनुरूपैक…).
       body = regex.sub(
@@ -439,7 +479,7 @@ def _extract_ra_corpus():
         tok = raw.strip(_RA_EDGE)
         if not tok or _RA_ANNOT_RE.search(tok) or _RA_BAD_RE.search(tok):
           continue
-        pieces = tok.split("-")
+        pieces = _SEP_SPLIT_RE.split(tok)
         if len(pieces) > 1:
           joined = ""
           for p in pieces:
@@ -535,7 +575,7 @@ def _form_positions(form):
   positions are expressed in the joined surface's own coordinates.  A
   boundary absorbed by such a merge has no surface position and is dropped.
   """
-  pieces = form.split("-")
+  pieces = _SEP_SPLIT_RE.split(form)
   joined = ""
   pos = []
   for i, p in enumerate(pieces):
@@ -584,7 +624,7 @@ def _build_ra_ngram_trie(split_votes, plain_counts):
   return trie
 
 
-def _build_ra_surfaces_trie(counts, plain_counts, smap):
+def _build_ra_surfaces_trie(counts, plain_counts, split_votes, smap):
   """Corpus surface tokens (hyphen pieces + unhyphenated tokens) -> trie.
 
   The prastuti convention's own vocabulary of *surfaces*: this is what may
@@ -592,11 +632,23 @@ def _build_ra_surfaces_trie(counts, plain_counts, smap):
   ``शब्दैर्``).  Dictionary root entries (``सर्व्``), exotic headwords
   (``अपास्``) and stem inferences (``तसम्``) that never surface in the
   corpus as such are vetoed instead.
+
+  A piece that the corpus itself uses as the left member of a join with an
+  inflected (e/o) final - ``गणे-श्वरम्``, ``पङ्के-रुह`` - is marked with
+  bit 0x8000: those, and only those, may take a samAsa cut after an e/o
+  final (``लोके-ष्विदं`` style case-form joins are vetoed).
   """
   merged = {}
   for table in (counts, plain_counts):
     for dev, n in table.items():
       merged[dev] = merged.get(dev, 0) + n
+  joined_lefts = set()
+  for forms in split_votes.values():
+    for form in forms:
+      parts = _SEP_SPLIT_RE.split(form)
+      for pc in parts[:-1]:
+        if pc.endswith(("\u0947", "\u094b")):
+          joined_lefts.add(pc)
   entries = []
   for dev, n in merged.items():
     try:
@@ -604,7 +656,8 @@ def _build_ra_surfaces_trie(counts, plain_counts, smap):
     except Exception:
       continue
     if hk:
-      entries.append((hk, (min(n, 0xFFFF),)))
+      val = min(n, 0x7FFF) | (0x8000 if dev in joined_lefts else 0)
+      entries.append((hk, (val,)))
   trie = marisa_trie.RecordTrie("H", entries)
   os.makedirs(_DATA_DIR, exist_ok=True)
   tmp = _RA_SURFACES_TRIE_PATH + ".tmp"
@@ -699,8 +752,185 @@ def _invalidate_trie_caches():
             _CACHE_STEM_BASE_PIECE, _CACHE_YAN_LEFT, _CACHE_TOKEN,
             _CACHE_VIS_RESTORE, _CACHE_YAN_RESTORE, _CACHE_WITNESS,
             _CACHE_RA_FORM, _CACHE_MEMO_PIECE, _CACHE_MEMO_SEPS,
-            _CACHE_SURFACE):
+            _CACHE_SURFACE, _CACHE_ELEFT, _CACHE_DICT, _CACHE_BAD, _CACHE_SEP):
     c.clear()
+
+
+def _bad_add(tables, lpiece, hk, cpos, weight):
+  """Record negative evidence for a cut at ``cpos`` of HK surface ``hk``:
+  the letter context around the cut plus the cut's left piece."""
+  kmax = min(_RA_BADSPLITS_MAX_K, cpos, len(hk) - cpos)
+  for k in range(2, kmax + 1):
+    key = "%s\x1f%s" % (hk[cpos - k:cpos], hk[cpos:cpos + k])
+    tables[key] = tables.get(key, 0) + weight
+
+
+def _build_ra_badsplits(split_votes, plain_counts, smap):
+  """Negative split memory -> ``rAmAnujIya-badsplits.trie``.
+
+  Runs the splitter itself (memo bypassed) over every corpus surface and
+  records the junctions where it disagrees with the corpus:
+
+  * a surface the corpus only ever writes plain - every junction the DP cut;
+  * a surface the corpus hyphenates - the junctions the DP cut that the
+    corpus form does not have.
+
+  Keys are junction letter contexts of the analyzer's own cuts.  Weights are
+  corpus occurrences (capped at 20).  ``_segment`` refuses a boundary whose
+  longest attested negative context carries >= ``_RA_BADSPLITS_MIN`` evidence
+  *and* where the corpus's own junction n-gram holds no split vote
+  (``_junction_ngram_plain``); weaker evidence is only a cost
+  (``_RA_BADSPLITS_UNIT`` per unit).  The cut's left piece must be
+  corpus-unattested and short (``_RA_BADSPLITS_MAX_PIECE``).
+  """
+  tables = {}
+
+  def to_hk(dev):
+    try:
+      hk = sanscript.transliterate(dev, scheme_map=smap)
+    except Exception:
+      return None
+    return hk or None
+
+  def cut_positions(hk_form):
+    pos, acc = [], ""
+    for ch in hk_form:
+      if ch in " -":
+        pos.append(len(acc))
+      else:
+        acc += ch
+    return acc, pos
+
+  def cut_pieces(hk_form):
+    """Pieces + their end-position: ([(piece, cpos), ...], joined-surface)."""
+    out, cur = [], ""
+    for ch in hk_form:
+      if ch in " -":
+        out.append(cur)
+        cur = ""
+      else:
+        cur += ch
+    out.append(cur)
+    pieces, cpos = [], 0
+    for pc in out[:-1]:
+      cpos += len(pc)
+      pieces.append((pc, cpos))
+    return pieces, "".join(out)
+
+  def mine(hk, weight, corpus_pos=()):
+    try:
+      out_hk = _hyphenate_hk_token(hk)
+    except Exception:
+      return
+    if out_hk == hk:
+      return
+    pieces, joined = cut_pieces(out_hk)
+    if joined != hk:
+      return  # transliteration drift: coordinates would not line up
+    for pc, cpos in pieces:
+      if cpos in corpus_pos:
+        continue
+      _bad_add(tables, pc, hk, cpos, weight)
+
+  for tok, n in plain_counts.items():
+    if tok in split_votes:
+      continue  # the corpus splits this surface elsewhere
+    hk = to_hk(tok)
+    if hk and len(hk) >= 3:
+      mine(hk, min(n, 20))
+  for tok, votes in split_votes.items():
+    hk = to_hk(tok)
+    if not hk or len(hk) < 3:
+      continue
+    form = max(votes.items(), key=lambda kv: (kv[1], -len(kv[0])))[0]
+    joined, dev_pos = _form_positions(form)
+    if joined != tok:
+      continue
+    hk_pos = set()
+    for p in dev_pos:
+      pre_hk = to_hk(joined[:p])
+      if pre_hk is None:
+        hk_pos = None
+        break
+      hk_pos.add(len(pre_hk))
+    if hk_pos is not None:
+      mine(hk, min(sum(votes.values()), 20), hk_pos)
+  entries = [(key, (min(w, 0xFFFF),)) for key, w in tables.items()]
+  trie = marisa_trie.RecordTrie("H", entries)
+  os.makedirs(_DATA_DIR, exist_ok=True)
+  tmp = _RA_BADSPLITS_TRIE_PATH + ".tmp"
+  trie.save(tmp)
+  os.replace(tmp, _RA_BADSPLITS_TRIE_PATH)
+  return trie
+
+
+def _sep_add(tables, hk, cpos, dash):
+  """Record one separator vote at a junction of HK surface ``hk``."""
+  kmax = min(_RA_NGRAM_MAX_K, cpos, len(hk) - cpos)
+  for k in range(2, kmax + 1):
+    key = "%s\x1f%s" % (hk[cpos - k:cpos], hk[cpos:cpos + k])
+    cell = tables.get(key)
+    if cell is None:
+      cell = tables[key] = [0, 0]
+    cell[1 if dash else 0] += 1
+
+
+def _build_ra_seps_trie(split_votes, smap):
+  """Corpus separator memory -> ``rAmAnujIya-seps.trie``.
+
+  Every internal junction of every hyphenated corpus token votes for its
+  separator class: ``-`` = a within-samAsa joint, ``–`` = the boundary
+  between upapadas of a samAsa where the upapadas are themselves samAsas
+  (spelled ``--`` in older text, sometimes with a space between the dashes
+  in very long chains; normalised to the preferred ``–``).  ``_sep``
+  consults the longest attested context - dash-dominant renders with ``–``;
+  a junction the corpus hyphenates keeps ``-``.
+  """
+  tables = {}
+  for tok, votes in split_votes.items():
+    try:
+      hk = sanscript.transliterate(tok, scheme_map=smap)
+    except Exception:
+      continue
+    if not hk or len(hk) < 4:
+      continue
+    for form in votes:
+      pieces, seps = [], []
+      for i, part in enumerate(_SEP_CAPTURE_RE.split(form)):
+        if i % 2 == 0:
+          if part:
+            pieces.append(part)
+        else:
+          seps.append(part)
+      seps = seps[:max(0, len(pieces) - 1)]
+      if len(pieces) < 2 or len(seps) != len(pieces) - 1:
+        continue
+      joined = pieces[0]
+      juncs = []
+      for sep, part in zip(seps, pieces[1:]):
+        if joined.endswith("\u094d") and part[:1] in _VOWEL_TO_MATRA:
+          joined = joined[:-1] + _VOWEL_TO_MATRA[part[:1]] + part[1:]
+          continue  # the boundary was absorbed by a sandhi merge
+        juncs.append((len(joined), sep))
+        joined += part
+      if joined != tok:
+        continue
+      for pos, sep in juncs:
+        try:
+          pre_hk = sanscript.transliterate(joined[:pos], scheme_map=smap)
+        except Exception:
+          break
+        if pre_hk:
+          dash = ("–" in sep) or ("—" in sep) or len(sep) > 1
+          _sep_add(tables, hk, len(pre_hk), dash)
+  entries = [("%s" % k, (min(h, 0xFFFFFFFF), min(d, 0xFFFFFFFF)))
+             for k, (h, d) in tables.items()]
+  trie = marisa_trie.RecordTrie("II", entries)
+  os.makedirs(_DATA_DIR, exist_ok=True)
+  tmp = _RA_SEPS_TRIE_PATH + ".tmp"
+  trie.save(tmp)
+  os.replace(tmp, _RA_SEPS_TRIE_PATH)
+  return trie
 
 
 def rebuild_word_trie():
@@ -726,7 +956,8 @@ def rebuild_dcs_trie():
 def rebuild_ra_trie():
   """Force-rebuild the ``rAmAnujIya*`` tries from the sources declared in
   ``data/vocabulary/sanskrit/rAmAnujIya-sources.toml``."""
-  global _TRIE_RA, _TRIE_RA_FORMS, _TRIE_RA_NGRAM, _TRIE_RA_SURFACES, _LAYERED
+  global _TRIE_RA, _TRIE_RA_FORMS, _TRIE_RA_NGRAM, _TRIE_RA_SURFACES, \
+      _TRIE_SEPS, _LAYERED
   _load_words()
   layers = (_TRIE, _TRIE_DCS)
   _TRIE_RA = _WordTrie(_build_ra_trie(_get_scheme_map(), layers))
@@ -734,7 +965,8 @@ def rebuild_ra_trie():
   _TRIE_RA_FORMS = _build_ra_forms_trie(split_votes, plain_counts)
   _TRIE_RA_NGRAM = _build_ra_ngram_trie(split_votes, plain_counts)
   _TRIE_RA_SURFACES = _build_ra_surfaces_trie(counts, plain_counts,
-                                              _get_scheme_map())
+                                              split_votes, _get_scheme_map())
+  _TRIE_SEPS = _build_ra_seps_trie(split_votes, _get_scheme_map())
   _LAYERED = None
   _invalidate_trie_caches()
   return _TRIE_RA
@@ -742,7 +974,7 @@ def rebuild_ra_trie():
 
 def _load_words():
   global _TRIE, _TRIE_DCS, _TRIE_RA, _TRIE_RA_FORMS, _TRIE_RA_NGRAM, \
-      _TRIE_RA_SURFACES, _LAYERED
+      _TRIE_RA_SURFACES, _TRIE_BADSPLITS, _TRIE_SEPS, _LAYERED
   if _LAYERED is not None:
     return _LAYERED
   smap = _get_scheme_map()
@@ -788,15 +1020,37 @@ def _load_words():
     rt_surfaces = marisa_trie.RecordTrie("H")
     rt_surfaces.load(_RA_SURFACES_TRIE_PATH)
   else:
-    counts, _, plain_counts = _extract_ra_corpus()
-    rt_surfaces = _build_ra_surfaces_trie(counts, plain_counts, smap)
+    counts, split_votes, plain_counts = _extract_ra_corpus()
+    rt_surfaces = _build_ra_surfaces_trie(counts, plain_counts, split_votes,
+                                          smap)
+  rt_bad = None
+  if (os.path.exists(_RA_BADSPLITS_TRIE_PATH)
+      and os.path.getmtime(_RA_BADSPLITS_TRIE_PATH) >= ra_mtime):
+    rt_bad = marisa_trie.RecordTrie("H")
+    rt_bad.load(_RA_BADSPLITS_TRIE_PATH)
+  if (os.path.exists(_RA_SEPS_TRIE_PATH)
+      and os.path.getmtime(_RA_SEPS_TRIE_PATH) >= ra_mtime):
+    rt_seps = marisa_trie.RecordTrie("II")
+    rt_seps.load(_RA_SEPS_TRIE_PATH)
+  else:
+    _, split_votes, _plain = _extract_ra_corpus()
+    rt_seps = _build_ra_seps_trie(split_votes, smap)
   _TRIE = _WordTrie(rt_words)
   _TRIE_DCS = _WordTrie(rt_dcs)
   _TRIE_RA = _WordTrie(rt_ra)
   _TRIE_RA_FORMS = rt_forms
   _TRIE_RA_NGRAM = rt_ngram
   _TRIE_RA_SURFACES = rt_surfaces
+  _TRIE_BADSPLITS = rt_bad
+  _TRIE_SEPS = rt_seps
   _LAYERED = _LayeredWords(_TRIE, _TRIE_DCS, _TRIE_RA)
+  if _TRIE_BADSPLITS is None:
+    # Mine the negative splits only now that every layer is active - the
+    # builder runs the splitter itself over the corpus (memo bypassed).
+    _invalidate_trie_caches()
+    _, split_votes, plain_counts = _extract_ra_corpus()
+    _TRIE_BADSPLITS = _build_ra_badsplits(split_votes, plain_counts, smap)
+    _invalidate_trie_caches()
   return _LAYERED
 
 
@@ -843,6 +1097,52 @@ def _surface_attested(hk_piece):
     hit = hk_piece in trie
     _CACHE_SURFACE[hk_piece] = hit
   return hit
+
+
+def _joined_left_attested(hk_piece):
+  """The corpus itself joins this inflected (e/o-final) piece to a following
+  member (``गणे-श्वरम्``, ``पङ्के-रुह``, ``मनो-बुद्धि``) - bit 0x8000."""
+  _load_words()
+  trie = _TRIE_RA_SURFACES
+  if trie is None:
+    return True
+  hit = _CACHE_ELEFT.get(hk_piece)
+  if hit is None:
+    rec = trie.get(hk_piece)
+    hit = bool(rec) and bool(rec[0][0] & 0x8000)
+    _CACHE_ELEFT[hk_piece] = hit
+  return hit
+
+
+def _dict_attested(dev_word):
+  """rAmAnujIya corpus or DCS dictionary contains this Devanagari word."""
+  hit = _CACHE_DICT.get(dev_word)
+  if hit is None:
+    _load_words()
+    try:
+      hk_word = sanscript.transliterate(dev_word, sanscript.DEVANAGARI,
+                                        sanscript.HK)
+    except Exception:
+      hk_word = None
+    hit = bool(hk_word) and (
+        hk_word in _TRIE_RA or (_TRIE_DCS is not None and hk_word in _TRIE_DCS))
+    _CACHE_DICT[dev_word] = hit
+  return hit
+
+
+def _junction_dict_ok(left, right):
+  """A new boundary must sit against real words: the left fragment must end
+  with a rAmAnujIya/DCS word (अनेकार्थ in शब्दस्यानेकार्थ) or the right one
+  must begin with one (शब्द in शब्दस्यानेकार्थ..., मध्ये itself)."""
+  n = min(len(left), 20)
+  for L in range(n, 3, -1):
+    if _dict_attested(left[-L:]):
+      return True
+  n = min(len(right), 20)
+  for L in range(n, 3, -1):
+    if _dict_attested(right[:L]):
+      return True
+  return False
 
 
 def _prefix_in_dict(s):
@@ -1023,26 +1323,29 @@ _CACHE_RA_FORM = {}
 _CACHE_MEMO_PIECE = {}
 _CACHE_MEMO_SEPS = {}
 _CACHE_SURFACE = {}
+_CACHE_ELEFT = {}
+_CACHE_DICT = {}
+_CACHE_BAD = {}
+_CACHE_SEP = {}
 
 
 def _memo_form_seps(form):
-  """(pieces, seps) of a memoised hyphenated form.
-
-  The granularity is the corpus's; separators are re-derived with ``_sep``
-  so that pada boundaries come out as spaces (the prastuti sometimes writes
-  them with ``-``).
-  """
+  """(pieces, seps) of a memoised hyphenated form, with the corpus's own
+  separator glyphs: ``-`` (within-pada joint) stays ``-``, while ``--`` /
+  ``–`` / ``—`` (a glued pada boundary) normalise to the preferred ``–``."""
   cached = _CACHE_MEMO_SEPS.get(form)
   if cached is not None:
     return cached
-  pieces = [p for p in regex.split(r"[- ]+", form) if p]
-  hks = []
-  for p in pieces:
-    try:
-      hks.append(sanscript.transliterate(p, sanscript.DEVANAGARI, sanscript.HK))
-    except Exception:
-      hks.append("")
-  seps = [_sep(a, b, a, b) for a, b in zip(hks, hks[1:])]
+  pieces, seps = [], []
+  for i, part in enumerate(_SEP_CAPTURE_RE.split(form)):
+    if i % 2 == 0:
+      if part:
+        pieces.append(part)
+    else:
+      seps.append("-" if part == "-" else "–")
+  seps = seps[:max(0, len(pieces) - 1)]
+  while len(seps) < len(pieces) - 1:
+    seps.append("-")
   res = (pieces, seps)
   _CACHE_MEMO_SEPS[form] = res
   return res
@@ -1082,15 +1385,50 @@ def _memo_piece_split(hk_piece):
   return res or None
 
 
+def _tight_merger_surface(hk):
+  """Two words joined by one merger, both with stardict/DCS backing.
+
+  The boosted rAmAnujIya count alone (often a single prastuti piece) does
+  not make a surface atomic: cenna is merely cet+na - a separable
+  assimilation surface - and must stay open to the DP, while nobhaya
+  (na + ubhaya) is a genuine tight merger."""
+  words = _load_words()
+  n = len(hk)
+  for p in range(1, n):
+    for mlen in (2, 1):
+      if p + mlen > n:
+        continue
+      mv = hk[p:p + mlen]
+      exps = _merger_exps(mv)
+      if not exps:
+        continue
+      if mlen == 1 and hk[p] not in "AIUeo":
+        continue
+      right_rest = hk[p + mlen:]
+      if not right_rest:
+        continue
+      for lv, rv in exps:
+        lu = hk[:p] + lv
+        ru = rv + right_rest
+        if lu in words and ru in words:
+          lw, ld, _r = words.layer_counts(lu)
+          rw, rd, _rr = words.layer_counts(ru)
+          if lw + ld > 0 and rw + rd > 0:
+            return True
+  return False
+
+
 def _core_valid(hk_piece, piece_mode=False):
   """Core validation (no upasarga strip, no length guard)."""
   words = _load_words()
   if hk_piece in words:
-    if (piece_mode and len(hk_piece) <= 4 and hk_piece[-1] in ("M", "m")
-        and hk_piece not in _PRONOUNS and hk_piece not in _AVYAYAS
-        and hk_piece not in _UPASARGAS):
-      # inflected shards like naM/vaM are not usable as split pieces
-      return (None, hk_piece)
+    if piece_mode and len(hk_piece) <= 4 and hk_piece[-1] in ("M", "m"):
+      # inflected shards like naM/vaM are not usable as split pieces - but
+      # the anusvAra spelling of listed pronouns/avyayas (idaM = idam) is.
+      base = hk_piece[:-1] + "m" if hk_piece.endswith("M") else hk_piece
+      if (base not in _PRONOUNS and base not in _AVYAYAS
+          and base not in _UPASARGAS):
+        return (None, hk_piece)
     return ("exact", hk_piece)
   if hk_piece.startswith("'"):
     rest = hk_piece[1:]
@@ -1155,6 +1493,20 @@ def _core_valid(hk_piece, piece_mode=False):
     cand = hk_piece[:-1] + "m"
     if cand in words:
       return ("stem", cand)
+  if piece_mode and len(hk_piece) >= 7 and hk_piece.endswith("sminn"):
+    # Prastuti writes a junctional doubled न् at the end of a sarvanAma
+    # locative piece (उभयस्मिन्न् अपि, तस्मिन्न् इति): the surface underneath
+    # is …स्मिन्, whose base must be attested - directly, or as a tight
+    # merger surface (नोभय = na + ubhaya).  A merger veneer over an
+    # unattested prastuti piece (चेन्न = cet + na) stays rejectable: the
+    # separable assimilation joint must remain available to the DP.
+    cand = hk_piece[:-1]
+    if cand in words:
+      return ("merger", cand)
+    stem = hk_piece[:-5]
+    if (len(stem) >= 3
+        and (stem in words or _tight_merger_surface(stem))):
+      return ("merger", cand)
   if piece_mode:
     if _stem_valid_piece(hk_piece):
       return ("stem", hk_piece)
@@ -1598,6 +1950,7 @@ def _merger_chain_uncached(hk):
   n = len(hk)
   if n < 4:
     return False
+  words = _load_words()
   seen = set()
   stack = [(0, "", 0, 0, 0, 0)]
   while stack:
@@ -1635,7 +1988,11 @@ def _merger_chain_uncached(hk):
             stack.append((r + mlen, rv2, 0, wild, junc + 1, apo2))
           elif (q > 0 and wild == 0 and junc + 1 <= 3 and 2 <= r - q <= 8
                 and not any(c in "AIUeo" for c in hk[q:r])
-                and "ai" not in hk[q:r] and "au" not in hk[q:r]):
+                and "ai" not in hk[q:r] and "au" not in hk[q:r]
+                and base in words):
+            # the one tolerated unattested middle word must still be a
+            # dictionary surface somewhere (chanda|o|uviSayatv|A|annA is
+            # no merger chain: uviSayatv is nothing at all)
             stack.append((r + mlen, rv2, 1, 1, junc + 1, apo2))
   return False
 
@@ -1702,8 +2059,35 @@ def _boundary_kind(left_hk, right_hk):
   return "cons-cons"
 
 
-def _sep(left_hk, right_hk, left_under, right_under, whole_hk=None):
-  """Choose separator at a boundary: '-' for samAsa, ' ' for separate pada."""
+def _sep_dash(hk, cpos):
+  """True when the corpus renders this junction with the glued pada dash
+  (``–``/``--``): dash votes dominate hyphen votes at the longest attested
+  separator context."""
+  trie = _TRIE_SEPS
+  if trie is None or cpos <= 0 or cpos >= len(hk):
+    return False
+  key = (hk, cpos)
+  hit = _CACHE_SEP.get(key)
+  if hit is not None:
+    return hit
+  res = False
+  kmax = min(_RA_NGRAM_MAX_K, cpos, len(hk) - cpos)
+  for k in range(kmax, 1, -1):
+    vals = trie.get(("%s\x1f%s" % (hk[cpos - k:cpos],
+                                   hk[cpos:cpos + k])).encode("utf-8"))
+    if vals:
+      n_h, n_d = vals[0]
+      res = n_d > 0 and n_d >= _RA_NGRAM_RATIO * n_h
+      break
+  _CACHE_SEP[key] = res
+  return res
+
+
+def _sep(left_hk, right_hk, left_under, right_under, whole_hk=None, ctx=None):
+  """Choose separator at a boundary: ' ' for separate padas, '–' for a pada
+  boundary the corpus keeps glued (``_sep_dash``), '-' for samAsa joints."""
+  if ctx is not None and _sep_dash(ctx[0], ctx[1]):
+    return "–"
   k = _boundary_kind(left_hk, right_hk)
   if k == "vowel-cons":
     return "-"
@@ -1824,21 +2208,32 @@ def _segment(hk, strict):
           under = base
       if kind != "memo" and not _piece_reliable(piece, kind, under):
         continue
-      # An internal halant-final piece (dictionary "exact" or inferred
-      # "stem") must be a surface the corpus itself uses: root entries
-      # (सर्व् = √सर्व्), exotic headwords (अपास्) and stem husks (तसम्)
-      # are impossible padas.  Restore-based kinds (visarga/yan/...,
-      # दुष्प्रकृतेर् -> दुष्प्रकृतेः) keep their own witnesses.
-      if (j < m and kind in ("exact", "stem") and _halant_final(piece)
+      # An internal halant-final piece (dictionary "exact", inferred "stem"
+      # or de-assimilation "t-assim") must be a surface the corpus itself
+      # uses: root entries (सर्व् = √सर्व्), exotic headwords (अपास्),
+      # stem husks (तसम्) and one-off reconstructions (साद् = "sAt") are
+      # impossible padas.  Visarga/yan restores keep their own witnesses.
+      if (j < m and kind in ("exact", "stem", "t-assim")
+          and _halant_final(piece)
           and not _surface_attested(piece)):
         continue
       if j < m and under in _AVYAYAS and kind == "exact" and len(piece) <= 3:
         continue
       if i > 0 and is_veto_split(hk, coff[i]):
         continue
+      bad = 0
+      if (i > 0 and _count_of(info[i][0]) == 0
+          and len(info[i][0]) <= _RA_BADSPLITS_MAX_PIECE):
+        # Negative evidence only where the cut would create a short left
+        # piece the corpus never uses: नमस्/तद्/फलम् are real pieces (नमस् ते
+        # stays a split), while जान्य्/अधिर् are analyzer-only shards.
+        bad = _badsplit_evidence(hk, coff[i])
+        if bad >= _RA_BADSPLITS_MIN and _junction_ngram_plain(hk, coff[i]):
+          continue
       # boundary kind computed on char strings:
       if i > 0:
         lhk = hk[:coff[i]]
+        lpiece = info[i][0]
         rhk = piece
         bkind = _boundary_kind(lhk, rhk)
         lkind = info[i][2] if info[i] else None
@@ -1862,15 +2257,35 @@ def _segment(hk, strict):
             continue
           if kind not in ("exact", "stem", "merger", "visarga", "yan", "memo"):
             continue
+          # A vibhakti-final form (लोके) is no samAsa member: an e/o-final
+          # left piece only compounds where the corpus itself joins it
+          # (गणे-श्वरम्, पङ्के-रुह) or as the -as compounding stem
+          # (mano-, tejo-, svato- = manaH, tejaH, svataH).
+          if lpiece[-1] in ("e", "o"):
+            if not _joined_left_attested(lpiece):
+              if not (lpiece[-1] == "o"
+                      and (lpiece[:-1] + "aH") in _load_words()):
+                continue
+          # Visarga-r ambiguity: a vowel-final left + r-initial right must
+          # not steal the H-placeholder r from the "…ir eva" reading
+          # (ज्योति-रेव is wrong; ज्योतिर् एव is the convention) - unless the
+          # r-initial piece is itself a corpus surface (मिथ्या-रूपम्).
+          if (piece.startswith("r") and piece[1:2] in _VOWELS
+              and _has_visarga_restore(lpiece + "r")
+              and _valid_piece_kind(piece[1:], piece_mode=True)[0] is not None
+              and not _surface_attested(piece)):
+            continue
         elif bkind == "m-vowel":
           pass
         elif bkind in ("visarga", "visarga-o"):
           if kind == "merger":
             # merged units (asyaiva) never begin at a visarga joint
             continue
-          if lkind not in ("visarga", "visarga-o", "memo") and not _has_visarga_restore(lhk):
+          # the sandhi witness is the left *piece* (jyotir -> jyotiH), never
+          # the accumulated prefix (AdityAdijyotir is no word)
+          if lkind not in ("visarga", "visarga-o", "memo") and not _has_visarga_restore(lpiece):
             continue
-          if strict and lkind == "exact" and not lhk.endswith("s"):
+          if strict and lkind == "exact" and not lpiece.endswith("s"):
             continue
           if strict and lkind in ("visarga", "visarga-o"):
             # weak H-restores (duSprakRter->duSprakRtiH) are still fine when
@@ -1880,12 +2295,21 @@ def _segment(hk, strict):
               base = _stem_base_piece(lu)
               if not base or _count_of(base) < _STEM_BASE_MIN:
                 continue
-          # H -> r only before vowels; s/z/S before vowels is not a sandhi.
-          if rhk[:1] in _VOWELS and not lhk.endswith("r"):
+          # H -> r only before vowels; s/z/S before a vowel (including ऋ,
+          # which is why pUrvakas|RSTy misreads सृष्ट्यादि) is not a sandhi.
+          if ((rhk[:1] in _VOWELS or rhk[:1] == "R")
+              and not lpiece.endswith("r")):
             continue
         elif bkind == "yan":
           if lkind not in ("yan", "memo") and not _has_yan_restore(lhk):
-            continue
+            # ... or the left piece is itself a prastuti surface whose yaN
+            # restore is a closed-class particle (अप्य् अविरोधात्: the corpus
+            # writes api halant-final before a vowel).  A noun restore (दिश्य्
+            # -> दिशि) is no witness: निर्दिश्यत is one verb form.
+            restore = _yan_restored_left(lpiece)
+            if not (lkind == "exact" and restore in (_AVYAYAS | _PRONOUNS)
+                    and _surface_attested(lpiece)):
+              continue
           if strict and lkind == "yan" and _count_of(info[i][1]) < 5:
             continue
           if strict and (under in _WEAK_RIGHTS or piece in _WEAK_RIGHTS):
@@ -1929,7 +2353,7 @@ def _segment(hk, strict):
           extra -= 6  # M + vowel is a high-precision split
         if j == m:
           extra -= 6  # prefer splitting off a clean final pada
-      cost = dp[i] + 100 - q + extra
+      cost = dp[i] + 100 - q + extra + _RA_BADSPLITS_UNIT * bad
       if cost < dp[j]:
         dp[j] = cost
         prev[j] = i
@@ -1959,7 +2383,8 @@ def _segment(hk, strict):
       return None
   seps = []
   for k in range(len(pieces) - 1):
-    seps.append(_sep(pieces[k], pieces[k + 1], unders[k], unders[k + 1]))
+    seps.append(_sep(pieces[k], pieces[k + 1], unders[k], unders[k + 1],
+                     ctx=(hk, coff[idx[k + 1][0]])))
   # Expand "memo" pieces into the corpus's own sub-segmentation.
   if "memo" in kinds:
     out_pieces, out_seps = [], []
@@ -2014,6 +2439,47 @@ def _hyphenate_hk_token_uncached(hk):
 _DEV_DISJ_RE = regex.compile(r"(?<=[\u0915-\u0939]\u094d)(?=[\u0905-\u0914])")
 
 
+def _badsplit_evidence(hk, cpos):
+  """Negative split evidence at a boundary: weight of the longest attested
+  badsplits context (>= 2 letters each side; a lone letter is never enough)."""
+  trie = _TRIE_BADSPLITS
+  if trie is None or cpos <= 0 or cpos >= len(hk):
+    return 0
+  key = (hk, cpos)
+  hit = _CACHE_BAD.get(key)
+  if hit is not None:
+    return hit
+  res = 0
+  kmax = min(_RA_BADSPLITS_MAX_K, cpos, len(hk) - cpos)
+  for k in range(kmax, 1, -1):
+    vals = trie.get(("%s\x1f%s" % (hk[cpos - k:cpos],
+                                   hk[cpos:cpos + k])).encode("utf-8"))
+    if vals:
+      res = vals[0][0]
+      break
+  _CACHE_BAD[key] = res
+  return res
+
+
+def _junction_ngram_plain(hk, cpos):
+  """True when the corpus n-gram at this junction holds no split vote (the
+  longest attested devanagari context is plain-dominant).  Gate for the
+  badsplits veto: negative evidence may only block cuts the corpus's own
+  junction statistics do not sanction."""
+  try:
+    dev_l = sanscript.transliterate(
+        hk[max(0, cpos - _RA_NGRAM_MAX_K):cpos],
+        sanscript.HK, sanscript.DEVANAGARI)
+    dev_r = sanscript.transliterate(
+        hk[cpos:cpos + _RA_NGRAM_MAX_K],
+        sanscript.HK, sanscript.DEVANAGARI)
+  except Exception:
+    return False
+  if not dev_l or not dev_r:
+    return False
+  return not _ngram_votes_hyphen(dev_l, dev_r)
+
+
 def _ngram_cell(wleft, wright):
   """Longest *attested* junction context: ``((ns, nn), k, kmax)`` or None.
 
@@ -2041,12 +2507,16 @@ def _ngram_votes_hyphen(wleft, wright):
   Requires at least 2 split occurrences per plain one; a backoff to a
   shorter-than-available context additionally needs ``_RA_NGRAM_MIN_SUPPORT``
   instances (one-off witnesses like ``विपरीत|व्याप्तो`` must not generalise
-  to ``ग्रहीतव्यः``).
+  to ``ग्रहीतव्यः``).  A lone 1-letter context is never enough - ``ष|श्``
+  in ``ज्योतिषश्`` (the visarga placeholder) must not ride on corpus joins
+  like ``दोष-शमन``.
   """
   hit = _ngram_cell(wleft, wright)
   if hit is None:
     return False
   (ns, nn), k, kmax = hit
+  if k < 2:
+    return False
   if k < kmax and ns + nn < _RA_NGRAM_MIN_SUPPORT:
     return False
   return ns >= _RA_NGRAM_MIN_SPLITS and ns >= _RA_NGRAM_RATIO * nn
@@ -2066,7 +2536,7 @@ def _ngram_refine(word, hk, out):
       return out
   if len(word) < 4:
     return out
-  if out.replace("-", "").replace(" ", "") != word:
+  if _RENDER_SPLIT_RE.sub("", out) != word:
     # The DP re-expanded a sandhi joint (tadvad eva for tadvadeva): the two
     # outputs live in different coordinate systems - leave it alone.
     return out
@@ -2077,7 +2547,7 @@ def _ngram_refine(word, hk, out):
   cuts = {}
   pos = 0
   for ch in out:
-    if ch in ("-", " "):
+    if ch in ("-", " ", "–", "—"):
       cuts[pos] = ch
     else:
       pos += 1
@@ -2087,10 +2557,16 @@ def _ngram_refine(word, hk, out):
     if unicodedata.category(word[p]) in ("Mn", "Mc"):
       continue  # a cut may not precede a dependent sign (mAtrA/virama)
     sep = cuts.get(p)
-    if sep == "-":
+    if sep in ("-", "–"):
       continue
     wleft, wright = word[max(0, p - K):p], word[p:p + K]
     if not _ngram_votes_hyphen(wleft, wright):
+      continue
+    # The n-gram vote alone never suffices: the new boundary must sit
+    # against rAmAnujIya/DCS dictionary words.
+    lstart = max((q for q in cuts if q < p), default=0)
+    rend = min((q for q in cuts if q > p), default=len(word))
+    if not _junction_dict_ok(word[lstart:p], word[p:rend]):
       continue
     try:
       pre = sanscript.transliterate(word[:p], sanscript.DEVANAGARI,
@@ -2101,8 +2577,9 @@ def _ngram_refine(word, hk, out):
       continue
     if is_veto_split(hk, len(pre)):
       continue
-    cuts[p] = "-"
-    if sep != "-":
+    new_sep = "–" if _sep_dash(hk, len(pre)) else "-"
+    cuts[p] = new_sep
+    if sep != new_sep:
       changed = True
   if not changed:
     return out
@@ -2148,10 +2625,10 @@ def hyphenate_word(word):
   if hyph_hk == hk:
     out = word
   else:
-    parts = regex.split(r"([ \-])", hyph_hk)
+    parts = _RENDER_SPLIT_RE.split(hyph_hk)
     out_parts = []
     for pt in parts:
-      if pt in (" ", "-") or pt == "":
+      if pt in _SEP_GLYPHS or pt == "":
         out_parts.append(pt)
       else:
         try:
@@ -2199,8 +2676,10 @@ def hyphene(text, show_progress=False):
   def _repl(m):
     w = m.group(0)
     # Tokens touching a hyphen are part of an already-split compound: leave
-    # them alone (this also makes hyphene idempotent).
-    if text[m.start() - 1:m.start()] == "-" or text[m.end():m.end() + 1] == "-":
+    # them alone (this also makes hyphene idempotent).  '–' (glued pada
+    # dash) and '—' count as separators just like '-'.
+    if (text[m.start() - 1:m.start()] in ("-", "–", "—")
+        or text[m.end():m.end() + 1] in ("-", "–", "—")):
       return w
     if _in_anno(m.start()):
       return w

@@ -1,6 +1,14 @@
 import regex
 
 
+# Short bracketed citation opening a sentence, e.g. `(छां.३.१२.१)` /
+# `(तै. उ. २। ५। १)`: Devanagari/Latin, digits, ref punctuation, and it
+# must contain a digit so ordinary parenthetical asides are left alone.
+_leading_bracket_ref = regex.compile(
+    r"^\((?=[^()]*[0-9\u0966-\u096F])"
+    r"[A-Za-z\u0900-\u097F0-9\s\.\-–—।॥,]{1,60}\)[ \t]*")
+
+
 def _approx_syllables(line):
   """Approximate svara/syllable count (svara-count clue for verse detection)."""
   try:
@@ -75,6 +83,13 @@ def split_to_sentences(text):
   - Does NOT split unquoted verse blocks (e.g. Gītā śloka on two
     lines ending in ``॥``): detected via ``॥``, svara-count equality
     and ``chandas`` meter identification when available.
+  - Closing markdown emphasis markers (``**`` / ``__``) sitting right
+    after a terminator stay glued to the sentence they close (e.g.
+    ``**इति ... ॥१०॥**`` is not split into a sentence plus a stray
+    ``**``).
+  - A short bracketed citation opening a sentence (e.g.
+    ``(छां.३.१२.१)``, ``(तै. उ. २। ५। १)``) is appended to the previous
+    sentence, since it cites that sentence rather than starting a new one.
   - Returns list of stripped non-empty sentences, preserving original
     characters. Trailing fragment without terminator (e.g. lead-in
     ending in ``—``) is returned as-is so nothing is lost.
@@ -167,12 +182,20 @@ def split_to_sentences(text):
       bounds.append(("p", m.start(), m.end()))
   bounds.sort(key=lambda x: x[1])
 
+  close_emphasis = regex.compile(r"(?:\*\*|__)+")
+
   sentences = []
   start = 0
   for _, bs, be in bounds:
     # Include immediately following closing quotes/brackets if any
     # (e.g. `...?’, ...।’` is rare; terminator is usually outside).
+    # Also absorb closing markdown emphasis markers (`**`, `__`) that
+    # hug the terminator, so `...॥१०॥**` stays one sentence instead of
+    # leaving a stray `**`.
     end = be
+    m = close_emphasis.match(text, end)
+    if m:
+      end = m.end()
     # Do not consume the whitespace; slicing + strip handles it.
     sent = text[start:end].strip()
     # Attach leading whitespace-separated? No, keep as-is.
@@ -182,4 +205,18 @@ def split_to_sentences(text):
   tail = text[start:].strip()
   if tail:
     sentences.append(tail)
-  return [s for s in sentences if s]
+
+  # A short parenthesized reference opening a sentence (e.g.
+  # `(छां.३.१२.१)`) cites the preceding sentence; glue it back there
+  # instead of letting it start a new sentence.
+  out = []
+  for s in [x for x in sentences if x]:
+    while out:
+      m = _leading_bracket_ref.match(s)
+      if not m:
+        break
+      out[-1] = out[-1] + " " + s[:m.end()].strip()
+      s = s[m.end():].strip()
+    if s:
+      out.append(s)
+  return out

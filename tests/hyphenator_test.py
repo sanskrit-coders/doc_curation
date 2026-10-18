@@ -6,7 +6,7 @@ from doc_curation.sanskrit.hyphenator import hyphene
 
 
 def _segments(text):
-  return [p for p in re.split(r"[ -]+", text) if p]
+  return [p for p in re.split(r"[ \-\u2013\u2014]+", text) if p]
 
 
 def test_non_separable_mergers():
@@ -22,7 +22,8 @@ def test_non_separable_mergers():
 
 
 def test_yan_sandhi():
-  assert hyphene("इत्येवम्") == "इत्य् एवम्"
+  # iti + evam: the corpus's own memoised rendering keeps the hyphen.
+  assert hyphene("इत्येवम्") == "इत्य्-एवम्"
   assert hyphene("मध्वरिः") == "मध्व्-अरिः"
 
 
@@ -88,5 +89,6 @@ def test_reference_compound_sentence_jagatAm_upakArAya():
 
 def test_idempotent():
   for text in ["इत्य् एवम्", "मध्व्-अरिः", "हेतु-भावे", "नमस् ते",
-               "रामो ऽस्ति", "फलम् अश्नुते", "धर्मार्थ"]:
+               "रामो ऽस्ति", "फलम् अश्नुते", "धर्मार्थ",
+               "इत्य्-एवम्", "तत्–स्व-रूप–तत्-प्रात्य्-उपायोपदेश-पराणि"]:
     assert hyphene(text) == text

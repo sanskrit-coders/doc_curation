@@ -20,13 +20,13 @@ def process_dir(dir_path):
 
 
 def insert_commentary(dest_path):
-  # interleaver.interleave_TIkA_below_mUla(dest_file=dest_path, commentary_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shruta-prakAshikA/mUlam_rA/1/1/09_prANAdhikaraNam.md")
+  # interleaver.interleave_TIkA_below_mUla(dest_file=dest_path, commentary_file="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sudarshana-sUriH/shruta-prakAshikA/mUlam_rA/1/1/10_jyotiradhikaraNam.md")
 
   opencode.insert_translation_details(
     md_path=dest_path,
     translation_dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/en/thibaut/1/1",
-    start_file="24.md", end_file="24.md",
-    end_after="Here terminates the adhikaraṇa.+?\.",
+    start_file="24.md", end_file="28.md",
+    end_after=r"Here terminates the adhikaraṇa.+?\.",
     model_id="opencode-go/deepseek-v4.1-flash",)
     # opencode-go/deepseek-v4.1-flash
     # opencode/muse-spark-1.3-contributor-free
@@ -34,6 +34,6 @@ def insert_commentary(dest_path):
 
 
 if __name__ == '__main__':
-  # process_dir("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/09_prANAdhikaraNam.md")
-  insert_commentary("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/09_prANAdhikaraNam.md")
+  # process_dir("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/10_jyotiradhikaraNam.md")
+  insert_commentary("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/10_jyotiradhikaraNam.md")
   pass
