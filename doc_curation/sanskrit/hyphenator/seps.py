@@ -138,13 +138,17 @@ def _sep_dash(hk, cpos):
                                    hk[cpos:cpos + k])).encode("utf-8"))
     if vals:
       n_h, n_d = vals[0]
-      res = n_d > 0 and n_d >= _RA_NGRAM_RATIO * n_h
+      # A lone dash instance is annotation noise (प्राण–शब्दो vs ह hyphens at
+      # the shorter context): требовать at least two witnesses.
+      res = n_d >= 2 and n_d >= _RA_NGRAM_RATIO * n_h
       break
   _CACHE_SEP[key] = res
   return res
 
 
-_TIG_TAILS = ("ante", "anti", "ate", "nti", "nte", "te", "ti")
+_TIG_TAILS = ("ante", "anti", "ate", "nti", "nte", "te", "ti",
+              "taH", "Ate", "AtAm", "si", "tha", "thaH", "dhve", "dhvam",
+              "se")
 
 
 def _finite_verb_piece(hk):
@@ -160,6 +164,15 @@ def _sep(left_hk, right_hk, left_under, right_under, whole_hk=None, ctx=None):
   boundary the corpus keeps glued (``_sep_dash``), '-' for samAsa joints."""
   if ctx is not None and _sep_dash(ctx[0], ctx[1]):
     return "–"
+  if not V._samasa_head_ok(left_hk, left_under):
+    # a tilG-anta or bare dhAtu heads no samAsa: the junction is a pada break
+    return " "
+  if (right_hk not in T._load_words() and V.merger_chain_valid(right_hk)):
+    fw = V.merger_first_word(right_hk)
+    if fw in C._AVYAYAS or fw in C._PRONOUNS:
+      # prANAdevAdhi = prANAd eva adhi: the merged unit starts with a
+      # particle/pronoun, so the boundary is a pada space (prANAdevAdhi).
+      return " "
   k = _boundary_kind(left_hk, right_hk)
   if k == "vowel-cons":
     if _finite_verb_piece(left_hk) and _finite_verb_piece(right_hk):
@@ -169,9 +182,10 @@ def _sep(left_hk, right_hk, left_under, right_under, whole_hk=None, ctx=None):
     return " "
   lu = left_under or left_hk
   ru = right_under or right_hk
-  if ru.startswith(C._COMPOUND_SUFFIXES) and (
-      ru not in C._AVYAYAS
-      or (left_hk + right_hk) in T._load_words()):
+  if (ru.startswith(C._COMPOUND_SUFFIXES)
+      and not ru.startswith("antar")  # antar-Aditya: prefix, not the anta head
+      and (ru not in C._AVYAYAS
+           or (left_hk + right_hk) in T._load_words())):
     # 'antar' merely starts with the head 'anta': an independent particle
     # takes a space unless the corpus itself glues the junction (ity-Adi).
     return "-"
@@ -190,6 +204,12 @@ def _sep(left_hk, right_hk, left_under, right_under, whole_hk=None, ctx=None):
     return " "
   if k == "t-assim" and (ru == "hi" or right_hk == "dhi"):
     return " "
+  if (k == "t-assim" and left_hk.endswith("l") and right_hk.startswith("l")
+      and (left_hk[:-1] + "d") in T._load_words()
+      and not _finite_verb_piece(right_hk)):
+    # the d + l assimilation glues a samAsa (tad-liGga -> तल्-लिङ्गम्); a
+    # finite verb after tad still takes a space.
+    return "-"
   if lu == "iti":
     return " "
   jn = left_hk + right_hk

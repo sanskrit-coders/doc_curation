@@ -1,21 +1,26 @@
-<!-- Scratch pad for hyphenator mis-splits.  All cases below were fixed:
-तत्तद् -> तत्-तद् (corpus-attested split via memo);
-भगवद्गीतादर्शनात् -> भगवद्-गीता-दर्शनात् (synthesised merger-left no longer
-vetoes: bhagavad|gItA|darzanAt reads as t-assim, not a gItA+adarzanAt merger);
-यत्तूक्तं -> यत् तूक्तं (tUktam = tu+uktaM merger chain; the doubling escape
-(yat|tUktam vs yattu|uktaM) lifts the global-merger freeze);
-सर्वरसः -> सर्व-रसः (strong exact|exact vowel-cons joint outranks the weak
-sarvar|asaH visarga-restore reading in strict mode);
-अप्याधारश्रवणान्न -> अप्य् आधार-श्रवणान् न (apyAdhAra is no lexicalised
-upasarga piece; zravaNAn|na t-assim split outranks the zravaNAnna swallow);
-एवाक्ष्यादित्ययोरन्तरुपदिश्यते -> एवाक्ष्यादित्ययोर् अन्तर् उपदिश्यते
-(evAkSyAditya merger-chain stem base; antar is an independent particle, not
-a compound head);
-आत्मान्तर्याम्यमृतः -> आत्मान्तर्याम्य् अमृतः (yaN restore via merger chain;
-no bare mergers before ardhAntara padas).
-Along the way: तत्कार्यत्वासम्भवात्, प्रभवाप्ययादिश्रवणात् (upasarga heads
-inside a word), निरचेष्यत / आकाशयति (upasarga whole words) got their fixes
-and the eval moved 84.1 / 88.8 / 97.6 (was 84.1 / 87.8 / 97.6).
-Five earlier cases (हिरण्यश्मश्रुर्, परमेश्वरस्योपपद्यते, मर्यादावदैश्वर्यम्,
-भूतपाल, एषां लोकानाम्) stay fixed.  -->
+<!-- Scratch pad for hyphenator mis-splits.  Resolved:
+अध्यस्यमानः/म्/ं/स्य stay whole (were अध्य् अस्य-मान..., अध्यस्य-मान...):
+the verbal -mAna tail binds to its root (a mAna(m/sya/H/A)-initial right
+after a vowel-final left is no cut, in the DP and the refine), short yaN
+pieces must restore to iti/api/adhi/eva or a pronoun/upasarga (asy <- asi
+dead), and a prefix-yaN (adhy <- adhi) takes no pronoun pada (asya) after
+it.  gamyamAnasya likewise whole.
+गम्यमानस्य stays whole (was गम्यम् आनस्य / गम्य-मानस्य): the m-vowel and
+strong-window guards now reject a cut whose left+next letter forms its own
+dictionary word that merely continues the token (gamyam is only the start
+of gamyamAnasya; a real pada join like फलम् अश्नुते is untouched).
+द्युमर्यादत्वश्रुतेश्च -> द्युमर्यादत्व-श्रुतेश् च (was द्यु मर्याद् अत्व् अश्रुतेश् च):
+the atv yaN shard (atu) is dead - short yaN pieces must restore to a
+closed-class word; the s|y cut is dead - a pada-final H shows as r before a
+semivowel (bhUtAkAzas|yApi stole the asya's y); and the refine now makes a
+pada space before the bare particle ca after a visarga surface (श्रुतेश् च,
+प्राणश् च; पश्चात् untouched).  vidyAH/viSayaiH: a y-initial piece after a
+non-particle left inside a whole dict word is the word's own y (vid|yAH is
+no cut; tad|yathA stays).
+प्राणशब्दं -> प्राण-शब्दं (a lone dash instance is no witness, _sep_dash
+needs 2+).
+Earlier: विषयैरिन्द्रियाणां whole (corpus-joined); विषयैः whole (aiH sup
+ending + stolen-y guard); गमयतः whole (tiG tails + no strong vc on verbs);
+प्राणाद् एवाधि; तल्-लिङ्गाद् ब्रह्मण एव; भूताकाशं whole; यत् तूक्तं.
+Eval: 84.1 / 88.8 / 98.6.  -->
 

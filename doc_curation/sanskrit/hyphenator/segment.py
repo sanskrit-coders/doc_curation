@@ -167,9 +167,15 @@ def _segment(hk, strict, strong_vc=False):
                    and V._base_attested(V._stem_base_piece(under or piece)))
           and not (kind == "stem" and piece.endswith("m")
                    and V.merger_chain_valid(V._stem_base_piece(piece) or ""))
-          and not (kind == "t-assim" and V._attested(under))):
+          and not (kind == "t-assim" and V._attested(under))
+          and not (kind == "t-assim"
+                   and V._stem_valid_piece(under or "")
+                   and V._count_of(under or "") >= 2
+                   and V._base_attested(V._stem_base_piece(under or "")))):
         continue  # a t-assim piece is witnessed by its attested restore
-        # (zravaNAn <- zravaNAt, corpus-attested)
+        # (zravaNAn <- zravaNAt, corpus-attested) or an ablative that is
+        # itself seen (prANAd <- prANAt cnt=2); a base-only artifact
+        # (maryAd <- maryAt cnt=0, base marya) is no witness
       if (j < m and kind == "exact" and len(piece) <= 3
           and (under in C._AVYAYAS or under.lower() in C._UPASARGAS)
           and piece not in C._PRONOUNS
@@ -209,6 +215,15 @@ def _segment(hk, strict, strong_vc=False):
         rhk = piece
         bkind = SP._boundary_kind(lhk, rhk)
         lkind = info[i][2] if info[i] else None
+        if (piece.startswith("y") and len(lpiece) >= 3
+            and lkind not in ("t-assim", "visarga", "visarga-o", "memo")
+            and lpiece not in C._PRONOUNS and lpiece not in C._AVYAYAS
+            and lpiece.lower() not in C._UPASARGAS
+            and V._prefix_in_dict(lpiece + "y")):
+          continue  # inside a single dictionary word the y belongs to the
+          # word (vid|yAH steals vidyA, viSa|yaiH steals viSayaiH); a real
+          # pada join like tad|yathA stays
+
         if (rhk.startswith(("sya", "syA", "syo"))
             and ((lpiece + "sya") in T._load_words()
                  or V._stem_valid(lpiece + "sya"))):
@@ -235,11 +250,19 @@ def _segment(hk, strict, strong_vc=False):
         # Sandhi-witness requirement - a boundary may only be cut when it is
         # phonologically witnessed by the sandhi type.
         if bkind == "vowel-cons":
+          if (piece.startswith(("mAnaM", "mAnam", "mAnasya", "mAnAH",
+                                "mAnaH", "mAnA"))
+              and lpiece[-1:] in _VOWELS):
+            continue  # the verbal -mAna tail (adhyasyamAna, gamyamAna)
+            # binds to its root: asya|mAnam is no word boundary
           if strict and not (strong_vc and lkind == "exact"
                              and kind == "exact"
                              and V._count_of(lhk) >= 10
-                             and V._count_of(piece) >= 10):
-            continue  # upasarga wholes (AkAzayati) never take this cut
+                             and V._count_of(piece) >= 10
+                             and not V._stolen_final_shard(hk, piece, lpiece)):
+            continue  # upasarga wholes (AkAzayati) never take this cut,
+            # and the window must not chop an inflected single word
+            # (viSayaiH is no viSa + yaiH)
           if lkind not in ("exact", "stem", "merger"):
             continue
           if kind not in ("exact", "stem", "merger", "visarga", "yan",
@@ -265,11 +288,18 @@ def _segment(hk, strict, strong_vc=False):
             # tokens (मिथ्या-रूपम्) may start such a cut.
             continue
         elif bkind == "m-vowel":
-          pass
+          if (V._whole_kind(hk) is not None and piece[:1] in _VOWELS
+              and V._prefix_in_dict(lpiece + piece[:1])):
+            continue  # gamyam|Anasya: the A is the word's own mA (gamyamAna)
+            # - a real pada join (phalam aznute) has no such whole word
         elif bkind in ("visarga", "visarga-o"):
           if kind == "merger":
             # merged units (asyaiva) never begin at a visarga joint
             continue
+          if (lpiece.endswith(("s", "z", "S"))
+              and piece.startswith(("y", "v", "r"))):
+            continue  # a pada-final H shows as r before a semivowel
+            # (bhUtAkAzar yApi): ...as|yApi merely steals the asya's y
           # the sandhi witness is the left *piece* (jyotir -> jyotiH), never
           # the accumulated prefix (AdityAdijyotir is no word)
           if lkind not in ("visarga", "visarga-o", "memo") and not V._has_visarga_restore(lpiece):
@@ -315,6 +345,12 @@ def _segment(hk, strict, strong_vc=False):
             if not (under or piece).startswith(C._COMPOUND_SUFFIXES):
               continue
         elif bkind in ("t-assim", "cons-vowel"):
+          if (bkind == "cons-vowel" and lhk.endswith("t")
+              and not rhk.startswith("'")):
+            # a surface t before a vowel is never a word-final t (that would
+            # voice to d): it is a ta+A merger (bhUtAkAzaM = bhUta+AkAzaM) or
+            # the right word's own -t- suffix (etAvatA).  Cut stays blocked.
+            continue
           if lkind != "memo" and not V._left_final_witness(lhk):
             continue
           if strict:
@@ -347,6 +383,12 @@ def _segment(hk, strict, strong_vc=False):
         extra += 60
       if piece in C._PRONOUNS or piece in C._AVYAYAS:
         extra -= 4  # independent particles/pronouns favour a clean cut
+      if (i > 0 and bkind == "vowel-cons" and lpiece.endswith("A")
+          and lpiece not in C._TRIE_NOMINAL_STEMS
+          and (lpiece[:-1] + "aH") in T._load_words()
+          and V._count_of(lpiece[:-1] + "aH") >= 5):
+        extra += 20  # a nom.pl "-A(H)" surface (prANA, devA) is a finished
+        # pada, never a samAsa head: the restore reading prANAd eva adhi wins
       if i > 0:
         if bkind in _HIGH_KINDS:
           extra -= 10  # bonus for genuine sandhi boundary
@@ -392,6 +434,10 @@ def _segment_assemble(hk, coff, idx, pieces, unders, kinds):
   for k in range(len(pieces) - 1):
     seps.append(SP._sep(pieces[k], pieces[k + 1], unders[k], unders[k + 1],
                         ctx=(hk, coff[idx[k + 1][0]])))
+  for k, s in enumerate(seps + [" "]):
+    # a chunk shown as a separate pada must be a pada form, not a bare stem
+    if s == " " and not V._pada_ok(pieces[k], unders[k], kinds[k]):
+      return None
   if "memo" in kinds:
     out_pieces, out_seps = [], []
     for k, pc in enumerate(pieces):
@@ -425,7 +471,9 @@ def _hyphenate_hk_token_uncached(hk):
   if whole in ("stem", "upasarga") and len(hk) >= 24:
     whole = None
   if whole is not None:
-    res = _segment(hk, strict=True, strong_vc=(whole == "stem"))
+    res = _segment(hk, strict=True,
+                   strong_vc=(whole == "stem"
+                              and not SP._finite_verb_piece(hk)))
     if res is None:
       return hk
   else:
@@ -566,6 +614,15 @@ def _ngram_refine(word, hk, out):
     sep = cuts.get(p)
     if sep in ("-", "–"):
       continue
+    lft_dev = word[max(0, p - K):p]
+    rgt_dev = word[p:p + K]
+    if (sep is None and rgt_dev == "च"
+        and lft_dev.endswith(("श्", "ष्", "स्", "र्"))):
+      # a visarga surface followed by the bare particle ca is a pada break
+      # (श्रुतेश् च side by side; पश्चात् stays whole - its right is not च).
+      cuts[p] = " "
+      changed = True
+      continue
     wleft, wright = word[max(0, p - K):p], word[p:p + K]
     if not _ngram_votes_hyphen(wleft, wright):
       continue
@@ -579,6 +636,10 @@ def _ngram_refine(word, hk, out):
     # (गानेष्व्|अस्य: restore the व to उ before testing).
     lft_restore = (lft_dev[:-1] + "उ") if lft_dev.endswith("व") else lft_dev
     if lft_restore.endswith(("षु", "सु")):
+      continue
+    # A finished ablative pada (…ād/…āt) can't head a samAsa: the junction
+    # is a pada boundary (तल्लिङ्गाद् ब्रह्मण), never a hyphen.
+    if lft_dev.endswith(("ाद्", "ात्")):
       continue
     # पुरुषस्|याप्यति: the y stole the genitive स्य (my sya guard covers the
     # DP, the refine needs its own).
@@ -598,6 +659,18 @@ def _ngram_refine(word, hk, out):
       if (SP._finite_verb_piece(lhk_piece)
           and SP._finite_verb_piece(rhk_piece)):
         continue
+      if (rhk_piece.startswith(("mAnaM", "mAnam", "mAnasya", "mAnAH",
+                                "mAnaH", "mAnA"))
+          and lhk_piece[-1:] in "aAiIuUfFxXeEoO"):
+        continue  # the verbal -mAna tail binds to its root (adhyasyamAna)
+      if (rhk_piece in C._PRONOUNS and lhk_piece.endswith(("y", "v"))
+          and (V._yan_restored_left(lhk_piece) or "").lower()
+          in C._UPASARGAS):
+        continue  # adhy|asya: a prefix-y does not take a pronoun pada here
+      word_hk = sanscript.transliterate(word, sanscript.DEVANAGARI,
+                                        sanscript.HK)
+      if V._stolen_final_shard(word_hk, rhk_piece, lhk_piece):
+        continue  # viSayaiH is no viSa|yaiH: the y is the base's own
     except Exception:
       pass
     if not V._junction_dict_ok(word[lstart:p], word[p:rend]):
