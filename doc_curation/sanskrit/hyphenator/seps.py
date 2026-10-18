@@ -144,6 +144,17 @@ def _sep_dash(hk, cpos):
   return res
 
 
+_TIG_TAILS = ("ante", "anti", "ate", "nti", "nte", "te", "ti")
+
+
+def _finite_verb_piece(hk):
+  """A finite verb form (tiG-anta): ends in a tiG ending and validates as
+  one (dictionary entry or a stemmed form)."""
+  if not hk or not hk.endswith(_TIG_TAILS):
+    return False
+  return hk in T._load_words() or V._stem_valid_piece(hk)
+
+
 def _sep(left_hk, right_hk, left_under, right_under, whole_hk=None, ctx=None):
   """Choose separator at a boundary: ' ' for separate padas, '–' for a pada
   boundary the corpus keeps glued (``_sep_dash``), '-' for samAsa joints."""
@@ -151,19 +162,27 @@ def _sep(left_hk, right_hk, left_under, right_under, whole_hk=None, ctx=None):
     return "–"
   k = _boundary_kind(left_hk, right_hk)
   if k == "vowel-cons":
+    if _finite_verb_piece(left_hk) and _finite_verb_piece(right_hk):
+      return " "  # two tiG-antas never form a samAsa
     return "-"
   if k in ("m-vowel", "visarga-o"):
     return " "
   lu = left_under or left_hk
   ru = right_under or right_hk
-  if ru.startswith(C._COMPOUND_SUFFIXES):
+  if ru.startswith(C._COMPOUND_SUFFIXES) and (
+      ru not in C._AVYAYAS
+      or (left_hk + right_hk) in T._load_words()):
+    # 'antar' merely starts with the head 'anta': an independent particle
+    # takes a space unless the corpus itself glues the junction (ity-Adi).
     return "-"
   if ru.startswith(C._META_SUFFIXES):
     return "-"
   if k == "yan" and ru.startswith("ari") and lu != "iti":
     return "-"
-  if k == "yan" and V.merger_chain_valid(lu):
-    return "-"
+  if k == "yan" and lu.endswith(("Su", "su")):
+    # a locative-plural pada can't head a samAsa (गानेषु अस्य); the
+    # merger branch below would misread gAneSu as gAna + iSu.
+    return " "
   # Particles / pronouns / verbs after a sandhi boundary are separate padas.
   if ru in C._AVYAYAS or ru in C._PRONOUNS:
     return " "

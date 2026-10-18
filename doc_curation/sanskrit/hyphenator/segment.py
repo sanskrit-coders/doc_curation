@@ -94,9 +94,11 @@ def _freq_quality(word):
   return min(int(3 * math.log2(w + 1)), 21)
 
 
-def _segment(hk, strict):
+def _segment(hk, strict, strong_vc=False):
   """DP segmentation. ``strict``: only high-precision sandhi boundaries and
   dict-join compounds may split a token that is itself a valid word.
+  ``strong_vc`` (whole kind ``stem``): a strong exact|exact vowel+consonant
+  joint (sarva|rasaH) is allowed even in strict mode.
 
   Returns (pieces, seps) or None if no acceptable split."""
   if V.has_global_merger(hk):
@@ -162,10 +164,20 @@ def _segment(hk, strict):
           and not V._attested(piece)
           and not (kind in ("stem", "t-assim")
                    and (under or piece).endswith(("vat", "mat"))
-                   and V._base_attested(V._stem_base_piece(under or piece)))):
-        continue
-      if j < m and under in C._AVYAYAS and kind == "exact" and len(piece) <= 3:
-        continue
+                   and V._base_attested(V._stem_base_piece(under or piece)))
+          and not (kind == "stem" and piece.endswith("m")
+                   and V.merger_chain_valid(V._stem_base_piece(piece) or ""))
+          and not (kind == "t-assim" and V._attested(under))):
+        continue  # a t-assim piece is witnessed by its attested restore
+        # (zravaNAn <- zravaNAt, corpus-attested)
+      if (j < m and kind == "exact" and len(piece) <= 3
+          and (under in C._AVYAYAS or under.lower() in C._UPASARGAS)
+          and piece not in C._PRONOUNS
+          and not (piece.endswith("y")
+                   and V._yan_restored_left(piece) in (C._AVYAYAS | C._PRONOUNS))):
+        continue  # a short particle/prefix may not head an internal joint -
+        # but a connective pronoun (yat|tUktam) or a yaN-restored particle
+        # (apy|AdhAra = api) does
       if i > 0 and V.is_veto_split(hk, coff[i]):
         continue
       bad = 0
@@ -174,7 +186,11 @@ def _segment(hk, strict):
         # Negative evidence only where the cut would create a short left
         # piece the corpus never uses: नमस्/तद्/फलम् are real pieces (नमस् ते
         # stays a split), while जान्य्/अधिर् are analyzer-only shards.
-        bad = _badsplit_evidence(hk, coff[i])
+        if SP._boundary_kind(hk[:coff[i]], piece) == "m-vowel":
+          bad = 0  # M + vowel is a core pada split (फलम् अश्नुते): the
+          # negative memory must not veto it
+        else:
+          bad = _badsplit_evidence(hk, coff[i])
         if bad >= _RA_BADSPLITS_MIN and _junction_ngram_plain(hk, coff[i]):
           # ... except a genuine possessive-suffix t-restore (मर्यादावत् +
           # ऐश्वर्यम् = मर्यादावदैश्वर्यम्): mined false restores share its
@@ -193,15 +209,21 @@ def _segment(hk, strict):
         rhk = piece
         bkind = SP._boundary_kind(lhk, rhk)
         lkind = info[i][2] if info[i] else None
-        if (rhk.startswith(("sya", "syA"))
+        if (rhk.startswith(("sya", "syA", "syo"))
             and ((lpiece + "sya") in T._load_words()
                  or V._stem_valid(lpiece + "sya"))):
           # -sya is the left word's genitive ending, not a new member
           # (परमेश्वर|स्याधार is no split).
           continue
+        if (lpiece.endswith(("s", "z", "S")) and rhk.startswith("y")
+            and (lpiece[:-1] + "sya") in T._load_words()):
+          # the y stole the genitive स्य: पुरुषस्|याप्यति is no split
+          continue
         # Right-side pieces must be surface-complete words (never restored):
         # a restored right piece (e.g. az->aH) is always a junk shard.
-        if kind not in ("exact", "stem", "avagraha", "merger", "visarga", "yan", "memo"):
+        # t-assim pieces are surface-true (zravaNAn = zravaNAt + na).
+        if kind not in ("exact", "stem", "avagraha", "merger", "visarga",
+                        "yan", "memo", "t-assim"):
           continue
         if (kind == "visarga" and not piece.endswith(("z", "S"))
             and not (j == m and piece.endswith(("s", "r")))):
@@ -213,12 +235,16 @@ def _segment(hk, strict):
         # Sandhi-witness requirement - a boundary may only be cut when it is
         # phonologically witnessed by the sandhi type.
         if bkind == "vowel-cons":
-          if strict:
-            continue
+          if strict and not (strong_vc and lkind == "exact"
+                             and kind == "exact"
+                             and V._count_of(lhk) >= 10
+                             and V._count_of(piece) >= 10):
+            continue  # upasarga wholes (AkAzayati) never take this cut
           if lkind not in ("exact", "stem", "merger"):
             continue
-          if kind not in ("exact", "stem", "merger", "visarga", "yan", "memo"):
-            continue
+          if kind not in ("exact", "stem", "merger", "visarga", "yan",
+                          "memo", "t-assim"):
+            continue  # t-assim rights are surface-true (zravaNAn)
           # A vibhakti-final form (लोके) is no samAsa member: an e/o-final
           # left piece only compounds where the corpus itself joins it
           # (गणे-श्वरम्, पङ्के-रुह) or as the -as compounding stem
@@ -292,10 +318,16 @@ def _segment(hk, strict):
           if lkind != "memo" and not V._left_final_witness(lhk):
             continue
           if strict:
-            if under in C._WEAK_RIGHTS or piece in C._WEAK_RIGHTS:
+            closed_pair = ((info[i][1] or lpiece) in (C._AVYAYAS | C._PRONOUNS)
+                           and (under or piece) in (C._AVYAYAS | C._PRONOUNS))
+            if not closed_pair and (under in C._WEAK_RIGHTS or piece in C._WEAK_RIGHTS):
               continue
-            if V._count_of(piece) < 10 and piece not in C._SANDHI_KEEP:
-              continue
+            if (kind in ("exact", "stem") and V._count_of(piece) < 10
+                and piece not in C._SANDHI_KEEP
+                and not (kind == "stem"
+                         and V.merger_chain_valid(piece))):
+              continue  # a rare shard (अपाल, अत्वं) is no samAsa member;
+              # merged surfaces (asyAmRtam = asya + amRtam) keep theirs
             lmax = V._count_of(lhk)
             for r in V._restores_of(lhk):
               lmax = max(lmax, V._count_of(r))
@@ -308,6 +340,11 @@ def _segment(hk, strict):
         q += min(V._count_of(under), 20)  # frequent base -> plausible inflected form
       q += max(_freq_quality(under), _freq_quality(piece))
       extra = 0
+      if (kind == "merger" and not V._count_of(piece)
+          and not V._attested(piece) and V._witnessed_swallow(piece)):
+        # an un-attested chain piece that hides a witnessed split on the
+        # same span (zravaNAnna) must beat it on merit, not on piece count
+        extra += 60
       if piece in C._PRONOUNS or piece in C._AVYAYAS:
         extra -= 4  # independent particles/pronouns favour a clean cut
       if i > 0:
@@ -388,7 +425,7 @@ def _hyphenate_hk_token_uncached(hk):
   if whole in ("stem", "upasarga") and len(hk) >= 24:
     whole = None
   if whole is not None:
-    res = _segment(hk, strict=True)
+    res = _segment(hk, strict=True, strong_vc=(whole == "stem"))
     if res is None:
       return hk
   else:
@@ -536,6 +573,33 @@ def _ngram_refine(word, hk, out):
     # against rAmAnujIya/DCS dictionary words.
     lstart = max((q for q in cuts if q < p), default=0)
     rend = min((q for q in cuts if q > p), default=len(word))
+    lft_dev = word[lstart:p]
+    rgt_dev = word[p:rend]
+    # A yaN-restored locative-plural pada can't head a samAsa
+    # (गानेष्व्|अस्य: restore the व to उ before testing).
+    lft_restore = (lft_dev[:-1] + "उ") if lft_dev.endswith("व") else lft_dev
+    if lft_restore.endswith(("षु", "सु")):
+      continue
+    # पुरुषस्|याप्यति: the y stole the genitive स्य (my sya guard covers the
+    # DP, the refine needs its own).
+    if lft_dev.endswith("स्") and rgt_dev.startswith("य"):
+      try:
+        if (sanscript.transliterate(lft_dev[:-1] + "स्य", sanscript.DEVANAGARI,
+                                    sanscript.HK) in T._load_words()):
+          continue
+      except Exception:
+        pass
+    # two tiG-antas never samAsa-join (याप्यति|दिशति)
+    try:
+      lhk_piece = sanscript.transliterate(lft_dev, sanscript.DEVANAGARI,
+                                          sanscript.HK)
+      rhk_piece = sanscript.transliterate(rgt_dev, sanscript.DEVANAGARI,
+                                          sanscript.HK)
+      if (SP._finite_verb_piece(lhk_piece)
+          and SP._finite_verb_piece(rhk_piece)):
+        continue
+    except Exception:
+      pass
     if not V._junction_dict_ok(word[lstart:p], word[p:rend]):
       continue
     try:

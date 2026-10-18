@@ -159,6 +159,8 @@ def _stem_valid_piece_uncached(hk):
       continue
     if pre in words:
       return True
+    if merger_chain_valid(pre):
+      return True
     for fin in C._STEM_FINALS:
       if pre + fin in words:
         return True
@@ -185,6 +187,8 @@ def _stem_base_piece_uncached(hk):
     if not pre or pre in C._AVYAYAS:
       continue
     if pre in words:
+      return pre
+    if merger_chain_valid(pre):
       return pre
     for fin in C._STEM_FINALS:
       if pre + fin in words:
@@ -360,7 +364,7 @@ def _core_valid(hk_piece, piece_mode=False):
     cand = hk_piece[:-1] + "H"
     if cand in words:
       return ("visarga", cand)
-    if _stem_valid(cand):
+    if _stem_valid_piece(cand) if piece_mode else _stem_valid(cand):
       return ("visarga", cand)
   if len(hk_piece) >= 3 and hk_piece.endswith(("d", "n")):
     cand = hk_piece[:-1] + "t"
@@ -436,6 +440,9 @@ def _valid_piece_kind(hk_piece, piece_mode=False):
         rest = cur[len(up):]
         k2, u2 = _core_valid(rest, piece_mode=piece_mode)
         if k2 is not None:
+          if (piece_mode and C._LAYERED is not None
+              and _count_of(hk_piece) == 0 and not _attested(hk_piece)):
+            break  # a non-lexicalised upasarga join (apyAdhAra) is no piece
           res = ("upasarga", hk_piece)
           _CACHE_CORE[key] = res
           return res
@@ -542,8 +549,14 @@ def _has_yan_restore(hk):
   if hk:
     if hk.endswith("y"):
       res = (hk[:-1] + "i") in words or (hk[:-1] + "I") in words
+      if not res:
+        res = (merger_chain_valid(hk[:-1] + "i")
+               or merger_chain_valid(hk[:-1] + "I"))
     elif hk.endswith("v"):
       res = (hk[:-1] + "u") in words or (hk[:-1] + "U") in words
+      if not res:
+        res = (merger_chain_valid(hk[:-1] + "u")
+               or merger_chain_valid(hk[:-1] + "U"))
   _CACHE_YAN_RESTORE[hk] = res
   return res
 
@@ -557,6 +570,8 @@ def _base_attested(base):
   if not base:
     return False
   if _count_of(base) >= _BASE_ATTESTED_MIN:
+    return True
+  if merger_chain_valid(base):
     return True
   return (base.startswith("a") and len(base) > 3
           and _count_of(base[1:]) >= _BASE_ATTESTED_MIN
@@ -595,6 +610,10 @@ def _reliable(hk, depth=2):
         if depth == 2:
           _CACHE_RELIABLE[hk] = True
         return True
+      if merger_chain_valid(cand) and _count_of(cand) > 0:
+        if depth == 2:
+          _CACHE_RELIABLE[hk] = True
+        return True
   for cand in _restores_of(hk):
     if _count_of(cand) >= _RELIABLE_MIN:
       if depth == 2:
@@ -621,6 +640,9 @@ def _reliable(hk, depth=2):
 
 
 def _piece_reliable(piece, kind, under):
+  if kind == "exact" and piece in T._load_words():
+    return True  # a listed dictionary word is usable even when the counted
+    # layers hold none of it (tUktaM lives only in a corpus-forms layer)
   if kind == "merger":
     return True
   if kind == "yan" and under and merger_chain_valid(under):
@@ -722,6 +744,10 @@ def _is_veto_split_uncached(hk_full, cpos):
     right_rest = hk_full[cpos:]
     for lv, rv in exps:
       if (left_pre + lv) in words and _veto_side_ok(rv + right_rest):
+        if not _attested(left_pre + lv):
+          # a synthesised left (bhagavadgItA) is no merger witness: the
+          # t-assim reading bhagavad|gItA|darzanAt stays available
+          continue
         return True
   # Case R: merger vowel starts the right piece.
   # If the char before the split is a semivowel whose yaN-restore is a more
@@ -793,6 +819,10 @@ def _has_global_merger_uncached(hk):
       right_rest = hk[p + mlen:]
       if not right_rest:
         continue  # bare final vowel is never a merger partner
+      if (hk[p - 1] not in "aAiIuUeEoO'"
+          and hk[:p - 1] in words and hk[p - 1:] in words):
+        continue  # the stop may double instead of merging: yat|tUktam
+        # outranks the yattu|uktaM reading
       # Ambiguous t-assim reading: yadAste = yad+Aste and tadeva = tad+eva
       # share the surface with a merger parse, so the merger witness is not
       # decisive; leave the token to the internal splitter.
@@ -807,18 +837,55 @@ def _has_global_merger_uncached(hk):
       for lv, rv in exps:
         lu = left_pre + lv
         ru = rv + right_rest
-        if lu in words and ru in words:
+        if _merger_side_ok(lu) and _merger_side_ok(ru):
+          if not _attested(lu):
+            continue  # synthesised left is no merger witness (bhagavadgItA)
           if yan_left and _count_of(yan_left) > _count_of(lu):
             continue
-          if _count_of(lu) >= 5 and _count_of(ru) >= 5:
-            return True
+          return True
   return False
+
+
+def _merger_side_ok(s):
+  """A merger side with >=5 attestation - or a stemmed form whose base is
+  a settled, vowel-final word (paramezvarasya -> paramezvara).  A
+  halant-final base (tripAdasya -> tripAd) keeps the t-assim reading
+  alive instead of freezing the whole as a merger."""
+  if s in T._load_words():
+    return _count_of(s) >= 5
+  if not _stem_valid_piece(s):
+    return False
+  base = _stem_base_piece(s)
+  return (bool(base) and not _halant_final(base)
+          and _base_attested(base) and _count_of(base) >= _STEM_BASE_MIN)
 
 
 _MERGER_MIN = 6
 
 
 _CACHE_CHAIN = {}
+
+
+_CACHE_SWALLOW = {}
+
+
+def _witnessed_swallow(hk_piece):
+  """True when an un-attested merger-chain piece itself contains a
+  witnessed (t-assim) split (zravaNAnna = zravaNAn + na).  Such a piece
+  must not swallow the split; anukramyAha (no internal witness) may."""
+  hit = _CACHE_SWALLOW.get(hk_piece)
+  if hit is not None:
+    return hit
+  res = False
+  for p in range(4, len(hk_piece) - 1):
+    if hk_piece[p - 1] not in ("n", "d") or hk_piece[p] not in "dntTkpszS":
+      continue
+    kL, _u = _valid_piece_kind(hk_piece[:p], piece_mode=True)
+    if kL == "t-assim":
+      res = True
+      break
+  _CACHE_SWALLOW[hk_piece] = res
+  return res
 
 
 def merger_chain_valid(hk):
@@ -837,12 +904,18 @@ def merger_chain_valid(hk):
 def _chain_word_ok(s):
   """Merger-chain component: a well-attested word, never a closed-class or
   suffix shard.  Short components need proportionally more attestation
-  (ape/Iti/naM do not qualify, eka/Adi do)."""
+  (ape/Iti/naM do not qualify, eka/Adi do) - except the short closed-class
+  joiners ca/vA (cAdhyAtmam = ca + adhyAtmam)."""
   n = len(s)
-  if n < 3 or s in C._BARE_SUFFIXES or s in C._AVYAYAS or s.lower() in C._UPASARGAS:
+  if n < 3:
+    return s in ("ca", "vA", "tu")
+  if s in C._BARE_SUFFIXES or s in C._AVYAYAS or s.lower() in C._UPASARGAS:
     return False
   if s in C._PRONOUNS and n < 4:
     return False
+  if n >= 4 and not _attested(s):
+    return False  # a synthesised surface (zravaNA, Anna, apya) is no word
+    # (short Vedic particles like evA pass on frequency alone)
   cnt = _count_of(s)
   if n == 3:
     return cnt >= 20

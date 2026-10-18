@@ -244,6 +244,14 @@ def _extract_ra_word_counts():
   return _extract_ra_corpus()[0]
 
 
+def _form_has_yan_cut(form):
+  """A cut right after a halant semivowel (इत्य्-आदौ) is a high-precision
+  yaN joint: the corpus's plain occurrences of the surface don't make that
+  split a mis-split."""
+  pieces = [p for p in C._SEP_SPLIT_RE.split(form) if p]
+  return any(p.endswith(("य्", "व्")) for p in pieces[:-1])
+
+
 def _build_ra_forms_trie(split_votes, plain_counts):
   """Surface -> preferred hyphenation memory -> ``rAmAnujIya-splits.trie``.
 
@@ -258,10 +266,11 @@ def _build_ra_forms_trie(split_votes, plain_counts):
   entries = []
   for joined, votes in split_votes.items():
     n_plain = plain_counts.get(joined, 0)
-    if n_plain >= 1 and n_plain >= sum(votes.values()):
+    form = max(votes.items(), key=lambda kv: (kv[1], -len(kv[0])))[0]
+    if (n_plain >= 1 and n_plain >= sum(votes.values())
+        and not _form_has_yan_cut(form)):
       entries.append((joined, b""))
       continue
-    form = max(votes.items(), key=lambda kv: (kv[1], -len(kv[0])))[0]
     # Normalised frequency of the winning segmentation, per-mille of the
     # surface's occurrences (split votes + plain) - available for scoring
     # experiments via ``T._ra_form_confidence``.
