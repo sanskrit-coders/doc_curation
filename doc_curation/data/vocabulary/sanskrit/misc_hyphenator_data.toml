@@ -1,0 +1,32 @@
+# Algorithm tuning data for doc_curation/sanskrit/hyphenator.py.
+# Kept beside the module so the lists can be edited without touching code.
+
+# Short words seeded into the base word trie (``_build_trie``).
+seed_words = ["ca", "vA", "hi", "tu", "api", "iti", "eva", "evam", "iva", "ati", "adhi", "anu", "upa", "pari", "prati", "sam", "vi", "na", "saH", "tat", "etat", "yat", "kim", "idam", "adas", "asmin", "tasmin", "yad", "tad", "etad", "sat", "asat", "asti", "santi", "bhavati", "gacCati", "ukta", "uktam", "dharma", "artha", "hetu", "brahma", "zabda", "Adi"]
+
+# Endings that must never appear as standalone split pieces.
+bare_suffixes = ["AH", "Ad", "An", "Ani", "AsAm", "At", "AyA", "AyAH", "Aya", "Ayai", "BhiH", "ByAm", "ByaH", "Byah", "EH", "Ini", "O", "Uni", "aH", "aiH", "auH", "avaH", "ave", "ayA", "ayaH", "aye", "bhyAm", "bhyaH", "bhyah", "e", "eH", "enA", "ena", "ezu", "inA", "mAn", "mAtrA", "mAtrAM", "mAtra", "mAtram", "mant", "mat", "nAM", "nAm", "oH", "sya", "tA", "tvAt", "tva", "tvaM", "tvam", "unA", "vAn", "vant", "vat", "vatI", "yoH", "zu"]
+
+# Collocations after which a split keeps the pieces as separate padas.
+sandhi_keep = ["bavad", "bhavad", "cid", "cit", "etad", "etat", "idam", "kiMcid", "kimcid", "sad", "sat", "tad", "tat", "yat", "yuSmad", "yuzmad"]
+
+# Weak (function-word) right pieces: after a prefix-like left these are
+# almost always separate padas, never suffix-like compound members.
+weak_rights = ["amUM", "amum", "enaM", "enam", "ezAm", "idAnIm", "imaM", "imam", "kena", "taM", "tam", "tasya", "tataH", "tena", "tezAm", "yaM", "yam", "yasya", "yataH", "yena"]
+
+# Whitelist for very short pieces (HK len < 3).
+short_ok = ["a", "ca", "hi", "jA", "me", "na", "oM", "te", "tu", "vA"]
+
+# sup/tiG endings used by the light stemmer (longest first).
+sup_endings = ["bhyAm", "bhyah", "ByAm", "ByaH", "BhiH", "AnAm", "Ayai", "AyAH", "asya", "ante", "anti", "vatI", "ezu", "nAm", "sya", "yoH", "Ani", "Ini", "Uni", "Aya", "yAH", "ena", "enA", "inA", "unA", "AyA", "ayA", "aye", "ave", "ate", "nte", "nti", "tum", "tvA", "sya", "vat", "vAn", "mAn", "mat", "oH", "eH", "EH", "At", "Ad", "aH", "AH", "An", "Am", "te", "ti", "It", "us", "uH", "e", "O", "M", "m", "H", "n", "t", "d", "s", "r"]
+
+# Stem-final restorations tried when stripping a sup/tiG ending.
+stem_finals = ["a", "A", "i", "I", "u", "U", "f", "t", "d", "n", "s", "as"]
+
+# Suffixes that favour a samAsa hyphen after the piece they follow
+# (…-zabda, …-artha) and always take one when they end the left piece.
+meta_suffixes = ["zabda", "DAtu", "sUtra", "pratyaya", "prakRti"]
+
+# Recognised compound-final members (…-Adi etc.): a split off these
+# renders with a hyphen.
+compound_suffixes = ["Adi", "antara", "artha", "anta", "anvaya"]

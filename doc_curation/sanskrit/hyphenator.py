@@ -59,17 +59,20 @@ Separator choice per boundary:
 
 Fast: ~O(L^2) dict lookups per token with memoised validation.  Evidence is
 layered as
-``doc_curation/data/vocabulary/sanskrit/{rAmAnujIya,dcs-frequency,sanskrit-words}.trie``
+``doc_curation/data/vocabulary/sanskrit/{padas,nominal-stems,verb-stems,avyayas,dcs-stems,rAmAnujIya}.trie``
 (all marisa-tries built on first use, rebuilt when their sources change):
 
 * ``rAmAnujIya.trie`` - words + stems harvested from the rAmAnujIya
   prastuti corpus (sources and ingestion rules recorded in
   ``data/vocabulary/sanskrit/rAmAnujIya-sources.toml``); scored
   highest;
-* ``dcs-frequency.trie`` - DCS corpus frequencies from
+* ``dcs-stems.trie`` - DCS corpus stem frequencies from
   ``dcs-frequency.babylon``; scored next;
-* ``sanskrit-words.trie`` - ``words_sa_dev.txt`` stardict headwords
-  (~600k, ~2.5 MB);
+* ``padas.trie`` / ``nominal-stems.trie`` / ``verb-stems.trie`` /
+  ``avyayas.trie`` - ``words_sa_dev.txt`` stardict headwords partitioned
+  with the vyAkaraNa sources (vidyut subanta stems, vidyut tiNanta
+  roots/stems, the svArAdi/cAdi gaNas) into padas, nominal stems,
+  verb stems and indeclinables;
 * ``rAmAnujIya-splits.trie`` - the corpus's own segmentations (joined
   surface -> hyphenated form; empty = attestably unsplit).  Consulted
   first by ``hyphenate_word`` and reusable as whole DP pieces;
@@ -78,10 +81,11 @@ layered as
   miss it refines the DP result: adds corpus-attested hyphens
   (``आकाशादि-विशेष-शब्दैर्``) and prefers ``-`` over `` `` at joints the
   corpus hyphenates (``जगत्-कारणे``);
-* ``rAmAnujIya-surfaces.trie`` - the corpus's hyphen pieces + plain tokens.
-  A halant-final piece taken as a dictionary word or inferred stem
-  (``सर्व्`` = √सर्व्, ``अपास्``, ``तसम्``) is vetoed unless the corpus
-  itself uses that surface.
+* ``rAmAnujIya-attestations.trie`` - the corpus attestation memory: HK token -> bits
+  (1 = the corpus itself uses the token, as a hyphen piece or whole plain
+  token; 2 = an e/o-final piece the corpus joins onward).  A halant-final
+  piece taken from a dictionary entry or inferred stem is vetoed unless the
+  corpus itself uses that token.
 * ``rAmAnujIya-seps.trie`` - separator memory: for every junction of every
   hyphenated corpus token, votes for ``-`` (a within-samAsa joint) versus
   ``–`` (the boundary between upapadas of a samAsa where the upapadas are
@@ -95,11 +99,20 @@ layered as
   elsewhere).  Evidence >= ``_RA_BADSPLITS_MIN`` vetoes a boundary the
   corpus n-gram does not sanction, weaker evidence only penalises it.
 
+Algorithm tuning data lives outside the module: seed words / bare suffixes /
+sandhi keeps / weak rights / short pieces in ``misc_hyphenator_data.toml``
+(beside this module) and the closed classes (avyayas, upasargas, pronouns) in
+``data/vocabulary/sanskrit/misc-vocab.toml``, next to the tries.  Prastuti
+piece-rejoining recreates sandhi with the ``sandhi`` package (build-time
+only: ``_join_pieces``, ``_merge_editor_junction``; browsers load prebuilt
+tries and never need it).
+
 Already-hyphenated compounds are left untouched (pieces adjacent to ``-`` are
 not re-processed), so running on pre-split प्रस्तुति-style text is safe.
 """
 
 import bisect
+import glob
 import math
 import os
 import regex
@@ -119,14 +132,31 @@ logging.basicConfig(
 _DICT_TXT = "/home/vvasuki/gitland/indic-dict/dicts/stardict-sanskrit/wordlists/words_sa_dev.txt"
 _DCS_BABYLON = ("/home/vvasuki/gitland/indic-dict/dicts/stardict-sanskrit-kAvya/"
                 "dcs-frequency/dcs-frequency.babylon")
+# vyAkaraNa category sources (indic-dict) used to split the stardict
+# wordlist into padas / nominal-stems / verb-stems / avyayas.
+_VYAKARANA_DIR = ("/home/vvasuki/gitland/indic-dict/dicts/"
+                  "stardict-sanskrit-vyAkaraNa")
+_SUBANTA_GLOB = os.path.join(_VYAKARANA_DIR, "subanta", "vidyut", "*",
+                             "*.babylon")
+_TINANTA_GLOB = os.path.join(_VYAKARANA_DIR, "tiNanta", "vidyut", "*",
+                             "*.babylon")
+_GANAPATHAH_PATH = os.path.join(_VYAKARANA_DIR, "aShTAdhyAyI", "gaNapAThaH",
+                                "gaNapAThaH.babylon")
+_AVYAYA_GANAS = ("स्वरादिः", "चादिः")
 _DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                          "data", "vocabulary", "sanskrit")
-_TRIE_PATH = os.path.join(_DATA_DIR, "sanskrit-words.trie")
-_DCS_TRIE_PATH = os.path.join(_DATA_DIR, "dcs-frequency.trie")
+_WORD_TRIE_PATHS = {
+    "padas": os.path.join(_DATA_DIR, "padas.trie"),
+    "nominal-stems": os.path.join(_DATA_DIR, "nominal-stems.trie"),
+    "verb-stems": os.path.join(_DATA_DIR, "verb-stems.trie"),
+    "avyayas": os.path.join(_DATA_DIR, "avyayas.trie"),
+}
+_DCS_TRIE_PATH = os.path.join(_DATA_DIR, "dcs-stems.trie")
 _RA_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya.trie")
 _RA_FORMS_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-splits.trie")
 _RA_NGRAM_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-ngram.trie")
-_RA_SURFACES_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-surfaces.trie")
+_RA_ATTESTATIONS_TRIE_PATH = os.path.join(
+    _DATA_DIR, "rAmAnujIya-attestations.trie")
 _RA_BADSPLITS_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-badsplits.trie")
 _RA_SEPS_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-seps.trie")
 _RA_SOURCES_TOML = os.path.join(_DATA_DIR, "rAmAnujIya-sources.toml")
@@ -161,24 +191,85 @@ _SEP_CAPTURE_RE = regex.compile(r"([-–—]+)")
 _RENDER_SPLIT_RE = regex.compile(r"([ \-–—])")
 _SEP_GLYPHS = (" ", "-", "–", "—")
 
-_SEED_WORDS = (
-    "ca", "vA", "hi", "tu", "api", "iti", "eva", "evam", "iva",
-    "ati", "adhi", "anu", "upa", "pari", "prati", "sam", "vi",
-    "na", "saH", "tat", "etat", "yat", "kim", "idam", "adas",
-    "asmin", "tasmin", "yad", "tad", "etad", "sat", "asat",
-    "asti", "santi", "bhavati", "gacCati", "ukta", "uktam",
-    "dharma", "artha", "hetu", "brahma", "zabda", "Adi",
-)
+_MISC_DATA_TOML = os.path.join(_DATA_DIR, "misc_hyphenator_data.toml")
+_MISC_VOCAB_TOML = os.path.join(_DATA_DIR, "misc-vocab.toml")
+
 _SEED_COUNT = 3
 
-_TRIE = None
+# Externalised data: ``misc_hyphenator_data.toml`` (seed words, bare
+# suffixes, sandhi keeps, weak rights, short pieces) and
+# ``misc-vocab.toml`` (avyayas, upasargas, pronouns, next to the tries).
+# Loaded lazily via ``_load_misc_data`` (see ``_load_words``).
+_SEED_WORDS = ()
+_BARE_SUFFIXES = frozenset()
+_SANDHI_KEEP = frozenset()
+_WEAK_RIGHTS = frozenset()
+_SHORT_OK = frozenset()
+_SUP_ENDINGS = ()
+_STEM_FINALS = ()
+_META_SUFFIXES = ()
+_COMPOUND_SUFFIXES = ()
+_AVYAYAS = frozenset()
+_WEAK_RIGHTS_EXTRA = frozenset()
+_PRONOUNS = frozenset()
+_UPASARGAS = ()
+_UPASARGA_HEADS = frozenset()
+_MISC_LOADED = False
+
+
+def _read_toml_file(path):
+  try:
+    with open(path, "rb") as f:
+      return tomllib.load(f)
+  except (OSError, tomllib.TOMLDecodeError):
+    logging.warning("hyphenator: cannot read %s", path)
+    return {}
+
+
+def _load_misc_data():
+  """Load misc_hyphenator_data.toml + misc-vocab.toml (idempotent)."""
+  global _SEED_WORDS, _BARE_SUFFIXES, _SANDHI_KEEP, _WEAK_RIGHTS, _SHORT_OK, \
+      _SUP_ENDINGS, _STEM_FINALS, _META_SUFFIXES, _COMPOUND_SUFFIXES, \
+      _PRONOUNS, _UPASARGAS, _UPASARGA_HEADS, _WEAK_RIGHTS_EXTRA, _MISC_LOADED
+  if _MISC_LOADED:
+    return
+  data = _read_toml_file(_MISC_DATA_TOML)
+  vocab = _read_toml_file(_MISC_VOCAB_TOML)
+  _SEED_WORDS = tuple(data.get("seed_words", ()))
+  _BARE_SUFFIXES = frozenset(data.get("bare_suffixes", ()))
+  _SANDHI_KEEP = frozenset(data.get("sandhi_keep", ()))
+  _SHORT_OK = frozenset(data.get("short_ok", ()))
+  _META_SUFFIXES = tuple(data.get("meta_suffixes", ()))
+  _COMPOUND_SUFFIXES = tuple(data.get("compound_suffixes", ()))
+  _SUP_ENDINGS = tuple(sorted(data.get("sup_endings", ()),
+                              key=len, reverse=True))
+  _STEM_FINALS = tuple(data.get("stem_finals", ()))
+  _PRONOUNS = frozenset(vocab.get("pronouns", ()))
+  _UPASARGAS = tuple(sorted(vocab.get("upasargas", ()), key=len, reverse=True))
+  _UPASARGA_HEADS = frozenset(x[0] for x in _UPASARGAS)
+  # _AVYAYAS comes from avyayas.trie (see _load_words); _WEAK_RIGHTS is
+  # recomputed there once the avyaya set is known.
+  _WEAK_RIGHTS_EXTRA = frozenset(data.get("weak_rights", ()))
+  _WEAK_RIGHTS = _PRONOUNS | _WEAK_RIGHTS_EXTRA
+  _MISC_LOADED = True
+
+_TRIE_PADAS = None
+_TRIE_NOMINAL_STEMS = None
+_TRIE_VERB_STEMS = None
+_TRIE_AVYAYAS = None
 _TRIE_DCS = None
 _TRIE_RA = None
 _TRIE_RA_FORMS = None
 _TRIE_RA_NGRAM = None
-_TRIE_RA_SURFACES = None
+_TRIE_RA_ATTESTATIONS = None
 _TRIE_BADSPLITS = None
 _TRIE_SEPS = None
+_WORD_TRIE_GLOBALS = {
+    "padas": "_TRIE_PADAS",
+    "nominal-stems": "_TRIE_NOMINAL_STEMS",
+    "verb-stems": "_TRIE_VERB_STEMS",
+    "avyayas": "_TRIE_AVYAYAS",
+}
 _LAYERED = None
 
 
@@ -220,36 +311,37 @@ class _WordTrie:
 
 
 class _LayeredWords:
-  """Union view over the stardict / DCS / rAmAnujIya word tries.
+  """Union view over the word tries: padas, nominal-stems, verb-stems,
+  avyayas, dcs-stems and rAmAnujIya.
 
   Membership is the union of the layers.  ``count`` keeps the legacy
-  reliability semantics (stardict source count, raised by the DCS tier and
-  by a strong boost for rAmAnujIya-attested words and stems).
-  ``layer_counts`` exposes the per-layer raw counts for the graded,
-  tiered (rAmAnujIya > DCS > stardict) frequency preference.
+  reliability semantics (the best source count among the four word layers,
+  raised by the DCS tier and by a strong boost for rAmAnujIya-attested
+  words and stems).  ``layer_counts`` exposes the per-layer raw counts
+  ``(padas, nominal-stems, verb-stems, avyayas, dcs-stems, rAmAnujIya)``
+  for the graded, tiered frequency preference.
   """
 
   __slots__ = ("_layers",)
 
-  def __init__(self, words, dcs, ra):
-    self._layers = (words, dcs, ra)
+  def __init__(self, *layers):
+    self._layers = layers
 
   def __contains__(self, word):
     return any(word in layer for layer in self._layers)
 
   def count(self, word):
-    c = self._layers[0].count(word)
-    d = self._layers[1].count(word)
+    c = max(self._layers[i].count(word) for i in range(4))
+    d = self._layers[4].count(word)
     if d:
       c = max(c, _dcs_tier(d))
-    r = self._layers[2].count(word)
+    r = self._layers[5].count(word)
     if r:
       c = max(c, _RA_BOOST + r)
     return c
 
   def layer_counts(self, word):
-    return (self._layers[0].count(word), self._layers[1].count(word),
-            self._layers[2].count(word))
+    return tuple(layer.count(word) for layer in self._layers)
 
   def has_prefix(self, prefix):
     return any(layer.has_prefix(prefix) for layer in self._layers)
@@ -468,25 +560,22 @@ def _extract_ra_corpus():
       # builder votes '–' there.
       body = regex.sub(r"[-–—]+\s+[-–—]+", "--", body)
       # "X-+V" editor junctions over a merged mUla: merge final a/ā with
-      # the following independent vowel (…अनुरूप-+एक… = …अनुरूपैक…).
+      # the following independent vowel (…अनुरूप-+एक… = …अनुरूपैक…) via the
+      # sandhi package; the dash run may be a normalised "--"
+      # (…निरतिशय--+औज्ज्वल्य…).
       body = regex.sub(
-          r"(?<=[\u0915-\u0939\u093e])[-–—]\s*\+([\u0905-\u0914])",
+          r"([\u0915-\u0939](?:[\u093e-\u094c])?)[-–—]+\s*\+([\u0905-\u0914])",
           _merge_editor_junction, body)
       # other "+" junctions (e.g. after virama) are non-sandhi seams whose
       # merged form is unknown: drop the token.
-      body = regex.sub(r"[-–—]\s*\+", "@", body)
+      body = regex.sub(r"[-–—]+\s*\+", "@", body)
       for raw in body.split():
         tok = raw.strip(_RA_EDGE)
         if not tok or _RA_ANNOT_RE.search(tok) or _RA_BAD_RE.search(tok):
           continue
         pieces = _SEP_SPLIT_RE.split(tok)
         if len(pieces) > 1:
-          joined = ""
-          for p in pieces:
-            if joined.endswith("\u094d") and p[:1] in _VOWEL_TO_MATRA:
-              joined = joined[:-1] + _VOWEL_TO_MATRA[p[:1]] + p[1:]
-            else:
-              joined += p
+          joined, _bounds = _join_pieces(pieces)
           votes = split_votes.setdefault(joined, {})
           votes[tok] = votes.get(tok, 0) + 1
         else:
@@ -497,23 +586,64 @@ def _extract_ra_corpus():
   return counts, split_votes, plain_counts
 
 
-# independent vowels -> mAtra (for rejoining prastuti pieces into the
-# plain sandhi-merged surface).
-_VOWEL_TO_MATRA = {
-    "\u0905": "", "\u0906": "\u093e", "\u0907": "\u093f", "\u0908": "\u0940",
-    "\u0909": "\u0941", "\u090a": "\u0942", "\u090b": "\u0943",
-    "\u090f": "\u0947", "\u0910": "\u0948", "\u0913": "\u094b",
-    "\u0914": "\u094c",
-}
+_INDEPENDENT_VOWELS = frozenset("अआइईउऊऋऌऍऎएऐऑऒओऔ")
+_SANDHI = None
+_SANDHI_CACHE = {}
+
+
+def _sandhi_single(left, right):
+  """Merge two devanagari surfaces via the sandhi package (first analysis).
+
+  Build-time helper for recreating the mUla sandhi at prastuti seams -
+  rejoined pieces (…निरतिशय + औज्ज्वल्य = …निरतिशयौज्ज्वल्य) and editor
+  junctions.  Sandhi is assumed always present at build time; the browser
+  never reaches this (tries ship prebuilt).
+  """
+  global _SANDHI
+  last = left[-1:]
+  # Only vowel-initial right pieces after a consonant/virama-final left are
+  # genuine merge spots (…य् + अनन्त, …न् + अपि, …प + एक): s-final stems
+  # (रजस् + तमोमय) stay untouched.
+  if not (right[:1] in _INDEPENDENT_VOWELS
+          and (last == "\u094d" or ("\u0915" <= last <= "\u0939"))):
+    return left + right
+  key = (left, right)
+  hit = _SANDHI_CACHE.get(key)
+  if hit is not None:
+    return hit
+  if _SANDHI is None:
+    from sandhi.sandhi import Sandhi
+    _SANDHI = Sandhi()
+  out = _SANDHI.sandhi(left, right)
+  res = out[0][0] if out else left + right
+  _SANDHI_CACHE[key] = res
+  return res
+
+
+def _join_pieces(pieces):
+  """Join prastuti pieces into the merged mUla surface.
+
+  Returns ``(joined, boundaries)``: ``boundaries[i]`` is the cut position of
+  ``pieces[i + 1]`` inside the joined surface, or None when the sandhi
+  absorbed the junction (…यस्मिन्न् + अपि…, देव + इन्द्र…): such a boundary
+  has no displayable position.
+  """
+  pieces = [p for p in pieces if p]
+  if not pieces:
+    return "", []
+  joined = pieces[0]
+  boundaries = []
+  for p in pieces[1:]:
+    merged = _sandhi_single(joined, p)
+    boundaries.append(len(joined) if merged.startswith(joined) else None)
+    joined = merged
+  return joined, boundaries
 
 
 def _merge_editor_junction(m):
-  """guNa/vRddhi merge of a final a/ā with an editor-marked independent vowel."""
-  return {
-      "अ": "\u093e", "आ": "\u093e", "इ": "\u0947", "ई": "\u0947",
-      "उ": "\u094b", "ऊ": "\u094b", "ऋ": "\u0943", "ए": "\u0948",
-      "ऐ": "\u0948", "ओ": "\u094c", "औ": "\u094c",
-  }.get(m.group(1), "\u093e")
+  """guNa/vRddhi merge of a final a/ā with an editor-marked independent
+  vowel (…अनुरूप-+एक… = …अनुरूपैक…), recreated via the sandhi package."""
+  return _sandhi_single(m.group(1), m.group(2))
 
 
 def _extract_ra_word_counts():
@@ -538,7 +668,12 @@ def _build_ra_forms_trie(split_votes, plain_counts):
       entries.append((joined, b""))
       continue
     form = max(votes.items(), key=lambda kv: (kv[1], -len(kv[0])))[0]
-    entries.append((joined, form.encode("utf-8")))
+    # Normalised frequency of the winning segmentation, per-mille of the
+    # surface's occurrences (split votes + plain) - available for scoring
+    # experiments via ``_ra_form_confidence``.
+    total = n_plain + sum(votes.values())
+    freq = (1000 * votes[form]) // max(total, 1)
+    entries.append((joined, ("%d\t%s" % (freq, form)).encode("utf-8")))
   for tok in set(plain_counts) - set(split_votes):
     if plain_counts[tok] >= 3:
       entries.append((tok, b""))
@@ -570,24 +705,14 @@ def _ngram_add(tables, surface, pos, is_split, weight):
 def _form_positions(form):
   """``(joined surface, split positions)`` of a hyphenated form.
 
-  Uses the extractor's own reassembly (``_VOWEL_TO_MATRA``: a piece-final
-  virama + next-piece independent vowel merge into the plain surface), so the
-  positions are expressed in the joined surface's own coordinates.  A
-  boundary absorbed by such a merge has no surface position and is dropped.
+  Uses ``_join_pieces`` (sandhi package: a virama-final piece + independent
+  vowel or a bare a-final merge into the plain surface), so the positions
+  are expressed in the joined surface's own coordinates.  A boundary
+  absorbed by such a merge has no surface position and is dropped.
   """
   pieces = _SEP_SPLIT_RE.split(form)
-  joined = ""
-  pos = []
-  for i, p in enumerate(pieces):
-    if joined.endswith("\u094d") and p[:1] in _VOWEL_TO_MATRA:
-      if pos:
-        pos[-1] = None
-      joined = joined[:-1] + _VOWEL_TO_MATRA[p[:1]] + p[1:]
-    else:
-      joined += p
-    if i < len(pieces) - 1:
-      pos.append(len(joined))
-  return joined, [p for p in pos if p]
+  joined, boundaries = _join_pieces(pieces)
+  return joined, [b for b in boundaries if b]
 
 
 def _build_ra_ngram_trie(split_votes, plain_counts):
@@ -622,138 +747,6 @@ def _build_ra_ngram_trie(split_votes, plain_counts):
   trie.save(tmp)
   os.replace(tmp, _RA_NGRAM_TRIE_PATH)
   return trie
-
-
-def _build_ra_surfaces_trie(counts, plain_counts, split_votes, smap):
-  """Corpus surface tokens (hyphen pieces + unhyphenated tokens) -> trie.
-
-  The prastuti convention's own vocabulary of *surfaces*: this is what may
-  be carved as a halant-final piece (``तद्``, ``जगत्``, ``फलम्``,
-  ``शब्दैर्``).  Dictionary root entries (``सर्व्``), exotic headwords
-  (``अपास्``) and stem inferences (``तसम्``) that never surface in the
-  corpus as such are vetoed instead.
-
-  A piece that the corpus itself uses as the left member of a join with an
-  inflected (e/o) final - ``गणे-श्वरम्``, ``पङ्के-रुह`` - is marked with
-  bit 0x8000: those, and only those, may take a samAsa cut after an e/o
-  final (``लोके-ष्विदं`` style case-form joins are vetoed).
-  """
-  merged = {}
-  for table in (counts, plain_counts):
-    for dev, n in table.items():
-      merged[dev] = merged.get(dev, 0) + n
-  joined_lefts = set()
-  for forms in split_votes.values():
-    for form in forms:
-      parts = _SEP_SPLIT_RE.split(form)
-      for pc in parts[:-1]:
-        if pc.endswith(("\u0947", "\u094b")):
-          joined_lefts.add(pc)
-  entries = []
-  for dev, n in merged.items():
-    try:
-      hk = sanscript.transliterate(dev, scheme_map=smap)
-    except Exception:
-      continue
-    if hk:
-      val = min(n, 0x7FFF) | (0x8000 if dev in joined_lefts else 0)
-      entries.append((hk, (val,)))
-  trie = marisa_trie.RecordTrie("H", entries)
-  os.makedirs(_DATA_DIR, exist_ok=True)
-  tmp = _RA_SURFACES_TRIE_PATH + ".tmp"
-  trie.save(tmp)
-  os.replace(tmp, _RA_SURFACES_TRIE_PATH)
-  return trie
-
-
-def _build_ra_trie(smap, base_layers):
-  """Words + stems from the rAmAnujIya prastuti corpus -> ``rAmAnujIya.trie``.
-
-  Stems are the mechanical light-stemmer truncations of attested words
-  (longest sup/tiG ending, plus stem-final restorations) that are themselves
-  known (in this corpus or in the base layers).
-  """
-  word_counts = {}
-  for dev, n in _extract_ra_word_counts().items():
-    try:
-      hk = sanscript.transliterate(dev, scheme_map=smap)
-    except Exception:
-      continue
-    if hk:
-      word_counts[hk] = word_counts.get(hk, 0) + n
-
-  def known(hk):
-    return hk in word_counts or any(hk in layer for layer in base_layers)
-
-  stem_counts = {}
-  for hk, n in word_counts.items():
-    for end in _SUP_ENDINGS:
-      if len(hk) <= len(end) + 1 or not hk.endswith(end):
-        continue
-      pre = hk[:-len(end)]
-      for cand in (pre,) + tuple(pre + f for f in _STEM_FINALS):
-        if len(cand) >= 3 and known(cand):
-          stem_counts[cand] = stem_counts.get(cand, 0) + n
-      break
-  for cand, n in stem_counts.items():
-    if n > word_counts.get(cand, 0):
-      word_counts[cand] = n
-
-  rt = marisa_trie.RecordTrie(
-      "H", [(w, (min(c, 65535),)) for w, c in word_counts.items()])
-  os.makedirs(_DATA_DIR, exist_ok=True)
-  tmp = _RA_TRIE_PATH + ".tmp"
-  rt.save(tmp)
-  os.replace(tmp, _RA_TRIE_PATH)
-  return rt
-
-
-def _build_trie():
-  """Build the marisa word trie from the stardict wordlist + DCS frequency
-  babylon + seed words."""
-  smap = _get_scheme_map()
-  counts = {}
-  try:
-    with open(_DICT_TXT, encoding="utf-8") as f:
-      for line in f:
-        line = line.strip()
-        if not line:
-          continue
-        parts = line.split("\t")
-        w = parts[0].strip()
-        if not w or len(w) > 40:
-          continue
-        nsrc = len(parts[1].split(",")) if len(parts) > 1 and parts[1] else 1
-        try:
-          hk = sanscript.transliterate(w, scheme_map=smap)
-        except Exception:
-          continue
-        if hk and nsrc > counts.get(hk, 0):
-          counts[hk] = nsrc
-  except FileNotFoundError:
-    pass
-  for hk, total in _parse_dcs(smap).items():
-    tier = _dcs_tier(total)
-    if tier > counts.get(hk, 0):
-      counts[hk] = tier
-  for w in _SEED_WORDS:
-    counts.setdefault(w, _SEED_COUNT)
-  rt = marisa_trie.RecordTrie(
-      "H", [(w, (min(c, 65535),)) for w, c in counts.items()])
-  os.makedirs(_DATA_DIR, exist_ok=True)
-  tmp = _TRIE_PATH + ".tmp"
-  rt.save(tmp)
-  os.replace(tmp, _TRIE_PATH)
-  return rt
-
-
-def _invalidate_trie_caches():
-  for c in (_CACHE_CORE, _CACHE_RELIABLE, _CACHE_STEM, _CACHE_STEM_PIECE,
-            _CACHE_STEM_BASE_PIECE, _CACHE_YAN_LEFT, _CACHE_TOKEN,
-            _CACHE_VIS_RESTORE, _CACHE_YAN_RESTORE, _CACHE_WITNESS,
-            _CACHE_RA_FORM, _CACHE_MEMO_PIECE, _CACHE_MEMO_SEPS,
-            _CACHE_SURFACE, _CACHE_ELEFT, _CACHE_DICT, _CACHE_BAD, _CACHE_SEP):
-    c.clear()
 
 
 def _bad_add(tables, lpiece, hk, cpos, weight):
@@ -864,6 +857,88 @@ def _build_ra_badsplits(split_votes, plain_counts, smap):
   return trie
 
 
+def _build_ra_trie(smap, base_layers):
+  """Words + stems from the rAmAnujIya prastuti corpus -> ``rAmAnujIya.trie``.
+
+  Stems are the mechanical light-stemmer truncations of attested words
+  (longest sup/tiG ending, plus stem-final restorations) that are themselves
+  known (in this corpus or in the base layers).  The corpus attestation memory
+  (pieces + whole tokens, joined-lefts) lives separately in
+  ``rAmAnujIya-attestations.trie``.
+  """
+  word_counts = {}
+  for dev, n in _extract_ra_word_counts().items():
+    try:
+      hk = sanscript.transliterate(dev, scheme_map=smap)
+    except Exception:
+      continue
+    if hk:
+      word_counts[hk] = word_counts.get(hk, 0) + n
+
+  def known(hk):
+    return hk in word_counts or any(hk in layer for layer in base_layers)
+
+  stem_counts = {}
+  for hk, n in word_counts.items():
+    for end in _SUP_ENDINGS:
+      if len(hk) <= len(end) + 1 or not hk.endswith(end):
+        continue
+      pre = hk[:-len(end)]
+      for cand in (pre,) + tuple(pre + f for f in _STEM_FINALS):
+        if len(cand) >= 3 and known(cand):
+          stem_counts[cand] = stem_counts.get(cand, 0) + n
+      break
+  for cand, n in stem_counts.items():
+    if n > word_counts.get(cand, 0):
+      word_counts[cand] = n
+
+  rt = marisa_trie.RecordTrie(
+      "H", [(w, (min(c, 65535),)) for w, c in word_counts.items()])
+  os.makedirs(_DATA_DIR, exist_ok=True)
+  tmp = _RA_TRIE_PATH + ".tmp"
+  rt.save(tmp)
+  os.replace(tmp, _RA_TRIE_PATH)
+  return rt
+
+
+def _build_ra_attestations_trie(counts, plain_counts, split_votes, smap):
+  """Corpus attestation memory -> ``rAmAnujIya-attestations.trie``.
+
+  HK token -> bit flags: 1 = the corpus itself uses this token (as a hyphen
+  piece or as a whole unhyphenated token); 2 = an e/o-final piece the corpus
+  joins to a following member (``गणे-श्वरम्``, ``पङ्के-रुह``; implies bit 1).
+  A halant-final piece taken from a dictionary entry or inferred stem
+  (``सर्व्`` = √सर्व्, ``अपास्``, ``तसम्``) is vetoed unless flagged here -
+  see ``_attested`` / ``_joined_left_attested``.
+  """
+  flags = {}
+  for dev in set(counts) | set(plain_counts):
+    try:
+      hk = sanscript.transliterate(dev, scheme_map=smap)
+    except Exception:
+      continue
+    if hk:
+      flags[hk] = flags.get(hk, 0) | 1
+  for forms in split_votes.values():
+    for form in forms:
+      for pc in [p for p in _SEP_SPLIT_RE.split(form) if p][:-1]:
+        if not pc.endswith(("\u0947", "\u094b")):
+          continue
+        try:
+          hk = sanscript.transliterate(pc, scheme_map=smap)
+        except Exception:
+          continue
+        if hk:
+          flags[hk] = flags.get(hk, 0) | 3
+  entries = [(w, (min(c, 0xFFFF),)) for w, c in flags.items()]
+  trie = marisa_trie.RecordTrie("H", entries)
+  os.makedirs(_DATA_DIR, exist_ok=True)
+  tmp = _RA_ATTESTATIONS_TRIE_PATH + ".tmp"
+  trie.save(tmp)
+  os.replace(tmp, _RA_ATTESTATIONS_TRIE_PATH)
+  return trie
+
+
 def _sep_add(tables, hk, cpos, dash):
   """Record one separator vote at a junction of HK surface ``hk``."""
   kmax = min(_RA_NGRAM_MAX_K, cpos, len(hk) - cpos)
@@ -905,17 +980,12 @@ def _build_ra_seps_trie(split_votes, smap):
       seps = seps[:max(0, len(pieces) - 1)]
       if len(pieces) < 2 or len(seps) != len(pieces) - 1:
         continue
-      joined = pieces[0]
-      juncs = []
-      for sep, part in zip(seps, pieces[1:]):
-        if joined.endswith("\u094d") and part[:1] in _VOWEL_TO_MATRA:
-          joined = joined[:-1] + _VOWEL_TO_MATRA[part[:1]] + part[1:]
-          continue  # the boundary was absorbed by a sandhi merge
-        juncs.append((len(joined), sep))
-        joined += part
+      joined, boundaries = _join_pieces(pieces)
       if joined != tok:
         continue
-      for pos, sep in juncs:
+      for sep, pos in zip(seps, boundaries):
+        if pos is None:
+          continue  # the boundary was absorbed by a sandhi merge
         try:
           pre_hk = sanscript.transliterate(joined[:pos], scheme_map=smap)
         except Exception:
@@ -933,14 +1003,165 @@ def _build_ra_seps_trie(split_votes, smap):
   return trie
 
 
-def rebuild_word_trie():
-  """Force-rebuild ``data/vocabulary/sanskrit/sanskrit-words.trie`` from the
-  stardict wordlist (also done automatically when the trie is stale)."""
-  global _TRIE, _LAYERED
-  _TRIE = _WordTrie(_build_trie())
+def _babylon_head_lines(path):
+  """Head (``|`` separated) lines of a stardict babylon file."""
+  try:
+    with open(path, encoding="utf-8") as f:
+      text = f.read()
+  except OSError:
+    return
+  for m in regex.finditer(r"(?:\A|\n\n)([^\n#][^\n]*)\n", text):
+    yield m.group(1)
+
+
+def _category_word_sets():
+  """(avyaya, nominal-stem, verb-stem) devanagari sets from indic-dict.
+
+  nominal stems come from the vidyut subanta tables (first column of each
+  headword), verb stems/roots from the vidyut tiNanta tables (first two
+  columns), avyayas from the svArAdi/cAdi gaNas of the aShTAdhyAyI
+  gaNapAThaH.
+  """
+  avyaya, nominal, verb = set(), set(), set()
+  for path in glob.glob(_SUBANTA_GLOB):
+    for head in _babylon_head_lines(path):
+      first = head.split("|", 1)[0].strip()
+      if first:
+        nominal.add(first)
+  for path in glob.glob(_TINANTA_GLOB):
+    for head in _babylon_head_lines(path):
+      for field in head.split("|")[:2]:
+        field = field.strip()
+        if field:
+          verb.add(field)
+  try:
+    with open(_GANAPATHAH_PATH, encoding="utf-8") as f:
+      text = f.read()
+  except OSError:
+    text = ""
+  for gana in _AVYAYA_GANAS:
+    m = regex.search(r"^%s<BR>[^\n]*" % gana, text, regex.MULTILINE)
+    if not m:
+      continue
+    for item in m.group(0).split("।"):
+      item = item.strip().strip("*_()[]॥ ")
+      if not item or " " in item or "<" in item:
+        continue
+      if any(ord(ch) < 0x900 or ord(ch) > 0x97F for ch in item):
+        continue
+      avyaya.add(item)
+  # The DCS glossary marks indeclinables ("\u2026<BR>indeclinable ind<BR>\u2026");
+  # a robust supplement to the gaNas (अपि etc. are not in svArAdi/cAdi).
+  try:
+    with open(_DCS_BABYLON, encoding="utf-8") as f:
+      dcs_text = f.read()
+  except OSError:
+    dcs_text = ""
+  for entry in dcs_text.split("\n\n"):
+    lines = entry.split("\n")
+    if len(lines) >= 2 and "indeclinable ind" in "\n".join(lines[1:]):
+      key = lines[0].strip()
+      if key and all(0x900 <= ord(ch) <= 0x97F or ch in "-" for ch in key):
+        avyaya.add(key)
+  return avyaya, nominal, verb
+
+
+def _word_sources_mtime():
+  """Newest mtime among the wordlist and the vyAkaraNa category sources."""
+  paths = []
+  for path in (_DICT_TXT, _GANAPATHAH_PATH):
+    if os.path.exists(path):
+      paths.append(path)
+  for pattern in (_SUBANTA_GLOB, _TINANTA_GLOB):
+    paths.extend(glob.glob(pattern))
+  return max([os.path.getmtime(p) for p in paths if os.path.exists(p)],
+             default=0)
+
+
+def _build_tries():
+  """Build the four marisa word tries (padas / nominal-stems / verb-stems /
+  avyayas) by partitioning the stardict wordlist with the vyAkaraNa category
+  sources (seed words are categorised by membership too)."""
+  smap = _get_scheme_map()
+  avyaya_set, nominal_set, verb_set = _category_word_sets()
+  buckets = {name: {} for name in _WORD_TRIE_PATHS}
+  try:
+    with open(_DICT_TXT, encoding="utf-8") as f:
+      for line in f:
+        line = line.strip()
+        if not line:
+          continue
+        parts = line.split("\t")
+        w = parts[0].strip()
+        if not w or len(w) > 40:
+          continue
+        nsrc = len(parts[1].split(",")) if len(parts) > 1 and parts[1] else 1
+        if w in avyaya_set:
+          bucket = "avyayas"
+        elif w in verb_set:
+          bucket = "verb-stems"
+        elif w in nominal_set:
+          bucket = "nominal-stems"
+        else:
+          bucket = "padas"
+        try:
+          hk = sanscript.transliterate(w, scheme_map=smap)
+        except Exception:
+          continue
+        if hk and nsrc > buckets[bucket].get(hk, 0):
+          buckets[bucket][hk] = nsrc
+  except FileNotFoundError:
+    pass
+  for w in _SEED_WORDS:
+    try:
+      dev = sanscript.transliterate(w, sanscript.HK, sanscript.DEVANAGARI)
+    except Exception:
+      dev = ""
+    if dev and dev in avyaya_set:
+      bucket = "avyayas"
+    elif dev and dev in verb_set:
+      bucket = "verb-stems"
+    elif dev and dev in nominal_set:
+      bucket = "nominal-stems"
+    else:
+      bucket = "padas"
+    buckets[bucket].setdefault(w, _SEED_COUNT)
+  os.makedirs(_DATA_DIR, exist_ok=True)
+  tries = {}
+  for name, path in _WORD_TRIE_PATHS.items():
+    rt = marisa_trie.RecordTrie(
+        "H", [(w, (min(c, 65535),)) for w, c in buckets[name].items()])
+    tmp = path + ".tmp"
+    rt.save(tmp)
+    os.replace(tmp, path)
+    tries[name] = rt
+  return tries
+
+
+def _invalidate_trie_caches():
+  for c in (_CACHE_CORE, _CACHE_RELIABLE, _CACHE_STEM, _CACHE_STEM_PIECE,
+            _CACHE_STEM_BASE_PIECE, _CACHE_YAN_LEFT, _CACHE_TOKEN,
+            _CACHE_VIS_RESTORE, _CACHE_YAN_RESTORE, _CACHE_WITNESS,
+            _CACHE_RA_FORM, _CACHE_MEMO_PIECE, _CACHE_MEMO_SEPS,
+            _CACHE_RA_ATTESTED, _CACHE_ELEFT, _CACHE_DICT, _CACHE_BAD, _CACHE_SEP):
+    c.clear()
+
+
+def rebuild_word_tries():
+  """Force-rebuild the four word tries (padas / nominal-stems / verb-stems /
+  avyayas) from the stardict wordlist + vyAkaraNa categories (also done
+  automatically when a source is stale)."""
+  global _LAYERED
+  _load_misc_data()
+  tries = _build_tries()
+  for name, rt in tries.items():
+    globals()[_WORD_TRIE_GLOBALS[name]] = _WordTrie(rt)
   _LAYERED = None
   _invalidate_trie_caches()
-  return _TRIE
+  return _TRIE_PADAS
+
+
+rebuild_word_trie = rebuild_word_tries
 
 
 def rebuild_dcs_trie():
@@ -956,16 +1177,16 @@ def rebuild_dcs_trie():
 def rebuild_ra_trie():
   """Force-rebuild the ``rAmAnujIya*`` tries from the sources declared in
   ``data/vocabulary/sanskrit/rAmAnujIya-sources.toml``."""
-  global _TRIE_RA, _TRIE_RA_FORMS, _TRIE_RA_NGRAM, _TRIE_RA_SURFACES, \
+  global _TRIE_RA, _TRIE_RA_FORMS, _TRIE_RA_NGRAM, _TRIE_RA_ATTESTATIONS, \
       _TRIE_SEPS, _LAYERED
-  _load_words()
-  layers = (_TRIE, _TRIE_DCS)
+  loaded = _load_words()
+  layers = tuple(loaded._layers[:5])
   _TRIE_RA = _WordTrie(_build_ra_trie(_get_scheme_map(), layers))
   counts, split_votes, plain_counts = _extract_ra_corpus()
   _TRIE_RA_FORMS = _build_ra_forms_trie(split_votes, plain_counts)
   _TRIE_RA_NGRAM = _build_ra_ngram_trie(split_votes, plain_counts)
-  _TRIE_RA_SURFACES = _build_ra_surfaces_trie(counts, plain_counts,
-                                              split_votes, _get_scheme_map())
+  _TRIE_RA_ATTESTATIONS = _WordTrie(_build_ra_attestations_trie(
+      counts, plain_counts, split_votes, _get_scheme_map()))
   _TRIE_SEPS = _build_ra_seps_trie(split_votes, _get_scheme_map())
   _LAYERED = None
   _invalidate_trie_caches()
@@ -973,19 +1194,38 @@ def rebuild_ra_trie():
 
 
 def _load_words():
-  global _TRIE, _TRIE_DCS, _TRIE_RA, _TRIE_RA_FORMS, _TRIE_RA_NGRAM, \
-      _TRIE_RA_SURFACES, _TRIE_BADSPLITS, _TRIE_SEPS, _LAYERED
+  global _TRIE_PADAS, _TRIE_NOMINAL_STEMS, _TRIE_VERB_STEMS, _TRIE_AVYAYAS, \
+      _TRIE_DCS, _TRIE_RA, _TRIE_RA_FORMS, _TRIE_RA_NGRAM, _TRIE_RA_ATTESTATIONS, \
+      _TRIE_BADSPLITS, _TRIE_SEPS, _LAYERED, _AVYAYAS, _WEAK_RIGHTS
+  _load_misc_data()
   if _LAYERED is not None:
     return _LAYERED
   smap = _get_scheme_map()
-  if (os.path.exists(_TRIE_PATH) and os.path.exists(_DICT_TXT)
-      and os.path.getmtime(_TRIE_PATH) >= os.path.getmtime(_DICT_TXT)):
-    rt_words = marisa_trie.RecordTrie("H")
-    rt_words.load(_TRIE_PATH)
+  word_src = _word_sources_mtime()
+  word_tries = {}
+  av_keys = []
+  if all(os.path.exists(path) for path in _WORD_TRIE_PATHS.values()) and (
+      not word_src or all(os.path.getmtime(path) >= word_src
+                          for path in _WORD_TRIE_PATHS.values())):
+    for name, path in _WORD_TRIE_PATHS.items():
+      rt = marisa_trie.RecordTrie("H")
+      rt.load(path)
+      word_tries[name] = _WordTrie(rt)
+      if name == "avyayas":
+        av_keys = list(rt.iterkeys())
   else:
-    rt_words = _build_trie()
-  if (os.path.exists(_DCS_TRIE_PATH) and os.path.exists(_DCS_BABYLON)
-      and os.path.getmtime(_DCS_TRIE_PATH) >= os.path.getmtime(_DCS_BABYLON)):
+    built = _build_tries()
+    for name, rt in built.items():
+      word_tries[name] = _WordTrie(rt)
+      if name == "avyayas":
+        av_keys = list(rt.iterkeys())
+  # The avyaya closed class is the corpus wordlist's avyayas.trie itself.
+  _AVYAYAS = frozenset(av_keys)
+  _WEAK_RIGHTS = _AVYAYAS | _PRONOUNS | _WEAK_RIGHTS_EXTRA
+  if (os.path.exists(_DCS_TRIE_PATH)
+      and (not os.path.exists(_DCS_BABYLON)
+           or os.path.getmtime(_DCS_TRIE_PATH)
+           >= os.path.getmtime(_DCS_BABYLON))):
     rt_dcs = marisa_trie.RecordTrie("H")
     rt_dcs.load(_DCS_TRIE_PATH)
   else:
@@ -1000,7 +1240,8 @@ def _load_words():
     rt_ra = marisa_trie.RecordTrie("H")
     rt_ra.load(_RA_TRIE_PATH)
   else:
-    rt_ra = _build_ra_trie(smap, (_WordTrie(rt_words), _WordTrie(rt_dcs)))
+    base_layers = tuple(word_tries.values()) + (_WordTrie(rt_dcs),)
+    rt_ra = _build_ra_trie(smap, base_layers)
   if (os.path.exists(_RA_FORMS_TRIE_PATH)
       and os.path.getmtime(_RA_FORMS_TRIE_PATH) >= ra_mtime):
     rt_forms = marisa_trie.BytesTrie()
@@ -1015,14 +1256,13 @@ def _load_words():
   else:
     _, split_votes, plain_counts = _extract_ra_corpus()
     rt_ngram = _build_ra_ngram_trie(split_votes, plain_counts)
-  if (os.path.exists(_RA_SURFACES_TRIE_PATH)
-      and os.path.getmtime(_RA_SURFACES_TRIE_PATH) >= ra_mtime):
-    rt_surfaces = marisa_trie.RecordTrie("H")
-    rt_surfaces.load(_RA_SURFACES_TRIE_PATH)
+  if (os.path.exists(_RA_ATTESTATIONS_TRIE_PATH)
+      and os.path.getmtime(_RA_ATTESTATIONS_TRIE_PATH) >= ra_mtime):
+    rt_tokens = marisa_trie.RecordTrie("H")
+    rt_tokens.load(_RA_ATTESTATIONS_TRIE_PATH)
   else:
     counts, split_votes, plain_counts = _extract_ra_corpus()
-    rt_surfaces = _build_ra_surfaces_trie(counts, plain_counts, split_votes,
-                                          smap)
+    rt_tokens = _build_ra_attestations_trie(counts, plain_counts, split_votes, smap)
   rt_bad = None
   if (os.path.exists(_RA_BADSPLITS_TRIE_PATH)
       and os.path.getmtime(_RA_BADSPLITS_TRIE_PATH) >= ra_mtime):
@@ -1035,15 +1275,20 @@ def _load_words():
   else:
     _, split_votes, _plain = _extract_ra_corpus()
     rt_seps = _build_ra_seps_trie(split_votes, smap)
-  _TRIE = _WordTrie(rt_words)
+  _TRIE_PADAS = word_tries["padas"]
+  _TRIE_NOMINAL_STEMS = word_tries["nominal-stems"]
+  _TRIE_VERB_STEMS = word_tries["verb-stems"]
+  _TRIE_AVYAYAS = word_tries["avyayas"]
   _TRIE_DCS = _WordTrie(rt_dcs)
   _TRIE_RA = _WordTrie(rt_ra)
   _TRIE_RA_FORMS = rt_forms
   _TRIE_RA_NGRAM = rt_ngram
-  _TRIE_RA_SURFACES = rt_surfaces
+  _TRIE_RA_ATTESTATIONS = _WordTrie(rt_tokens)
   _TRIE_BADSPLITS = rt_bad
   _TRIE_SEPS = rt_seps
-  _LAYERED = _LayeredWords(_TRIE, _TRIE_DCS, _TRIE_RA)
+  _LAYERED = _LayeredWords(_TRIE_PADAS, _TRIE_NOMINAL_STEMS,
+                           _TRIE_VERB_STEMS, _TRIE_AVYAYAS, _TRIE_DCS,
+                           _TRIE_RA)
   if _TRIE_BADSPLITS is None:
     # Mine the negative splits only now that every layer is active - the
     # builder runs the splitter itself over the corpus (memo bypassed).
@@ -1065,9 +1310,29 @@ def _ra_split_form(dev_word):
     return cached
   _load_words()
   vals = _TRIE_RA_FORMS.get(dev_word) if _TRIE_RA_FORMS is not None else None
-  form = vals[0].decode("utf-8") if vals else None
+  form = None
+  if vals:
+    raw = vals[0]
+    if not raw:
+      form = ""
+    else:
+      text = raw.decode("utf-8")
+      tilde = text.find("\t")
+      form = text[tilde + 1:] if tilde >= 0 else text
   _CACHE_RA_FORM[dev_word] = form
   return form
+
+
+def _ra_form_confidence(dev_word):
+  """Per-mille frequency of the corpus's winning segmentation of a surface
+  (None when unseen or unattested-plain)."""
+  _load_words()
+  vals = _TRIE_RA_FORMS.get(dev_word) if _TRIE_RA_FORMS is not None else None
+  if not vals or not vals[0]:
+    return None
+  text = vals[0].decode("utf-8")
+  tilde = text.find("\t")
+  return int(text[:tilde]) if tilde >= 0 else None
 
 
 def _count_of(hk):
@@ -1086,30 +1351,28 @@ def _halant_final(hk_piece):
   return ch.isalpha()
 
 
-def _surface_attested(hk_piece):
-  """Corpus (hyphen pieces + plain tokens) attests this exact surface."""
+def _attested(hk_piece):
+  """The corpus itself uses this token - as a hyphen piece or as a whole
+  unhyphenated token (bit 1 of ``rAmAnujIya-attestations.trie``)."""
   _load_words()
-  trie = _TRIE_RA_SURFACES
-  if trie is None:
-    return True  # no corpus data loaded: do not veto
-  hit = _CACHE_SURFACE.get(hk_piece)
+  hit = _CACHE_RA_ATTESTED.get(hk_piece)
   if hit is None:
-    hit = hk_piece in trie
-    _CACHE_SURFACE[hk_piece] = hit
+    hit = bool(_TRIE_RA_ATTESTATIONS.count(hk_piece) & 1) \
+        if _TRIE_RA_ATTESTATIONS is not None else True
+    _CACHE_RA_ATTESTED[hk_piece] = hit
   return hit
 
 
 def _joined_left_attested(hk_piece):
   """The corpus itself joins this inflected (e/o-final) piece to a following
-  member (``गणे-श्वरम्``, ``पङ्के-रुह``, ``मनो-बुद्धि``) - bit 0x8000."""
+  member (``गणे-श्वरम्``, ``पङ्के-रुह``, ``मनो-बुद्धि``).
+
+  Bit 2 of ``rAmAnujIya-attestations.trie``."""
   _load_words()
-  trie = _TRIE_RA_SURFACES
-  if trie is None:
-    return True
   hit = _CACHE_ELEFT.get(hk_piece)
   if hit is None:
-    rec = trie.get(hk_piece)
-    hit = bool(rec) and bool(rec[0][0] & 0x8000)
+    hit = bool(_TRIE_RA_ATTESTATIONS.count(hk_piece) & 2) \
+        if _TRIE_RA_ATTESTATIONS is not None else True
     _CACHE_ELEFT[hk_piece] = hit
   return hit
 
@@ -1151,69 +1414,12 @@ def _prefix_in_dict(s):
   return _load_words().has_prefix(s)
 
 
-# Closed classes (HK).
-_AVYAYAS = frozenset([
-    "eva", "evam", "iva", "hi", "ca", "vA", "tu", "api", "iti", "atha",
-    "tathA", "yathA", "nanu", "khalu", "vai", "ha", "aho", "he", "are",
-    "mA", "sma", "su", "dus", "anu", "upari", "atra", "tatra", "kutra",
-])
-_PRONOUNS = frozenset([
-    "tat", "etat", "yat", "kim", "idam", "adas", "tad", "etad", "yad",
-    "asmin", "tasmin", "etasmin", "tasmAt", "asmAt", "kasmin",
-    "saH", "sA", "te", "tvam", "aham", "vayam", "yUyam", "asya",
-    "etat", "idam", "etad",
-])
-_META_SUFFIXES = ("zabda", "DAtu", "sUtra", "pratyaya", "prakRti")
-_COMPOUND_SUFFIXES = ("Adi", "antara", "artha", "anta", "anvaya")
+# Closed classes (HK): avyayas / pronouns / upasargas come from
+# ``data/vocabulary/sanskrit/misc-vocab.toml`` (see ``_load_misc_data``).
+# _META_SUFFIXES / _COMPOUND_SUFFIXES: misc_hyphenator_data.toml.
 
-_UPASARGAS = tuple(sorted([
-    "prati", "abhi", "pari", "adhi", "sam", "anu", "ava", "nis", "nir",
-    "dus", "dur", "ut", "ud", "pra", "parA", "apa", "vi", "ni", "A",
-    "su", "api", "ati", "upa", "duS", "duz", "niS", "niz", "saM", "san",
-], key=len, reverse=True))
-
-# Whitelist for very short pieces (HK len < 3).
-_SHORT_OK = frozenset(["ca", "vA", "hi", "tu", "na", "te", "me", "oM", "jA", "a"])
-
-# sup/tiG endings used by the light stemmer (longest first).
-_SUP_ENDINGS = tuple(sorted([
-    "ByAm", "ByaH", "bhyAm", "bhyah", "BhiH", "ezu", "nAm", "sya",
-    "yoH", "oH", "eH", "EH", "AnAm", "Ani", "Ini", "Uni",
-    "Aya", "Ayai", "AyAH", "yAH",
-    "At", "Ad", "aH", "AH", "An", "Am", "e", "O", "ena", "enA",
-    "inA", "unA", "AyA", "ayA",     "aye", "ave", "asya",
-    # tiG endings (verbs)
-    "ante", "anti", "ate", "nte", "nti", "te", "ti", "It", "us", "uH",
-    "tum", "tvA", "sya", "vat", "vatI", "vAn", "mAn", "mat",
-    "M", "m", "H", "n", "t", "d", "s", "r",
-], key=len, reverse=True))
-
-_STEM_FINALS = ("a", "A", "i", "I", "u", "U", "f", "t", "d", "n", "s", "as")
-
-# pure endings that must never appear as standalone split pieces
-_BARE_SUFFIXES = frozenset([
-    "sya", "ByAm", "ByaH", "bhyaH", "Byah", "bhyAm", "bhyah", "BhiH", "ezu", "zu",
-    "nAm", "yoH", "oH", "eH", "EH", "Aya", "Ayai", "AyAH", "aiH", "auH",
-    "At", "Ad", "An", "ena", "enA", "inA", "unA", "AyA", "ayA",
-    "aye", "ave", "AsAm", "tva", "tvAt", "tA", "tvam", "tvaM", "vat",
-    "mat", "vAn", "mAn", "vatI", "vant", "mant", "nAm", "nAM", "mAtram",
-    "mAtrAM", "mAtra", "mAtrA", "Ani", "Ini", "Uni", "avaH", "ayaH",
-    "aH", "AH", "e", "O",
-])
-
-# Weak (function-word) right pieces: after a prefix-like left these are
-# almost always separate padas, never suffix-like compound members.
-_SANDHI_KEEP = frozenset([
-    "kiMcid", "yuzmad", "bavad", "etad", "idam", "kimcid", "yuSmad",
-    "bhavad", "tad", "sad", "cid", "yat", "etat", "tat", "sat", "cit",
-])
-
-_WEAK_RIGHTS = _AVYAYAS | _PRONOUNS | frozenset([
-    "yam", "yaM", "tam", "taM", "enam", "enaM", "imam", "imaM",
-    "amum", "amUM", "asya", "tasya", "yasya",
-    "tezAm", "ezAm", "yena", "tena", "kena", "tataH", "yataH",
-    "idAnIm", "etat", "etad",
-])
+# sup/tiG endings + stem-final restorations: misc_hyphenator_data.toml
+# (see _load_misc_data).
 
 
 def _stem_valid(hk):
@@ -1322,7 +1528,7 @@ _CACHE_WITNESS = {}
 _CACHE_RA_FORM = {}
 _CACHE_MEMO_PIECE = {}
 _CACHE_MEMO_SEPS = {}
-_CACHE_SURFACE = {}
+_CACHE_RA_ATTESTED = {}
 _CACHE_ELEFT = {}
 _CACHE_DICT = {}
 _CACHE_BAD = {}
@@ -1411,9 +1617,9 @@ def _tight_merger_surface(hk):
         lu = hk[:p] + lv
         ru = rv + right_rest
         if lu in words and ru in words:
-          lw, ld, _r = words.layer_counts(lu)
-          rw, rd, _rr = words.layer_counts(ru)
-          if lw + ld > 0 and rw + rd > 0:
+          lw = max(words.layer_counts(lu)[:5])
+          rw = max(words.layer_counts(ru)[:5])
+          if lw > 0 and rw > 0:
             return True
   return False
 
@@ -1467,7 +1673,7 @@ def _core_valid(hk_piece, piece_mode=False):
     cand = hk_piece[:-1] + "t"
     if cand in words:
       return ("t-assim", cand)
-    if not piece_mode and _stem_valid(cand):
+    if _stem_valid_piece(cand) if piece_mode else _stem_valid(cand):
       return ("t-assim", cand)
   if len(hk_piece) >= 3 and hk_piece.endswith("j"):
     cand = hk_piece[:-1] + "t"
@@ -1516,9 +1722,6 @@ def _core_valid(hk_piece, piece_mode=False):
   elif _stem_valid(hk_piece):
     return ("stem", hk_piece)
   return (None, hk_piece)
-
-
-_UPASARGA_HEADS = frozenset(x[0] for x in _UPASARGAS)
 
 
 def _valid_piece_kind(hk_piece, piece_mode=False):
@@ -1570,7 +1773,8 @@ def _has_visarga_restore(hk):
   if hk.endswith("o"):
     res = (hk[:-1] + "aH") in words
   elif hk[-1] in ("r", "s", "z", "S"):
-    res = (hk[:-1] + "H") in words
+    cand = hk[:-1] + "H"
+    res = cand in words or _stem_valid(cand)
   else:
     res = False
   _CACHE_VIS_RESTORE[hk] = res
@@ -1649,6 +1853,21 @@ def _has_yan_restore(hk):
   return res
 
 
+_BASE_ATTESTED_MIN = 3
+
+
+def _base_attested(base):
+  """A stem base is good evidence when it (or its naiJ form, अ- stripped)
+  is attested (>= _BASE_ATTESTED_MIN sources)."""
+  if not base:
+    return False
+  if _count_of(base) >= _BASE_ATTESTED_MIN:
+    return True
+  return (base.startswith("a") and len(base) > 3
+          and _count_of(base[1:]) >= _BASE_ATTESTED_MIN
+          and base[1:] in _load_words())
+
+
 def _reliable(hk, depth=2):
   """Frequency guard with restoration: a piece is reliable when it, or a
   plausible underlying form of it, is an attested dictionary word."""
@@ -1688,11 +1907,11 @@ def _reliable(hk, depth=2):
       return True
     if _stem_valid_piece(cand):
       base = _stem_base_piece(cand)
-      if base and _count_of(base) >= _STEM_BASE_MIN:
+      if _base_attested(base):
         return True
   if _stem_valid_piece(hk):
     base = _stem_base_piece(hk)
-    if base and _count_of(base) >= _STEM_BASE_MIN:
+    if _base_attested(base):
       return True
   if depth > 0:
     for up in _UPASARGAS:
@@ -2026,7 +2245,7 @@ def hk_to_units(hk):
 
 _VOWELS = frozenset("aAiIuUeo")
 _HIGH_KINDS = frozenset(["yan", "visarga-o", "visarga", "m-vowel",
-                         "t-assim", "avagraha"])
+                         "t-assim", "cons-vowel", "avagraha"])
 
 
 def _boundary_kind(left_hk, right_hk):
@@ -2137,16 +2356,18 @@ _QUALITY = {
 
 
 def _freq_quality(word):
-  """Graded frequency preference, tiered rAmAnujIya > DCS-frequency >
-  stardict wordlist.  Log-scaled and capped so that kind choices and
-  length still dominate.  Higher evidence -> cheaper piece."""
+  """Graded frequency preference, tiered rAmAnujIya > DCS stems > the word
+  tries (padas / nominal-stems / verb-stems / avyayas).  Log-scaled and
+  capped so that kind choices and length still dominate.  Higher evidence ->
+  cheaper piece."""
   if not word:
     return 0
-  w, d, r = _load_words().layer_counts(word)
+  p, n, v, a, d, r = _load_words().layer_counts(word)
   if r:
     return min(14 + int(3 * math.log2(r + 1)), 21)
   if d:
     return min(6 + int(3 * math.log2(d + 1)), 21)
+  w = max(p, n, v, a)
   return min(int(3 * math.log2(w + 1)), 21)
 
 
@@ -2215,7 +2436,10 @@ def _segment(hk, strict):
       # impossible padas.  Visarga/yan restores keep their own witnesses.
       if (j < m and kind in ("exact", "stem", "t-assim")
           and _halant_final(piece)
-          and not _surface_attested(piece)):
+          and not _attested(piece)
+          and not (kind in ("stem", "t-assim")
+                   and (under or piece).endswith(("vat", "mat"))
+                   and _base_attested(_stem_base_piece(under or piece)))):
         continue
       if j < m and under in _AVYAYAS and kind == "exact" and len(piece) <= 3:
         continue
@@ -2229,7 +2453,16 @@ def _segment(hk, strict):
         # stays a split), while जान्य्/अधिर् are analyzer-only shards.
         bad = _badsplit_evidence(hk, coff[i])
         if bad >= _RA_BADSPLITS_MIN and _junction_ngram_plain(hk, coff[i]):
-          continue
+          # ... except a genuine possessive-suffix t-restore (मर्यादावत् +
+          # ऐश्वर्यम् = मर्यादावदैश्वर्यम्): mined false restores share its
+          # cut position (…वद्|ऐ… वृद्धि), yet this द-final piece rests on
+          # an attested stem base.
+          if (info[i][2] == "t-assim"
+              and (info[i][1] or "").endswith(("vat", "mat"))
+              and _base_attested(_stem_base_piece(info[i][1]))):
+            bad = 0
+          else:
+            continue
       # boundary kind computed on char strings:
       if i > 0:
         lhk = hk[:coff[i]]
@@ -2237,6 +2470,12 @@ def _segment(hk, strict):
         rhk = piece
         bkind = _boundary_kind(lhk, rhk)
         lkind = info[i][2] if info[i] else None
+        if (rhk.startswith(("sya", "syA"))
+            and ((lpiece + "sya") in _load_words()
+                 or _stem_valid(lpiece + "sya"))):
+          # -sya is the left word's genitive ending, not a new member
+          # (परमेश्वर|स्याधार is no split).
+          continue
         # Right-side pieces must be surface-complete words (never restored):
         # a restored right piece (e.g. az->aH) is always a junk shard.
         if kind not in ("exact", "stem", "avagraha", "merger", "visarga", "yan", "memo"):
@@ -2271,9 +2510,10 @@ def _segment(hk, strict):
           # (ज्योति-रेव is wrong; ज्योतिर् एव is the convention) - unless the
           # r-initial piece is itself a corpus surface (मिथ्या-रूपम्).
           if (piece.startswith("r") and piece[1:2] in _VOWELS
-              and _has_visarga_restore(lpiece + "r")
-              and _valid_piece_kind(piece[1:], piece_mode=True)[0] is not None
-              and not _surface_attested(piece)):
+              and not _attested(piece)):
+            # an r-initial piece after a vowel-final left is almost always
+            # the stolen visarga-r placeholder (ज्योति-रेव): only corpus
+            # tokens (मिथ्या-रूपम्) may start such a cut.
             continue
         elif bkind == "m-vowel":
           pass
@@ -2292,8 +2532,7 @@ def _segment(hk, strict):
             # the restored form leans on a frequent stem.
             lu = info[i][1]
             if _count_of(lu) < 3:
-              base = _stem_base_piece(lu)
-              if not base or _count_of(base) < _STEM_BASE_MIN:
+              if not _base_attested(_stem_base_piece(lu)):
                 continue
           # H -> r only before vowels; s/z/S before a vowel (including ऋ,
           # which is why pUrvakas|RSTy misreads सृष्ट्यादि) is not a sandhi.
@@ -2308,7 +2547,7 @@ def _segment(hk, strict):
             # -> दिशि) is no witness: निर्दिश्यत is one verb form.
             restore = _yan_restored_left(lpiece)
             if not (lkind == "exact" and restore in (_AVYAYAS | _PRONOUNS)
-                    and _surface_attested(lpiece)):
+                    and _attested(lpiece)):
               continue
           if strict and lkind == "yan" and _count_of(info[i][1]) < 5:
             continue
@@ -2331,6 +2570,8 @@ def _segment(hk, strict):
             continue
           if strict:
             if under in _WEAK_RIGHTS or piece in _WEAK_RIGHTS:
+              continue
+            if _count_of(piece) < 10 and piece not in _SANDHI_KEEP:
               continue
             lmax = _count_of(lhk)
             for r in _restores_of(lhk):

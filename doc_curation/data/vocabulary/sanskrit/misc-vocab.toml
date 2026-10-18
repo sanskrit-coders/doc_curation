@@ -1,0 +1,10 @@
+# Closed-class Sanskrit vocabulary used by doc_curation/sanskrit/hyphenator.py.
+# Sits with the vocabulary tries.  Avyayas are NOT listed here: the
+# hyphenator reads them from avyayas.trie (the corpus wordlist's avyaya
+# partition, svArAdi/cAdi gaNas + DCS indeclinables).
+
+# Preverbs.
+upasargas = ["A", "abhi", "adhi", "anu", "apa", "api", "ati", "ava", "duS", "dur", "dus", "duz", "ni", "niS", "nir", "nis", "niz", "parA", "pari", "pra", "prati", "saM", "sam", "san", "su", "ud", "upa", "ut", "vi"]
+
+# Pronouns.
+pronouns = ["adas", "aham", "asmAt", "asmin", "asya", "etad", "etasmin", "etat", "idam", "kasmin", "kim", "sA", "saH", "tad", "tasmAt", "tasmin", "tat", "te", "tvam", "vayam", "yUyam", "yad", "yat"]
