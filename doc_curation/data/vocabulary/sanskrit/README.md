@@ -1,7 +1,7 @@
 # Sanskrit vocabulary data for the hyphenator
 
 Data consumed by
-[`doc_curation/sanskrit/hyphenator.py`](../../../sanskrit/hyphenator.py)
+[`doc_curation/sanskrit/hyphenator/`](../../../sanskrit/hyphenator/) (package)
 (sandhi-aware pāda-splitting of Sanskrit text).  All `*.trie` files are
 [marisa tries](https://github.com/s-yata/marisa-trie), built lazily on first
 use and rebuilt automatically whenever a source file is newer than the trie
