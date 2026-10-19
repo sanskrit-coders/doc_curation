@@ -1,8 +1,14 @@
+import os
 import re
 
 import pytest
 
 from doc_curation.sanskrit.hyphenator import hyphene
+
+pytestmark = pytest.mark.skipif(
+    os.environ.get("RUN_HYPHENATOR_TESTS") != "1",
+    reason="hyphenator results depend on locally generated trie data; "
+           "set RUN_HYPHENATOR_TESTS=1 to run these tests.")
 
 
 def _segments(text):
