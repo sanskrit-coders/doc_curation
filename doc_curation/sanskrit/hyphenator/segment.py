@@ -68,6 +68,9 @@ def hk_to_units(hk):
   return units
 
 
+_VOICELESS = frozenset("kKcCTWtwpPzSs")
+
+
 _MAX_UNITS = 200
 
 
@@ -294,15 +297,23 @@ def _segment(hk, strict, strong_vc=False):
             # - a real pada join (phalam aznute) has no such whole word
         elif bkind in ("visarga", "visarga-o"):
           if kind == "merger":
-            # merged units (asyaiva) never begin at a visarga joint
-            continue
+            fw = V.merger_first_word(piece)
+            if not (fw and fw in C._AVYAYAS and fw not in C._PRONOUNS):
+              # merged units (asyaiva) never begin at a visarga joint -
+              # except a particle-led merge (vRtter evAnugrAhake)
+              continue
           if (lpiece.endswith(("s", "z", "S"))
               and piece.startswith(("y", "v", "r"))):
             continue  # a pada-final H shows as r before a semivowel
             # (bhUtAkAzar yApi): ...as|yApi merely steals the asya's y
+          if lpiece.endswith("r") and piece[:1] in _VOICELESS:
+            continue  # and it is r only before voiced sounds: anuvar|tiSyate
+            # (H before t would show as s, never r) is no junction
           # the sandhi witness is the left *piece* (jyotir -> jyotiH), never
           # the accumulated prefix (AdityAdijyotir is no word)
-          if lkind not in ("visarga", "visarga-o", "memo") and not V._has_visarga_restore(lpiece):
+          if (lkind not in ("visarga", "visarga-o", "memo")
+              and not V._has_visarga_restore(lpiece)
+              and not lpiece.endswith("H")):
             continue
           if strict and lkind == "exact" and not lpiece.endswith("s"):
             continue

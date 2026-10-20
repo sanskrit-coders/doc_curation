@@ -107,7 +107,7 @@ def _boundary_kind(left_hk, right_hk):
     return "visarga-o"
   if lc == "e" and (rc == "'" or rc in ("a", "A")):
     return "visarga-o"
-  if lc in ("r", "s", "z", "S"):
+  if lc in ("r", "s", "z", "S", "H"):
     return "visarga"
   if lc == "m" and (rc in _VOWELS or right_hk.startswith(("ai", "au"))):
     return "m-vowel"

@@ -128,7 +128,9 @@ def _stem_valid_uncached(hk):
 
 
 def _piece_ending_ok(hk, end):
-  """Piece-mode endings: length >= 2, plus M/H/m with a base >= 4 chars."""
+  """Piece-mode endings: length >= 2, plus M/H/m with a base >= 4 chars.
+  A single vowel case ending (anugrAhake <- anugrAhaka) is fine over a long
+  base - the outer check still demands the listed base word."""
   if len(end) >= 2:
     return len(hk) > len(end) + 2
   if end in ("M", "H", "m"):
@@ -643,9 +645,13 @@ _SHORT_YAN_OK = ("iti", "api", "adhi", "eva", "evA", "iti")
 
 
 def _piece_reliable(piece, kind, under):
+  if (kind == "stem" and not _attested(piece)
+      and piece.endswith(_FINITE_VERB_TAILS)):
+    return False  # tiSyate: an unattested tiG-form shard stands for no stem
   if kind == "exact" and piece in T._load_words():
-    if not _attested(piece) and _count_of(piece) < 3:
-      return False  # a workbook relic (AkA cnt=2, zasi cnt=2) is no word
+    if not _attested(piece) and _count_of(piece) < 5:
+      return False  # a workbook relic (AkA cnt=2, zasi cnt=2, vaga cnt=4)
+      # is no word
     return True  # a listed dictionary word is usable even when the counted
     # layers hold none of it (tUktaM lives only in a corpus-forms layer)
   if kind == "yan" and under:
@@ -1019,11 +1025,16 @@ def _stolen_final_shard(hk, piece, lpiece=None):
   return False
 
 
-def _chain_end_ok(base, apo):
+def _chain_end_ok(base, apo, wild=0):
   """Final chain component: strict for merger chains; after an avagraha
   joint a restorable consonant-final word (abhivadan = abhi + vadan) is
-  accepted too."""
+  accepted too, and a real inflected word form (anugrAhake) is a fine
+  merged tail even without corpus attestation."""
   if _chain_word_ok(base):
+    return True
+  if (wild == 0 and len(base) >= 6
+      and not base.endswith(_FINITE_VERB_TAILS)
+      and _stem_valid(base)):
     return True
   if not apo:
     return False
@@ -1051,7 +1062,7 @@ def _merger_chain_uncached(hk):
     for r in range(q + 1, n + 1):
       base = rv + hk[q:r]
       if r == n:
-        if 1 <= junc <= 3 and _chain_end_ok(base, apo):
+        if 1 <= junc <= 3 and _chain_end_ok(base, apo, wild):
           return True
         continue
       for mlen in (1, 2):
