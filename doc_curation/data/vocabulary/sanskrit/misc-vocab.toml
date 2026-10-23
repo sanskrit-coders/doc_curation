@@ -7,4 +7,4 @@
 upasargas = ["A", "abhi", "adhi", "anu", "apa", "api", "ati", "ava", "duS", "dur", "dus", "duz", "ni", "niS", "nir", "nis", "niz", "parA", "pari", "pra", "prati", "saM", "sam", "san", "su", "ud", "upa", "ut", "vi"]
 
 # Pronouns.
-pronouns = ["adas", "aham", "asmAt", "asmin", "asya", "etad", "etasmin", "etat", "idam", "kasmin", "kim", "sA", "saH", "tad", "tasmAt", "tasmin", "tat", "te", "tvam", "vayam", "yUyam", "yad", "yat"]
+pronouns = ["adas", "aham", "asmAt", "asmin", "asya", "ayam", "etad", "etasmin", "etat", "idam", "kasmin", "kim", "sA", "saH", "tad", "tasmAt", "tasmin", "tat", "te", "tvam", "vayam", "yUyam", "yad", "yat"]

@@ -654,9 +654,11 @@ def _piece_reliable(piece, kind, under):
   if kind == "exact" and piece in T._load_words():
     if not _attested(piece) and _count_of(piece) < 5:
       base = _stem_base_piece(piece)
-      if not (base and base.endswith(tuple(C._BARE_SUFFIXES))):
+      if not (base and (base.endswith(tuple(C._BARE_SUFFIXES))
+                        or _count_of(base) >= 3)):
         return False  # a workbook relic (AkA cnt=2, zasi cnt=2, vaga cnt=4)
-        # is no word; a real suffix form (tvena <- tva) stays
+        # is no word; a real suffix form (tvena <- tva) or an inflection of
+        # a real base (ahanam <- ahana, tvASTram <- tvASTra) stays
     return True  # a listed dictionary word is usable even when the counted
     # layers hold none of it (tUktaM lives only in a corpus-forms layer)
   if kind == "yan" and under:

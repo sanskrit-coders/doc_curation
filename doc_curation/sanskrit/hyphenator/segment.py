@@ -97,6 +97,27 @@ def _freq_quality(word):
   return min(int(3 * math.log2(w + 1)), 21)
 
 
+_DEGREE_SUFFIXES = ("tama", "tara")
+
+
+def _degree_tail(lpiece, rpiece):
+  """True when ``rpiece`` inflects a -tama/-tara degree suffix of the left
+  word: hitatamam / hitatameSu is the superlative of hita, never a
+  hita|tama... compound.
+
+  The suffix-final a merges with a vowel ending (tama+ena = tamena,
+  tama+eSu = tameSu, tama+At = tamAt), so the surface after the left word
+  begins with ``tam``/``tar`` + a/A/e/o."""
+  if not lpiece or not rpiece or len(rpiece) < 4:
+    return False
+  if rpiece[3] not in "aAeo":
+    return False
+  for suf in _DEGREE_SUFFIXES:
+    if rpiece.startswith(suf[:3]) and (lpiece + suf) in T._load_words():
+      return True
+  return False
+
+
 def _segment(hk, strict, strong_vc=False):
   """DP segmentation. ``strict``: only high-precision sandhi boundaries and
   dict-join compounds may split a token that is itself a valid word.
@@ -168,17 +189,21 @@ def _segment(hk, strict, strong_vc=False):
           and not (kind in ("stem", "t-assim")
                    and (under or piece).endswith(("vat", "mat"))
                    and V._base_attested(V._stem_base_piece(under or piece)))
-          and not (kind == "stem" and piece.endswith("m")
-                   and V.merger_chain_valid(V._stem_base_piece(piece) or ""))
+          and not (kind in ("exact", "stem") and piece.endswith("m")
+                   and V._base_attested(V._stem_base_piece(piece)))
           and not (kind == "t-assim" and V._attested(under))
           and not (kind == "t-assim"
                    and V._stem_valid_piece(under or "")
-                   and V._count_of(under or "") >= 2
+                   and (V._count_of(under or "") >= 2
+                        or len(V._stem_base_piece(under or "") or "") >= 8)
                    and V._base_attested(V._stem_base_piece(under or "")))):
         continue  # a t-assim piece is witnessed by its attested restore
         # (zravaNAn <- zravaNAt, corpus-attested) or an ablative that is
         # itself seen (prANAd <- prANAt cnt=2); a base-only artifact
-        # (maryAd <- maryAt cnt=0, base marya) is no witness
+        # (maryAd <- maryAt cnt=0, base marya) is no witness.  A long
+        # single-source compound base (AtmopadezAd <- Atmopadeza) is
+        # witnessed by the dictionary entry itself even when that
+        # inflection is unseen.
       if (j < m and kind == "exact" and len(piece) <= 3
           and (under in C._AVYAYAS or under.lower() in C._UPASARGAS)
           and piece not in C._PRONOUNS
@@ -203,13 +228,18 @@ def _segment(hk, strict, strong_vc=False):
         else:
           bad = _badsplit_evidence(hk, coff[i])
         if bad >= _RA_BADSPLITS_MIN and _junction_ngram_plain(hk, coff[i]):
-          # ... except a genuine possessive-suffix t-restore (मर्यादावत् +
-          # ऐश्वर्यम् = मर्यादावदैश्वर्यम्): mined false restores share its
-          # cut position (…वद्|ऐ… वृद्धि), yet this द-final piece rests on
-          # an attested stem base.
+          # ... except a genuine t-assim surface whose restore the corpus
+          # itself uses (anenaikArthyAd <- anenaikArthyAt): the left piece
+          # is no analyzer shard, so the negative memory does not apply.
+          # Likewise a possessive-suffix t-restore (मर्यादावत् + ऐश्वर्यम् =
+          # मर्यादावदैश्वर्यम्): mined false restores share its cut position
+          # (…वद्|ऐ… वृद्धि), yet this द-final piece rests on an attested
+          # stem base.
           if (info[i][2] == "t-assim"
-              and (info[i][1] or "").endswith(("vat", "mat"))
-              and V._base_attested(V._stem_base_piece(info[i][1]))):
+              and (V._attested(info[i][1] or "")
+                   or ((info[i][1] or "").endswith(("vat", "mat"))
+                       and V._base_attested(
+                           V._stem_base_piece(info[i][1]))))):
             bad = 0
           else:
             continue
@@ -276,6 +306,9 @@ def _segment(hk, strict, strong_vc=False):
               and lpiece[-1:] in _VOWELS):
             continue  # the verbal -mAna tail (adhyasyamAna, gamyamAna)
             # binds to its root: asya|mAnam is no word boundary
+          if _degree_tail(lpiece, piece):
+            continue  # a -tama/-tara degree suffix inflects the left word
+            # itself: hitatamam / hitatameSu is no hita + tama...
           if strict and not (strong_vc and lkind == "exact"
                              and kind == "exact"
                              and V._count_of(lhk) >= 10

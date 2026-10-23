@@ -34,7 +34,7 @@ def test_yan_sandhi():
 
 
 def test_visarga_sandhi():
-  assert hyphene("रामोऽस्ति") == "रामो ऽस्ति"
+  assert hyphene("रामोऽस्ति") == "रामो ऽस्ति"  # separate padas
   assert hyphene("दुष्प्रकृतेरस्य") == "दुष्प्रकृतेर् अस्य"
   assert hyphene("नमस्ते") == "नमस् ते"
 
@@ -91,6 +91,25 @@ def test_reference_compound_sentence_jagatAm_upakArAya():
   text = "जगतामुपकाराय  न सा कर्मनिमित्तजा"
   expected = "जगताम् उपकाराय  न सा कर्म-निमित्त-जा"
   assert hyphene(text) == expected
+
+
+def test_bad_split_regressions():
+  # hita-tama is one superlative, not a samAsa (bad: हित-तमम्).
+  assert hyphene("हिततमम्") == "हिततमम्"
+  for form in ("हिततमः", "हिततमेषु", "हिततमाभ्याम्"):
+    assert hyphene(form) == form
+  # iti + AzaGkA is a yaN joint; the A belongs to the right word
+  # (bad: इत्या-शङ्कायाम्).
+  assert hyphene("इत्याशङ्कायाम्") == "इत्य् आशङ्कायाम्"
+  # vaktur + AtmopadezAt + iti (bad: वक्तुरात्मोपेद-शादिति).
+  assert (hyphene("वक्तुरात्मोपदेशादिति")
+          == "वक्तुर् आत्मोपदेशाद् इति")
+  # the t-assim ablative must not be read as a stolen Adi (bad:
+  # अनेनैकार्थ्य् आदयं).
+  assert hyphene("अनेनैकार्थ्यादयं") == "अनेनैकार्थ्याद् अयं"
+  # m-vowel pada split, not a tvASTra + mahana compound (bad:
+  # त्वाष्ट्र-महनम्).
+  assert hyphene("त्वाष्ट्रमहनम्") == "त्वाष्ट्रम् अहनम्"
 
 
 def test_idempotent():
