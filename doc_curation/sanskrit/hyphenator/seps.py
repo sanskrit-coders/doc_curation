@@ -109,7 +109,8 @@ def _boundary_kind(left_hk, right_hk):
     return "visarga-o"
   if lc in ("r", "s", "z", "S", "H"):
     return "visarga"
-  if lc == "m" and (rc in _VOWELS or right_hk.startswith(("ai", "au"))):
+  if lc == "m" and (rc in _VOWELS or rc in ("R", "f", "F", "x", "X")
+                    or right_hk.startswith(("ai", "au"))):
     return "m-vowel"
   if lc in _VOWELS or lc in ("ai", "au"):
     return "vowel-cons"
@@ -160,6 +161,15 @@ def _finite_verb_piece(hk):
 
 
 def _sep(left_hk, right_hk, left_under, right_under, whole_hk=None, ctx=None):
+  if right_hk.startswith("'"):
+    under = left_under or left_hk
+    if (under and not _finite_verb_piece(under)
+        and under not in C._AVYAYAS and under not in C._PRONOUNS
+        and (under in T._load_words() or V._attested(under)
+             or V._count_of(under) >= 3)):
+      return " "  # a finished subanta before the avagraha is a pada
+      # (rAmo 'sti).  It also separates ceto 'rpana - an accepted misfire.
+    return ""  # otherwise the avagraha continues the left unit
   """Choose separator at a boundary: ' ' for separate padas, '–' for a pada
   boundary the corpus keeps glued (``_sep_dash``), '-' for samAsa joints."""
   if ctx is not None and _sep_dash(ctx[0], ctx[1]):

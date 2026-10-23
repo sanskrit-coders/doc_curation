@@ -148,8 +148,8 @@ def _hough_rule(gray):
                     ext.append(int(ys[-1] - ys[0]))
                 b = bw[yl + 4:yl + 12, x]
                 ink.append(float((b > 0).mean()))
-                a = bw[yl - 9:yl - 2, x]
-                above.append(float((a > 0).mean()))
+                ab = bw[yl - 9:yl - 2, x]
+                above.append(float((ab > 0).mean()))
             med = float(np.median(ext)) if ext else 999.0
             below = float(np.mean(ink)) if ink else 1.0
             # Clear space ABOVE too: a line tracking the lower strokes of a text row
@@ -566,6 +566,70 @@ def _footer_cut(gray, w, h, dark=100):
     while y2 + 1 < min(h, y_lim + 60) and int(bw[y2 + 1].sum()) >= max(3, 0.0025 * w):
         y2 += 1
     return int(min(y2 + 4, h - 1))
+
+
+def find_section_rules(img_path, angle=None):
+    """Return all body section rules (yc, width) after deskew.
+
+    This is the generalized version of the separator search used by split_page:
+    split_page keeps only the first rule (mUlam/commentary boundary), while the
+    raw-book OCR needs every rule that starts a new section.  Header rules are
+    excluded using split_page's header-bottom logic; short centred rules are
+    recovered with refine_rule_angle when no long rule is found.
+    """
+    if isinstance(img_path, np.ndarray):
+        raw = img_path
+        if raw.ndim == 2:
+            raw = cv2.cvtColor(raw, cv2.COLOR_GRAY2BGR)
+    else:
+        raw = cv2.imread(str(img_path))
+    if raw is None:
+        return {"rules": [], "header_bottom": 0, "angle": 0.0,
+                "w": 0, "h": 0, "all_lines": []}
+    gray_raw = cv2.cvtColor(raw, cv2.COLOR_BGR2GRAY)
+    if angle is None:
+        angle, _ = estimate_skew(gray_raw)
+    img = deskew_image(raw, angle) if abs(angle) >= 0.05 else raw
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    lines, frags, w, h = find_hlines(gray)
+    header_bottom, top_lines, seps = header_and_seps(lines, frags, w, h)
+    lo = max(header_bottom + 2, int(h * 0.06))
+    hi = int(h * 0.94)
+    rules = [dict(L) for L in lines
+             if L.get("rule") and L["w"] > 0.30 * w and lo < L["yc"] < hi]
+    if not rules:
+        ref = refine_rule_angle(gray_raw)
+        if ref is not None and lo < ref["c"] < hi:
+            rules = [{"x": ref["x0"], "y": int(ref["c"]) - 2,
+                      "w": ref["x1"] - ref["x0"], "h": 4, "yc": float(ref["c"]),
+                      "ink_below": ref.get("below", 0.0), "rule": True}]
+    rules.sort(key=lambda L: L["yc"])
+    merged = []
+    for L in rules:
+        if merged and abs(L["yc"] - merged[-1]["yc"]) <= 10:
+            if L["w"] > merged[-1]["w"]:
+                merged[-1] = L
+        else:
+            merged.append(L)
+    return {"rules": merged, "header_bottom": header_bottom, "angle": float(angle),
+            "w": w, "h": h, "all_lines": lines}
+
+
+def split_page_sections(img_path, angle=None):
+    """Generalized split_page: return every section rule, not just core/comm.
+
+    Returns the same dictionary as find_section_rules plus a ``sections`` list
+    of (y0, y1) text bands between the header, each rule, and the footer.
+    This is the variant used by the raw-book OCR reconstructor.
+    """
+    meta = find_section_rules(img_path, angle=angle)
+    h = meta.get("h", 0)
+    hb = int(meta.get("header_bottom", 0))
+    footer = int(h * 0.94) if h else 0
+    ys = [hb] + [int(round(L["yc"])) for L in meta.get("rules", [])] + [footer]
+    meta["sections"] = [(ys[i], ys[i + 1]) for i in range(len(ys) - 1)
+                        if ys[i + 1] > ys[i] + 5]
+    return meta
 
 
 def split_page(img_path, out_dir, stem, angle=0.0):
