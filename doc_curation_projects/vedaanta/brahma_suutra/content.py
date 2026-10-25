@@ -15,7 +15,7 @@ from doc_curation.md.content_processor.details import maker
 from doc_curation.md.content_processor.commentary import interleaver
 
 def process_dir(dir_path):
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: maker.generic_sanskrit_vipra_mUla(c))
+  # library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: maker.generic_sanskrit_vipra_mUla(c))
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: details_helper.transform_details_with_soup(content=c,content_str_transformer=lambda x, *args, **kwargs : hyphenator.hyphene(x), title_pattern="विश्वास-.*"))
 
 
@@ -35,8 +35,8 @@ def insert_commentary(dest_path):
 
 
 if __name__ == '__main__':
-  # process_dir("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/11_indraprANAdhikaraNam.md")
-  insert_commentary("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/11_indraprANAdhikaraNam.md")
+  process_dir("/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/shankaraH/brahma-sUtrANi/sarva-prastutiH/01/01/11_pratardanAdhikaraNam.md")
+  # insert_commentary("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH/1_ayoga-vyavachChedaH/11_indraprANAdhikaraNam.md")
 
   # library.apply_function(fn=MdFile.transform, dir_path="/home/vvasuki/gitland/vishvAsa/AgamaH_brAhmaH/content/shAnkara-darshanam/tattvam/shankaraH/brahma-sUtrANi/sarva-prastutiH/01/01/10_jyotishcharaNAdhikaraNam.md", content_transformer=lambda c, *args, **kwargs: details_helper.transform_details_with_soup(content=c,content_str_transformer=lambda x, *args, **kwargs : hyphenator.hyphene(x), title_pattern="विश्वास-.*"))
   pass

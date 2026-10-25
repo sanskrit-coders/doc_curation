@@ -97,6 +97,10 @@ def _freq_quality(word):
   return min(int(3 * math.log2(w + 1)), 21)
 
 
+_MANA_TAILS = ("mAnaM", "mAnam", "mAnasya", "mAnAH",
+               "mAnaH", "mAnA", "mAne", "mAnena", "mAnAt")
+
+
 _DEGREE_SUFFIXES = ("tama", "tara")
 
 
@@ -189,7 +193,9 @@ def _segment(hk, strict, strong_vc=False):
           and not (kind in ("stem", "t-assim")
                    and (under or piece).endswith(("vat", "mat"))
                    and V._base_attested(V._stem_base_piece(under or piece)))
-          and not (kind in ("exact", "stem") and piece.endswith("m")
+          and not (kind == "stem" and piece.endswith("m")
+                   and V.merger_chain_valid(V._stem_base_piece(piece) or ""))
+          and not (kind == "exact" and piece.endswith("m")
                    and V._base_attested(V._stem_base_piece(piece)))
           and not (kind == "t-assim" and V._attested(under))
           and not (kind == "t-assim"
@@ -301,8 +307,7 @@ def _segment(hk, strict, strong_vc=False):
               and lpiece[-1:] in _VOWELS):
             continue  # the -tva suffix tail binds to its member
             # (maryAdA-tvena stays maryAdAtvena)
-          if (piece.startswith(("mAnaM", "mAnam", "mAnasya", "mAnAH",
-                                "mAnaH", "mAnA", "mAne", "mAnena", "mAnAt"))
+          if (piece.startswith(_MANA_TAILS)
               and lpiece[-1:] in _VOWELS):
             continue  # the verbal -mAna tail (adhyasyamAna, gamyamAna)
             # binds to its root: asya|mAnam is no word boundary
@@ -342,10 +347,16 @@ def _segment(hk, strict, strong_vc=False):
             # tokens (मिथ्या-रूपम्) may start such a cut.
             continue
         elif bkind == "m-vowel":
+          if (lpiece.endswith("m")
+              and ("m" + piece).startswith(_MANA_TAILS)):
+            continue  # upadizyam|AnaH steals the m of the verbal -mAna
+            # suffix: it binds to its root (upadizyamAnaH stays whole)
           if (V._whole_kind(hk) is not None and piece[:1] in _VOWELS
+              and not lpiece.endswith("tum")
               and V._prefix_in_dict(lpiece + piece[:1])):
             continue  # gamyam|Anasya: the A is the word's own mA (gamyamAna)
-            # - a real pada join (phalam aznute) has no such whole word
+            # - a real pada join (phalam aznute) has no such whole word.
+            # A -tum infinitive is a finished pada: bhavitum arhati.
         elif bkind in ("visarga", "visarga-o"):
           if kind == "merger":
             fw = V.merger_first_word(piece)
@@ -387,9 +398,13 @@ def _segment(hk, strict, strong_vc=False):
             fw = V.merger_first_word(piece)
             if not (fw and (fw in C._AVYAYAS or fw in C._PRONOUNS
                             or V._attested(fw))
-                    or (V._yan_restored_left(lpiece) or "") in ("iti",)):
-              continue  # praty|abhijJAyamAne: an unattested merge head is
-              # no yaN right (asyaiva, ity|AdyAsu are; iti opens a pada)
+                    or (V._yan_restored_left(lpiece) or "") in ("iti",)
+                    or not (SP._finite_verb_piece(piece)
+                            or piece.endswith(_MANA_TAILS))):
+              continue  # praty|abhijJAyamAne: a verb-form merge head is
+              # no yaN right (asyaiva, ity|AdyAsu are; iti opens a pada);
+              # a nominal merger (vijJeyendra|stuty|arthatvenopanyAsaH)
+              # is a real member
           if (piece.lower() in C._UPASARGAS
               and (V._yan_restored_left(lpiece) or "").lower()
               in C._UPASARGAS):
@@ -746,8 +761,7 @@ def _ngram_refine(word, hk, out):
                                 "tvAya", "tve", "tvAni"))
           and lhk_piece[-1:] in "aAiIuUfFxXeEoO"):
         continue  # the -tva suffix tail binds to its member
-      if (rhk_piece.startswith(("mAnaM", "mAnam", "mAnasya", "mAnAH",
-                                "mAnaH", "mAnA", "mAne", "mAnena", "mAnAt"))
+      if (rhk_piece.startswith(_MANA_TAILS)
           and lhk_piece[-1:] in "aAiIuUfFxXeEoO"):
         continue  # the verbal -mAna tail binds to its root (adhyasyamAna)
       if (rhk_piece in C._PRONOUNS and lhk_piece.endswith(("y", "v"))
@@ -758,6 +772,12 @@ def _ngram_refine(word, hk, out):
                                         sanscript.HK)
       if V._stolen_final_shard(word_hk, rhk_piece, lhk_piece):
         continue  # viSayaiH is no viSa|yaiH: the y is the base's own
+      if (rend == len(word)
+          and not (rhk_piece in T._load_words()
+                   or V._attested(rhk_piece)
+                   or V._valid_piece_kind(rhk_piece, piece_mode=True)[0])):
+        continue  # praty|budhyata: a final verb-form shard takes no new
+        # hyphen; only a real final pada/word may end a refined cut
     except Exception:
       pass
     if not V._junction_dict_ok(word[lstart:p], word[p:rend]):

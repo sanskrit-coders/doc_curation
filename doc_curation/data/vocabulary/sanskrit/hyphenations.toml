@@ -1,0 +1,101 @@
+# Test data for the Sanskrit hyphenator
+# (doc_curation/sanskrit/hyphenator).  Each section exercises one rule
+# family.  Reference sentences compare separator-insensitive segments by
+# default; mode = "exact" also compares the separator glyphs.
+
+[non_separable_mergers]
+cases = [
+  { input = "दयार्द्र", expected = "दयार्द्र", note = "dIrgha merger" },
+  { input = "अपीच्छा", expected = "अपीच्छा", note = "dIrgha merger" },
+  { input = "धर्मार्थ", expected = "धर्मार्थ", note = "dIrgha merger" },
+  { input = "स्वप्रकाशाद्वितीय", expected = "स्वप्रकाशाद्वितीय", note = "svaprakAza + advitIya is no svaprakAza-dvitIya" },
+  { input = "महोत्सव", expected = "महोत्सव", note = "guNa merger" },
+  { input = "रामेति", expected = "रामेति", note = "guNa merger" },
+  { input = "सदैव", expected = "सदैव", note = "vRddhi merger" },
+]
+
+[yan_sandhi]
+cases = [
+  { input = "इत्येवम्", expected = "इत्य्-एवम्", note = "corpus memo keeps the hyphen" },
+  { input = "मध्वरिः", expected = "मध्व्-अरिः", note = "madhv + ariH" },
+]
+
+[visarga_sandhi]
+cases = [
+  { input = "रामोऽस्ति", expected = "रामो ऽस्ति", note = "separate padas" },
+  { input = "दुष्प्रकृतेरस्य", expected = "दुष्प्रकृतेर् अस्य", note = "visarga r" },
+  { input = "नमस्ते", expected = "नमस् ते", note = "visarga s" },
+]
+
+[final_m_sandhi]
+cases = [
+  { input = "फलमश्नुते", expected = "फलम् अश्नुते", note = "phalam aznute" },
+  { input = "अर्थमिति", expected = "अर्थम् इति", note = "artham iti" },
+]
+
+[consonant_assimilation]
+cases = [
+  { input = "तद्धि", expected = "तद् धि", note = "tad dhi" },
+]
+
+[samasa_and_inflected_words]
+cases = [
+  { input = "हेतुभावे", expected = "हेतु-भावे", note = "plain samAsa" },
+  { input = "आकाशशब्देन", expected = "आकाश-शब्देन", note = "plain samAsa" },
+  { input = "जगत्कारणम्", expected = "जगत्-कारणम्", note = "assimilating final" },
+  { input = "वृत्तस्य", expected = "वृत्तस्य", note = "single inflected word" },
+  { input = "क्षणिकत्वम्", expected = "क्षणिकत्वम्", note = "single inflected word" },
+  { input = "सर्वज्ञ", expected = "सर्वज्ञ", note = "single inflected word" },
+]
+
+[bad_split_regressions]
+cases = [
+  { input = "हिततमम्", expected = "हिततमम्", note = "-tama is one superlative, not a samAsa" },
+  { input = "हिततमः", expected = "हिततमः", note = "-tama form stays whole" },
+  { input = "हिततमेषु", expected = "हिततमेषु", note = "-tama form stays whole" },
+  { input = "हिततमाभ्याम्", expected = "हिततमाभ्याम्", note = "-tama form stays whole" },
+  { input = "इत्याशङ्कायाम्", expected = "इत्य् आशङ्कायाम्", note = "the A belongs to the right word" },
+  { input = "वक्तुरात्मोपदेशादिति", expected = "वक्तुर् आत्मोपदेशाद् इति", note = "long compound base witnesses t-assim" },
+  { input = "अनेनैकार्थ्यादयं", expected = "अनेनैकार्थ्याद् अयं", note = "attested t-assim restore" },
+  { input = "त्वाष्ट्रमहनम्", expected = "त्वाष्ट्रम् अहनम्", note = "m-vowel pada split" },
+  { input = "विजिज्ञासीत", expected = "विजिज्ञासीत", note = "desiderative -sIta verb" },
+  { input = "अर्थान्तरभूतः", expected = "अर्थान्तर-भूतः", note = "bhUtaH is no bhu+taH merge" },
+  { input = "आत्मत्वेनोपदिश्यमानः", expected = "आत्मत्वेनोपदिश्यमानः", note = "-mAna binds to its root" },
+  { input = "हिततमत्वादिवचनानि", expected = "हिततमत्वादि-वचनानि", note = "corpus split; tiny-base shards are dead" },
+  { input = "प्रत्यगात्मसम्बन्धः", expected = "प्रत्यग्-आत्म-सम्बन्धः", note = "agAtm is no m-final stem shard" },
+  { input = "प्रत्यबुध्यत", expected = "प्रत्यबुध्यत", note = "prati + abudhyata is one verb" },
+  { input = "विज्ञेयेन्द्रस्तुत्यर्थत्वेनोपन्यासः", expected = "विज्ञेयेन्द्र-स्तुत्य्-अर्थत्वेनोपन्यासः", note = "long yaN sponges are no pieces" },
+  { input = "साहसान्युपन्यस्य", expected = "साहसान्य् उपन्यस्य", note = "sAhasAni <- sAhasa is a yaN witness" },
+  { input = "भवितुमर्हति", expected = "भवितुम् अर्हति", note = "-tum infinitive is a finished pada" },
+]
+
+[idempotence]
+texts = [
+  "इत्य् एवम्",
+  "मध्व्-अरिः",
+  "हेतु-भावे",
+  "नमस् ते",
+  "रामो ऽस्ति",
+  "फलम् अश्नुते",
+  "धर्मार्थ",
+  "इत्य्-एवम्",
+  "तत्–स्व-रूप–तत्-प्रात्य्-उपायोपदेश-पराणि",
+]
+
+[[reference_sentences.cases]]
+name = "sri-bhasya-prastuti"
+mode = "segments"
+text = """एतदुक्तं भवति – परस्यैव ब्रह्मणो निखिलहेयप्रत्यनीकानन्तज्ञानानन्दैकस्वरूपतया सकलेतरविलक्षणस्य स्वाभाविकानविधकातिशयासङ्ख्येयकल्याणगुणगणाश्च सन्ति।"""
+expected = """एतद् उक्तं भवति – परस्यैव ब्रह्मणो निखिल-हेय-प्रत्यनीकानन्त-ज्ञानानन्दैक-स्वरूपतया सकलेतर-विलक्षणस्य स्वाभाविकानविधकातिशयासङ्ख्येय- -कल्याण-गुण-गणाश् च सन्ति।"""
+
+[[reference_sentences.cases]]
+name = "sri-bhasya-tadvad"
+mode = "segments"
+text = """तद्वदेव स्वाभिमतानुरूपैकरूपाचिन्त्यदिव्याद्भुतनित्यनिरवद्यनिरतिशयौज्ज्वल्यसौन्दर्यसौगन्ध्यसौकुमार्यलावण्ययौवनाद्यनन्तगुणगणनिधिदिव्यरूपमपि स्वाभाविकमस्ति।"""
+expected = """तद्वद् एव स्वाभिमतानुरूपैक-रूपाचिन्त्य-दिव्याद्भुत-नित्य-निरवद्य-निरतिशयौज्ज्वल्य-सौन्दर्य-सौगन्ध्य-सौकुमार्य-लावण्य-यौवनाद्य्-अनन्त-गुण-गण-निधि-दिव्य-रूपम् अपि स्वाभाविकम् अस्ति।"""
+
+[[reference_sentences.cases]]
+name = "jagatAm-upakArAya"
+mode = "exact"
+text = """जगतामुपकाराय  न सा कर्मनिमित्तजा"""
+expected = """जगताम् उपकाराय  न सा कर्म-निमित्त-जा"""

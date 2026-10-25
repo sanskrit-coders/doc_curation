@@ -385,6 +385,8 @@ class MdFile(object):
         section_md_urls]
       content = content + "\n" + "\n".join(section_md_includes)
     logging.debug(metadata)
+    if "title" not in metadata:
+      metadata["title"] = "UNK"
     if not metadata["title"].startswith("+"):
       metadata["title"] = "+" + metadata["title"]
     MdFile(file_path=remainder_file_path, frontmatter_type=target_frontmantter_type).dump_to_file(metadata=metadata,

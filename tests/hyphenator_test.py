@@ -1,119 +1,82 @@
 import os
 import re
+import tomllib
 
 import pytest
 
 from doc_curation.sanskrit.hyphenator import hyphene
+from doc_curation.sanskrit.hyphenator import constants as C
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("RUN_HYPHENATOR_TESTS") != "1",
     reason="hyphenator results depend on locally generated trie data; "
            "set RUN_HYPHENATOR_TESTS=1 to run these tests.")
 
+_DATA_PATH = os.path.join(C._DATA_DIR, "hyphenations.toml")
+with open(_DATA_PATH, "rb") as f:
+  _HYPHENATIONS = tomllib.load(f)
+
 
 def _segments(text):
   return [p for p in re.split(r"[ \-\u2013\u2014]+", text) if p]
 
 
-def test_non_separable_mergers():
+def _cases(section):
+  return _HYPHENATIONS[section]["cases"]
+
+
+@pytest.mark.parametrize("case", _cases("non_separable_mergers"),
+                         ids=lambda c: c["input"])
+def test_non_separable_mergers(case):
   # dIrgha / guNa / vRddhi mergers must never be split (absolute veto).
-  assert hyphene("दयार्द्र") == "दयार्द्र"
-  assert hyphene("अपीच्छा") == "अपीच्छा"
-  assert hyphene("धर्मार्थ") == "धर्मार्थ"
-  # svaprakAza + advitIya must NOT become svaprakAza-dvitIya.
-  assert hyphene("स्वप्रकाशाद्वितीय") == "स्वप्रकाशाद्वितीय"
-  assert hyphene("महोत्सव") == "महोत्सव"
-  assert hyphene("रामेति") == "रामेति"
-  assert hyphene("सदैव") == "सदैव"
+  assert hyphene(case["input"]) == case["expected"]
 
 
-def test_yan_sandhi():
-  # iti + evam: the corpus's own memoised rendering keeps the hyphen.
-  assert hyphene("इत्येवम्") == "इत्य्-एवम्"
-  assert hyphene("मध्वरिः") == "मध्व्-अरिः"
+@pytest.mark.parametrize("case", _cases("yan_sandhi"),
+                         ids=lambda c: c["input"])
+def test_yan_sandhi(case):
+  assert hyphene(case["input"]) == case["expected"]
 
 
-def test_visarga_sandhi():
-  assert hyphene("रामोऽस्ति") == "रामो ऽस्ति"  # separate padas
-  assert hyphene("दुष्प्रकृतेरस्य") == "दुष्प्रकृतेर् अस्य"
-  assert hyphene("नमस्ते") == "नमस् ते"
+@pytest.mark.parametrize("case", _cases("visarga_sandhi"),
+                         ids=lambda c: c["input"])
+def test_visarga_sandhi(case):
+  assert hyphene(case["input"]) == case["expected"]
 
 
-def test_final_m_sandhi():
-  assert hyphene("फलमश्नुते") == "फलम् अश्नुते"
-  assert hyphene("अर्थमिति") == "अर्थम् इति"
+@pytest.mark.parametrize("case", _cases("final_m_sandhi"),
+                         ids=lambda c: c["input"])
+def test_final_m_sandhi(case):
+  assert hyphene(case["input"]) == case["expected"]
 
 
-def test_consonant_assimilation():
-  assert hyphene("तद्धि") == "तद् धि"
+@pytest.mark.parametrize("case", _cases("consonant_assimilation"),
+                         ids=lambda c: c["input"])
+def test_consonant_assimilation(case):
+  assert hyphene(case["input"]) == case["expected"]
 
 
-def test_samasa_and_inflected_words():
-  assert hyphene("हेतुभावे") == "हेतु-भावे"
-  assert hyphene("आकाशशब्देन") == "आकाश-शब्देन"
-  assert hyphene("जगत्कारणम्") == "जगत्-कारणम्"
-  # single inflected words stay whole
-  assert hyphene("वृत्तस्य") == "वृत्तस्य"
-  assert hyphene("क्षणिकत्वम्") == "क्षणिकत्वम्"
-  assert hyphene("सर्वज्ञ") == "सर्वज्ञ"
+@pytest.mark.parametrize("case", _cases("samasa_and_inflected_words"),
+                         ids=lambda c: c["input"])
+def test_samasa_and_inflected_words(case):
+  assert hyphene(case["input"]) == case["expected"]
 
 
-def test_reference_compound_sentence():
-  # Sri-bhasya prastuti reference sentence (space/hyphen choice is free, the
-  # segmentation is not): long merged chains (sakala+itara -> sakaletara)
-  # must be kept joined and only separable joints cut.
-  text = ("एतदुक्तं भवति – परस्यैव ब्रह्मणो "
-          "निखिलहेयप्रत्यनीकानन्तज्ञानानन्दैकस्वरूपतया सकलेतरविलक्षणस्य "
-          "स्वाभाविकानविधकातिशयासङ्ख्येयकल्याणगुणगणाश्च सन्ति।")
-  expected = ("एतद् उक्तं भवति – परस्यैव ब्रह्मणो "
-              "निखिल-हेय-प्रत्यनीकानन्त-ज्ञानानन्दैक-स्वरूपतया "
-              "सकलेतर-विलक्षणस्य "
-              "स्वाभाविकानविधकातिशयासङ्ख्येय- -कल्याण-गुण-गणाश् च सन्ति।")
-  assert _segments(hyphene(text)) == _segments(expected)
+@pytest.mark.parametrize("case", _cases("bad_split_regressions"),
+                         ids=lambda c: c["input"])
+def test_bad_split_regressions(case):
+  assert hyphene(case["input"]) == case["expected"]
 
 
-def test_reference_compound_sentence_tadvad():
-  # Second Sri-bhasya prastuti reference: ai/au-merged chains (svAbhimata-
-  # anurUpaika) plus a long simplex-concatenation compound that must split
-  # member by member (ananta-guNa-gaNa-nidhi-divya-rUpam).
-  text = ("तद्वदेव स्वाभिमतानुरूपैकरूपाचिन्त्यदिव्याद्भुतनित्यनिरवद्य"
-          "निरतिशयौज्ज्वल्यसौन्दर्यसौगन्ध्यसौकुमार्यलावण्ययौवनाद्यनन्तगुणगणनिधि"
-          "दिव्यरूपमपि स्वाभाविकमस्ति।")
-  expected = ("तद्वद् एव स्वाभिमतानुरूपैक-रूपाचिन्त्य-दिव्याद्भुत-नित्य-निरवद्य"
-              "-निरतिशयौज्ज्वल्य-सौन्दर्य-सौगन्ध्य-सौकुमार्य-लावण्य-यौवनाद्य्-"
-              "अनन्त-गुण-गण-निधि-दिव्य-रूपम् अपि स्वाभाविकम् अस्ति।")
-  assert _segments(hyphene(text)) == _segments(expected)
+@pytest.mark.parametrize("case", _cases("reference_sentences"),
+                         ids=lambda c: c["name"])
+def test_reference_sentences(case):
+  if case.get("mode") == "exact":
+    assert hyphene(case["text"]) == case["expected"]
+  else:
+    assert _segments(hyphene(case["text"])) == _segments(case["expected"])
 
 
-def test_reference_compound_sentence_jagatAm_upakArAya():
-  # vi.pu. 6.7.70: jagatAm + upakArAya is an m-vowel pada split (jagatAm is
-  # a count-1 inflection of jagat); karmanimittajA splits at plain joints.
-  text = "जगतामुपकाराय  न सा कर्मनिमित्तजा"
-  expected = "जगताम् उपकाराय  न सा कर्म-निमित्त-जा"
-  assert hyphene(text) == expected
-
-
-def test_bad_split_regressions():
-  # hita-tama is one superlative, not a samAsa (bad: हित-तमम्).
-  assert hyphene("हिततमम्") == "हिततमम्"
-  for form in ("हिततमः", "हिततमेषु", "हिततमाभ्याम्"):
-    assert hyphene(form) == form
-  # iti + AzaGkA is a yaN joint; the A belongs to the right word
-  # (bad: इत्या-शङ्कायाम्).
-  assert hyphene("इत्याशङ्कायाम्") == "इत्य् आशङ्कायाम्"
-  # vaktur + AtmopadezAt + iti (bad: वक्तुरात्मोपेद-शादिति).
-  assert (hyphene("वक्तुरात्मोपदेशादिति")
-          == "वक्तुर् आत्मोपदेशाद् इति")
-  # the t-assim ablative must not be read as a stolen Adi (bad:
-  # अनेनैकार्थ्य् आदयं).
-  assert hyphene("अनेनैकार्थ्यादयं") == "अनेनैकार्थ्याद् अयं"
-  # m-vowel pada split, not a tvASTra + mahana compound (bad:
-  # त्वाष्ट्र-महनम्).
-  assert hyphene("त्वाष्ट्रमहनम्") == "त्वाष्ट्रम् अहनम्"
-
-
-def test_idempotent():
-  for text in ["इत्य् एवम्", "मध्व्-अरिः", "हेतु-भावे", "नमस् ते",
-               "रामो ऽस्ति", "फलम् अश्नुते", "धर्मार्थ",
-               "इत्य्-एवम्", "तत्–स्व-रूप–तत्-प्रात्य्-उपायोपदेश-पराणि"]:
-    assert hyphene(text) == text
+@pytest.mark.parametrize("text", _HYPHENATIONS["idempotence"]["texts"])
+def test_idempotent(text):
+  assert hyphene(text) == text

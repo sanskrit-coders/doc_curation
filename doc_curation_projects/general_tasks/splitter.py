@@ -16,8 +16,8 @@ if __name__ == '__main__':
 
   # देवनागरी
   # library.apply_function(fn=section_helper.autonumber, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/sa_hi", start_index=1)
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/sa_hi", target_frontmantter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, start_index=None) 
-  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/kAvyam/drAviDam/4k-divya-prabandha/sarva-prastutiH/23_tiruvAymoLHi_-_nammALHvAr_2791-3892/bhagavad-viShayam/12k_vAdikesari-jIyar__36k_IDu_nam-piLLai_vaDakkut-tiru-vIdi-piLLai/sa_hi/01.md", dry_run=True, source_script=sanscript.DEVANAGARI, start_index=1, max_length=40) # 
+  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAsaH/pAlimAru-maTha-edition/laxAlankAraH", target_frontmantter_type=MdFile.TOML, dry_run=False, source_script=sanscript.DEVANAGARI, start_index=None) 
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/mahAbhAratam/content/vyAsaH/pAlimAru-maTha-edition/laxAlankAraH.md", dry_run=False, source_script=sanscript.DEVANAGARI, start_index=1, max_length=40) # 
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/smRtiH/manuH/kullUkaH/_index.md",  dry_run=False, source_script=sanscript.DEVANAGARI, start_index=1) # 
   # 
   # IAST
@@ -36,5 +36,5 @@ if __name__ == '__main__':
 
   # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/kentum/mediterranian/articles/julian_wright/orations.md", dry_run=False, source_script=None, start_index=1)
   # 
-  library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/interleave-translation/mUla_and_En_translation.md", dry_run=False, source_script=None,  start_index=None, max_length=30)
+  # library.apply_function(fn=MdFile.split_to_bits, dir_path="/home/vvasuki/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/interleave-translation/mUla_and_En_translation.md", dry_run=False, source_script=None,  start_index=None, max_length=30)
   

@@ -18,7 +18,7 @@ weak_rights = ["amUM", "amum", "enaM", "enam", "ezAm", "idAnIm", "imaM", "imam",
 short_ok = ["a", "ca", "hi", "jA", "me", "na", "oM", "te", "tu", "vA"]
 
 # sup/tiG endings used by the light stemmer (longest first).
-sup_endings = ["bhyAm", "bhyah", "ByAm", "ByaH", "BhiH", "AnAm", "Ayai", "AyAH", "asya", "ante", "anti", "vatI", "ezu", "nAm", "sya", "yoH", "Ani", "Ini", "Uni", "Aya", "yAH", "yAm", "Asu", "ena", "enA", "inA", "unA", "AyA", "ayA", "aye", "ave", "ate", "nte", "nti", "tum", "tvA", "sya", "vat", "vAn", "mAn", "mat", "oH", "eH", "EH", "At", "Ad", "aH", "AH", "aiH", "An", "Am", "te", "ti", "It", "us", "uH", "e", "O", "M", "m", "H", "n", "t", "d", "s", "r"]
+sup_endings = ["bhyAm", "bhyah", "ByAm", "ByaH", "BhiH", "AnAm", "Ayai", "AyAH", "asya", "ante", "anti", "vatI", "ezu", "nAm", "sya", "yoH", "Ani", "Ini", "Uni", "Aya", "yAH", "yAm", "Asu", "ena", "enA", "inA", "unA", "AyA", "ayA", "aye", "ave", "ate", "nte", "nti", "tum", "tvA", "sya", "vat", "vAn", "mAn", "mat", "oH", "eH", "EH", "At", "Ad", "aH", "AH", "aiH", "An", "Am", "te", "ti", "Ita", "It", "us", "uH", "e", "O", "M", "m", "H", "n", "t", "d", "s", "r"]
 
 # Stem-final restorations tried when stripping a sup/tiG ending.
 stem_finals = ["a", "A", "i", "I", "u", "U", "f", "t", "d", "n", "s", "as"]
