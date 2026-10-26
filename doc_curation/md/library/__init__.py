@@ -57,7 +57,7 @@ def import_md_recursive(source_dir, file_extension, source_format=None, dry_run=
     md_file.import_with_pandoc(source_file=source_path, source_format=source_format, dry_run=dry_run)
 
 
-def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, start_file=None, silent_iteration=True, *args,
+def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, start_file=None, end_file=None, silent_iteration=True, *args,
                    **kwargs):
   if not silent_iteration:
     logging.debug(list(Path(dir_path).glob(file_pattern)))
@@ -90,6 +90,13 @@ def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, 
       else:
         result = fn(md_file, *args, **kwargs)
       results_map[md_file.file_path] = result
+    if end_file is not None:
+      if end_file.startswith("/"):
+        end_matched = str(md_file.file_path) == end_file
+      else:
+        end_matched = os.path.basename(md_file.file_path) == end_file
+      if end_matched:
+        break
   return results_map
 
 

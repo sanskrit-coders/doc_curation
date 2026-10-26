@@ -387,9 +387,13 @@ def _core_valid(hk_piece, piece_mode=False):
     cand = hk_piece[:-1] + "t"
     if cand in words:
       return ("t-assim", cand)
+    if _stem_valid_piece(cand) if piece_mode else _stem_valid(cand):
+      return ("t-assim", cand)
   if len(hk_piece) >= 3 and hk_piece.endswith("c"):
     cand = hk_piece[:-1] + "t"
     if cand in words:
+      return ("t-assim", cand)
+    if _stem_valid_piece(cand) if piece_mode else _stem_valid(cand):
       return ("t-assim", cand)
   # de-aspiration of an initial (tad+dhi -> tad dhi from tad+hi)
   if len(hk_piece) >= 3 and hk_piece.startswith("dh"):
@@ -505,7 +509,8 @@ def _left_final_witness(lhk):
   if c in ("d", "t", "n"):
     res = True
   elif c in ("j", "c"):
-    res = (lhk[:-1] + "t") in words
+    cand = lhk[:-1] + "t"
+    res = cand in words or _stem_valid_piece(cand)
   elif c in ("g", "D", "b"):
     flip = {"g": "k", "D": "T", "b": "p"}[c]
     res = (lhk[:-1] + flip) in words
@@ -970,6 +975,8 @@ def _chain_word_ok(s):
     base = _stem_base_piece(s)
     if base and len(base) >= 4 and _base_attested(base):
       return True  # a solid inflected member (arthatvena <- arthatva)
+    if s in T._load_words() and _count_of(s) >= _MERGER_MIN:
+      return True  # a real dictionary word (pravibhajya)
     return False  # a synthesised surface (zravaNA, Anna, apya) is no word
     # (short Vedic particles like evA pass on frequency alone)
 
@@ -994,8 +1001,10 @@ def _samasa_head_ok(hk, under=None):
         or s in C._PRONOUNS or s.lower() in C._UPASARGAS):
       return True
   for s in cands:
-    if s in C._TRIE_VERB_STEMS:
-      return False  # a bare verb stem heads no samAsa
+    if (s in C._TRIE_VERB_STEMS
+        and not (_attested(s) and _count_of(s) >= 100)):
+      return False  # a bare verb stem heads no samAsa; a homonymous,
+      # well-attested noun (jIva, bhU) does
     if (s.endswith(_FINITE_VERB_TAILS) and s in T._load_words()
         and len(s) >= 4):
       return False  # a tiG-anta is a pada, never a member

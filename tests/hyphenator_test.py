@@ -44,6 +44,12 @@ def test_visarga_sandhi(case):
   assert hyphene(case["input"]) == case["expected"]
 
 
+@pytest.mark.parametrize("case", _cases("avagraha"),
+                         ids=lambda c: c["input"])
+def test_avagraha(case):
+  assert hyphene(case["input"]) == case["expected"]
+
+
 @pytest.mark.parametrize("case", _cases("final_m_sandhi"),
                          ids=lambda c: c["input"])
 def test_final_m_sandhi(case):

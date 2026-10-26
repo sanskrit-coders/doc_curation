@@ -489,9 +489,10 @@ def _match_end_anchor(words, end_after):
   no LLM, no domain knowledge in code.  Plain phrases work unchanged
   (they match themselves); patterns like ``r"Here terminates .+?\\."``
   are supported.  Matching is case-sensitive first, then case-insensitive
-  (mirroring the previous behaviour).  The stream truncates at the next
-  word boundary after the match.  Empty / zero / multiple matches raise
-  ValueError (fail-stop: callers pass a more specific pattern).
+  (mirroring the previous behaviour).  When several places match, the
+  **first (earliest) match wins**, so a non-greedy pattern stops at the
+  first occurrence; the stream then truncates at the next word boundary
+  after that match.  Empty / zero matches raise ValueError (fail-stop).
   """
   anchor = (end_after or "").strip()
   if not anchor:
@@ -514,12 +515,10 @@ def _match_end_anchor(words, end_after):
       f"end_after pattern {end_after!r} matches nowhere "
       f"(stream has {len(words)} words)")
   if len(matches) > 1:
-    preview = "; ".join(
-      f"word~{len(text[:m.start()].split(' '))}: {text[m.start():m.start() + 60]!r}"
-      for m in matches[:5])
-    raise ValueError(
-      f"end_after pattern {end_after!r} matches {len(matches)} places "
-      f"({preview}); pass a more specific pattern")
+    logging.warning(
+      "end_after pattern %r matches %d places; using the first "
+      "(word~%d)", end_after, len(matches),
+      len(text[:matches[0].start()].split(" ")))
   match = matches[0]
   h = match.end()
   gap = regex.search(r"\s", text[h:])
@@ -536,7 +535,10 @@ def _translation_files_sorted(translation_path, start_file=None,
   :param start_file: basename to start from (e.g. ``"12.md"``); ``None``
     starts with the first file.  Uses
     :func:`doc_curation.md.library.get_md_files_from_path` (skips
-    dotfiles and ``_``-prefixed files).
+    dotfiles and ``_``-prefixed files) by default, but an explicitly
+    requested ``start_file`` that exists on disk (e.g. ``"_index.md"``,
+    the pāda preface) is honoured and placed first, followed by the
+    numbered files.
   :param end_file: basename to stop at (inclusive); ``None`` runs to the
     last file.  Bounds the translation stream when the md file's scope
     ends before the directory does (e.g. an adhikaraṇa file ending at
@@ -559,9 +561,18 @@ def _translation_files_sorted(translation_path, start_file=None,
   if start_file is not None:
     names = [os.path.basename(p) for p in paths]
     if start_file not in names:
-      raise ValueError(
-        f"start_file {start_file!r} not found in {translation_path}; "
-        f"available: {names}")
+      # An explicitly requested file that exists on disk but is excluded
+      # by the default filter (notably ``_index.md``) still anchors the
+      # run: include it first, then the numbered siblings.
+      start_path = os.path.join(os.path.abspath(translation_path),
+                                start_file)
+      if os.path.isdir(translation_path) and os.path.isfile(start_path):
+        paths = [os.path.abspath(start_path)] + paths
+        names = [os.path.basename(p) for p in paths]
+      else:
+        raise ValueError(
+          f"start_file {start_file!r} not found in {translation_path}; "
+          f"available: {names}")
     paths = paths[names.index(start_file):]
   if end_file is not None:
     names = [os.path.basename(p) for p in paths]
@@ -1062,10 +1073,10 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
       peek = _peek_batch(todo_texts, todo_lens, n_sent, len(todo_texts),
                          batch_core_chars)
       upcoming = (g1, peek[1]) if peek is not None else None
-      norm, skipped, next_en_new = _map_batch(
+      norm, skipped_batch, next_en_new = _map_batch(
         batch_texts, g0, en[e:e_end], e, total_core, m,
         generate_fn, max_retries, prev_text=prev, upcoming=upcoming)
-      skip_set = set(skipped)
+      skip_set = set(skipped_batch)
       skipped_flags = [(g0 + k) in skip_set for k in range(len(batch_texts))]
       translations = []
       for k in range(len(batch_texts)):

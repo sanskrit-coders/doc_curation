@@ -67,6 +67,20 @@ cases = [
   { input = "विज्ञेयेन्द्रस्तुत्यर्थत्वेनोपन्यासः", expected = "विज्ञेयेन्द्र-स्तुत्य्-अर्थत्वेनोपन्यासः", note = "long yaN sponges are no pieces" },
   { input = "साहसान्युपन्यस्य", expected = "साहसान्य् उपन्यस्य", note = "sAhasAni <- sAhasa is a yaN witness" },
   { input = "भवितुमर्हति", expected = "भवितुम् अर्हति", note = "-tum infinitive is a finished pada" },
+  { input = "प्रविभज्यैतद्बाणम्", expected = "प्रविभज्यैतद् बाणम्", note = "never split pravibhajya into prav|ibha|jya" },
+  { input = "जीवमुख्यप्राणयोरन्यतरः", expected = "जीव-मुख्य-प्राणयोर् अन्यतरः", note = "m-vowel cut may not leave a bare-stem pada" },
+  { input = "आश्रितत्वाच्च", expected = "आश्रितत्वाच् च", note = "tva binds to its member; c+t is witnessed t-assim" },
+  { input = "प्राणप्रज्ञात्मनोर्भेददर्शनं", expected = "प्राणप्रज्ञात्मनोर्भेद-दर्शनं", note = "no spurious avagraha (अर्भेद)" },
+  { input = "अधिप्रज्ञं", expected = "अधिप्रज्ञं", note = "upasarga+stem compound stays whole" },
+]
+
+[avagraha]
+cases = [
+  { input = "रामोऽस्ति", expected = "रामो ऽस्ति", note = "explicit avagraha" },
+  { input = "रामोर्थः", expected = "रामो ऽर्थः", note = "lost avagraha: rAmaH + arthaH" },
+  { input = "रामोर्धम्", expected = "रामो ऽर्धम्", note = "a+r+dha: voiced consonant after r" },
+  { input = "चेतोर्पण", expected = "चेतो ऽर्पण", note = "lost avagraha before arpaNa" },
+  { input = "प्राणप्रज्ञात्मनोर्भेदः", expected = "प्राणप्रज्ञात्मनोर्भेदः", note = "genuine visarga-r, no avagraha" },
 ]
 
 [idempotence]

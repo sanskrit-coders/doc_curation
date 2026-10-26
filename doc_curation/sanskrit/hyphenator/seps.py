@@ -222,6 +222,9 @@ def _sep(left_hk, right_hk, left_under, right_under, whole_hk=None, ctx=None):
     return "-"
   if lu == "iti":
     return " "
+  for L in range(min(len(left_hk), 10), 2, -1):
+    if left_hk[-L:] in (C._SANDHI_KEEP | C._PRONOUNS):
+      return " "  # a pronoun-final left member is a pada: etad bANam
   jn = left_hk + right_hk
   if V._prefix_in_dict(jn) or jn in T._load_words():
     return "-"
