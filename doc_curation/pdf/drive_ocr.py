@@ -1,5 +1,6 @@
 import glob
 import logging
+import re
 import shutil
 
 from curation_utils.google import drive
@@ -14,13 +15,13 @@ from doc_curation.pdf import compress_with_gs, detext_via_jpg, split_into_small_
 import argparse
 
 
-def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf", detext=False, google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/proofing/ocr_app_oauth.json'):
+def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern=r".*\.pdf", detext=False, google_key='/home/vvasuki/gitland/vvasuki-git/sysconf/kunchikA/google/proofing/ocr_app_oauth.json'):
   """
   small_pdf_pages=1 works best for kannaDa - images uploaded, rather than pdf.
   
   :param dir_path: 
   :param small_pdf_pages: 
-  :param file_pattern: 
+  :param file_pattern: Regex matched against filenames.
   :param detext: 
   :param google_key: 
   :return: 
@@ -29,7 +30,10 @@ def split_and_ocr_all(dir_path, small_pdf_pages=25, file_pattern="*.pdf", detext
     logging.warning("Got a file actually. processing it!")
     file_paths = [dir_path]
   else:
-    file_paths = sorted(Path(dir_path).glob(file_pattern))
+    file_paths = sorted(
+      path for path in Path(dir_path).iterdir()
+      if path.is_file() and re.fullmatch(file_pattern, path.name)
+    )
   file_paths = [f for f in file_paths if not (str(f).endswith("_detexted.pdf") or str(f).endswith("_tiny.pdf"))]
   for file_path in file_paths:
     if small_pdf_pages == 1:
