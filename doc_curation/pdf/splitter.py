@@ -58,10 +58,17 @@ def split_double_page_pdf(pdf_path, backup_suffix=BACKUP_SUFFIX,
             crop = pymupdf.Rect(rect.x0, rect.y0, split_x, rect.y1)
           else:
             crop = pymupdf.Rect(split_x, rect.y0, rect.x1, rect.y1)
-          new_page.set_cropbox(crop * new_page.derotation_matrix)
+          crop = crop * new_page.derotation_matrix
+          crop = pymupdf.Rect(
+            crop.x0 + new_page.cropbox.x0, crop.y0 + new_page.cropbox.y0,
+            crop.x1 + new_page.cropbox.x0, crop.y1 + new_page.cropbox.y0,
+          )
+          if crop not in new_page.mediabox:
+            new_page.set_mediabox(new_page.mediabox | crop)
+          new_page.set_cropbox(crop)
 
       output.set_metadata(source.metadata)
-      output.save(temp_path, garbage=4, deflate=True)
+      output.save(temp_path, garbage=1, deflate=True)
 
     shutil.move(pdf_path, backup_path)
     os.replace(temp_path, pdf_path)

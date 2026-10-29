@@ -123,6 +123,10 @@ included_details = ["विश्वास-प्रस्तुतिः", "व
 path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/kRShNamAchAryoktA_mata-prakriyA"
 
 [[source]]
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/uttamUru-vIrarAghavaH/vaikhAnasa-vijayaH"
+included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
+
+[[source]]
 path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/sarva-prastutiH"
 # vishvAsa-prastutiH here is maNiprAvALa (Devanagari-written Tamil mixed
 # in): not used.  Only the Sanskrit नीलमेघः (सं) and विश्वास-टिप्पनी

@@ -243,6 +243,7 @@ from .tries import (
     _ra_form_confidence,
     _ra_split_form,
     _word_sources_mtime,
+    export_browser_data,
     rebuild_dcs_trie,
     rebuild_ra_trie,
     rebuild_word_trie,

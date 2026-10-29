@@ -1,8 +1,11 @@
 """tries - part of the hyphenator package (see __init__.py)."""
 import bisect
 import glob
+import gzip
 import math
 import os
+import shutil
+import struct
 import unicodedata
 
 import regex
@@ -361,9 +364,90 @@ def rebuild_dcs_trie():
   return C._TRIE_DCS
 
 
+def _export_hyp1(rt, kind, dest_path):
+  """Write ``rt`` as the browser's HYP1 format (gzip-compressed).
+
+  ``kind``: 0 = RecordTrie("H") (uint16 values), 1 = BytesTrie,
+  2 = RecordTrie("II") (two uint32 values).  Keys are sorted: the browser
+  shim binary-searches them.
+  """
+  keys = sorted(rt.iterkeys())
+  n = len(keys)
+  value_blob = bytearray()
+  if kind == 0:
+    for k in keys:
+      value_blob += struct.pack("<H", rt.get(k)[0][0])
+  elif kind == 2:
+    for k in keys:
+      a, b = rt.get(k)[0]
+      value_blob += struct.pack("<II", a, b)
+  else:
+    for k in keys:
+      v = rt.get(k)[0]
+      value_blob += struct.pack("<I", len(v)) + v
+  keys_blob = bytearray()
+  ends = []
+  for k in keys:
+    keys_blob += k.encode("utf-8")
+    ends.append(len(keys_blob))
+  data = (b"HYP1" + bytes([kind]) + struct.pack("<I", n)
+          + bytes(value_blob)
+          + struct.pack("<%dI" % n, *ends)
+          + bytes(keys_blob))
+  tmp = dest_path + ".tmp"
+  with open(tmp, "wb") as f:
+    f.write(gzip.compress(data, compresslevel=9, mtime=0))
+  os.replace(tmp, dest_path)
+
+
+def export_browser_data(dest_dir=None):
+  """Update the Pyodide browser distribution (package source + tries).
+
+  Copies ``hyphenator/*.py`` and the misc TOMLs, then exports all tries as
+  ``*.bin.gz`` (HYP1 format read by the page's ``marisa_trie`` shim).
+  Returns the destination directory (or None when it does not exist).
+  """
+  dest_dir = dest_dir or C._BROWSER_HYPHENATOR_DIR
+  if not os.path.isdir(dest_dir):
+    logging.warning("hyphenator: browser dir missing: %s", dest_dir)
+    return None
+  _load_words()
+  pkg_dir = os.path.dirname(os.path.abspath(__file__))
+  dest_pkg = os.path.join(dest_dir, "hyphenator")
+  os.makedirs(dest_pkg, exist_ok=True)
+  for fn in sorted(os.listdir(pkg_dir)):
+    if fn.endswith(".py"):
+      shutil.copy2(os.path.join(pkg_dir, fn), os.path.join(dest_pkg, fn))
+  for src in (C._MISC_DATA_TOML, C._MISC_VOCAB_TOML):
+    if os.path.exists(src):
+      shutil.copy2(src, os.path.join(dest_dir, os.path.basename(src)))
+
+  def raw(t):
+    return t._rt if isinstance(t, _WordTrie) else t
+
+  exports = (
+      ("padas.bin.gz", raw(C._TRIE_PADAS), 0),
+      ("nominal-stems.bin.gz", raw(C._TRIE_NOMINAL_STEMS), 0),
+      ("verb-stems.bin.gz", raw(C._TRIE_VERB_STEMS), 0),
+      ("avyayas.bin.gz", raw(C._TRIE_AVYAYAS), 0),
+      ("dcs-stems.bin.gz", raw(C._TRIE_DCS), 0),
+      ("ramAnujIya.bin.gz", raw(C._TRIE_RA), 0),
+      ("ramAnujIya-splits.bin.gz", raw(C._TRIE_RA_FORMS), 1),
+      ("ramAnujIya-ngram.bin.gz", raw(C._TRIE_RA_NGRAM), 2),
+      ("ramAnujIya-attestations.bin.gz",
+       raw(C._TRIE_RA_ATTESTATIONS), 0),
+      ("ramAnujIya-badsplits.bin.gz", raw(C._TRIE_BADSPLITS), 0),
+      ("ramAnujIya-seps.bin.gz", raw(C._TRIE_SEPS), 2),
+  )
+  for name, rt, kind in exports:
+    _export_hyp1(rt, kind, os.path.join(dest_dir, name))
+  return dest_dir
+
+
 def rebuild_ra_trie():
   """Force-rebuild the ``rAmAnujIya*`` tries from the sources declared in
-  ``data/vocabulary/sanskrit/rAmAnujIya-sources.toml``."""
+  ``data/vocabulary/sanskrit/rAmAnujIya-sources.toml`` and refresh the
+  browser distribution."""
   loaded = _load_words()
   layers = tuple(loaded._layers[:5])
   C._TRIE_RA = _WordTrie(RA._build_ra_trie(_get_scheme_map(), layers))
@@ -374,6 +458,7 @@ def rebuild_ra_trie():
       counts, plain_counts, split_votes, _get_scheme_map()))
   from . import seps as _seps  # local: seps imports tries (avoid the cycle)
   C._TRIE_SEPS = _seps._build_ra_seps_trie(split_votes, _get_scheme_map())
+  export_browser_data()
   C._LAYERED = None
   _invalidate_trie_caches()
   return C._TRIE_RA

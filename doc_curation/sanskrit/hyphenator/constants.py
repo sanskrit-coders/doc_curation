@@ -77,6 +77,12 @@ _RA_SEPS_TRIE_PATH = os.path.join(_DATA_DIR, "rAmAnujIya-seps.trie")
 _RA_SOURCES_TOML = os.path.join(_DATA_DIR, "rAmAnujIya-sources.toml")
 
 
+# Browser (Pyodide) distribution: package source, misc data and exported
+# tries for https://…/lekhanam/hyphenator.  See export_browser_data().
+_BROWSER_HYPHENATOR_DIR = (
+    "/home/vvasuki/gitland/vishvAsa/sanskrit/content/lekhanam/hyphenator")
+
+
 _RA_BOOST = 20
 
 
