@@ -7,6 +7,7 @@ import regex
 from indic_transliteration import sanscript
 
 from doc_curation.md import content_processor
+from doc_curation.md.content_processor.details.model import Detail
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement
 from doc_curation.utils import patterns
@@ -122,6 +123,70 @@ def wrap_commentaries_in_details(content, block_name="सर्वाष् ट�
     i = j + 1
   parts.append(content[pos:])
   return "".join(parts)
+
+
+def collapse_details_to_end(content, title="द्राविडी", title_pattern=None, separator="\n\n"):
+  """Merge all matching top-level detail blocks into one block at the end.
+
+  Details whose summary fully matches ``title_pattern`` (default: the literal
+  ``title``) are removed and their bodies are joined, in document order, into a
+  single ``title`` detail appended at the end of the content. Surrounding blank
+  lines are normalized; text inside other details and elsewhere is untouched.
+  Idempotent when a single matching block already sits at the end.
+  """
+  if "<details" not in (content or ""):
+    return content
+  if title_pattern is None:
+    title_pattern = regex.escape(title)
+  if isinstance(title_pattern, str):
+    title_pattern = regex.compile(title_pattern)
+  tag_re = regex.compile(r"</details>|<details[^>]*>")
+  summary_re = regex.compile(r"<summary>(.*?)</summary>", flags=regex.DOTALL)
+
+  spans = []
+  depth = 0
+  start = None
+  for match in tag_re.finditer(content):
+    if match.group().startswith("</"):
+      if depth > 0:
+        depth -= 1
+        if depth == 0 and start is not None:
+          spans.append((start, match.end()))
+          start = None
+    else:
+      if depth == 0:
+        start = match.start()
+      depth += 1
+
+  matched_spans = []
+  bodies = []
+  for (start, end) in spans:
+    summary_match = summary_re.search(content[start:end])
+    if summary_match is None or not title_pattern.fullmatch(summary_match.group(1).strip()):
+      continue
+    close = content.rfind("</details>", start, end)
+    bodies.append(content[start + summary_match.end():close].strip())
+    matched_spans.append((start, end))
+
+  if not matched_spans:
+    return content
+  if len(matched_spans) == 1 and not content[matched_spans[0][1]:].strip():
+    return content
+
+  segments = []
+  pos = 0
+  for (start, end) in matched_spans:
+    segments.append(content[pos:start])
+    pos = end
+  segments.append(content[pos:])
+  segments = [segment.strip("\n") for segment in segments]
+  segments = [segment for segment in segments if segment.strip()]
+
+  merged = Detail(title=title, content=separator.join(body for body in bodies if body)).to_md_html()
+  new_content = separator.join(segments)
+  if new_content.strip():
+    return f"{new_content}{separator}{merged}\n"
+  return f"{merged}\n"
 
 
 def move_detail_to_matching_file(dest_dir, source_file, dest_id_maker=None, dest_pattern="<details.+?summary>मूलम्</summary>[\s\S]+?॥ *([०-९]+) *॥\s*</details>\n*", source_pattern="(?<=\n|^)([\d०-९೦-೯]+).+\n", overwrite_pattern=None, overwrite_mode=None, dry_run=False):
