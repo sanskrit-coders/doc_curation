@@ -1,3 +1,4 @@
+import difflib
 import os
 import re
 import unicodedata
@@ -21,6 +22,19 @@ def fix_includes(dir_path):
   include_helper.prefill_includes(dir_path=dir_path)
 
 
+def _detail_titles(lines):
+    titles = []
+    stack = []
+    for line in lines:
+        match = re.match(r"<details[^>]*><summary>(.*?)</summary>", line)
+        if match:
+            stack.append(match.group(1).strip())
+        titles.append(stack[-1] if stack else None)
+        if "</details>" in line and stack:
+            stack.pop()
+    return titles
+
+
 def _normalize_for_anchor(text):
     text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
     text = re.sub(r"[^\u0900-\u097F]+", "", text)
@@ -38,8 +52,11 @@ def insert_sayaNa(content):
     block = ["<details><summary>सायणटीका</summary>", "", text.strip(), "</details>", ""]
     if anchor:
         anchor_norm = _normalize_for_anchor(anchor)
+        titles = _detail_titles(lines)
         matched_end = None
         for start in range(len(lines)):
+            if titles[start] != "मूलम्":
+                continue
             window = ""
             for end in range(start, min(len(lines), start + 10)):
                 window += _normalize_for_anchor(lines[end])
@@ -47,6 +64,19 @@ def insert_sayaNa(content):
                     matched_end = end
                 if len(window) > len(anchor_norm) + 200:
                     break
+        if matched_end is None:
+            best_ratio = 0.0
+            for start in range(len(lines)):
+                if titles[start] != "मूलम्":
+                    continue
+                for end in range(start, min(len(lines), start + 10)):
+                    window = "".join(_normalize_for_anchor(line) for line in lines[start:end + 1])
+                    ratio = difflib.SequenceMatcher(None, anchor_norm, window).ratio()
+                    if ratio > best_ratio:
+                        best_ratio = ratio
+                        matched_end = end
+            if best_ratio < 0.6:
+                matched_end = None
         if matched_end is not None:
             close_index = matched_end + 1
             while close_index < len(lines) and lines[close_index].strip() != "</details>":
@@ -54,7 +84,7 @@ def insert_sayaNa(content):
             insert_index = close_index + 1 if close_index < len(lines) else len(lines)
             lines[insert_index:insert_index] = block
         else:
-            lines.extend(block)
+            return
     else:
         lines.extend(block)
     md_file.replace_content_metadata(new_content="\n".join(lines))
