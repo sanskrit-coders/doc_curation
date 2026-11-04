@@ -1,5 +1,6 @@
 import os
 import logging
+import regex
 from doc_curation.ebook import pdf_book
 from pypdf import PdfReader, PdfWriter, PageObject
 from pypdf import Transformation
@@ -143,7 +144,7 @@ def _finalize_and_write(writer, output_pdf_path, metadata=None, duplex=None):
     writer.write(out_file)
 
 
-def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_title=None, metadata=None, gutter=10):
+def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_title=None, metadata=None, gutter=10, split_locus=None):
   """
   :param crop_ratio: Fraction of outer page margin to trim (e.g. 0.04 = 4%).
   :param gutter: Safety margin in points from the central fold line (e.g. 10pt = ~3.5mm).
@@ -162,6 +163,35 @@ def to_booklet(input_pdf_path, output_pdf_path=None, sig_pages=None, signature_t
   # 1. Pad the entire PDF to a multiple of 4 first
   pages_in = list(reader.pages)
   total_padded = len(pages_in)
+
+  # Resolve split_locus into signature page counts. When a split point is
+  # given, each signature starts at the page where the text first appears,
+  # so the corresponding heading begins a new part. split_locus is always
+  # treated as a list of strings.
+  if isinstance(split_locus, str):
+    split_locus = [split_locus]
+  texts = list(split_locus) if split_locus is not None else []
+
+  if texts:
+    indices = []
+    for t in texts:
+      pattern = regex.escape(str(t))
+      idx = pdf_book.get_page_index_with_pattern(pattern, input_pdf_path)
+      if isinstance(idx, int) and idx > 0:
+        indices.append(idx)
+    indices = sorted(set(indices))
+    if indices:
+      bounds = [0] + indices + [total_padded]
+      counts = [bounds[i + 1] - bounds[i] for i in range(len(bounds) - 1)]
+      counts = [c for c in counts if c > 0]
+      if counts:
+        sig_pages = counts
+
+  # Normalize sig_pages: allow string "91:160" or list.
+  if isinstance(sig_pages, str):
+    sig_pages = [int(x) for x in sig_pages.split(":") if str(x).strip() != ""]
+  if isinstance(sig_pages, (list, tuple)):
+    sig_pages = [int(x) for x in sig_pages]
 
   # 2. Determine pages per signature (copy: never mutate caller's list)
   sig_bounds = []

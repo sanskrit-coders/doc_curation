@@ -11,8 +11,8 @@ from doc_curation.md.library import get_md_files_from_path
 from indic_transliteration import sanscript
 
 # Re-exported for backwards compatibility; implementation lives in
-# doc_curation.md.content_processor.commentary.details_merger.
-from doc_curation.md.content_processor.commentary.details_merger import merge_translations, remove_spurious_mula_variants, prune_index_only_dirs, dedupe_vr_blocks, cleanup_grouping_artifacts, scan_grouping_artifacts, split_grouped_translations, align_parallel_units, transfer_nukta_marks  # noqa: F401
+# doc_curation.md.content_processor.commentary.multi_merger.
+from doc_curation.md.content_processor.commentary.multi_merger import merge_translations, remove_spurious_mula_variants, prune_index_only_dirs, dedupe_vr_blocks, cleanup_grouping_artifacts, scan_grouping_artifacts, split_grouped_translations, align_parallel_units, transfer_nukta_marks  # noqa: F401
 
 __all__ = ["merge_translations", "remove_spurious_mula_variants", "prune_index_only_dirs", "dedupe_vr_blocks", "cleanup_grouping_artifacts", "scan_grouping_artifacts", "split_grouped_translations", "align_parallel_units", "transfer_nukta_marks"]
 

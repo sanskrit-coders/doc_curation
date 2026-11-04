@@ -18,7 +18,7 @@ def rAmAnujIyam():
 
   # ebook.make_all("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH", out_path=os.path.join(out_path, "rAmAnujaH/shrI-bhAShyam"), css_path=CSS_PATH, metadata={"author": "रामानुजः"}, appendix=appendix_dg, file_split_level=2, overwrite=".*")
 
-  # ebook.make_all("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", out_path=os.path.join(out_path, "yAmunaH/Agama-prAmANyam"), css_path=CSS_PATH, metadata={"author": "यामुनः"}, appendix=appendix_dg, file_split_level=2, booklets=["a4_91:160"], overwrite="pdf")
+  ebook.make_all("/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/yAmunaH/Agama-prAmANyam/sarva-prastutiH", out_path=os.path.join(out_path, "yAmunaH/Agama-prAmANyam"), css_path=CSS_PATH, metadata={"author": "यामुनः"}, appendix=appendix_dg, file_split_level=2, booklets=[{"page_size": "a4", "split_locus": ["+०२ उत्तर-पक्षः ①"]}], overwrite="pdf")
 
   # ebook.make_all(source_dir="/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/venkaTa-nAtha-shAkhA/venkaTanAthaH/rahasya-traya-sAraH/kumAra-varadaH/artha-sangrahaH", file_split_level=1,  out_path=os.path.join(out_path, "kumAra-varadaH/artha-sangrahaH"), metadata={"author": "कुमार-वरदः"}, css_path=CSS_PATH, appendix=appendix_dg, booklets=["a4"], details_pattern_to_prefix="NONE")
 

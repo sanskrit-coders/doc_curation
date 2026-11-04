@@ -37,13 +37,54 @@ def make_script_pdfs(epub_path, scripts, booklets, metadata, *args, **kwargs):
   
     for booklet in booklets:
       sig_pages = None
-      if "_" in booklet:
-        sig_pages = booklet.split("_")[-1].split(":")
-        sig_pages = [int(x) for x in sig_pages]
-      if "a4" in booklet:
-        booklet_maker.to_booklet(input_pdf_path=a4_path, output_pdf_path=None, sig_pages=sig_pages, signature_title="Part ", metadata=metadata)
-      elif "a5:dup" in booklets:
-        booklet_maker.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=None, sig_pages=sig_pages, signature_title="Part ")
+      split_locus = None
+      dup = False
+      page_size = None
+      if isinstance(booklet, dict):
+        page_size = booklet.get("page_size")
+        sig_pages = booklet.get("sig_pages")
+        split_locus = booklet.get("split_locus")
+        dup = bool(booklet.get("dup", False)) or "dup" in str(booklet.get("mode", ""))
+        if page_size is None:
+          for v in booklet.values():
+            if isinstance(v, str) and ("a4" in v or "a5" in v):
+              page_size = v
+              break
+        # Allow dict page_size like "a4_91:160" (mirroring the string form).
+        if isinstance(page_size, str) and "_" in page_size and sig_pages is None and split_locus is None:
+          ps, sig_spec = page_size.split("_", 1)
+          page_size = ps.strip()
+          sig_spec = sig_spec.strip()
+          try:
+            if ":" in sig_spec:
+              sig_pages = [int(x) for x in sig_spec.split(":") if str(x).strip() != ""]
+            else:
+              sig_pages = [int(sig_spec)]
+          except ValueError:
+            split_locus = sig_spec
+      else:
+        booklet_str = str(booklet)
+        dup = "dup" in booklet_str
+        if "_" in booklet_str:
+          page_size, sig_spec = booklet_str.split("_", 1)
+          sig_spec = sig_spec.strip()
+          # Numeric sig pages by default; fall back to split_locus.
+          try:
+            if ":" in sig_spec:
+              sig_pages = [int(x) for x in sig_spec.split(":") if str(x).strip() != ""]
+            else:
+              sig_pages = [int(sig_spec)]
+          except ValueError:
+            split_locus = sig_spec
+            sig_pages = None
+        else:
+          page_size = booklet_str
+      page_size_str = str(page_size) if page_size is not None else str(booklet)
+
+      if "a4" in page_size_str:
+        booklet_maker.to_booklet(input_pdf_path=a4_path, output_pdf_path=None, sig_pages=sig_pages, split_locus=split_locus, signature_title="Part ", metadata=metadata)
+      elif "a5" in page_size_str and dup:
+        booklet_maker.duplicated_booklet(input_pdf_path=a5_path, output_pdf_path=None, metadata=metadata)
 
     make_deprecated = False
     if make_deprecated:
