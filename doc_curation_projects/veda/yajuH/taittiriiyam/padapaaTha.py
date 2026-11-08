@@ -61,88 +61,96 @@ def strip_iti(text):
   text = regex.sub('थ्स', 'त्स', text)
   text = regex.sub('ऱ्', 'र्', text)
   text = regex.sub('ꣴ', 'ं', text)
-  text = regex.sub(' इत.*ः', 'ः', text)
-  text = regex.sub('॒ इत.*ः([॒॑]?)$', 'ः\\1', text)
   text = regex.sub('[॒॑]ꣳ', 'ं', text)
-  text = regex.sub('ेति[॒॑] .+ा([॒॑]?)$', 'ा\\1', text)
-  text = regex.sub('ेति[॒॑] .+([॒॑]?)$', '\\1', text)
-  text = regex.sub('ेत्य[॒॑]?.+?([॒॑]?)$', '\\1', text)
-  text = regex.sub('ेती[॒॑]?.+?([॒॑]?)$', '\\1', text)
-  text = regex.sub('ीति[॒॑] .+ी([॒॑]?)$', 'ी\\1', text)
-  text = regex.sub('ीत्य[॒॑]?.+ी([॒॑]?)$', 'ी\\1', text)
-  text = regex.sub('ीति[॒॑] .+ि([॒॑]?)$', 'ि\\1', text)
-  text = regex.sub('ीत्य[॒॑]?.+ि([॒॑]?)$', 'ि\\1', text)
-  text = regex.sub('ा[॒॑]? इत.+ै([॒॑]?)$', 'ै\\1', text)
-  text = regex.sub('ी[॒॑]? इत.+ी([॒॑]?)$', 'ी\\1', text)
-  text = regex.sub('[॒॑]?दिति[॒॑] .+([॒॑]?)त्$', '\\1त्', text)
-  text = regex.sub('[॒॑]?दि[॒॑]?त्य[॒॑]?.+([॒॑]?)त्$', '\\1त्', text)
-  text = regex.sub('[॒॑]?दि[॒॑]?ती[॒॑]?.+([॒॑]?)त्$', '\\1त्', text)
-  text = regex.sub('[॒॑]?मिति[॒॑] .+?([॑]?)म्$', '\\1म्', text)
-  text = regex.sub('[॒॑]?मिति[॒॑] .+?([॑])म्$', '\\1म्', text)
-  text = regex.sub('[॒॑]?रिति[॒॑] .+ः([॒॑]?)$', 'ः\\1', text)
-  text = regex.sub('[॒॑]?रि[॒॑]?त्य[॒॑]?.+ः([॒॑]?)$', 'ः\\1', text)
-  text = regex.sub('[॒॑]?रि[॒॑]?ती[॒॑]?.+ः([॒॑]?)$', 'ः\\1', text)
-  text = regex.sub('[॒॑]? इ[॒॑]?त.+े([॒॑]?)$', 'े\\1', text)
-  text = regex.sub('[॒॑]? इत.+ः([॒॑]?)$', 'ः\\1', text)
-  text = regex.sub(' इ॑त.*ः([॒॑]?)', 'ः\\1', text)
+  has_iti = ("त" in text or "त्य" in text)
+  if has_iti:
+    text = regex.sub(' इत.*ः', 'ः', text)
+    text = regex.sub('॒ इत.*ः([॒॑]?)$', 'ः\\1', text)
+    text = regex.sub('ेति[॒॑] .+ा([॒॑]?)$', 'ा\\1', text)
+    text = regex.sub('ेति[॒॑] .+([॒॑]?)$', '\\1', text)
+    text = regex.sub('ेत्य[॒॑]?.+?([॒॑]?)$', '\\1', text)
+    text = regex.sub('ेती[॒॑]?.+?([॒॑]?)$', '\\1', text)
+    text = regex.sub('ीति[॒॑] .+ी([॒॑]?)$', 'ी\\1', text)
+    text = regex.sub('ीत्य[॒॑]?.+ी([॒॑]?)$', 'ी\\1', text)
+    text = regex.sub('ीति[॒॑] .+ि([॒॑]?)$', 'ि\\1', text)
+    text = regex.sub('ीत्य[॒॑]?.+ि([॒॑]?)$', 'ि\\1', text)
+    text = regex.sub('ा[॒॑]? इत.+ै([॒॑]?)$', 'ै\\1', text)
+    text = regex.sub('ी[॒॑]? इत.+ी([॒॑]?)$', 'ी\\1', text)
+    text = regex.sub('[॒॑]?दिति[॒॑] .+([॒॑]?)त्$', '\\1त्', text)
+    text = regex.sub('[॒॑]?दि[॒॑]?त्य[॒॑]?.+([॒॑]?)त्$', '\\1त्', text)
+    text = regex.sub('[॒॑]?दि[॒॑]?ती[॒॑]?.+([॒॑]?)त्$', '\\1त्', text)
+    text = regex.sub('[॒॑]?मिति[॒॑] .+?([॑]?)म्$', '\\1म्', text)
+    text = regex.sub('[॒॑]?मिति[॒॑] .+?([॑])म्$', '\\1म्', text)
+    text = regex.sub('[॒॑]?रिति[॒॑] .+ः([॒॑]?)$', 'ः\\1', text)
+    text = regex.sub('[॒॑]?रि[॒॑]?त्य[॒॑]?.+ः([॒॑]?)$', 'ः\\1', text)
+    text = regex.sub('[॒॑]?रि[॒॑]?ती[॒॑]?.+ः([॒॑]?)$', 'ः\\1', text)
+    text = regex.sub('[॒॑]? इ[॒॑]?त.+े([॒॑]?)$', 'े\\1', text)
+    text = regex.sub('[॒॑]? इत.+ः([॒॑]?)$', 'ः\\1', text)
+    text = regex.sub(' इ॑त.*ः([॒॑]?)', 'ः\\1', text)
   text = regex.sub('्([॒॑])', '्', text)
   text = regex.sub('न्न्([॒॑]?)', 'न्', text)
-  # standalone upasarga-pada "निरिति" (= निर्, from निस्) carries no "iti X" gloss
-  text = regex.sub('^निरिति([॒॑]?)$', 'निर्\\1', text)
   text = regex.sub('ं॒ ‌', 'ं', text)
-  text = regex.sub(' इति॑$', '', text)
-  # "X इति" without visarga/gloss: the iti is a padapATha marker, X is the word
-  # (e.g. मो इति -> मो). Bare इति ("thus") has no space: untouched.
-  text = regex.sub('^(.+) इति$', '\\1', text)
-  # fused "Xu + iti" without gloss (अन्विति -> अनु, स्विति -> सु);
-  # glossed forms (पृत्स्विति पृत्-सु) end otherwise: untouched.
-  text = regex.sub('^(\\S+)्विति([॒॑]?)$', '\\1ु\\2', text)
   text = regex.sub(r'\(३\)', '', text)
   text = regex.sub('ꣳ', 'ँ', text)
-  text = regex.sub('([॒॑]?)न्निति[॒॑] .+([॒॑]?)न्', '\\1न्', text)
-  text = regex.sub('नि[॒॑]?ति[॒॑]? .*([॒॑]?)न्', 'न्', text)
-  text = regex.sub('नि[॒॑]?ती[॒॑]? .*([॒॑]?)न्', 'न्', text)
-  text = regex.sub('नि[॒॑]?त्य[॒॒]?.*([॒॑]?)न्', 'न्', text)
-  text = regex.sub('मि[॒॑]?ति[॒॑]? .*?([॒॑]?)म्$', '\\1म्', text)
-  text = regex.sub('मि[॒॑]?त्य[॒॑]?.*?([॒॑]?)म्$', '\\1म्', text)
-  text = regex.sub('मि[॒॑]?ती[॒॑]?.*?([॒॑]?)म्$', '\\1म्', text)
-  text = regex.sub('ङि[॒॑]?ति[॒॑]? .*?([॒॑]?)ङ्$', '\\1ङ्', text)
-  text = regex.sub('्विति[॒॑] .*ु([॒॑]?)$', 'ु\\1', text)
-  text = regex.sub('्वि[॒॑]?त्य[॒॑]?.*ु([॒॑]?)$', 'ु\\1', text)
-  text = regex.sub('॒विति॑ .*ो([॒॑]?)$', 'ो\\1', text)
-  text = regex.sub('ा[॒॑]?विति[॒॑] .+ौ([॒॑]?)$', 'ौ\\1', text)
-  text = regex.sub('ा[॒॑]?वित्य[॒॑]?.+ौ([॒॑]?)$', 'ौ\\1', text)
-  text = regex.sub('ा[॒॑]?वि[॒॑]?ती[॒॑]?.+ौ([॒॑]?)$', 'ौ\\1', text)
-  text = regex.sub('ा[॒॑]?यिति[॒॑] .+ै([॒॑]?)$', 'ै\\1', text)
-  text = regex.sub('[॒॑]?गिति[॒॑] .*?([॒॑]?)क्$', '\\1क्', text)
-  text = regex.sub('[॒॑]?डिति[॒॑] .*?([॒॑]?)ट्$', '\\1ट्', text)
-  text = regex.sub('ू[॒॑]? इत.*ू([॒॑]?)$', 'ू\\1', text)
-  text = regex.sub('ो[॒॑]? इ[॒॑]?त.*ो([॒॒]?)$', 'ो\\1', text)
+  if has_iti:
+    # standalone upasarga-pada "निरिति" (= निर्, from निस्) carries no "iti X" gloss
+    text = regex.sub('^निरिति([॒॑]?)$', 'निर्\\1', text)
+    text = regex.sub('^(अ॒?भ|अ॒?त|अ॒?ध|प॒?र|प्र॒?त|न|व)ीति([॒॑]?)$', '\\1ि\\2', text)
+    text = regex.sub('^(उ॒?प|अ॒?प|अ॒?व|प्र|प॒?रा|न|च|व)ेति([॒॑]?)$', '\\1\\2', text)
+    text = regex.sub('^एति([॒॑]?)$', 'आ\\1', text)
+    text = regex.sub(' इति॑$', '', text)
+    # "X इति" without visarga/gloss: the iti is a padapATha marker, X is the word
+    # (e.g. मो इति -> मो). Bare इति ("thus") has no space: untouched.
+    text = regex.sub('^(.+) इति$', '\\1', text)
+    # fused "Xu + iti" without gloss (अन्विति -> अनु, स्विति -> सु);
+    # glossed forms (पृत्स्विति पृत्-सु) end otherwise: untouched.
+    text = regex.sub('^(\\S+)्विति([॒॑]?)$', '\\1ु\\2', text)
+    text = regex.sub('([॒॑]?)न्निति[॒॑] .+([॒॑]?)न्', '\\1न्', text)
+    text = regex.sub('नि[॒॑]?ति[॒॑]? .*([॒॑]?)न्', 'न्', text)
+    text = regex.sub('नि[॒॑]?ती[॒॑]? .*([॒॑]?)न्', 'न्', text)
+    text = regex.sub('नि[॒॑]?त्य[॒॒]?.*([॒॑]?)न्', 'न्', text)
+    text = regex.sub('मि[॒॑]?ति[॒॑]? .*?([॒॑]?)म्$', '\\1म्', text)
+    text = regex.sub('मि[॒॑]?त्य[॒॑]?.*?([॒॑]?)म्$', '\\1म्', text)
+    text = regex.sub('मि[॒॑]?ती[॒॑]?.*?([॒॑]?)म्$', '\\1म्', text)
+    text = regex.sub('ङि[॒॑]?ति[॒॑]? .*?([॒॑]?)ङ्$', '\\1ङ्', text)
+    text = regex.sub('्विति[॒॑] .*ु([॒॑]?)$', 'ु\\1', text)
+    text = regex.sub('्वि[॒॑]?त्य[॒॑]?.*ु([॒॑]?)$', 'ु\\1', text)
+    text = regex.sub('॒विति॑ .*ो([॒॑]?)$', 'ो\\1', text)
+    text = regex.sub('ा[॒॑]?विति[॒॑] .+ौ([॒॑]?)$', 'ौ\\1', text)
+    text = regex.sub('ा[॒॑]?वित्य[॒॑]?.+ौ([॒॑]?)$', 'ौ\\1', text)
+    text = regex.sub('ा[॒॑]?वि[॒॑]?ती[॒॑]?.+ौ([॒॑]?)$', 'ौ\\1', text)
+    text = regex.sub('ा[॒॑]?यिति[॒॑] .+ै([॒॑]?)$', 'ै\\1', text)
+    text = regex.sub('[॒॑]?गिति[॒॑] .*?([॒॑]?)क्$', '\\1क्', text)
+    text = regex.sub('[॒॑]?डिति[॒॑] .*?([॒॑]?)ट्$', '\\1ट्', text)
+    text = regex.sub('ू[॒॑]? इत.*ू([॒॑]?)$', 'ू\\1', text)
+    text = regex.sub('ो[॒॑]? इ[॒॑]?त.*ो([॒॒]?)$', 'ो\\1', text)
   return text
 
 
 def drop_elided_inserts(text):
-  """Drop bracketed/parenthesized chunks, keep within-mantra repetitions.
+  """Drop bracketed/parenthesized/braced chunks, keep within-mantra repetitions.
 
   Chunks whose content does NOT occur unbracketed elsewhere in the same
   text are elisions, glosses or markers (``[ये देवाः]``, ``[रक्षोहण...]``,
-  ``(+++)``, ``[8]``) and are dropped with content. Chunks whose content
+  ``{तेषाँ...}``, ``(+++)``, ``[8]``) and are dropped with content. Chunks whose content
   DOES occur unbracketed (e.g. repeated ``[रक्षोघ्ने स्वाहा]``) are expanded.
   """
+  if not any(ch in text for ch in "()[]{}"):
+    return text
   for _ in range(2):
-    for pat in (r"\([^()]*\)", r"\[[^\[\]]*\]"):
+    for pat in (r"\([^()]*\)", r"\[[^\[\]]*\]", r"\{[^\{\}]*\}"):
       def _decide(m, _text=text):
         inner = m.group(0)[1:-1]
         inner_norm = normalize_for_match(inner, drop_inserts=False)
         if not inner_norm:
           return ""
         rest = _text[:m.start()] + " " + _text[m.end():]
-        rest_bare = regex.sub(r"\([^()]*\)", "", regex.sub(r"\[[^\[\]]*\]", "", rest))
+        rest_bare = regex.sub(r"\{[^\{\}]*\}", "", regex.sub(r"\([^()]*\)", "", regex.sub(r"\[[^\[\]]*\]", "", rest)))
         if inner_norm in normalize_for_match(rest_bare, drop_inserts=False):
           return inner
         return ""
       text, _ = regex.subn(pat, _decide, text)
-  text = regex.sub(r"[\[\]\(\)]", "", text)
+  text = regex.sub(r"[\[\]\(\)\{\}]", "", text)
   return text
 
 
@@ -163,13 +171,14 @@ def normalize_for_match(text, is_pada=False, drop_inserts=True):
   # anusvara glyph (सव्ँवत्सर = संवत्सर)
   text = regex.sub(r"\+", "", text)
   text = regex.sub("\u0935\u094d([ँं])", r"\1", text)
-  text = drop_elided_inserts(text)
+  if drop_inserts:
+    text = drop_elided_inserts(text)
   text = regex.sub(r"[।॥]", "", text)
   # labels like 1A, anuvaka markers [20], punctuation
   text = regex.sub(r"[0-9०-९A-Z]", "", text)
-  text = regex.sub(r"[\s\u200b\-\–\—\ऽ\/\.,;:|]+", "", text)
+  text = regex.sub(r"[\s\u200b\u200c\u200d\u2026\-\–\—\ऽ\/\.,;:|\"\'“”‘’]+", "", text)
   text = regex.sub(ACCENTS_RE, "", text)
-  text = text.replace("ः", "")
+  text = regex.sub(r"[ःᳵᳶ]", "", text)
   return text
 
 
@@ -213,11 +222,25 @@ def similarity(a, b):
   return max(full, sk)
 
 
+def pada_coverage(mula_norm, pada_norm):
+  """Fraction of ``pada_norm`` covered by ``mula_norm`` (handles galita elisions)."""
+  if not mula_norm or not pada_norm:
+    return 0.0
+  sm = difflib.SequenceMatcher(None, mula_norm, pada_norm)
+  cov1 = sum(b.size for b in sm.get_matching_blocks()) / len(pada_norm)
+  ms, ps = consonant_skeleton(mula_norm), consonant_skeleton(pada_norm)
+  if ms and ps:
+    sm2 = difflib.SequenceMatcher(None, ms, ps)
+    cov2 = sum(b.size for b in sm2.get_matching_blocks()) / len(ps)
+    return max(cov1, cov2)
+  return cov1
+
+
 # ---------------------------------------------------------------------------
 # pada file parsing
 # ---------------------------------------------------------------------------
 
-@lru_cache(maxsize=8)
+@lru_cache(maxsize=64)
 def parse_pada_file(pada_path):
   """Parse a padapATha saMhitA file into ordered tokens.
 
@@ -237,12 +260,14 @@ def parse_pada_file(pada_path):
       body = regex.sub(r"\[\d+\]\s*$", "", line).strip()
     else:
       body = line
-    # find label blocks: "<num><letters?> ।"
-    label_matches = list(regex.finditer(r"(?:^|\s)(\d+[A-Z]*)\s*।", body))
+    # find label blocks: "<num><letters?> ।" or "<letters> ।"
+    label_matches = list(regex.finditer(r"(?:^|\s)(\d+[A-Z]*|[A-Z]+)\s*।", body))
     if not label_matches:
       blocks = [(None, body)]
     else:
       blocks = []
+      if label_matches[0].start() > 0:
+        blocks.append((None, body[:label_matches[0].start()]))
       for idx, lm in enumerate(label_matches):
         label = lm.group(1)
         start = lm.end()
@@ -253,6 +278,7 @@ def parse_pada_file(pada_path):
       first = True
       for tm in regex.finditer(r"([^।॥]+)([।॥]+)", block):
         raw = tm.group(1).strip()
+        raw = regex.sub(r"^(?:\d+[A-Z]*|[A-Z]+)\s+", "", raw).strip()
         delim_raw = tm.group(2).strip()
         delim = "॥" if "॥" in delim_raw else "।"
         if not raw:
@@ -315,14 +341,19 @@ def _detail_title(tag):
   return summary.get_text().strip()
 
 
-def _has_pada_after(tag):
-  """True if a pada-pATha detail already follows this mUla tag.
+def _is_non_split_mula_title(title):
+  return any(k in title for k in ("संयुक्तम्", "सातवलेकर", "सात्वलेकर"))
 
-  Scans forward siblings until the next mUla tag (or end of parent).
-  Any ``pada-pATha`` detail in that range counts, so re-running
-  :func:`add_pada` never creates a duplicate - even if other details
-  (Keith, TIkA, ...) were inserted between the mUla and its pada-pATha,
-  or the title has variant spacing/hyphens.
+
+def _has_pada_after(tag):
+  """True if a pada-pATha detail already accompanies this mUla tag.
+
+  Scans forward siblings until the next split mUla tag or vishvAsa-prastutiH
+  tag (or end of parent), and also backward up to the current unit's
+  vishvAsa-prastutiH / previous split mUla tag. Any ``pada-pATha`` detail in
+  that unit range counts, so re-running :func:`add_pada` never creates a
+  duplicate - even if ``pada-pATha`` was placed before ``mUlam`` or after
+  ``mUlam (saMyuktam)``.
   """
   sib = tag.next_sibling
   while sib is not None:
@@ -333,11 +364,28 @@ def _has_pada_after(tag):
       sib = sib.next_sibling
       continue
     title = _detail_title(sib)
-    if regex.fullmatch(MULA_TITLE_RE, title):
-      return False  # reached next mUla without seeing a pada-pATha
+    if title.startswith("विश्वास-प्रस्तुतिः"):
+      break
+    if regex.fullmatch(MULA_TITLE_RE, title) and not _is_non_split_mula_title(title):
+      break  # reached next mUla without seeing a pada-pATha
     if regex.fullmatch(PADA_TITLE_RE, title):
       return True
     sib = sib.next_sibling
+  # Also check backward within the same mantra unit (before mUlam)
+  sib = tag.previous_sibling
+  while sib is not None:
+    if isinstance(sib, NavigableString):
+      sib = sib.previous_sibling
+      continue
+    if getattr(sib, "name", None) != "details":
+      sib = sib.previous_sibling
+      continue
+    title = _detail_title(sib)
+    if regex.fullmatch(PADA_TITLE_RE, title):
+      return True
+    if title.startswith("विश्वास-प्रस्तुतिः") or (regex.fullmatch(MULA_TITLE_RE, title) and not _is_non_split_mula_title(title)):
+      break
+    sib = sib.previous_sibling
   return False
 
 
@@ -382,7 +430,7 @@ def get_top_mulas(md_path):
     title = summary.get_text().strip()
     if not regex.fullmatch(MULA_TITLE_RE, title):
       continue
-    if "संयुक्तम्" in title:
+    if _is_non_split_mula_title(title):
       continue
     if _is_inside_include(tag):
       continue
@@ -407,7 +455,7 @@ def get_div_mula_groups(soup):
     title = summary.get_text().strip()
     if not regex.fullmatch(MULA_TITLE_RE, title):
       continue
-    if "संयुक्तम्" in title:
+    if _is_non_split_mula_title(title):
       continue
     div = None
     for parent in tag.parents:
@@ -418,9 +466,12 @@ def get_div_mula_groups(soup):
         break
     if div is None:
       continue
+    div_url = div.get("url", "") or ""
+    if "/taittirIyam/sArasvata-vibhAgaH/saMhitA/" not in div_url or "/mUlam/" in div_url or "/vishvAsa-prastutiH/" in div_url:
+      continue
     if id(div) not in index_by_div:
       index_by_div[id(div)] = len(groups)
-      groups.append({"div": div, "url": div.get("url", ""), "entries": []})
+      groups.append({"div": div, "url": div_url, "entries": []})
     groups[index_by_div[id(div)]]["entries"].append(_mula_entry_from_tag(tag))
   return groups
 
@@ -436,7 +487,7 @@ def collect_include_targets(md_path, hugo_base=DEFAULT_HUGO_BASE):
   targets = []
   for div in soup.select("div.js_include"):
     url = div.get("url", "")
-    if not url:
+    if not url or "/taittirIyam/sArasvata-vibhAgaH/saMhitA/" not in url or "/mUlam/" in url or "/vishvAsa-prastutiH/" in url:
       continue
     if include_helper is None:
       continue
@@ -456,8 +507,8 @@ def collect_include_targets(md_path, hugo_base=DEFAULT_HUGO_BASE):
 # alignment (similarity + sequence)
 # ---------------------------------------------------------------------------
 
-def select_pada_window(mula_norms, pada_tokens, max_anuvakas=4, edge_margin=30):
-  """Narrow the full pada token list to consecutive anuvakas.
+def select_pada_window(mula_norms, pada_tokens, max_anuvakas=20, edge_margin=30):
+  """Narrow the full pada token list to consecutive anuvakas (panchatis).
 
   Order-aware prefilter: concatenate normalized mUlas (M) and normalized
   pada tokens (P), find longest common substrings via difflib (fast, C-ish
@@ -495,29 +546,35 @@ def select_pada_window(mula_norms, pada_tokens, max_anuvakas=4, edge_margin=30):
     ti = max(0, min(ti, len(pada_tokens) - 1))
     votes[pada_tokens[ti].get("anuvaka", "")] += size
   if not votes:
-    # fallback: whole file (DP has free prefix/suffix but would be slow;
-    # cap to first max_anuvakas anuvakas to stay safe)
     logging.warning("No difflib votes; using whole pada file")
     return pada_tokens, 0
   vmax = max(votes.values())
-  thresh = max(10, 0.15 * vmax)
+  thresh = max(8, 0.08 * vmax)
   # anuvaka order as they appear in the file (numeric strings, but keep order)
   anu_order = []
   for t in pada_tokens:
     a = t.get("anuvaka", "")
     if a not in anu_order:
       anu_order.append(a)
-  # expand contiguously from the top-voted anuvaka (avoids far noise votes
-  # forcing a huge min-max span).
+  # expand contiguously from the top-voted anuvaka, allowing at most a 1-anuvaka
+  # gap (e.g. when a middle panchati lives inside a js_include).
   top = max(votes, key=lambda a: votes[a])
   top_idx = anu_order.index(top)
   lo = hi = top_idx
-  while lo - 1 >= 0 and votes.get(anu_order[lo - 1], 0) >= thresh \
-      and (hi - (lo - 1) + 1) <= max_anuvakas:
-    lo -= 1
-  while hi + 1 < len(anu_order) and votes.get(anu_order[hi + 1], 0) >= thresh \
-      and ((hi + 1) - lo + 1) <= max_anuvakas:
-    hi += 1
+  while lo - 1 >= 0 and (hi - (lo - 1) + 1) <= max_anuvakas:
+    if votes.get(anu_order[lo - 1], 0) >= thresh:
+      lo -= 1
+    elif lo - 2 >= 0 and votes.get(anu_order[lo - 2], 0) >= thresh and (hi - (lo - 2) + 1) <= max_anuvakas:
+      lo -= 2
+    else:
+      break
+  while hi + 1 < len(anu_order) and ((hi + 1) - lo + 1) <= max_anuvakas:
+    if votes.get(anu_order[hi + 1], 0) >= thresh:
+      hi += 1
+    elif hi + 2 < len(anu_order) and votes.get(anu_order[hi + 2], 0) >= thresh and ((hi + 2) - lo + 1) <= max_anuvakas:
+      hi += 2
+    else:
+      break
   window_anus = anu_order[lo:hi + 1]
   # token slice, padded so spans may reach into the previous block's tail
   # or the next block's head across anuvaka/block boundaries
@@ -525,8 +582,9 @@ def select_pada_window(mula_norms, pada_tokens, max_anuvakas=4, edge_margin=30):
   start, end = min(indices), max(indices) + 1
   logging.info("Selected pada anuvakas %s (votes %s)", window_anus,
                {a: votes[a] for a in window_anus})
-  start = max(0, start - edge_margin)
-  end = min(len(pada_tokens), end + edge_margin)
+  eff_margin = min(edge_margin, 12) if len(mula_norms) <= 2 else edge_margin
+  start = max(0, start - eff_margin)
+  end = min(len(pada_tokens), end + eff_margin)
   return pada_tokens[start:end], start
 
 
@@ -565,12 +623,17 @@ def _block_continues_flags(window_tokens, source_tokens, window_start):
     if not t.get("label"):
       flags.append(False)
       continue
+    prev = source_tokens[window_start + i - 1] if window_start + i - 1 >= 0 else None
+    if t.get("label") == "1" and prev is not None and prev.get("anuvaka") != t.get("anuvaka"):
+      # Panchati boundary ("1 ।" at start of new panchati line) often falls mid-sentence
+      flags.append(False)
+      continue
     nxt = source_tokens[window_start + i + 1] if window_start + i + 1 < len(source_tokens) else None
     flags.append(nxt is not None and not nxt.get("label"))
   return flags
 
 
-def align_mulas_to_padas(mula_norms, pada_norms, max_span=30,
+def align_mulas_to_padas(mula_norms, pada_norms, max_span=45,
                          gap_open=0.15, gap_extend=0.001, sequential=None,
                          ends_new_block=None):
   """Align each mUla to a span of pada tokens (similarity + sequence).
@@ -578,53 +641,85 @@ def align_mulas_to_padas(mula_norms, pada_norms, max_span=30,
   DP with free prefix/suffix and affine-penalized gaps: each mUla consumes
   1..max_span tokens; a skipped stretch (mantras living in ``div.js_include``
   targets, hence absent from this file's mUla list) costs ``gap_open`` once
-  plus ``gap_extend`` per token. The affine form matters: one long skipped
-  div-region must stay cheaper than one garbage mismatch (cost up to 1.0),
-  while a zero-length gap costs nothing, so genuinely contiguous sequences
-  are unaffected. Cost = 1 - similarity.
-
-  Returns (spans, total_cost, gaps) where spans[i] = (start, end) and
-  gaps[i] = number of skipped pada tokens just before spans[i].
-
-  ``sequential[j]`` (j >= 1) forces a gapless transition from mula j-1 to
-  mula j (contiguous blocks with no div between); None means gaps allowed
-  everywhere (affine-penalized). ``ends_new_block`` parallels ``pada_norms``
-  (bool per token, see :func:`_block_continues_flags`); a span ending in
-  such a token (length > 1) has swallowed the next block's head token
-  while its block continues, and costs LABEL_END_PENALTY.
+  plus ``gap_extend`` per token.
   """
   n, m = len(mula_norms), len(pada_norms)
   if n == 0 or m == 0:
     return [], float("inf"), []
   INF = 1e9
-  from functools import lru_cache
 
-  @lru_cache(maxsize=None)
-  def span_cost(i, k, j):
-    concat = "".join(pada_norms[k:j])
-    cost = 1.0 - similarity(mula_norms[i], concat)
-    if ends_new_block is not None and j - 1 > k and ends_new_block[j - 1]:
-      cost += LABEL_END_PENALTY
-    return cost
+  mula_skels = [consonant_skeleton(x) for x in mula_norms]
+  pada_skels = [consonant_skeleton(x) for x in pada_norms]
+  mula_lens = [len(x) for x in mula_norms]
+
+  p_cum_norm = [""]
+  p_cum_skel = [""]
+  for pn, ps in zip(pada_norms, pada_skels):
+    p_cum_norm.append(p_cum_norm[-1] + pn)
+    p_cum_skel.append(p_cum_skel[-1] + ps)
+
+  def _run_dp_row(i, best_prev_val, best_prev_arg, prune=True):
+    dp_i = [INF] * (m + 1)
+    par_k_i = [None] * (m + 1)
+    par_prev_i = [None] * (m + 1)
+    mn = mula_norms[i - 1]
+    ms = mula_skels[i - 1]
+    ml = mula_lens[i - 1]
+    min_bpv = min(best_prev_val)
+    if min_bpv >= INF:
+      return dp_i, par_k_i, par_prev_i
+    max_len = int(ml * 1.85) + 8
+    for k in range(i - 1, m):
+      bpv = best_prev_val[k]
+      if bpv >= INF:
+        continue
+      if prune and bpv > min_bpv + 1.4:
+        continue
+      bpa = best_prev_arg[k]
+      if prune:
+        ps_k = pada_skels[k]
+        if ms and ps_k:
+          head_match = (ms[0] == ps_k[0]) or (len(ms) > 1 and ms[1] == ps_k[0]) or (len(ps_k) > 1 and ms[0] == ps_k[1])
+          if not head_match and (i == 1 or bpv > min_bpv + 0.05):
+            continue
+      base_norm_len = len(p_cum_norm[k])
+      eff_max_span = max(max_span, int(ml * 0.65) + 20)
+      j_max = min(m, k + eff_max_span)
+      for j in range(k + 1, j_max + 1):
+        cl = len(p_cum_norm[j]) - base_norm_len
+        if prune and cl > max_len and j > k + 1:
+          break
+        pen = LABEL_END_PENALTY if (ends_new_block is not None and j - 1 > k and ends_new_block[j - 1]) else 0.0
+        if bpv + pen >= dp_i[j]:
+          continue
+        c_norm = p_cum_norm[j][base_norm_len:]
+        c_skel = p_cum_skel[j][len(p_cum_skel[k]):]
+        r1 = difflib.SequenceMatcher(None, mn, c_norm).ratio()
+        r2 = difflib.SequenceMatcher(None, ms, c_skel).ratio() if (ms and c_skel) else 0.0
+        cost = 1.0 - max(r1, r2) + pen
+        tot = bpv + cost
+        if tot < dp_i[j]:
+          dp_i[j] = tot
+          par_k_i[j] = k
+          par_prev_i[j] = bpa
+    return dp_i, par_k_i, par_prev_i
 
   dp = [[INF] * (m + 1) for _ in range(n + 1)]
-  par_k = [[None] * (m + 1) for _ in range(n + 1)]  # start of span
-  par_prev = [[None] * (m + 1) for _ in range(n + 1)]  # end of prev span
+  par_k = [[None] * (m + 1) for _ in range(n + 1)]
+  par_prev = [[None] * (m + 1) for _ in range(n + 1)]
   for j in range(m + 1):
-    dp[0][j] = 0.0  # free prefix
+    dp[0][j] = 0.0
   if sequential is None:
     sequential = [False] * n
   for i in range(1, n + 1):
-    # best_prev[k] = min(dp[i-1][k], min_{k'<k} dp[i-1][k'] + open + extend*(k-k'))
     best_prev_val = [INF] * (m + 1)
     best_prev_arg = [0] * (m + 1)
     if i > 1 and sequential[i - 1]:
-      # contiguous blocks with no div between: hard gapless transition
       for k in range(m + 1):
         best_prev_val[k] = dp[i - 1][k]
         best_prev_arg[k] = k
     else:
-      run_val, run_arg = INF, 0  # running min of (dp[i-1][k'] - extend*k')
+      run_val, run_arg = INF, 0
       for k in range(m + 1):
         best_v, best_a = dp[i - 1][k], k
         if run_val < INF:
@@ -636,20 +731,27 @@ def align_mulas_to_padas(mula_norms, pada_norms, max_span=30,
         v = dp[i - 1][k] - gap_extend * k
         if v < run_val:
           run_val, run_arg = v, k
-    for j in range(1, m + 1):
-      best, bk, bp = INF, None, None
-      for k in range(max(0, j - max_span), j):
-        if best_prev_val[k] >= INF:
-          continue
-        if k < (i - 1) * 1:
-          continue
-        c = span_cost(i - 1, k, j)
-        tot = best_prev_val[k] + c
-        if tot < best:
-          best, bk, bp = tot, k, best_prev_arg[k]
-      dp[i][j] = best
-      par_k[i][j] = bk
-      par_prev[i][j] = bp
+    dp_i, par_k_i, par_prev_i = _run_dp_row(i, best_prev_val, best_prev_arg, prune=True)
+    if min(dp_i) >= INF / 2:
+      # Fallback: if sequential gapless transition hit a dead-end or pruning was too tight,
+      # allow affine gaps and unpruned search on this step.
+      if i > 1 and sequential[i - 1]:
+        run_val, run_arg = INF, 0
+        for k in range(m + 1):
+          best_v, best_a = dp[i - 1][k], k
+          if run_val < INF:
+            cand = gap_open + gap_extend * k + run_val
+            if cand < best_v:
+              best_v, best_a = cand, run_arg
+          best_prev_val[k] = best_v
+          best_prev_arg[k] = best_a
+          v = dp[i - 1][k] - gap_extend * k
+          if v < run_val:
+            run_val, run_arg = v, k
+      dp_i, par_k_i, par_prev_i = _run_dp_row(i, best_prev_val, best_prev_arg, prune=False)
+    dp[i] = dp_i
+    par_k[i] = par_k_i
+    par_prev[i] = par_prev_i
   best_end = min(range(n, m + 1), key=lambda j: dp[n][j])
   spans, gaps = [], []
   j = best_end
@@ -666,44 +768,43 @@ def align_mulas_to_padas(mula_norms, pada_norms, max_span=30,
   return spans, dp[n][best_end], gaps
 
 
-def span_head_ok(entry_text, span_first_norm, carried_over=False):
-  """Check the span starts with the mUla's head word.
-
-  Guards against absorbed previous-block tails (e.g. a stray ``कुरुते``
-  heading the span while the mantra starts with ``सव्वँत्सरे``). Passes if
-  the consonant skeletons share a prefix in either direction (covers
-  sandhi-fused heads like ``यदन्तरिक्षम्…`` vs ``यत्``, where the full
-  similarity is diluted by length) or similarity >= 0.5. Skipped when a
-  leading particle was carried over (head genuinely lives outside the
-  source) or the head is empty.
-  """
-  if carried_over:
-    return True
-  head_norm = normalize_for_match(mula_head_token(entry_text))
+def _match_single_head(head_norm, span_first_norm):
   if not head_norm:
     return True
   hs, ss = consonant_skeleton(head_norm), consonant_skeleton(span_first_norm)
-  if hs and ss and (hs.startswith(ss) or ss.startswith(hs)):
+  if hs and ss:
+    if hs.startswith(ss) or ss.startswith(hs):
+      return True
+    if len(ss) >= 2 and ss.endswith("त") and hs.startswith(ss[:-1]):
+      return True
+    if hs[0] == ss[0] and (len(ss) == 1 or len(hs) == 1 or similarity(hs[:len(ss) + 1], ss) >= 0.5):
+      return True
+  head_pref = head_norm[:max(len(span_first_norm) + 2, 3)]
+  return similarity(head_pref, span_first_norm) >= 0.5
+
+
+def span_head_ok(entry_text, span_first_norm, carried_over=False):
+  """Check the span starts with the mUla's head word (or a subsequent clause head
+  when the leading clause is elided/galita in the padapATha)."""
+  if carried_over:
     return True
-  return similarity(head_norm, span_first_norm) >= 0.5
+  head_norm = normalize_for_match(mula_head_token(entry_text))
+  if _match_single_head(head_norm, span_first_norm):
+    return True
+  # Check subsequent clauses (separated by danda, newline, or quotes) in case
+  # the leading clause of the mUla was elided (galita) in the padapATha.
+  for clause in regex.split(r"[।॥\n\"“”‘’]+", entry_text):
+    ch = normalize_for_match(mula_head_token(clause))
+    if ch and _match_single_head(ch, span_first_norm):
+      return True
+  return False
 
 
 def build_pada_text(span_tokens):
-  """Build ``1A । ... । ... ।`` display string for a span."""
+  """Build ``... । ... ।`` display string for a span (without clause index labels)."""
   if not span_tokens:
     return ""
-  parts = []
-  first = span_tokens[0]
-  if first.get("label"):
-    parts.append(f"{first['label']} ।")
-  for t in span_tokens:
-    # inner label boundaries inside a span should not normally happen
-    # (spans respect contiguity, may cross labels for multi-anuvaka files);
-    # surface them if they occur mid-span.
-    if t is not first and t.get("label"):
-      parts.append(f"{t['label']} ।")
-    parts.append(f"{t['raw']} {t['delim']}")
-  return " ".join(parts).strip()
+  return " ".join(f"{t['raw']} {t['delim']}" for t in span_tokens).strip()
 
 
 # ---------------------------------------------------------------------------
@@ -716,22 +817,22 @@ def mula_head_token(text):
   text = drop_elided_inserts(text)
   text = regex.sub(r"[।॥]", " ", text)
   text = regex.sub(r"[0-9०-९A-Z]", "", text)
-  text = regex.sub(r"[\u200b\-\u2013\u2014\/\.,;:|\+]+", " ", text)
+  text = regex.sub(r"[\u200b\u200c\u200d\u2026\-\u2013\u2014\/\.,;:|\+\"\'“”‘’]+", " ", text)
   parts = text.split()
   return parts[0] if parts else ""
 
 
 def leading_carryover(entry_text, span_concat_norm):
-  """Return "X । " prefix if the mUla starts with a short particle missing
+  """Return "आ । " prefix if the mUla starts with particle आ missing
   from the span head (padapATha source has no token for it, e.g. leading
   \u0906 in "\u0906 \u0928 \u090f\u0924\u0941"), else ''. Conservative: only fires for
-  head tokens of ≤2 chars whose norm is not already the span start.
+  head token 'आ' whose norm is not already the span start.
   """
   if not span_concat_norm:
     return ""
   head = mula_head_token(entry_text)
   head_norm = normalize_for_match(head)
-  if not head_norm or len(head_norm) > 2:
+  if head_norm != "आ":
     return ""
   if span_concat_norm.startswith(head_norm):
     return ""
@@ -765,7 +866,19 @@ def _group_pada_tokens(group, md_path, fallback_tokens, hugo_base):
   return fallback_tokens
 
 
-def process_single_file(md_path, pada_tokens, dry_run=False, max_span=30,
+def _span_acceptable(entry, span_concat_norm, s):
+  if "अनुवाकः" in entry["text"] or "प्रपाठकः" in entry["text"]:
+    return False
+  if s >= 0.5:
+    return True
+  # Galita (elided repeated clauses in padapATha): span is shorter than mUla,
+  # but >=85% of the span's characters match inside the mUla.
+  if len(span_concat_norm) >= 3 and pada_coverage(entry["norm"], span_concat_norm) >= 0.85:
+    return True
+  return False
+
+
+def process_single_file(md_path, pada_tokens, dry_run=False, max_span=45,
                         min_avg_sim=0.55, hugo_base=DEFAULT_HUGO_BASE):
   """Add pada details to mUlas of one file (top-level + in-div). Returns num inserted."""
   soup, metadata, content, mulas = get_top_mulas(md_path)
@@ -778,7 +891,7 @@ def process_single_file(md_path, pada_tokens, dry_run=False, max_span=30,
     logging.warning("Skipping mUla with empty text after cleanup: %r", m["text"][:60])
   mulas = [m for m in mulas if m["norm"]]
   inserted = 0
-  if mulas:
+  if mulas and not all(e["already_has_pada"] for e in mulas):
     mula_norms = [x["norm"] for x in mulas]
     # Contiguous blocks (no div between) must map to gapless spans.
     sequential = [False] + [_no_div_between(mulas[i - 1]["tag"], mulas[i]["tag"])
@@ -801,38 +914,25 @@ def process_single_file(md_path, pada_tokens, dry_run=False, max_span=30,
     n_gaps = sum(1 for g in gaps if g > 0)
     logging.info("Aligned %d mUlas in %s (window %d tokens @%d, avg_sim=%.3f, gaps=%d)",
                  len(mulas), md_path, len(window_tokens), window_start, avg_sim, n_gaps)
-    for idx, s in enumerate(sims):
-      extra = f" (+{gaps[idx]} skipped before)" if gaps[idx] else ""
-      if s < 0.5:
-        logging.warning("  low match [%d] sim=%.3f%s mUla=%r pada=%r", idx, s, extra,
-                        mulas[idx]["text"][:60],
-                        " + ".join(t["raw"][:30] for t in window_tokens[spans[idx][0]:spans[idx][1]])[:120])
-      elif gaps[idx] > 0:
-        logging.info("  match [%d] sim=%.3f%s mUla=%r", idx, s, extra,
-                     mulas[idx]["text"][:60])
     if avg_sim < min_avg_sim:
       logging.warning("Skipping %s: avg similarity %.3f < %.2f", md_path, avg_sim, min_avg_sim)
       return 0
     for entry, (a, b), s in zip(mulas, spans, sims):
-      # Re-check right before inserting: get_top_mulas() ran before alignment,
-      # so re-verify on the live soup to guarantee no duplicate is created.
       if entry["already_has_pada"] or _has_pada_after(entry["tag"]):
-        if not entry["already_has_pada"]:
-          logging.info("Skipping %r: pada-pATha already present", entry["text"][:40])
         continue
-      if s < 0.5:
-        # Safety net: a low-similarity match is never written, even if the
-        # file-level average looked fine (one garbage span can hide in it).
+      span_concat_norm = "".join(window_norms[a:b])
+      if not _span_acceptable(entry, span_concat_norm, s):
         logging.warning("  skipping low match sim=%.3f mUla=%r pada=%r", s,
                         entry["text"][:60],
                         " + ".join(t["raw"][:30] for t in window_tokens[a:b])[:120])
         continue
       span_tokens = window_tokens[a:b]
-      carried = leading_carryover(entry["text"], "".join(window_norms[a:b]))
+      carried = leading_carryover(entry["text"], span_concat_norm)
       if not span_head_ok(entry["text"], window_norms[a], carried_over=bool(carried)):
-        logging.warning("  skipping bad head mUla=%r pada-head=%r", entry["text"][:60],
-                        span_tokens[0]["raw"][:40])
-        continue
+        if pada_coverage(entry["norm"], span_concat_norm) < 0.90:
+          logging.warning("  skipping bad head mUla=%r pada-head=%r", entry["text"][:60],
+                          span_tokens[0]["raw"][:40])
+          continue
       pada_text = carried + build_pada_text(span_tokens)
       if not pada_text:
         continue
@@ -844,18 +944,10 @@ def process_single_file(md_path, pada_tokens, dry_run=False, max_span=30,
       inserted += 1
   # In-div mUlas (expanded js_include prefills): add pada-pATha in place too,
   # besides the included static file (handled by add_pada recursion).
-  # Each enclosing div is aligned independently - a div prefill mirrors one
-  # static file (usually 1-2 contiguous mantras).
   for group in div_groups:
-    for e in group["entries"]:
-      if not e["norm"]:
-        logging.warning("Skipping in-div mUla with empty text after cleanup: %r", e["text"][:60])
     g_all = [e for e in group["entries"] if e["norm"]]
-    if not g_all:
+    if not g_all or all(e["already_has_pada"] for e in g_all):
       continue
-    # Same nearest-div group = contiguous blocks (nested divs hold other
-    # streams and do not break contiguity): hard gapless throughout.
-    # Already-done entries still participate as tiling anchors.
     g_norms = [e["norm"] for e in g_all]
     g_seq = [False] * len(g_all)
     g_tokens = _group_pada_tokens(group, md_path, pada_tokens, hugo_base)
@@ -873,19 +965,21 @@ def process_single_file(md_path, pada_tokens, dry_run=False, max_span=30,
     for entry, (a, b) in zip(g_all, g_spans):
       if entry["already_has_pada"] or _has_pada_after(entry["tag"]):
         continue
-      s = similarity(entry["norm"], "".join(g_wnorms[a:b]))
-      if s < 0.5:
+      span_concat_norm = "".join(g_wnorms[a:b])
+      s = similarity(entry["norm"], span_concat_norm)
+      if not _span_acceptable(entry, span_concat_norm, s):
         logging.warning("  in-div low match sim=%.3f mUla=%r pada=%r (in %s)",
                         s, entry["text"][:60],
                         " + ".join(t["raw"][:30] for t in g_window[a:b])[:120],
                         group["url"])
         continue
       span_toks = g_window[a:b]
-      carried = leading_carryover(entry["text"], "".join(g_wnorms[a:b]))
+      carried = leading_carryover(entry["text"], span_concat_norm)
       if not span_head_ok(entry["text"], g_wnorms[a], carried_over=bool(carried)):
-        logging.warning("  skipping bad head mUla=%r pada-head=%r (in %s)", entry["text"][:60],
-                        span_toks[0]["raw"][:40], group["url"])
-        continue
+        if pada_coverage(entry["norm"], span_concat_norm) < 0.90:
+          logging.warning("  skipping bad head mUla=%r pada-head=%r (in %s)", entry["text"][:60],
+                          span_toks[0]["raw"][:40])
+          continue
       pada_text = carried + build_pada_text(span_toks)
       if not pada_text:
         continue
@@ -898,7 +992,11 @@ def process_single_file(md_path, pada_tokens, dry_run=False, max_span=30,
   if inserted and not dry_run:
     from doc_curation.md import content_processor
     new_content = content_processor._make_content_from_soup(soup=soup)
-    new_content = new_content.replace("<div", "\n<div")
+    new_content = regex.sub(r"([^\n])[ \t]*(</details>)", r"\1\n\2", new_content)
+    new_content = regex.sub(r"([^\n])\n(<div\b)", r"\1\n\n\2", new_content)
+    new_content = regex.sub(r"([^\n])\n(<details\b)", r"\1\n\n\2", new_content)
+    new_content = regex.sub(r"(</details>)\n([^\n])", r"\1\n\n\2", new_content)
+    new_content = regex.sub(r"\n{3,}", "\n\n", new_content)
     MdFile(file_path=str(md_path)).replace_content_metadata(
       new_metadata=metadata, new_content=new_content)
   logging.info("Inserted %d pada details in %s", inserted, md_path)
@@ -906,7 +1004,7 @@ def process_single_file(md_path, pada_tokens, dry_run=False, max_span=30,
 
 
 def add_pada(file_in, pada_file=None, pada_base=DEFAULT_PADA_BASE,
-             hugo_base=DEFAULT_HUGO_BASE, dry_run=False, max_span=30,
+             hugo_base=DEFAULT_HUGO_BASE, dry_run=False, max_span=45,
              _visited=None, _depth=0):
   """Add pada-pATha details for ``file_in`` + its static includes.
 
