@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-check_sheet.py — Inspect the Google Sheet backing pdf-lib/map.csv via Apps Script.
+check_sheet.py — Inspect the Google Sheet backing the pdf-lib map via Apps Script.
 
 Usage:
   ~/gitland/python_venv/bin/python check_sheet.py [--script-url URL] [--q PAT] [--tail N]

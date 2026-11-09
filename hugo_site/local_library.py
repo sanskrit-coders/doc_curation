@@ -1,80 +1,21 @@
-#!/usr/bin/env python3
-"""
-update_map.py — Regenerate map.csv for the granthasangrahaH library.
-
-Canonical location (tooling):
-    ~/gitland/sanskrit-coders/doc_curation/vishvaasa_sites/update_map.py
-
-Data location (unchanged):
-    ~/gitland/vishvAsa/vishvAsa.github.io/content/interests/private/pdf-lib/map.csv
-
-Usage:
-    ~/gitland/python_venv/bin/python \\
-        ~/gitland/sanskrit-coders/doc_curation/vishvaasa_sites/update_map.py [--llm-label LLM-crouton]
-
-What this script does:
-  1. Scans all PDFs in granthasangrahaH/ and builds a local index (size, stem, title).
-  2. Queries archive.org for items uploaded by kashcidv@gmail.com / vishvas.vasuki@gmail.com
-     and matches archive-item PDFs to local PDFs by exact file size.
-  3. Scans ~/gitland/vishvAsa .md files for archive.org URLs and PDF mentions,
-     and matches them to local PDFs by stem/title/archive-URL linkage.
-  4. Uses an inverted-word-index over OCR text (.pdf.txt sidecars) to match
-     remaining unmatched PDFs to vishvAsa .md files.
-  5. Uses directory-correspondence hints (CORRESPONDENCES) to match PDFs in known
-     subject subtrees to their counterpart vishvAsa directories.
-  6. Writes pdf-lib/map.csv mapping source_path (relative PDF path) to archive_urls
-     and site_path (Hugo site URL), with map_source recording how each mapping was
-     found. Algorithmic rows use real sources (size:/md:/ocr:/correspondence:);
-     rows with no algorithmic source fall back to the LLM label (--llm-label,
-     default "LLM-crouton"; historical rows use "LLM-claude", etc.). Manually
-     curated rows (ut-dharma:* and map_source == "manual") are preserved across
-     regenerations.
-
-Outputs (in the pdf-lib data directory, not next to this script):
-    map.csv              — the main mapping file (source_path, archive_urls, site_path, map_source)
-    .archive_cache.json  — cached archive.org metadata (auto-generated)
-
-Apps Script callers (push/check helpers for the Google Sheet mirror) live
-alongside this script in the same vishvaasa_sites/ directory:
-    appscript_client.py     — GET/POST helpers (edit-suggestion + appendRows)
-    push_map_to_sheet.py    — push map.csv rows to the sheet (chained edit or append)
-    check_sheet.py          — GET the sheet and report header/row counts
-
-Dependencies (all in ~/gitland/python_venv):
-    requests, indic_transliteration
-"""
-
+import json
+import logging
 import os
 import re
-import csv
-import json
 import time
-import argparse
-import requests
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import requests
+
+from hugo_site import md_to_site_path, VISHVASA_DIR
+from hugo_site import appscript_client
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-# This tool lives in doc_curation/vishvaasa_sites/, but map.csv itself stays in
-# the Hugo pdf-lib directory. Keep those two locations distinct.
 GS_DIR        = "/media/vvasuki/vData/text/granthasangrahaH"
-SCRIPT_DIR    = os.path.dirname(os.path.abspath(__file__))   # doc_curation/vishvaasa_sites/
 PDF_LIB_DIR   = os.path.expanduser(
     "~/gitland/vishvAsa/vishvAsa.github.io/content/interests/private/pdf-lib")
-VISHVASA_DIR  = os.path.expanduser("~/gitland/vishvAsa")
-OUTPUT_CSV    = os.path.join(PDF_LIB_DIR, "map.csv")
-SITE_BASE     = "https://vishvasa.github.io/"
-CACHE_FILE    = os.path.join(PDF_LIB_DIR, ".archive_cache.json")  # cached archive metadata
-# Back-compat alias (older code / external callers used META_DIR for the data dir).
-META_DIR      = PDF_LIB_DIR
-
-# ── LLM provenance ─────────────────────────────────────────────────────────────
-# Rows whose mapping was produced or curated by an LLM are stamped with the
-# backend label, e.g. "LLM-crouton", "LLM-claude", etc. Algorithmic rows keep
-# their real match_sources (size:/md:/ocr:/correspondence:). Override with
-# --llm-label (e.g. --llm-label LLM-claude for historical re-runs).
+CACHE_FILE    = os.path.join(PDF_LIB_DIR, ".archive_cache.json")
 DEFAULT_LLM_LABEL = "LLM-crouton"
-LLM_LABEL         = DEFAULT_LLM_LABEL
 
 # Uploaders whose items we match against
 UPLOADERS = ["kashcidv@gmail.com", "vishvas.vasuki@gmail.com"]
@@ -123,42 +64,30 @@ ARCHIVE_RE = re.compile(
 PDF_MENTION_RE = re.compile(r"([a-zA-Z0-9_\-\.]+\.pdf)", re.IGNORECASE)
 FM_TITLE_RE    = re.compile(r'^\s*title\s*[:=]\s*["\']?([^"\'\\n\\r]+)["\']?', re.MULTILINE | re.IGNORECASE)
 
+CORRESPONDENCES = [
+    # AgamaH/vaiShNavaH/shrIvaiShNavaH/ ↔ rAmAnujIyam/content/tattvam
+    ("AgamaH/vaiShNavaH/shrIvaiShNavaH/",
+        ["rAmAnujIyam/content/tattvam"]),
+    # kalpaH/vaiShNavaH/shrIvaiShNavaH/ ↔ rAmAnujIyam/content/kriyA
+    ("kalpaH/vaiShNavaH/shrIvaiShNavaH/",
+        ["rAmAnujIyam/content/kriyA"]),
+    # kAvyam/shrIvaiShNavakRtam/ ↔ multiple vishvAsa kAvyam locations
+    ("kAvyam/shrIvaiShNavakRtam/",
+        ["rAmAnujIyam/content/kAvyam",
+         "purANam_vaiShNavam/content/kAvyam/padyam/shrIvaiShNava-kRtam",
+         "rAmAyaNam/content/kAvyam",
+         "mahAbhAratam/content/kAvyam"]),
+]
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+
+# ── Basic Helpers ──────────────────────────────────────────────────────────────
 
 def normalize(text):
     return re.sub(r"[^a-z0-9]", "", text.lower())
 
 
-def is_exempt(rel_path):
-    return any(rel_path.startswith(p) for p in EXEMPT_PREFIXES)
-
-
-def md_to_site_path(md_path):
-    """Convert a vishvAsa MD path (relative to ~/gitland/vishvAsa/) to a Hugo site URL.
-
-    Example:
-        AgamaH_vaiShNavaH/content/vaikhAnasaH/AgamaH/atri-saMhitA/samUrtArchanAdhikaraNam.md
-        -> https://vishvasa.github.io/AgamaH_vaiShNavaH/vaikhAnasaH/AgamaH/atri-saMhitA/samUrtArchanAdhikaraNam/
-    _index.md / index.md -> directory URL.
-    """
-    md_path = (md_path or "").strip()
-    if not md_path:
-        return ""
-    if "/content/" in md_path:
-        prefix, rest = md_path.split("/content/", 1)
-        md_path = prefix + "/" + rest
-    else:
-        md_path = md_path.lstrip("/")
-    if md_path.endswith("/_index.md"):
-        md_path = md_path[: -len("/_index.md")] + "/"
-    elif md_path.endswith("/index.md"):
-        md_path = md_path[: -len("/index.md")] + "/"
-    elif md_path.endswith(".md"):
-        md_path = md_path[: -len(".md")] + "/"
-    elif not md_path.endswith("/"):
-        md_path = md_path + "/"
-    return SITE_BASE + md_path
+def is_exempt(rel_path, exempt_prefixes=EXEMPT_PREFIXES):
+    return any(rel_path.startswith(p) for p in exempt_prefixes)
 
 
 def read_first_chunk(path, chars=1500, skip=150):
@@ -176,29 +105,50 @@ def get_rare_words(text, min_len=5, max_words=50):
     return sorted(set(words), key=lambda w: -len(w))[:max_words]
 
 
+# ── Spreadsheet Access ─────────────────────────────────────────────────────────
+
+def get_sheet_entries(script_url=None):
+    """Retrieve all entries from the Google Sheet via Apps Script.
+
+    Returns:
+        dict: {
+            "ok": bool,
+            "header": list[str],
+            "rows": list[dict], # {source_path, archive_urls, site_path, map_source, Pending, __row}
+            "entries_by_source_path": dict[str, dict]
+        }
+    """
+    sheet = appscript_client.get_sheet(script_url)
+    if not sheet.get("ok"):
+        raise RuntimeError(f"Failed to fetch spreadsheet entries: {sheet.get('error')}")
+    rows = sheet.get("rows", [])
+    entries_by_source_path = {r["source_path"]: r for r in rows if "source_path" in r}
+    sheet["entries_by_source_path"] = entries_by_source_path
+    return sheet
+
+
 # ── Stage 1: Scan local PDFs ───────────────────────────────────────────────────
 
-def scan_local_pdfs():
-    print(f"[1] Scanning {GS_DIR} for PDFs …")
+def scan_local_pdfs(gs_dir=GS_DIR, skip_dirs=SKIP_DIRS, exempt_prefixes=EXEMPT_PREFIXES):
+    logging.info(f"Scanning {gs_dir} for PDFs …")
     t0 = time.time()
     pdfs = []
     size_to_paths = defaultdict(list)
 
-    for root, dirs, files in os.walk(GS_DIR):
-        dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.startswith(".")]
+    for root, dirs, files in os.walk(gs_dir):
+        dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith(".")]
         for fname in files:
             if not fname.lower().endswith(".pdf"):
                 continue
             full = os.path.join(root, fname)
-            rel  = os.path.relpath(full, GS_DIR)
-            if is_exempt(rel):
+            rel  = os.path.relpath(full, gs_dir)
+            if is_exempt(rel, exempt_prefixes=exempt_prefixes):
                 continue
             try:
                 sz = os.path.getsize(full)
             except OSError:
                 sz = 0
             stem = fname[:-4]
-            # title part = after first "_" if present
             parts = stem.split("_", 1)
             title = parts[1] if len(parts) > 1 else parts[0]
             rec = {
@@ -213,34 +163,35 @@ def scan_local_pdfs():
             pdfs.append(rec)
             size_to_paths[sz].append(rel)
 
-    print(f"    Found {len(pdfs)} PDFs in {time.time()-t0:.1f}s")
+    logging.info(f"Found {len(pdfs)} PDFs in {time.time()-t0:.1f}s")
     return pdfs, size_to_paths
 
 
 # ── Stage 2: Archive.org matching ─────────────────────────────────────────────
 
-def load_cache():
-    if os.path.exists(CACHE_FILE):
+def load_cache(cache_file=CACHE_FILE):
+    if os.path.exists(cache_file):
         try:
-            with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            with open(cache_file, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
             pass
     return {}
 
 
-def save_cache(cache):
-    with open(CACHE_FILE, "w", encoding="utf-8") as f:
+def save_cache(cache, cache_file=CACHE_FILE):
+    os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+    with open(cache_file, "w", encoding="utf-8") as f:
         json.dump(cache, f)
 
 
-def fetch_archive_items(cache):
-    print("[2] Fetching archive.org item list …")
+def fetch_archive_items(cache, uploaders=UPLOADERS, cache_file=CACHE_FILE):
+    logging.info("Fetching archive.org item list …")
     session = requests.Session()
     session.headers["User-Agent"] = "Mozilla/5.0 granthasangrahaH-map-builder"
 
     items = []
-    for uploader in UPLOADERS:
+    for uploader in uploaders:
         try:
             url = IA_SEARCH_URL.format(uploader=requests.utils.quote(uploader, safe="@"))
             resp = session.get(url, timeout=30)
@@ -248,12 +199,12 @@ def fetch_archive_items(cache):
             for doc in docs:
                 if not any(it["identifier"] == doc["identifier"] for it in items):
                     items.append(doc)
-            print(f"    {len(docs)} items for {uploader}")
+            logging.info(f"{len(docs)} items for {uploader}")
         except Exception as e:
-            print(f"    Warning: could not query {uploader}: {e}")
+            logging.warning(f"Could not query {uploader}: {e}")
 
     to_fetch = [it for it in items if it["identifier"] not in cache]
-    print(f"    Items to fetch metadata for: {len(to_fetch)} (cached: {len(cache)})")
+    logging.info(f"Items to fetch metadata for: {len(to_fetch)} (cached: {len(cache)})")
 
     def fetch_one(doc):
         ident = doc["identifier"]
@@ -281,16 +232,16 @@ def fetch_archive_items(cache):
                 if meta:
                     cache[ident] = meta
                 if done % 50 == 0:
-                    print(f"    … fetched {done}/{len(to_fetch)} in {time.time()-t0:.0f}s")
-        save_cache(cache)
-        print(f"    Saved {len(cache)} items to cache.")
+                    logging.info(f"… fetched {done}/{len(to_fetch)} in {time.time()-t0:.0f}s")
+        save_cache(cache, cache_file=cache_file)
+        logging.info(f"Saved {len(cache)} items to cache.")
 
     return items, cache
 
 
 def match_by_size(items, cache, size_to_paths):
-    print("[2b] Matching archive PDFs to local PDFs by file size …")
-    result = {}  # rel_path -> {"archive_urls": [], "md_paths": [], "match_sources": []}
+    logging.info("Matching archive PDFs to local PDFs by file size …")
+    result = {}
 
     for item_doc in items:
         ident = item_doc["identifier"]
@@ -327,19 +278,18 @@ def match_by_size(items, cache, size_to_paths):
                 result[local_rel]["archive_urls"].append(item_url)
                 result[local_rel]["match_sources"].append(f"size:{fname}")
 
-    print(f"    Matched {len(result)} PDFs via file size")
+    logging.info(f"Matched {len(result)} PDFs via file size")
     return result
 
 
 # ── Stage 3: vishvAsa MD scan ──────────────────────────────────────────────────
 
-def scan_vishvasa(pdfs, existing_map):
-    print(f"[3] Scanning {VISHVASA_DIR} for archive.org links and PDF matches …")
-    if not os.path.isdir(VISHVASA_DIR):
-        print("    vishvAsa directory not found, skipping.")
+def scan_vishvasa(pdfs, existing_map, vishvasa_dir=VISHVASA_DIR, skip_dirs=SKIP_DIRS):
+    logging.info(f"Scanning {vishvasa_dir} for archive.org links and PDF matches …")
+    if not os.path.isdir(vishvasa_dir):
+        logging.warning("vishvAsa directory not found, skipping.")
         return existing_map
 
-    # Build lookup structures
     by_norm_stem  = {}
     by_norm_title = {}
     by_filename   = {}
@@ -356,14 +306,14 @@ def scan_vishvasa(pdfs, existing_map):
     scanned = 0
     matches = 0
 
-    for root, dirs, files in os.walk(VISHVASA_DIR):
-        dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.startswith(".")]
+    for root, dirs, files in os.walk(vishvasa_dir):
+        dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith(".")]
         for fname in files:
             if not fname.endswith(".md"):
                 continue
             scanned += 1
             fpath  = os.path.join(root, fname)
-            rel_md = os.path.relpath(fpath, VISHVASA_DIR)
+            rel_md = os.path.relpath(fpath, vishvasa_dir)
 
             try:
                 with open(fpath, "r", encoding="utf-8", errors="ignore") as fp:
@@ -408,7 +358,6 @@ def scan_vishvasa(pdfs, existing_map):
             if not matched_pdfs and not arch_urls:
                 continue
 
-            # Only add high-confidence matches
             for rel, reasons in matched_pdfs.items():
                 reason_str = " ".join(reasons)
                 if not ("pdf_mention" in reason_str or "stem:" in reason_str or
@@ -426,30 +375,29 @@ def scan_vishvasa(pdfs, existing_map):
                     if au_clean not in entry["archive_urls"]:
                         entry["archive_urls"].append(au_clean)
 
-    print(f"    Scanned {scanned} MDs, added {matches} PDF→MD links in {time.time()-t0:.1f}s")
+    logging.info(f"Scanned {scanned} MDs, added {matches} PDF→MD links in {time.time()-t0:.1f}s")
     return existing_map
 
 
 # ── Stage 4: OCR text fragment matching ───────────────────────────────────────
 
-def ocr_match(pdfs, existing_map):
-    print("[4] OCR text fragment matching for unmatched PDFs with .pdf.txt …")
+def ocr_match(pdfs, existing_map, vishvasa_dir=VISHVASA_DIR, skip_dirs=SKIP_DIRS):
+    logging.info("OCR text fragment matching for unmatched PDFs with .pdf.txt …")
     no_md = [(p["rel"], p["full"] + ".txt") for p in pdfs
              if not existing_map.get(p["rel"], {}).get("md_paths")
              and os.path.exists(p["full"] + ".txt")]
-    print(f"    PDFs with .pdf.txt but no MD match: {len(no_md)}")
+    logging.info(f"PDFs with .pdf.txt but no MD match: {len(no_md)}")
     if not no_md:
         return existing_map
 
-    # Gather MDs with archive URLs for the index
     mds_with_arch = []
-    for root, dirs, files in os.walk(VISHVASA_DIR):
-        dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.startswith(".")]
+    for root, dirs, files in os.walk(vishvasa_dir):
+        dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith(".")]
         for fname in files:
             if not fname.endswith(".md"):
                 continue
             fpath  = os.path.join(root, fname)
-            rel_md = os.path.relpath(fpath, VISHVASA_DIR)
+            rel_md = os.path.relpath(fpath, vishvasa_dir)
             try:
                 with open(fpath, "r", encoding="utf-8", errors="ignore") as fp:
                     top = "".join(fp.readline() for _ in range(20))
@@ -459,10 +407,10 @@ def ocr_match(pdfs, existing_map):
             if arch_urls:
                 mds_with_arch.append((rel_md, fpath, arch_urls))
 
-    print(f"    Building inverted index from {len(mds_with_arch)} MDs with archive URLs …")
+    logging.info(f"Building inverted index from {len(mds_with_arch)} MDs with archive URLs …")
     t0 = time.time()
-    inverted   = {}  # word → list of indices
-    md_registry = []  # (rel_md, arch_urls)
+    inverted   = {}
+    md_registry = []
 
     for rel_md, md_path, arch_urls in mds_with_arch:
         text = read_first_chunk(md_path, chars=1500, skip=100)
@@ -474,7 +422,7 @@ def ocr_match(pdfs, existing_map):
         for w in words:
             inverted.setdefault(w, []).append(idx)
 
-    print(f"    Index: {len(inverted)} words, {len(md_registry)} MDs in {time.time()-t0:.1f}s")
+    logging.info(f"Index: {len(inverted)} words, {len(md_registry)} MDs in {time.time()-t0:.1f}s")
     t0 = time.time()
     new_matches = 0
 
@@ -510,46 +458,26 @@ def ocr_match(pdfs, existing_map):
             if au_clean not in entry["archive_urls"]:
                 entry["archive_urls"].append(au_clean)
 
-    print(f"    OCR stage added {new_matches} links in {time.time()-t0:.1f}s")
+    logging.info(f"OCR stage added {new_matches} links in {time.time()-t0:.1f}s")
     return existing_map
 
 
-# ── Directory correspondences (GS prefix → vishvAsa search dirs) ───────────────
-# Add or extend entries here to guide MD matching for specific sub-collections.
+# ── Stage 5: Correspondence-guided matching ────────────────────────────────────
 
-CORRESPONDENCES = [
-    # AgamaH/vaiShNavaH/shrIvaiShNavaH/ ↔ rAmAnujIyam/content/tattvam
-    ("AgamaH/vaiShNavaH/shrIvaiShNavaH/",
-        ["rAmAnujIyam/content/tattvam"]),
-    # kalpaH/vaiShNavaH/shrIvaiShNavaH/ ↔ rAmAnujIyam/content/kriyA
-    ("kalpaH/vaiShNavaH/shrIvaiShNavaH/",
-        ["rAmAnujIyam/content/kriyA"]),
-    # kAvyam/shrIvaiShNavakRtam/ ↔ multiple vishvAsa kAvyam locations
-    ("kAvyam/shrIvaiShNavakRtam/",
-        ["rAmAnujIyam/content/kAvyam",
-         "purANam_vaiShNavam/content/kAvyam/padyam/shrIvaiShNava-kRtam",
-         "rAmAyaNam/content/kAvyam",
-         "mahAbhAratam/content/kAvyam"]),
-]
-
-
-def _corr_index(vis_subdirs):
-    """Build inverted word→idx index from vishvAsa subdirs (stem + parent dirs)."""
+def _corr_index(vis_subdirs, vishvasa_dir=VISHVASA_DIR, skip_dirs=SKIP_DIRS):
     inverted = {}
-    registry = []  # (rel_md, arch_urls)
+    registry = []
     for sub in vis_subdirs:
-        subpath = os.path.join(VISHVASA_DIR, sub)
+        subpath = os.path.join(vishvasa_dir, sub)
         if not os.path.isdir(subpath):
             continue
-        skip = {".git", "node_modules", "themes", "build_github",
-                ".system_generated", ".vscode", ".idea", "meta"}
         for root, dirs, files in os.walk(subpath):
-            dirs[:] = [d for d in dirs if d not in skip and not d.startswith(".")]
+            dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith(".")]
             for fname in files:
                 if not fname.endswith(".md"):
                     continue
                 fpath = os.path.join(root, fname)
-                rel_md = os.path.relpath(fpath, VISHVASA_DIR)
+                rel_md = os.path.relpath(fpath, vishvasa_dir)
                 try:
                     with open(fpath, "r", encoding="utf-8", errors="ignore") as fp:
                         top = "".join(fp.readline() for _ in range(40))
@@ -585,24 +513,19 @@ def _corr_index(vis_subdirs):
     return inverted, registry
 
 
-# ── Stage 5: Correspondence-guided matching ────────────────────────────────────
-
-def correspondence_match(pdfs, result_map):
-    """Match unmatched PDFs to MDs using directory correspondence hints."""
-    print("[5] Applying directory correspondences …")
+def correspondence_match(pdfs, result_map, correspondences=CORRESPONDENCES,
+                         vishvasa_dir=VISHVASA_DIR, skip_dirs=SKIP_DIRS):
+    logging.info("Applying directory correspondences …")
     new_links = 0
     pdf_by_rel = {p["rel"]: p for p in pdfs}
 
-    for gs_prefix, vis_subdirs in CORRESPONDENCES:
+    for gs_prefix, vis_subdirs in correspondences:
         candidates = [(rel, pdf_by_rel[rel]) for rel in pdf_by_rel
                       if rel.startswith(gs_prefix)
                       and not result_map.get(rel, {}).get("md_paths")]
         if not candidates:
-            print(f"    {gs_prefix}: no unmatched PDFs, skipping")
             continue
-        print(f"    {gs_prefix}: {len(candidates)} PDFs → scanning {vis_subdirs}")
-        inv, reg = _corr_index(vis_subdirs)
-        print(f"      index: {len(inv)} words, {len(reg)} MDs")
+        inv, reg = _corr_index(vis_subdirs, vishvasa_dir=vishvasa_dir, skip_dirs=skip_dirs)
 
         for rel, pinfo in candidates:
             rel_parts = rel.split("/")
@@ -610,7 +533,6 @@ def correspondence_match(pdfs, result_map):
             q_words = set(re.findall(r"[a-zA-Z]{4,}", stem.lower()))
             for part in rel_parts[:-1]:
                 q_words.update(re.findall(r"[a-zA-Z]{4,}", part.lower()))
-            # OCR sidecar boost
             txt_path = pinfo["full"] + ".txt"
             if os.path.exists(txt_path):
                 try:
@@ -648,107 +570,97 @@ def correspondence_match(pdfs, result_map):
                 if au_c not in result_map[rel]["archive_urls"]:
                     result_map[rel]["archive_urls"].append(au_c)
 
-    print(f"    → {new_links} new PDF→MD links added")
+    logging.info(f"Directory correspondences added {new_links} new PDF→MD links")
     return result_map
 
 
-# ── Stage 6: Write map.csv ────────────────────────────────────────────────────
+# ── Identifying New PDFs & Mapping to Site Pages ───────────────────────────────
 
-def load_ut_rows():
-    """Preserve manually-added rows across regens.
+def find_new_pdf_mappings(sheet_entries=None, script_url=None, gs_dir=GS_DIR,
+                          vishvasa_dir=VISHVASA_DIR, llm_label=DEFAULT_LLM_LABEL,
+                          cache_file=CACHE_FILE):
+    """Identify local PDFs not yet in the spreadsheet and map them to site pages / archive URLs.
 
-    Preserves:
-      * UT Dharmasastra rows (ut-dharma:* in source_path or map_source)
-      * Manual PDF rows with map_source == "manual" (curated PDF→site links
-        that the automatic matcher cannot recover, e.g. Gautama Mitākṣarā).
+    Args:
+        sheet_entries (dict, optional): Result from get_sheet_entries(). If omitted, fetched automatically.
+        script_url (str, optional): Apps Script /exec URL.
+        gs_dir (str, optional): Directory of granthasangrahaH library.
+        vishvasa_dir (str, optional): Directory of vishvAsa repository.
+        llm_label (str, optional): Fallback provenance label when matching is non-algorithmic.
+        cache_file (str, optional): Cache file path for archive.org metadata.
+
+    Returns:
+        list[dict]: List of row dicts for new PDFs with keys:
+                    'source_path', 'archive_urls', 'site_path', 'map_source'.
     """
-    try:
-        with open(OUTPUT_CSV, newline="", encoding="utf-8") as f:
-            existing = list(csv.DictReader(f))
-    except FileNotFoundError:
-        return []
-    preserved = []
-    for r in existing:
-        src = str(r.get("source_path", ""))
-        msrc = str(r.get("map_source", ""))
-        if (src.startswith("ut-dharma:") or msrc.startswith("ut-dharma:")
-                or msrc == "manual"):
-            preserved.append(r)
-    return preserved
+    if sheet_entries is None:
+        sheet_entries = get_sheet_entries(script_url=script_url)
+
+    known_source_paths = set(sheet_entries.get("entries_by_source_path", {}).keys())
+
+    # 1. Scan local PDFs
+    pdfs, size_to_paths = scan_local_pdfs(gs_dir=gs_dir)
+
+    # 2. Archive items matching
+    cache = load_cache(cache_file=cache_file)
+    items, cache = fetch_archive_items(cache, cache_file=cache_file)
+    result_map = match_by_size(items, cache, size_to_paths)
+
+    # 3. Scan vishvasa MDs
+    result_map = scan_vishvasa(pdfs, result_map, vishvasa_dir=vishvasa_dir)
+
+    # 4. OCR text match
+    result_map = ocr_match(pdfs, result_map, vishvasa_dir=vishvasa_dir)
+
+    # 5. Directory correspondence match
+    result_map = correspondence_match(pdfs, result_map, vishvasa_dir=vishvasa_dir)
+
+    # 6. Filter only PDFs that are not already in the spreadsheet
+    new_rows = []
+    for p in sorted(pdfs, key=lambda x: x["rel"]):
+        rel = p["rel"]
+        if rel in known_source_paths:
+            continue
+        info = result_map.get(rel, {})
+        arch = list(dict.fromkeys(info.get("archive_urls", [])))
+        mds = list(dict.fromkeys(info.get("md_paths", [])))
+        site_paths = [md_to_site_path(m) for m in mds]
+        sources = list(dict.fromkeys(info.get("match_sources", [])))
+        map_source = ";".join(sources) if sources else llm_label
+
+        new_rows.append({
+            "source_path": rel,
+            "archive_urls": "\n".join(arch),
+            "site_path": "\n".join(site_paths),
+            "map_source": map_source,
+        })
+
+    logging.info(f"Found {len(new_rows)} local PDFs missing from the spreadsheet")
+    return new_rows
 
 
-def write_csv(result_map, ut_rows=None, llm_label=None):
-    llm_label = llm_label or LLM_LABEL
-    print(f"[6] Writing {OUTPUT_CSV} …")
-    entries = sorted(
-        [(rel, info) for rel, info in result_map.items()
-         if (info.get("archive_urls") or info.get("md_paths"))
-         and os.path.exists(os.path.join(GS_DIR, rel))]
+def sync_new_pdfs_to_sheet(script_url=None, dry_run=False, llm_label=DEFAULT_LLM_LABEL,
+                           gs_dir=GS_DIR, vishvasa_dir=VISHVASA_DIR):
+    """Find local PDFs missing from sheet, map them to site pages, and append to sheet."""
+    sheet_entries = get_sheet_entries(script_url=script_url)
+    new_mappings = find_new_pdf_mappings(
+        sheet_entries=sheet_entries,
+        script_url=script_url,
+        gs_dir=gs_dir,
+        vishvasa_dir=vishvasa_dir,
+        llm_label=llm_label,
     )
-    ut_rows = ut_rows or []
-    with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=["source_path", "archive_urls", "site_path", "map_source"])
-        w.writeheader()
-        for rel, info in entries:
-            arch = list(dict.fromkeys(info.get("archive_urls", [])))
-            mds = list(dict.fromkeys(info.get("md_paths", [])))
-            site_paths = [md_to_site_path(m) for m in mds]
-            sources = list(dict.fromkeys(info.get("match_sources", [])))
-            # LLM provenance: algorithmic rows keep their real sources; rows
-            # with no algorithmic source are stamped with the LLM label
-            # (e.g. "LLM-crouton"; historical rows use "LLM-claude", etc.).
-            map_source = ";".join(sources) if sources else llm_label
-            w.writerow({
-                "source_path": rel,
-                "archive_urls": "\n".join(arch),
-                "site_path": "\n".join(site_paths),
-                "map_source": map_source,
-            })
-        for r in ut_rows:
-            w.writerow({
-                "source_path": r.get("source_path", ""),
-                "archive_urls": r.get("archive_urls", ""),
-                "site_path": r.get("site_path", ""),
-                "map_source": r.get("map_source", ""),
-            })
-    sz = os.path.getsize(OUTPUT_CSV)
-    print(f"    Wrote {len(entries)} PDF entries + {len(ut_rows)} manual/UT rows ({sz/1024:.0f} KB)")
-    return {rel for rel, _ in entries}
 
+    if not new_mappings:
+        logging.info("No new PDFs to sync to sheet.")
+        return 0
 
-# ── Main ───────────────────────────────────────────────────────────────────────
+    if dry_run:
+        logging.info(f"[dry-run] Would append {len(new_mappings)} new PDFs to sheet.")
+        return len(new_mappings)
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Regenerate pdf-lib/map.csv (archive_urls + site_path per PDF).",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        "--llm-label", default=DEFAULT_LLM_LABEL,
-        help="map_source stamped on rows with no algorithmic source "
-             "(LLM provenance, e.g. LLM-crouton, LLM-claude).")
-    args = parser.parse_args()
-    global LLM_LABEL
-    LLM_LABEL = args.llm_label
-    print(f"    LLM label for fallback rows: {LLM_LABEL}")
-
-    t_start = time.time()
-    ut_rows = load_ut_rows()
-    if ut_rows:
-        print(f"    Preserving {len(ut_rows)} existing manual/ut-dharma:* rows …")
-    pdfs, size_to_paths = scan_local_pdfs()
-
-    cache        = load_cache()
-    items, cache = fetch_archive_items(cache)
-    result_map   = match_by_size(items, cache, size_to_paths)
-
-    result_map = scan_vishvasa(pdfs, result_map)
-    result_map = ocr_match(pdfs, result_map)
-    result_map = correspondence_match(pdfs, result_map)
-
-    write_csv(result_map, ut_rows=ut_rows, llm_label=LLM_LABEL)
-    print(f"\nDone in {time.time()-t_start:.0f}s. Outputs in {PDF_LIB_DIR}/")
-
-
-if __name__ == "__main__":
-    main()
+    resp = appscript_client.post_append_rows(script_url, new_mappings)
+    if not resp.get("ok"):
+        raise RuntimeError(f"appendRows failed: {resp}")
+    logging.info(f"Successfully appended {resp.get('added', len(new_mappings))} rows to sheet.")
+    return resp.get("added", len(new_mappings))

@@ -3,7 +3,7 @@
 appscript_client.py — Low-level helpers to call the pdf-lib Apps Script endpoint.
 
 The Apps Script server code lives in the Hugo site (pdf-lib/appScript.gs).
-This module is the Python client used by push_map_to_sheet.py / check_sheet.py.
+This module is the Python client used by local_library.py / check_sheet.py.
 
 Endpoint contract (see pdf-lib/appScript.gs):
   GET  -> JSON { ok, header, rows:[{source_path, archive_urls, site_path,
@@ -29,7 +29,6 @@ import urllib.request
 
 PDF_LIB_DIR = os.path.expanduser(
     "~/gitland/vishvAsa/vishvAsa.github.io/content/interests/private/pdf-lib")
-MAP_CSV = os.path.join(PDF_LIB_DIR, "map.csv")
 BROWSE_HTML = os.path.join(PDF_LIB_DIR, "browse.html")
 
 # Fallback to the URL currently deployed for the pdf-lib sheet.
@@ -39,20 +38,20 @@ FALLBACK_SCRIPT_URL = (
     "AKfycbxN0DMuFrQRspr1fLMkAiN9-dgllGUQBRaRIaWvAgJcBb6iEVJQt1kRvOo10OBAbWdK/exec")
 
 
-def default_script_url():
+def default_script_url(browse_html=BROWSE_HTML, fallback_url=FALLBACK_SCRIPT_URL):
     """Resolve the Apps Script URL: env var > browse.html > fallback."""
     env = os.environ.get("PDF_LIB_SCRIPT_URL", "").strip()
     if env:
         return env
     try:
-        text = open(BROWSE_HTML, encoding="utf-8").read()
+        text = open(browse_html, encoding="utf-8").read()
         import re
         m = re.search(r"https://script\.google\.com/macros/s/[A-Za-z0-9_-]+/exec", text)
         if m:
             return m.group(0)
     except FileNotFoundError:
         pass
-    return FALLBACK_SCRIPT_URL
+    return fallback_url
 
 
 def _parse_appscript_text(txt):
@@ -101,8 +100,8 @@ def post_append_rows(url, rows, timeout=30):
 
     `rows` is a list of dicts with source_path/archive_urls/site_path/map_source.
     On the older deployed appScript.gs (without append support) this returns
-    { ok:false, error:"original row not found: undefined" } — use push_map_to_sheet
-    --mode edit (chained) instead.
+    { ok:false, error:"original row not found: undefined" } — use push_rows_chained
+    instead.
     """
     return _post(url, {"action": "appendRows", "rows": list(rows)}, timeout=timeout)
 

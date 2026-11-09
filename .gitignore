@@ -15,5 +15,5 @@ __pycache__/
 
 *.iml
 
-*local*
+!hugo_site/local_library.py
 .DS_Store
