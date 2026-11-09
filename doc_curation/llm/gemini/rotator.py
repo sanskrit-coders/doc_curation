@@ -376,7 +376,7 @@ def process_text_chunks_with_keys(
     max_transient_retries=8,
     **kwargs,
 ):
-  return _call_with_keys(
+  result = _call_with_keys(
     process_text_chunks,
     file_in,
     *args,
@@ -386,6 +386,55 @@ def process_text_chunks_with_keys(
     max_transient_retries=max_transient_retries,
     **kwargs,
   )
+  # Flash models make characteristic OCR-like slips; fix them after a
+  # successful run when the effective model name contains "flash".
+  # model_id may arrive as a keyword, a positional arg (process_text_chunks
+  # order: prompt, max_chunk_chars, model_id, ...) or via an explicit backend.
+  model_id = kwargs.get("model_id")
+  if not model_id and len(args) >= 3 and isinstance(args[2], str) and args[2]:
+    model_id = args[2]
+  if not model_id:
+    backend = kwargs.get("backend")
+    if backend is None and len(args) >= 6:
+      backend = args[5]
+    if backend is not None:
+      model_id = getattr(backend, "model", None) or getattr(backend, "DEFAULT_MODEL", None) or ""
+  if not model_id:
+    try:
+      from .backend import GeminiBackend
+      model_id = GeminiBackend.DEFAULT_MODEL
+    except Exception:
+      model_id = "gemini-3.8-flash"
+  if isinstance(model_id, str) and "flash" in model_id.lower():
+    try:
+      from doc_curation.md.content_processor import ocr_helper
+    except Exception as e:
+      logging.warning(f"Could not import ocr_helper for flash fix: {e}")
+      return result
+    logging.info(f"Applying fix_gemini_flash_errors for flash model {model_id}")
+    dry_run = kwargs.get("dry_run")
+    if dry_run is None and len(args) >= 5:
+      dry_run = args[4]
+    # dry_run default in process_text_chunks is False.
+    if not (dry_run is True):
+      try:
+        from doc_curation.llm.text_chunker import _as_file_path, _dump_md_file_atomic
+        from doc_curation.md.file import MdFile
+        file_path = _as_file_path(file_in)
+        md_file = MdFile(file_path)
+        metadata, content = md_file.read()
+        fixed = ocr_helper.fix_gemini_flash_errors(content)
+        _dump_md_file_atomic(md_file, metadata, fixed)
+        return fixed
+      except Exception as e:
+        logging.warning(f"Could not apply flash fix to file {file_in}: {e}")
+        # Fall back to fixing the in-memory return value if file rewrite failed.
+    if isinstance(result, str) and result:
+      try:
+        return ocr_helper.fix_gemini_flash_errors(result)
+      except Exception as e:
+        logging.warning(f"Could not apply flash fix to result for {file_in}: {e}")
+  return result
 
 
 def process_details_with_keys(

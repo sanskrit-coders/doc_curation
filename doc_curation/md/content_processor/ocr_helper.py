@@ -163,7 +163,7 @@ def fix_hyphenation(text):
   return text
 
 
-def fix_gemini_errors(text):
+def fix_gemini_flash_errors(text):
   text = regex.sub(r"-न्त", r"-अन्त", text)
   text = fix_hyphenation(text)
   text = regex.sub(r"त्(?=[ -][चछ])", r"च्", text)
