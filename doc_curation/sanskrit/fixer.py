@@ -1,3 +1,5 @@
+import unicodedata
+
 import regex
 from indic_transliteration import sanscript, sacred_texts_scheme
 from indic_transliteration.sanscript.schemes.brahmic.accent import ACCENTS_PATTERN
@@ -152,3 +154,76 @@ def fix_sacred_texts_transliteration(text):
 def fix_intra_word_bolds(content, *args, **kwargs):
   content = regex.sub(r"([ऀ-ॣ]*)(\*+)([ऀ-ॣ]+)\2([ऀ-ॣ]+)", r"\2\1\3\4\2", content)
   return content
+
+def _remove_spaces_and_punctuation(text):
+  return "".join(char for char in text if not char.isspace() and unicodedata.category(char)[0] not in "PS")
+
+# OLD and NEW may contain footnote refs (eg. [[names160s|names[^151]]]), but not nested markers or newlines: a naive pattern such as r"\[\[([^\|]+)\|(.+?)\]\]" lets a page marker ([[P12]]) swallow the paragraphs that follow it up to the next "|" and "]]".
+SUGGESTION_PATTERN = r"\[\[((?:(?!\[\[|\]\]|\n).)+?)\|((?:(?!\[\[|\n).)+?)\]\]"
+
+def is_minor_roman_change(old, new):
+  """
+  Check whether the only differences between old and new are IAST/ ISO diacritics, spaces or punctuation (including - and +).
+
+  Eg. "śivaṃ" vs "sivam", "devā-lokaḥ" vs "deva loka", "ṛtam" vs "r̥tam" and "tapaḥ + sva" vs "tapa sva" are minor changes, while "rāma" vs "nāma" is not.
+
+  :param old: original text
+  :param new: changed text
+  :return: True if the change is minor.
+  """
+  def fold_diacritics(text):
+    # IAST/ ISO diacritics decompose to a base Latin letter + combining marks (eg. ā -> a + macron, r̥ -> r + ring below), while devanagari and other scripts are left untouched.
+    folded = []
+    for char in unicodedata.normalize("NFD", text):
+      if folded and unicodedata.category(char).startswith("M") and folded[-1].isascii() and folded[-1].isalpha():
+        continue
+      folded.append(char)
+    return "".join(folded)
+
+  def normalize(text):
+    text = fold_diacritics(text or "")
+    return _remove_spaces_and_punctuation(text)
+
+  return normalize(old) == normalize(new)
+
+def is_minor_dev_change(old, new):
+  """
+  Check whether the only differences between old and new (after conversion to ISO 15919) are in spaces, punctuation, anunāsika/ anusvāra or word-final visarga/ s/ r.
+
+  Eg. "अँगुलिः" vs "अंगुलिः", "देवाः" vs "देवास्", "अग्निः" vs "अग्निर्" and "संस्कृतम् ।" vs "संस्कृतम्।" are minor changes, while "रामः" vs "नामः" is not.
+
+  :param old: original text
+  :param new: changed text
+  :return: True if the change is minor.
+  """
+  def normalize(text):
+    text = sanscript.transliterate(text or "", sanscript.DEVANAGARI, sanscript.ISO)
+    text = text.replace("m̐", "ṁ")  # anunAsika and anusvAra are equivalent.
+    # Word-final visarga, s and r are equivalent (eg. devaḥ, devas, devar). Non-final s and r are left intact (eg. rasa vs hasa).
+    text = regex.sub(r"[ḥsrḤSR](?![A-Za-z\u00C0-\u024F\u0300-\u036F])", "s", text)
+    return _remove_spaces_and_punctuation(text)
+
+  return normalize(old) == normalize(new)
+
+def accept_minor_changes(text, suggestion_pattern=SUGGESTION_PATTERN):
+  """
+  Accept minor suggestions of the form [[OLD|NEW]] (as emitted by LLM proofreading) by replacing them with NEW, while leaving non-minor suggestions intact for manual review.
+
+  A change is minor if it only involves spaces, punctuation, IAST/ ISO diacritics or (for Devanagari) anunāsika/ anusvāra/ visarga variations - see :func:`is_minor_dev_change` and :func:`is_minor_roman_change`.
+
+  Eg. "[[tejaḥ sva|tejaḥsva]]" and "[[रामः|रामस्]]" are accepted, while "[[prarabvaṁ|prārabdhaṁ]]", "[[मातुलंगकैः|मातुलुङ्गकैः]]" and "[[tejaḥ|tejaḥ sva]]" are left intact.
+
+  :param text: text containing [[OLD|NEW]] suggestions.
+  :param suggestion_pattern: pattern matching a suggestion, with OLD in group 1 and NEW in group 2. It should not let OLD or NEW span nested markers or lines (see :const:`SUGGESTION_PATTERN`).
+  :return: text with minor suggestions applied.
+  """
+  def replacer(match):
+    old, new = match.group(1), match.group(2)
+    if regex.search(r"[\u0900-\u097F]", old + new):
+      is_minor = is_minor_dev_change(old, new)
+    else:
+      is_minor = is_minor_roman_change(old, new)
+    return new if is_minor else match.group(0)
+
+  return regex.sub(suggestion_pattern, replacer, text or "")
+

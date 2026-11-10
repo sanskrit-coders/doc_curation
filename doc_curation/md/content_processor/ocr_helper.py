@@ -1,10 +1,46 @@
 import os
+from pathlib import Path
 
 import pandas
 import regex
 import tqdm
 from doc_curation import sanskrit as sanskrit_helper
+from doc_curation.sanskrit.seeker import is_sanskrit_nagari
 from indic_transliteration import sanscript
+
+
+def get_gemini_flash_mangled_sanskrit_files(
+    dir_path,
+    regex_filter=r"\[\[[^\|]+\|(.+?)\]\]",
+    regex_min=5,
+    hyphenated_min=20,
+):
+  """Get Markdown paths with many Gemini OCR markers in Sanskrit Nagari.
+
+  A file must contain at least ``regex_min`` matches of ``regex_filter``,
+  at least ``hyphenated_min`` Devanagari hyphenated forms, and pass
+  :func:`is_sanskrit_nagari`. Both minimums are inclusive.
+  """
+  dir_path = Path(dir_path)
+  if not dir_path.is_dir():
+    raise NotADirectoryError(dir_path)
+  if regex_min < 0 or hyphenated_min < 0:
+    raise ValueError("Match minimums must be non-negative")
+  file_regex = regex.compile(regex_filter)
+  hyphenated_sanskrit_regex = regex.compile(r"[\u0900-\u097F]+-[\u0900-\u097F]+")
+  matching_files = []
+  for file_path in sorted(dir_path.rglob("*.md")):
+    if not file_path.is_file():
+      continue
+    content = file_path.read_text(encoding="utf-8")
+    if not is_sanskrit_nagari(content):
+      continue
+    if len(file_regex.findall(content)) < regex_min:
+      continue
+    if len(hyphenated_sanskrit_regex.findall(content)) < hyphenated_min:
+      continue
+    matching_files.append(str(file_path))
+  return matching_files
 
 
 def fix_iast_for_pdfs(text):

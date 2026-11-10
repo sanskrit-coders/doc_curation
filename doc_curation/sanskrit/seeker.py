@@ -1,5 +1,31 @@
 import regex
 
+from doc_curation.translation.classifier import _HINDI_RE
+
+
+_DEVANAGARI_RE = regex.compile(r"[\u0900-\u097F]")
+_TAMIL_WORD_RE = regex.compile(r"[\u0B80-\u0BFF]+")
+_TAMIL_DEVANAGARI_WORD_RE = regex.compile(r"[\u0900-\u097F]*[ऱऩऴ][\u0900-\u097F]*")
+
+
+def is_sanskrit_nagari(text, non_skt_threshold=10):
+  """Return whether text is Devanagari with few Hindi or Tamil markers.
+
+  Distinct Hindi vocabulary matches, Tamil-script tokens, and Devanagari
+  tokens with Tamil-specific letters are counted once each. Text without
+  Devanagari is not Sanskrit in Nagari.
+  """
+  if non_skt_threshold < 0:
+    raise ValueError("non_skt_threshold must be non-negative")
+  if not text or not _DEVANAGARI_RE.search(text):
+    return False
+  hindi_strings = set(_HINDI_RE.findall(text))
+  tamil_strings = set(_TAMIL_WORD_RE.findall(text))
+  tamil_transliterations = set(_TAMIL_DEVANAGARI_WORD_RE.findall(text))
+
+  non_skt_markers = len(hindi_strings) + len(tamil_strings) + len(tamil_transliterations)
+  return non_skt_markers <= non_skt_threshold
+
 
 # Short bracketed citation opening a sentence, e.g. `(छां.३.१२.१)` /
 # `(तै. उ. २। ५। १)`: Devanagari/Latin, digits, ref punctuation, and it

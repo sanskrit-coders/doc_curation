@@ -34,6 +34,9 @@ BAD_BEFORE_DASH = (
     "इत्याह", "अर्थाः", "मित्यत्र", "इति वक्तव्ये", "पा.सू.", "उ.सू.", "तै.ब्रा.",
     "तदेवाह", "कस्माद", "कथमित्याह", "अत्रेदमुक्तम्", "सङ्गतिः", "उच्यते -", "मन्त्रार्थस्तु",
     "तत्राह", "विशेष्यते", "परोक्षम् उच्यते", "इति चेत्", "चेत्", "यथा", "यथोक्तम्", "उच्यते", "**",
+    "अत्र ब्राह्मणम्", "ब्राह्मणं च भवति", "गतम् ।", "प्रत्यक्षेणाह",
+    "महानुभावत्वमाह", "विधानार्थमाह", "भवतीत्याह", "दार्ष्टान्तिकः",
+    "विधत्ते", "प्रशंसति",
 )
 
 MANTRA_ANUVAKAS_IN_BRAHMANA_SECTIONS = {
@@ -57,6 +60,8 @@ def _extract_sayana_viniyoga(body_lines):
     for index in range(start, min(len(body_lines), start + 9)):
         line = body_lines[index]
         if index > start:
+            if line.lstrip().startswith("-"):
+                break
             prev_text = " ".join(body_lines[start:index])
             if not (
                 "अनुवाक" in prev_text
@@ -70,18 +75,18 @@ def _extract_sayana_viniyoga(body_lines):
         if any(bad in line for bad in NON_VINIYOGA_AHA):
             continue
         match = re.search(
-            r"((?:पुरोनुवाक्याम्|याज्याम्|मन्त्रम्|मन्त्रान्|ऋचम्|यजुर्|शेषम्)\s+आह|माहः|माह|गाह|नाह)(?:\s|[—–-])",
+            r"((?:पुरोनुवाक्याम्|याज्याम्|मन्त्रम्|मन्त्रान्|ऋचम्|यजुर्|शेषम्)\s+(?:आह|पठति)|माहः|माह|गाह|नाह|मृचं\s+पठति)(?:\s|[—–-])",
             line,
         )
         if match:
             before_m = line[:match.start()]
-            if "।" not in before_m or "कल्प" in before_m or "अनुवाक" in before_m:
+            if "।" not in before_m or "कल्प" in before_m or "अनुवाक" in before_m or "तत्र " in line[:match.start()]:
                 marker_index = index
                 marker = match.group(1)
                 marker_position = match.start()
                 break
         match2 = re.search(
-            r"(प्रतीके\s+दशंयति|प्रतीके\s+दर्शयति|प्रतीकानि\s+दर्शयति|मन्त्रं\s+विनियुङ्क्ते)",
+            r"(प्रतीक[ंे]\s+दशंयति|प्रतीक[ंे]\s+दर्शय[तप]ि|प्रतीकानि\s+दर्शय[तप]ि|मन्त्रं\s+विनियुङ्क्ते)",
             line,
         )
         if match2:
@@ -91,7 +96,7 @@ def _extract_sayana_viniyoga(body_lines):
                 marker = match2.group(1)
                 marker_position = match2.start()
                 break
-        if "पाठस्तु" in line:
+        if "पाठस्तु" in line and "कल्पः" not in line and "हे " not in line and "!" not in line:
             p_pos = line.find("पाठस्तु")
             before_m = line[:p_pos]
             if (index > start or before_m.strip()) and ("।" not in before_m or "कल्प" in before_m or "अनुवाक" in before_m):
@@ -152,20 +157,44 @@ def _extract_sayana_viniyoga(body_lines):
     else:
         if marker_position >= 0:
             danda_index = body_lines[marker_index].find("।", marker_position)
+            if danda_index == -1:
+                dd_idx = body_lines[marker_index].find("॥", marker_position)
+                if dd_idx != -1 and ("दर्शय" in (marker or "") or "व्याख्यात" in body_lines[marker_index][marker_position:dd_idx]):
+                    danda_index = dd_idx
         else:
             danda_index = body_lines[marker_index].find("।")
         if (
-            danda_index != -1
-            and marker_position >= 0
+            marker_position >= 0
             and marker
-            and ("आह" in marker or "माह" in marker or "गाह" in marker or "नाह" in marker)
-            and danda_index - marker_position > 55
+            and ("आह" in marker or "माह" in marker or "गाह" in marker or "नाह" in marker or "पठति" in marker)
         ):
             after_marker_start = marker_position + len(marker)
-            iti_match = re.search(r"\S*इति(?=\s)", body_lines[end_index][after_marker_start:danda_index])
-            if iti_match and iti_match.end() <= 35:
-                split_at = after_marker_start + iti_match.end()
-                prefix = body_lines[end_index][:split_at] + "।"
+            if danda_index == -1 or danda_index - marker_position > 45:
+                search_end = danda_index if danda_index != -1 else min(len(body_lines[end_index]), after_marker_start + 50)
+                iti_match = re.search(r"\S*(?:इति|[ेिी]ति)(?=\s)", body_lines[end_index][after_marker_start:search_end])
+                if iti_match and iti_match.end() <= 35 and "हे " not in body_lines[end_index][after_marker_start:after_marker_start + iti_match.end()]:
+                    split_at = after_marker_start + iti_match.end()
+                    prefix = body_lines[end_index][:split_at] + "।"
+                    remainder = body_lines[end_index][split_at:].lstrip()
+                    segment = body_lines[start:end_index] + [prefix]
+                    remaining = body_lines[:start]
+                    if remainder:
+                        remaining.append(remainder)
+                    remaining.extend(body_lines[end_index + 1:])
+                    return "\n".join(segment).strip("\n"), remaining
+            m_dash = re.match(r"^\s*[—–-]", body_lines[end_index][after_marker_start:])
+            if m_dash and (
+                danda_index == -1
+                or not re.search(r"(इति|[ेिी]ति)\s*$", body_lines[end_index][after_marker_start:danda_index])
+            ) and (
+                re.match(r"^(\(SB\)\s*)?[०-९0-9]", body_lines[start].strip())
+                or "कल्प" in body_lines[start]
+                or "मन्त्र" in body_lines[end_index][:after_marker_start]
+                or "मृच" in body_lines[end_index][:after_marker_start]
+                or re.match(r"^(अथ\s*|तत्र\s*)*(प्रथमा|द्वितीया|तृतीया|चतुर्थी|पञ्चमी|षष्ठी|सप्तमी|अष्टमी|नवमी|दशमी)", body_lines[start].strip())
+            ):
+                split_at = after_marker_start + m_dash.end()
+                prefix = body_lines[end_index][:split_at].rstrip()
                 remainder = body_lines[end_index][split_at:].lstrip()
                 segment = body_lines[start:end_index] + [prefix]
                 remaining = body_lines[:start]
@@ -215,16 +244,26 @@ def _extract_bhaskara_viniyoga(body_lines):
             and not any(b in before_dash for b in BAD_BEFORE_DASH)
             and (
                 "।" not in before_dash
-                or re.match(r"^(\(SB\)\s*)?([०-९0-9]+|अथ|तत्र|एवम्|इदानीम्)", before_dash)
+                or "(SB)" in before_dash
+                or "अतः पर" in before_dash
+                or "अतःपर" in before_dash
                 or "अनुवाक" in before_dash
                 or "ब्राह्मणम्" in before_dash
+                or "सूक्त" in before_dash
+                or "कल्प" in before_dash
             )
         )
         if valid_before:
             dd_pos = after_dash.find("॥")
             if dd_pos != -1 and dd_pos < 220:
                 pratika_part = after_dash[:dd_pos].strip()
-                if " - " not in pratika_part and "\n" not in pratika_part and "।" not in pratika_part:
+                if (
+                    " - " not in pratika_part
+                    and "\n" not in pratika_part
+                    and "।" not in pratika_part
+                    and len(pratika_part.split()) <= 12
+                    and not re.search(r"(आह|माह|नाह|गाह|दर्शयति|उच्यते|अभिधीयते)$", before_dash)
+                ):
                     if PRATIKA_PART_RE.search(pratika_part) and "हे " not in pratika_part:
                         end_pos = dash_match.end() + dd_pos + len("॥")
                         after_dd = joined[end_pos:]
@@ -302,7 +341,10 @@ def _extract_bhaskara_viniyoga(body_lines):
 def _extract_viniyoga(body_lines, commentary_label="सायण-टीका"):
     if commentary_label == "भट्टभास्कर-टीका":
         return _extract_bhaskara_viniyoga(body_lines)
-    return _extract_sayana_viniyoga(body_lines)
+    vin, rem = _extract_sayana_viniyoga(body_lines)
+    if vin is None:
+        return _extract_bhaskara_viniyoga(body_lines)
+    return vin, rem
 
 
 SHEET_CSV = "/tmp/taittiriiya_sheet.csv"
@@ -327,7 +369,7 @@ def _file_anuvAka(md_file):
         index = parts.index("sarva-prastutiH")
         kANDa = int(parts[index + 1].split("_")[0])
         prashna = int(parts[index + 2].split("_")[0])
-        name = parts[index + 3] if (kANDa == 1 and len(parts) > index + 4) else parts[-1]
+        name = parts[index + 3]
         stem = os.path.splitext(name)[0]
         match = re.match(r"^(\d+)", stem)
         if not match:
@@ -340,19 +382,20 @@ def _file_anuvAka(md_file):
 
 def is_brAhmaNam_anuvAka(md_file):
     """Return True when the sArasvata sheet marks this anuvAka as a brAhmaNam portion."""
-    if "brAhmaNam" in md_file.file_path:
+    if "brAhmaNam" in os.path.basename(md_file.file_path):
         return True
+    work_id = "2" if "brAhmaNam" in md_file.file_path else "1"
     location = _file_anuvAka(md_file)
     if location is None:
-        return False
-    if location in MANTRA_ANUVAKAS_IN_BRAHMANA_SECTIONS:
+        return "brAhmaNam" in md_file.file_path
+    if work_id == "1" and location in MANTRA_ANUVAKAS_IN_BRAHMANA_SECTIONS:
         return False
     kANDa, prashna, anuvAka = location
     for row in _sheet_rows():
         if len(row) < 8:
             continue
         try:
-            if row[3] == "1" and int(row[4]) == kANDa and int(row[5]) == prashna and int(row[6]) == anuvAka:
+            if row[3] == work_id and int(row[4]) == kANDa and int(row[5]) == prashna and int(row[6]) == anuvAka:
                 return row[7].strip().endswith("ब्राह्मणम्")
         except ValueError:
             continue
@@ -488,7 +531,7 @@ def separate_viniyogas(md_file):
             top_div = div_stack[-1]
             if "01_kumbheShTakA__" in top_div:
                 pass
-            elif "/sarvASh_TIkAH/" in top_div and "brAhmaNam" not in top_div:
+            elif "/sarvASh_TIkAH/" in top_div and (("brAhmaNam" in md_file.file_path) == ("brAhmaNam" in top_div)):
                 if not _is_commentary(line):
                     output.append(line)
                     index += 1
