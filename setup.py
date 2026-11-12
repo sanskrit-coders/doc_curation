@@ -110,12 +110,16 @@ setup(
         'extras': install_extras,
     },
 
-    # If there are data files included in your packages that need to be
-    # installed, specify them here.  If using Python 2.6 or less, then these
-    # have to be included in MANIFEST.in as well.
-    # package_data={
-    #     'sample': ['package_data.dat'],
-    # },
+    # Include the harness configuration data shipped by doc_curation.llm.configurer
+    # (global AGENTS.md, agent definitions and skills), so an installed copy still
+    # works without the source checkout.
+    package_data={
+        'doc_curation.llm.configurer': [
+            'data/*/*.md',
+            'data/*/*/*.md',
+            'data/*/*/*.toml',
+        ],
+    },
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:

@@ -205,7 +205,7 @@ def is_minor_dev_change(old, new):
 
   return normalize(old) == normalize(new)
 
-def accept_minor_changes(text, suggestion_pattern=SUGGESTION_PATTERN):
+def accept_minor_changes(text, suggestion_pattern=SUGGESTION_PATTERN, *args, **kwargs):
   """
   Accept minor suggestions of the form [[OLD|NEW]] (as emitted by LLM proofreading) by replacing them with NEW, while leaving non-minor suggestions intact for manual review.
 
@@ -215,7 +215,7 @@ def accept_minor_changes(text, suggestion_pattern=SUGGESTION_PATTERN):
 
   :param text: text containing [[OLD|NEW]] suggestions.
   :param suggestion_pattern: pattern matching a suggestion, with OLD in group 1 and NEW in group 2. It should not let OLD or NEW span nested markers or lines (see :const:`SUGGESTION_PATTERN`).
-  :return: text with minor suggestions applied.
+  :return: text with minor suggestions applied. Extra args (eg. metadata passed by :meth:`doc_curation.md.file.MdFile.transform`) are ignored.
   """
   def replacer(match):
     old, new = match.group(1), match.group(2)

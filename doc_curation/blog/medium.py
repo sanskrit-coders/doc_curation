@@ -22,6 +22,6 @@ def article_scraper(url, dir_path, dry_run):
 def scrape_medium_blog(url, dir_path, dry_run=False):
   global browser
   if browser is None:
-    browser = scraping.get_selenium_chrome(headless=False)
+    browser = scraping.get_selenium_chrome(headless=True)
 
   blog.scrape_index_from_anchors(url=url, dir_path=dir_path, entry_css_list=[], anchor_css_list=["a:has(h2)"], article_scraper=article_scraper, browser=browser, dry_run=dry_run)

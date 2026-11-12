@@ -3,3 +3,4 @@ include LICENSE.txt
 
 # Include the data files
 recursive-include doc_curation/data *
+recursive-include doc_curation/llm/configurer/data *
