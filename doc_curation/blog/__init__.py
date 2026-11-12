@@ -62,6 +62,13 @@ def get_post_html(url, entry_css_list=None, browser=None):
 
 
 
+def is_valid_article_date(date_obj):
+  if date_obj is None:
+    return False
+  current_year = datetime.datetime.now().year
+  return 1995 <= date_obj.year <= current_year + 1
+
+
 def extract_date_with_regex(text):
   # Pattern 1: Month Day, Year (e.g., "May 24, 2026", "Feb 07, 2026", "October 5, 2025")
   # Matches month name (or abbreviation), day (1-2 digits), and year (4 digits)
@@ -81,7 +88,9 @@ def extract_date_with_regex(text):
     matched_str = match.group(0)
     try:
       # Parse only the extracted substring with fuzzy=False to prevent noise pollution
-      return parser.parse(matched_str, fuzzy=False)
+      d = parser.parse(matched_str, fuzzy=False)
+      if is_valid_article_date(d):
+        return d
     except Exception:
       pass
   return None
@@ -101,22 +110,51 @@ def get_post_metadata(soup):
   # 2. Primary Attempt: Extract from JSON-LD structured metadata (Highly reliable for Substack)
   json_ld_tags = soup.find_all("script", type="application/ld+json")
   for tag in json_ld_tags:
-    if tag.string:
+    txt = tag.string or tag.get_text()
+    if txt:
       try:
-        data = json.loads(tag.string)
-        # JSON-LD can be a single dictionary or a list of dictionaries
+        data = json.loads(txt)
+        candidates = []
         if isinstance(data, dict):
-          date_string = data.get("datePublished")
-        elif isinstance(data, list) and len(data) > 0:
-          date_string = data[0].get("datePublished")
-        else:
-          date_string = None
+          candidates.append(data)
+          if "@graph" in data and isinstance(data["@graph"], list):
+            candidates.extend(data["@graph"])
+        elif isinstance(data, list):
+          candidates.extend(data)
         
-        if date_string:
-          date = parser.parse(date_string, fuzzy=True)
+        for item in candidates:
+          if isinstance(item, dict):
+            for field in ["datePublished", "dateCreated", "dateModified"]:
+              date_string = item.get(field)
+              if date_string:
+                try:
+                  candidate_date = parser.parse(date_string, fuzzy=True)
+                  if is_valid_article_date(candidate_date):
+                    date = candidate_date
+                    break
+                except Exception:
+                  pass
+            if date is not None:
+              break
+        if date is not None:
           break
       except Exception:
         pass
+
+  # 2b. Substack embedded script post_date (e.g. "post_date":"2023-03-05T15:29:11.601Z")
+  if date is None:
+    for s in soup.find_all("script"):
+      stext = s.string or s.get_text()
+      if stext and "post_date" in stext:
+        m = re.search(r'"post_date"\s*:\s*"([^"]+)"', stext)
+        if m:
+          try:
+            candidate_date = parser.parse(m.group(1), fuzzy=True)
+            if is_valid_article_date(candidate_date):
+              date = candidate_date
+              break
+          except Exception:
+            pass
 
   # 3. Secondary Attempt: Extract from standard HTML head meta-tags
   if date is None:
@@ -124,42 +162,60 @@ def get_post_metadata(soup):
       "meta[property='article:published_time']",
       "meta[name='publication_date']",
       "meta[name='publish-date']",
-      "meta[property='og:pubdate']"
+      "meta[property='og:pubdate']",
+      "meta[property='article:modified_time']",
+      "meta[property='og:updated_time']",
     ]
     for selector in meta_selectors:
-      meta_tag = soup.select_one(selector)
-      if meta_tag and meta_tag.get("content"):
+      meta_tags = soup.select(selector)
+      for meta_tag in meta_tags:
+        if meta_tag and meta_tag.get("content"):
+          try:
+            candidate_date = parser.parse(meta_tag["content"], fuzzy=True)
+            if is_valid_article_date(candidate_date):
+              date = candidate_date
+              break
+          except Exception:
+            pass
+      if date is not None:
+        break
+
+  # 4. Tertiary Fallback: Time element CSS selectors
+  if date is None:
+    time_tags = soup.find_all("time")
+    if not time_tags:
+      time_css_list = [".entry-date", ".post-date", ".published", "div.card-body>center"]
+      time_tags = get_tags_matching_first_css(soup=soup, css_selector_list=time_css_list)
+    for time_tag in time_tags:
+      date_string = time_tag.get("datetime", None)
+      if date_string is None:
+        date_string = time_tag.get_text(separator="\n", strip=True)
+      if date_string:
         try:
-          date = parser.parse(meta_tag["content"], fuzzy=True)
-          break
+          candidate_date = parser.parse(date_string, fuzzy=True)
+          if is_valid_article_date(candidate_date):
+            date = candidate_date
+            break
         except Exception:
           pass
 
-  # 4. Tertiary Fallback: Original time element CSS selectors
-  if date is None:
-    time_css_list = ["time", ".entry-date", ".post-date", ".published", "div.card-body>center"]
-    time_tags = get_tags_matching_first_css(soup=soup, css_selector_list=time_css_list)
-    if len(time_tags) > 0:
-      try:
-        time_tag = time_tags[0]
-        date_string = time_tag.get("datetime", None)
-        if date_string is None:
-          date_string = time_tag.get_text(separator="\n", strip=True)
-        date = parser.parse(date_string, fuzzy=True)
-      except Exception:
-        date = None
-
-  # 5. Final Fallback: Datefinder on raw article text
+  # 5. Final Fallback: Regex on raw article text (with strict year validation)
   if date is None:
     post_tags = get_tags_matching_first_css(soup=soup, css_selector_list=["article", ".post"])
     if len(post_tags) > 0:
-      date = extract_date_with_regex(post_tags[0].get_text(separator="\n"))
-      if date is None:
+      candidate_date = extract_date_with_regex(post_tags[0].get_text(separator="\n"))
+      if is_valid_article_date(candidate_date):
+        date = candidate_date
+      else:
         import datefinder
-        # non-strict mode goofs up with "May 24, 2026 Like (15) comments (4) 5 Share ... narrates the lives of the 63" TODO: Fix this.
         matches = list(datefinder.find_dates(post_tags[0].get_text(separator="\n")))
-        if len(matches) > 0:
-          date = matches[0]
+        for m in matches:
+          if is_valid_article_date(m):
+            date = m
+            break
+
+  if date is not None and not is_valid_article_date(date):
+    date = None
 
   return date, title
 
