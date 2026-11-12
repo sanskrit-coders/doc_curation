@@ -5,6 +5,8 @@ description: OCRs PDFs and scans to text. Default is Google Drive OCR (doc_curat
 
 OCR the PDF or scan you are given.
 
+In case you have a 2-page scan, or multi-column pages, consider splitting before OCR (use and modify as needed `pdf/splitter` for splitting two-up scanned PDFs into single pages).
+
 **Default: Google Drive OCR via `doc_curation`'s `pdf/drive_ocr`.** OCR yourself only if explicitly directed otherwise — never run custom OCR jobs on the local machine.
 
 Split large PDFs into small chunks before OCR — Drive's OCR quality degrades on long files:
