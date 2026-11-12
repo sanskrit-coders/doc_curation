@@ -22,6 +22,9 @@ Prefer `dry_run=True` on a first pass when the transform is new.
 - `commentary` — commentary blocks.
 - `indlude` — include directives, where one md file's content is included in another.
 
-## Splitting Markdown files
+## Splitting and placing Markdown files
 
-`/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation_projects/general_tasks/splitter.py`
+Use `/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation_projects/general_tasks/splitter.py` for splitting.
+
+Whenever you create markdown files in a directory within a vishvAsa/*/content path, be sure to run `Run library.fix_index_files`  there.
+
