@@ -26,7 +26,8 @@ Before writing text-processing code, check these in `~/gitland/sanskrit-coders/d
 
 - `doc_curation.md.library` has `apply_function` which is especially useful for bulk processing Markdown files within a path. Use it in combination with other functions as needed.
 - `pdf/splitter` for splitting two-up scanned PDFs into single pages.
-- `ebook/` for producing epubs and pdf-s from markdown.
+- Update and use 
+`doc_curation_projects/general_tasks/ebooks.py` for producing epubs and pdf-s from markdown.
 
 For files with Sanskrit names you output, use something like `curation_utils.file_helper.get_storage_name(SANSKRIT_TEXT, source_script=sanscript.IAST)`.
 

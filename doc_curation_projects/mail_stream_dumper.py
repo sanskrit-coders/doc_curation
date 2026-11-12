@@ -18,9 +18,9 @@ def dump_sadaasvaada(messages, subject, dest_dir, url, dry_run=False):
 
 def scrape_groups():
   from doc_curation.mail_stream import mailman
-  # mailman.scrape_months(url="https://list.indology.info/pipermail/indology/", list_id="[INDOLOGY] ", dest_dir_base="/home/vvasuki/gitland/hindu-comm/mail_stream/indology/", dry_run=False)
-  mailman.scrape_months(url="https://dvaita.info/pipermail/dvaita-list_dvaita.info/", list_id="[DVAITA] ", dest_dir_base="/home/vvasuki/gitland/hindu-comm/mail_stream/dvaita-list/", jobs=2, end_month="2012/05", dry_run=False)
-  mailman.scrape_months(url="https://lists.advaita-vedanta.org/archives/advaita-l/", list_id="[Advaita-l] ", dest_dir_base="/home/vvasuki/gitland/hindu-comm/mail_stream/advaita-l/", dry_run=False)
+  mailman.scrape_months(url="https://list.indology.info/pipermail/indology/", list_id="[INDOLOGY] ", dest_dir_base="/home/vvasuki/gitland/hindu-comm/mail_stream/indology/", jobs=2, start_month="2026/11", dry_run=False)
+  mailman.scrape_months(url="https://dvaita.info/pipermail/dvaita-list_dvaita.info/", list_id="[DVAITA] ", dest_dir_base="/home/vvasuki/gitland/hindu-comm/mail_stream/dvaita-list/", jobs=2, start_month="2026/11", dry_run=False)
+  mailman.scrape_months(url="https://lists.advaita-vedanta.org/archives/advaita-l/", list_id="[Advaita-l] ", dest_dir_base="/home/vvasuki/gitland/hindu-comm/mail_stream/advaita-l/", jobs=2, start_month="2026/11", dry_run=False)
   pass
 
 def dump_google_groups():

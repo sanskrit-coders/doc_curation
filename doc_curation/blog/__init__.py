@@ -248,7 +248,7 @@ def fix_special_markup(content):
   return content
 
 
-def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entry_css_list=None, browser=None):
+def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entry_css_list=None, browser=None, date_override=None, title_override=None):
   logging.debug(f"Scraping {url}")
   (title, post_html, date_obj) = (None, None, None)
   
@@ -268,10 +268,15 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
       logging.error(f"Could not get title from {url}")
       return False
     date_obj, title = get_post_metadata(soup)
+    if title_override is not None:
+      title = title_override
     if title is None:
       logging.warning(f"Could not get title from {url}")
       return False
     file_name = "%s.md" % get_storage_name(text=title, max_length=max_title_length)
+
+  if date_override is not None:
+    date_obj = date_override
 
   file_path = get_file_path(date_obj, dir_path, file_name)
 
@@ -286,6 +291,10 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
       logging.warning(f"Could not get post html : {url}")
       return False
     date_obj_alt, title = get_post_metadata(soup)
+    if title_override is not None:
+      title = title_override
+    if date_override is not None:
+      date_obj_alt = date_override
     if date_obj_alt is not None:
       date_obj = date_obj_alt
       file_path = get_file_path(date_obj, dir_path, file_name)
