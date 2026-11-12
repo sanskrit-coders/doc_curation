@@ -90,3 +90,16 @@ def to_muse(agent: Agent) -> str:
     if value:
       lines.append(f"{key}: {value}")
   return "---\n" + "\n".join(lines) + "\n---\n\n" + agent.body.strip() + "\n"
+
+
+def command_to_toml(name: str, description: str, body: str) -> str:
+  """Convert a command to TOML format for Gemini."""
+  # Convert $ARGUMENTS to {{args}} for Gemini
+  gemini_body = body.strip().replace("$ARGUMENTS", "{{args}}")
+  return (
+    f'name = "{name}"\n'
+    f'description = """{description}"""\n'
+    f'prompt = """\n'
+    f"{gemini_body}\n"
+    '"""\n'
+  )

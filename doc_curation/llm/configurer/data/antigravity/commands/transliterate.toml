@@ -1,0 +1,7 @@
+name = "transliterate"
+description = """Transliterates Sanskrit across scripts and applies Vedic accent marks (udAtta/svarita)."""
+prompt = """
+Load the transliteration-accenting skill and transliterate/accent the given text:
+
+{{args}}
+"""

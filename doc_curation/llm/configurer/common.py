@@ -14,9 +14,11 @@ DATA_DIR = PACKAGE_DIR / "data"
 CANONICAL_AGENTS = DATA_DIR / "opencode" / "AGENTS.md"
 CANONICAL_AGENTS_DIR = DATA_DIR / "opencode" / "agents"
 CANONICAL_SKILLS = DATA_DIR / "opencode" / "skills"
+CANONICAL_COMMANDS = DATA_DIR / "opencode" / "commands"
 
 _FRONTMATTER = re.compile(r"^---\r?\n(.*?)\r?\n---\r?\n?(.*)$", re.DOTALL)
 _AGENT_NAME = re.compile(r"[a-z]+(?:-[a-z]+)*")
+_COMMAND_NAME = re.compile(r"[a-z0-9]+(?:[-_][a-z0-9]+)*")
 
 
 class ConfigurerError(RuntimeError):
@@ -70,6 +72,42 @@ def load_agent(source: Path) -> Agent:
     body=body,
     source=source,
   )
+
+
+@dataclass(frozen=True)
+class Command:
+  """A canonical OpenCode command definition, split into its parts."""
+
+  name: str
+  description: str
+  frontmatter: str
+  body: str
+  source: Path
+
+
+def load_command(source: Path) -> Command:
+  frontmatter, body = split_frontmatter(source.read_text(encoding="utf-8"), source)
+  description = frontmatter_value(frontmatter, "description")
+  if not description:
+    raise ConfigurerError(f"{source} must define description")
+  name = source.stem
+  if not _COMMAND_NAME.fullmatch(name):
+    raise ConfigurerError(
+      f"{source}: name {name!r} is invalid (use lowercase words separated by hyphens or underscores)"
+    )
+  return Command(
+    name=name,
+    description=description,
+    frontmatter=frontmatter,
+    body=body,
+    source=source,
+  )
+
+
+def command_sources(source_dir: Path = CANONICAL_COMMANDS) -> Iterable[Path]:
+  for source in sorted(source_dir.glob("*.md")):
+    if not source.name.startswith("_"):
+      yield source
 
 
 def write_text(path: Path, text: str, dry_run: bool = False) -> bool:

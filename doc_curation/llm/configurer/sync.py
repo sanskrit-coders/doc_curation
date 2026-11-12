@@ -9,11 +9,15 @@ from typing import Callable
 
 from doc_curation.llm.configurer import adapters
 from doc_curation.llm.configurer.common import (
-  DATA_DIR,
+  CANONICAL_COMMANDS,
   ConfigurerError,
+  DATA_DIR,
+  command_sources,
+  load_command,
   mirror_files,
   sync_agents,
   user_config_dir,
+  write_text,
 )
 
 
@@ -39,6 +43,25 @@ def _sync_vibe(dry_run: bool = False) -> list[str]:
   return sync_agents(
     DATA_DIR / "vibe" / "agents", adapters.to_vibe, suffix=".toml", dry_run=dry_run
   )
+
+
+def _sync_gemini_commands(dry_run: bool = False) -> list[str]:
+  """Convert canonical commands to TOML for Gemini CLI."""
+  dest_dir = DATA_DIR / "antigravity" / "commands"
+  written: list[str] = []
+  for source in command_sources():
+    cmd = load_command(source)
+    destination = dest_dir / f"{cmd.name}.toml"
+    write_text(destination, adapters.command_to_toml(cmd.name, cmd.description, cmd.body), dry_run=dry_run)
+    written.append(destination.name)
+
+  if dest_dir.is_dir():
+    for stale in dest_dir.glob("*.toml"):
+      if stale.name in written or not stale.is_file():
+        continue
+      if not dry_run:
+        stale.unlink()
+  return written
 
 
 def _sync_muse(dry_run: bool = False) -> list[str]:
@@ -69,6 +92,7 @@ SYNCERS: dict[str, tuple[Callable[..., list[str]], Path, Path | None]] = {
   "kilo": (_sync_kilo, DATA_DIR / "kilo" / "agents", None),
   "muse": (_sync_muse, DATA_DIR / "muse" / "agents", MUSE_AGENTS),
   "vibe": (_sync_vibe, DATA_DIR / "vibe" / "agents", None),
+  "gemini_commands": (_sync_gemini_commands, DATA_DIR / "antigravity" / "commands", None),
 }
 
 

@@ -19,6 +19,7 @@ from doc_curation.llm.configurer.common import (
   CANONICAL_AGENTS,
   CANONICAL_AGENTS_DIR,
   CANONICAL_SKILLS,
+  CANONICAL_COMMANDS,
   DATA_DIR,
 )
 
@@ -30,13 +31,21 @@ MANAGED_LINKS: list[Manager] = [
   ("~/.config/opencode/AGENTS.md", CANONICAL_AGENTS),
   ("~/.config/opencode/agents", CANONICAL_AGENTS_DIR),
   ("~/.config/opencode/skills", CANONICAL_SKILLS),
+  ("~/.config/opencode/commands", CANONICAL_COMMANDS),
   # Muse Code (rules and skills; agents are copied by `sync`, see module docstring)
   ("~/.config/muse/AGENTS.md", CANONICAL_AGENTS),
   ("~/.config/muse/skills", CANONICAL_SKILLS),
   # Kilo
   ("~/.config/kilo/AGENTS.md", CANONICAL_AGENTS),
   ("~/.config/kilo/agents", CANONICAL_AGENTS_DIR),
+  ("~/.config/kilo/commands", CANONICAL_COMMANDS),
   ("~/.kilo/skills", CANONICAL_SKILLS),
+  ("~/.kilo/commands", CANONICAL_COMMANDS),
+  # Legacy .kilocode (Kilo also reads from here)
+  ("~/.kilocode/AGENTS.md", CANONICAL_AGENTS),
+  ("~/.kilocode/agents", CANONICAL_AGENTS_DIR),
+  ("~/.kilocode/commands", CANONICAL_COMMANDS),
+  ("~/.kilocode/skills", CANONICAL_SKILLS),
   # Mistral Vibe
   ("~/.vibe/AGENTS.md", CANONICAL_AGENTS),
   ("~/.vibe/agents", DATA_DIR / "vibe" / "agents"),
@@ -48,6 +57,7 @@ MANAGED_LINKS: list[Manager] = [
   ("~/.gemini/config/AGENTS.md", CANONICAL_AGENTS),
   ("~/.gemini/config/agents", DATA_DIR / "antigravity" / "agents"),
   ("~/.gemini/config/skills", CANONICAL_SKILLS),
+  ("~/.gemini/commands", DATA_DIR / "antigravity" / "commands"),
   ("~/.agents/skills", CANONICAL_SKILLS),
 ]
 
