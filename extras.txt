@@ -21,3 +21,5 @@ translators
 
 anthropic
 google-genai
+metaai-sdk[api]>=5.0
+
