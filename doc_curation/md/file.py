@@ -143,6 +143,10 @@ class MdFile(object):
     if not isinstance(metadata, dict):
       logging.fatal(f"Crazy metadata - {self.file_path}")
     title = metadata.get("title", None)
+    if title is None:
+      # Do NOT stringify to "None" - callers must be able to tell a missing
+      # title apart from a literal one.
+      return None
     title = str(title)  # Might be mistakenly numeric!
     if ref_dir_for_ancestral_title is not None:
       while ref_dir_for_ancestral_title.endswith("/"):
@@ -154,17 +158,28 @@ class MdFile(object):
         if parent_dir != ref_dir_for_ancestral_title:
           parent_title = parent_md.get_title(omit_chapter_id=omit_chapter_id,
                                              ref_dir_for_ancestral_title=ref_dir_for_ancestral_title)
-          title = "%s - %s" % (parent_title, title)
-          title = regex.sub(r"(?:^| )\+", "", title)
+          if parent_title is not None:
+            title = "%s - %s" % (parent_title, title)
+            title = regex.sub(r"(?:^| )\+", "", title)
 
-    if title is None:
-      logging.fatal("%s has None title", self.file_path)
     if omit_plus and title.startswith("+"):
       title = title[1:]
 
     if omit_chapter_id and title is not None:
       title = regex.sub(r"^[+०-९\d]+ *", "", title)
     return title
+
+  def has_title(self):
+    """True when frontmatter declares a non-empty title.
+
+    Cheap pre-check for bulk runs, without the string-postprocessing in
+    :meth:`get_title`.
+    """
+    (metadata, content) = self.read()
+    if not isinstance(metadata, dict):
+      return False
+    title = metadata.get("title", None)
+    return title is not None and str(title).strip() != ""
 
   def get_index_basename(self, index_position=0):
     base_name = os.path.basename(self.file_path)

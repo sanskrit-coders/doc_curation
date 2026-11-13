@@ -19,6 +19,9 @@ def ensure_ordinal_in_title(dir_path, dest_script=sanscript.DEVANAGARI, first_fi
   for index, file in enumerate(files):
     md_file = MdFile(file_path=os.path.join(dir_path, file))
     title = md_file.get_title(omit_chapter_id=False)
+    if title is None:
+      logging.warning("No title for %s - skipping.", file)
+      continue
     title = regex.sub(r"(^[\d०-९೦-೯ ]+ )", "", title)
     # if regex.fullmatch("[+०-९0-9].+", title):
     #   return
@@ -45,7 +48,8 @@ def pad_title_numbering(dir_path, dry_run):
     md_file = MdFile(file_path=os.path.join(dir_path, file))
     title = md_file.get_title()
     if title is None:
-      return
+      logging.warning("No title for %s - skipping.", file)
+      continue
 
     import regex
     new_title = regex.sub("(^[०-९][^०-९])", "०\\1", title)
@@ -60,6 +64,9 @@ def set_filename_from_title(md_file, source_script=None, mixed_languages_in_titl
     logging.info("Special file %s. Skipping." % md_file.file_path)
     return
   title = md_file.get_title(omit_chapter_id=False)
+  if title is None:
+    logging.warning("No title for %s - skipping rename.", md_file.file_path)
+    return
   if source_script is None:
     from indic_transliteration import detect
     source_script_deduced = detect.detect(title)
@@ -142,7 +149,7 @@ def set_title_from_filename(md_file, dest_script=sanscript.DEVANAGARI, overwrite
 def set_index_from_filename(md_file, dest_script=sanscript.DEVANAGARI, overwrite=True, dry_run=False):
   # logging.debug(md_file.file_path)
   index = get_index_from_filename(file_path=md_file.file_path, dest_script=dest_script)
-  title = md_file.get_title(omit_chapter_id=True)
+  title = md_file.get_title(omit_chapter_id=True) or ""
   title = f"{index} {title}"
   md_file.set_title(dry_run=dry_run, overwrite=overwrite, title=title)
 
@@ -155,12 +162,16 @@ def prepend_file_index_to_title(md_file, dest_script=sanscript.DEVANAGARI, dry_r
   base_name = base_name.replace(".md", "")
   index = regex.sub("_.+", "", base_name)
   index = sanscript.transliterate(index, _to=dest_script, _from=sanscript.IAST)
-  title = index + " " + md_file.get_title(omit_chapter_id=True)
+  title = md_file.get_title(omit_chapter_id=True) or ""
+  title = index + " " + title
   md_file.set_title(dry_run=dry_run, title=title)
 
 
 def strip_index_from_title(md_file, dry_run):
   title = md_file.get_title(omit_chapter_id=True)
+  if title is None:
+    logging.warning("No title for %s - skipping.", md_file.file_path)
+    return
   if os.path.basename(md_file.file_path) == "_index.md":
     title = f"+{title}"
   md_file.set_title(dry_run=dry_run, title=title)
@@ -180,7 +191,11 @@ def add_init_words_to_title(md_file, num_words=3, target_title_length=50,script=
 def transliterate_title(md_file, dest_script=sanscript.DEVANAGARI, dry_run=False):
   # md_file.replace_in_content("<div class=\"audioEmbed\".+?></div>\n", "")
   logging.debug(md_file.file_path)
-  title_fixed = sanscript.transliterate(data=md_file.get_title(omit_chapter_id=False, omit_plus=False), _from=sanscript.OPTITRANS,
+  title = md_file.get_title(omit_chapter_id=False, omit_plus=False)
+  if title is None:
+    logging.warning("No title for %s - skipping.", md_file.file_path)
+    return
+  title_fixed = sanscript.transliterate(data=title, _from=sanscript.OPTITRANS,
                                         _to=dest_script)
   md_file.set_title(title=title_fixed, dry_run=dry_run)
 
@@ -188,6 +203,9 @@ def transliterate_title(md_file, dest_script=sanscript.DEVANAGARI, dry_run=False
 
 def remove_post_numeric_title_text(md_file, removal_allower=lambda x:True, rename=True, set_in_content=False, dry_run=False):
   title = md_file.get_title(omit_chapter_id=False)
+  if title is None:
+    logging.warning("No title for %s - skipping.", md_file.file_path)
+    return
   match = regex.fullmatch(r"([\d०-९೦-೯-]+) +(\S.+)", title)
   if match is None:
     logging.warning(f"No match! Skipping {md_file.file_path}")

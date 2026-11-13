@@ -198,7 +198,7 @@ def make_include_files(dest_dir, source_dir, start_index=None, end_index=None, d
       md_file_dest = MdFile(file_path=os.path.join(dest_dir, base_name_dest))
       (metadata, content) = md_file.read()
       index_str = sanscript.transliterate(f"{dest_index:02d}", _to=sanscript.DEVANAGARI, _from=sanscript.IAST)
-      metadata["title"] = f"{index_str} {md_file.get_title()}"
+      metadata["title"] = f"{index_str} {md_file.get_title() or ''}".strip()
       url = md_file.file_path.replace("/home/vvasuki/gitland/vishvAsa/", "/").replace("/static/", "/").replace("/content/", "/").replace("_index.md", "").replace(".md", "")
       md = f'<div class="js_include" url="{url}"  newLevelForH1="1" includeTitle="true">\n\n{content}\n</div>'
       md_file_dest.dump_to_file(metadata=metadata, content=md, dry_run=dry_run)

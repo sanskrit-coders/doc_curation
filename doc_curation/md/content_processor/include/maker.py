@@ -87,7 +87,7 @@ def make_alt_include(url, file_path, target_dir, h1_level, source_dir, classes=[
     if os.path.exists(index_file_path):
       md_file = MdFile(file_path=index_file_path)
       title = md_file.get_title()
-    else:
+    if title is None:
       title = sanscript.transliterate(target_dir, sanscript.OPTITRANS, sanscript.DEVANAGARI)
   if os.path.exists(alt_file_path):
     html = Include(url=alt_url, h1_level=h1_level, classes=classes, title=title).to_html_str()

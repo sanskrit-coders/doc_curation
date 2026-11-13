@@ -83,13 +83,16 @@ def apply_function(fn, dir_path, file_pattern="**/*.md", file_name_filter=None, 
         continue
       else:
         start_file_reached = True
-    if md_file.get_title() is not None:
-      # logging.info("Processing %s", md_file)
-      if _takes_file_path(fn):
-        result = fn(md_file.file_path, *args, **kwargs)
-      else:
-        result = fn(md_file, *args, **kwargs)
-      results_map[md_file.file_path] = result
+    # Process every file, including those without a frontmatter title: the
+    # transform may well be what adds one. Callbacks that need a title should
+    # check `md_file.get_title() is None` themselves.
+    if logging.getLogger().isEnabledFor(logging.DEBUG) and not md_file.has_title():
+      logging.debug("No title for %s - processing anyway.", md_file.file_path)
+    if _takes_file_path(fn):
+      result = fn(md_file.file_path, *args, **kwargs)
+    else:
+      result = fn(md_file, *args, **kwargs)
+    results_map[md_file.file_path] = result
     if end_file is not None:
       if end_file.startswith("/"):
         end_matched = str(md_file.file_path) == end_file
