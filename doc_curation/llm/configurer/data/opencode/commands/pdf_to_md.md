@@ -4,3 +4,5 @@ description: Converts PDFs to Markdown — extracts text layer, OCRs when needed
 Load the pdf-to-md skill and convert the given PDF to Markdown:
 
 $ARGUMENTS
+
+If no PDF is given, ask for one.

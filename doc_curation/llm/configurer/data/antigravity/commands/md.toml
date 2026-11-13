@@ -1,0 +1,7 @@
+name = "md"
+description = """Processes Markdown files — bulk transforms, details blocks, footnotes, commentary, include directives, and file splitting."""
+prompt = """
+Load the md-processing skill and process the given Markdown:
+
+{{args}}
+"""
