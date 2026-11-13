@@ -1,7 +1,9 @@
 name = "md"
-description = """Processes Markdown files — bulk transforms, details blocks, footnotes, commentary, include directives, and file splitting."""
+description = """Runs a doc_curation md/ transform (bulk edits, details, footnotes, includes, sections, splitting) over the given path."""
 prompt = """
 Load the md-processing skill and process the given Markdown:
 
 {{args}}
+
+If no path is given, ask for one, and confirm the target path before transforming a directory. Start any new transform with `dry_run=True` and show the resulting `git diff --stat` before applying it.
 """

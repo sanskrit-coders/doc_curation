@@ -7,7 +7,7 @@ import shutil
 import requests
 from dateutil import parser
 
-from curation_utils import file_helper, scraping
+from curation_utils import scraping
 from curation_utils.file_helper import get_storage_name
 from doc_curation import blog
 from doc_curation.utils import text_utils
@@ -107,6 +107,9 @@ def get_post_dates(url):
 def get_slug_from_url(url):
   from urllib.parse import urlsplit
   path_parts = [part for part in urlsplit(url).path.split("/") if part != ""]
+  # Some saved URLs point at the comments page of a post.
+  while len(path_parts) > 0 and path_parts[-1] in ("comments", "comment"):
+    path_parts = path_parts[:-1]
   if not path_parts:
     return None
   return path_parts[-1]
@@ -122,13 +125,19 @@ def get_posts_by_slug(url):
   return posts
 
 
+def strip_date_prefix(file_name):
+  """Strip any leading YYYY-MM-DD_ or (for bogus dates like 1-01-01) Y-M-D_ prefix."""
+  while True:
+    date_prefix_match = re.match(r"^\d{1,4}-\d\d-\d\d_(.*)$", file_name)
+    if date_prefix_match is None:
+      return file_name
+    file_name = date_prefix_match.group(1)
+
+
 def _target_path(dir_path, post_date, file_name):
-  date_prefix_match = re.match(r"^(\d\d\d\d-\d\d-\d\d)_(.*)$", file_name)
-  if date_prefix_match is not None:
-    file_name = date_prefix_match.group(2)
-  target_dir = os.path.join(dir_path, datetime.datetime.strftime(post_date, "%Y/%m"))
-  # Use the same path cleaning as blog.get_file_path, so that re-scrapes do not create duplicates.
-  return file_helper.clean_file_path(os.path.join(target_dir, datetime.datetime.strftime(post_date, "%Y-%m-%d_") + file_name))
+  file_name = strip_date_prefix(file_name)
+  # Use the same path computation as the scraper, so that re-scrapes do not create duplicates.
+  return blog.get_file_path(date_obj=post_date, dir_path=dir_path, file_name=file_name)
 
 
 def _normalize_title(title):
@@ -175,6 +184,10 @@ def fix_archive(url, dir_path, dry_run=False, quarantine_dir=None):
     logging.info("Fetched %d posts from %s", len(publication_posts), publication_url)
     posts.update(publication_posts)
 
+  if not os.path.isdir(dir_path):
+    logging.warning("No archive directory at %s; skipping", dir_path)
+    return {"ok": 0, "moved": 0, "duplicates": 0, "unmatched": 0, "undated": 0, "conflicts": 0}
+
   files_by_key = {}
   basename_slugs = {}
   for md_file in library.get_md_files_from_path(dir_path=dir_path):
@@ -196,6 +209,10 @@ def fix_archive(url, dir_path, dry_run=False, quarantine_dir=None):
   stats = {"ok": 0, "moved": 0, "duplicates": 0, "unmatched": 0, "undated": 0, "conflicts": 0}
   for (resolved_slug, _, _), entries in sorted(files_by_key.items(), key=lambda x: str(x[0])):
     post_date = parser.parse(posts[resolved_slug]["post_date"]) if resolved_slug is not None else None
+    api_date_bogus = post_date is not None and not blog.is_valid_article_date(post_date)
+    if api_date_bogus:
+      logging.warning("Ignoring implausible API date %s for %s", post_date.date(), resolved_slug)
+      post_date = None
     date_str = datetime.datetime.strftime(post_date, "%Y-%m-%d") if post_date is not None else None
 
     def rank(entry):
@@ -230,12 +247,16 @@ def fix_archive(url, dir_path, dry_run=False, quarantine_dir=None):
     if post_date is None:
       # Without an API date, at least move files with an obviously bogus date (e.g. one mentioned in the text) to undated/.
       metadata_date = keeper_metadata.get("date")
-      try:
-        metadata_date_obj = parser.parse(str(metadata_date)) if metadata_date is not None else None
-      except (ValueError, OverflowError):
-        metadata_date_obj = None
-      if metadata_date_obj is not None and not blog.is_valid_article_date(metadata_date_obj):
-        undated_path = os.path.join(dir_path, "undated", re.sub(r"^\d\d\d\d-\d\d-\d\d_", "", os.path.basename(keeper_path)))
+      # Only a full YYYY-MM-DD date is trustworthy here; parser.parse("1-01-01") silently yields 2001-01-01.
+      metadata_date_obj = None
+      if metadata_date is not None and re.match(r"^\d{4}-\d\d-\d\d", str(metadata_date)):
+        try:
+          metadata_date_obj = parser.parse(str(metadata_date))
+        except (ValueError, OverflowError):
+          metadata_date_obj = None
+      already_undated = os.path.dirname(os.path.abspath(keeper_path)) == os.path.join(os.path.abspath(dir_path), "undated")
+      if not already_undated and (api_date_bogus or metadata_date_obj is None or not blog.is_valid_article_date(metadata_date_obj)):
+        undated_path = os.path.join(dir_path, "undated", strip_date_prefix(os.path.basename(keeper_path)))
         logging.info("Moving %s to %s (implausible date %s)", keeper_path, undated_path, metadata_date)
         stats["undated"] += 1
         if not dry_run:
@@ -248,7 +269,7 @@ def fix_archive(url, dir_path, dry_run=False, quarantine_dir=None):
       continue
     file_name = os.path.basename(keeper_path)
     target_path = _target_path(dir_path, post_date, file_name)
-    if re.sub(r"^\d\d\d\d-\d\d-\d\d_", "", file_name) in generic_basenames:
+    if strip_date_prefix(file_name) in generic_basenames:
       api_title = posts[resolved_slug].get("title")
       if api_title:
         api_file_name = "%s.md" % get_storage_name(text=api_title, max_length=50)
@@ -303,10 +324,14 @@ def scrape_free_articles_from_index_anchors(url, dir_path, dry_run=False):
   def article_scraper(url, dir_path, dry_run):
     post = posts.get(get_slug_from_url(url), {})
     post_date = post.get("post_date")
+    undated = False
+    if post_date is not None:
+      post_date = parser.parse(post_date)
+      if not blog.is_valid_article_date(post_date):
+        post_date, undated = None, True
     return blog.scrape_post_markdown(
       url=url, dir_path=dir_path, dry_run=dry_run, entry_css_list=[".single-post", "div.body.markup"], browser=browser,
-      date_override=parser.parse(post_date) if post_date is not None else None,
-      title_override=post.get("title"))
+      date_override=post_date, title_override=post.get("title"), undated=undated)
 
   for publication_url in urls:
     blog.scrape_index_from_anchors(url=publication_url, dir_path=dir_path, entry_css_list=[], anchor_css_list=['a[data-testid="post-preview-title"]', ".portable-archive-list a"], article_scraper=article_scraper, urlpattern=".*/p/[^/]+/?$", anchor_filter=free_article_filter, browser=browser, dry_run=dry_run)

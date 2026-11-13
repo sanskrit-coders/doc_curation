@@ -4,4 +4,6 @@ prompt = """
 Load the transliteration-accenting skill and transliterate/accent the given text:
 
 {{args}}
+
+If no text, file, or target script is given, ask for them.
 """

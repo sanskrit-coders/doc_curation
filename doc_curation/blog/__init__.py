@@ -248,9 +248,16 @@ def fix_special_markup(content):
   return content
 
 
-def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entry_css_list=None, browser=None, date_override=None, title_override=None):
+def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entry_css_list=None, browser=None, date_override=None, title_override=None, undated=False):
   logging.debug(f"Scraping {url}")
   (title, post_html, date_obj) = (None, None, None)
+
+  # If the date and title are known upfront, we can skip the post without even fetching it.
+  if date_override is not None and title_override is not None and not regex.search(r"/(\d\d\d\d)/(\d\d)/", url):
+    file_name = "%s.md" % get_storage_name(text=title_override, max_length=max_title_length)
+    if os.path.exists(get_file_path(date_override, dir_path, file_name)):
+      logging.warning("Skipping %s : exists", file_name)
+      return True
   
   if regex.search(r"/(\d\d\d\d)/(\d\d)/", url):
     file_name = file_name_from_url(url=url, max_title_length=max_title_length)
@@ -277,6 +284,12 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
 
   if date_override is not None:
     date_obj = date_override
+  if undated:
+    # The upstream index explicitly has no reliable date for this post; do not guess one from the page text.
+    date_obj = None
+  if date_obj is not None and not is_valid_article_date(date_obj):
+    logging.warning("Ignoring implausible date %s for %s", date_obj, url)
+    date_obj = None
 
   file_path = get_file_path(date_obj, dir_path, file_name)
 
@@ -324,6 +337,9 @@ def scrape_post_markdown(url, dir_path, max_title_length=50, dry_run=False, entr
 
 
 def get_file_path(date_obj, dir_path, file_name):
+  # get_storage_name can leave trailing underscores (e.g. from a trailing "?"), which clean_file_path
+  # does not fully remove. Normalize them so that names are stable across re-scrapes.
+  file_name = regex.sub(r"_+(\.md)$", r"\1", file_name)
   if date_obj is None:
     file_path = file_helper.clean_file_path(file_path=os.path.join(dir_path, "undated", file_name))
   else:

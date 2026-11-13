@@ -4,4 +4,6 @@ prompt = """
 Load the ocr skill and OCR the given PDF or scan:
 
 {{args}}
+
+If no PDF or scan is given, ask for one.
 """

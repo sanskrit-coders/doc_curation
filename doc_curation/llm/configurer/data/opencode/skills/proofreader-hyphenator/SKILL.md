@@ -51,13 +51,15 @@ boundaries.
 processing:
 
 ```python
+import os
 from doc_curation import llm
 from doc_curation.llm import gemini
 from doc_curation.md import library
 
+prompt_path = os.path.expanduser("~/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md")
 library.apply_function(
     fn=gemini.process_text_chunks_with_keys, dir_path=...,
-    prompt=llm.get_prompt("~/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md"),
+    prompt=llm.get_prompt(prompt_path),
     dry_run=False,
 )
 ```
@@ -79,7 +81,7 @@ from doc_curation.md import library
 library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: hyphene(c))
 ```
 
-Importing it loads a 57 MB wordlist and can take two-plus minutes cold, so batch a whole directory in one run rather than file by file.
+Importing it loads a 57 MB wordlist and can take 2–3 minutes cold (agents may time-box it as a hang), so batch a whole directory in one run rather than file by file.
 
 ## Final Markdown formatting
 

@@ -4,4 +4,6 @@ prompt = """
 Load the pdf-to-md skill and convert the given PDF to Markdown:
 
 {{args}}
+
+If no PDF is given, ask for one.
 """

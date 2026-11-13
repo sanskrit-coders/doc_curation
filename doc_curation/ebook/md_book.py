@@ -53,7 +53,11 @@ def prep_full_md(omit_pattern, md_path, overwrite: bool, source_dir, metadata, b
     logging.info(f"Copied images to {images_dest}")
 
   md_file = MdFile(file_path=md_path)
-  md_file.set_title(title=title_from_path(dir_path=source_dir), dry_run=False)
+  book_title = title_from_path(dir_path=source_dir)
+  if book_title is not None:
+    md_file.set_title(title=book_title, dry_run=False)
+  else:
+    logging.warning("No title derivable from %s - leaving title unset.", source_dir)
 
   def _fix_metadata(c, m):
     m.update(metadata)
