@@ -2,8 +2,33 @@
 name: md-processing
 description: Processes Markdown (md) files — bulk transforms, details blocks, footnotes, commentary, include directives, and file splitting — using doc_curation's md/ toolkit. Use when Markdown files need structured content edits beyond simple text replacement.
 ---
+Where appropriate, process Markdown with the `doc_curation.md` toolkit (venv: `~/gitland/python_venv`).
 
-Process Markdown with the `doc_curation.md` toolkit (venv: `~/gitland/python_venv`).
+## Editing content
+...
+
+
+### Content processors
+
+`doc_curation.md.content_processor` subpackages:
+
+- `details` — `<details><summary>मूलम्</summary>` blocks. `maker`, `transformer`, `seeker`.
+- `footnote` — footnotes. `footnote_helper.define_footnotes_near_use` is the usual entry point; other fixers (`fix_plain_footnotes`, `fix_sup_footnotes`, `add_page_id_to_ref_ids`, `comments_to_footnotes`) are shown in `doc_curation_projects/general_tasks/content/footnote_fix.py`.
+- `commentary` — commentary blocks. For *interleaving* a translation or ṭīkā alongside the mUlam, use the `interleaver` skill.
+- `include` — include directives, where one md file's content is included in another. See `doc_curation_projects/general_tasks/content/include_fix.py`.
+- `section_helper` — sections: `autonumber`, `fix_headers`, `denumerify_section_titles`, `drop_sections`. See `doc_curation_projects/general_tasks/content/section_fix.py`.
+
+
+
+## Editing Metadata
+
+Files should have proper TOML metadata (preferred over YAML). Useful functions in `doc_curation.md.library.metadata_helper`:
+
+- `set_title_from_filename` — title from the file name.
+- `set_filename_from_title` — file name from the title.
+- Others: `transliterate_title`, `set_index_from_filename`, `ensure_ordinal_in_title`, `prepend_file_index_to_title`.
+
+See `doc_curation_projects/general_tasks/metadata_fix.py` for usage.
 
 ## Bulk transforms
 
@@ -27,25 +52,6 @@ Gotchas —
 
 Workflow: run with `dry_run=True`, inspect `git diff --stat`, then run for real and re-check the diff.
 
-## Content processors
-
-`doc_curation.md.content_processor` subpackages:
-
-- `details` — `<details><summary>मूलम्</summary>` blocks. `maker`, `transformer`, `seeker`.
-- `footnote` — footnotes. `footnote_helper.define_footnotes_near_use` is the usual entry point; other fixers (`fix_plain_footnotes`, `fix_sup_footnotes`, `add_page_id_to_ref_ids`, `comments_to_footnotes`) are shown in `doc_curation_projects/general_tasks/content/footnote_fix.py`.
-- `commentary` — commentary blocks. For *interleaving* a translation or ṭīkā alongside the mUlam, use the `interleaver` skill.
-- `include` — include directives, where one md file's content is included in another. See `doc_curation_projects/general_tasks/content/include_fix.py`.
-- `section_helper` — sections: `autonumber`, `fix_headers`, `denumerify_section_titles`, `drop_sections`. See `doc_curation_projects/general_tasks/content/section_fix.py`.
-
-## Metadata
-
-Files should have proper TOML metadata (preferred over YAML). Useful functions in `doc_curation.md.library.metadata_helper`:
-
-- `set_title_from_filename` — title from the file name.
-- `set_filename_from_title` — file name from the title.
-- Others: `transliterate_title`, `set_index_from_filename`, `ensure_ordinal_in_title`, `prepend_file_index_to_title`.
-
-See `doc_curation_projects/general_tasks/metadata_fix.py` for usage.
 
 ## Splitting and placing Markdown files
 
