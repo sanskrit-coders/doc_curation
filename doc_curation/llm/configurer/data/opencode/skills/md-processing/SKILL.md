@@ -27,7 +27,6 @@ For various python utilities, see `doc_curation.md.content_processor.include` an
 
 - **Cluster anatomy:** A standard unit in case of vedic text consists of optional `<details><summary>*विनियोगः</summary>` (`भास्करोक्त-विनियोगः`, `सायणोक्त-विनियोगः`, etc.), followed by `<details open><summary>विश्वास-प्रस्तुतिः...</summary>`, `<details><summary>मूलम्</summary>`, and commentary blocks (`भट्टभास्कर-टीका`, `सायण-टीका`, etc.). Section-intro blocks (`विस्तारः (द्रष्टुं नोद्यम्)`) and trailing summaries (`विनियोगसङ्ग्रहः`) sit outside individual unit clusters.
 - **Frontmatter vs. horizontal rules:** Anchor frontmatter regexes to the start of the file (`\A(?:\+\+\+.*?^\+\+\+|---.*?^---)`). An unanchored `^---.*?^---` with `MULTILINE`/`DOTALL` will swallow content between mid-file `---` horizontal rules. Preserve mid-file separators (`____________`, `---`) and headings in place.
-- **Editorial glosses & layer alignment:** `विश्वास-प्रस्तुतिः` often adds `+++(...)+++` glosses, supplied elliptical verbs, hyphens, and punctuation not present in `मूलम्`. Mask or strip `+++(...)+++` glosses and svaras (`[\u0951-\u0954\u1cd0-\u1cff]`) when aligning sentence segments or commentary pratīkas across layers, and never split on daṇḍas inside `+++(...)+++`, quotes, or parentheses.
 - **Verify invariants before writing:** For any block splitting, merging, or commentary/viniyoga separation, assert that:
   1. The whitespace-stripped character stream of each layer (`विश्वास-प्रस्तुतिः`, `मूलम्`, `*टीका`, `*विनियोगः`) is unchanged before and after (except where text is intentionally moved between `*टीका` and `*विनियोगः`).
   2. `<details>` / `</details>` and `<div` / `</div>` tag counts are balanced.
@@ -38,7 +37,7 @@ For various python utilities, see `doc_curation.md.content_processor.include` an
 ### Sections
 `doc_curation.md.content_processor.section_helper` has useful code — sections: `autonumber`, `fix_headers`, `denumerify_section_titles`, `drop_sections`. See `doc_curation_projects/general_tasks/content/section_fix.py`.
 
-### Other Content processors
+### Commentary/ translation interleaving
 
 `doc_curation.md.content_processor` subpackages:
 
