@@ -5,10 +5,12 @@ from doc_curation import blog
 import logging
 import os
 from pathlib import Path
-import feedparser
-import trafilatura
 
 from doc_curation.md.file import MdFile
+
+# NOTE: feedparser and trafilatura are extras-only and must stay a
+# function-level import in scrape(), so that `import doc_curation.blog`
+# keeps working with a bare `pip install .` (as in CI).
 
 for handler in logging.root.handlers[:]:
   logging.root.removeHandler(handler)
@@ -53,6 +55,8 @@ def get_archived_urls(dist_dir):
 
 
 def scrape(profile_url: str, dist_dir: str = "dist_dir", dry_run: bool = False):
+  import feedparser
+  import trafilatura
   # 1. Create distribution directory if it doesn't exist
   output_path = Path(dist_dir)
   output_path.mkdir(parents=True, exist_ok=True)

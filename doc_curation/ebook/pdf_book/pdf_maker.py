@@ -1,11 +1,13 @@
 from doc_curation.ebook import calibre_helper
-from doc_curation.ebook.pdf_book import booklet_maker
 from doc_curation.md.file import MdFile
 from indic_transliteration import sanscript
 import os, regex
 
 
 def make_script_pdfs(epub_path, scripts, booklets, metadata, *args, **kwargs):
+  # Local import: booklet_maker needs extras-only pypdf/reportlab; keep
+  # `import doc_curation.ebook` working with a bare `pip install .` (as in CI).
+  from doc_curation.ebook.pdf_book import booklet_maker
   for script in scripts:
     if script is None:
       script_dir = os.path.dirname(epub_path)

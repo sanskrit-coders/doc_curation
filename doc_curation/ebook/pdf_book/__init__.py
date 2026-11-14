@@ -4,15 +4,14 @@ import os
 import os.path
 
 import tempfile
-import rarfile
-import img2pdf
 
 import regex
-from pypdf import PdfReader, PdfWriter
-
-from fpdf import FPDF
 
 from doc_curation.md.file import MdFile
+
+# NOTE: rarfile, img2pdf, pypdf and fpdf are extras-only and must stay
+# function-level imports below, so that `import doc_curation.ebook` keeps
+# working with a bare `pip install .` (as in CI).
 
 
 SKT_FONT = '/home/vvasuki/gitland/indic-transliteration/sanskrit-fonts/fonts/ttf-devanagari/TiroDevanagariSanskrit-Regular.ttf'
@@ -30,6 +29,7 @@ def save_grid_a3_pdf(text, dest_file, num_cols=4, num_rows=1, font_path=SKT_FONT
   """
   Creates an A3 Landscape PDF with a grid using fpdf2 for correct Sanskrit shaping.
   """
+  from fpdf import FPDF
   # 1. Handle input text (Markdown or String)
   if os.path.exists(text):
     try:
@@ -97,6 +97,8 @@ def save_grid_a3_pdf(text, dest_file, num_cols=4, num_rows=1, font_path=SKT_FONT
 
 
 def create_page(text, width, height, font_path=SKT_FONT, font_size=30):
+  from fpdf import FPDF
+  from pypdf import PdfReader
   # 1. Initialize FPDF in 'points' to match your PDF dimensions
   # 'L' for landscape, 'pt' for points
   text = text.strip()
@@ -139,6 +141,7 @@ def create_page(text, width, height, font_path=SKT_FONT, font_size=30):
 
 def insert_text_at_index(text, input_pdf_path, font_size=30, index=0, output_pdf_path=None ):
   """Inserts a custom text page into an existing PDF at the specified index."""
+  from pypdf import PdfReader, PdfWriter
   if output_pdf_path is None:
     output_pdf_path = input_pdf_path
 
@@ -175,6 +178,7 @@ def trim_pdf_until_text(input_pdf_path, target_pattern, output_pdf_path=None, st
   Skips all pages before start_index, then continues removing pages until 
   a page is found where the text starts with target_text.
   """
+  from pypdf import PdfReader, PdfWriter
   if output_pdf_path is None:
     output_pdf_path = input_pdf_path
   reader = PdfReader(input_pdf_path)
@@ -224,6 +228,7 @@ def get_page_index_with_pattern(target_pattern, pdf_path, start_index=0,search_d
   Returns the 0-based index of the first page containing the regex pattern.
   Returns -1 if the pattern is not found.
   """
+  from pypdf import PdfReader
   reader = PdfReader(pdf_path)
   pages = list(reader.pages)
   num_pages = len(pages)
@@ -252,6 +257,8 @@ def get_page_index_with_pattern(target_pattern, pdf_path, start_index=0,search_d
 
 def cbr_to_temp_pdf(cbr_path, temp_pdf_path):
   """Extracts images from a CBR archive and saves them as a PDF."""
+  import rarfile
+  import img2pdf
   with tempfile.TemporaryDirectory() as tmp_dir:
     with rarfile.RarFile(cbr_path) as rf:
       rf.extractall(tmp_dir)

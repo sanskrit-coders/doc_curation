@@ -210,12 +210,26 @@ class _FakeThreadBrowser:
     return [_FakeSection(html) for html in self._sections]
 
 
+def test_wait_for_sections_until_expected():
+  browser = mock.Mock()
+  browser.find_elements.side_effect = [["s1"], ["s1", "s2", "s3"], ["s1", "s2", "s3"]]
+  tags = google_groups._wait_for_sections(browser, expected_count=3, timeout=10)
+  assert len(tags) == 3
+
+
+def test_wait_for_sections_plateau_returns_stable():
+  browser = mock.Mock()
+  browser.find_elements.side_effect = [["s1"], ["s1", "s2"], ["s1", "s2"], ["s1", "s2"]]
+  tags = google_groups._wait_for_sections(browser, expected_count=5, timeout=10, stable_rounds=2)
+  assert len(tags) == 2
+
+
 def test_thread_leading_authorless_section_does_not_crash():
   browser = _FakeThreadBrowser("Subject", [
     "<div><span>Nov 13, 2026, 10:00 AM</span><div role='region'><p>system notice</p></div></div>",
     "<div><h3>Author A</h3><span>Nov 13, 2026, 11:00 AM</span><div role='region'><p>hello</p></div></div>",
   ])
-  (messages, subject) = google_groups.get_thread_messages_selenium(url="https://x/t", browser=browser)
+  (messages, subject) = google_groups.get_thread_messages_selenium(url="https://x/t", browser=browser, expected_count=2)
   assert subject == "Subject"
   assert len(messages) == 2
   assert messages[0].author == "UNKNOWN_AUTHOR"
@@ -225,7 +239,7 @@ def test_thread_leading_authorless_section_does_not_crash():
 
 def test_thread_without_sections_returns_empty():
   browser = _FakeThreadBrowser("Subject", [])
-  (messages, subject) = google_groups.get_thread_messages_selenium(url="https://x/t", browser=browser)
+  (messages, subject) = google_groups.get_thread_messages_selenium(url="https://x/t", browser=browser, expected_count=0)
   assert (messages, subject) == ([], "Subject")
 
 

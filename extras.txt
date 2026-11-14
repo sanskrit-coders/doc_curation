@@ -1,5 +1,5 @@
 editdistance # Installation failed on WIndows in 2022 with an error requiring visual basic.
-selenium # Not needed for github action runs
+selenium # Also installed for github action test runs (see pythonpackage.yml).
 google-cloud-vision
 google-api-python-client
 

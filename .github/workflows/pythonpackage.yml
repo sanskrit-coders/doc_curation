@@ -57,7 +57,9 @@ jobs:
         python -c "import doc_curation"
     - name: Test with pytest
       run: |
-        pip install pytest
+        # Test-only deps (stay out of requirements.txt): the mail_stream tests
+        # import selenium and lxml directly.
+        pip install pytest lxml selenium
         pytest
     - name: Upload package
       if: ${{ github.event_name != 'pull_request'}}

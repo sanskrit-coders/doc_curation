@@ -8,16 +8,17 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import pymupdf
 import random
 from bs4 import BeautifulSoup
 
 
 import json
-import pypdf
-from pikepdf import Pdf
 
 from curation_utils import list_helper
+
+# NOTE: pymupdf, pypdf and pikepdf are extras-only (see extras.txt) and must
+# stay function-level imports below, so that `import doc_curation.pdf` keeps
+# working with a bare `pip install .` (as in CI).
 
 ## To thwart DecompressionBombError: Image size (268216326 pixels) exceeds limit of 178956970 pixels, could be decompression bomb DOS attack.
 from PIL import Image
@@ -45,6 +46,7 @@ def get_max_dpi(pdf_path, sample_pages=10):
   Returns the maximum DPI found among images in up to `sample_pages`
   randomly selected pages of the PDF.
   """
+  import pymupdf
   doc = pymupdf.open(pdf_path)
   total_pages = len(doc)
   pages_to_check = random.sample(range(total_pages), min(sample_pages, total_pages))
@@ -148,6 +150,7 @@ def _get_ocr_dir(pdf_path, small_pdf_pages=None):
 
 def split_into_small_pdfs(pdf_path, output_directory=None, start_page=1, end_page=None, small_pdf_pages=25):
   logging.info("Splitting %s into segments of %d", pdf_path, small_pdf_pages)
+  from pikepdf import Pdf
   pdf_name_stem = Path(pdf_path).stem
   if output_directory == None:
     output_directory = _get_ocr_dir(pdf_path, small_pdf_pages)
@@ -304,6 +307,7 @@ def crop_pdf_with_json(input_pdf_path, output_pdf_path, json_path="/home/vvasuki
     return
 
   logging.info(f"Opening source PDF: {input_pdf_path}")
+  import pypdf
   try:
     reader = pypdf.PdfReader(input_pdf_path)
   except FileNotFoundError:

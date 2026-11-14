@@ -3,8 +3,11 @@ import os
 import shlex
 import subprocess
 
-from pypdf import PdfReader, PdfWriter
 import regex
+
+# NOTE: pypdf is extras-only (see extras.txt); it stays a function-level
+# import in to_pdf() so that `import doc_curation.ebook` keeps working with a
+# bare `pip install .` (as in CI).
 
 from doc_curation import pdf
 
@@ -119,6 +122,7 @@ def to_azw3(epub_path: str, metadata={}):
 
 # TODO: footnotes not appearing the bottom of the page.
 def to_pdf(epub_path: str, dest_path=None, paper_size="a5", margins=None, move_toc=False):
+  from pypdf import PdfReader, PdfWriter
   logging.info(f"=========PDF {paper_size}========")
 
   if dest_path is None:

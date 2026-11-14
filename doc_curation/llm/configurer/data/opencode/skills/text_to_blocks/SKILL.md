@@ -3,7 +3,8 @@ name: text_to_blocks
 description: Splits Sanskrit Markdown text into finer विश्वास-प्रस्तुतिः, मूलम् and commentary details blocks, one sense-unit per block. Use when bare Sanskrit text must be wrapped in mUlam blocks or existing blocks must be split finer.
 ---
 
-Split Sanskrit text (possibly not in preexisting details blocks) into finer विश्वास-प्रस्तुतिः, मूलम् and commentary details blocks.  
+**Goal:** Split the text (or existing blocks) into the smallest विश्वास-प्रस्तुतिः, मूलम्, commentary blocks that still make complete sense on their own.
+
 Apply the procedures below as need.
 
 **Required imports:**
@@ -27,9 +28,16 @@ This internally uses
 from doc_curation.sanskrit import split_to_sentences
 ```
 
-## Split clause text
+## Common text in details blocks
+- **Editorial glosses in `विश्वास-प्रस्तुतिः` (`+++(...)+++`):** Always mask `+++(...)+++` when splitting on daṇḍas (`।`/`॥`). If `विश्वास-प्रस्तुतिः` explicitly supplies an elliptical finite verb inside `+++(...)+++` (e.g. `+++(निरमिमीत)+++`, `+++(आदधाति)+++`, `+++(भवति)+++`), treat that segment as having its finite verb (self-contained); only truly verb-less short segments (such as bare datives of purpose `रक्षसाम् अपहत्यै ।`, `सुवर्गस्य लोकस्य समष्ट्यै ।`, or bare `अथ + accusative` list items `अथ श्मश्रूणि ।` with no supplied verb and no `एव`) attach to the preceding action sentence under Test 5.
 
-**Goal:** Split the text (or existing blocks) into the smallest विश्वास-प्रस्तुतिः, मूलम्, commentary blocks that still make complete sense on their own.
+
+### Implementation notes for multi-layer Vedic files
+
+- **Vedic accents in `विश्वास-प्रस्तुतिः`:** When generating new `विश्वास-प्रस्तुतिः` and `मूलम्` blocks from bare Vedic text (which has `॒`/`॑` accent marks), convert the `विश्वास-प्रस्तुतिः` text to udātta (`᳓`) / svarita (`᳙`) accents using `indic_transliteration.sanscript.schemes.brahmic.accent.to_US_accents` (see `transliteration-accenting` skill), while keeping the original `॒`/`॑` text in `मूलम्` (and stripping `+++(...)+++` editorial glosses if they were added to the bare text before block creation).
+- **Parallel splitting of paired layers:** When splitting an existing multi-layer cluster into `k` fine blocks, emit `k` complete sub-clusters, each containing its paired `विश्वास-प्रस्तुतिः`, translations (if present), `मूलम्`, and corresponding `*टीका` slice (see `interleaver` skill for commentary/translation alignment and viniyoga separation).
+
+## Split clause text
 
 **Definitions:**
 - **Sentence segment:** A string ending in a daNDa, either `।` or `॥`. Do not split inside a segment.
@@ -59,6 +67,9 @@ A conditional can extend beyond a pair. All segments that complete the same cond
 > स᳓ त᳓तः श्वः᳓_श्वो भू᳓यान् भ᳓वन्न् एति ॥
 > प्र᳓_एव᳓ जायते ॥
 
+- **Self-contained `yad` sentences in Test 2:** A single-daṇḍa segment opening with `yad` that already contains its `tad`-correlative (`स`, `सा`, `तत्`, `तेन`, etc., or comma-separated apodosis within the same segment) is already a complete conditional-correlative unit and does not force-merge with the next segment.
+
+
 **3. Quotation inside a conditional:** If a quotation is embedded inside a conditional, do not split at the quotation boundary. The whole span, protasis plus embedded quote plus resolution, is one block. The quotation does not break the conditional, and the conditional does not break the quotation.
 
 Example:
@@ -78,6 +89,8 @@ Example:
 
 Reference numbers like `१। ५। ११। २॥ ५६` are not sentence segments. They stay attached to the following text and do not create a split.
 
+- **Distinguishing `इति` from `√i` (`एति`) verbs in Test 4:** Do not confuse 3rd-singular verbs from `√i` (`उपैति`, `पर्येति`, `अवेति`, `समवेति`, `प्रैति`, `अभ्येति`, `अन्वेति`, `अत्येति`, `व्येति`, `समेति`, `पुनरेति`, `अन्तरेति`, `अपेति`, `अप्येति`, `उदेति`, `प्रत्येति`, `अध्येति`, `आयुरेति`) with sandhi-fused `इति`, while still recognizing genuine sandhi-fused `इति` (e.g. `उपैतीति` = `उपैति + इति`).
+
 **5. Same sequential action:** If one segment states a prior action and the next segment states the action that completes it, keep them together. Typically the first segment ends in an absolutive, such as `-tvA` or `-ya`, and is syntactically incomplete without the main verb in the next segment.
 
 Example:
@@ -87,11 +100,15 @@ Example:
 
 `taptvA` alone does not complete the sense. It must stay with `vyajAnAt`.
 
+### General notes
 **Combination rule:** Merging is transitive. If segment A merges with B, and B merges with C, then A, B, and C form one block, even if A and C were merged under different tests. If none of the tests above applies at a boundary, split there.
 
 **Exception:** If different viniyoga-s apply to different parts of a block (eg. different parts of a Rk), it should be split accordingly, even if the above rules (eg. single Rk) suggest otherwise.
 
 **In doubtful cases:** Keep together. A split that breaks sense is worse than a slightly longer block.
+
+- **Reference / pañcāti / anuvāka markers mid-sentence:** Reference numbers (like `१। ५। ११। २॥ ५६`, `(2)`, `[41]`) and mechanical pañcāti or anuvāka divisions in Vedic texts often fall in the middle of a Ṛk or prose sentence. Keep cross-pañcāti and cross-anuvāka sentences/mantras together in a single block (keeping the marker in place at its token position), using the metre, syntax, commentary pratīkas, and translations to identify true sentence/mantra boundaries.
+
 
 ## Report
 Report which section you ran and what changed.

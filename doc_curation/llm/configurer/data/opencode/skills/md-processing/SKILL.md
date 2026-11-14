@@ -14,21 +14,21 @@ Where appropriate, process Markdown with the `doc_curation.md` toolkit (venv: `~
     - Root-relative URLs without `.md` map to `/home/vvasuki/gitland/vishvAsa/<repo>/content/<rest>.md` (or `_index.md`).
   - When a task applies to included content as well, edit the underlying `static/` (or cross-repo `content/`) source files and refresh the host files' inline snapshots via `include.prefill_includes(dir_path=...)` (or apply the transform to both so they stay in sync).
 - **Treat `js_include` divs as atomic boundaries when transforming host files:**
-  - Match `<div\s+[^>]*js_include[^>]*>.*?</div>` (note: `class` may be `"js_include"` or `"js_include collapsed"`, and attributes like `unfilled` may precede `url`) **before** matching headings (`\n#+\s+`) or `<details>` blocks.
+  - Match `<div\s+[^>]*js_include[^>]*>` and track balanced `<div` / `</div>` tags (since a prefilled file-level `js_include` may itself contain nested `<div class="js_include">` blocks) **before** matching headings (`\n#+\s+`) or `<details>` blocks.
   - Never let a host-file `<details>` parser reach inside a `js_include` wrapper unless intentionally syncing an inline prose include (`includetitle="false"`), or inner `<details><summary>मूलम्</summary>` / `###` headings inside prefilled `सर्वाष् टीकाः` includes will be misparsed or split across `</div>` tags.
 
 For various python utilities, see `doc_curation.md.content_processor.include` and `doc_curation_projects/general_tasks/content/include_fix.py`.
 
 
 ### Details blocks
-`doc_curation.md.content_processor.details` has several nifty utilties. See `maker`, `transformer`, `seeker` subpackages.
+`doc_curation.md.content_processor.details` has several nifty utilities. See `maker`, `transformer`, `seeker` subpackages. For wrapping bare Sanskrit text into `विश्वास-प्रस्तुतिः` / `मूलम्` details blocks or splitting existing coarse blocks into fine sense-unit blocks, use the `text_to_blocks` skill.
 
 #### Preserving `<details>` block structure & invariants
 
-- **Cluster anatomy:** A standard unit in case of vedic text consists of optional `<details><summary>*विनियोगः</summary>` (`भास्करोक्त-विनियोगः`, `सायणोक्त-विनियोगः`, etc.), followed by `<details open><summary>विश्वास-प्रस्तुतिः...</summary>`, `<details><summary>मूलम्</summary>`, and commentary blocks (`भट्टभास्कर-टीका`, `सायण-टीका`, etc.). Section-intro blocks (`विस्तारः (द्रष्टुं नोद्यम्)`) and trailing summaries (`विनियोगसङ्ग्रहः`) sit outside individual unit clusters.
+- **Cluster anatomy:** A standard unit in case of vedic text consists of optional `<details><summary>*विनियोगः</summary>` (`भास्करोक्त-विनियोगः`, `सायणोक्त-विनियोगः`, etc.), followed by `<details open><summary>विश्वास-प्रस्तुतिः...</summary>`, optional translation blocks (placed above `मूलम्`), `<details><summary>मूलम्</summary>`, and commentary blocks (`भट्टभास्कर-टीका`, `सायण-टीका`, etc., placed below `मूलम्`). Section-intro blocks (`विस्तारः (द्रष्टुं नोद्यम्)`) and trailing summaries (`विनियोगसङ्ग्रहः`) sit outside individual unit clusters.
 - **Frontmatter vs. horizontal rules:** Anchor frontmatter regexes to the start of the file (`\A(?:\+\+\+.*?^\+\+\+|---.*?^---)`). An unanchored `^---.*?^---` with `MULTILINE`/`DOTALL` will swallow content between mid-file `---` horizontal rules. Preserve mid-file separators (`____________`, `---`) and headings in place.
 - **Verify invariants before writing:** For any block splitting, merging, or commentary/viniyoga separation, assert that:
-  1. The whitespace-stripped character stream of each layer (`विश्वास-प्रस्तुतिः`, `मूलम्`, `*टीका`, `*विनियोगः`) is unchanged before and after (except where text is intentionally moved between `*टीका` and `*विनियोगः`).
+  1. The whitespace-stripped character stream of each layer (`विश्वास-प्रस्तुतिः`, translations, `मूलम्`, `*टीका`, `*विनियोगः`) is unchanged before and after (except where text is intentionally moved between `*टीका` and `*विनियोगः`).
   2. `<details>` / `</details>` and `<div` / `</div>` tag counts are balanced.
 
 ### Footnotes

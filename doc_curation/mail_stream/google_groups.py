@@ -46,12 +46,43 @@ def get_date(soup):
     date_tags = list(filter(lambda x: regex.match(r"^\d+:\d+", x.text.strip()) , span_tags))
   if len(date_tags) == 0:
     return None
-  date_str = regex.sub("\(.+?\)", "", date_tags[0].text.strip())
+  date_str = regex.sub(r"\(.+?\)", "", date_tags[0].text.strip())
   dt = parser.parse(date_str, fuzzy=True)
   return dt
 
 
-def get_thread_messages_selenium(url, browser=thread_browser):
+def _wait_for_sections(browser, expected_count=None, timeout=30, stable_rounds=5):
+  """Section tags once rendering settles: at least expected_count, or stable.
+
+  Threads render progressively after page load; reading immediately captures
+  only the first batch (~100 sections). The common case (already rendered)
+  returns after a single poll; the timeout bounds genuinely-short threads.
+  """
+  deadline = time.monotonic() + timeout
+  last_count = -1
+  stable_polls = 0
+  tags = []
+  while True:
+    try:
+      tags = browser.find_elements(by=By.CSS_SELECTOR, value="section")
+    except StaleElementReferenceException:
+      tags = []
+    if expected_count is not None and len(tags) >= expected_count:
+      return tags
+    if len(tags) == last_count:
+      stable_polls += 1
+    else:
+      stable_polls = 0
+      last_count = len(tags)
+    if stable_polls >= stable_rounds:
+      return tags
+    if time.monotonic() >= deadline:
+      logging.warning("Section rendering stalled at %d (expected %s) for current thread.", len(tags), expected_count)
+      return tags
+    time.sleep(1)
+
+
+def get_thread_messages_selenium(url, browser=thread_browser, expected_count=None):
   # Expanding threads forces us to click and trigger javascript loading. Hence we then use selenium, rather than soup.
   browser.get(url=url)
   try:
@@ -60,7 +91,7 @@ def get_thread_messages_selenium(url, browser=thread_browser):
   except NoSuchElementException:
     pass
   subject = browser.find_element(value="h1", by=By.CSS_SELECTOR).text
-  section_tags = browser.find_elements(by=By.CSS_SELECTOR, value="section")
+  section_tags = _wait_for_sections(browser, expected_count=expected_count)
   thread_dir = None
   messages = []
   for index, section in enumerate(section_tags):
@@ -299,7 +330,7 @@ def parse_listed_message_count(row_soup):
   return None
 
 
-def fetch_thread_with_retry(thread_url, max_attempts=3):
+def fetch_thread_with_retry(thread_url, max_attempts=3, expected_count=None):
   """Fetch one thread, relaunching the thread browser if the driver goes bad.
 
   Raises the last error after max_attempts failures.
@@ -308,7 +339,7 @@ def fetch_thread_with_retry(thread_url, max_attempts=3):
   last_error = None
   for attempt in range(1, max_attempts + 1):
     try:
-      return get_thread_messages_selenium(url=thread_url, browser=thread_browser)
+      return get_thread_messages_selenium(url=thread_url, browser=thread_browser, expected_count=expected_count)
     except WebDriverException as e:
       last_error = e
       logging.warning("Thread fetch failed (attempt %d/%d): %s", attempt, max_attempts, thread_url)
@@ -488,7 +519,7 @@ def scrape_threads_backwards(url, dest_dir, dumper=dump_messages_to_files, brows
           continue
         logging.info(f"Thread grew ({archived_count} -> {listed_count}), re-dumping {thread_url}")
       try:
-        (messages, subject) = fetch_thread_with_retry(thread_url=thread_url)
+        (messages, subject) = fetch_thread_with_retry(thread_url=thread_url, expected_count=listed_count)
         if listed_count is not None and len(messages) != listed_count:
           logging.warning("Thread %s: dumped %d messages but listing shows %d",
                           thread_url, len(messages), listed_count)
