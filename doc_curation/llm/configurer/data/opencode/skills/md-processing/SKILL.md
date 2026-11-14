@@ -4,6 +4,8 @@ description: Processes Markdown (md) files — bulk transforms, details blocks, 
 ---
 Where appropriate, process Markdown with the `doc_curation.md` toolkit (venv: `~/gitland/python_venv`).
 
+**Fix toolkit shortcomings; don't work around them.** When a toolkit function mishandles the case at hand (wrong output, dropped content, mangled formatting), fix the function in `doc_curation` source with a regression test in `tests/` and run the suite — never paper over it with a one-off bypass script while leaving the bug for the next user.
+
 ## Editing content
 
 ### Handling `js_include` directives (`<div class="js_include" ...>`)
@@ -35,7 +37,7 @@ For various python utilities, see `doc_curation.md.content_processor.include` an
 `doc_curation.md.content_processor.footnote` — has useful code. `footnote_helper.define_footnotes_near_use` is the usual entry point; other fixers (`fix_plain_footnotes`, `fix_sup_footnotes`, `add_page_id_to_ref_ids`, `comments_to_footnotes`) are shown in `doc_curation_projects/general_tasks/content/footnote_fix.py`.
 
 ### Sections
-`doc_curation.md.content_processor.section_helper` has useful code — sections: `autonumber`, `fix_headers`, `denumerify_section_titles`, `drop_sections`. See `doc_curation_projects/general_tasks/content/section_fix.py`.
+`doc_curation.md.content_processor.section_helper` has useful code — sections: `autonumber`, `fix_headers`, `denumerify_section_titles`, `drop_sections`, `deromanize_section_numbers` . See `doc_curation_projects/general_tasks/content/section_fix.py`.
 
 ### Commentary/ translation interleaving
 

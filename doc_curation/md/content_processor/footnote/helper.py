@@ -4,9 +4,18 @@ import regex
 import logging
 
 REF_PATTERN = r"\[\^([^\]\n]+?) *\]"
-DEF_ENDING = r"(?=$|\n\[\^|\n<|\n#|\n\n)"
-DEFINITION_PATTERN_SINGLE_LINE = rf"(?<=\n)({REF_PATTERN}):\s*(\S[\s\S]+?){DEF_ENDING}"
-DEFINITION_PATTERN_MULTI_LINE = rf"(?<=\n)({REF_PATTERN}): *\n((   .*|\n)+?){DEF_ENDING}"
+# One definition block: `[^id]:` first line, its lazy continuation lines, then
+# further blank-separated paragraphs which must be indented (Goldmark footnote
+# semantics). Matches single-line, pure multi-line and hybrid definitions
+# whole, so multi-paragraph notes are never split from their continuations.
+# Groups: 1=reference ([^id]), 2=id, 3=content.
+DEFINITION_PATTERN = (
+  r"(?m)^(?P<ref>\[\^(?P<id>[^\]\n]+?) *\]):"
+  r"(?P<content>[^\n]*"
+  r"(?:\n(?![ \t]*\n)(?!\[\^)(?!#)(?!<)[^\n]*)*"
+  r"(?:(?:\n[ \t]*)+\n(?: {3,}|\t)[^\n]*"
+  r"(?:\n(?![ \t]*\n)(?!\[\^)(?!#)(?!<)[^\n]*)*)*)"
+)
 
 
 for handler in logging.root.handlers[:]:
@@ -75,31 +84,27 @@ def insert_definitions_near_use(content, definitions):
 
 
 def extract_definitions(content):
+  # Single pass with the block pattern: each definition (however many
+  # paragraphs) is one match. Identical texts are still deduplicated.
   seen_matches = set()
   definitions = []
-  # Extracts definitions matching pattern; removes matches from content
-  def _process_pattern(pattern, content):
-    definitions.extend([
-      match
-      for match in regex.finditer(pattern, content)
-      if match.group(0) not in seen_matches and not seen_matches.add(match.group(0))
-    ])
-    content = regex.sub(pattern, "", content)
-    return content
-  content = _process_pattern(DEFINITION_PATTERN_SINGLE_LINE, content=content)
-  content = _process_pattern(DEFINITION_PATTERN_MULTI_LINE, content=content)
+  for match in regex.finditer(DEFINITION_PATTERN, content):
+    if match.group(0) not in seen_matches:
+      seen_matches.add(match.group(0))
+      definitions.append(match)
+  content = regex.sub(DEFINITION_PATTERN, "", content)
   return content, definitions
 
 
 def transform_definitions(content, transformer, *args, **kwargs):
-  content = regex.sub(DEFINITION_PATTERN_SINGLE_LINE, transformer, content)
+  content = regex.sub(DEFINITION_PATTERN, transformer, content)
   return content
 
 
 def to_latex_footnotes(content):
   content, definitions = extract_definitions(content=content)
   for definition in definitions:
-    content = content.replace(definition.group(1), f"\\footnote{{{definition.group(2)}}}")
+    content = content.replace(definition.group(1), f"\\footnote{{{definition.group(3).strip()}}}")
   return content
 
 

@@ -37,9 +37,33 @@ A similar pattern holds elsewhere.
 - **Viniyoga separation:** In Vedic commentaries (Bhaṭṭa Bhāskara, Sāyaṇa, etc.), separate leading ritual application (viniyoga) statements at the start of commentary blocks into `<details><summary>भास्करोक्त-विनियोगः</summary>` / `<details><summary>सायणोक्त-विनियोगः</summary>` placed above the corresponding `विश्वास-प्रस्तुतिः` block, and keep trailing verse summaries in `<details><summary>विनियोगसङ्ग्रहः</summary>`.
   - The same applies to **avatArikA separation** in other cases.
 
-### Footnotes & endnotes inside inserted `<details>` blocks
-Place any footnotes/endnotes belonging to a translated segment inside the **same** `<details><summary><TranslatorName/ CommentatorName></summary>` block (and place section/anuvāka introductory notes in a `<details><summary><TranslatorName/ CommentatorName></summary>` block at the start of that section/anuvāka). Replace Markdown footnote syntax (`[^32]`) by removing the `^` (e.g. `[32]`), so that the notes render inline inside the `<details>` block rather than being hoisted by the Markdown renderer to the bottom of the page outside the `<details>` block.
+### When the source quotes the core text (source-driven re-segmentation)
+When the incoming commentary presents the core text passage by passage (each passage quoted, then explained), its quotes are the **segmentation authority**: every quoted core-text passage opens a new group, and all host layers are re-cut — split or merged — at those boundaries so that each group treats the same unit of text. New layers (presentation + incoming commentary) come from the source; host layers (`मूलम्`, existing commentaries) are only re-cut, never rewritten.
+- **Core-text quotes vs inline citations:** only quotes of the host core text open groups. Citations of other texts, pūrvapakṣa pratīkas, and quotes of other commentaries stay inline inside the commentary block with their `>` markers kept. Test: a group needs host `मूलम्` to cut — a quote with no host counterpart cannot be a group.
+- **Pre-block:** source prose before the first quote (introduction, often ending in a lead-in) becomes a commentary-only block placed before the first group, directly under the section heading.
+- **Lead-ins stay behind:** a sentence introducing the next quote stays at the end of the preceding commentary block.
+- **Headings:** a source heading opening a commentary block is hoisted to a real `###` heading immediately before the group's `विश्वास-प्रस्तुतिः` (one blank line before, none between); a heading after prose has begun stays bold inside the block (`**name॥**` plus hard break). A source heading already mirrored by the host's own `##` is dropped (its label may still be hoisted as `###`). No commentary block may start or end with a bold heading.
+- **Empty layer:** if the source has no prose for a quote (e.g. only a colophon follows), omit that layer's block for the group rather than leaving an empty block. Colophons and end markers keep the host's existing rendering.
+- **Verse markers** stay inside `मूलम्` where they fall, even mid-block after a merge; every marker remains present exactly once. Fidelity beats alignment.
+- **Never rstrip** source prose lines: trailing double spaces are hard breaks, one clause per line.
 
+### Build technique (no retyping, ever)
+- Work from the source file plus a saved copy of the pre-change host page (back it up before overwriting); once installed, the page is already re-cut and the script is not re-runnable.
+- Use a build script: slice the source by **line ranges**; split host blocks with `split_seq(text, markers)` where each marker is asserted unique (`text.count(marker) == 1`).
+- If a split point is hidden by sandhi, restore the sandhi **only in the `मूलम्` being split**, never globally.
+
+### Verification checklist
+1. **Coverage**: every source content line appears verbatim in the page after stripping `>`, surrounding quotes, and heading markers → expect `missing: []`.
+2. `<details>` count == `</details>` count.
+3. Summary census matches intent; every `विश्वास-प्रस्तुतिः` block `open`.
+4. Host sections not being edited are byte-identical before/after.
+5. No stray sentinel text (e.g. `None`).
+6. Structural lint: block order within each group; no empty blocks; no commentary block starts or ends with a `**…॥**` heading; verse markers all still present, each once.
+
+### Footnotes & endnotes inside inserted `<details>` blocks
+Place any short footnotes/endnotes belonging to a translated segment inside the **same** `<details><summary><TranslatorName/ CommentatorName></summary>` block (and place section/anuvāka introductory notes in a `<details><summary><TranslatorName/ CommentatorName></summary>` block at the start of that section/anuvāka). Replace Markdown footnote syntax (`[^32]`) by removing the `^` (e.g. `[32]`), so that the notes render inline inside the `<details>` block rather than being hoisted by the Markdown renderer to the bottom of the page outside the `<details>` block.
+
+However, longer footnotes should be placed in an adjascent `<details><summary><TranslatorName/ CommentatorName> - Note</summary>` block.
 
 ### Sanskrit commentaries (ṭīkā)
 If you are interleaving a Sanskrit commentary where a rough alignment is explicitly allowed by the prompt, call:
