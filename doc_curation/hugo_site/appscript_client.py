@@ -3,7 +3,7 @@
 appscript_client.py — Low-level helpers to call the pdf-lib Apps Script endpoint.
 
 The Apps Script server code lives in the Hugo site (pdf-lib/appScript.gs).
-This module is the Python client used by local_library.py / check_sheet.py.
+This module is the Python client used by vv_pdf_library.py / check_sheet.py.
 
 Endpoint contract (see pdf-lib/appScript.gs):
   GET  -> JSON { ok, header, rows:[{source_path, archive_urls, site_path,
@@ -21,11 +21,18 @@ Endpoint contract (see pdf-lib/appScript.gs):
 
 Default script URL is the one embedded in pdf-lib/browse.html. Override with
 PDF_LIB_SCRIPT_URL env var or an explicit `url` argument.
+
+The endpoint has no delete or in-place update action, so destructive and
+approval writes (delete_sheet_rows, delete_rows_by_source_path,
+clear_pending) go through the Sheets API directly, reusing the OAuth tokens
+also used by doc_curation.pdf.drive_ocr.
 """
 
 import json
 import os
 import urllib.request
+
+from doc_curation.hugo_site import get_catalog_source_path
 
 PDF_LIB_DIR = os.path.expanduser(
     "~/gitland/vishvAsa/vishvAsa.github.io/content/interests/private/pdf-lib")
@@ -85,9 +92,13 @@ def _post(url, payload, timeout=30):
 
 def post_edit(url, *, source_path, archive_urls, site_path, user_id,
               original_source_path, timeout=30):
-    """POST one edit-suggestion row (Pending="add" if source_path is new, else "replace")."""
+    """POST one edit-suggestion row (Pending="add" if source_path is new, else "replace").
+
+    `source_path` is normalized via get_catalog_source_path; the
+    `original_source_path` anchor is sent verbatim so it matches the sheet.
+    """
     return _post(url, {
-        "source_path": source_path,
+        "source_path": get_catalog_source_path(source_path),
         "archive_urls": archive_urls,
         "site_path": site_path,
         "userId": user_id,
@@ -95,15 +106,26 @@ def post_edit(url, *, source_path, archive_urls, site_path, user_id,
     }, timeout=timeout)
 
 
+def _normalized_rows(rows):
+    """Copy row dicts with each `source_path` run through get_catalog_source_path."""
+    out = []
+    for r in rows:
+        r = dict(r)
+        r["source_path"] = get_catalog_source_path(r.get("source_path", ""))
+        out.append(r)
+    return out
+
+
 def post_append_rows(url, rows, timeout=30):
     """POST clean appends via action appendRows. Returns response dict.
 
     `rows` is a list of dicts with source_path/archive_urls/site_path/map_source.
+    Each `source_path` is normalized via get_catalog_source_path first.
     On the older deployed appScript.gs (without append support) this returns
     { ok:false, error:"original row not found: undefined" } — use push_rows_chained
     instead.
     """
-    return _post(url, {"action": "appendRows", "rows": list(rows)}, timeout=timeout)
+    return _post(url, {"action": "appendRows", "rows": _normalized_rows(rows)}, timeout=timeout)
 
 
 def push_rows_chained(url, rows, *, timeout=30, sleep_s=0.5, dry_run=False):
@@ -116,8 +138,10 @@ def push_rows_chained(url, rows, *, timeout=30, sleep_s=0.5, dry_run=False):
     post_append_rows when the deployed appScript.gs supports it (also "add").
 
     `rows` must be in the desired sheet order. Returns list of responses.
+    Each `source_path` is normalized via get_catalog_source_path first.
     """
     import time
+    rows = _normalized_rows(rows)
     sheet = get_sheet(url, timeout=timeout)
     if not sheet.get("rows"):
         raise RuntimeError("sheet has no rows; cannot anchor appends")
@@ -152,3 +176,146 @@ def push_rows_chained(url, rows, *, timeout=30, sleep_s=0.5, dry_run=False):
         if sleep_s:
             time.sleep(sleep_s)
     return responses
+
+
+# ── Direct Sheets API: delete rows / clear Pending ───────────────────────────
+# The Apps Script endpoint can only GET, append, and insert edit-suggestion
+# rows, so these destructive/approval writes use the Sheets API directly.
+
+SHEETS_SCOPES = ["https://www.googleapis.com/auth/drive"]
+DEFAULT_GOOGLE_KEY = os.path.expanduser(
+    "~/gitland/vvasuki-git/sysconf/kunchikA/google/proofing/ocr_app_oauth.json")
+MAP_TAB_NAME = "map"
+
+# Spreadsheet holding the pdf-lib `map` tab. Override with the
+# PDF_LIB_SPREADSHEET_ID env var or an explicit `spreadsheet_id` argument.
+FALLBACK_SPREADSHEET_ID = "1YTU1e2CIeUXqsu06z_pfugpt3lkMeXeZLbLauOtksCQ"
+
+
+def default_spreadsheet_id(fallback_id=FALLBACK_SPREADSHEET_ID):
+    """Resolve the pdf-lib spreadsheet id: env var > fallback."""
+    return os.environ.get("PDF_LIB_SPREADSHEET_ID", "").strip() or fallback_id
+
+
+def get_sheets_service(google_key=DEFAULT_GOOGLE_KEY, scopes=SHEETS_SCOPES):
+    """Build a Sheets v4 service from cached OAuth user creds (refreshed as needed).
+
+    `google_key` is the OAuth client-secrets file; the user tokens live in
+    `tokens.json` beside it (same layout as curation_utils.google.drive).
+    """
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from googleapiclient.discovery import build
+    token_file = os.path.join(os.path.dirname(google_key), "tokens.json")
+    if not os.path.exists(token_file):
+        raise RuntimeError(f"Google tokens not found at {token_file}")
+    creds = Credentials.from_authorized_user_file(token_file, scopes)
+    if not creds.valid:
+        if creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+            with open(token_file, "w") as f:
+                f.write(creds.to_json())
+        else:
+            raise RuntimeError(
+                f"Google creds at {token_file} are invalid and cannot refresh; "
+                "re-authenticate.")
+    return build("sheets", "v4", credentials=creds)
+
+
+def _rows_to_delete_requests(sheet_id, rows):
+    """Build descending deleteDimension requests, merging contiguous rows.
+
+    `rows` are 1-based sheet rows. Requests run bottom-up so earlier
+    deletions never shift the row numbers of later ones.
+    """
+    runs = []
+    for r in sorted(set(rows)):
+        if runs and r == runs[-1][1]:
+            runs[-1][1] = r + 1
+        else:
+            runs.append([r, r + 1])
+    requests = []
+    for start, end in sorted(runs, reverse=True):
+        requests.append({"deleteDimension": {"range": {
+            "sheetId": sheet_id, "dimension": "ROWS",
+            "startIndex": start - 1, "endIndex": end - 1}}})
+    return requests
+
+
+def _map_tab_sheet_id(service, spreadsheet_id, tab=MAP_TAB_NAME):
+    meta = service.spreadsheets().get(
+        spreadsheetId=spreadsheet_id, fields="sheets.properties").execute()
+    for s in meta.get("sheets", []):
+        if s["properties"]["title"] == tab:
+            return s["properties"]["sheetId"]
+    raise RuntimeError(f'tab "{tab}" not found in spreadsheet {spreadsheet_id}')
+
+
+def delete_sheet_rows(row_numbers, *, spreadsheet_id=None, tab=MAP_TAB_NAME,
+                      google_key=DEFAULT_GOOGLE_KEY, dry_run=False):
+    """Delete 1-based sheet rows from the map tab. Refuses row 1 (header)."""
+    rows = sorted(set(int(r) for r in row_numbers))
+    if any(r < 2 for r in rows):
+        raise ValueError("refusing to delete the header row (row 1)")
+    if dry_run:
+        return {"ok": True, "dry_run": True, "rows": rows}
+    if not rows:
+        return {"ok": True, "deleted": 0}
+    spreadsheet_id = spreadsheet_id or default_spreadsheet_id()
+    service = get_sheets_service(google_key)
+    sheet_id = _map_tab_sheet_id(service, spreadsheet_id, tab)
+    resp = service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body={"requests": _rows_to_delete_requests(sheet_id, rows)}).execute()
+    return {"ok": True, "deleted": len(rows),
+            "replies": len(resp.get("replies", []))}
+
+
+def delete_rows_by_source_path(source_paths, *, url=None, spreadsheet_id=None,
+                               tab=MAP_TAB_NAME, google_key=DEFAULT_GOOGLE_KEY,
+                               dry_run=False, timeout=30):
+    """Delete the rows currently holding `source_paths` (resolved via GET)."""
+    sheet = get_sheet(url, timeout=timeout)
+    if not sheet.get("ok"):
+        raise RuntimeError(f"GET failed: {sheet.get('error')}")
+    row_by_path = {r["source_path"]: r["__row"] for r in sheet.get("rows", [])}
+    missing = [sp for sp in source_paths if sp not in row_by_path]
+    if missing:
+        raise RuntimeError(f"{len(missing)} source_paths not in sheet, "
+                           f"e.g. {missing[:3]}; aborting")
+    rows = [row_by_path[sp] for sp in source_paths]
+    if dry_run:
+        return {"ok": True, "dry_run": True,
+                "source_paths": list(source_paths), "rows": sorted(set(rows))}
+    return delete_sheet_rows(rows, spreadsheet_id=spreadsheet_id, tab=tab,
+                             google_key=google_key)
+
+
+def clear_pending(source_paths=None, *, url=None, spreadsheet_id=None,
+                  tab=MAP_TAB_NAME, pending_col="E",
+                  google_key=DEFAULT_GOOGLE_KEY, dry_run=False, timeout=30):
+    """Clear Pending cells: the whole data column if `source_paths` is None,
+    else just the rows currently holding `source_paths`. Never touches row 1.
+    """
+    if source_paths is None:
+        ranges = [f"{tab}!{pending_col}2:{pending_col}"]
+    else:
+        sheet = get_sheet(url, timeout=timeout)
+        if not sheet.get("ok"):
+            raise RuntimeError(f"GET failed: {sheet.get('error')}")
+        row_by_path = {r["source_path"]: r["__row"] for r in sheet.get("rows", [])}
+        missing = [sp for sp in source_paths if sp not in row_by_path]
+        if missing:
+            raise RuntimeError(f"{len(missing)} source_paths not in sheet, "
+                               f"e.g. {missing[:3]}; aborting")
+        ranges = [f"{tab}!{pending_col}{row_by_path[sp]}" for sp in source_paths]
+    if dry_run:
+        return {"ok": True, "dry_run": True, "ranges": ranges}
+    if not ranges:
+        return {"ok": True, "cleared_ranges": 0}
+    spreadsheet_id = spreadsheet_id or default_spreadsheet_id()
+    service = get_sheets_service(google_key)
+    resp = service.spreadsheets().values().batchClear(
+        spreadsheetId=spreadsheet_id, body={"ranges": ranges}).execute()
+    return {"ok": True,
+            "cleared_ranges": len(resp.get("clearedRanges", ranges))}

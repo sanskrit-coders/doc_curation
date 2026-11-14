@@ -18,7 +18,9 @@ drive_ocr.split_and_ocr_all(dir_path=..., small_pdf_pages=10, file_pattern=r"(?!
 ```
 
 - `split_and_ocr_all(dir_path=...)` handles a whole directory; `split_and_ocr_on_drive(pdf_path=...)` a single file.
-- `small_pdf_pages=10` is a good default for Drive OCR quality; `detext=False` keeps the text layer when one exists.
+- `small_pdf_pages` defaults to 25; pass 10 for better Drive OCR quality on dense or long books.
+- `detext=True` strips an existing text layer first — text in the input can fool the OCR. It defaults to `False` in `split_and_ocr_all` and `None` in `split_and_ocr_on_drive`; leave it unset when the text layer is sound.
+- `google_key` defaults to the local `ocr_app_oauth.json`; OCR fails when that credential is missing or unauthorized.
 - Segment files, tmp intermediates and `clear_tmp_files(base_dir=...)` cleanup live beside the source PDFs.
 
 ## Special tools — custom / bulk OCR

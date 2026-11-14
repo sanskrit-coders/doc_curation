@@ -3,6 +3,7 @@ import datetime
 import dateutil.parser as parser
 from doc_curation import blog
 import logging
+import os
 from pathlib import Path
 import feedparser
 import trafilatura
@@ -33,7 +34,25 @@ def get_rss_url(profile_url: str) -> str:
     return f"{base_url}/feed"
   return f"{base_url}/feed"
 
-def scrape(profile_url: str, dist_dir: str = "dist_dir"):
+def normalize_url(url):
+  """Strip query/fragment and trailing slash so feed links match archived upstream_urls."""
+  return (url or "").split("#")[0].split("?")[0].rstrip("/")
+
+
+def get_archived_urls(dist_dir):
+  """Normalized upstream_urls already saved under dist_dir (for dedup across scrapers)."""
+  from doc_curation.md import library
+  urls = set()
+  if not os.path.isdir(str(dist_dir)):
+    return urls
+  for md_file in library.get_md_files_from_path(dir_path=str(dist_dir)):
+    (metadata, _) = md_file.read()
+    if metadata.get("upstream_url"):
+      urls.add(normalize_url(metadata["upstream_url"]))
+  return urls
+
+
+def scrape(profile_url: str, dist_dir: str = "dist_dir", dry_run: bool = False):
   # 1. Create distribution directory if it doesn't exist
   output_path = Path(dist_dir)
   output_path.mkdir(parents=True, exist_ok=True)
@@ -48,15 +67,19 @@ def scrape(profile_url: str, dist_dir: str = "dist_dir"):
     return
 
   print(f"-> Found {len(feed.entries)} articles. Processing content...\n")
+  archived_urls = get_archived_urls(dist_dir)
 
   for entry in feed.entries:
     title = entry.get("title", "Untitled")
-    link = entry.get("link", "")
+    link = normalize_url(entry.get("link", ""))
     date_string = entry.get("published", "Unknown Date")
     date_obj = parser.parse(date_string, fuzzy=True)
     date = datetime.datetime.strftime(date_obj, "%Y-%m-%d")
 
     if not link:
+      continue
+    if link in archived_urls:
+      print(f"Skipping (already archived): {title}")
       continue
 
     print(f"Processing: {title}")
@@ -91,9 +114,14 @@ def scrape(profile_url: str, dist_dir: str = "dist_dir"):
 
       file_name = blog.file_name_from_url(url=link, max_title_length=50)
       file_path = blog.get_file_path(date_obj=date_obj, dir_path=output_path, file_name=file_name)
+      if os.path.exists(file_path):
+        logging.warning("Skipping %s : exists", file_name)
+        archived_urls.add(link)
+        continue
       md_file = MdFile(file_path)
       metadata = {"title": title, "date": date, "upstream_url": link}
-      md_file.dump_to_file(metadata=metadata, content=markdown_content)
+      md_file.dump_to_file(metadata=metadata, content=markdown_content, dry_run=dry_run)
+      archived_urls.add(link)
     except Exception as e:
       print(f"   [Error] An exception occurred: {e}")
 

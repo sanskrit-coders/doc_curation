@@ -7,16 +7,10 @@ Interleave translations or commentaries into the Markdown files you are given.
 
 **Required imports:**
 ```python
-from doc_curation.md import library
-from doc_curation.md.content_processor.details import maker
 from doc_curation.md.content_processor.commentary import interleaver
-from doc_curation.md.file import MdFile
 ```
 
-1. **Generate mUlam blocks if missing.** If the files have no `<details><summary>मूलम्</summary>` blocks, create them first:
-   ```python
-   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: maker.generic_sanskrit_vipra_mUla(c))
-   ```
+1. **Generate mUlam blocks if missing.** If the files have no `<details><summary>मूलम्</summary>` blocks, use the `text_to_blocks` skill to create them first.
 
 2. **Sanskrit commentaries (ṭīkā).** If you are interleaving a commentary, call:
    ```python

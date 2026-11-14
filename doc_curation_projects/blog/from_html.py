@@ -1,7 +1,7 @@
 import logging
 
 from doc_curation import blog
-from doc_curation.blog import wordpress, substack, medium
+from doc_curation.blog import wordpress, substack, rss
 from doc_curation.scraping.misc_sites import sambhashana_sandesha
 from doc_curation.md.file import MdFile
 from doc_curation.md import library
@@ -88,11 +88,14 @@ def dump_wordpress_monthly():
 
 
 def dump_medium():
-  medium.scrape_medium_blog(url="https://satyan-sharma.medium.com/", dir_path=f"{BASE_PATH}/weblogs/satyan-sharma")
+  # The selenium index scrape (medium.scrape_medium_blog) is defeated by Medium's
+  # security-verification challenge; the RSS feed carries the same full content.
+  rss.scrape(profile_url="https://satyan-sharma.medium.com/", dist_dir=f"{BASE_PATH}/weblogs/satyan-sharma")
 
 
 SUBSTACK_TARGETS = [
   ("https://psugam.substack.com/archive?sort=new", f"{BASE_PATH}/weblogs/psugam"),
+  ("https://devnmsura.substack.com/archive?sort=new", f"{BASE_PATH}/weblogs/devnmsura"),
   ("https://immanentdomain.substack.com/archive?sort=new", f"{BASE_PATH}/weblogs/immanentdomain"),
   ("https://naavalam.substack.com/archive?sort=new", f"{BASE_PATH}/weblogs/naavalam"),
   ("https://www.thelongmemory.in/archive?sort=new", f"{BASE_PATH}/weblogs/long-memory"),
@@ -137,9 +140,8 @@ def fix_substack_archives(dry_run=False):
 
 
 def dump_mags():
-  sambhashana_sandesha.dump_year(year=2023, dest_path=f"{BASE_PATH}/mags/saMbhAShaNa-sandesha")
-  # sambhashana_sandesha.dump_year(year=2022, dest_path=f"{BASE_PATH}/mags/saMbhAShaNa-sandesha")
-  # sambhashana_sandesha.dump_year(year=2021, dest_path=f"{BASE_PATH}/mags/saMbhAShaNa-sandesha")
+  for year in (2023, 2024, 2025, 2026):
+    sambhashana_sandesha.dump_year(year=year, dest_path=f"{BASE_PATH}/mags/saMbhAShaNa-sandesha")
 
 
 if __name__ == '__main__':

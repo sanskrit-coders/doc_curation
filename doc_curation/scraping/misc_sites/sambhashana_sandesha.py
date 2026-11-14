@@ -33,6 +33,9 @@ def dump_month(url, dest_path_month):
     logging.error(f"Could not fetch month page, skipping: {url}")
     return
   content_divs = soup.select("#showData>div")
+  if not content_divs:
+    logging.warning(f"No article content at {url} (login-walled?). Skipping month.")
+    return
   for index, div in enumerate(content_divs):
     title = f"{(index + 1):02d} " + get_title(div)
     file_name = f"{get_storage_name(text=title, max_length=20, source_script=sanscript.DEVANAGARI)}.md"

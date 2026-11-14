@@ -1,0 +1,8 @@
+---
+description: Splits Sanskrit Markdown text into fine विश्वास-प्रस्तुतिः, मूलम् and टीका details blocks, one sense-unit per block.
+---
+Load the text_to_blocks skill and split the given Markdown text into blocks:
+
+$ARGUMENTS
+
+If no path or text is given, ask for one.

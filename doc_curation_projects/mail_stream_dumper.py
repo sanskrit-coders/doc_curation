@@ -1,4 +1,5 @@
 import regex, os
+import logging
 from doc_curation import md
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
@@ -13,7 +14,7 @@ def dump_sadaasvaada(messages, subject, dest_dir, url, dry_run=False):
   content = ""
   for index, message in enumerate(messages):
     content = f"{content}\n\n{message.content}"
-  md_file.dump_to_file(content=message.content, metadata={"title": title}, dry_run=dry_run)
+  md_file.dump_to_file(content=content, metadata={"title": title}, dry_run=dry_run)
 
 
 def scrape_groups():
@@ -23,14 +24,46 @@ def scrape_groups():
   mailman.scrape_months(url="https://lists.advaita-vedanta.org/archives/advaita-l/", list_id="[Advaita-l] ", dest_dir_base="/home/vvasuki/gitland/hindu-comm/mail_stream/advaita-l/", jobs=2, start_month="2026/11", dry_run=False)
   pass
 
+def scrape_with_recovery(url, dest_dir, dry_run=False, dumper=None, max_attempts=3, start_url=None, shard=None):
+  """Scrape one group, relaunching both browsers and retrying if the driver dies.
+
+  Safe to retry: already-archived threads are skipped by archive membership.
+  start_url restores the old positional resume for backfills (disables cutoff).
+  shard is an (index, total) pair splitting the dump set across parallel workers.
+  """
+  from doc_curation.mail_stream import google_groups
+  from curation_utils import scraping
+  for attempt in range(1, max_attempts + 1):
+    try:
+      kwargs = dict(url=url, dest_dir=dest_dir, dry_run=dry_run, browser=google_groups.base_browser)
+      if dumper is not None:
+        kwargs["dumper"] = dumper
+      if start_url is not None:
+        kwargs["start_url"] = start_url
+      if shard is not None:
+        kwargs["shard"] = shard
+      return google_groups.scrape_threads_backwards(**kwargs)
+    except Exception as e:
+      if attempt >= max_attempts:
+        raise
+      logging.warning("Group scrape failed (attempt %d/%d): %s. Relaunching browsers.", attempt, max_attempts, e)
+      for name in ("base_browser", "thread_browser"):
+        try:
+          getattr(google_groups, name).quit()
+        except Exception:
+          pass
+      google_groups.base_browser = scraping.get_selenium_chrome(headless=google_groups.HEADLESS)
+      google_groups.thread_browser = scraping.get_selenium_firefox(headless=google_groups.HEADLESS)
+
+
 def dump_google_groups():
   from doc_curation.mail_stream import mailman, google_groups
-  pass
-  # google_groups.scrape_threads(url="https://groups.google.com/g/sadaswada", dest_dir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/AsvAdaH/sadAsvAdaH", dumper=dump_sadaasvaada, dry_run=False)
-  # google_groups.scrape_threads(url="https://groups.google.com/g/hindu-vidya", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/hindu-vidya", dry_run=False)
-  google_groups.scrape_threads(url="https://groups.google.com/g/advaitin", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/advaitin", dry_run=False, start_url="0DHKqnhLcHI")
-  # google_groups.scrape_threads(url="https://groups.google.com/g/bvparishat", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/bvparishat", dry_run=False, start_url="ry4713TxiuQ")
-  # google_groups.scrape_threads(url="https://groups.google.com/g/samskrita", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/samskrita", dry_run=False, start_url="qVDwKqFADvg")
+  # sadaswada is private ("Content unavailable") as of 2026-11; re-enable when accessible.
+  # scrape_with_recovery(url="https://groups.google.com/g/sadaswada", dest_dir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/AsvAdaH/sadAsvAdaH", dumper=dump_sadaasvaada, dry_run=False)
+  scrape_with_recovery(url="https://groups.google.com/g/hindu-vidya", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/hindu-vidya", dry_run=False)
+  scrape_with_recovery(url="https://groups.google.com/g/advaitin", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/advaitin", dry_run=False)
+  scrape_with_recovery(url="https://groups.google.com/g/bvparishat", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/bvparishat", dry_run=False)
+  scrape_with_recovery(url="https://groups.google.com/g/samskrita", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/samskrita", dry_run=False)
   # google_groups.get_thread_messages_selenium(url="https://groups.google.com/g/bvparishat/c/vkOvpkrL97o")
 
 def word_clouds():
