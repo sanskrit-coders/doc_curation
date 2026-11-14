@@ -28,8 +28,11 @@ logging.basicConfig(
 
 
 # GROUPS_HEADLESS=1 runs both browsers headless (for parallel shard workers).
+# Plain (non-undetected) chrome: undetected_chromedriver resolves its browser
+# via PATH while pinning its own driver version, so a shadowing shim breaks
+# every launch; plain selenium matches its driver to the pinned binary instead.
 HEADLESS = os.environ.get("GROUPS_HEADLESS", "") == "1"
-base_browser = scraping.get_selenium_chrome(headless=HEADLESS)
+base_browser = scraping.get_selenium_chrome(headless=HEADLESS, undetected=False)
 thread_browser = scraping.get_selenium_firefox(headless=HEADLESS)
 
 Message = namedtuple(typename="Message", field_names=["author", "date", "content"])

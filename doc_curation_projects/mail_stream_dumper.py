@@ -1,5 +1,6 @@
 import regex, os
 import logging
+import time
 from doc_curation import md
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
@@ -24,12 +25,13 @@ def scrape_groups():
   mailman.scrape_months(url="https://lists.advaita-vedanta.org/archives/advaita-l/", list_id="[Advaita-l] ", dest_dir_base="/home/vvasuki/gitland/hindu-comm/mail_stream/advaita-l/", jobs=2, start_month="2026/11", dry_run=False)
   pass
 
-def scrape_with_recovery(url, dest_dir, dry_run=False, dumper=None, max_attempts=3, start_url=None, shard=None):
+def scrape_with_recovery(url, dest_dir, dry_run=False, dumper=None, max_attempts=3, start_url=None, shard=None, recovery_delay=120):
   """Scrape one group, relaunching both browsers and retrying if the driver dies.
 
   Safe to retry: already-archived threads are skipped by archive membership.
   start_url restores the old positional resume for backfills (disables cutoff).
   shard is an (index, total) pair splitting the dump set across parallel workers.
+  recovery_delay spaces attempts so transient outages (DNS, driver flake) clear.
   """
   from doc_curation.mail_stream import google_groups
   from curation_utils import scraping
@@ -46,13 +48,14 @@ def scrape_with_recovery(url, dest_dir, dry_run=False, dumper=None, max_attempts
     except Exception as e:
       if attempt >= max_attempts:
         raise
-      logging.warning("Group scrape failed (attempt %d/%d): %s. Relaunching browsers.", attempt, max_attempts, e)
+      logging.warning("Group scrape failed (attempt %d/%d): %s. Retrying in %ds.", attempt, max_attempts, e, recovery_delay)
+      time.sleep(recovery_delay)
       for name in ("base_browser", "thread_browser"):
         try:
           getattr(google_groups, name).quit()
         except Exception:
           pass
-      google_groups.base_browser = scraping.get_selenium_chrome(headless=google_groups.HEADLESS)
+      google_groups.base_browser = scraping.get_selenium_chrome(headless=google_groups.HEADLESS, undetected=False)
       google_groups.thread_browser = scraping.get_selenium_firefox(headless=google_groups.HEADLESS)
 
 

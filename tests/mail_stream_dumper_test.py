@@ -54,7 +54,7 @@ def test_scrape_with_recovery_retries_after_browser_crash():
       mock.patch.object(scraping, "get_selenium_chrome", return_value=chrome2), \
       mock.patch.object(scraping, "get_selenium_firefox", return_value=firefox2):
     result = mail_stream_dumper.scrape_with_recovery(url="https://groups.google.com/g/x", dest_dir="/tmp/nope",
-                                                     start_url="XYZ-backfill", shard=(2, 5))
+                                                     start_url="XYZ-backfill", shard=(2, 5), recovery_delay=0)
   assert result == []
   assert scrape.call_count == 2
   assert scrape.call_args_list[1].kwargs["browser"] is chrome2
@@ -69,7 +69,10 @@ def test_scrape_with_recovery_raises_after_max_attempts():
       mock.patch.object(google_groups, "base_browser", mock.Mock()), \
       mock.patch.object(google_groups, "thread_browser", mock.Mock()), \
       mock.patch.object(scraping, "get_selenium_chrome", return_value=mock.Mock()), \
-      mock.patch.object(scraping, "get_selenium_firefox", return_value=mock.Mock()):
+      mock.patch.object(scraping, "get_selenium_firefox", return_value=mock.Mock()), \
+      mock.patch.object(mail_stream_dumper.time, "sleep") as sleep:
     with pytest.raises(WebDriverException):
-      mail_stream_dumper.scrape_with_recovery(url="https://groups.google.com/g/x", dest_dir="/tmp/nope", max_attempts=2)
+      mail_stream_dumper.scrape_with_recovery(url="https://groups.google.com/g/x", dest_dir="/tmp/nope", max_attempts=2,
+                                              recovery_delay=45)
   assert scrape.call_count == 2
+  sleep.assert_called_once_with(45)

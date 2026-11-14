@@ -5,18 +5,44 @@ description: Processes Markdown (md) files — bulk transforms, details blocks, 
 Where appropriate, process Markdown with the `doc_curation.md` toolkit (venv: `~/gitland/python_venv`).
 
 ## Editing content
-...
+
+### Handling `js_include` directives (`<div class="js_include" ...>`)
+
+- **Source of truth lives in `static/` (or another `content/` repo):** A `<div class="js_include" ... url="...">...</div>` block in a host `.md` file holds a prefilled inline snapshot (typically wrapped in `<details open><summary><hN>... …{Loading}…</hN></summary>`) that is dynamically replaced at page load.
+  - Resolve the target file with `include.file_path_from_url(url, hugo_base_dir="/home/vvasuki/gitland/vishvAsa", current_file_path=...)`:
+    - Root-relative URLs ending in `.md` (e.g. `/vedAH_yajuH/taittirIyam/.../foo.md` or `/vedAH_Rk/shAkalam/.../bar.md`) map to `/home/vvasuki/gitland/vishvAsa/<repo>/static/<rest>.md`.
+    - Root-relative URLs without `.md` map to `/home/vvasuki/gitland/vishvAsa/<repo>/content/<rest>.md` (or `_index.md`).
+  - When a task applies to included content as well, edit the underlying `static/` (or cross-repo `content/`) source files and refresh the host files' inline snapshots via `include.prefill_includes(dir_path=...)` (or apply the transform to both so they stay in sync).
+- **Treat `js_include` divs as atomic boundaries when transforming host files:**
+  - Match `<div\s+[^>]*js_include[^>]*>.*?</div>` (note: `class` may be `"js_include"` or `"js_include collapsed"`, and attributes like `unfilled` may precede `url`) **before** matching headings (`\n#+\s+`) or `<details>` blocks.
+  - Never let a host-file `<details>` parser reach inside a `js_include` wrapper unless intentionally syncing an inline prose include (`includetitle="false"`), or inner `<details><summary>मूलम्</summary>` / `###` headings inside prefilled `सर्वाष् टीकाः` includes will be misparsed or split across `</div>` tags.
+
+For various python utilities, see `doc_curation.md.content_processor.include` and `doc_curation_projects/general_tasks/content/include_fix.py`.
 
 
-### Content processors
+### Details blocks
+`doc_curation.md.content_processor.details` has several nifty utilties. See `maker`, `transformer`, `seeker` subpackages.
+
+#### Preserving `<details>` block structure & invariants
+
+- **Cluster anatomy:** A standard unit in case of vedic text consists of optional `<details><summary>*विनियोगः</summary>` (`भास्करोक्त-विनियोगः`, `सायणोक्त-विनियोगः`, etc.), followed by `<details open><summary>विश्वास-प्रस्तुतिः...</summary>`, `<details><summary>मूलम्</summary>`, and commentary blocks (`भट्टभास्कर-टीका`, `सायण-टीका`, etc.). Section-intro blocks (`विस्तारः (द्रष्टुं नोद्यम्)`) and trailing summaries (`विनियोगसङ्ग्रहः`) sit outside individual unit clusters.
+- **Frontmatter vs. horizontal rules:** Anchor frontmatter regexes to the start of the file (`\A(?:\+\+\+.*?^\+\+\+|---.*?^---)`). An unanchored `^---.*?^---` with `MULTILINE`/`DOTALL` will swallow content between mid-file `---` horizontal rules. Preserve mid-file separators (`____________`, `---`) and headings in place.
+- **Editorial glosses & layer alignment:** `विश्वास-प्रस्तुतिः` often adds `+++(...)+++` glosses, supplied elliptical verbs, hyphens, and punctuation not present in `मूलम्`. Mask or strip `+++(...)+++` glosses and svaras (`[\u0951-\u0954\u1cd0-\u1cff]`) when aligning sentence segments or commentary pratīkas across layers, and never split on daṇḍas inside `+++(...)+++`, quotes, or parentheses.
+- **Verify invariants before writing:** For any block splitting, merging, or commentary/viniyoga separation, assert that:
+  1. The whitespace-stripped character stream of each layer (`विश्वास-प्रस्तुतिः`, `मूलम्`, `*टीका`, `*विनियोगः`) is unchanged before and after (except where text is intentionally moved between `*टीका` and `*विनियोगः`).
+  2. `<details>` / `</details>` and `<div` / `</div>` tag counts are balanced.
+
+### Footnotes
+`doc_curation.md.content_processor.footnote` — has useful code. `footnote_helper.define_footnotes_near_use` is the usual entry point; other fixers (`fix_plain_footnotes`, `fix_sup_footnotes`, `add_page_id_to_ref_ids`, `comments_to_footnotes`) are shown in `doc_curation_projects/general_tasks/content/footnote_fix.py`.
+
+### Sections
+`doc_curation.md.content_processor.section_helper` has useful code — sections: `autonumber`, `fix_headers`, `denumerify_section_titles`, `drop_sections`. See `doc_curation_projects/general_tasks/content/section_fix.py`.
+
+### Other Content processors
 
 `doc_curation.md.content_processor` subpackages:
 
-- `details` — `<details><summary>मूलम्</summary>` blocks. `maker`, `transformer`, `seeker`.
-- `footnote` — footnotes. `footnote_helper.define_footnotes_near_use` is the usual entry point; other fixers (`fix_plain_footnotes`, `fix_sup_footnotes`, `add_page_id_to_ref_ids`, `comments_to_footnotes`) are shown in `doc_curation_projects/general_tasks/content/footnote_fix.py`.
 - `commentary` — commentary blocks. For *interleaving* a translation or ṭīkā alongside the mUlam, use the `interleaver` skill.
-- `include` — include directives, where one md file's content is included in another. See `doc_curation_projects/general_tasks/content/include_fix.py`.
-- `section_helper` — sections: `autonumber`, `fix_headers`, `denumerify_section_titles`, `drop_sections`. See `doc_curation_projects/general_tasks/content/section_fix.py`.
 
 
 
