@@ -231,6 +231,9 @@ def file_name_from_url(url, max_title_length=None):
   # remove slashes, replace with dashes when dealing with urls like https://manasataramgini.wordpress.com/2020/06/08/pandemic-days-the-fizz-is-out-of-the-bottle/
   # https://koenraadelst.blogspot.com/2021/06/resume-spring-2021.html
   post_id = unquote(path_parts[-1])
+  # Blogspot-style URLs end in .html (e.g. /2021/06/slug.html): drop the
+  # extension so files are named <slug>.md rather than <slug>_html.md.
+  post_id = regex.sub(r"\.html?$", "", post_id, flags=regex.IGNORECASE)
   return "%s.md" % file_helper.get_storage_name(post_id, max_length=max_title_length)
 
 

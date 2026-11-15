@@ -1,7 +1,7 @@
 import logging
 
 from doc_curation import blog
-from doc_curation.blog import wordpress, substack, rss
+from doc_curation.blog import wordpress, substack, rss, blogspot
 from doc_curation.scraping.misc_sites import sambhashana_sandesha
 from doc_curation.md.file import MdFile
 from doc_curation.md import library
@@ -87,6 +87,11 @@ def dump_wordpress_monthly():
   pass
 
 
+def dump_blogspot():
+  blogspot.scrape_index(url="https://koenraadelst.blogspot.com/", dir_path=f"{BASE_PATH}/weblogs/koenraadelst", dry_run=False)
+  blogspot.scrape_index(url="https://talageri.blogspot.com/", dir_path=f"{BASE_PATH}/weblogs/talageri", dry_run=False)
+
+
 def dump_medium():
   # The selenium index scrape (medium.scrape_medium_blog) is defeated by Medium's
   # security-verification challenge; the RSS feed carries the same full content.
@@ -150,6 +155,7 @@ if __name__ == '__main__':
   # dump_mags()
   # blog.organize_by_date(dir_path="/home/vvasuki/gitland/vishvAsa/notes/content/sapiens/branches/Aryan/satem/indo-iranian/indo-aryan/jAti-varNa-practice/v1/persons/sage-bloodlines/bhRguH/dvitIyajanmani_bhRguH/chyavanaH/ApnavAna/aurvaH/jamadagniH/MT_charitram")
   dump_medium()
+  # dump_blogspot()
   # dump_wordpress_monthly()
   # dump_substack()
   # dump_wordpress()
