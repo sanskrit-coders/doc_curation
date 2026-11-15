@@ -13,7 +13,8 @@ from doc_curation.md.content_processor.commentary import interleaver
 ```
 
 ## Preparation
-- **Generate or split `मूलम्` blocks if missing or coarse.** If the files have no `<details><summary>मूलम्</summary>` blocks (or have coarse blocks that should be split to sense units), use the `text_to_blocks` skill first. Commentary and translation boundaries can also help identify mantra/clause boundaries during splitting.
+- **Generate or split `मूलम्` blocks if missing or coarse.** If the files have no `<details><summary>मूलम्</summary>` blocks (or have coarse blocks that should be split to sense units), use the `text_to_blocks` skill first.
+
 
 ## Commentary / translation insertion
 ### Matching & alignment
@@ -21,6 +22,8 @@ from doc_curation.md.content_processor.commentary import interleaver
 
 
 **Cross-recension alignment:** When interleaving a translation based on a different recension (e.g. Sāyaṇa pāṭha vs. Drāviḍa pāṭha), align by parallel mantra/clause boundaries while leaving the host file's `मूलम्` and `विश्वास-प्रस्तुतिः` text unchanged.
+
+**Verifying alignment & digitization artifacts:** Never align solely by translation item numbers—verify lexical/semantic correspondence against the Sanskrit so shifted, misplaced, or duplicated translation passages are caught. Check section-level `> *Note:*` blocks carefully (print/OCR sources often leave the introductory note for section `N+1` at the end of section `N`, or duplicate an inline footnote) and place each note only at the section or block it actually introduces.
 
 ### Order
 **Block order within each unit cluster (vedic example below):**
@@ -38,19 +41,17 @@ Commentaries are inserted after mUla.
 ### Block naming
 Unless specified otherwise (in the prompt or surrounding context), translations and commentaries are wrapped in `<details><summary><AuthorName></summary>\n\n...\n</details>`
 
-### Splitting
+### Commentary Splitting
+- Core Text splitting was explained in a previous section.
 - **Distributing multi-sentence commentary across fine `मूलम्` blocks:** When commentary blocks span multiple `मूलम्` blocks, split commentary sentences quote-safely (respecting quotes and parentheses so quoted mantras with internal `।`/`॥` are not broken) and align them monotonically to the `मूलम्` blocks using pratīka matching (`... इति`, quoted phrases, and normalized Devanagari stems).
 - **Viniyoga separation:** In Vedic commentaries (Bhaṭṭa Bhāskara, Sāyaṇa, etc.), separate leading ritual application (viniyoga) statements at the start of commentary blocks into `<details><summary>भास्करोक्त-विनियोगः</summary>` / `<details><summary>सायणोक्त-विनियोगः</summary>` placed above the corresponding `विश्वास-प्रस्तुतिः` block, and keep trailing verse summaries in `<details><summary>विनियोगसङ्ग्रहः</summary>`.
   - The same applies to **avatArikA separation** in other cases.
 
-### When the source quotes the core text (source-driven re-segmentation)
-When the incoming commentary presents the core text passage by passage (each passage quoted, then explained), its quotes are the **segmentation authority**: every quoted core-text passage opens a new group, and all host layers are re-cut — split or merged — at those boundaries so that each group treats the same unit of text. New layers (presentation + incoming commentary) come from the source; host layers (`मूलम्`, existing commentaries) are only re-cut, never rewritten.
-- **Core-text quotes vs inline citations:** only quotes of the host core text open groups. Citations of other texts, pūrvapakṣa pratīkas, and quotes of other commentaries stay inline inside the commentary block with their `>` markers kept. Test: a group needs host `मूलम्` to cut — a quote with no host counterpart cannot be a group.
+### When the source quotes the core text
 - **Pre-block:** source prose before the first quote (introduction, often ending in a lead-in) becomes a commentary-only block placed before the first group, directly under the section heading.
 - **Lead-ins stay behind:** a sentence introducing the next quote stays at the end of the preceding commentary block.
 - **Headings:** a source heading opening a commentary block is hoisted to a real `###` heading immediately before the group's `विश्वास-प्रस्तुतिः` (one blank line before, none between); a heading after prose has begun stays bold inside the block (`**name॥**` plus hard break). A source heading already mirrored by the host's own `##` is dropped (its label may still be hoisted as `###`). No commentary block may start or end with a bold heading.
 - **Empty layer:** if the source has no prose for a quote (e.g. only a colophon follows), omit that layer's block for the group rather than leaving an empty block. Colophons and end markers keep the host's existing rendering.
-- **Verse markers** stay inside `मूलम्` where they fall, even mid-block after a merge; every marker remains present exactly once. Fidelity beats alignment.
 - **Never rstrip** source prose lines: trailing double spaces are hard breaks, one clause per line.
 
 ### Build technique (no retyping, ever)

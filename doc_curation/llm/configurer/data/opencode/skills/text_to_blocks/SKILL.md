@@ -37,6 +37,21 @@ from doc_curation.sanskrit import split_to_sentences
 - **Vedic accents in `विश्वास-प्रस्तुतिः`:** When generating new `विश्वास-प्रस्तुतिः` and `मूलम्` blocks from bare Vedic text (which has `॒`/`॑` accent marks), convert the `विश्वास-प्रस्तुतिः` text to udātta (`᳓`) / svarita (`᳙`) accents using `indic_transliteration.sanscript.schemes.brahmic.accent.to_US_accents` (see `transliteration-accenting` skill), while keeping the original `॒`/`॑` text in `मूलम्` (and stripping `+++(...)+++` editorial glosses if they were added to the bare text before block creation).
 - **Parallel splitting of paired layers:** When splitting an existing multi-layer cluster into `k` fine blocks, emit `k` complete sub-clusters, each containing its paired `विश्वास-प्रस्तुतिः`, translations (if present), `मूलम्`, and corresponding `*टीका` slice (see `interleaver` skill for commentary/translation alignment and viniyoga separation).
 
+## Translation-guided prose splitting
+**(`;`, `.`, `!`, and parallel clauses):** 
+
+Sanskrit prose often joins multiple independent finite-verb or nominal sentences inside one block or between single daṇḍas. When a translation is available, inspect **both** `.`/`!` **and `;`** (semicolon-separated independent clauses), as well as repeated parallel clauses (e.g., serial prayers/invocations `मयि ... अग्निः ...; मयि ... इन्द्रः ...; मयि ... सूर्यः` or comma-joined litanies like `The earth is the peace, the mid-region is the peace, the heaven is the peace...`), to identify independent sense units and split both the Sanskrit (`विश्वास-प्रस्तुतिः` + `मूलम्`) and the translation cleanly in parallel.
+- Keep metrical Ṛks intact across internal `;`/`.` unless separate viniyogas require splitting (`text_to_blocks` Exception), and keep tight `yad`/`tad` correlatives or short quotative frames with their quotes unless compound/long.
+- Never split mid-akṣara across sandhi-fused Devanagari characters; when prose clauses meet without sandhi (or across clean word boundaries), split both layers directly, and if saṁhitā sandhi fuses the boundary, resolve the boundary cleanly per local `मूलम्` rules below while separating cleanly in `विश्वास-प्रस्तुतिः`.
+
+## Commentary fully quoting core text
+When the source quotes the core text fully, not just pratIka-s (source-driven re-segmentation)
+
+When the incoming commentary presents the core text passage by passage (each passage quoted, then explained), its quotes are the **segmentation authority**: every quoted core-text passage opens a new group, and all host layers are re-cut — split or merged — at those boundaries so that each group treats the same unit of text. New layers (presentation + incoming commentary) come from the source; host layers (`मूलम्`, existing commentaries) are only re-cut, never rewritten.
+- **Core-text quotes vs inline citations:** only quotes of the host core text open groups. Citations of other texts, pūrvapakṣa pratīkas, and quotes of other commentaries stay inline inside the commentary block with their `>` markers kept. Test: a group needs host `मूलम्` to cut — a quote with no host counterpart cannot be a group.
+
+
+
 ## Split clause text
 
 **Definitions:**
@@ -107,7 +122,7 @@ Example:
 
 **In doubtful cases:** Keep together. A split that breaks sense is worse than a slightly longer block.
 
-- **Reference / pañcāti / anuvāka markers mid-sentence:** Reference numbers (like `१। ५। ११। २॥ ५६`, `(2)`, `[41]`) and mechanical pañcāti or anuvāka divisions in Vedic texts often fall in the middle of a Ṛk or prose sentence. Keep cross-pañcāti and cross-anuvāka sentences/mantras together in a single block (keeping the marker in place at its token position), using the metre, syntax, commentary pratīkas, and translations to identify true sentence/mantra boundaries.
+**Reference / pañcāti / anuvāka markers mid-sentence:** Reference numbers (like `१। ५। ११। २॥ ५६`, `(2)`, `[41]`) and mechanical pañcāti or anuvāka divisions in Vedic texts often fall in the middle of a Ṛk or prose sentence. Keep cross-pañcāti and cross-anuvāka sentences/mantras together in a single block (keeping the marker in place at its token position), using the metre, syntax, commentary pratīkas, and translations to identify true sentence/mantra boundaries.
 
 
 ## Report
