@@ -28,7 +28,7 @@ from doc_curation.md.content_processor.commentary import interleaver
 ### Order
 **Block order within each unit cluster (vedic example below):**
 
-1. Optional `<details><summary>*विनियोगः</summary>` (`भास्करोक्त-विनियोगः`, `सायणोक्त-विनियोगः`, etc.) at the top of the unit, **above** `विश्वास-प्रस्तुतिः`.
+1. Optional `<details><summary>*विनियोगः</summary>` (`भास्करोक्त-विनियोगः`, `सायणोक्त-विनियोगः`, `त्रिभुवनः - विनियोगः`, etc.) at the top of the unit, **above** `विश्वास-प्रस्तुतिः` (or above an included mantra's `js_include`).
 2. `<details open><summary>विश्वास-प्रस्तुतिः...</summary>`
 3. Optional translation blocks (e.g. `<details><summary>Houben</summary>`, `<details><summary>त्रिभुवनः</summary>`) placed **above** `<details><summary>मूलम्</summary>` (and below `विश्वास-प्रस्तुतिः`).
 4. `<details><summary>मूलम्</summary>`
@@ -44,8 +44,11 @@ Unless specified otherwise (in the prompt or surrounding context), translations 
 ### Commentary Splitting
 - Core Text splitting was explained in a previous section.
 - **Distributing multi-sentence commentary across fine `मूलम्` blocks:** When commentary blocks span multiple `मूलम्` blocks, split commentary sentences quote-safely (respecting quotes and parentheses so quoted mantras with internal `।`/`॥` are not broken) and align them monotonically to the `मूलम्` blocks using pratīka matching (`... इति`, quoted phrases, and normalized Devanagari stems).
-- **Viniyoga separation:** In Vedic commentaries (Bhaṭṭa Bhāskara, Sāyaṇa, etc.), separate leading ritual application (viniyoga) statements at the start of commentary blocks into `<details><summary>भास्करोक्त-विनियोगः</summary>` / `<details><summary>सायणोक्त-विनियोगः</summary>` placed above the corresponding `विश्वास-प्रस्तुतिः` block, and keep trailing verse summaries in `<details><summary>विनियोगसङ्ग्रहः</summary>`.
-  - The same applies to **avatArikA separation** in other cases.
+- **Viniyoga separation:** In Vedic commentaries and translations (Bhaṭṭa Bhāskara, Sāyaṇa, Tribhuvana, etc.), separate leading ritual application (viniyoga) statements, anuvāka/section scope notes (`> *Note:* ...`), and ritual/rubric footnotes (`*(Mantra ...)*`, `*(Kaṇḍikā ...)*`, etc.) into `<details><summary>भास्करोक्त-विनियोगः</summary>`, `<details><summary>सायणोक्त-विनियोगः</summary>`, or `<details><summary><Translator> - विनियोगः</summary>` (e.g. `<details><summary>त्रिभुवनः - विनियोगः</summary>`) placed together **above** the corresponding `विश्वास-प्रस्तुतिः` block (or above a `js_include`), stripping the `[P...]` viniyoga marker from the translation block, and keep trailing verse summaries in `<details><summary>विनियोगसङ्ग्रहः</summary>`. Keep inline footnotes inside `<details><summary>त्रिभुवनः</summary>` strictly for lexical, grammatical, or doctrinal glosses (and merge any `<details><summary>... - Note</summary>` into the referencing block rather than leaving separate note blocks).
+- The same applies to **avatArikA separation** in other cases.
+
+### Include directives
+**`js_include` (`sarvASh_TIkAH` / shared `sarva-prastutiH`) targets:** When a mantra or passage is included via `js_include` from a `sarvASh_TIkAH` file or a shared `sarva-prastutiH` file, place its mantra-intrinsic translation (e.g. `<details><summary>त्रिभुवनः</summary>`) and any missing commentary directly inside that included `sarvASh_TIkAH` / shared `sarva-prastutiH` file (alongside existing translations above `मूलम्` and commentaries below `मूलम्`) — stripping host-specific mantra numbering (`1\. `, `2\. `) and host-context viniyoga footnotes — and run `transformer.prefill_includes`. Never place duplicate inline translation/commentary blocks adjacent to the `js_include` in host files; only host-context additions (such as a `त्रिभुवनः - विनियोगः` block above the include or an appended ritual utterance like `Om Peace, Peace, Peace.`) stay in the host file.
 
 ### When the source quotes the core text
 - **Pre-block:** source prose before the first quote (introduction, often ending in a lead-in) becomes a commentary-only block placed before the first group, directly under the section heading.
