@@ -3,16 +3,16 @@ import json
 import logging
 import os
 import shutil
+import unicodedata
+import zipfile
 from collections import defaultdict
 from functools import lru_cache
 
 import tqdm
-from selenium.webdriver.common.by import By
 
 import regex
 from bs4 import BeautifulSoup, Tag
 from curation_utils import scraping, file_helper
-from doc_curation.ebook import pandoc_helper
 from doc_curation.md import library, content_processor
 from doc_curation.md.content_processor.footnote import helper as footnote_helper
 from doc_curation.md.file import MdFile
@@ -26,8 +26,6 @@ logging.basicConfig(
   level=logging.DEBUG,
   format="%(levelname)s:%(asctime)s:%(module)s:%(lineno)d %(message)s")
 
-
-creds = "muktabodha:indology123"
 
 tradition_to_path = {
   "Mantranaya/Vajrayāna" : "/home/vvasuki/gitland/vishvAsa/tipiTaka/content/shAstrapiTaka",
@@ -59,26 +57,14 @@ tradition_to_path = {
 }
 
 
-def get_title(title_iast_in):
-  title_iast = title_iast_in.replace("Part ", "").replace("Volume ", "").replace("volume ", "").replace("Vol. ",
-                                                                                                        "").replace(
-    "with ", "").replace("text ", "").replace("version ", "").replace("by ", "").replace("commentary ", "").replace(
-    "commentaries ", "").replace("rescension ", "").replace("ṣṃ", "ṣm").strip()
-  return title_iast
-
-
-def get_author(author_iast_in):
-  author_iast = author_iast_in.replace("anonymous", "").replace("attributed ", "").replace("to ", "").replace("to: ",
-                                                                                                              "").replace(
-    "chapters ", "").replace("thru ", "").strip()
-  return author_iast
-
-
 def get_file_path(out_dir, metadata):
-  title_iast = metadata["Uniform title"]
+  title_iast = metadata.get("Uniform title", metadata.get("title", "UNKNOWN"))
   author_iast = metadata.get("Author", None)
   catalog_number = metadata.get("Catalog number", None)
-  category = metadata.get("Traditions", ["mixed"])[-1]
+  traditions = metadata.get("Traditions") or ["mixed"]
+  if isinstance(traditions, str):
+    traditions = [traditions]
+  category = traditions[-1]
   category_optitrans = file_helper.clean_file_path(sanscript.transliterate(data=category, _from=sanscript.IAST, _to=sanscript.OPTITRANS))
   title_optitrans = sanscript.transliterate(data=title_iast, _from=sanscript.IAST, _to=sanscript.OPTITRANS)
   if author_iast is None:
@@ -114,15 +100,6 @@ def rearrange_library(out_dir):
   file_helper.remove_empty_dirs(out_dir)
 
 
-def get_text(url):
-  # TODO: get past the bot-buster
-  (soup, result) = scraping.get_soup(url=url)
-  html = soup.select_one("p")
-  text = pandoc_helper.get_md_with_pandoc(content_in=html)
-  text = fix_devanaagarii(content=text)
-  return text
-
-
 def get_local_source(code, lib_path="/home/vvasuki/Downloads/mukta/"):
   file_paths = glob.glob(f"{lib_path}{code}*")
   if len(file_paths) > 0:
@@ -130,6 +107,10 @@ def get_local_source(code, lib_path="/home/vvasuki/Downloads/mukta/"):
   else:
     logging.warning(f"Could not get {code}")
     return None
+
+
+def has_devanagari(text):
+  return regex.search(r"[\u0900-\u097F]", text) is not None
 
 
 def fix_devanaagarii(content):
@@ -141,28 +122,48 @@ def fix_devanaagarii(content):
   return content
 
 
-def get_text_from_pre(url):
-  logging.info("Processing %s", url)
-  (soup, _) = scraping.get_soup(url=url)
-  content = soup.select("pre")[0].text
-  content = regex.sub("\nMUKTABODHA INDOLOGICAL.+", "", content)
-  content = fix_devanaagarii(content=content)
-  content = content.replace("\n", "  \n")
-  content = content.replace("*", r"\*")
-  content = regex.sub("\n- *\n", "-  \n", content)
-  return content
-
-
-def from_iast_text(url):
-  content = get_text_from_pre(url=url)
+def from_iast(content):
+  """Transliterates and cleans up IAST e-text content."""
   content = sanscript.transliterate(data=content, _from=sanscript.IAST, _to=sanscript.DEVANAGARI, togglers={}, suspend_on={}, suspend_off={})
-  content = content.replace("\"न\्", "ङ्")
+  content = content.replace("\"न्", "ङ्")
   content = fix_devanaagarii(content=content)
   content = regex.sub("ए-तेxत्स् मय् बे विएwएद् ओन्ल्य् ओन्लिने ओर् दोwन्लोअदेद् फ़ोर् प्रिवते स्तुद्य्। *", "", content)
   return content
 
 
+def get_text_from_pre_content(content):
+  content = regex.sub("\nMUKTABODHA INDOLOGICAL.+", "", content)
+  # Download zips come both in Devanagari and in IAST; detect the script on the raw text, since fix_devanaagarii turns IAST word separators into danda-s.
+  iast = not has_devanagari(content)
+  content = fix_devanaagarii(content=content)
+  content = content.replace("\n", "  \n")
+  content = content.replace("*", r"\*")
+  content = regex.sub("\n- *\n", "-  \n", content)
+  if iast:
+    content = from_iast(content=content)
+  return content
+
+
+def get_text_from_soup(soup):
+  pre_tags = soup.select("pre")
+  if len(pre_tags) == 0:
+    return None
+  return get_text_from_pre_content(content=pre_tags[0].text)
+
+
+def get_text_from_pre(url):
+  """Gets the e-text content from a local file path or a URL."""
+  logging.info("Processing %s", url)
+  (soup, _) = scraping.get_soup(url=url)
+  return get_text_from_soup(soup=soup)
+
+
+def get_text_from_html(html):
+  return get_text_from_soup(soup=BeautifulSoup(html, features="html.parser"))
+
+
 def get_front_matter(html):
+  """Parses the metadata block at the head of a Muktabodha e-text."""
   frontmatter = {}
   soup = BeautifulSoup(html, features="lxml")
   item_heads = soup.select("span.listItemName")
@@ -171,69 +172,52 @@ def get_front_matter(html):
     tag = tag.strip()
     values = frontmatter.get(tag, [])
     value_item = item_head.next_sibling
-    while value_item.name == "br":
+    while isinstance(value_item, Tag) and value_item.name == "br":
       value_item = value_item.next_sibling
     while isinstance(value_item, Tag) and value_item.has_attr("class") and value_item["class"][0] == "listItem":
       values.extend([value_item.text.strip()])
       value_item = value_item.next_sibling
+    if len(values) == 0:
+      continue
     if tag in ['Catalog number', 'Uniform title', 'Main title', 'Description', 'Notes', 'Publication country']:
       frontmatter[tag] = values[0]
     else:
       frontmatter[tag] = values
-  if 'Notes' in frontmatter:
-    frontmatter.pop('Notes')
   if 'E-text' in frontmatter:
     frontmatter.pop('E-text')
-  frontmatter["title_iast"] = get_title(frontmatter["Uniform title"])
-  if "Author" in frontmatter:
-    frontmatter["author_iast"] = get_author(frontmatter["Author"][0])
-  frontmatter["title"] = sanscript.transliterate(data=frontmatter["title_iast"], _from=sanscript.IAST,
-                                                 _to=sanscript.DEVANAGARI)
   return frontmatter
 
 
-def process_catalog_page_selenium(url, out_dir):
-  logging.info("Processing catalog %s", url)
-  # For some reason, soup does not manage to get the full source. Content of div.catalog_record_body is empty. Hence using selenium.
-  browser = scraping.get_selenium_chrome(headless=True)
-
-  browser.get(url=url)
-  text_links = browser.find_elements(By.LINK_TEXT, "View in Unicode transliteration")
-  # The below yields rare transliteration errors, such as  तडिच्चञ्चलमायुश्च कस्य स्याज्जगतो [धृ]तिः ॥ in kulArNavatantra:30.
-  # text_links = browser.find_elements_by_link_text("View in Unicode devanagari")
-  if len(text_links) == 0:
-    logging.warning("%s does not have text", url)
-    return
-
-  catalog_body = browser.find_element(By.CSS_SELECTOR, ".catalog_record_body")
-  metadata = get_front_matter(catalog_body.get_attribute('innerHTML'))
-  logging.info(metadata)
-
-  dest_file_path = get_file_path(out_dir=out_dir, metadata=metadata)
-  if os.path.exists(dest_file_path):
-    logging.info("Skipping %s - already exists.", dest_file_path)
-    return
-
-  text_url = text_links[0].get_attribute("href")
-  file = MdFile(file_path=dest_file_path, frontmatter_type="toml")
-  text = from_iast_text(url=text_url)
-  file.dump_to_file(metadata=metadata, content=text, dry_run=False)
+MONTHS = {month[:3].lower(): index for (index, month) in enumerate(
+  ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], start=1)}
 
 
-def process_catalog_page_soup(url):
-  """Does not work - get template content which is different from actual view in browser."""
-  (soup, _) = scraping.get_soup(url=url)
+def get_revision(notes):
+  """Gets the last 'Revision N: Mon D, YYYY' note as a sortable tuple."""
+  matches = regex.findall(r"Revision (\d+): *([A-Za-z]+)\.? *(\d+), *(\d{4})", notes or "")
+  if len(matches) == 0:
+    return None
+  (number, month, day, year) = matches[-1]
+  return (int(number), int(year), MONTHS.get(month[:3].lower(), 0), int(day))
 
-# TODO: can be made a bit more efficient by following https://muktalib7.com/DL_CATALOG_ROOT/MUKTABODHA-LIBRARY-DEVANAGARI/DEV-TITLE-LINK-LIST.html or https://muktalib7.com/DL_CATALOG_ROOT/MUKTABODHA-LIBRARY-IAST/UTF8-TITLE-LINK-LIST.html .  
-# But they do not include the etexts of the cumulative Muktabodha/IFP collection.
-def get_docs(out_dir):
-  (soup, _) = scraping.get_soup(
-    "https://%s@muktalib7.com/DL_CATALOG_ROOT/DL_CATALOG/DL_CATALOG_USER_INTERFACE/dl_user_interface_list_catalog_records.php?sort_key=title" % creds)
-  links = soup.select("a")
-  for link in links:
-    url = "https://%s@muktalib7.com/DL_CATALOG_ROOT/DL_CATALOG/DL_CATALOG_USER_INTERFACE/%s" % (creds, link["href"])
-    process_catalog_page_selenium(url=url, out_dir=out_dir)
-    # exit()
+
+def flatten_front_matter(frontmatter):
+  flattened = {}
+  for (key, value) in frontmatter.items():
+    if isinstance(value, list) and key not in ["Traditions"]:
+      value = "\n".join(value)
+    flattened[key] = value
+  return flattened
+
+
+def get_download_metadata(html, code):
+  """Gets md frontmatter for an e-text in a Muktabodha download zip."""
+  metadata = flatten_front_matter(frontmatter=get_front_matter(html=html))
+  # File names in the download zips carry the catalog number as used by the catalog json and by existing md files; the number in the body may be zero-padded differently (eg. M00401 vs M04001).
+  metadata["Catalog number"] = code
+  metadata["title"] = metadata.get("Uniform title", "UNKNOWN")
+  metadata["upstream_url"] = f"https://muktabodha-digital-library.org/texts/DEV/{code}"
+  return metadata
 
 
 @lru_cache(maxsize=20)
@@ -260,13 +244,85 @@ def scrape_from_json(out_dir, lib_path="/home/vvasuki/Downloads/mukta/"):
     for (code, metadata) in tqdm.tqdm(lib_metadata.items(), desc="file-codes"):
       if code in code_to_md:
         continue
+      source_path = get_local_source(code=code, lib_path=lib_path)
+      content = get_text_from_pre(url=source_path) if source_path is not None else None
+      if content is None:
+        logging.warning(f"Skipping {code} - no local etext in {lib_path}.")
+        continue
       dest_file_path = get_file_path(out_dir=out_dir, metadata=metadata)
       url = f"https://muktabodha-digital-library.org/texts/DEV/{code}"
       metadata["upstream_url"] = url
-      content = get_text_from_pre(url=get_local_source(code=code, lib_path=lib_path))
       metadata["title"] = metadata.get("Uniform title", "UNKNOWN")
       md_file = MdFile(file_path=dest_file_path)
       md_file.dump_to_file(metadata=metadata, content=content, dry_run=False)
+
+
+def update_from_download(zip_path, out_dir, update_existing=False, dry_run=False):
+  """Brings a Muktabodha library mirror (out_dir) up to date with a library download zip.
+
+  The zip is the "download all" file from the library site, eg. muktalib_IAST_download_2026-08-24.zip or muktalib_DEV_download_*.zip; the script of each etext (IAST or Devanagari) is detected from its content.
+
+  - Etexts without an md file in out_dir are written as md files (frontmatter from the zip's metadata block, traditions from muktabodha_metadata.json if known, else "mixed"), and are added to muktabodha_metadata.json.
+  - Etexts whose text differs from the local md file are only rewritten if update_existing is set; their frontmatter is otherwise left untouched, and they are merely reported as outdated.
+
+  :param update_existing: Refresh the text of md files which already exist.
+  """
+  code_to_md = get_code_to_md(out_dir=out_dir)
+  json_path = os.path.join(out_dir, "muktabodha_metadata.json")
+  with open(json_path) as f:
+    lib_metadata = json.load(f)
+  stats = defaultdict(int)
+  new_metadata = {}
+  with zipfile.ZipFile(zip_path) as archive:
+    etext_paths = sorted([path for path in archive.namelist() if path.lower().endswith((".htm", ".html"))])
+    logging.info(f"{len(etext_paths)} etexts in {zip_path}; {len(code_to_md)} indexed in {out_dir}.")
+    for etext_path in tqdm.tqdm(etext_paths, desc="update_from_download"):
+      code = os.path.basename(etext_path).split(" ")[0]
+      html = archive.read(etext_path).decode("utf-8")
+      content = get_text_from_html(html=html)
+      if content is None:
+        logging.warning(f"Skipping {etext_path} - no etext found.")
+        stats["skipped"] += 1
+        continue
+      download_metadata = get_download_metadata(html=html, code=code)
+      md_file = code_to_md.get(code)
+      if md_file is not None:
+        (metadata, old_content) = md_file.read()
+        download_revision = get_revision(notes=download_metadata.get("Notes"))
+        local_revision = get_revision(notes=metadata.get("Notes"))
+        if _comparable_content(old_content) == _comparable_content(content):
+          stats["unchanged"] += 1
+          continue
+        if not update_existing:
+          logging.warning(f"Text of {code} differs from {md_file.file_path} (revision upstream: {download_revision}, local: {local_revision}). Set update_existing=True to refresh it.")
+          stats["outdated"] += 1
+          continue
+        logging.info(f"Updating {md_file.file_path} (revision upstream: {download_revision}, local: {local_revision})")
+        if download_revision is not None and (local_revision is None or download_revision > local_revision) and "Notes" in download_metadata:
+          metadata["Notes"] = download_metadata["Notes"]
+        md_file.dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
+        stats["updated"] += 1
+        continue
+      metadata = {**download_metadata, **lib_metadata.get(code, {})}
+      metadata.setdefault("Traditions", ["mixed"])
+      dest_file_path = get_file_path(out_dir=out_dir, metadata=metadata)
+      MdFile(file_path=dest_file_path).dump_to_file(metadata=metadata, content=content, dry_run=dry_run)
+      new_metadata[code] = metadata
+      stats["new"] += 1
+  if len(new_metadata) > 0:
+    logging.info(f"Adding {len(new_metadata)} etexts to {json_path}")
+    lib_metadata.update(new_metadata)
+    if not dry_run:
+      with open(json_path, "w") as f:
+        json.dump(lib_metadata, f, sort_keys=False, ensure_ascii=False, indent=2)
+  get_code_to_md.cache_clear()
+  logging.info(f"New: {stats['new']}; updated: {stats['updated']}; outdated: {stats['outdated']}; unchanged: {stats['unchanged']}; skipped: {stats['skipped']}.")
+
+
+def _comparable_content(content):
+  """Normalizes md content for comparison across download snapshots."""
+  content = unicodedata.normalize("NFC", content)
+  return "\n".join([line.rstrip() for line in content.split("\n")]).strip()
 
 
 def fix_footnotes(dir_path):
@@ -358,12 +414,3 @@ def get_tradition_to_metadatas_actual():
         code_to_metadata = json.load(f)
         tradition_to_metadatas_actual[tradition] = code_to_metadata
   return tradition_to_metadatas_actual
-
-
-if __name__ == '__main__':
-  # text = from_iast_text(url="https://%s@muktalib7.com/DL_CATALOG_ROOT/DL_CATALOG/DL_CATALOG_USER_INTERFACE/dl_user_interface_create_utf8_text.php?hk_file_url=..%%2FTEXTS%%2FETEXTS%%2FmaliniivijayottaraHK.txt&miri_catalog_number=M00160" % creds)
-  # rearrange_library("/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/mukta")
-  pass
-  # dump_tradition_to_metadatas("/home/vvasuki/gitland/sanskrit/raw_etexts/mixed/mukta")
-  get_tradition_to_metadatas_actual()
-  # update_website()
