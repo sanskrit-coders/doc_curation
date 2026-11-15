@@ -183,10 +183,17 @@ def deromanize_section_numbers(content):
   outlines = []
   def deromanize(match):
     import roman
-    number = roman.fromRoman(match.group(2))
-    return f"{match.group(1)} {number:02d} {match.group(3)}"
+    prefix, rom, rest = match.group(1), match.group(2), match.group(3)
+    if not regex.fullmatch(r"#+\s*", prefix) and not rom.isupper():
+      return match.group(0)
+    try:
+      number = roman.fromRoman(rom.upper())
+    except Exception:
+      return match.group(0)
+    suffix = f" {rest}" if rest else ""
+    return f"{prefix} {number:02d}{suffix}"
   for line in lines:
-    outline = regex.sub(r"^(#+) *([XIVxiv]+)[\.\s]+(.+)", deromanize, line)
+    outline = regex.sub(r"^(#+(?: +[^\d#\s]+)*?) +([MCDLXIVmcdlxiv]+)(?:[\.\s]+(.+)| *$)", deromanize, line)
     outlines.append(outline)
   return "\n".join(outlines)
 

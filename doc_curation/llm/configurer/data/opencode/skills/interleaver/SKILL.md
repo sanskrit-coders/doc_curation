@@ -17,8 +17,12 @@ from doc_curation.md.content_processor.commentary import interleaver
 
 ## Commentary / translation insertion
 ### Matching & alignment
-- **Editorial glosses & layer alignment:** `विश्वास-प्रस्तुतिः` often adds `+++(...)+++` glosses, supplied elliptical verbs, hyphens, and punctuation not present in `मूलम्`. Mask or strip `+++(...)+++` glosses, svaras (`[\u0951-\u0954\u1cd0-\u1cff]`), and nasal/visarga variants when aligning sentence segments or commentary pratīkas across layers (including yaṇ-sandhi restoration `इ/ई → य्`, `उ/ऊ → व्`, `ऋ → र्`), and never split on daṇḍas inside `+++(...)+++`, quotes (`"..."`, `“...”`, `'...'`), or parentheses (`(...)`, `[...]`).
+**Editorial glosses & layer alignment:** `विश्वास-प्रस्तुतिः` often adds `+++(...)+++` glosses, supplied elliptical verbs, hyphens, and punctuation not present in `मूलम्`. Mask or strip `+++(...)+++` glosses, svaras (`[\u0951-\u0954\u1cd0-\u1cff]`), and nasal/visarga variants when aligning sentence segments or commentary pratīkas across layers (including yaṇ-sandhi restoration `इ/ई → य्`, `उ/ऊ → व्`, `ऋ → र्`), and never split on daṇḍas inside `+++(...)+++`, quotes (`"..."`, `“...”`, `'...'`), or parentheses (`(...)`, `[...]`).
 
+
+**Cross-recension alignment:** When interleaving a translation based on a different recension (e.g. Sāyaṇa pāṭha vs. Drāviḍa pāṭha), align by parallel mantra/clause boundaries while leaving the host file's `मूलम्` and `विश्वास-प्रस्तुतिः` text unchanged.
+
+### Order
 **Block order within each unit cluster (vedic example below):**
 
 1. Optional `<details><summary>*विनियोगः</summary>` (`भास्करोक्त-विनियोगः`, `सायणोक्त-विनियोगः`, etc.) at the top of the unit, **above** `विश्वास-प्रस्तुतिः`.
@@ -27,10 +31,12 @@ from doc_curation.md.content_processor.commentary import interleaver
 4. `<details><summary>मूलम्</summary>`
 5. Sanskrit commentary blocks (`<details><summary>भट्टभास्कर-टीका</summary>`, `<details><summary>सायण-टीका</summary>`, `<details><summary>टीका</summary>`, etc.) placed **below** `<details><summary>मूलम्</summary>`.
 
-A similar pattern holds elsewhere.
+A similar pattern holds elsewhere.  
+Unless specified otherwise, insert each translated segment directly above its corresponding `<details><summary>मूलम्</summary>` block (and below `विश्वास-प्रस्तुतिः`), preserving the original Sanskrit text verbatim.  
+Commentaries are inserted after mUla.
 
-- **Cross-recension alignment:** When interleaving a translation based on a different recension (e.g. Sāyaṇa pāṭha vs. Drāviḍa pāṭha), align by parallel mantra/clause boundaries while leaving the host file's `मूलम्` and `विश्वास-प्रस्तुतिः` text unchanged.
-
+### Block naming
+Unless specified otherwise (in the prompt or surrounding context), translations and commentaries are wrapped in `<details><summary><AuthorName></summary>\n\n...\n</details>`
 
 ### Splitting
 - **Distributing multi-sentence commentary across fine `मूलम्` blocks:** When commentary blocks span multiple `मूलम्` blocks, split commentary sentences quote-safely (respecting quotes and parentheses so quoted mantras with internal `।`/`॥` are not broken) and align them monotonically to the `मूलम्` blocks using pratīka matching (`... इति`, quoted phrases, and normalized Devanagari stems).
@@ -72,9 +78,6 @@ If you are interleaving a Sanskrit commentary where a rough alignment is explici
 interleaver.interleave_TIkA_below_mUla(dest_file, commentary_file)
 ```
 Both arguments are **file paths (str)**, not `MdFile` objects — the function calls `open()` internally. Note that `interleaver.py` matches `<details><summary>टीका</summary>` by default (`TIKA_RE` / `TIKA_FMT`); when a specific summary title (such as `भट्टभास्कर-टीका` or `सायण-टीका`) is used, set or rename the `<summary>` tag accordingly.
-
-### Translations
-Follow the instructions in `~/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/interleave-translation/mUla_and_En_translation/Insert_above_mUla.md` — insert each translated segment wrapped in `<details><summary><TranslatorName></summary>\n\n...\n</details>` directly above its corresponding `<details><summary>मूलम्</summary>` block (and below `विश्वास-प्रस्तुतिः`), preserving the original Sanskrit text verbatim.
 
 
 ## Final report
