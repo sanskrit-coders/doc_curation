@@ -1,6 +1,6 @@
 ---
 name: grammar
-description: Answers Sanskrit grammar questions — how a form is derived, which sūtra applies, what a sūtra means, sandhi/declension/conjugation/kāraka rules — from Pāṇini with commentaries (ashtadhyayi.com data), our pāṇinīya notes, Whitney's Sanskrit Grammar, Deshpande's primer, and step-by-step derivation with vidyut/airaavata. Use for any vyākaraṇa question, including "why is this form thus?".
+description: Answers Sanskrit grammar questions — how a form is derived, which sūtra applies, what a sūtra means, sandhi/declension/conjugation/kāraka rules, or the accent of a pāda — from Pāṇini with commentaries (ashtadhyayi.com data), our pāṇinīya notes, accent dictionaries and corpora, Whitney's Sanskrit Grammar, Deshpande's primer, and step-by-step derivation with vidyut/airaavata. Use for any vyākaraṇa question, including "why is this form thus?" and "what is the svara of this word?".
 ---
 
 ## Answering grammar questions
@@ -11,30 +11,10 @@ The sources below are read-only reference corpora. Choose by question type, then
 |---|---|
 | Which sūtra-s derive form X? | derivation steps (ashtadhyayi `shabdaprakriya.txt`, `dhatuforms_*`), vidyut/airaavata for anything not in them (section 5), and our `dhAtu-prakriyA` notes |
 | What does sūtra N say, and how do commentaries read it? | aShTAdhyAyI `sutraani/` |
-| What's the accent for pada X? How's it derived?                                                        | our notes - see `accent` subsection.|
+| What is the accent of pāda or stem X, and how is it justified? | accent dictionaries and corpora, then the rules — section 6 |
 | General rule, paradigm, exception, historical/comparative note | Whitney |
 | Learner-level explanation, lesson sequence, drills | Deshpande |
 | Topic discussion, open questions, tabular summaries | our `pANinIyam/` notes |
-
-## Accent determination
-When asked for the accent of a pada, look it up in the dictionaries and corpora first. If the accent of pada or it's stem is well attested, you can return it. Otherwise, you can try to derive it from the rules.
-
-### Accent lookup
-#### Dictionaries
-The following dictionaries mark svara-s, and can be used for lookups
-
-- Benfey, landman, edgerton at  /home/vvasuki/gitland/sanskrit/raw_etexts/koshaH/indic-dict/sanskrit/sa-head/en-entries . These dictionaries are available as stardict files at /media/vvasuki/vData/dicts/stardict/indic-dict/stardict-sanskrit/sa-head/en-entries .
-- rv-padasvara, av-padasvara, kyv-ts-padasvara at /home/vvasuki/gitland/sanskrit/raw_etexts/koshaH/indic-dict/kAvya . These dictionaries are available as stardict files at /media/vvasuki/vData/dicts/stardict/indic-dict/stardict-sanskrit-kAvya
-
-#### Accented corpora
-Accented corpora not covered by the above dictionaries include - /home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH , /home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/kAThakam/sarva-prastutiH , /home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH
-
-You can look up accents there too.
-
-#### Grammar
-See the "accent" section under "our notes" below too.  
-Can look up whitney as well.
-
 
 ## 1. Pāṇini with commentaries
 
@@ -80,18 +60,13 @@ Sūtra pages: `https://ashtadhyayi.github.io/suutra/<a>.<p>/<a>.<p>.<n>` (note `
 | `dhAtu-siddhiH/` | dhātu-pāṭha copy, dhātu-kārikā-s, dhātu-nirmāṇa |
 | `samAsaH/` | compounds — `prakriyA/`, `mahAbaleshvaraH` |
 | `vAkya-staram/` | sentence level — kāraka, vibhakti, prayoga, dvirukti, gati |
-| `svaraH/` | accent-related grammar (marks themselves: `accenting` skill) |
+| `svaraH/` | accent rules and sources — see section 6 |
 | `avyutpannAH/`, `meta/` | unanalysed words; administrative notes and articles |
 | `mUlAni/` | source texts we host — `aShTAdhyAyI_vishvAsa-prastutiH.md`, `gaNapAThaH.md`, `kAshikA/`, `nAgeshaH/`, `mahA-bhAShyam/` |
 
 - Topics come as prose `.md` **plus** a same-named `.toml` holding the tabular rows rendered in site widgets — read both.
 - `dhAtu-prakriyA/prakriyAH/tiNantAni/*.md` is our worked-derivation format: every step is `अक्षर 1.3.1 → भू,तिप् (सूत्रम् [A](link))`, ideal for citing a full derivation.
 - `mUlAni/aShTAdhyAyI_vishvAsa-prastutiH.md` is our hyphenated, `+++(...)+++`-annotated edition, one sūtra per line prefixed `a.p.n` — not bare mūla text.
-
-### Accents
-/home/vvasuki/gitland/vishvAsa/sanskrit/content/vyAkaraNam/pANinIyam/svaraH/pada-svaraH.md has common accent rules. /home/vvasuki/gitland/vishvAsa/sanskrit/content/vyAkaraNam/pANinIyam/svaraH/phiT-sUtrANi.md can be used too.
-
-
 
 ## 3. Whitney
 
@@ -137,13 +112,87 @@ print(list(lookup_and_derive(s)))     # ['रामः']
 
 Verify each generated step against `sutraani/data.txt` before quoting it in an answer: the step text is vidyut's summary, and a code missing from `code_to_sutra` prints as `(??)`.
 
+## 6. Accent determination
+
+Look for attestation first; derive only when nothing attests the form. Order of work:
+
+### 6.1 Padasvara dictionaries — the primary tool
+
+`~/gitland/sanskrit/raw_etexts/koshaH/indic-dict/kAvya/` (StarDict copies on the external drive: `/media/vvasuki/vData/dicts/stardict/indic-dict/stardict-sanskrit-kAvya/`)
+
+| Dict | Gives |
+|---|---|
+| `rv-padasvara-dev` | Ṛgveda word forms with accents, plus occurrences (`1 72 7 d` = maṇḍala, sūkta, ṛk, pāda) |
+| `av-padasvara` | Atharvaveda word forms with accents, plus occurrences (`/20/136/12`) |
+| `kyv-ts-padasvara` | Kṛṣṇa-Yajurveda-TS word forms with dependent accents |
+| `rv-padapATha-dev` | Ṛgveda pādas: unaccented saṃhitā head → accented saṃhitā + accented pada-pāṭha + reference |
+
+Heads are `|`-separated; in the padasvara dicts a trailing `+` marks the pre-sandhi pada, so search the bare word. All of these are Babylon files — blank-line separated entries, head line first:
+
+```python
+import os
+
+DICTS = os.path.expanduser("~/gitland/sanskrit/raw_etexts/koshaH/indic-dict")
+
+def lookup(babylon_path, word, limit=5):
+    text = open(babylon_path, encoding="utf-8", errors="ignore").read()
+    hits = []
+    for entry in text.split("\n\n"):
+        head, _, body = entry.partition("\n")
+        if word in head.split("|"):
+            hits.append(body.strip())
+            if len(hits) >= limit:
+                break
+    return hits
+
+print(lookup(f"{DICTS}/kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon", "अभवः"))
+# → ['अ॑भवः<br>1 72 7 d, 1 91 2 d, …']
+print(lookup(f"{DICTS}/kAvya/rv-padapATha-dev/rv-padapATha-dev.babylon", "अग्निमीळे पुरोहितं"))
+# → ['1 1 1 a<br>अ॒ग्निमी॑ळे पु॒रोहि॑तं<br>अ॒ग्निम् ईळे पु॒रोहि॑तम्']
+```
+
+### 6.2 Accent-marked dictionaries
+
+`~/gitland/sanskrit/raw_etexts/koshaH/indic-dict/sanskrit/sa-head/en-entries/` (StarDict: `…/stardict-sanskrit/sa-head/en-entries/`) — same `lookup()` works, but big files (MW ~60 MB) take a second:
+
+| Dict | Accent convention |
+|---|---|
+| `mw-cologne` | appends `॑` to the accented syllable (`अग्नि॑`) — the best general source, ~42k marks |
+| `lanman`, `macdonell` | Vedic accent as a combining acute (`aṅganā́`) |
+| `whitney-roots` | accented roots |
+| `shabda-sAgara`, `vaidya` | a handful of `॑` only |
+
+`edgerton-buddhist-hybrid`, `wilson`, `apte-1890`, `apte-1957`, `spokensanskrit`, `Vedic-Index-of-Names-and-Subjects` carry **no** accents; `benfey` has only a few. Don't promise an accent from these.
+
+### 6.3 Accented corpora
+
+Use when the word is not in the dictionaries above:
+
+- `~/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH/`
+- `~/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/kAThakam/sarva-prastutiH/`
+- `~/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH/`
+
+`grep -rn "<word>" <dir>` gives the accented occurrence in context. These carry dependent accents in `मूलम्` blocks and US accents in `विश्वास-प्रस्तुतिः` blocks.
+
+### 6.4 The rules
+
+`~/gitland/vishvAsa/sanskrit/content/vyAkaraNam/pANinIyam/svaraH/` — `pada-svaraH.md` (common pada-accent rules), `phiT-sUtrANi.md` (Phiṭ-sūtras used in accent derivation), `sandhiH.md`, `vAkyasvaraH.md`, `pramANAni.md`, `shrInivAsa-svara-siddhAnta-chandrikA/`. Whitney's pronunciation chapter and the `svara`-related sūtra-s (`6.1.…`, `8.2.…`, `phiṭ`) supplement these.
+
+### 6.5 Answering
+
+- Attested in a dictionary or corpus → give the accented form **with its source and reference**; prefer the padasvara dict, since MW's single `॑` under-specifies.
+- Only the stem's accent attested → say so explicitly, and don't silently extrapolate.
+- Derived from rules → mark it per the `accenting` skill: suffix the `विश्वास-प्रस्तुतिः` sentence with `(यन्त्र-स्वरः)` and add a `पद-पाठः (यान्त्रिकः)` block giving each pada, its accent, provenance, and doubts.
+- Never harmonise silently: keep the text's own accents unless a source contradicts them, and then say which source.
+
 ## How to answer
 
 1. Locate the sūtra-s: search `s` in `data.txt`, read the derivation steps for the form, or derive it with vidyut when it isn't cached.
 2. Read at least Kāśikā + Bālamanoramā (or Padamañjarī/Nyāsa) + the English gloss; add Mahābhāṣya or Śabdenduśekhara for contested points.
 3. Check our notes for the topic and for a ready-made derivation.
 4. Bring in Whitney (rule shape, exceptions, history) and Deshpande (learner framing) as needed.
-5. Present: the rule (`1.1.1 वृद्धिरादैच्`), the step-by-step application with sūtra numbers, options/exceptions, and a citation per claim.
+5. For accents, follow section 6 — attestation before derivation, provenance always.
+6. Present: the rule (`1.1.1 वृद्धिरादैच्`), the step-by-step application with sūtra numbers, options/exceptions, and a citation per claim.
 
 - Never invent a sūtra number or wording — verify in `data.txt` and quote `s` verbatim.
 - Keep bhāṣya/kārikā positions distinct from our own notes, and say which commentary says what.
