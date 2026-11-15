@@ -3,7 +3,7 @@ name: grammar
 description: Answers Sanskrit grammar questions — how a form is derived, which sūtra applies, what a sūtra means, sandhi/declension/conjugation/kāraka rules — from Pāṇini with commentaries (ashtadhyayi.com data), our pāṇinīya notes, Whitney's Sanskrit Grammar, Deshpande's primer, and step-by-step derivation with vidyut/airaavata. Use for any vyākaraṇa question, including "why is this form thus?".
 ---
 
-# Answering grammar questions
+## Answering grammar questions
 
 The sources below are read-only reference corpora. Choose by question type, then cross-check:
 
@@ -11,9 +11,30 @@ The sources below are read-only reference corpora. Choose by question type, then
 |---|---|
 | Which sūtra-s derive form X? | derivation steps (ashtadhyayi `shabdaprakriya.txt`, `dhatuforms_*`), vidyut/airaavata for anything not in them (section 5), and our `dhAtu-prakriyA` notes |
 | What does sūtra N say, and how do commentaries read it? | aShTAdhyAyI `sutraani/` |
+| What's the accent for pada X? How's it derived?                                                        | our notes - see `accent` subsection.|
 | General rule, paradigm, exception, historical/comparative note | Whitney |
 | Learner-level explanation, lesson sequence, drills | Deshpande |
 | Topic discussion, open questions, tabular summaries | our `pANinIyam/` notes |
+
+## Accent determination
+When asked for the accent of a pada, look it up in the dictionaries and corpora first. If the accent of pada or it's stem is well attested, you can return it. Otherwise, you can try to derive it from the rules.
+
+### Accent lookup
+#### Dictionaries
+The following dictionaries mark svara-s, and can be used for lookups
+
+- Benfey, landman, edgerton at  /home/vvasuki/gitland/sanskrit/raw_etexts/koshaH/indic-dict/sanskrit/sa-head/en-entries . These dictionaries are available as stardict files at /media/vvasuki/vData/dicts/stardict/indic-dict/stardict-sanskrit/sa-head/en-entries .
+- rv-padasvara, av-padasvara, kyv-ts-padasvara at /home/vvasuki/gitland/sanskrit/raw_etexts/koshaH/indic-dict/kAvya . These dictionaries are available as stardict files at /media/vvasuki/vData/dicts/stardict/indic-dict/stardict-sanskrit-kAvya
+
+#### Accented corpora
+Accented corpora not covered by the above dictionaries include - /home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH , /home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/kAThakam/sarva-prastutiH , /home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH
+
+You can look up accents there too.
+
+#### Grammar
+See the "accent" section under "our notes" below too.  
+Can look up whitney as well.
+
 
 ## 1. Pāṇini with commentaries
 
@@ -66,6 +87,11 @@ Sūtra pages: `https://ashtadhyayi.github.io/suutra/<a>.<p>/<a>.<p>.<n>` (note `
 - Topics come as prose `.md` **plus** a same-named `.toml` holding the tabular rows rendered in site widgets — read both.
 - `dhAtu-prakriyA/prakriyAH/tiNantAni/*.md` is our worked-derivation format: every step is `अक्षर 1.3.1 → भू,तिप् (सूत्रम् [A](link))`, ideal for citing a full derivation.
 - `mUlAni/aShTAdhyAyI_vishvAsa-prastutiH.md` is our hyphenated, `+++(...)+++`-annotated edition, one sūtra per line prefixed `a.p.n` — not bare mūla text.
+
+### Accents
+/home/vvasuki/gitland/vishvAsa/sanskrit/content/vyAkaraNam/pANinIyam/svaraH/pada-svaraH.md has common accent rules. /home/vvasuki/gitland/vishvAsa/sanskrit/content/vyAkaraNam/pANinIyam/svaraH/phiT-sUtrANi.md can be used too.
+
+
 
 ## 3. Whitney
 

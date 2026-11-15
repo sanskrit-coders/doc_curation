@@ -10,13 +10,10 @@ from indic_transliteration import sanscript
 from indic_transliteration.sanscript.schemes.brahmic import accent
 ```
 
-## Invent accents only if asked to
-Do not accent classical Sanskrit by yourself, and do not invent accents where the source has none (unless explicitly instructed to). 
-
-## Accent styles
+## Changing accent notation
+### Accent styles
 Match the notation to the block: `विश्वास-प्रस्तुतिः` blocks normally use **US accents**; `मूलम्` blocks keep the source's own notation (classically dependent `॒`/`॑`).
 
-## Changing accent notation
 
 ### US accents (᳓ / ᳙)
 
@@ -42,6 +39,11 @@ classical == accent.add_dependent_accents(accent.to_US_accents(classical), UDATT
 ```
 
 ## Checking and fixing bad accents
+### De-novo accents only if asked to
+Do not accent classical Sanskrit by yourself, and do not invent accents where the source has none (unless explicitly instructed to).
+
+When you do insert de-novo accents, add a suffix (यन्त्र-स्वरः) to the विश्वास-प्रस्तुतिः block sentence where you do this, and add a पद-पाठः (यान्त्रिकः) block below the मूलम्, where for each पद, as a list item, you provide the accent, and source(s) of the accent (eg. rv-padapATha, shatapatha-brAhmaNa, pANini's rule xyz etc.), plus any doubts you may have.
+
 ### Fake accents
 Some Vedic texts (e.g. some taittirīya āraṇyaka sections) carry fake accents — typically mechanically applied runs of udAtta. Detect and strip them:
 
@@ -55,7 +57,7 @@ If you are explicitly asked, you may also spot badly accented US text beyond wha
 Repair policy:
 
 1. Remove **all** accents from that `विश्वास-प्रस्तुतिः` block. If accents were already removed there by hand, keep the unaccented text as is.
-2. Insert proper accents only when specifically requested, and add a suffix +++(← यन्त्र-स्वरः)+++ to each sentence where you do this.
+2. Insert de-novo accents only when specifically requested.
 
 ### Splitting errors
 Typical `मूलम्`-block errors are at the beginnings and terminations of split blocks, e.g.

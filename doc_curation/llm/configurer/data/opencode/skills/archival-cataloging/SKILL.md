@@ -46,5 +46,5 @@ Interact with archive.org through the `ia` command line (already configured) or
 
 ## Etext collection updates
 Check UT dharmashAstra library etexts https://sites.utexas.edu/sanskrit/resources/dharmasastra/ for new items, which are then generally dumped to  /home/vvasuki/gitland/vishvAsa/kalpAntaram/content/dharmaH/nibandhaH.  
-Call doc_curation_projects/misc/sanskrit_docs.py 
-Call /home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation_projects/misc/muktabodha.py
+Call doc_curation_projects/misc/sanskrit_docs.py  
+Call /home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation_projects/misc/muktabodha.py  
