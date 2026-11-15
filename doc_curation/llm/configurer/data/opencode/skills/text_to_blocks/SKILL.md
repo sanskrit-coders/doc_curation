@@ -34,7 +34,7 @@ from doc_curation.sanskrit import split_to_sentences
 
 ### Implementation notes for multi-layer Vedic files
 
-- **Vedic accents in `विश्वास-प्रस्तुतिः`:** When generating new `विश्वास-प्रस्तुतिः` and `मूलम्` blocks from bare Vedic text (which has `॒`/`॑` accent marks), convert the `विश्वास-प्रस्तुतिः` text to udātta (`᳓`) / svarita (`᳙`) accents using `indic_transliteration.sanscript.schemes.brahmic.accent.to_US_accents` (see `transliteration-accenting` skill), while keeping the original `॒`/`॑` text in `मूलम्` (and stripping `+++(...)+++` editorial glosses if they were added to the bare text before block creation).
+- **Vedic accents in `विश्वास-प्रस्तुतिः`:** When generating new `विश्वास-प्रस्तुतिः` and `मूलम्` blocks from bare Vedic text (which has `॒`/`॑` accent marks), convert the `विश्वास-प्रस्तुतिः` text to udātta (`᳓`) / svarita (`᳙`) (US) accents using the `accenting` skill, while keeping the original `॒`/`॑` text in `मूलम्` (and stripping `+++(...)+++` editorial glosses if they were added to the bare text before block creation).
 - **Parallel splitting of paired layers:** When splitting an existing multi-layer cluster into `k` fine blocks, emit `k` complete sub-clusters, each containing its paired `विश्वास-प्रस्तुतिः`, translations (if present), `मूलम्`, and corresponding `*टीका` slice (see `interleaver` skill for commentary/translation alignment and viniyoga separation).
 
 ## Translation-guided prose splitting
