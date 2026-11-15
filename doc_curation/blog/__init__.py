@@ -38,6 +38,25 @@ def remove_non_content_tags(soup):
     tag.decompose()
 
 
+def replace_iframes_with_links(soup, entry_divs):
+  """Replace <iframe> embeds in entry divs with plain links to their src.
+
+  Pandoc (>=3.8) fetches <iframe src> URLs over the network and transcludes the
+  response into the converted document: slow, injects junk (e.g. YouTube's
+  "Unable to execute JavaScript"), and some fetched pages (Blogger's video
+  player) wipe out the entire document. Keep the reference as a link instead.
+  """
+  for div in entry_divs:
+    for iframe in div.find_all("iframe"):
+      src = (iframe.get("src") or "").strip()
+      if src:
+        link = soup.new_tag("a", href=src)
+        link.string = "Embedded video: %s" % src
+        iframe.replace_with(link)
+      else:
+        iframe.decompose()
+
+
 def get_post_html(url, entry_css_list=None, browser=None):
   '''get the text body of links'''
   logging.info("Processing post at %s", url)
@@ -56,6 +75,7 @@ def get_post_html(url, entry_css_list=None, browser=None):
   if not entry_divs:
     return (None, soup)
 
+  replace_iframes_with_links(soup, entry_divs)
   post_html = "\n\n".join(div.encode_contents().decode("utf-8") for div in entry_divs)
 
   return (post_html, soup)
