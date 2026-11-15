@@ -1,6 +1,7 @@
 import os
 from unittest import mock
 
+import pytest
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 
 from curation_utils import scraping
@@ -224,6 +225,7 @@ def test_wait_for_sections_plateau_returns_stable():
   assert len(tags) == 2
 
 
+@pytest.mark.needs_pandoc
 def test_thread_leading_authorless_section_does_not_crash():
   browser = _FakeThreadBrowser("Subject", [
     "<div><span>Nov 13, 2026, 10:00 AM</span><div role='region'><p>system notice</p></div></div>",

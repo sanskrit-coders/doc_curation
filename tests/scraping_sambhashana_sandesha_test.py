@@ -2,6 +2,7 @@ import logging
 import os
 from unittest import mock
 
+import pytest
 from bs4 import BeautifulSoup
 
 from doc_curation.scraping.misc_sites import sambhashana_sandesha
@@ -20,6 +21,7 @@ def test_dump_month_warns_when_no_articles(tmp_path, caplog):
   assert "No article content" in caplog.text
 
 
+@pytest.mark.needs_pandoc
 def test_dump_month_writes_article_files(tmp_path):
   html = ("<html><body><div id='showData'>"
           "<div><h1>परीक्षा लेखः</h1><p>विषयः अस्ति।</p></div>"
