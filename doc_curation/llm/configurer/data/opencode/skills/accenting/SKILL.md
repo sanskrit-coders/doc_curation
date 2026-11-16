@@ -10,8 +10,8 @@ from indic_transliteration import sanscript
 from indic_transliteration.sanscript.schemes.brahmic import accent
 ```
 
-
 ## Changing accent notation
+
 Match the notation to the block: `विश्वास-प्रस्तुतिः` normally uses **US accents**; `मूलम्` keeps the source's own notation (classically dependent `॒`/`॑`).
 
 ### US accents (᳓ / ᳙)
@@ -38,13 +38,16 @@ classical == accent.add_dependent_accents(accent.to_US_accents(classical), UDATT
 ```
 
 ## Checking and correcting bad accents
-### General rules
-Generally, for correcting accented texts, don't directly alter svara-s (especially in विश्वास-प्रस्तुतिः) -  just make suggestions in the [[OLD|NEW]] format specified in the proofreading skill. Exceptions are noted below.
 
-#### De-novo accents (यन्त्र-स्वरः)
-when you do insert accents on your own, both of these are mandatory:
+### General rule: suggest, don't alter
 
-1. append `(यन्त्र-स्वरः)` to that details block name;
+Do not directly alter svara-s in an accented text (especially in `विश्वास-प्रस्तुतिः`) — make the correction a reviewable inline suggestion in the `[[OLD|NEW]]` format from the `proofreader-hyphenator` skill, on the smallest span that carries the wrong accent, e.g. `[[अग्निमीळे|अ॒ग्निमी॑ळे]]`. State the source behind the suggestion (dictionary, corpus, or sūtra) in the same breath. The exceptions below — fake accents, wrong de-novo insertion, splitting errors — may be applied directly.
+
+### De-novo accents (यन्त्र-स्वरः)
+
+Do not accent classical Sanskrit, and do not insert accents of your own where the source has none — only when explicitly asked. When you do, both of these are mandatory:
+
+1. append `(यन्त्र-स्वरः)` to the `open`-ed details block name, i.e. `<details open><summary>विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)</summary>`;
 2. add a `पद-पाठः (यान्त्रिकः)` block below the `मूलम्` — one list item per pada, giving its accented form, the source(s) of the accent (e.g. `rv-padapATha`, `shatapatha-brAhmaNa`, "Pāṇini 6.1.xx"), and any doubts you have.
 
 Where to find an accent and how to derive it: `grammar` skill, section 6.
@@ -52,9 +55,9 @@ Where to find an accent and how to derive it: `grammar` skill, section 6.
 Shape of the result (illustrative — fill provenance from the actual source):
 
 ````markdown
-<details open><summary>विश्वास-प्रस्तुतिः</summary>
+<details open><summary>विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)</summary>
 
-ब्र᳓ह्म स᳓न्धत्तम् +++(मया सह)+++। त᳓न् +++(ब्रह्म)+++ मे जिन्वतम्+++(=प्रीणयतम्)+++ ॥ (यन्त्र-स्वरः)
+ब्र᳓ह्म स᳓न्धत्तम् +++(मया सह)+++। त᳓न् +++(ब्रह्म)+++ मे जिन्वतम्+++(=प्रीणयतम्)+++ ॥
 </details>
 
 <details><summary>मूलम्</summary>
@@ -80,12 +83,10 @@ Some Vedic texts (e.g. some taittirīya āraṇyaka sections) carry fake accents
 accent.detect_fake_US_accents(text)  # → suspicious runs of >5 consecutive ᳓; empty list = nothing found
 ```
 
-If you are explicitly asked, you may also spot other fake accent US text beyond what the above detector finds.
+If you are explicitly asked, you may also spot other fake-accented US text beyond what the above detector finds. Here direct correction is allowed:
 
-#### Repair policy
-
-1. Remove **all** accents from that `विश्वास-प्रस्तुतिः` block (`accent.strip_accents(text)`). If accents were already removed there by hand, keep the unaccented text as is. In all such cases, add (स्वराः पूर्याः) to the details block name.
-2. Re-insert accents only when asked — and then follow the de-novo rules in the policy above.
+1. Remove **all** accents from that `विश्वास-प्रस्तुतिः` block (`accent.strip_accents(text)`), or keep the unaccented text if that was already done by hand. In both cases, append `(स्वराः पूर्याः)` ("accents still to be supplied") to the details block name, i.e. `<details open><summary>विश्वास-प्रस्तुतिः (स्वराः पूर्याः)</summary>`.
+2. Re-insert accents only when asked — and then follow the de-novo rules above.
 
 ### Splitting errors
 

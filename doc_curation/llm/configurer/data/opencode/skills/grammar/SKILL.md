@@ -182,7 +182,8 @@ Use when the word is not in the dictionaries above:
 
 - Attested in a dictionary or corpus → give the accented form **with its source and reference**; prefer the padasvara dict, since MW's single `॑` under-specifies.
 - Only the stem's accent attested → say so explicitly, and don't silently extrapolate.
-- Derived from rules → mark it per the `accenting` skill: suffix the `विश्वास-प्रस्तुतिः` sentence with `(यन्त्र-स्वरः)` and add a `पद-पाठः (यान्त्रिकः)` block giving each pada, its accent, provenance, and doubts.
+- Derived from rules → mark it per the `accenting` skill: tag the block `<details open><summary>विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)</summary>` and add a `पद-पाठः (यान्त्रिकः)` block giving each pada, its accent, provenance, and doubts.
+- Editing an accented text: suggest, don't rewrite — give the correction as `[[OLD|NEW]]` (see `accenting`); re-accenting, fake-accent stripping and splitting fixes are the exceptions that may be applied directly.
 - Never harmonise silently: keep the text's own accents unless a source contradicts them, and then say which source.
 
 ## How to answer
