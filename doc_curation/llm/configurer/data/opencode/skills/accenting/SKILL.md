@@ -48,7 +48,7 @@ Do not directly alter svara-s in an accented text (especially in `विश्�
 Do not accent classical Sanskrit, and do not insert accents of your own where the source has none — only when explicitly asked. When you do, both of these are mandatory:
 
 1. append `(यन्त्र-स्वरः)` to the `open`-ed details block name, i.e. `<details open><summary>विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)</summary>`;
-2. add a `पद-पाठः (यान्त्रिकः)` block below the `मूलम्` — one list item per pada, giving its accented form, the source(s) of the accent (e.g. `rv-padapATha`, `shatapatha-brAhmaNa`, "Pāṇini 6.1.xx"), and any doubts you have.
+2. add a `पद-पाठः (यान्त्रिकः)` block below the `मूलम्` — one list item per pada in US accents (`᳓` / `᳙`), giving its accented form, concise source abbreviation(s) (`*TS*`, `*RV*`, `*TB*`, `*TK*`, `*AV*`, `*ŚB*`, `*MW*`, `पा० x.y.z`, `भास्करः`, `सायणः`), and any doubts. When auditing an already-accented source for *vyatyasta* accents (`N > 0` of `P` padas), title the block `<details><summary>पद-पाठः (यान्त्रिकः - N/P व्यत्यस्त-स्वराः)</summary>` and write corrected padas as `- आङ्गीर᳓सः → **आङ्गीरसः᳓** (प्रातिपदिकम् आङ्गीरस᳓ (*MW*))` (unchanged padas omit any redundant prefix: `- आङ्गीरसः᳓ (प्रातिपदिकम् आङ्गीरस᳓ (*MW*))`).
 
 Where to find an accent and how to derive it: `grammar` skill, section 6.
 
@@ -67,13 +67,45 @@ Shape of the result (illustrative — fill provenance from the actual source):
 
 <details><summary>पद-पाठः (यान्त्रिकः)</summary>
 
-- ब्रह्म — ब्र᳓ह्म (*shatapatha-brAhmaNa*, …)
-- सन्धत्तम् — स᳓न्धत्तम् (*shatapatha-brAhmaNa*, …)
-- तन् — त᳓न् (doubt: पद-स्वरः or वाक्य-स्वरः?)
-- मे — मे, unaccented
-- जिन्वतम् — जिन्वतम् (*rv-padapATha*…), matching the note
+- ब्र᳓ह्म (*TS*, *RV*, *ŚB*)
+- स᳓म् (*TS*, *RV*)
+- धत्तम् (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *RV*, *ŚB*)
+- त᳓त् (*TS*, *RV*)
+- मे (अनुदात्तम्, पा० ८.१.१८, *TS*, *RV*)
+- जिन्वतम् (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *RV*)
 </details>
 ````
+
+#### Pada-pāṭha decision procedure
+
+Never split padas or assign accents mechanically from word lists alone. Decide the pada-pāṭha and each pada's expected svara in this order:
+
+1. **Read interleaved commentaries and translations first:**
+   - Check `भट्टभास्कर-टीका`, `सायण-टीका`, `रङ्ग-रामानुजः`, etc., and translations in the same mantra cluster before splitting. Commentaries bold or gloss each pada, give *vigraha-vākyas* for compounds, identify finite verbs and roots (e.g. `सुत` = 2nd pl. imperative of `षु प्रसवैश्वर्ययोः` "अनुजानीत", unaccented — not `सुतः`), and note Vedic Pāṇinian rules (`परादिश्छन्दसि` पा० ६.२.१९९, `चवायोगे प्रथमा` पा० ८.१.५९, `उदात्तवता तिङा`, `ऐकश्रुत्यम्`, `स्वरव्यत्ययः`).
+   - Where a pāda or phrase has a parallel in `*TS*` or `*RV*`, follow its attested `<summary>पद-पाठः</summary>` / `rv-padapATha-dev` division.
+
+2. **Split distinct sandhi-joined padas; never club non-compounds:**
+   - Undo external vowel, visarga, and consonant sandhi into normalized isolated padas (`देवीर्भुवनसूवरीः` → `देवीः᳓` + `भुवन-सू᳓वरीः`; `उत्तानस् त्वाङ्गीरसः` → `उत्तानः᳓`, `त्वा`, `आङ्गीरसः᳓`; `सह सञ्चस्करर्धिया` → `सह᳓`, `सञ्चस्कर`, `ऋ᳓द्धिया`).
+   - **Never club `न` + word as a compound:** `नञ्-तत्पुरुष` drops `न्` (`पा० ६.३.७३ नलोपो नञः` → `अ-`/`अन्-`), so `नान्यः`, `नान्यत्`, `नैनम्` are always two separate padas (`न᳓` + `अन्यः᳓`), never `न-अन्यः`.
+   - Likewise never club `मा`, standalone pronouns (`यः`, `सः`, `तम्`, `अहम्`, `अस्य`), particles/enclitics (`च`, `वा`, `हि`, `उ`, `ह`, `एव`, `इति`, `मे`, `ते`, `त्वा`, `नः`, `वः`), copulas/verbs (`-असि`, `-अस्मि`, `-अस्ति`, `-एति`), or case-inflected `सुबन्त`s unless a genuine Vedic *aluk* or *upapada* compound (`तपसः-पते`, `वाचः-पतिः`, `आयुः-दाः`, `स्वयम्-भु`, `तत्-पुरुषाय`, `द्यौः-इव`).
+
+3. **Keep samasta-padas together with `-` at compound joints:**
+   - Never split a *samasta-pada* across multiple bullets. Keep it as one item with `-` between compound members (`वायु-अ᳓श्वाः`, `रश्मि-प᳓तयः`, `म᳓रीचि-आत्मानः`, `भुवन-सू᳓वरीः`), undoing internal sandhi cleanly at `-`.
+   - Do **not** place `-` before *kṛt* or *taddhita* suffixes (`पुत्रवत्त्वा᳓य`, `आङ्गीरसः᳓`).
+
+4. **Honor pause-final sandhi (`पा० ८.३.१५ खरवसानयोर्विसर्जनीयः`):**
+   - Visarga (`-ः`) never drops before `।` or `॥`. Never "restore" `-ः` onto a word ending in `-अ` at pause (`मे सुत ।`, `इतोहित ।`).
+
+5. **Separate or compound `upasarga` (`गति`) + finite verb (`तिङन्त`) by clause type:**
+   - **Main clause (unaccented verb, `पा० ८.१.२८ तिङ्ङतिङः`):** Split `upasarga`(s) and the finite verb into separate padas (`सम॑वर्त॒ताधि॑` → `स᳓म्`, `अवर्तत`, `अ᳓धि`; `प्र᳓ति` + `गृह्णातु`; `आ᳓` + `यातु`), where the `upasarga` keeps its udātta (with `पा० ८.१.७० गतिर्गतावत्` when chained) and the verb is unaccented. Do not split simplex roots or `अ-` augments that merely resemble prefixes (`आस्ते`, `आहुः`, `अवतु`, `विद्यते`, `विवेश`, `अपश्यत्`, `अवसन्`).
+   - **Subordinate clause (accented verb):** Check the clause (and any immediately preceding verbless relative pāda before a correlative `तद्`-वृत्त) for `यद्`-वृत्त words (`यः`, `यम्`, `यत्`, `येन`, `यस्य`, `यत्र`, `यदा`, `यथा`, `यदि`, etc. — `पा० ८.१.६६ यद्वृत्तान्नित्यम्`), `हि`/`चेत्`/`नेत्`/`कुवित्` (`पा० ८.१.३४`, `८.१.३०`), or `च`/`वा` verb coordination (`पा० ८.१.५९ चवायोगे प्रथमा`). Here the `तिङन्त` retains its accent, a preceding `गति` becomes anudātta (`पा० ८.१.७१ तिङि चोदात्तवति`), and `गति + तिङ्` compound into one pada per `उदात्तवता तिङा गतिः समस्यते` (`य᳓म् उदाजहा᳓र` → `उदाजहा᳓र`; `यो᳓ नः प्रचोद᳓यात्` → `प्रचोद᳓यात्`).
+
+6. **Project sandhi accents and evaluate `वाक्य-स्वरः` before lexical lookup:**
+   - **Sandhi-merged vowels (`पा० ८.२.५ एकादेश उदात्तेनोदात्तः`):** Project accents from the US-accented text (`accent.to_US_accents`), never mistaking classical dependent svarita `॑` (which sits one syllable *after* the udātta, e.g. `सम॑वर्त॒ताधि॑` = `स᳓मवर्तता᳓धि`) for an udātta on the marked syllable. Attribute a merged boundary udātta (`-त + अ᳓- → -ता᳓-` in `अवर्तता᳓धि`, `-अ + ऋ᳓- → -अर्᳓-` in `सञ्चस्कर᳓र्धिया`) using each pada's syntactic role and attested accent (`अवर्तत` unaccented + `अ᳓धि`; `सञ्चस्कर` unaccented + `ऋ᳓द्धिया`). Sandhi-induced independent svarita `᳙` (*kṣaipra* `व्य᳙शेम`, *abhinihita* `यो᳙ऽपा᳓म्`) corresponds to padapāṭha udātta `᳓` (`वि᳓`, `यः᳓`); keep `᳙` in padapāṭha only on lexical svaritas (`स्वः᳙`, `क्व᳙`, `वीर्य᳙म्`).
+   - **Āmreḍita (`पा० ८.१.३ अनुदात्तं च`):** The repeated second word (`आ᳓पम् आपाम्`, `अस्मा᳓त् अस्मात्`) must be unaccented.
+   - **Vocatives (`आमन्त्रित`):** Clause/pāda-initial vocatives are *ādyudātta* (`पा० ६.१.१९८`); non-initial vocatives are unaccented (`पा० ८.१.१९`).
+   - **Enclitics & *anvādeśa*:** `मे`, `ते`, `त्वा`, `मा`, `नः`, `वः`, `च`, `वा`, `उ`, `ह`, `स्म`, and unemphatic anaphoric `इदम्`/`एतद्` forms (`अस्य`, `अस्मै`, `एनम्`, `पा० २.४.३२`) are unaccented (`पा० ८.१.१८`).
+   - **Attestation before stem extrapolation:** Prefer attested Vedic forms (`*TS*`, `*RV*`, `*TB*`, `*TK*`, `*AV*`, `*ŚB*`) over `*MW*` stem extrapolation, and do not override a valid single-accent Vedic form with an unattested `*MW*` homograph stem.
 
 ### Fake accents
 
