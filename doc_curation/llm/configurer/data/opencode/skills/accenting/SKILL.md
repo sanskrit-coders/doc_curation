@@ -69,6 +69,7 @@ classical == accent.add_dependent_accents(accent.to_US_accents(classical), UDATT
 ```
 
 ## Checking and correcting bad accents
+Generally, for correcting accented texts, don't directly alter svara-s (especially in विश्वास-प्रस्तुतिः) -  just make suggestions in the [[OLD|NEW]] format specified in the proofreading skill. Exceptions are noted below.
 
 ### Fake accents
 
@@ -81,7 +82,7 @@ accent.strip_accents(text)           # → text with all accent marks removed
 
 If you are explicitly asked, you may also spot badly accented US text beyond what the detector finds.
 
-### Repair policy
+#### Repair policy
 
 1. Remove **all** accents from that `विश्वास-प्रस्तुतिः` block. If accents were already removed there by hand, keep the unaccented text as is.
 2. Re-insert accents only when asked — and then follow the de-novo rules in the policy above, so the provenance lands in a `पद-पाठः (यान्त्रिकः)` block.
