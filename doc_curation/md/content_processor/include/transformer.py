@@ -77,8 +77,8 @@ def old_include_remover(inc, *args, **kwargs):
 def fix_rel_urls(content, from_path, to_path):
   def replacer(match):
     orig_url = match.group(2)
-    # Skip if URL is absolute or starts with '#'
-    if regex.match(r'[a-zA-Z]+://', orig_url) or orig_url.startswith(('#', '/')):
+    # Skip if URL has a scheme (http:, mailto:, javascript:, tel: ...) or starts with '#'
+    if regex.match(r'[a-zA-Z][a-zA-Z0-9+.\-]*:', orig_url) or orig_url.startswith(('#', '/')):
       return match.group(0)
     # Compute fixed relative path from file b to target
     if from_path.endswith("_index.md"):
@@ -194,9 +194,49 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   else:
     inc.replace_with(details)
 
-def prefill_includes(dir_path, file_name_filter=None, *args, **kwargs):
+def prefill_includes(dir_path, file_name_filter=None, dry_run=False, *args, **kwargs):
   logging.info(f"Prefilling includes in {dir_path}")
-  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, metadata: transform_includes_with_soup(x, metadata, transformer=prefill_include, *args, **kwargs), file_name_filter=file_name_filter)
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, metadata: transform_includes_with_soup(x, metadata, transformer=prefill_include, *args, **kwargs), file_name_filter=file_name_filter, dry_run=dry_run)
+
+def include_to_details(inc, container_file_path, title, url_pattern=None, prefill=False, hugo_base_dir="/home/vvasuki/gitland/vishvAsa", *args, **kwargs):
+  """To be used with transform_includes_with_soup: convert a prefilled include into a plain details block.
+
+  The include div is dropped and the (already prefilled) details tag within it is retained, with its summary text replaced by `title`.
+  Use this when the included content is to be inlined in the host file and the source file deleted, eg. a `vishvAsa-prastutiH` include becoming a `विश्वास-प्रस्तुतिः` details block.
+  """
+  url = inc.get("url", "")
+  if url_pattern is not None and not regex.search(url_pattern, url):
+    return
+  if prefill:
+    prefill_include(inc, container_file_path, hugo_base_dir=hugo_base_dir)
+  details = inc.select_one("details")
+  if details is None:
+    # Titleless includes (eg. includetitle="false") are prefilled without a details wrapper; wrap their bare content.
+    body = inc.decode_contents()
+  else:
+    summary = details.select_one("summary")
+    if summary is None:
+      logging.warning(f"No summary in details extracted from include {url} in {container_file_path}")
+      return
+    body = details.decode_contents()
+    if summary_str := str(summary):
+      if summary_str not in body:
+        logging.warning(f"Could not separate summary from body for include {url} in {container_file_path}")
+        return
+      body = body.split(summary_str, 1)[1]
+  body = body.strip()
+  details_new = BeautifulSoup(f"<details open><summary>{title}</summary>\n\n{body}\n</details>", "html.parser").select_one("details")
+  inc.replace_with(details_new)
+
+def includes_to_details(dir_path, title, url_pattern, prefill=False, file_name_filter=None, *args, **kwargs):
+  """Replace includes matching `url_pattern` with plain details blocks titled `title`.
+
+  `prefill` refreshes the included content from its source file before converting; otherwise run prefill_includes first.
+  """
+  def content_transformer(content, metadata, *args, **kwargs):
+    return transform_includes_with_soup(content=content, metadata=metadata, transformer=include_to_details, title=title, url_pattern=url_pattern, prefill=prefill, **kwargs)
+
+  library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=content_transformer, file_name_filter=file_name_filter, *args, **kwargs)
 
 def deincludify(dir_path, *args, **kwargs):
   # prefill_includes(dir_path=dir_path, *args, **kwargs)
