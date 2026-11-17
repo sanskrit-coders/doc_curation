@@ -19,12 +19,14 @@
 
 ## Existing code
 
-Use and maintain existing code where possible — it is installed in the venv at `~/gitland/python_venv`, so invoke `~/gitland/python_venv/bin/python` (**not** the default `python3`). 
+Use and maintain existing code where possible — it is installed in the venv at `~/gitland/python_venv`, so invoke `~/gitland/python_venv/bin/python` (**not** the default `python3`).
+- **Suggest retaining useful tooling:** When work produces a reusable utility, validator, parser, or workflow (even if prototyped as a scratch script), suggest promoting it into the appropriate shared repository (such as `doc_curation`) with tests rather than leaving it ephemeral.
 
 ### doc_curation
 Before writing text-processing code, check these in `~/gitland/sanskrit-coders/doc_curation`:
 
 - `doc_curation.md.library` has `apply_function` which is especially useful for bulk processing Markdown files within a path. Use it in combination with other functions as needed.
+- `doc_curation.sanskrit` includes `fixer`, `hyphenator`, `sandhi_check` (forward-sandhi verification), and `seeker`.
 
 For files with Sanskrit names you output, use something like `curation_utils.file_helper.get_storage_name(SANSKRIT_TEXT, source_script=sanscript.IAST)`.
 
