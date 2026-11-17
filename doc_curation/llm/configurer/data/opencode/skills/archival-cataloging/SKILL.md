@@ -26,6 +26,9 @@ post_append_rows(sheet_url, rows)
 - `hugo_site` lives at `doc_curation/hugo_site/` — import it as `doc_curation.hugo_site`, not as a top-level `hugo_site`.
 - `md_to_site_path` takes a path relative to `~/gitland/vishvAsa` (or any path containing `/content/`);
   `_index.md`/`index.md` map to the directory URL.
+- Post exactly ONE row per source book, with `site_path` pointing at the book's ROOT page
+  (the directory URL, e.g. `.../goldman/` from that directory's `_index.md`) — never one
+  row per chapter or file, even when a conversion spans many Markdown files.
 - Always build `source_path` with `get_catalog_source_path()`: granthasangrahaH PDFs → `vv-pdfs:<rel-path>`;
   UT dharmashAstra etexts → `ut-dharma:<slug>`; Muktabodha etexts → `muktabodha:<code>`.
   (The appscript client re-normalizes on POST, so older bare paths still land in the new form.)
