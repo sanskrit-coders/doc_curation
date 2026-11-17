@@ -1,6 +1,6 @@
 import pytest
 
-from doc_curation.sanskrit.sandhi_check import verify_mantra_sandhi, word_to_slp_options
+from doc_curation.sanskrit.accent.sandhi_check import verify_mantra_sandhi, word_to_slp_options
 
 
 @pytest.mark.parametrize(

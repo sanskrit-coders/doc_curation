@@ -321,11 +321,16 @@ class MdFile(object):
       add_short_title=False,
       deromanize=False,
       start_index=1,
-      dry_run=False, max_length=40):
+      dry_run=False, max_length=40,
+      max_depth=1,
+      split_sections_filter=None):
     """Splits this md file into separate files - one for each section.
-    
+
+    When ``max_depth`` is greater than 1 (or ``None`` for unlimited depth) and ``dry_run`` is ``False``,
+    each created child file is recursively split further unless ``split_sections_filter(sections, md_file)`` returns ``False``.
+
     Implementation notes: md parsers oft convert to html or json. Processing that output would be more complicated than what we need here.
-    :return: 
+    :return:
     """
     from doc_curation.md.content_processor.section_helper import get_lines_till_section, reduce_section_depth, \
       split_to_sections
@@ -343,9 +348,13 @@ class MdFile(object):
     sections = split_to_sections(remaining)
     if len(sections) == 0:
       return
-    
+    if split_sections_filter is not None and not split_sections_filter(sections, self):
+      return
+
     title_index_pattern = f"%0{len(str(len(sections)))}d"
     section_md_urls = []
+    created_paths = set()
+    created_children = []
     for section_index, section in enumerate(sections):
       title = section.title
       if title == None:
@@ -378,6 +387,15 @@ class MdFile(object):
         raise ValueError(f"title: {title_in_file_name}")
       file_name = file_helper.clean_file_path("%s.md" % title_in_file_name)
       file_path = os.path.join(out_dir, file_name)
+      if file_path in created_paths:
+        # Disambiguate colliding sanitized/truncated sibling titles instead of overwriting.
+        stem, ext = os.path.splitext(file_name)
+        suffix_idx = 2
+        while os.path.join(out_dir, f"{stem}__{suffix_idx}{ext}") in created_paths:
+          suffix_idx += 1
+        file_name = f"{stem}__{suffix_idx}{ext}"
+        file_path = os.path.join(out_dir, file_name)
+      created_paths.add(file_path)
       if bits_dir_url is not None:
         section_md_urls.append(os.path.join(bits_dir_url, file_name.replace(".md", "")))
       section_metadata = {"title": title}
@@ -388,6 +406,7 @@ class MdFile(object):
         section_md = "%s\n\n%s" % (title, section_md)
       md_file = MdFile(file_path=file_path, frontmatter_type=target_frontmantter_type)
       md_file.dump_to_file(metadata=section_metadata, content=section_md, dry_run=dry_run)
+      created_children.append((md_file, file_name))
 
     if bits_dir_url is not None:
       remainder_file_path = self.file_path
@@ -411,6 +430,25 @@ class MdFile(object):
       logging.info("Removing %s as %s is different ", self.file_path, remainder_file_path)
       if not dry_run and remainder_file_path != self.file_path:
         os.remove(path=self.file_path)
+
+    if not dry_run and (max_depth is None or max_depth > 1):
+      next_depth = None if max_depth is None else max_depth - 1
+      for child_md, file_name in created_children:
+        next_bits_dir_url = None if bits_dir_url is None else os.path.join(bits_dir_url, file_name.replace(".md", ""))
+        child_md.split_to_bits(
+          source_script=source_script,
+          mixed_languages_in_titles=mixed_languages_in_titles,
+          bits_dir_url=next_bits_dir_url,
+          maybe_use_dravidian_variant=maybe_use_dravidian_variant,
+          target_frontmantter_type=target_frontmantter_type,
+          add_short_title=add_short_title,
+          deromanize=deromanize,
+          start_index=start_index,
+          dry_run=dry_run,
+          max_length=max_length,
+          max_depth=next_depth,
+          split_sections_filter=split_sections_filter,
+        )
 
   def transform(self, content_transformer=None, metadata_transformer=None, dry_run=False, *args, **kwargs):
     [metadata, content] = self.read()

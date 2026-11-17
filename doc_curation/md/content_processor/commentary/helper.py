@@ -7,6 +7,7 @@ import regex
 from indic_transliteration import sanscript
 
 from doc_curation.md import content_processor
+from doc_curation.md.content_processor.details.common import get_top_level_detail_spans, parse_top_level_details
 from doc_curation.md.content_processor.details.model import Detail
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement
@@ -74,24 +75,9 @@ def wrap_commentaries_in_details(content, block_name="सर्वाष् ट�
   exclude_res = []
   for e in (exclude or []):
     exclude_res.append(e if hasattr(e, "search") else regex.compile(str(e)))
-  open_re = regex.compile(r"<details[^>]*>")
-  tag_re = regex.compile(r"</details>|<details[^>]*>")
   summary_re = regex.compile(r"<summary>(.*?)</summary>", flags=regex.DOTALL)
-  # Top-level spans via depth tracking (handles pre-wrapped nested blocks).
-  spans = []
-  depth = 0
-  start = None
-  for m in tag_re.finditer(content or ""):
-    if m.group().startswith("</"):
-      if depth > 0:
-        depth -= 1
-        if depth == 0 and start is not None:
-          spans.append((start, m.end()))
-          start = None
-    else:
-      if depth == 0:
-        start = m.start()
-      depth += 1
+  # Top-level spans via shared depth-tracking parser (handles pre-wrapped nested blocks).
+  spans = get_top_level_detail_spans(content)
   if not spans:
     return content
 
@@ -140,32 +126,13 @@ def collapse_details_to_end(content, title="द्राविडी", title_pat
     title_pattern = regex.escape(title)
   if isinstance(title_pattern, str):
     title_pattern = regex.compile(title_pattern)
-  tag_re = regex.compile(r"</details>|<details[^>]*>")
-  summary_re = regex.compile(r"<summary>(.*?)</summary>", flags=regex.DOTALL)
-
-  spans = []
-  depth = 0
-  start = None
-  for match in tag_re.finditer(content):
-    if match.group().startswith("</"):
-      if depth > 0:
-        depth -= 1
-        if depth == 0 and start is not None:
-          spans.append((start, match.end()))
-          start = None
-    else:
-      if depth == 0:
-        start = match.start()
-      depth += 1
 
   matched_spans = []
   bodies = []
-  for (start, end) in spans:
-    summary_match = summary_re.search(content[start:end])
-    if summary_match is None or not title_pattern.fullmatch(summary_match.group(1).strip()):
+  for (start, end, detail_title, body) in parse_top_level_details(content):
+    if not title_pattern.fullmatch(detail_title):
       continue
-    close = content.rfind("</details>", start, end)
-    bodies.append(content[start + summary_match.end():close].strip())
+    bodies.append(body)
     matched_spans.append((start, end))
 
   if not matched_spans:

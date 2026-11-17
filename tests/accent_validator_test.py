@@ -1,0 +1,130 @@
+from doc_curation.sanskrit.accent.validator import (
+  check_padapatha_header,
+  find_false_post_udatta_svarita_arrows,
+  find_unexplained_aa_hiatuses,
+  find_unlicensed_unaccented_padas,
+  find_unresolved_question_arrows,
+  find_unsplit_upasarga_tinantas,
+  find_virama_matra_glitches,
+  find_vp_integrity_issues,
+  validate_accented_markdown,
+  validate_padapatha_block,
+  validate_paired_vp_and_tk,
+)
+
+
+def test_check_padapatha_header():
+  body_ok = "- त᳓त् (*TS*)\n- एव᳓ → **ए᳓व** (*TS*)\n"
+  assert check_padapatha_header("पद-पाठः (यान्त्रिकः - 1/2 व्यत्यस्त-स्वराः)", body_ok) is None
+  assert check_padapatha_header("पद-पाठः (यान्त्रिकः - 0/2 व्यत्यस्त-स्वराः)", body_ok) is not None
+  body_zero = "- त᳓त् (*TS*)\n- एव᳓ (*TS*)\n"
+  assert check_padapatha_header("पद-पाठः (यान्त्रिकः)", body_zero) is None
+  assert check_padapatha_header("पद-पाठः (यान्त्रिकः - 0/2 व्यत्यस्त-स्वराः)", body_zero) is not None
+
+
+def test_find_virama_matra_glitches():
+  assert find_virama_matra_glitches(["- सव्ँ (*TS*)", "- शय्ँ (*TB*)"]) == []
+  glitches = find_virama_matra_glitches(["- कृत्ा (*MW*)"])
+  assert len(glitches) == 1
+
+
+def test_find_false_post_udatta_svarita_arrows():
+  mula = "पर॒मे व्यो॑मन्न् ॥"
+  # Classical ॑ on व्यो immediately follows udātta मे, so व्योमन्न् → **व्यो᳙मन्न्** is false-vyatyasta
+  false_hits = find_false_post_udatta_svarita_arrows(["- व्योमन्न् → **व्यो᳙मन्न्** (*TS*)"], mula)
+  assert len(false_hits) == 1
+  # Clean bullet without arrow is valid
+  assert find_false_post_udatta_svarita_arrows(["- व्यो᳙मन्न् (*TS*)"], mula) == []
+
+
+def test_find_unexplained_aa_hiatuses():
+  bad = find_unexplained_aa_hiatuses(["- आ (*TS*)", "- इद᳓म् (*TS*)"], "आ इ॒दम्")
+  assert len(bad) == 1
+  # Explicit daṇḍa or verified prakṛtibhāva pairs are permitted
+  assert find_unexplained_aa_hiatuses(["- आ (*TS*)", "- इद᳓म् (*TS*)"], "आ । इ॒दम्") == []
+  assert find_unexplained_aa_hiatuses(["- सप्त᳓ (*TS*)", "- इमे᳓ (*TS*)"], "स॒प्त इ॒मे") == []
+
+
+def test_find_vp_integrity_issues():
+  assert find_vp_integrity_issues("**[[ये᳓नावृत᳓ङ्|ये᳓ना᳓वृतङ्]]**[[12]]") == []
+  bad_vv = find_vp_integrity_issues("स्अग्निर्")
+  assert any("virama_vowel" in x for x in bad_vv)
+  bad_br = find_vp_integrity_issues("[[अग्नि|अ᳓ग्नि")
+  assert any("unbalanced_brackets" in x for x in bad_br)
+
+
+def test_validate_accented_markdown_and_paired():
+  clean_md = (
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\n"
+    "स᳓ इद᳓म् ॥\n</details>\n"
+    "<details><summary>मूलम्</summary>\n\n"
+    "स इ॒दम् ॥\n</details>\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n"
+    "- सः᳓ (*TS*)\n- इद᳓म् (*TS*)\n</details>\n"
+  )
+  assert validate_accented_markdown(clean_md) == []
+
+  bad_tags = clean_md + "<details>"
+  assert any(iss.kind == "tag_unbalanced" for iss in validate_accented_markdown(bad_tags))
+
+  issues_pair = validate_paired_vp_and_tk("+++\ntitle=\"x\"\n+++\n[[bad|x\n", clean_md)
+  assert any(iss.kind == "vp_integrity" for iss in issues_pair)
+
+
+def test_zero_accent_unresolved_and_upasarga_tinanta_guards():
+  assert find_unresolved_question_arrows(["- उ᳓पासितव्य᳓म् → **?** (अनेकोदात्त-दोषः)"]) != []
+  assert find_unresolved_question_arrows(["- उ᳓पासितव्य᳓म् → **उप-आसितव्य᳙म्** (पा० ३.१.९६)"]) == []
+
+  # Catches zero-accent nominals/compounds like प्रसूती without पा० ८.१.* / २.४.* license
+  assert find_unlicensed_unaccented_padas([
+    "- प्रसूती (आरण्यक-पाठः (अनाम्नातम्))",
+    "- दन्तिः (पा० ६.१.१९९ — भास्करः)",
+    "- महा-ज्ञेयम् (महा᳓ (*MW*), समासस्वरः)",
+  ]) != []
+  assert len(find_unlicensed_unaccented_padas([
+    "- प्रसूती (आरण्यक-पाठः (अनाम्नातम्))",
+    "- दन्तिः (पा० ६.१.१९९ — भास्करः)",
+    "- महा-ज्ञेयम् (महा᳓ (*MW*), समासस्वरः)",
+  ])) == 3
+
+  # Licensed anudāttas pass cleanly
+  assert find_unlicensed_unaccented_padas([
+    "- च (अनुदात्तम्, पा० ८.१.१८, *TS*, *RV*)",
+    "- विद्यते (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *RV*)",
+    "- अग्ने (आमन्त्रितम् अनुदात्तम्, पा० ८.१.१९)",
+    "- अस्य (अनुदात्तम्, पा० २.४.३२, *TS*, *RV*)",
+    "- शान्तिः (द्विर्वचने परस्यानुदात्तत्वम्, पा० ८.१.३)",
+    "- भूः (*TS*)",
+  ]) == []
+
+  # Catches unsplit upasarga + tiṅanta or misclassified nominal under पा० ८.१.२८
+  assert find_unsplit_upasarga_tinantas([
+    "- प्रदुघे (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- प्रसूती (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- सं-तापयति (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+  ]) != []
+  assert len(find_unsplit_upasarga_tinantas([
+    "- प्रदुघे (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- प्रसूती (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- सं-तापयति (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+  ])) == 3
+  # Simplex verbs starting with अ-/आ-/वि- pass cleanly
+  assert find_unsplit_upasarga_tinantas([
+    "- विद्यते (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *RV*)",
+    "- अभवत् (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *TS*)",
+    "- आनशुः (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *RV*)",
+    "- वह (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+  ]) == []
+
+  issues = validate_padapatha_block(
+    "पद-पाठः (यान्त्रिकः)",
+    "- प्रसूती (आरण्यक-पाठः (अनाम्नातम्))\n",
+  )
+  assert any(i.kind == "unlicensed_anudatta" for i in issues)
+
+
+def test_sanskrit_package_reexports():
+  import doc_curation.sanskrit as ds
+  import doc_curation.sanskrit.accent as dsa
+  for sym in dsa.__all__:
+    assert hasattr(ds, sym), f"Missing {sym} in doc_curation.sanskrit"

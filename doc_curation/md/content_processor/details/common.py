@@ -56,3 +56,40 @@ def _normalize_spaces(content):
   content = regex.sub(r"(?<=\n)(<\w+)", r"\n\n\1", content)
   content = regex.sub(r"\n *\n *\s+", "\n\n", content)
   return content
+
+
+_DETAIL_TAG_RE = regex.compile(r"</details>|<details[^>]*>")
+_SUMMARY_RE = regex.compile(r"<summary>(.*?)</summary>", flags=regex.DOTALL)
+
+
+def get_top_level_detail_spans(content):
+  """Return ``(start, end)`` spans of top-level ``<details>...</details>`` blocks."""
+  spans = []
+  depth = 0
+  start = None
+  for match in _DETAIL_TAG_RE.finditer(content or ""):
+    if match.group().startswith("</"):
+      if depth > 0:
+        depth -= 1
+        if depth == 0 and start is not None:
+          spans.append((start, match.end()))
+          start = None
+    else:
+      if depth == 0:
+        start = match.start()
+      depth += 1
+  return spans
+
+
+def parse_top_level_details(content):
+  """Return ``[(start, end, title, body)]`` for top-level ``<details>`` blocks."""
+  parsed = []
+  for start, end in get_top_level_detail_spans(content):
+    summary_match = _SUMMARY_RE.search(content[start:end])
+    if summary_match is None:
+      continue
+    close = content.rfind("</details>", start, end)
+    title = (summary_match.group(1) or "").strip()
+    body = content[start + summary_match.end():close].strip()
+    parsed.append((start, end, title, body))
+  return parsed
