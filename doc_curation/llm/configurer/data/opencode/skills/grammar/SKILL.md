@@ -166,14 +166,19 @@ print(lookup(f"{DICTS}/kAvya/rv-padapATha-dev/rv-padapATha-dev.babylon", "अग
 
 ### 6.3 Accented corpora
 
-Use when the word is not in the dictionaries above:
+Use when the word is not in the dictionaries above, or when you need to decide among different accents based on context:
 
+- /home/vvasuki/gitland/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/sarvASh_TIkAH (has pada-pATha too)
+- /home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH (has pada-pATha too)
+- /home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/kAThakam/sarva-prastutiH
+- /home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH
 - `~/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH/`
 - `~/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/kAThakam/sarva-prastutiH/`
 - `~/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH/`
 - `/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH`
 - `/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/saMhitA`
 - `/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH`
+- `/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/kaTha-kapiShTalAH/saMhitA/mUlam/schroeder/`
 
 `grep -rn "<word>" <dir>` gives the accented occurrence in context. These carry dependent accents in `मूलम्` blocks and US accents in `विश्वास-प्रस्तुतिः` blocks.
 
