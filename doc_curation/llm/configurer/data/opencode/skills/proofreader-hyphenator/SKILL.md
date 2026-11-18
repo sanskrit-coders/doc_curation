@@ -57,12 +57,16 @@ settled — word fixes change where boundaries fall.
    right separator — a **hyphen (`-`)** inside compounds (`samāsa`, e.g.
    `पुण्य-पापैः`, `मध्व्-अरिः`) and a **space (` `)** for all other separable
    word joints (e.g. `इत्य् एवम्`, `रामो ऽस्ति`).
-3. **Cardinal rule — never revert sandhi:** Split the *result* of the sandhi,
-   do not undo it.
-4. **Rule of precedence — non-separability is absolute (veto rule):**
-   Non-separation rules **always** take precedence over separation rules. **If a
-   boundary is non-separable, you MUST NOT split it for any reason, even if the
-   words form a compound (`samāsa`).**
+3. **Cardinal rule for inline hyphenation — never revert sandhi:** Within a line,
+   split the *result* of the sandhi, do not undo it. (Breaking sandhi across a
+   syntactic phrase, clause, or quote newline is allowed — see **Sentence and
+   phrase line breaks**.)
+4. **Rule of precedence — non-separability is absolute inline (veto rule):**
+   For inline hyphenation within a line, non-separation rules **always** take
+   precedence over separation rules. **If an inline boundary is non-separable,
+   you MUST NOT split it with a space or hyphen for any reason, even if the
+   words form a compound (`samāsa`).** (Only syntactic clause, quote, or
+   sentence newline breaks may undo a fused sandhi.)
 
 ### Boundary types and examples
 
@@ -140,6 +144,26 @@ never insert blank lines between every sentence inside one paragraph.
   - **Long parallel modifiers or compound chains:** break before distinct
     predicates/appositives or at major `--`/`–` boundaries when a long chain
     spans multiple clauses (e.g. `जीवात्मनः स्वरूपं  \nदेव-मनुष्यादि-प्रकृति-परिणाम-विशेष-रूप--  \nनाना-विध--**भेद-रहितं**  \nज्ञानानन्दैक-गुणम्।`).
+- **Breaking sandhi at phrase / clause / quote newlines:**
+  - When a separable seam already sits cleanly at the break, prefer splitting
+    without reverting sandhi (`निश्चयादयं` → `निश्चयाद्  \nअयं`,
+    `वह्नेर्दाह्यसन्निधौ` → `वह्नेर्  \nदाह्य-सन्निधौ`, `अप्युपपद्यते` →
+    `अप्य्  \nउपपद्यते`, `ब्रह्मणोऽभिधेयतया` → `ब्रह्मणो  \nऽभिधेयतया`).
+  - When external sandhi (`dīrgha`, `guṇa`, `vṛddhi`, `yaṇ`, or `visarga`)
+    fuses two distinct clauses, a `>` blockquote boundary, or a trailing `इति` /
+    participial / locative-absolute clause that belongs on its own line, you
+    **may break (revert) the sandhi across the newline** (never inline within a
+    line):
+    - `dīrgha` broken across clause/`इति` breaks: `निश्चिते सतीक्षणादयः` →
+      `निश्चिते सति  \nईक्षणादयः`; `जीवस्यानादि...` → `जीवस्य  \nअनादि-कर्म-रूपाविद्या-तिरोहित-स्वरूपस्य`;
+      `भवतीति` → `भवति  \nइति शक्यं वक्तुम्,`
+    - `guṇa` / `vṛddhi` broken across quote/`इति`/clause breaks:
+      `अत्रौदनोपसेचनसूचितोऽत्ता ... उत परमात्मेति सन्दिह्यते` →
+      `अत्र\n\n> ओदनोपसेचन-सूचितो ऽत्ता ...\nउत परमात्मा\n\nइति सन्दिह्यते ।`;
+      `प्रधानस्याचेतनस्यैवंरूपो` → `प्रधानस्याचेतनस्य  \nएवं-रूपो`
+    - `visarga` restored at major clause breaks: `पृष्टो मृत्युस्तस्यार्थस्य` →
+      `पृष्टो मृत्युः  \nतस्यार्थस्य`; `परस्य ब्रह्मणश्शरीरतया` →
+      `परस्य ब्रह्मणः\n\nशरीरतया`
 - **Keep intact (do not over-split):**
   - Leave short single-clause sentences on one line.
   - Never break inside a compound unit (unless at a major `--`/`–` sub-phrase
