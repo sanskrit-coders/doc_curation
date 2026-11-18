@@ -24,6 +24,9 @@ process all Sanskrit text provided.
   lines (`  \n`, see **Sentence and phrase line breaks** and **Final Markdown
   formatting**).
 - Correct obvious typographical errors (e.g. a space in the middle of a word).
+- Insert an omitted sentence-ending daṇḍa (`।`) followed by `  \n` when syntax
+  (and `मूलम्` context, if present) unmistakably shows two separate sentences or
+  commentary glosses fused without punctuation (never add `।` mid-clause).
 - Remove wasteful newlines, like those before `</details>` or between half-verses.
 - Preserve intentional styles like **bold** and *italic*.
 - Preserve existing headings and paragraphs; edit only what is asked.
@@ -129,7 +132,15 @@ never insert blank lines between every sentence inside one paragraph.
 
 - **Sentence boundaries within a paragraph:** Break with `  \n` after `।`, `॥`,
   `?`, `!`, or `;` (keeping any closing quote or immediate citation reference
-  attached to the sentence).
+  attached to the sentence). When a source omits `।` between syntactically
+  disjoint sentences or commentary glosses — e.g. commentary on `निर्मिते भवने
+  पित्रा यावदच्युतदर्शनम्`: `पित्रा सवित्रा यावद् अच्युतस्य श्री-कृष्णस्य दर्शनं
+  तावन् निवसामि ॥` → `पित्रा सवित्रा।  \nयावद् अच्युतस्य श्री-कृष्णस्य दर्शनं तावन्
+  निवसामि ॥` (where instrumental `पित्रा सवित्रा` closes the gloss on `निर्मिते`
+  and cannot govern the active `निवसामि` clause) — insert the missing `।  \n`.
+  Only insert `।` when the syntactic break (incompatible case/verb government
+  or `मूलम्` parallel) is clear; for clauses within one sentence, use `  \n`
+  without adding `।`.
 - **Syntactic phrase / clause boundaries within a sentence:** Break with `  \n`
   at natural sense-unit boundaries (matching curated `rAmAnujIya` formatting):
   - **Absolutive / gerundial phrases (`-त्वा`, `-य`):** e.g.
