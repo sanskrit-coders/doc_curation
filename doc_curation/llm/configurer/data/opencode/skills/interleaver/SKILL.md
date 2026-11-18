@@ -88,6 +88,32 @@ A source heading opening a commentary block is hoisted to a real `###` heading i
 - Use a build script: slice the source by **line ranges**; split host blocks with `split_seq(text, markers)` where each marker is asserted unique (`text.count(marker) == 1`).
 - If a split point is hidden by sandhi, restore the sandhi **only in the `मूलम्` being split**, never globally.
 
+## Specialist model (only when specifically requested)
+
+When explicitly asked to run `/interleaver` with the fine-tuned `Qwen3-14B` Sanskrit interleaver LoRA (`doc_curation/data/models/qwen3-14b-sanskrit-lora/`, Kaggle: `vishvasvasuki/qwen3-14b-sanskrit-proofreader-lora`), use `ProofreaderBackend` and `interleave_helper` — both operate strictly by **0-based JSON indices ("no retyping, ever")**:
+
+1. **Plain translation streams (`doc_curation.llm.translation_matcher`):** Pass `backend=ProofreaderBackend(base_url="https://<tunnel>/v1")` (`backend.generate_content` automatically annotates `TRANSLATION WORDS:` with `[0] w0 [1] w1 ...` word indices matching the model's cursor-alignment training).
+2. **Multi-role commentaries & Vedic translations (`doc_curation.llm.proofreader.interleave_helper`):**
+
+```python
+from doc_curation.llm.proofreader import INTERLEAVER_SYSTEM_PROMPT, ProofreaderBackend
+from doc_curation.llm.proofreader.interleave_helper import (
+    assemble_cluster_blocks,
+    format_interleave_prompt,
+    parse_interleave_json,
+    split_quote_safe_segments,
+)
+
+backend = ProofreaderBackend(base_url="https://<tunnel>/v1")
+segments = split_quote_safe_segments(source_commentary_text)
+prompt = format_interleave_prompt(core_mula_list, segments, author_label="भट्टभास्करः", is_sarvash_tikah=is_sarvash_tikah)
+raw_json = backend.new_chat(INTERLEAVER_SYSTEM_PROMPT).send_text(prompt)
+plan = parse_interleave_json(raw_json, num_cores=len(clusters), num_segments=len(segments))
+assembled_md, withheld_viniyogas = assemble_cluster_blocks(
+    clusters, segments, plan, author_label="भट्टभास्करः", is_sarvash_tikah=is_sarvash_tikah,
+)
+```
+
 ## Verification checklist
 1. **Coverage**: every source content line appears verbatim in the page after stripping `>`, surrounding quotes, and heading markers → expect `missing: []`.
 2. `<details>` count == `</details>` count.

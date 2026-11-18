@@ -158,3 +158,23 @@ Typical `मूलम्`-block errors are at the beginnings and terminations of
 > "सम्मा॑ऽऽसिञ्चन्तु म॒रुत॒स् समिन्द्र॒स् सं बृह॒स्पतिः॑ । सम्मा॒यम॒ग्निस् सि॑ञ्च॒त्वायु॑षा च॒ बले॑न॒ चायु॑ष्मन्तङ् करोत॒ मा" इति।
 
 has a missing svarita at the end. These errors likely arose from faulty splitting by a human. Where an error is found, fix it in the `मूलम्` block and in the corresponding `विश्वास-प्रस्तुतिः` block. In such cases, you can correct directly, without the [[OLD|NEW]] suggestion.
+
+## Specialist models (only when specifically requested)
+
+1. **Distilled local SLP1 neural hyphenator (`doc_curation.sanskrit.hyphenator.hyphene`):** Used automatically by `doc_curation.sanskrit.accent.decompose_samasa_for_padasvara` (alongside `BytesTrie` lexicon lookup in `lexicon.py`), and can be called directly (`hyphene(vp_text, clause_newlines=True)`) to hyphenate US-accented `विश्वास-प्रस्तुतिः` text while preserving `᳓`/`᳙` marks losslessly.
+2. **Fine-tuned `Qwen3-14B` LoRA `पद-पाठः (यान्त्रिकः)` generator (`doc_curation.llm.proofreader.accent_helper`):** When explicitly requested, ground the model (`doc_curation/data/models/qwen3-14b-sanskrit-lora/`) with retrieved `*RV*`/`*TS*`/`*AV*`/`*MW*` Babylon candidates and always run the deterministic sandhi/accent validators afterward:
+
+```python
+from doc_curation.llm.proofreader import PADAPATHA_ACCENT_SYSTEM_PROMPT, ProofreaderBackend
+from doc_curation.llm.proofreader.accent_helper import format_padapatha_user_prompt, retrieve_accent_candidates
+from doc_curation.sanskrit.accent import reconciler, sandhi_check, validator
+
+backend = ProofreaderBackend(base_url="https://<tunnel>/v1")
+hits = retrieve_accent_candidates(mula_text)
+prompt = format_padapatha_user_prompt(
+    mula_text, commentary_text=tika_text, translation_text=trans_text, lexicon_hits=hits,
+)
+padapatha_block = backend.new_chat(PADAPATHA_ACCENT_SYSTEM_PROMPT).send_text(prompt)
+# Always verify forward sandhi & पा० ६.१.१५८ / ८.१.२८ invariants deterministically:
+# sandhi_check.verify_mantra_sandhi(...), validator.validate_accented_markdown(...), reconciler.reconcile_markdown_blocks(...)
+```

@@ -190,10 +190,37 @@ never insert blank lines between every sentence inside one paragraph.
   unless punctuation (`।` or `,`) justifies the pause. Never remove a
   pre-existing avagraha (`ऽ`).
 
-### Special hyphenation tools (only when explicitly directed)
+### Special hyphenation & specialist models (only when explicitly directed)
 
-**Gemini free Flash (`llm/gemini`)** — non-thorough job, for cursory sanskrit-only
-processing:
+**1. Distilled local SLP1 neural hyphenator (`doc_curation.sanskrit.hyphenator`)** — fast local ONNX model (`doc_curation/data/models/sanskrit-hyphenator-slp1/hyphenator_slp1.onnx`, `<10 ms`/sentence via `onnxruntime`, zero GPU/server needed), backed by `BytesTrie` merger-veto checks (`lexicon.py`). Automatically preserves `<details><summary>मूलम्...</summary>` blocks, `+++(...)+++` glosses, and Vedic US accents (`᳓`/`᳙`), and supports both inline-only (`clause_newlines=False`) and phrase/clause soft-break (`clause_newlines=True`) modes:
+
+```python
+from doc_curation.md import library
+from doc_curation.md.file import MdFile
+from doc_curation.sanskrit.hyphenator import hyphene
+
+library.apply_function(
+    fn=MdFile.transform, dir_path=dir_path,
+    content_transformer=lambda c, *args, **kwargs: hyphene(c, clause_newlines=True),
+)
+```
+
+**2. Fine-tuned `Qwen3-14B` Sanskrit proofreader LoRA (`doc_curation.llm.proofreader`)** — adapter stored locally at `doc_curation/data/models/qwen3-14b-sanskrit-lora/` (and on Kaggle at `vishvasvasuki/qwen3-14b-sanskrit-proofreader-lora`), wrapped with deterministic `मूलम्` masking, inline merger-veto snap-back, and `[[OLD|NEW]]` silent-edit guards (`guards.py`). Use via an OpenAI-compatible `vLLM` Colab/Kaggle tunnel (`ProofreaderBackend` with `text_chunker` or `detail_chunker`) or offline Kaggle batch jobs (`kaggle_runner.stage_batch_dataset` / `apply_downloaded_outputs`):
+
+```python
+from doc_curation.llm import text_chunker
+from doc_curation.llm.proofreader import ProofreaderBackend, build_system_prompt
+from doc_curation.md import library
+
+backend = ProofreaderBackend(base_url="https://<tunnel>/v1")
+prompt = build_system_prompt(clause_newlines=True, suggest_corrections=True)
+library.apply_function(
+    fn=text_chunker.process_text_chunks, dir_path=dir_path,
+    prompt=prompt, backend=backend,
+)
+```
+
+**3. Gemini free Flash (`llm/gemini`)** — non-thorough job, for cursory sanskrit-only processing:
 
 ```python
 import os
@@ -212,23 +239,6 @@ library.apply_function(
 To process only details blocks, use `gemini.process_details_with_keys` instead
 (using `bare-hyphenator.md` in the same directory when processing `मूलम्` or
 standalone detail blocks).
-
-**Heuristic hyphenator** — approximate, with some errors:
-
-```python
-from doc_curation.sanskrit.hyphenator import hyphene
-```
-
-`hyphene(text)` implements the split rules without an LLM: space at word
-joints, hyphen at samAsa joints. Do not apply it to headings, frontmatter, or
-`<details>` content. Applied over a directory:
-
-```python
-from doc_curation.md import library
-library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: hyphene(c))
-```
-
-Importing it loads a 57 MB wordlist and can take 2–3 minutes cold (agents may time-box it as a hang), so batch a whole directory in one run rather than file by file.
 
 ## Final Markdown formatting
 

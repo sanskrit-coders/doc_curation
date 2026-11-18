@@ -124,6 +124,27 @@ Example:
 
 **Reference / pañcāti / anuvāka markers mid-sentence:** Reference numbers (like `१। ५। ११। २॥ ५६`, `(2)`, `[41]`) and mechanical pañcāti or anuvāka divisions in Vedic texts often fall in the middle of a Ṛk or prose sentence. Keep cross-pañcāti and cross-anuvāka sentences/mantras together in a single block (keeping the marker in place at its token position), using the metre, syntax, commentary pratīkas, and translations to identify true sentence/mantra boundaries.
 
+## Specialist models (only when specifically requested)
+
+When explicitly asked to run `/text_to_blocks` with the local distilled SLP1 hyphenator or the fine-tuned `Qwen3-14B` LoRA (`doc_curation/data/models/qwen3-14b-sanskrit-lora/`), use `doc_curation.llm.proofreader.block_splitter` (never retypes `मूलम्`):
+
+```python
+from doc_curation.llm.proofreader import (
+    ProofreaderBackend,
+    group_sense_unit_blocks,
+    split_into_danda_segments,
+    text_to_vipra_mula_blocks,
+)
+
+# 1. Local distilled SLP1 model + deterministic Pāṇinian Tests 1–5 (converts ॒/॑ -> US ᳓/᳙ in VP, strips +++(...)+++ from मूलम्):
+out_md = text_to_vipra_mula_blocks(content, use_local_hyphenator=True, clause_newlines=True)
+
+# 2. Fine-tuned Qwen3-14B LoRA backend (adds zero-retyping JSON {"merge_after": [...]} translation-guided boundary resolution):
+backend = ProofreaderBackend(base_url="https://<tunnel>/v1")
+segs = split_into_danda_segments(sanskrit_para)
+units = group_sense_unit_blocks(segs, backend=backend, translation_hint=translation_para)
+out_md = text_to_vipra_mula_blocks(content, backend=backend, clause_newlines=True)
+```
 
 ## Report
 Report which section you ran and what changed.
