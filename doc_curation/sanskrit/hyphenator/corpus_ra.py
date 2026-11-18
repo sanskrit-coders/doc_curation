@@ -79,6 +79,10 @@ def _ra_file_configs():
       if os.path.basename(root) != "_index.md":
         yield root, src
       continue
+    if not os.path.isdir(root):
+      logging.warning("hyphenator: rAmAnujIya source missing, skipped: %s",
+                      root)
+      continue
     until = src["until"]
     for dirpath, dirnames, filenames in os.walk(root):
       dirnames.sort()

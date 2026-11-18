@@ -447,7 +447,10 @@ def export_browser_data(dest_dir=None):
 def rebuild_ra_trie():
   """Force-rebuild the ``rAmAnujIya*`` tries from the sources declared in
   ``data/vocabulary/sanskrit/rAmAnujIya-sources.toml`` and refresh the
-  browser distribution."""
+  browser distribution.
+
+  This is the only writer path: normal loads reuse the committed tries
+  even when older than the sources, so call this after editing them."""
   loaded = _load_words()
   layers = tuple(loaded._layers[:5])
   C._TRIE_RA = _WordTrie(RA._build_ra_trie(_get_scheme_map(), layers))
@@ -507,53 +510,74 @@ def _ra_source_mtime():
 
 
 def _load_ra_tries(smap, ra_mtime, word_tries, rt_dcs):
-  """Load-or-build the rAmAnujIya* tries (words / forms / ngram /
-  attestations / seps); badsplits stays None until mined once every layer
-  is active."""
+  """Load the rAmAnujIya* tries (words / forms / ngram / attestations /
+  badsplits / seps), building only what is missing.
+
+  Existing tries are used as-is even when older than the corpus sources:
+  normal hyphenation never rewrites them.  Run the explicit
+  :func:`rebuild_ra_trie` to refresh them (and the browser distribution)
+  after editing the sources.  A missing badsplits trie stays None until
+  mined once every layer is active (see :func:`_load_words`).
+  """
   from . import seps as _seps  # local: seps imports tries (avoid the cycle)
   out = {}
-  if (os.path.exists(C._RA_TRIE_PATH)
-      and os.path.getmtime(C._RA_TRIE_PATH) >= ra_mtime):
+  stale = []
+  corpus = []
+
+  def _corpus():
+    if not corpus:
+      corpus.append(RA._extract_ra_corpus())
+    return corpus[0]
+
+  def _note_stale(path):
+    if os.path.getmtime(path) < ra_mtime:
+      stale.append(os.path.basename(path))
+
+  if os.path.exists(C._RA_TRIE_PATH):
+    _note_stale(C._RA_TRIE_PATH)
     out["ra"] = marisa_trie.RecordTrie("H")
     out["ra"].load(C._RA_TRIE_PATH)
   else:
     base_layers = tuple(word_tries.values()) + (_WordTrie(rt_dcs),)
     out["ra"] = RA._build_ra_trie(smap, base_layers)
-  if (os.path.exists(C._RA_FORMS_TRIE_PATH)
-      and os.path.getmtime(C._RA_FORMS_TRIE_PATH) >= ra_mtime):
+  if os.path.exists(C._RA_FORMS_TRIE_PATH):
+    _note_stale(C._RA_FORMS_TRIE_PATH)
     out["forms"] = marisa_trie.BytesTrie()
     out["forms"].load(C._RA_FORMS_TRIE_PATH)
   else:
-    _, split_votes, plain_counts = RA._extract_ra_corpus()
+    _, split_votes, plain_counts = _corpus()
     out["forms"] = RA._build_ra_forms_trie(split_votes, plain_counts)
-  if (os.path.exists(C._RA_NGRAM_TRIE_PATH)
-      and os.path.getmtime(C._RA_NGRAM_TRIE_PATH) >= ra_mtime):
+  if os.path.exists(C._RA_NGRAM_TRIE_PATH):
+    _note_stale(C._RA_NGRAM_TRIE_PATH)
     out["ngram"] = marisa_trie.RecordTrie("II")
     out["ngram"].load(C._RA_NGRAM_TRIE_PATH)
   else:
-    _, split_votes, plain_counts = RA._extract_ra_corpus()
+    _, split_votes, plain_counts = _corpus()
     out["ngram"] = RA._build_ra_ngram_trie(split_votes, plain_counts)
-  if (os.path.exists(C._RA_ATTESTATIONS_TRIE_PATH)
-      and os.path.getmtime(C._RA_ATTESTATIONS_TRIE_PATH) >= ra_mtime):
+  if os.path.exists(C._RA_ATTESTATIONS_TRIE_PATH):
+    _note_stale(C._RA_ATTESTATIONS_TRIE_PATH)
     out["attestations"] = marisa_trie.RecordTrie("H")
     out["attestations"].load(C._RA_ATTESTATIONS_TRIE_PATH)
   else:
-    counts, split_votes, plain_counts = RA._extract_ra_corpus()
+    counts, split_votes, plain_counts = _corpus()
     out["attestations"] = RA._build_ra_attestations_trie(
         counts, plain_counts, split_votes, smap)
-  if (os.path.exists(C._RA_BADSPLITS_TRIE_PATH)
-      and os.path.getmtime(C._RA_BADSPLITS_TRIE_PATH) >= ra_mtime):
+  if os.path.exists(C._RA_BADSPLITS_TRIE_PATH):
+    _note_stale(C._RA_BADSPLITS_TRIE_PATH)
     out["badsplits"] = marisa_trie.RecordTrie("H")
     out["badsplits"].load(C._RA_BADSPLITS_TRIE_PATH)
   else:
     out["badsplits"] = None
-  if (os.path.exists(C._RA_SEPS_TRIE_PATH)
-      and os.path.getmtime(C._RA_SEPS_TRIE_PATH) >= ra_mtime):
+  if os.path.exists(C._RA_SEPS_TRIE_PATH):
+    _note_stale(C._RA_SEPS_TRIE_PATH)
     out["seps"] = marisa_trie.RecordTrie("II")
     out["seps"].load(C._RA_SEPS_TRIE_PATH)
   else:
-    _, split_votes, _plain = RA._extract_ra_corpus()
+    _, split_votes, _plain = _corpus()
     out["seps"] = _seps._build_ra_seps_trie(split_votes, smap)
+  if stale:
+    logging.info("hyphenator: stale %s; run rebuild_ra_trie() to refresh.",
+                 ", ".join(sorted(stale)))
   return out
 
 

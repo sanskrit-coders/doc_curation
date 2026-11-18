@@ -22,7 +22,7 @@ _VOWEL_FAMILY = {
 }
 _STOP_NORM = {
   "ख": "क", "घ": "ग", "छ": "च", "झ": "ज", "ठ": "ट", "ढ": "ड",
-  "ण": "न", "थ": "त", "ध": "द", "फ": "प", "भ": "ब", "श": "स", "ष": "स", "ळ": "ड",
+  "ण": "न", "ञ": "न", "ङ": "न", "थ": "त", "ध": "द", "फ": "प", "भ": "ब", "श": "स", "ष": "स", "ळ": "ड",
 }
 _SAME_ONSET_PAIRS = frozenset({
   ("स", "च"), ("च", "स"), ("द", "न"), ("द", "ल"), ("द", "ज"),
@@ -196,6 +196,23 @@ def format_padapatha_summary(n_vyat: int, p_total: int) -> str:
   if n_vyat > 0:
     return f"पद-पाठः (यान्त्रिकः - {n_vyat}/{p_total} व्यत्यस्त-स्वराः)"
   return "पद-पाठः (यान्त्रिकः)"
+
+
+def format_filled_vp_summary(
+  orig_summary: str,
+  n_vyat: int,
+  p_total: int,
+  *,
+  mula_has_accents: bool = True,
+) -> str:
+  """Format the ``<summary>`` title of a ``विश्वास-प्रस्तुतिः`` block after filling US accents from ``पद-पाठः``."""
+  base = re.sub(r"\s*\((?:स्वराः पूर्याः|यन्त्र-स्वरः|स्वराः व्यत्यस्ताः[^)]*)\)\s*", "", orig_summary).strip()
+  base = re.sub(r"\s{2,}", " ", base) or "विश्वास-प्रस्तुतिः"
+  if not mula_has_accents:
+    return f"{base} (यन्त्र-स्वरः)"
+  if n_vyat > 0 and p_total > 0:
+    return f"{base} (स्वराः व्यत्यस्ताः {n_vyat}/{p_total})"
+  return base
 
 
 def _same_onset(c1: str, c2: str) -> bool:
@@ -390,6 +407,123 @@ def _pp_member_starts(items: Sequence[PadapathaItem]) -> set[int]:
   return starts
 
 
+def _align_replace_span(
+  vp_work: str,
+  vp_pieces: Sequence[dict],
+  pp_keys: list,
+  pp_meta: list,
+  vp_keys: list,
+  vp_meta: list,
+  member_starts: AbstractSet[int],
+  i1: int,
+  i2: int,
+  j1: int,
+  j2: int,
+) -> tuple[dict[int, int], list[tuple[int, int, int]]] | None:
+  """Align an arbitrary ``replace`` span ``(i1..i2, j1..j2)`` across chained sandhi/resyllabification."""
+  memo: dict[tuple[int, int], tuple[int, list[tuple[str, tuple[int, ...]]]] | None] = {}
+
+  def _solve(p: int, v: int) -> tuple[int, list[tuple[str, tuple[int, ...]]]] | None:
+    if p == i2 and v == j2:
+      return (0, [])
+    state = (p, v)
+    if state in memo:
+      return memo[state]
+
+    best: tuple[int, list[tuple[str, tuple[int, ...]]]] | None = None
+
+    def _consider(score_delta: int, act: tuple[str, tuple[int, ...]], sub: tuple[int, list[tuple[str, tuple[int, ...]]]] | None) -> None:
+      nonlocal best
+      if sub is None:
+        return
+      cand = (score_delta + sub[0], [act] + sub[1])
+      if best is None or cand[0] > best[0]:
+        best = cand
+
+    # 1. Leading 1->0 left-merge onto j1 - 1.
+    if (
+      p == i1
+      and v == j1
+      and i1 > 0
+      and j1 > 0
+      and pp_keys[i1][0] == ""
+      and (pp_meta[i1][1] == 0 or i1 in member_starts)
+    ):
+      ok_gap = True
+      if j1 < len(vp_meta):
+        pi_prev, pi_cur = vp_meta[j1 - 1][0], vp_meta[j1][0]
+        ok_gap = pi_prev == pi_cur or _no_punct_between(vp_work, vp_pieces[pi_prev], vp_pieces[pi_cur])
+      if ok_gap:
+        _consider(3, ("merge", (i1 - 1, i1, j1 - 1)), _solve(p + 1, v))
+
+    # 2. Trailing 1->0 right-merge of i2 - 1 with i2 onto j2.
+    if p == i2 - 1 and v == j2 and j2 < len(vp_meta) and i2 < len(pp_keys):
+      next_prev_yan = vp_pieces[vp_meta[j2][0]].get("prev_yan_onset") if vp_meta[j2][1] == 0 else None
+      if (
+        next_prev_yan is not None
+        and pp_keys[p][1] in ("i", "u", "r", "l")
+        and pp_keys[i2][0] == ""
+        and _same_onset(pp_keys[p][0], next_prev_yan)
+      ):
+        _consider(3, ("merge", (p, i2, j2)), _solve(i2, j2))
+      elif pp_keys[p][0] == "" and pp_keys[i2][0] == "" and _same_onset(pp_keys[p][0], vp_keys[j2][0]):
+        _consider(3, ("merge", (p, i2, j2)), _solve(i2, j2))
+
+    # 3. 1->1 syllable correspondence (same onset or consonant-final resyllabification).
+    if p < i2 and v < j2:
+      same_on = _same_onset(pp_keys[p][0], vp_keys[v][0])
+      resyl_ok = (
+        pp_keys[p][0] == ""
+        and (pp_meta[p][1] == 0 or p in member_starts)
+        and v > 0
+        and vp_meta[v - 1][0] == vp_meta[v][0]
+        and vp_keys[v][0] != ""
+        and (pp_keys[p][1] == vp_keys[v][1] or (pp_keys[p][1] == "a" and vp_keys[v][1] in ("o", "e")))
+      )
+      if same_on or resyl_ok:
+        sc = 4 if pp_keys[p] == vp_keys[v] else (3 if same_on and pp_keys[p][1] == vp_keys[v][1] else 2)
+        _consider(sc, ("map", (p, v)), _solve(p + 1, v + 1))
+
+    # 4. 2->1 sandhi coalescence (vowel sandhi, abhinihita, yaṇ, or resyllabified merge).
+    if p + 1 < i2 and v < j2 and pp_keys[p + 1][0] == "":
+      same_on = _same_onset(pp_keys[p][0], vp_keys[v][0])
+      yan_ok = (
+        pp_keys[p][1] in ("i", "u", "r", "l")
+        and pp_keys[p][0] in vp_keys[v][0]
+        and any(sv in vp_keys[v][0] for sv in ("य", "व", "र", "ल"))
+      )
+      resyl_merge = (
+        pp_keys[p][0] == ""
+        and (pp_meta[p][1] == 0 or p in member_starts)
+        and v > 0
+        and vp_meta[v - 1][0] == vp_meta[v][0]
+        and vp_keys[v][0] != ""
+      )
+      prev_yan = vp_pieces[vp_meta[v][0]].get("prev_yan_onset") if vp_meta[v][1] == 0 else None
+      spaced_yan = (
+        prev_yan is not None
+        and pp_keys[p][1] in ("i", "u", "r", "l")
+        and _same_onset(pp_keys[p][0], prev_yan)
+      )
+      if same_on or yan_ok or resyl_merge or spaced_yan:
+        _consider(3, ("merge", (p, p + 1, v)), _solve(p + 2, v + 1))
+
+    memo[state] = best
+    return best
+
+  ans = _solve(i1, j1)
+  if ans is None:
+    return None
+  local_map: dict[int, int] = {}
+  local_merges: list[tuple[int, int, int]] = []
+  for kind, payload in ans[1]:
+    if kind == "map":
+      local_map[payload[0]] = payload[1]
+    else:
+      local_merges.append((payload[0], payload[1], payload[2]))
+  return local_map, local_merges
+
+
 def _map_pp_to_vp_syllables(
   vp_work: str,
   vp_pieces: Sequence[dict],
@@ -409,6 +543,7 @@ def _map_pp_to_vp_syllables(
       for o in range(i2 - i1):
         pp_to_vp[i1 + o] = j1 + o
     elif tag == "replace":
+      before_cnt = len(pp_to_vp) + len(merged_pp_pairs)
       if (i2 - i1) == (j2 - j1):
         for o in range(i2 - i1):
           p_idx, v_idx = i1 + o, j1 + o
@@ -434,7 +569,23 @@ def _map_pp_to_vp_syllables(
         merged_pp_pairs.append((i1 - 1, i1, j1 - 1))
         merged_pp_pairs.append((i1 + 1, i1 + 2, j1))
       elif (i2 - i1) == 2 and (j2 - j1) == 1:
-        if pp_keys[i1 + 1][0] != "":
+        next_prev_yan = (
+          vp_pieces[vp_meta[j1 + 1][0]].get("prev_yan_onset")
+          if j1 + 1 < len(vp_meta) and vp_meta[j1 + 1][1] == 0
+          else None
+        )
+        if (
+          next_prev_yan is not None
+          and i1 + 2 < len(pp_keys)
+          and _same_onset(pp_keys[i1][0], vp_keys[j1][0])
+          and pp_keys[i1 + 1][1] in ("i", "u", "r", "l")
+          and pp_keys[i1 + 2][0] == ""
+          and _same_onset(pp_keys[i1 + 1][0], next_prev_yan)
+        ):
+          # e.g. ब्राह्मणेभ्यो + ह्य् अनुज्ञानम् where भ्यः->भ्यो + हि got grouped as 2->1
+          pp_to_vp[i1] = j1
+          merged_pp_pairs.append((i1 + 1, i1 + 2, j1 + 1))
+        elif pp_keys[i1 + 1][0] != "":
           if pp_keys[i1][0] == "" and _same_onset(pp_keys[i1 + 1][0], vp_keys[j1][0]):
             pp_to_vp[i1 + 1] = j1
             if i1 > 0 and j1 > 0 and (pp_meta[i1][1] == 0 or i1 in member_starts):
@@ -462,16 +613,30 @@ def _map_pp_to_vp_syllables(
           )
         ):
           merged_pp_pairs.append((i1, i1 + 1, j1))
-      elif (
-        (i2 - i1) == 3
-        and (j2 - j1) == 2
-        and _same_onset(pp_keys[i1][0], vp_keys[j1][0])
-        and pp_keys[i1 + 2][0] == ""
-        and _same_onset(pp_keys[i1 + 1][0], vp_keys[j1 + 1][0])
-      ):
-        # e.g. शेषे + आ᳓ + इ(हि) -> शेष ए᳓(हि)
-        pp_to_vp[i1] = j1
-        merged_pp_pairs.append((i1 + 1, i1 + 2, j1 + 1))
+      elif (i2 - i1) == 3 and (j2 - j1) == 2:
+        if (
+          _same_onset(pp_keys[i1][0], vp_keys[j1][0])
+          and pp_keys[i1 + 2][0] == ""
+          and _same_onset(pp_keys[i1 + 1][0], vp_keys[j1 + 1][0])
+        ):
+          # e.g. शेषे + आ᳓ + इ(हि) -> शेष ए᳓(हि)
+          pp_to_vp[i1] = j1
+          merged_pp_pairs.append((i1 + 1, i1 + 2, j1 + 1))
+        elif (
+          pp_keys[i1 + 1][0] == ""
+          and _same_onset(pp_keys[i1][0], vp_keys[j1][0])
+          and _same_onset(pp_keys[i1 + 2][0], vp_keys[j1 + 1][0])
+        ):
+          # e.g. प्र᳓-उक्तः -> प्रो᳓क्तो
+          merged_pp_pairs.append((i1, i1 + 1, j1))
+          pp_to_vp[i1 + 2] = j1 + 1
+      if len(pp_to_vp) + len(merged_pp_pairs) == before_cnt:
+        aligned = _align_replace_span(
+          vp_work, vp_pieces, pp_keys, pp_meta, vp_keys, vp_meta, member_starts, i1, i2, j1, j2
+        )
+        if aligned is not None:
+          pp_to_vp.update(aligned[0])
+          merged_pp_pairs.extend(aligned[1])
     elif tag == "delete":
       if (i2 - i1) == 1:
         next_is_av = j1 < len(vp_meta) and vp_pieces[vp_meta[j1][0]]["old"].startswith("ऽ")
@@ -546,6 +711,26 @@ def _map_pp_to_vp_syllables(
       continue
     pi, vsi = vp_meta[vs]
     pc_syl_sources[pi][vsi].append((pp_si,))
+
+  if (
+    any(not srcs for pc_s in pc_syl_sources for srcs in pc_s)
+    and len(pp_keys) <= 250
+    and len(vp_keys) <= 250
+  ):
+    full_aligned = _align_replace_span(
+      vp_work, vp_pieces, pp_keys, pp_meta, vp_keys, vp_meta, member_starts, 0, len(pp_keys), 0, len(vp_keys)
+    )
+    if full_aligned is not None:
+      pc_syl_sources = [[[] for _ in pc["keys"]] for pc in vp_pieces]
+      merged_at_vs = set()
+      for s1, s2, vs in full_aligned[1]:
+        pi, vsi = vp_meta[vs]
+        merged_at_vs.add(vs)
+        pc_syl_sources[pi][vsi].append((s1, s2))
+      for pp_si, vs in full_aligned[0].items():
+        if vs not in merged_at_vs:
+          pi, vsi = vp_meta[vs]
+          pc_syl_sources[pi][vsi].append((pp_si,))
   return pc_syl_sources
 
 
@@ -590,10 +775,7 @@ def _merged_valid_marks(
 
 
 def _skip_elided_avagraha_lead(pc: dict, it: PadapathaItem, si: int) -> bool:
-  if not pc["old"].startswith("ऽ"):
-    return False
-  ref_syls, _ = syllables_with_marks(it.ref if it.ref != "?" else it.ar)
-  return len(ref_syls) != len(pc["keys"]) + 1 or si == 0
+  return bool(pc["old"].startswith("ऽ") and si == 0)
 
 
 def _reconcile_plain_piece(
@@ -779,6 +961,79 @@ def reconcile_vp_suggestions(
   return "".join(out), logs
 
 
+def fill_vp_accents_from_padapatha(
+  vp_body: str,
+  items: Sequence[PadapathaItem],
+) -> tuple[str, list[tuple[str, int]]]:
+  """Directly populate US accents (``᳓``/``᳙``) onto an unaccented ``विश्वास-प्रस्तुतिः`` body from ``items``.
+
+  Preserves markdown bolding, ``+++(...)+++`` notes, hyphens, spaces, and exact bare Devanagari,
+  applying Pāṇini ``8.2.4–8.2.6`` cross-pada sandhi rules. Returns ``(filled_vp_body, unmapped_syllables)``.
+  """
+  vp_pieces = _extract_vp_pieces(vp_body)
+  if not vp_pieces or not items:
+    return vp_body, []
+
+  pp_keys, pp_meta, pp_refs, _ = _flatten_pp_syllables(items)
+  vp_keys = [kv for pc in vp_pieces for kv in pc["keys"]]
+  vp_meta = [(pi, si) for pi, pc in enumerate(vp_pieces) for si in range(len(pc["keys"]))]
+  pc_syl_sources = _map_pp_to_vp_syllables(vp_body, vp_pieces, pp_keys, pp_meta, vp_keys, vp_meta, _pp_member_starts(items))
+
+  unmapped: list[tuple[str, int]] = []
+  out = list(vp_body)
+  for pi, pc in reversed(list(enumerate(vp_pieces))):
+    if pc["is_sug"]:
+      continue
+    next_starts_av = (
+      pi + 1 < len(vp_pieces)
+      and vp_pieces[pi + 1]["old"].startswith("ऽ")
+      and _no_punct_between(vp_body, pc, vp_pieces[pi + 1])
+    )
+    target_mks = list(pc["old_mks"])
+    for vsi, srcs in enumerate(pc_syl_sources[pi]):
+      if not srcs:
+        unmapped.append((pc["old"], vsi))
+        continue
+      src = srcs[0]
+      if len(src) == 1:
+        pp_si = src[0]
+        ii, si = pp_meta[pp_si]
+        if not _skip_elided_avagraha_lead(pc, items[ii], si):
+          target_mks[vsi] = pp_refs[pp_si]
+      elif len(src) == 2:
+        _, pref_mk = _merged_valid_marks(pp_refs, pp_keys, pc, vsi, src[0], src[1], next_starts_av)
+        target_mks[vsi] = pref_mk
+    if target_mks != pc["old_mks"]:
+      new_tok = apply_marks_to_token(pc["old"], target_mks)
+      out[pc["start"]:pc["end"]] = list(new_tok)
+  return "".join(out), list(reversed(unmapped))
+
+
+def find_js_include_spans(markdown_text: str) -> list[tuple[int, int]]:
+  """Return balanced ``(start, end)`` spans of top-level ``<div class="js_include">...</div>`` elements."""
+  spans: list[tuple[int, int]] = []
+  tag_re = re.compile(r"<div\b[^>]*>|</div>", re.I)
+  js_depth = 0
+  inner_depth = 0
+  start_pos = 0
+  for m in tag_re.finditer(markdown_text):
+    tok = m.group(0)
+    if tok.lower().startswith("<div"):
+      if js_depth == 0:
+        if "js_include" in tok:
+          js_depth = 1
+          start_pos = m.start()
+      else:
+        inner_depth += 1
+    elif js_depth > 0:
+      if inner_depth > 0:
+        inner_depth -= 1
+      else:
+        spans.append((start_pos, m.end()))
+        js_depth = 0
+  return spans
+
+
 def reconcile_markdown_blocks(
   markdown_text: str,
   *,
@@ -786,11 +1041,7 @@ def reconcile_markdown_blocks(
   skip_js_includes: bool = True,
 ) -> tuple[str, list[str]]:
   """Reconcile paired ``विश्वास-प्रस्तुतिः`` and ``पद-पाठः (यान्त्रिकः)`` details blocks inside Markdown text."""
-  js_divs = (
-    [(m.start(), m.end()) for m in re.finditer(r'<div class="js_include".*?</div>', markdown_text, re.S)]
-    if skip_js_includes
-    else []
-  )
+  js_divs = find_js_include_spans(markdown_text) if skip_js_includes else []
   dmatches = [m for m in DETAILS_RE.finditer(markdown_text) if not any(a <= m.start() < b for a, b in js_divs)]
   replacements: list[tuple[int, int, str]] = []
   all_logs: list[str] = []
@@ -802,7 +1053,12 @@ def reconcile_markdown_blocks(
     for j in range(i - 1, max(-1, i - 5), -1):
       ps = dmatches[j].group(1)
       if ps.startswith("विश्वास-प्रस्तुतिः"):
-        if "स्वराः पूर्याः" not in ps and "यन्त्र-स्वरः" not in ps and has_us_accents(dmatches[j].group(2)):
+        if (
+          "स्वराः पूर्याः" not in ps
+          and "यन्त्र-स्वरः" not in ps
+          and "स्वराः व्यत्यस्ताः" not in ps
+          and has_us_accents(dmatches[j].group(2))
+        ):
           new_vp, vlogs = reconcile_vp_suggestions(dmatches[j].group(2), items, extra_invalid_olds=extra_invalid_olds)
           if new_vp != dmatches[j].group(2):
             open_attr = " open" if "<details open>" in dmatches[j].group(0)[:20] else ""

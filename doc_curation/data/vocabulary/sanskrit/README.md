@@ -4,9 +4,11 @@ Data consumed by
 [`doc_curation/sanskrit/hyphenator/`](../../../sanskrit/hyphenator/) (package)
 (sandhi-aware pāda-splitting of Sanskrit text).  All `*.trie` files are
 [marisa tries](https://github.com/s-yata/marisa-trie), built lazily on first
-use and rebuilt automatically whenever a source file is newer than the trie
-(`_load_words`); they can be force-rebuilt with `rebuild_word_tries()`,
-`rebuild_dcs_trie()` and `rebuild_ra_trie()`.
+use.  Normal hyphenation never rewrites the `rAmAnujIya*` tries - they are
+reused even when older than the corpus sources, and refreshed only by an
+explicit `rebuild_ra_trie()` (which also refreshes the browser
+distribution); the word and DCS tries still rebuild automatically when
+their sources are newer (`rebuild_word_tries()`, `rebuild_dcs_trie()`).
 
 The same tries are exported as `HYP1` `.bin.gz` files for the in-browser
 hyphenator page (`vishvAsa/sanskrit/content/lekhanam/hyphenator/`), so the
@@ -52,7 +54,9 @@ never needs it.
 
 * `rAmAnujIya-sources.toml` — the corpus sources (paths + accepted
   `<details>` labels) that feed all `rAmAnujIya*` tries.  Edit this to add
-  or drop corpora; the tries rebuild on next use.
+  or drop corpora, then run `rebuild_ra_trie()` to refresh the tries (and
+  the browser distribution); normal hyphenation keeps using the committed
+  tries until then.
 * `misc-vocab.toml` — closed-class vocabulary used by the module
   (`upasargas`, `pronouns`; avyayas come from `avyayas.trie`).
 * `misc_hyphenator_data.toml` — the hyphenator's algorithmic tuning data

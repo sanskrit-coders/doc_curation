@@ -29,6 +29,9 @@ VALID_ANUDATTA_RULE_TAGS: tuple[str, ...] = (
   "८.१.७१",
   "२.४.३२",
   "२.४.३४",
+  "६.१.१९१",
+  "सर्वस्य सुपि",
+  "सर्वानुदात्त",
 )
 
 UPASARGA_PREFIXES: tuple[str, ...] = (
@@ -66,8 +69,16 @@ SIMPLEX_TINANTA_ALLOWLIST: frozenset[str] = frozenset({
   "अवर्तत",
   "अशृणवत्",
   "अपश्यत्",
+  "अपृणात्",
+  "अप्राः",
   "अवसन्",
+  "अवहन्",
+  "अवयन्",
+  "अवाक्षुः",
+  "अविशताम्",
+  "अवित्सि",
   "अविन्दन्",
+  "अवृञ्जन्",
   "असृजत",
   "अजायत",
   "अतिष्ठत्",
@@ -79,28 +90,50 @@ SIMPLEX_TINANTA_ALLOWLIST: frozenset[str] = frozenset({
   "अस्तु",
   "अगात्",
   "अगन्",
+  "अद्मि",
+  "आद्मि",
   "अवतु",
   "अवन्तु",
   "अवतात्",
   "अवमीत्",
+  "अव्यथन्",
   "आः",
+  "आवाः",
   "आसीत्",
+  "आसीत",
+  "आध्वम्",
+  "आसते",
   "आसन्",
   "आस्ते",
+  "आसताम्",
   "आहुः",
   "आनशुः",
   "आनट्",
   "आरत्",
+  "आप्नोति",
+  "आप्नुयात्",
   "आप्नुवन्ति",
+  "आपन्",
+  "आशयामि",
   "विद्यते",
+  "विद्धि",
+  "विविदे",
   "विविच्यन्ते",
   "विदध्मसि",
   "विद्म",
   "विद्मः",
   "विद्महे",
+  "विद्यात्",
   "विदुः",
   "विन्दते",
+  "विन्दस्व",
   "विवेश",
+  "विशति",
+  "विशते",
+  "विशन्ति",
+  "विशन्तु",
+  "विशामि",
+  "विशेत्",
   "प्रीणाति",
 })
 
@@ -196,9 +229,12 @@ def find_false_post_udatta_svarita_arrows(
   for ln in pp_lines:
     m_ar = re.match(r"^- ([^→\n]+?)\s*→\s*\*\*([^*]+)\*\*", ln)
     if m_ar and "᳙" in m_ar.group(2) and "᳙" not in m_ar.group(1):
-      w_bare = accent.strip_accents(m_ar.group(2)).replace("-", "")
-      if has_post_udatta_svarita_in_mula(mula_clean, w_bare, pauses=pauses):
-        hits.append(ln)
+      ar_clean = m_ar.group(1).strip().replace("-", "")
+      ref_without_svarita = m_ar.group(2).strip().replace("᳙", "").replace("-", "")
+      if ar_clean == ref_without_svarita:
+        w_bare = accent.strip_accents(m_ar.group(2)).replace("-", "")
+        if has_post_udatta_svarita_in_mula(mula_clean, w_bare, pauses=pauses):
+          hits.append(ln)
   return hits
 
 
@@ -268,8 +304,10 @@ def find_unlicensed_unaccented_padas(pp_lines: Sequence[str]) -> list[str]:
 
 
 def find_unsplit_upasarga_tinantas(pp_lines: Sequence[str]) -> list[str]:
-  """Return main-clause ``पा० ८.१.२८`` tiṅanta bullets that retain an unseparated upasarga or compound hyphen."""
+  """Return main-clause ``पा० ८.१.२८`` tiṅanta bullets that retain an unseparated upasarga or misclassify a nominal."""
   hits: list[str] = []
+  nominal_8128_endings = ("तः", "ताः", "तौ", "तिः", "निः", "नीः", "लः", "रः", "णः", "कः", "शः", "षः", "नः", "भः", "यः", "हः", "भिः", "भ्यः", "षु", "सु", "स्य", "नाम्", "णाम्")
+  finite_sip_allow = frozenset({"आः", "अकः", "अभूः", "अधाः", "अदाः", "अस्थाः", "अपाः", "अगाः", "अजाः", "आवाः", "अप्राः", "अहः", "वेत्थ", "आत्थ", "तारिषः", "मोषीः", "भैषीः", "शारीः"})
   for ln in pp_lines:
     it_list = parse_padapatha_items(ln)
     if not it_list:
@@ -281,9 +319,41 @@ def find_unsplit_upasarga_tinantas(pp_lines: Sequence[str]) -> list[str]:
     if "-" in it.ref:
       hits.append(ln)
       continue
+    if bare not in finite_sip_allow and bare.endswith(nominal_8128_endings) and not bare.endswith(("थः", "तः")) or (
+      bare.endswith("तः") and bare in ("स्मृतः", "कृतः", "भृतः", "धृतः", "श्रितः", "स्थितः", "जातः", "गतः", "हतः", "मतः", "युक्तः", "मुक्तः", "प्रोक्तः", "उक्तः")
+    ):
+      hits.append(ln)
+      continue
     if bare in SIMPLEX_TINANTA_ALLOWLIST:
       continue
     if any(bare.startswith(up) and len(bare) > len(up) + 1 for up in UPASARGA_PREFIXES):
+      hits.append(ln)
+  return hits
+
+
+def find_multi_udatta_padas(pp_lines: Sequence[str]) -> list[str]:
+  """Return padapāṭha bullets whose target ``ref`` carries >1 US accent, dependent marks, or illegal enclitic accents."""
+  dual_accent_stems = ("बृहस्पति", "बृहस्पत", "ब्रह्मणस्पति", "ब्रह्मणस्पत", "वाचस्पति", "वाचस्पत", "शचीपति", "शचीपत", "वनस्पति", "वनस्पत", "सदसस्पति", "जगतस्पति", "रायस्पोष", "रायःपोष", "शुभस्पती", "शुभःपती", "नराशंस", "नराशँस", "तनूनपात्", "द्यावा", "मित्रावरुण", "मित्रा-वरुण", "इन्द्रावरुण", "इन्द्राग्नी", "इन्द्राविष्णू", "इन्द्राबृहस्पती", "इन्द्रासोमा", "अग्नीषोम", "सोमारुद्र", "अहोरात्र", "परिधातवै", "परि-धातवै")
+  always_anudatta_enclitics = frozenset({"च", "मे", "नः", "वः", "त्वा", "ह", "स्म"})
+  hits: list[str] = []
+  for ln in pp_lines:
+    it_list = parse_padapatha_items(ln)
+    if not it_list:
+      continue
+    it = it_list[0]
+    if "?" in it.ref:
+      continue
+    bare = bare_devanagari(it.ref)
+    if not re.search(r"[\u0905-\u0939]", bare) or any(ch in it.ref for ch in ("\u0951", "\u0952", "।", "॥")):
+      hits.append(ln)
+      continue
+    n_acc = sum(1 for ch in it.ref if ch in ("\u1cd3", "\u1cd9"))
+    if n_acc >= 1 and bare in always_anudatta_enclitics:
+      hits.append(ln)
+      continue
+    if n_acc >= 2:
+      if any(tag in it.prov for tag in ("६.२.१४०", "६.२.१४१", "देवताद्वन्द्व", "उभे वनस्पत्यादिषु")) or any(st in bare for st in dual_accent_stems):
+        continue
       hits.append(ln)
   return hits
 
@@ -345,6 +415,15 @@ def validate_padapatha_block(
           ln,
         )
       )
+
+  for ln in find_multi_udatta_padas(pp_lines):
+    issues.append(
+      AccentValidationIssue(
+        "multi_udatta",
+        "Pada carries >1 accent violating पा० ६.१.१५८ without पा० ६.२.१४०/१४१ license",
+        ln,
+      )
+    )
 
   mula_clean = re.sub(r"\+\+\+\([^)]*\)\+\+\+", "", mula_body.strip())
   mula_clean = re.sub(r"\[\[([^|\]]*)\|([^\]]*)\]\]", r"\1", mula_clean)
