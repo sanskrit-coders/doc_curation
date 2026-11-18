@@ -2,6 +2,8 @@ import pytest
 
 from doc_curation.sanskrit.accent.reconciler import (
   apply_marks_to_token,
+  fill_vp_accents_from_padapatha,
+  format_filled_vp_summary,
   format_padapatha_summary,
   parse_padapatha_items,
   reconcile_markdown_blocks,
@@ -243,3 +245,27 @@ def test_reconcile_spaced_yan_and_panini_provenance():
     "- जगति → **ज᳓गति** (*RV*)\n- अस्मिन् (अनुदात्तम्, पा० २.४.३२)"
   )
   assert reconcile_vp_suggestions("जगत्य् अस्मिन्", it_jag)[0] == "[[जगत्य्|ज᳓गत्य्]] अस्मिन्"
+
+
+def test_fill_vp_accents_and_filled_summary():
+  assert format_filled_vp_summary("विश्वास-प्रस्तुतिः (स्वराः पूर्याः)", 5, 25) == "विश्वास-प्रस्तुतिः (स्वराः व्यत्यस्ताः 5/25)"
+  assert format_filled_vp_summary("विश्वास-प्रस्तुतिः - ऋक् (स्वराः पूर्याः)", 4, 11) == "विश्वास-प्रस्तुतिः - ऋक् (स्वराः व्यत्यस्ताः 4/11)"
+  assert format_filled_vp_summary("विश्वास-प्रस्तुतिः (स्वराः पूर्याः)", 0, 8) == "विश्वास-प्रस्तुतिः"
+  assert format_filled_vp_summary("विश्वास-प्रस्तुतिः (स्वराः पूर्याः)", 0, 8, mula_has_accents=False) == "विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)"
+
+  items_30 = parse_padapatha_items(
+    "- ब्राह्मणे᳙भ्यः → **ब्राह्मणे᳓भ्यः** (*AV*, *TS*)\n"
+    "- हि → **हि᳓** (*TS*, *RV*)\n"
+    "- अनु-ज्ञानम् → **अनु-ज्ञा᳓नम्** (पा० ३.३.११५, ६.१.१९३)\n"
+    "- गच्छ᳓ → **ग᳓च्छ** (*TS*, *RV*; पा० ८.१.३४)"
+  )
+  filled, unmapped = fill_vp_accents_from_padapatha("ब्राह्मणेभ्यो ह्य् अनुज्ञानङ्\nगच्छ", items_30)
+  assert unmapped == []
+  assert filled == "ब्राह्मणे᳓भ्यो ह्य् अ᳙नुज्ञा᳓नङ्\nग᳓च्छ"
+
+  items_pr = parse_padapatha_items(
+    "- स्व᳓रः (*TS*)\n- प्र-उक्तः → **प्र᳓-उक्तः** (पा० ६.२.४९)\n- अङ्गु᳓ष्ठ᳓म् → **अङ्गुष्ठ᳓म्** (*TS*)\n- च (पा० ८.१.१८)"
+  )
+  filled_pr, unm_pr = fill_vp_accents_from_padapatha("स्वरः प्रोक्तो\nऽङ्गुष्ठञ्च", items_pr)
+  assert unm_pr == []
+  assert filled_pr == "स्व᳓रः प्रो᳓क्तो\nऽङ्गुष्ठ᳓ञ्च"

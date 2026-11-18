@@ -108,13 +108,23 @@ def test_zero_accent_unresolved_and_upasarga_tinanta_guards():
     "- प्रसूती (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
     "- सं-तापयति (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
   ])) == 3
-  # Simplex verbs starting with अ-/आ-/वि- pass cleanly
+  # Simplex verbs starting with अ-/आ-/वि- and 1st-pl -मः pass cleanly
   assert find_unsplit_upasarga_tinantas([
     "- विद्यते (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *RV*)",
     "- अभवत् (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *TS*)",
     "- आनशुः (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *RV*)",
+    "- आसीत (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- अप्राः (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *TS*, *RV*)",
+    "- विशेत् (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- स्मः (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- ख्यास्यामः (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
     "- वह (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
   ]) == []
+  # Genuine vyatyasta svarita (e.g. tavyat) where ar carries wrong udāttas is NOT flagged as false_svarita_arrow
+  assert find_false_post_udatta_svarita_arrows(
+    ["- प्र᳓-मदितव्य᳓म् → **प्र-मदितव्य᳙म्** (तव्यत् पा० ३.१.९६, ६.१.१८५)"],
+    "सत्यान् न प्रम॑दित॒व्यम् ।",
+  ) == []
 
   issues = validate_padapatha_block(
     "पद-पाठः (यान्त्रिकः)",
