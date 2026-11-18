@@ -147,7 +147,9 @@ accent.detect_fake_US_accents(text)  # → suspicious runs of >5 consecutive ᳓
 If you are explicitly asked, you may also spot other fake-accented US text beyond what the above detector finds. Here direct correction is allowed:
 
 1. Remove **all** accents from that `विश्वास-प्रस्तुतिः` block (`accent.strip_accents(text)`), or keep the unaccented text if that was already done by hand. In both cases, append `(स्वराः पूर्याः)` ("accents still to be supplied") to the details block name, i.e. `<details open><summary>विश्वास-प्रस्तुतिः (स्वराः पूर्याः)</summary>`.
-2. Re-insert accents only when asked — and then follow the de-novo rules above.
+2. Re-insert accents only when asked — and when filling US svara-s into an unaccented or `(स्वराः पूर्याः)` `विश्वास-प्रस्तुतिः` block whose `मूलम्` carried accents:
+   - Ensure `<details><summary>पद-पाठः (यान्त्रिकः...)</summary>` is present and clean below `मूलम्`, then populate US accents directly onto `विश्वास-प्रस्तुतिः` (`doc_curation.sanskrit.accent.reconciler.fill_vp_accents_from_padapatha`).
+   - Update the `विश्वास-प्रस्तुतिः` summary (via `format_filled_vp_summary`) to append `(स्वराः व्यत्यस्ताः D/P)` when `D > 0` of `P` padas differed from `मूलम्` (mirroring `पद-पाठः (यान्त्रिकः - D/P व्यत्यस्त-स्वराः)`, e.g. `<details open><summary>विश्वास-प्रस्तुतिः (स्वराः व्यत्यस्ताः 5/25)</summary>`), omit the suffix when `D == 0` (`<details open><summary>विश्वास-प्रस्तुतिः</summary>`), or use `(यन्त्र-स्वरः)` when `मूलम्` itself was completely unaccented.
 
 ### Splitting errors
 
