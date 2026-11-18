@@ -864,10 +864,14 @@ def _restore_lost_avagraha(match):
   return match.group(0)
 
 
-def hyphenate_word(word):
+def hyphenate_word(word, *, use_neural=None):
   """Hyphenate a single Devanagari word (no spaces). Idempotent."""
   if not word or len(word) < 2:
     return word
+  if use_neural is not False:
+    from .neural_slp1 import is_neural_hyphenator_available, neural_hyphene
+    if use_neural or is_neural_hyphenator_available():
+      return neural_hyphene(word, clause_newlines=False)
   if "ोर्" in word:
     word = _AVAGRAHA_LOST_RE.sub(_restore_lost_avagraha, word)
 
@@ -917,26 +921,20 @@ _WORD_RE = regex.compile(r"[ऀ-ॣऽ]+")
 _ANNO_RE = regex.compile(r"\+\+\+\(.*?\)\+\+\+", regex.DOTALL)
 
 
-def hyphene(text, show_progress=False):
-  """Hyphenate (split) Sanskrit text per the bare-hyphenator rules.
+def hyphene(text, show_progress=False, *, clause_newlines=False, use_neural=None):
+  """Hyphenate (split) Sanskrit text per the proofreader-hyphenator rules.
 
-  Preserves sandhi (never reverts it), never splits dIrgha/guNa/vRddhi
-  mergers, splits separable yaN / visarga / final-m / assimilation + samAsa
-  joints with ``-`` (samAsa) or `` `` (separate padas).
-
-  >>> hyphene("इत्येवम्")
-  'इत्य् एवम्'
-  >>> hyphene("मध्वरिः")
-  'मध्व्-अरिः'
-  >>> hyphene("धर्मार्थ")
-  'धर्मार्थ'
-
-  :param text: Devanagari (possibly markdown-mixed) string.
-  :param show_progress: unused, kept for API compatibility.
-  :return: hyphenated string.
+  Uses the distilled local ONNX SLP1 neural hyphenator automatically when
+  present on disk (``doc_curation/data/models/sanskrit-hyphenator-slp1``),
+  falling back to the dictionary/trie DP segmenter when unavailable or when
+  ``use_neural=False`` / ``DOC_CURATION_HYPHENATOR_BACKEND=trie``.
   """
   if not text:
     return text
+  if use_neural is not False:
+    from .neural_slp1 import is_neural_hyphenator_available, neural_hyphene
+    if use_neural or is_neural_hyphenator_available():
+      return neural_hyphene(text, clause_newlines=clause_newlines)
   T._load_words()
   anno_spans = [(m.start(), m.end()) for m in _ANNO_RE.finditer(text)]
   anno_starts = [s for s, _ in anno_spans]

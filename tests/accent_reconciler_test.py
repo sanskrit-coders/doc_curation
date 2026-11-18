@@ -7,7 +7,7 @@ from doc_curation.sanskrit.accent.reconciler import (
   format_padapatha_summary,
   parse_padapatha_items,
   reconcile_markdown_blocks,
-  reconcile_vp_and_tk_texts,
+  reconcile_vprastuti_and_tiikaa_texts,
   reconcile_vp_suggestions,
 )
 
@@ -150,7 +150,7 @@ def test_reconcile_markdown_blocks_skips_js_include_and_summary():
   assert updated.count("विद्यते᳓ ऽयनाय") == 1
 
 
-def test_reconcile_vp_and_tk_texts_preserves_frontmatter():
+def test_reconcile_vprastuti_and_tiikaa_texts_preserves_frontmatter():
   vp = "+++\ntitle = \"test\"\n+++\n\nना᳓न्यः᳓ प᳓न्था [[विद्यते᳓|विद्यते]] ऽयनाय । २\n"
   tk = (
     "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n"
@@ -158,7 +158,7 @@ def test_reconcile_vp_and_tk_texts_preserves_frontmatter():
     "- विद्यते (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *RV*)\n"
     "- अ᳓यनाय (*TS*)\n</details>\n"
   )
-  out, _ = reconcile_vp_and_tk_texts(vp, tk)
+  out, _ = reconcile_vprastuti_and_tiikaa_texts(vp, tk)
   assert out.startswith("+++\ntitle = \"test\"\n+++\n\n")
   assert "विद्यते᳓ ऽयनाय" in out
 
@@ -176,7 +176,7 @@ def test_reconcile_vp_and_tk_texts_preserves_frontmatter():
     "- अद्भ्यः᳓ (*TS*)\n"
     "- स्वा᳓हा (*TS*)\n</details>\n"
   )
-  out_c, _ = reconcile_vp_and_tk_texts(vp_complex, tk_complex)
+  out_c, _ = reconcile_vprastuti_and_tiikaa_texts(vp_complex, tk_complex)
   assert "(उत्तरस्याम्) [[धर्माय᳓|ध᳓र्माय]] स्वा᳓हा [स्थू᳓णे अभि᳓रक्षतु] …।" in out_c
   assert "<div class=\"js_include\" url=\"/x.md\">\nधर्माय᳓\n</div>" in out_c
 

@@ -165,3 +165,30 @@ def save_adapter_locally(
   return dest
 
 
+def save_hyphenator_onnx_locally(
+  downloaded_kernel_out: str,
+  dest_dir: str | None = None,
+) -> Path:
+  """Persist distilled ONNX hyphenator models + ``config.json`` + ``distill_eval_report.json``
+  into ``doc_curation/data/models/sanskrit-hyphenator-slp1/``."""
+  from doc_curation.sanskrit.hyphenator.neural_slp1 import DEFAULT_LOCAL_HYPHENATOR_DIR
+
+  out_dir = Path(downloaded_kernel_out)
+  model_src = out_dir / "model" if (out_dir / "model").is_dir() else out_dir
+  dest = Path(dest_dir or DEFAULT_LOCAL_HYPHENATOR_DIR)
+  dest.mkdir(parents=True, exist_ok=True)
+  copied = 0
+  for item in model_src.iterdir():
+    if item.is_file() and item.suffix in (".onnx", ".json"):
+      shutil.copy2(item, dest / item.name)
+      copied += 1
+  if copied == 0:
+    raise FileNotFoundError(f"No .onnx files found in {model_src}")
+  rep = out_dir / "distill_eval_report.json"
+  if rep.is_file():
+    shutil.copy2(rep, dest / "distill_eval_report.json")
+  (dest / ".gitignore").write_text("*.onnx\n", encoding="utf-8")
+  return dest
+
+
+

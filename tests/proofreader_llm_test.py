@@ -254,4 +254,118 @@ def test_word_indexed_translation_matcher_and_multiline_typos(tmp_path):
   assert DEFAULT_LOCAL_ADAPTER_DIR.endswith("qwen3-14b-sanskrit-lora")
 
 
+def test_slp1_codec_roundtrip_accents_avagraha_and_clause_breaks():
+  from doc_curation.sanskrit.hyphenator.slp1_codec import (
+    apply_slp1_predictions_to_text,
+    encode_curated_sentence,
+  )
+
+  # 1.Curated encoding -> oracle decoding round-trip with lost avagraha & samāsa
+  curated = "रामो ऽर्थः मध्व्-अरिः विश्व᳓-कर्मणः"
+  enc = encode_curated_sentence("रामो ऽर्थः मध्व्-अरिः विश्व-कर्मणः", random.Random(1))
+  assert enc is not None
+
+  # 2. Oracle predictor test on accented Vedic + lost avagraha + merger veto
+  def mock_oracle(slp_s: str):
+    # "rAmorTaH viSvakarmaRaH DarmArTa"
+    sep = [0] * len(slp_s)
+    cl = [0] * len(slp_s)
+    if "rAmorTaH" in slp_s:
+      idx = slp_s.index("rAmorTaH")
+      sep[idx + 3] = 4  # 'o' -> SPACE_AVAGRAHA (" Z")
+    if "viSvakarmaRaH" in slp_s:
+      idx = slp_s.index("viSvakarmaRaH")
+      sep[idx + 4] = 1  # 'a' -> HYPHEN
+    if "DarmArTa" in slp_s:
+      # Deliberately try illegal split inside dīrgha merger A -> must be vetoed!
+      idx = slp_s.index("DarmArTa")
+      sep[idx + 4] = 1
+    return sep, cl
+
+  out = apply_slp1_predictions_to_text("रामोर्थः विश्व᳓कर्मणः धर्मार्थ", mock_oracle)
+  assert out == "रामो ऽर्थः विश्व᳓-कर्मणः धर्मार्थ"
+
+
+def test_text_to_blocks_skill_both_local_and_14b_backend(monkeypatch):
+  from doc_curation.llm.proofreader import (
+    group_sense_unit_blocks,
+    has_genuine_iti,
+    split_into_danda_segments,
+    text_to_vipra_mula_blocks,
+  )
+
+  # Test 4 √i ("eti") vs genuine "iti" discriminator
+  for v_eti in ("उपैति", "पर्येति", "समवेति", "पुनरेति", "अध्येति", "आयुरेति"):
+    assert not has_genuine_iti(f"स एतम् {v_eti} ।"), f"{v_eti} falsely matched iti"
+  for real_iti in ("उपैतीति", "भिषज्यतमेति", "दानकामा मे प्रजाः स्युरिति", "प्रजापतिर् इति"):
+    assert has_genuine_iti(real_iti), f"{real_iti} missed genuine iti"
+
+  # Test 2(a): Protasis -> Apodosis
+  t2a = split_into_danda_segments("यः का॒मये॑त॒ दान॑कामा मे प्र॒जाः स्यु॒रिति॑ । स पूर्व॑योः॒ फल्गु॑न्योर॒ग्निमाद॑धीत ॥")
+  assert len(group_sense_unit_blocks(t2a)) == 1
+
+  # Test 2(b): Main statement -> Explanatory yad
+  t2b = split_into_danda_segments("अ॒र्य॒म्णो वा ए॒तन्नक्ष॑त्रम् । यत्पूर्वे॒ फल्गु॑नी ।")
+  assert len(group_sense_unit_blocks(t2b)) == 1
+
+  # Test 2 exception: Self-contained yad...tad sentence must NOT force-merge next sentence
+  t2_self = split_into_danda_segments(
+    "यदा ह्येवैष प्रतिष्ठां विन्दते, अथ सोऽभयं गतो भवति । तदेष श्लोको भवति ।"
+  )
+  assert len(group_sense_unit_blocks(t2_self)) == 2
+
+  # Test 3: Quotation embedded inside conditional
+  t3 = split_into_danda_segments(
+    "स᳓ य᳓द् ब्रूया᳓त् ॥ क᳓स् ता᳓नि नि᳓रमिमी᳓त_इ᳓ति ॥ प्रजा᳓पतिर् इ᳓ति ब्रूयात् ॥"
+  )
+  assert len(group_sense_unit_blocks(t3)) == 1
+
+  # Test 4: Multi-sentence quotation with sandhi-fused -meti + reference numbers kept attached
+  t4 = split_into_danda_segments(
+    "१। ५। ११। २॥ ५६ सो॑ऽब्रवीत् । स॒प्त॒द॒शेन॑ ह्रि॒यमा॑णो॒ व्य॑लेशिषि । भि॒षज्य॑त॒मेति॑ ।"
+  )
+  b4 = group_sense_unit_blocks(t4)
+  assert len(b4) == 1 and b4[0].startswith("१। ५। ११।")
+
+  # Test 5: Sequential -tvA absolutive with (33) ref + editorial gloss supplied verb vs bare atha/dative
+  t5 = split_into_danda_segments("स तप॑स्त॒प्त्वा । (33) अन्नं॒ ब्रह्मेति॒ व्य॑जानात् ।")
+  assert len(group_sense_unit_blocks(t5)) == 1
+
+  t5_bare = split_into_danda_segments("केशान् प्रवपति । अथ श्मश्रूणि । रक्षसाम् अपहत्यै ।")
+  assert len(group_sense_unit_blocks(t5_bare)) == 1
+
+  t5_glossed = split_into_danda_segments("केशान् प्रवपति । अथ श्मश्रूणि +++(प्रवपति)+++ ।")
+  assert len(group_sense_unit_blocks(t5_glossed)) == 2
+
+  # End-to-end vipra + mula block generation: (A) Local hyphenator path
+  bare_vedic = "सो॑ऽब्रवीत् । भि॒षज्य॑त॒मेति॑ +++(अवदत्)+++ ।"
+  blocks_local = text_to_vipra_mula_blocks(bare_vedic, use_local_hyphenator=True)
+  assert blocks_local.count("<summary>विश्वास-प्रस्तुतिः</summary>") == 1
+  assert "+++(अवदत्)+++" in blocks_local.split("<summary>मूलम्</summary>")[0]
+  assert "+++" not in blocks_local.split("<summary>मूलम्</summary>")[1]
+  assert "\u1cd3" in blocks_local.split("<summary>मूलम्</summary>")[0]  # US accent ᳓ in VP
+  assert "सो॑ऽब्रवीत्" in blocks_local.split("<summary>मूलम्</summary>")[1]  # original ॑ in मूलम्
+
+  # End-to-end vipra + mula + translation-guided merge: (B) 14B ProofreaderBackend path
+  b_llm = ProofreaderBackend(base_url="http://mock.local/v1")
+
+  def fake_chat(messages, model_id=None):
+    u = messages[-1]["content"]
+    if "merge_after" in u:
+      return '{"merge_after": [0]}', {}
+    return u.replace("जगत्कारणम्", "जगत्-कारणम्"), {}
+
+  monkeypatch.setattr(b_llm, "_chat_completion", fake_chat)
+  segs_tr = split_into_danda_segments("अग्निर् ज्योतिः । इन्द्रो ज्योतिः ।")
+  merged_tr = group_sense_unit_blocks(
+    segs_tr, backend=b_llm, translation_hint="Agni is light and Indra is light (single invocation)."
+  )
+  assert len(merged_tr) == 1
+  blocks_14b = text_to_vipra_mula_blocks("अथ जगत्कारणम् ।", backend=b_llm)
+  assert "जगत्-कारणम्" in blocks_14b.split("<summary>मूलम्</summary>")[0]
+  assert "जगत्कारणम्" in blocks_14b.split("<summary>मूलम्</summary>")[1]
+
+
+
+
 

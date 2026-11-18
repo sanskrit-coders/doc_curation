@@ -1148,45 +1148,45 @@ def _slice_items_for_partial_vp(items: Sequence[PadapathaItem], vp_masked: str) 
   return items[:best_k]
 
 
-def reconcile_vp_and_tk_texts(
-  vp_text: str,
-  tk_text: str,
+def reconcile_vprastuti_and_tiikaa_texts(
+  vprastuti_text: str,
+  tiikaa_text: str,
   *,
   extra_invalid_olds: AbstractSet[str] = frozenset(),
   mask_stage_brackets: bool = True,
 ) -> tuple[str, list[str]]:
-  """Reconcile a split ``vishvAsa-prastutiH`` (``vp``) file against its companion ``sarvASh_TIkAH`` (``tk``) file.
+  """Reconcile a split ``vishvAsa-prastutiH`` file against its companion ``sarvASh_TIkAH`` (ṭīkā) file.
 
   In split Hugo corpus layouts:
-  - ``vp_text`` (``vp`` = ``vishvAsa-prastutiH/<mantra>.md``) holds the reader-facing US-accented presentation text
+  - ``vprastuti_text`` (``vishvAsa-prastutiH/<mantra>.md``) holds the reader-facing US-accented presentation text
     (optionally followed or wrapped by ``<div class="js_include">`` blocks, stage directions, or ``…`` pratīka abbreviations).
-  - ``tk_text`` (``tk`` = ``sarvASh_TIkAH/<mantra>.md``, i.e. the ``टीका`` + ``मूलम्`` + ``पद-पाठः`` companion file)
+  - ``tiikaa_text`` (``sarvASh_TIkAH/<mantra>.md``, i.e. the ``टीका`` + ``मूलम्`` + ``पद-पाठः`` companion file)
     holds ``<details><summary>मूलम्</summary>``, ``<details><summary>पद-पाठः (यान्त्रिकः...)</summary>``, and commentaries.
 
-  Only outer blocks outside ``<div class="js_include">...</div>`` are read from ``tk_text`` and modified in ``vp_text``.
+  Only outer blocks outside ``<div class="js_include">...</div>`` are read from ``tiikaa_text`` and modified in ``vprastuti_text``.
   Stage-direction parentheses and single-bracketed anuṣaṅga supplements absent from ``मूलम्`` are masked during alignment,
-  and abbreviated ``vp_text`` prefixes are aligned against the matching prefix of ``पद-पाठः`` items.
+  and abbreviated ``vprastuti_text`` prefixes are aligned against the matching prefix of ``पद-पाठः`` items.
   """
-  js_tk = find_js_include_spans(tk_text)
-  tk_blocks = [m for m in DETAILS_RE.finditer(tk_text) if not any(a <= m.start() < b for a, b in js_tk)]
+  js_tk = find_js_include_spans(tiikaa_text)
+  tk_blocks = [m for m in DETAILS_RE.finditer(tiikaa_text) if not any(a <= m.start() < b for a, b in js_tk)]
   m_pp = next((m for m in tk_blocks if m.group(1).strip().startswith("पद-पाठः (यान्त्रिकः")), None)
   if m_pp is None:
-    return vp_text, []
+    return vprastuti_text, []
   m_mula = next((m for m in tk_blocks if m.group(1).strip().startswith("मूलम्")), None)
   mula_body = m_mula.group(2) if m_mula is not None else ""
 
-  vp_hdr, vp_body = _split_toml_frontmatter(vp_text)
+  vp_hdr, vp_body = _split_toml_frontmatter(vprastuti_text)
   vp_masked, masks = _mask_non_mula_spans(vp_body, mula_body, mask_stage_brackets=mask_stage_brackets)
   if not has_us_accents(vp_masked):
-    return vp_text, []
+    return vprastuti_text, []
 
   items = parse_padapatha_items(m_pp.group(2).strip())
   sub_items = _slice_items_for_partial_vp(items, vp_masked)
   if not sub_items:
-    return vp_text, []
+    return vprastuti_text, []
 
   new_masked, logs = reconcile_vp_suggestions(vp_masked, sub_items, extra_invalid_olds=extra_invalid_olds)
   new_vp_body = _unmask_spans(new_masked, masks)
   if new_vp_body == vp_body:
-    return vp_text, []
+    return vprastuti_text, []
   return vp_hdr + new_vp_body, logs

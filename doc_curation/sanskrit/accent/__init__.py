@@ -19,12 +19,13 @@ from doc_curation.sanskrit.accent.reconciler import (
   is_solid_provenance,
   parse_padapatha_items,
   reconcile_markdown_blocks,
-  reconcile_vp_and_tk_texts,
+  reconcile_vprastuti_and_tiikaa_texts,
   reconcile_vp_suggestions,
   sanitize_us_accents,
   syllables_with_marks,
   unwrap_stale_suggestions,
 )
+from doc_curation.sanskrit.accent.samasa import decompose_samasa_for_padasvara
 from doc_curation.sanskrit.accent.sandhi_check import (
   clean_deva_for_sandhi,
   sandhi_step,
@@ -63,6 +64,7 @@ __all__ = [
   "bare_devanagari",
   "check_padapatha_header",
   "clean_deva_for_sandhi",
+  "decompose_samasa_for_padasvara",
   "fill_vp_accents_from_padapatha",
   "find_false_post_udatta_svarita_arrows",
   "find_unexplained_aa_hiatuses",
@@ -78,7 +80,7 @@ __all__ = [
   "is_solid_provenance",
   "parse_padapatha_items",
   "reconcile_markdown_blocks",
-  "reconcile_vp_and_tk_texts",
+  "reconcile_vprastuti_and_tiikaa_texts",
   "reconcile_vp_suggestions",
   "sandhi_step",
   "sanitize_us_accents",

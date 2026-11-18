@@ -323,6 +323,13 @@ from .seps import (
     _sep_dash
 )
 
+from .neural_slp1 import (
+    DEFAULT_LOCAL_HYPHENATOR_DIR,
+    is_neural_hyphenator_available,
+    neural_hyphene,
+    predict_slp1_tags,
+    resolve_onnx_model_path,
+)
 from .segment import (
     _ANNO_RE,
     _ASPIRATE_FIRST,

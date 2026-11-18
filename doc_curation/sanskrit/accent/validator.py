@@ -292,6 +292,7 @@ SIMPLEX_TINANTA_ALLOWLIST: frozenset[str] = frozenset({
   "अविदत्",
   "अविदम्",
   "अपतत्",
+  "आपयेत्",
 })
 
 DEFAULT_VERIFIED_AA_HIATUSES: frozenset[tuple[str, str]] = frozenset({
