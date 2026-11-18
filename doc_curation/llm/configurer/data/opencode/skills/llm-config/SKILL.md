@@ -29,6 +29,10 @@ Everything under `data/antigravity/`, `data/copilot/`, `data/kilo/`, `data/muse/
 
 **Skills need no sync**: every harness symlinks the whole `data/opencode/skills` directory, so a new skill directory is live immediately.
 
+## Derived external prompts
+
+- `data/opencode/skills/proofreader-hyphenator/SKILL.md` is the canonical main copy for the standalone website/chunker prompts `Sanskrit_devanAgarI_markdown.md` and `bare-hyphenator.md` in `~/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/`. When rules in `proofreader-hyphenator/SKILL.md` change, ask the LLM to regenerate those two files following its **Updating derived AI prompts** section.
+
 ## Gotchas
 
 - Renaming a command file renames the generated TOML too; the stale one is pruned. After a rename, run `sync` rather than editing the generated file.
