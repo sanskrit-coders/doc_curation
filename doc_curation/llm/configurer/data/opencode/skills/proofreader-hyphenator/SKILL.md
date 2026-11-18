@@ -19,7 +19,10 @@ process all Sanskrit text provided.
 
 ## Text cleanup and normalization
 
-- Remove hard-wrapped line breaks to create continuous paragraphs.
+- Remove arbitrary print-column / hard-wrapped line breaks inside phrases, and
+  separate sentences and syntactic phrases/clauses onto clean Markdown soft-break
+  lines (`  \n`, see **Sentence and phrase line breaks** and **Final Markdown
+  formatting**).
 - Correct obvious typographical errors (e.g. a space in the middle of a word).
 - Remove wasteful newlines, like those before `</details>` or between half-verses.
 - Preserve intentional styles like **bold** and *italic*.
@@ -112,15 +115,45 @@ Iterate through each potential word/stem boundary in strict order:
    `पुण्य-पापैः`, `मध्व्-अरिः`), or a space (` `) for all other separable cases
    (e.g. `इत्य् एवम्`).
 
+### Sentence and phrase line breaks
+
+In Sanskrit prose (commentaries and multi-clause `विश्वास-प्रस्तुतिः` / prose
+blocks), separate sentences and distinct syntactic phrases/clauses onto their own
+lines ended with two trailing spaces (`  `, Markdown soft break). Use blank
+lines (`\n\n`) only between distinct paragraphs, blockquotes (`>`), or blocks —
+never insert blank lines between every sentence inside one paragraph.
+
+- **Sentence boundaries within a paragraph:** Break with `  \n` after `।`, `॥`,
+  `?`, `!`, or `;` (keeping any closing quote or immediate citation reference
+  attached to the sentence).
+- **Syntactic phrase / clause boundaries within a sentence:** Break with `  \n`
+  at natural sense-unit boundaries (matching curated `rAmAnujIya` formatting):
+  - **Absolutive / gerundial phrases (`-त्वा`, `-य`):** e.g.
+    `तीर्थे गत्वा,  \nशुचौ देशे, पादौ प्रक्षाल्य,  \nआचम्य,`
+  - **Causal ablatives (`-त्वात्`, `-आत्`) and reason clauses:** e.g.
+    `... सापेक्षत्वात्  \nतद्-अप्रतिपत्त्या प्रसिद्धि-प्राचुर्यस्य सापवादत्वात् ।`
+  - **Locative absolutes (*sati saptamī*) and participial phrases (`-अन्`,
+    `-मानः`):** e.g.
+    `... **प्रकाशितासु**  \nसर्वैर् अपि ... **अशक्यतां बुद्ध्वा**  \nनिवृत्तोद्योगः ... **उपालभते** –`
+  - **Quotative (`इति`), correlative (`यत्`/`तत्`), and comma/dash-delimited
+    clauses:** e.g. `अर्थान्तर-परिग्रहः अनुपपन्नः इति,  \nभाष्यादिषु स्थापितम् ।`
+  - **Long parallel modifiers or compound chains:** break before distinct
+    predicates/appositives or at major `--`/`–` boundaries when a long chain
+    spans multiple clauses (e.g. `जीवात्मनः स्वरूपं  \nदेव-मनुष्यादि-प्रकृति-परिणाम-विशेष-रूप--  \nनाना-विध--**भेद-रहितं**  \nज्ञानानन्दैक-गुणम्।`).
+- **Keep intact (do not over-split):**
+  - Leave short single-clause sentences on one line.
+  - Never break inside a compound unit (unless at a major `--`/`–` sub-phrase
+    seam in a very long chain), across tight noun-modifier pairs, inside
+    `[[OLD|NEW]]` / `+++(...)+++`, or so as to strand clitics (`च`, `वा`, `अपि`,
+    `एव`, `हि`, `न`, `तु`) alone on a line.
+  - Keep verse/śloka pādas one pāda per line ending with `  `.
+
 ### Optional sandhi-recreation variants (only when requested)
 
 - **Recreate sandhi:** If the source has an unnatural separation (e.g.
   `अथ स्थापकः अनिरुद्धः`), recreate the correct sandhi (`अथ स्थापको ऽनिरुद्धो`)
   unless punctuation (`।` or `,`) justifies the pause. Never remove a
   pre-existing avagraha (`ऽ`).
-- **Pause punctuation (instead of forcing sandhi):** Where non-sandhi indicates
-  reading pauses, insert appropriate punctuation (such as `,` or a long hyphen/dash)
-  instead of forcing sandhi.
 
 ### Special hyphenation tools (only when explicitly directed)
 
@@ -164,9 +197,8 @@ Importing it loads a 57 MB wordlist and can take 2–3 minutes cold (agents may 
 
 ## Final Markdown formatting
 
-- Remove any temporary `<santext>` markers used during non-Devanagari processing.
 - **Quotes & mantras**: quotes under five words in `"..."`; longer quotes and mantras as blockquotes (`>`).
-- **Structure**: end verse lines with two trailing spaces (soft break); blank line between paragraphs.
+- **Structure**: end verse pāda lines, prose sentence lines within a paragraph, and separated syntactic phrase/clause lines with two trailing spaces (`  `, soft break); use a blank line (`\n\n`) only between paragraphs, blockquotes, or blocks.
 - **Page numbers**: format page numbers (e.g. `६४`) as `[[P64]]` at the precise break point, even mid-paragraph.
 - **Footnotes**: Markdown footnote syntax `[^n]`, definitions placed next to the paragraph containing the reference, references unique and reflecting the source numbering where possible (e.g. page-12's footnote 1 → `12_1`).
 - Preserve `<details><summary>मूलम्...</summary>...</details>` blocks untouched and process only text outside them.
@@ -175,29 +207,3 @@ Importing it loads a 57 MB wordlist and can take 2–3 minutes cold (agents may 
 
 Report the edits and hyphenation performed, and list anything left for a human
 — doubtful readings, missing source images, style rules that did not apply.
-
-## Updating derived AI prompts
-
-This file is the canonical main copy of the proofreading and hyphenation rules.
-Two standalone prompts on `sanskrit.github.io` (read by `doc_curation.llm.get_prompt(path, block_index=0)`) are derived from it and can be regenerated with an LLM coding agent whenever rules here change:
-
-- `~/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md`
-- `~/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/bare-hyphenator.md`
-
-### Rules for regenerating those two files
-
-1. **`Sanskrit_devanAgarI_markdown.md`:**
-   - Keep the Hugo TOML frontmatter (`+++\ntitle = "Sanskrit devanAgarI markdown"\n\n+++`) and place the prompt inside the **first** fenced ```` ```markdown ... ``` ```` code block.
-   - Phrase the rules here as a self-contained single-turn prompt ("You are an expert Sanskrit proofreader and formatter...", `"Your entire output must be a single Markdown code block."`, ending with `"Are you ready?"`):
-     - Include the `<details><summary>मूलम्</summary>` preservation clauses (preamble and Final Markdown formatting bullet).
-     - Include Part 1 (Definitions, Separation Principle, Absolute Non-Separability Veto Rule, Boundary Types & Examples) and Part 2 (Workflow: cleanup + `<santext script=SCRIPT_NAME>` Devanagari round-trip for non-Devanagari scripts, Core Separation Algorithm, `[[OLD|NEW]]` source error handling, Final Markdown Formatting).
-     - **Exclude** coding-agent-only sections (`Special hyphenation tools`, `Report`, and this `Updating derived AI prompts` section).
-
-
-2. **`bare-hyphenator.md`:**
-   - Keep the Hugo TOML frontmatter (`+++\ntitle = "Bare Hyphenator"\n+++`) and place the prompt inside the **first** fenced ```` ```markdown ... ``` ```` code block.
-   - Match the regenerated `Sanskrit_devanAgarI_markdown.md` prompt block **except**:
-     - **Omit** both `<details><summary>मूलम्</summary>` preservation clauses (preamble sentence and Final Markdown formatting bullet), because callers such as `process_details_with_keys` pass bare or `मूलम्` detail blocks directly to it.
-     - **Omit** everything after the closing ```` ``` ```` fence (no `PROMPT ENDS ABOVE...`, `Variants`, or `उदाहरणानि`).
-
-3. **Verify:** Run `~/gitland/python_venv/bin/python` to confirm `doc_curation.llm.get_prompt(path)` extracts the full prompt cleanly (`block_index=0`) from both files without any coding-agent tool references.

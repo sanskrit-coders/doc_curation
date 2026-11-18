@@ -29,9 +29,30 @@ Everything under `data/antigravity/`, `data/copilot/`, `data/kilo/`, `data/muse/
 
 **Skills need no sync**: every harness symlinks the whole `data/opencode/skills` directory, so a new skill directory is live immediately.
 
-## Derived external prompts
+## Updating derived AI prompts
 
-- `data/opencode/skills/proofreader-hyphenator/SKILL.md` is the canonical main copy for the standalone website/chunker prompts `Sanskrit_devanAgarI_markdown.md` and `bare-hyphenator.md` in `~/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/`. When rules in `proofreader-hyphenator/SKILL.md` change, ask the LLM to regenerate those two files following its **Updating derived AI prompts** section.
+`data/opencode/skills/proofreader-hyphenator/SKILL.md` is the canonical main copy of the proofreading and hyphenation rules.
+Two standalone prompts on `sanskrit.github.io` (read by `doc_curation.llm.get_prompt(path, block_index=0)`) are derived from it and should be regenerated with an LLM coding agent whenever rules in `proofreader-hyphenator/SKILL.md` change:
+
+- `~/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md`
+- `~/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/bare-hyphenator.md`
+
+### Rules for regenerating those two files
+
+1. **`Sanskrit_devanAgarI_markdown.md`:**
+   - Keep the Hugo TOML frontmatter (`+++\ntitle = "Sanskrit devanAgarI markdown"\n\n+++`) and update only the **first** fenced ```` ```markdown ... ``` ```` code block (leaving any human-only notes below it untouched).
+   - Phrase the rules from `proofreader-hyphenator/SKILL.md` as a self-contained single-turn prompt ("You are an expert Sanskrit proofreader and formatter...", `"Your entire output must be a single Markdown code block."`, ending with `"Are you ready?"`):
+     - Include the `<details><summary>मूलम्</summary>` preservation clauses (preamble and Final Markdown formatting bullet).
+     - Include Part 1 (Definitions, Separation Principle, Absolute Non-Separability Veto Rule, Boundary Types & Examples) and Part 2 (Workflow: cleanup, Core Separation Algorithm across Devanagari and non-Devanagari Sanskrit, Sentence and Phrase Line Breaks, `[[OLD|NEW]]` source error handling + `[[??]]` illegible spans, Final Markdown Formatting).
+     - **Exclude** coding-agent-only sections (`Special hyphenation tools` and `Report`).
+
+2. **`bare-hyphenator.md`:**
+   - Keep the Hugo TOML frontmatter (`+++\ntitle = "Bare Hyphenator"\n+++`) and place the prompt inside the **first** fenced ```` ```markdown ... ``` ```` code block.
+   - Match the regenerated `Sanskrit_devanAgarI_markdown.md` prompt block **except**:
+     - **Omit** both `<details><summary>मूलम्</summary>` preservation clauses (preamble sentence and Final Markdown formatting bullet), because callers such as `process_details_with_keys` pass bare or `मूलम्` detail blocks directly to it.
+     - **Omit** everything after the closing ```` ``` ```` fence (no `PROMPT ENDS ABOVE...`, `Variants`, or `उदाहरणानि`).
+
+3. **Verify:** Run `~/gitland/python_venv/bin/python` to confirm `doc_curation.llm.get_prompt(path)` extracts the full prompt cleanly (`block_index=0`) from both files without any coding-agent tool references.
 
 ## Gotchas
 
