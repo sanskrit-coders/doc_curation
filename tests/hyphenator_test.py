@@ -4,15 +4,13 @@ import tomllib
 
 import pytest
 
-from doc_curation.sanskrit.hyphenator import hyphene
-from doc_curation.sanskrit.hyphenator import constants as C
+from doc_curation.sanskrit.hyphenator import DATA_DIR, hyphene, is_neural_hyphenator_available
 
 pytestmark = pytest.mark.skipif(
-    os.environ.get("RUN_HYPHENATOR_TESTS") != "1",
-    reason="hyphenator results depend on locally generated trie data; "
-           "set RUN_HYPHENATOR_TESTS=1 to run these tests.")
+    not is_neural_hyphenator_available(),
+    reason="Distilled local ONNX hyphenator model not yet present in doc_curation/data/models/sanskrit-hyphenator-slp1.")
 
-_DATA_PATH = os.path.join(C._DATA_DIR, "hyphenations.toml")
+_DATA_PATH = os.path.join(DATA_DIR, "hyphenations.toml")
 with open(_DATA_PATH, "rb") as f:
   _HYPHENATIONS = tomllib.load(f)
 

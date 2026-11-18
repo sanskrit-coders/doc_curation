@@ -224,17 +224,11 @@ def _is_valid_inline_cut(slp_tok: str, pos: int, sep_cls: int) -> bool:
     return False
 
   # Dictionary-backed merger veto: forbid splitting right after a merged vowel (A/I/U/e/E/o/O)
-  # when the junction is a dīrgha/guṇa/vṛddhi merger (e.g. dharmA|rtha, dayA|rdra, maho|tsava, sadai|va)
+  # when the junction is a dīrgha/guṇa/vṛddhi merger (e.g. dharmA|rTa, dayA|rdra, maho|tsava, sadE|va)
   if left_ch in _MERGED_VOWELS and sep_cls in (1, 2, 3):
-    try:
-      from . import tries as T, validate as V
-      T._load_words()
-      hk_full = sanscript.transliterate(slp_tok, sanscript.SLP1, sanscript.HK)
-      hk_left = sanscript.transliterate(left_piece, sanscript.SLP1, sanscript.HK)
-      if hk_full.startswith(hk_left) and V.is_veto_split(hk_full, len(hk_left)):
-        return False
-    except Exception:
-      pass
+    from .lexicon import is_merger_veto_slp1
+    if is_merger_veto_slp1(slp_tok, pos):
+      return False
   return True
 
 

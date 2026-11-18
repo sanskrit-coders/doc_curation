@@ -74,19 +74,19 @@ def has_genuine_iti(seg: str, *, use_local_hyphenator: bool = True) -> bool:
   bare = accent.strip_accents(no_anno).replace("_", " ")
   raw_slp = sanscript.transliterate(bare, sanscript.DEVANAGARI, sanscript.SLP1)
   raw_tokens = [w.strip("Z'") for w in regex.findall(r"[a-zA-Z'Z]+", raw_slp) if w.strip("Z'")]
-  hyp_tokens = _clean_slp_words(seg, use_local_hyphenator=use_local_hyphenator)
-
-  for tok in raw_tokens + hyp_tokens:
-    if tok == "iti":
+  non_eti_tokens = [w for w in raw_tokens if w not in _ETI_ROOT_VERBS_SLP]
+  for tok in non_eti_tokens:
+    if tok == "iti" or tok.endswith(("Iti", "yiti", "viti", "riti", "diti", "titi", "miti")):
       return True
-    if tok in _ETI_ROOT_VERBS_SLP:
-      continue
-    # Genuine sandhi-fused iti: upEtIti / BavatIti (-Iti), syuriti (-riti), brahmeti / Bizajyatameti (-eti)
-    if tok.endswith(("Iti", "yiti", "viti", "riti", "diti", "titi", "miti")):
+    if tok.endswith("eti") and len(tok) >= 4:
       return True
-    if tok.endswith("eti") and len(tok) >= 4 and not any(tok == v for v in _ETI_ROOT_VERBS_SLP):
-      return True
-  return False
+  if not non_eti_tokens:
+    return False
+  hyp_tokens = _clean_slp_words(
+    " ".join(sanscript.transliterate(w, sanscript.SLP1, sanscript.DEVANAGARI) for w in non_eti_tokens),
+    use_local_hyphenator=use_local_hyphenator,
+  )
+  return "iti" in hyp_tokens
 
 
 def split_into_danda_segments(text: str) -> list[str]:

@@ -11,7 +11,7 @@ import tomllib
 from pathlib import Path
 import regex
 
-from doc_curation.sanskrit.hyphenator.corpus_ra import _ra_source_files
+from doc_curation.sanskrit.hyphenator.lexicon import list_ramanujIya_source_files
 from doc_curation.sanskrit.hyphenator.slp1_codec import encode_curated_sentence
 from doc_curation.llm.proofreader.dataset.text_normalizer import (
   DETAILS_RE,
@@ -50,7 +50,7 @@ def _load_heldout_reference_keys(hyp_toml_path: str) -> set[str]:
 def _collect_curated_files() -> list[str]:
   seen = set()
   files: list[str] = []
-  for fp in _ra_source_files():
+  for fp in list_ramanujIya_source_files():
     if os.path.isfile(fp) and fp not in seen:
       seen.add(fp)
       files.append(fp)

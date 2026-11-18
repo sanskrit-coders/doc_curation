@@ -6,7 +6,7 @@ import os
 import random
 import tomllib
 
-from doc_curation.sanskrit.hyphenator import constants as HC
+from doc_curation.sanskrit.hyphenator.lexicon import RA_SOURCES_TOML
 from .interleave_extractor import (
   extract_commentary_interleaver_examples,
   extract_padapatha_examples,
@@ -26,7 +26,7 @@ __all__ = [
 
 
 def _collect_ra_files() -> tuple[list[str], list[str]]:
-  with open(HC._RA_SOURCES_TOML, "rb") as f:
+  with open(RA_SOURCES_TOML, "rb") as f:
     cfg = tomllib.load(f)
   train_files, eval_files = [], []
   for src in cfg.get("source", ()):
