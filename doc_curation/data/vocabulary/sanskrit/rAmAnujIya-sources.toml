@@ -94,7 +94,7 @@ path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/parichaya-san
 included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
 
 [[source]]
-path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH"
+path = "/home/vvasuki/gitland/vishvAsa/rAmAnujIyam/content/tattvam/rAmAnujaH/brahma-sUtrANi/shrI-bhAShyam/sarva-prastutiH/1_samanvayaH"
 # 08_AkAshAdhikaraNam.md and later are held out for evaluation.
 until = "1_ayoga-vyavachChedaH/08_AkAshAdhikaraNam.md"
 included_details = ["विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी"]
