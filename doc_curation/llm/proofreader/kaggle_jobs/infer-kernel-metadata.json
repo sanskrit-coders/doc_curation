@@ -1,0 +1,22 @@
+{
+  "id": "vishvasvasuki/qwen3-14b-sanskrit-proofreader-infer",
+  "title": "qwen3-14b-sanskrit-proofreader-infer",
+  "code_file": "infer_batch.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "gpu"
+  ],
+  "dataset_sources": [
+    "vishvasvasuki/qwen3-14b-sanskrit-proofreader-lora"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": [],
+  "docker_image": "gcr.io/kaggle-private-byod/python@sha256:2757e0c7d1e0a9cb43da657b97e223c321a98f5014bdf64f44f2f6b083ad2b2f",
+  "machine_shape": "NvidiaTeslaT4"
+}

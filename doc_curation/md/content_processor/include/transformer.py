@@ -198,6 +198,131 @@ def prefill_includes(dir_path, file_name_filter=None, dry_run=False, *args, **kw
   logging.info(f"Prefilling includes in {dir_path}")
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, metadata: transform_includes_with_soup(x, metadata, transformer=prefill_include, *args, **kwargs), file_name_filter=file_name_filter, dry_run=dry_run)
 
+
+_DIV_TAG_RE = regex.compile(r"<div\b[^>]*>|</div>", regex.S)
+_LOADING_WRAPPER_RE = regex.compile(
+  r"^(\s*<details[^>]*><summary>(?:<h(\d+)>)?.*?(?:\.\.\.|…)\{Loading\}(?:\.\.\.|…)(?:</h\d+>)?\s*</summary>)(.*)(</details>\s*)$",
+  regex.S,
+)
+
+
+def find_js_include_divs(content):
+  """Return balanced ``(s_open, e_open, body_start, body_end, e_close, open_tag)`` tuples for all ``js_include`` divs."""
+  stack = []
+  results = []
+  for m in _DIV_TAG_RE.finditer(content):
+    tok = m.group(0)
+    if tok.startswith("<div"):
+      is_js = 'class="js_include' in tok or "class='js_include" in tok
+      stack.append((m.start(), m.end(), tok, is_js))
+    elif stack:
+      s_open, e_open, open_tok, is_js = stack.pop()
+      if is_js:
+        results.append((s_open, e_open, e_open, m.start(), m.end(), open_tok))
+  return results
+
+
+def surgical_prefill_content(
+  content,
+  container_file_path,
+  *,
+  url_filter=None,
+  hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
+):
+  """Refresh ``js_include`` prefills via exact string slicing without BeautifulSoup re-serialization.
+
+  Preserves ``<div ...>`` attributes, ``<details ...><summary>...{Loading}...</summary>`` wrapper headers,
+  and all surrounding Markdown/HTML byte-for-byte. When an outer ``js_include`` div is skipped by ``url_filter``,
+  descends into its nested ``js_include`` children so matching inner includes still get refreshed.
+
+  Returns ``(updated_content, num_divs_updated)``.
+  """
+  if "js_include" not in content:
+    return content, 0
+
+  all_divs = find_js_include_divs(content)
+  target_divs = []
+  covered = []
+  for d in sorted(all_divs, key=lambda x: (x[0], -(x[4] - x[0]))):
+    if any(a <= d[0] and d[4] <= b for a, b in covered):
+      continue
+    m_url = regex.search(r"""url=["']([^"']+)["']""", d[5])
+    if not m_url:
+      continue
+    url = m_url.group(1)
+    if url_filter is not None:
+      matched = url_filter(url) if callable(url_filter) else bool(regex.search(url_filter, url))
+      if not matched:
+        continue
+    file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
+    if file_path is None:
+      alt_url = url[:-3] if url.endswith(".md") else (url[:-1] if url.endswith(".md/") else regex.sub("/$", "", url) + ".md")
+      alt_url = alt_url.replace("/content/", "/").replace("/static/", "/").replace("//", "/")
+      file_path = file_path_from_url(url=alt_url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
+    if not file_path or str(file_path) == str(container_file_path) or not os.path.exists(file_path):
+      continue
+    target_divs.append((d, str(file_path)))
+    covered.append((d[0], d[4]))
+
+  edits = []
+  for (_, _, b_start, b_end, _, open_tok), target_fp in target_divs:
+    _, inc_content = MdFile(file_path=target_fp).read()
+    cur_body = content[b_start:b_end]
+    m_wrap = _LOADING_WRAPPER_RE.match(cur_body)
+    if m_wrap:
+      wrap_head, h_lvl_str, old_inner, wrap_tail = m_wrap.group(1), m_wrap.group(2), m_wrap.group(3), m_wrap.group(4)
+      if h_lvl_str:
+        h1_level = int(h_lvl_str)
+      else:
+        m_nl = regex.search(r"""newlevelforh1=["']([^"']+)["']""", open_tok)
+        h1_level = int(m_nl.group(1)) if (m_nl and m_nl.group(1).isdigit()) else 2
+      rendered = fix_headers(inc_content, h1_level)
+      rendered = fix_rel_urls(content=rendered, from_path=target_fp, to_path=str(container_file_path))
+      lead_ws = old_inner[: len(old_inner) - len(old_inner.lstrip())] or "\n\n"
+      trail_ws = old_inner[len(old_inner.rstrip()) :] or "\n"
+      new_body = wrap_head + lead_ws + rendered.strip() + trail_ws + wrap_tail
+    else:
+      m_nl = regex.search(r"""newlevelforh1=["']([^"']+)["']""", open_tok)
+      h1_level = int(m_nl.group(1)) if (m_nl and m_nl.group(1).isdigit()) else 2
+      rendered = fix_headers(inc_content, h1_level)
+      rendered = fix_rel_urls(content=rendered, from_path=target_fp, to_path=str(container_file_path))
+      new_body = "\n" + rendered.strip() + "\n"
+
+    if new_body != cur_body:
+      edits.append((b_start, b_end, new_body))
+
+  if not edits:
+    return content, 0
+
+  out = content
+  for s, e, rep in sorted(edits, key=lambda x: x[0], reverse=True):
+    out = out[:s] + rep + out[e:]
+  return out, len(edits)
+
+
+def surgical_prefill_includes(
+  dir_path,
+  *,
+  url_filter=None,
+  file_name_filter=None,
+  hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
+  dry_run=False,
+):
+  """Surgically refresh ``js_include`` prefills across ``dir_path`` while preserving ``{Loading}`` wrappers."""
+  logging.info(f"Surgically prefilling includes in {dir_path}")
+  library.apply_function(
+    fn=MdFile.transform,
+    dir_path=dir_path,
+    content_transformer=lambda x, metadata: surgical_prefill_content(
+      x,
+      metadata["_file_path"],
+      url_filter=url_filter,
+      hugo_base_dir=hugo_base_dir,
+    )[0],
+    file_name_filter=file_name_filter,
+    dry_run=dry_run,
+  )
+
 def include_to_details(inc, container_file_path, title, url_pattern=None, prefill=False, hugo_base_dir="/home/vvasuki/gitland/vishvAsa", *args, **kwargs):
   """To be used with transform_includes_with_soup: convert a prefilled include into a plain details block.
 

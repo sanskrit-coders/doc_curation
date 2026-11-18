@@ -162,6 +162,24 @@ def test_reconcile_vp_and_tk_texts_preserves_frontmatter():
   assert out.startswith("+++\ntitle = \"test\"\n+++\n\n")
   assert "विद्यते᳓ ऽयनाय" in out
 
+  # Masks <div class="js_include">, stage-direction parens/brackets, and slices abbreviated '…' pratīkas
+  vp_complex = (
+    "+++\ntitle = \"complex\"\n+++\n\n"
+    "(उत्तरस्याम्) धर्माय᳓ स्वा᳓हा [स्थू᳓णे अभि᳓रक्षतु] …।\n"
+    "<div class=\"js_include\" url=\"/x.md\">\nधर्माय᳓\n</div>\n"
+  )
+  tk_complex = (
+    "<details><summary>मूलम्</summary>\n\nधर्मा॑य॒ स्वाहा॑ । अ॒द्भ्यः स्वाहा॑ ।\n</details>\n\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः - 1/4 व्यत्यस्त-स्वराः)</summary>\n\n"
+    "- धर्माय᳓ → **ध᳓र्माय** (*TS*)\n"
+    "- स्वा᳓हा (*TS*)\n"
+    "- अद्भ्यः᳓ (*TS*)\n"
+    "- स्वा᳓हा (*TS*)\n</details>\n"
+  )
+  out_c, _ = reconcile_vp_and_tk_texts(vp_complex, tk_complex)
+  assert "(उत्तरस्याम्) [[धर्माय᳓|ध᳓र्माय]] स्वा᳓हा [स्थू᳓णे अभि᳓रक्षतु] …।" in out_c
+  assert "<div class=\"js_include\" url=\"/x.md\">\nधर्माय᳓\n</div>" in out_c
+
 
 def test_reconcile_intra_compound_and_samasa_sutra_provenance():
   items = parse_padapatha_items(

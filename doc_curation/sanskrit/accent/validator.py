@@ -13,6 +13,7 @@ from doc_curation.sanskrit.accent.reconciler import (
   DETAILS_RE,
   PP_HEADER_RE,
   bare_devanagari,
+  find_js_include_spans,
   has_us_accents,
   parse_padapatha_items,
 )
@@ -35,6 +36,7 @@ VALID_ANUDATTA_RULE_TAGS: tuple[str, ...] = (
 )
 
 UPASARGA_PREFIXES: tuple[str, ...] = (
+  # Base upasargas
   "परा",
   "अप",
   "सम्",
@@ -59,6 +61,102 @@ UPASARGA_PREFIXES: tuple[str, ...] = (
   "नि",
   "वि",
   "आ",
+  # Prevocalic consonant-final upasargas (सम्, उद्, निर्, दुर् + vowel)
+  "सम",
+  "समा",
+  "समि",
+  "समी",
+  "समु",
+  "समू",
+  "समृ",
+  "समे",
+  "समै",
+  "समो",
+  "उद",
+  "उदा",
+  "उदि",
+  "उदी",
+  "उदु",
+  "उदे",
+  "उदै",
+  "निर",
+  "निरा",
+  "निरि",
+  "निरु",
+  "निरे",
+  "दुर",
+  "दुरा",
+  "दुरु",
+  # Parasavarṇa-assimilated upasargas
+  "सँ",
+  "सङ्",
+  "सञ्",
+  "सण्",
+  "सन्",
+  "सम्ब",
+  "सम्भ",
+  "सम्म",
+  "उच्च",
+  "उच्छ",
+  "उज्ज",
+  "उड्ड",
+  "उत्त",
+  "उन्न",
+  "उल्ल",
+  "निष",
+  "निश्",
+  "निः",
+  "दुष",
+  "दुश्",
+  "दुः",
+  # Yaṇ-coalesced upasargas
+  "अन्व",
+  "अन्वा",
+  "अन्वि",
+  "अन्वी",
+  "अन्वे",
+  "अध्य",
+  "अध्या",
+  "अध्यु",
+  "अध्ये",
+  "अप्य",
+  "अत्य",
+  "अत्या",
+  "अभ्य",
+  "अभ्या",
+  "अभ्यु",
+  "अभ्ये",
+  "प्रत्य",
+  "प्रत्या",
+  "प्रत्यु",
+  "पर्य",
+  "पर्या",
+  "पर्यु",
+  "न्य",
+  "न्या",
+  "न्यु",
+  "व्य",
+  "व्या",
+  "व्यु",
+  "व्यू",
+  "व्ये",
+  # Guṇa / vṛddhi / savarṇadīrgha coalesced upasargas
+  "प्रे",
+  "प्रै",
+  "प्रो",
+  "परे",
+  "परै",
+  "अपे",
+  "अपै",
+  "अवे",
+  "अवै",
+  "उपे",
+  "उपै",
+  "अधी",
+  "अती",
+  "अभी",
+  "प्रती",
+  "परी",
 )
 
 SIMPLEX_TINANTA_ALLOWLIST: frozenset[str] = frozenset({
@@ -132,9 +230,68 @@ SIMPLEX_TINANTA_ALLOWLIST: frozenset[str] = frozenset({
   "विशते",
   "विशन्ति",
   "विशन्तु",
+  "विशतात्",
   "विशामि",
   "विशेत्",
   "प्रीणाति",
+  "सुव",
+  "सुवति",
+  "सुवतु",
+  "निनीयात्",
+  "निन्युः",
+  "अवृत्रन्",
+  "अवादिषुः",
+  "अवीवृतत्",
+  "आपाम",
+  "आराम",
+  "आमयति",
+  "आक्षि",
+  "अपात्",
+  "अपातम्",
+  "आरुक्त",
+  "आममत्",
+  "अविन्दत्",
+  "अवथः",
+  "वित्सि",
+  "विवित्से",
+  "अवदत्",
+  "विधेम",
+  "विशस्व",
+  "विशताम्",
+  "विद्ध्यामि",
+  "अवादिषम्",
+  "आवीत्",
+  "आसीः",
+  "अपश्यन्",
+  "अव्यात्",
+  "अपप्तत्",
+  "सुवामसि",
+  "सन्तु",
+  "सन्ति",
+  "स्यन्दन्ते",
+  "व्यथते",
+  "व्यथः",
+  "व्ययन्तु",
+  "व्ययस्व",
+  "उच्छन्तु",
+  "उच्छतु",
+  "ऐच्छम्",
+  "अनुष्व",
+  "वीरयध्वम्",
+  "वीहि",
+  "नीयते",
+  "एति",
+  "एधि",
+  "अतीताम्",
+  "सुवः",
+  "अवीः",
+  "ऐत्",
+  "आयन्",
+  "आस्यत्",
+  "सुषुप्थाः",
+  "अविदत्",
+  "अविदम्",
+  "अपतत्",
 })
 
 DEFAULT_VERIFIED_AA_HIATUSES: frozenset[tuple[str, str]] = frozenset({
@@ -208,10 +365,11 @@ def check_padapatha_header(header: str, pp_body: str) -> AccentValidationIssue |
 
 
 def find_virama_matra_glitches(pp_lines: Sequence[str]) -> list[str]:
-  """Return padapāṭha bullet lines containing stray ``्`` + vowel-sign/anusvāra sequences."""
+  """Return padapāṭha bullet lines containing stray ``्`` + vowel-sign/anusvāra or stray ``+``/``,`` artifacts."""
   hits: list[str] = []
   for ln in pp_lines:
-    if re.search(r"्[ा-ौःंँ]", ln.replace("्ँ", "")):
+    head = ln.split("(", 1)[0]
+    if re.search(r"्[ा-ौःंँ]", ln.replace("्ँ", "")) or "+" in head or "," in head:
       hits.append(ln)
   return hits
 
@@ -304,30 +462,86 @@ def find_unlicensed_unaccented_padas(pp_lines: Sequence[str]) -> list[str]:
 
 
 def find_unsplit_upasarga_tinantas(pp_lines: Sequence[str]) -> list[str]:
-  """Return main-clause ``पा० ८.१.२८`` tiṅanta bullets that retain an unseparated upasarga or misclassify a nominal."""
+  """Return main-clause tiṅanta bullets that retain an unseparated upasarga or misclassify a nominal.
+
+  Catches both:
+  1. Unaccented ``पा० ८.१.२८`` bullets retaining a leading upasarga (including coalesced ``ऐतु``/``अवैत्``) or nominal ending.
+  2. Accented ``upasarga + tiṅanta`` bullets (e.g. ``- प्रचोद᳓यात् (*TS*, *RV*; *TS*, *RV*, *TB*)``) whose provenance
+     lacks an explicit subordinate-clause license (``पा० ८.१.६६``, ``८.१.३४``, ``८.१.३०``, ``८.१.५९``, ``८.१.६३``, ``८.१.७१``).
+  """
   hits: list[str] = []
   nominal_8128_endings = ("तः", "ताः", "तौ", "तिः", "निः", "नीः", "लः", "रः", "णः", "कः", "शः", "षः", "नः", "भः", "यः", "हः", "भिः", "भ्यः", "षु", "सु", "स्य", "नाम्", "णाम्")
-  finite_sip_allow = frozenset({"आः", "अकः", "अभूः", "अधाः", "अदाः", "अस्थाः", "अपाः", "अगाः", "अजाः", "आवाः", "अप्राः", "अहः", "वेत्थ", "आत्थ", "तारिषः", "मोषीः", "भैषीः", "शारीः"})
+  finite_sip_allow = frozenset({
+    "आः", "अकः", "अभूः", "अधाः", "अदाः", "अस्थाः", "अपाः", "अगाः", "अजाः", "आवाः", "अप्राः",
+    "अहः", "वेत्थ", "आत्थ", "तारिषः", "मोषीः", "भैषीः", "शारीः", "अस्य", "सुवः", "कः", "वृहः",
+    "रीरिषः", "अबिभः", "मांस्ताः", "जीह्वरः", "दहः", "उरुष्यः", "अवीः", "पूरिष्ठाः", "अहाः",
+  })
+  coalesced_up_tinantas = frozenset({"ऐतु", "अवैत्", "प्रैत्", "उपैत्", "उपैति", "प्रेरते", "उपेहि", "अपेहि", "एहि", "परेहि", "परीहि"})
+  subordinate_verb_tags = ("८.१.६६", "८.१.३४", "८.१.३०", "८.१.५९", "८.१.६३", "८.१.७१", "८.१.७२", "पादादि")
+  nominal_prov_tags = (
+    "६.२.", "६.१.२२३", "२.१.", "५.४.", "४.३.", "मयट्", "अव्ययीभाव", "बहुव्रीह", "तत्पुरुष", "कर्मधारय", "नञ्",
+    "क्त्वा", "ल्यप्", "तुमुन्", "तवै", "शतृ", "शानच्", "निष्ठा", "क्त", "घञ्", "ल्युट्", "क्तिन्",
+    "क्विप्", "तव्यत्", "अनीयर्", "ण्यत्", "यत्", "कप्", "प्रातिपदिकम्",
+  )
+  accented_verb_roots = frozenset({
+    "चोदयात्", "चोदयाति", "मृध्यताम्", "मृद्ध्यताम्", "अगात्", "अहार्षम्", "विश", "भजासि",
+    "प्यायय", "यच्छ", "वापय", "वापया", "तरेम", "रभेथाम्", "मृश", "स्पृश", "वह",
+    "अगन्महि", "सृज", "सृजस्व", "स्रवन्तु", "शारीः", "ताप्तम्", "महेम", "महेमा",
+    "एधिषीमहि", "नये", "जीवाथ", "गहि", "आध्वम्", "आद्ध्वम्", "असरत्", "दह", "अस्य",
+    "राज", "वधिष्ठाः", "हर", "हरा", "अरुक्षम्", "स्रसत्",
+  })
   for ln in pp_lines:
     it_list = parse_padapatha_items(ln)
     if not it_list:
       continue
     it = it_list[0]
-    if "?" in it.ref or has_us_accents(it.ref) or "८.१.२८" not in it.prov:
+    if "?" in it.ref:
       continue
     bare = bare_devanagari(it.ref)
-    if "-" in it.ref:
-      hits.append(ln)
+    if bare in SIMPLEX_TINANTA_ALLOWLIST or bare in ("अवद्यात्", "उपास्य"):
       continue
-    if bare not in finite_sip_allow and bare.endswith(nominal_8128_endings) and not bare.endswith(("थः", "तः")) or (
-      bare.endswith("तः") and bare in ("स्मृतः", "कृतः", "भृतः", "धृतः", "श्रितः", "स्थितः", "जातः", "गतः", "हतः", "मतः", "युक्तः", "मुक्तः", "प्रोक्तः", "उक्तः")
-    ):
-      hits.append(ln)
-      continue
-    if bare in SIMPLEX_TINANTA_ALLOWLIST:
-      continue
-    if any(bare.startswith(up) and len(bare) > len(up) + 1 for up in UPASARGA_PREFIXES):
-      hits.append(ln)
+    if not has_us_accents(it.ref):
+      if "८.१.२८" not in it.prov:
+        continue
+      if "-" in it.ref or bare in coalesced_up_tinantas:
+        hits.append(ln)
+        continue
+      if bare not in finite_sip_allow and bare.endswith(nominal_8128_endings) and not bare.endswith(("थः", "तः")) or (
+        bare.endswith("तः") and bare in ("स्मृतः", "कृतः", "भृतः", "धृतः", "श्रितः", "स्थितः", "जातः", "गतः", "हतः", "मतः", "युक्तः", "मुक्तः", "प्रोक्तः", "उक्तः")
+      ):
+        hits.append(ln)
+        continue
+      if any(bare.startswith(up) and len(bare) > len(up) + 1 for up in UPASARGA_PREFIXES):
+        hits.append(ln)
+    else:
+      # Catch missed पा० ८.१.२८ svara-nighāta on Vedic 2pl imperative -तन/-थन (e.g. युयोतन → **युयो᳓तन**)
+      if "→ **" in ln and not has_us_accents(it.ar) and bare.endswith(("तन", "थन")) and not any(t in it.prov for t in subordinate_verb_tags):
+        hits.append(ln)
+        continue
+      if any(t in it.prov for t in subordinate_verb_tags) or any(t in it.prov for t in nominal_prov_tags):
+        continue
+      if bare in UPASARGA_PREFIXES or bare in ("सम्", "निस्", "निर्", "दुस्", "दुर्", "उद्"):
+        continue
+      if bare in coalesced_up_tinantas:
+        hits.append(ln)
+        continue
+      for up in UPASARGA_PREFIXES:
+        if bare.startswith(up) and len(bare) > len(up) + 1:
+          rest = bare[len(up):]
+          rest_cands = [rest]
+          if up in ("आ", "सम", "उद", "निर", "दुर"):
+            rest_cands.append("अ" + rest)
+          elif up in ("प्र", "परा", "अव", "उप", "अप") and rest.startswith("ा"):
+            rest_cands.extend(["अ" + rest[1:], "आ" + rest[1:]])
+          if any(rc in accented_verb_roots for rc in rest_cands) or (
+            bare == "अधिधाः"
+            or (
+              rest.endswith(("यात्", "याताम्", "न्ताम्", "थाम्", "ध्वम्", "मसि", "महि", "ैषम्", "ार्षम्"))
+              and not bare.endswith(("ताम्", "नाम्", "णाम्"))
+            )
+          ):
+            hits.append(ln)
+            break
   return hits
 
 
@@ -348,6 +562,14 @@ def find_multi_udatta_padas(pp_lines: Sequence[str]) -> list[str]:
       hits.append(ln)
       continue
     n_acc = sum(1 for ch in it.ref if ch in ("\u1cd3", "\u1cd9"))
+    if "\u1cd9" in it.ref:
+      # Keep ᳙ in padapāṭha only on lexical (jātya) svaritas (after ् + य/व, e.g. स्वः᳙, वीर्य᳙म्, तव्य᳙म्, नद्यः᳙).
+      for m_sv in re.finditer(r"(.{0,6})\u1cd9", it.ref):
+        if not re.search(r"्[यव][ािीुूृेैोौःंँ]*$", m_sv.group(1)):
+          hits.append(ln)
+          break
+      if ln in hits:
+        continue
     if n_acc >= 1 and bare in always_anudatta_enclitics:
       hits.append(ln)
       continue
@@ -491,15 +713,25 @@ def validate_paired_vp_and_tk(
   check_html_balance: bool = True,
   check_hiatus: bool = True,
 ) -> list[AccentValidationIssue]:
-  """Validate a split ``vishvAsa-prastutiH`` + ``sarvASh_TIkAH`` file pair."""
-  issues = validate_accented_markdown(
-    tk_text,
-    verified_prakrtibhava_pairs=verified_prakrtibhava_pairs,
-    check_html_balance=check_html_balance,
-    check_hiatus=check_hiatus,
-    check_vp=False,
+  """Validate a split ``vishvAsa-prastutiH`` (``vp``) + ``sarvASh_TIkAH`` (``tk`` = ``टीका``/``मूलम्``/``पद-पाठः``) file pair."""
+  js_tk = find_js_include_spans(tk_text)
+  tk_outer = "".join(tk_text[i : i + 1] for i in range(len(tk_text)) if not any(a <= i < b for a, b in js_tk))
+  if check_html_balance and (tk_text.count("<details") != tk_text.count("</details>") or tk_text.count("<div") != tk_text.count("</div>")):
+    issues = [AccentValidationIssue("tag_unbalanced", "Mismatched <details> or <div> closing tags")]
+  else:
+    issues = []
+  issues.extend(
+    validate_accented_markdown(
+      tk_outer,
+      verified_prakrtibhava_pairs=verified_prakrtibhava_pairs,
+      check_html_balance=False,
+      check_hiatus=check_hiatus,
+      check_vp=False,
+    )
   )
   vp_body = vp_text.split("+++", 2)[2] if vp_text.startswith("+++") and len(vp_text.split("+++", 2)) == 3 else vp_text
-  for msg in find_vp_integrity_issues(vp_body):
+  js_vp = find_js_include_spans(vp_body)
+  vp_outer = "".join(vp_body[i : i + 1] for i in range(len(vp_body)) if not any(a <= i < b for a, b in js_vp))
+  for msg in find_vp_integrity_issues(vp_outer):
     issues.append(AccentValidationIssue("vp_integrity", msg))
   return issues

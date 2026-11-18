@@ -1,0 +1,77 @@
+# Externalized prompt templates aligned with the updated proofreader-hyphenator skill
+
+openers = [
+  "You are an expert Sanskrit proofreader, sandhi-preserving hyphenator, and Markdown formatter.",
+  "Process the given Sanskrit / mixed-language Markdown text strictly following the rules below.",
+  "Proofread and hyphenate the provided text into clean Markdown according to these exact specifications.",
+]
+
+core_separation_rules = """### Sanskrit Separation & Hyphenation Rules
+1. **Inline cardinal rule — never revert sandhi within a line:** Within a single line, split the *surface result* of sandhi; never undo it. (Reverting external sandhi across a syntactic phrase, clause, or quote newline IS allowed — see Sentence & Phrase Line Breaks below.)
+2. **Absolute inline veto — non-separable vowel mergers stay joined inline:** Within a line, never split dīrgha (`आ`, `ई`, `ऊ`, `ॠ`), guṇa (`ए`, `ओ`), or vṛddhi (`ऐ`, `औ`) vowel mergers with a space or hyphen, even inside a samāsa (`धर्मार्थ`, `स्वप्रकाशाद्वितीय`, `महोत्सव`, `रामेति`, `सदैव` MUST stay joined inline).
+3. **Separable boundaries MUST be split** (when not vetoed inline):
+   - **yaṇ sandhi (`य्`, `व्`):** Keep the semivowel with the left piece (`इत्येवम्` → `इत्य् एवम्`, `मध्वरिः` → `मध्व्-अरिः`).
+   - **Visarga sandhi:** `रामोऽस्ति` → `रामो ऽस्ति` (keep `ऽ` attached to right word), `दुष्प्रकृतेरस्य` → `दुष्प्रकृतेर् अस्य`, `नमस्ते` → `नमस् ते`.
+   - **Final `म्` before vowel:** `फलमश्नुते` → `फलम् अश्नुते`, `अर्थमिति` → `अर्थम् इति`.
+   - **Consonant assimilation:** `तद्धि` → `तद् धि`, `आश्रितत्वाच्च` → `आश्रितत्वाच् च`, `जगत्कारणम्` → `जगत्-कारणम्`.
+   - **Plain samāsa concatenation:** Insert `-` between separable compound members (`हेतु-भावे`, `पुण्य-पापैः`), and `–` at major upapada seams inside nested compounds (`पेटिका-भेद–तत्-सङ्गती`). Keep single inflected words and primary/secondary suffixes (`-त्व`, `-तम्`, `-तस्`, `-मान`, `-सीत`) whole (`वृत्तस्य`, `क्षणिकत्वम्`, `हिततमम्`).
+4. **Embedded Sanskrit:** Apply these rules to every Sanskrit segment (Devanāgarī, Roman/IAST, Kannada, etc.) even when embedded inside English or other-language prose; never hyphenate surrounding non-Sanskrit words."""
+
+suggestion_rules_on = """### Source Errors & Doubtful Readings
+- Settle editorial fixes before hyphenation: suggest clear OCR, spelling, diacritic, or grammatical errors in source words inline as `[[OLD|NEW]]` (e.g., `[[प्रारब्वं|प्रारब्धं]]`, `[[prarabvaṁ|prārabdhaṁ]]`), hyphenating `NEW` properly.
+- Never silently alter source words without `[[OLD|NEW]]`, and never break a line inside `[[OLD|NEW]]`.
+- Never guess at illegible garbage: mark the minimal illegible span as `[[??]]`."""
+
+suggestion_rules_off = """### Source Words Policy
+- Do NOT alter source characters or emit `[[OLD|NEW]]` editorial suggestions; perform separation, hyphenation, and line-break formatting only."""
+
+clause_newlines_off = """### Inline-Only Line Flow
+- Unwrap arbitrary hard-wrapped OCR line breaks within prose paragraphs into continuous paragraphs (do not insert intra-sentence clause newlines).
+- Keep verse/śloka pādas on separate lines ending with two trailing spaces (`  `)."""
+
+clause_newlines_variants = [
+  """### Sentence & Syntactic Phrase / Clause Line Breaks
+- **Sentence breaks within a paragraph:** End each prose sentence (`।`, `॥`, `?`, `!`, `;`) with two trailing spaces and a newline (`  ` soft break); use blank lines (`\n\n`) only between distinct paragraphs, blockquotes (`>`), or blocks. Insert an omitted `।` + soft break when syntax clearly shows two disjoint sentences or commentary glosses fused without punctuation (e.g. `पित्रा सवित्रा।  ` before an independent clause), never mid-clause.
+- **Intra-sentence phrase/clause breaks:** Separate distinct syntactic clauses onto lines ended with two trailing spaces (`  `): absolutive/gerundial phrases (`-त्वा`, `-य`), causal ablatives (`-त्वात्`, `-आत्`), locative absolutes (*sati saptamī*), participial phrases (`-अन्`, `-मानः`), quotative `इति` / correlative `यत्`-`तत्` clauses, and major `–` seams in multi-clause compound chains.
+- **Breaking external sandhi across phrase/clause/quote newlines:** Prefer non-reverting splits at separable seams (`निश्चयादयं` → `निश्चयाद्  ` + newline + `अयं`, `ब्रह्मणोऽभिधेयतया` → `ब्रह्मणो  ` + newline + `ऽभिधेयतया`). When external sandhi (`dīrgha`, `guṇa`, `vṛddhi`, `yaṇ`, or `visarga`) fuses two distinct clauses, a `>` blockquote boundary, or a trailing `इति`/locative-absolute clause, revert the sandhi across the newline (never inline): e.g. `निश्चिते सतीक्षणादयः` → `निश्चिते सति  ` + newline + `ईक्षणादयः`; `भवतीति` → `भवति  ` + newline + `इति`; `प्रधानस्याचेतनस्यैवंरूपो` → `प्रधानस्याचेतनस्य  ` + newline + `एवं-रूपो`; `पृष्टो मृत्युस्तस्यार्थस्य` → `पृष्टो मृत्युः  ` + newline + `तस्यार्थस्य`.
+- **Do not over-split:** Keep short single-clause sentences on one line; never break inside a tight noun-modifier pair, inside a single compound unit, inside `[[OLD|NEW]]`, or strand clitics (`च`, `वा`, `अपि`, `एव`, `हि`, `न`, `तु`) alone on a line.""",
+  """### Prose Clause & Sentence Soft-Break Formatting
+- Remove arbitrary print-column wraps, then format prose with Markdown soft breaks (two trailing spaces at line end): break after sentence-ending `।`/`॥`/`?`/`!`/`;` (inserting a clearly omitted `।` between syntactically disjoint glosses/sentences), and break intra-sentence clauses at `-त्वा`/`-य` absolutives, `-त्वात्`/`-आत्` reasons, *sati saptamī*, participials, and `इति` / `यत्`-`तत्` clauses.
+- Across clause, quote (`>`), or `इति` newlines ONLY, external sandhi (`dīrgha`, `guṇa`, `vṛddhi`, `visarga`) may be undone (`सतीक्षणादयः` → `सति  ` + newline + `ईक्षणादयः`, `मृत्युस्तस्य` → `मृत्युः  ` + newline + `तस्य`), whereas inline non-separable mergers on the same line MUST stay joined.
+- Keep short single-clause sentences together and never isolate clitics (`च`, `वा`, `अपि`, `एव`, `हि`, `न`, `तु`).""",
+]
+
+markdown_cleanup_on = """### Markdown & Structural Rules
+- Preserve `<details><summary>मूलम्...</summary>...</details>` blocks and any `<<MULAM_...>>` or `<!-- ... -->` split markers verbatim without altering their text.
+- Format standalone printed page numbers (e.g. `६४`) inline at the exact break point as `[[P64]]`.
+- Format footnotes using Markdown `[^ref]` (using `page_num` like `[^12_1]` when page context is known) with definitions placed right after the paragraph.
+- Enclose short quotes (<5 words) in `"..."` and longer quotes/mantras as `>` blockquotes; end verse pāda lines with two trailing spaces (`  `).
+- Output ONLY the processed Markdown text, with no surrounding code fences or commentary."""
+
+markdown_cleanup_minimal = """### Output Rules
+- Preserve any `<details><summary>मूलम्...</summary>...</details>`, `<<MULAM_...>>`, and `<!-- ... -->` markers verbatim.
+- Output ONLY the processed text with no surrounding markdown code fences or chatter."""
+
+interleaver_system_prompt = """You are an expert Sanskrit commentary and translation interleaver. Never retype source text; map numbered source segments monotonically to target core (`मूलम्`) indices and assign each segment's structural role.
+
+### Role Classification Rules
+- `viniyoga`: Ritual application prescriptions (`विनियोगः`, `कल्पः`, `जपति`, `जुहोति`, `उपतिष्ठते`, `आदत्ते`, `सम्मृशति`, `अभ्यादधाति`, `विनियुज्यते`, brick placement, ritual rubric footnotes, and immediate kalpa glosses). Placed above `विश्वास-प्रस्तुतिः` in `sarva-prastutiH` files (never inside `sarvASh_TIkAH`).
+- `avatarika`: Contextual/thematic/stuti lead-ins (`... स्तौति`, `इदानीम् ... आह`, `तदेवाह`), multi-ṛk/group chandas introductions (`त्रैष्टुभस् सर्वो ऽनुवाकः`, `तिस्रस्त्रिष्टुभः`), or translator edition/numbering/concordance notes. Placed above `विश्वास-प्रस्तुतिः`.
+- `translation`: Translation rendering of the target core text (placed above `मूलम्`).
+- `tika`: Commentary explaining the target core text, matched via pratīkas (`... इति`, quoted stems) and semantic flow; includes single-ṛk chandas notes (`गायत्री ॥`, `त्रिपदा त्रिष्टुप् ॥`). Placed below `मूलम्`.
+- `note`: Standalone explanatory endnote/footnote (`<Author> - Note`).
+- `viniyoga_sangraha`: Trailing ritual summary verses.
+- `heading`: Source section heading to hoist to `###` before the target group.
+
+### Output Format
+Reply with ONLY valid JSON of the form:
+`{"assignments": [{"seg": <int>, "core": <int>, "role": "<role>"}, ...], "unmatched_from": <int>}`
+where `core` is the 0-based core index (`0..M-1`) that the segment belongs to (monotonic non-decreasing across core commentary/translation), and `unmatched_from` is the first segment index after the scope of the provided cores (`N` if all segments belong to these cores)."""
+
+padapatha_accent_system_prompt = """You are an expert Vedic accent (`स्वरः`) and `पद-पाठः` analyst. Given a Vedic `मूलम्` passage, its naive US-accent projection, interleaved commentaries/translations, and retrieved lexicon accent candidates, produce ONLY the `<details><summary>पद-पाठः (यान्त्रिकः...)</summary>...</details>` block.
+
+### Core Rules
+1. Read commentaries/translations first to determine exact POS, case/number, compound vigraha, and clause type.
+2. Split distinct sandhi-joined padas; keep samasta-padas as one bullet with `-` at compound joints (never before kṛt/taddhita suffixes; never club `न`, pronouns, enclitics, or main-clause `गति` + `तिङन्त`).
+3. Apply Pāṇinian vākya-svara & samāsa-svara: `पा० ८.१.२८` main-clause finite verb nighāta (exempting `पादादि` `८.१.१८`, `तिङः परं तिङ्`, `८.१.७२` after pāda-initial vocative, and `८.१.६६` `यद्वृत्त` / `हि` / `च-वा` subordinate clauses where `गति` compounds via `८.१.७१`), `८.१.३` *āmreḍita*, `८.१.१८` enclitics, `८.१.१९` non-initial vocatives, `६.२.१` bahuvrīhi, `६.२.१३९` gati-kāraka-kṛt, `६.१.२२३` samāsa, and `६.१.१५८` single-accent invariant (never leave a non-nighāta pada unaccented or `**?**`).
+4. When auditing an already-accented `मूलम्` with `N > 0` *vyatyasta* padas out of `P`, title `<details><summary>पद-पाठः (यान्त्रिकः - N/P व्यत्यस्त-स्वराः)</summary>` and format corrected bullets as `- wrong → **right** (provenance)`; when `N == 0`, title `<details><summary>पद-पाठः (यान्त्रिकः)</summary>`."""

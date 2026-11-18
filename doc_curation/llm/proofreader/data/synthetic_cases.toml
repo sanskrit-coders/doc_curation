@@ -1,0 +1,51 @@
+# Synthetic test/training pairs for embedded IAST and Devanāgarī OCR confusions
+
+iast_compounds = [
+  ["jagatkāraṇatvam", "jagat-kāraṇatvam"],
+  ["brahmajijñāsā", "brahma-jijñāsā"],
+  ["svaprakāśādvitīya", "svaprakāśādvitīya"],
+  ["dharmārtha", "dharmārtha"],
+  ["mahotsava", "mahotsava"],
+  ["puṇyapāpaiḥ", "puṇya-pāpaiḥ"],
+  ["cidacidvilakṣaṇa", "cid-acid-vilakṣaṇa"],
+  ["śarīrātmasambandha", "śarīrātma-sambandha"],
+  ["karmamīmāṁsā", "karma-mīmāṁsā"],
+  ["nityaśuddhabuddhamuktasvabhāva", "nitya-śuddha-buddha-mukta-svabhāva"],
+]
+
+iast_typos = [
+  ["prarabvaṁ", "prārabdhaṁ"],
+  ["sarvajnatva", "sarvajñatva"],
+  ["antaryamin", "antaryāmin"],
+  ["apahatapapman", "apahata-pāpman"],
+  ["satyakama", "satya-kāma"],
+]
+
+# Authentic Devanāgarī print/OCR confusions observed in Śrībhāṣya / Śrutaprakāśikā scans:
+# [correct_substring, corrupted_ocr_substring]
+devanagari_ocr_confusions = [
+  ["प्रा", "व्रा"],
+  ["प्रा", "पा"],
+  ["प्र", "प"],
+  ["धि", "घि"],
+  ["ध", "घ"],
+  ["घ", "ध"],
+  ["त्व", "त्ब"],
+  ["ब", "व"],
+  ["व", "ब"],
+  ["म", "य"],
+  ["म", "स"],
+  ["प", "व"],
+  ["ष", "प"],
+  ["थ", "य"],
+  ["भ", "म"],
+  ["त", "न"],
+  ["द", "र"],
+  ["क्या", "कया"],
+  ["मा", "म"],
+  ["पा", "प"],
+  ["ू", ""],
+  ["े", ""],
+]
+
+illegible_markers = ["@#%??", "क्ष्म्ष्ट्र्@#", "\ufffd\ufffd##"]

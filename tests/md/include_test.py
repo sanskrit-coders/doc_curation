@@ -135,3 +135,50 @@ def test_include_to_details_without_title(tmp_path):
   assert "js_include" not in content_new
   assert "<details open><summary>विश्वास-प्रस्तुतिः</summary>" in content_new
   assert "**न** निष्क्रय-विसर्गाभ्यां" in content_new
+
+
+def test_surgical_prefill_preserves_wrappers_and_nested_children(tmp_path):
+  static_dir = tmp_path / "vedAH_yajuH" / "static" / "ekAgnikANDam" / "vishvAsa-prastutiH"
+  static_dir.mkdir(parents=True)
+  (static_dir / "01_adite.md").write_text(
+    '+++\ntitle = "०१ अदिते"\n+++\nअ᳓दिते᳓ऽनु मन्यस्व।\n',
+    encoding="utf-8",
+  )
+
+  content_dir = tmp_path / "vedAH_yajuH" / "content" / "ekAgnikANDam"
+  content_dir.mkdir(parents=True)
+  host_path = content_dir / "1.md"
+  host_txt = textwrap.dedent("""\
+    +++
+    title = "१"
+    +++
+    {{< figure src="keep.jpg" >}}
+
+    <div class="js_include" includetitle="false" newlevelforh1="2" unfilled url="/vedAH_yajuH/karmANi/vaishvadevam/">
+    Outer text untouched < b >
+
+    <div class="js_include" includetitle="true" newlevelforh1="3" unfilled url="/vedAH_yajuH/ekAgnikANDam/vishvAsa-prastutiH/01_adite.md">
+    <details open><summary><h3>०१ अदिते ...{Loading}...</h3></summary>
+
+    अदि॒तेऽनु॑ मन्यस्व।
+
+    </details>
+    </div>
+    </div>
+  """)
+  host_path.write_text(host_txt, encoding="utf-8")
+
+  include_helper.surgical_prefill_includes(
+    dir_path=str(content_dir),
+    url_filter="/ekAgnikANDam/",
+    hugo_base_dir=str(tmp_path),
+  )
+
+  updated = host_path.read_text(encoding="utf-8")
+  # Hugo shortcodes, stray '<', outer wrapper attributes, and {Loading} summary preserved byte-for-byte
+  assert '{{< figure src="keep.jpg" >}}' in updated
+  assert "Outer text untouched < b >" in updated
+  assert "<details open><summary><h3>०१ अदिते ...{Loading}...</h3></summary>" in updated
+  # Inner matching prefill updated cleanly
+  assert "अ᳓दिते᳓ऽनु मन्यस्व।" in updated
+  assert "अदि॒तेऽनु॑" not in updated

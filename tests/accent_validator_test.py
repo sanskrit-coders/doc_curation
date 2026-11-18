@@ -24,8 +24,12 @@ def test_check_padapatha_header():
 
 def test_find_virama_matra_glitches():
   assert find_virama_matra_glitches(["- सव्ँ (*TS*)", "- शय्ँ (*TB*)"]) == []
-  glitches = find_virama_matra_glitches(["- कृत्ा (*MW*)"])
-  assert len(glitches) == 1
+  glitches = find_virama_matra_glitches([
+    "- कृत्ा (*MW*)",
+    "- युयोतन+ → **युयो᳓तन+** (*RV*)",
+    "- दर्,शत᳓म् (*TS*)",
+  ])
+  assert len(glitches) == 3
 
 
 def test_find_false_post_udatta_svarita_arrows():
@@ -107,7 +111,23 @@ def test_zero_accent_unresolved_and_upasarga_tinanta_guards():
     "- प्रदुघे (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
     "- प्रसूती (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
     "- सं-तापयति (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
-  ])) == 3
+    "- प्रचोद᳓यात् (*TS*, *RV*; *TS*, *RV*, *TB*)",
+    "- ऐतु (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- स᳓ञ्चरेमहि → **सञ्चरेमहि** (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- स᳓मगन्महि (*EK* मूल-पाठः)",
+    "- उ᳓च्छेषि → **उच्छेषि** (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- व्यू᳓हध्वम् → **व्यूहध्वम्** (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- युयोतन → **युयो᳓तन** (*RV*)",
+    "- दधातन → **द᳓धातन** (*RV*)",
+  ])) == 11
+  # Non-jātya svaritas in padapāṭha are caught, while genuine jātya svaritas pass
+  from doc_curation.sanskrit.accent.validator import find_multi_udatta_padas
+  assert find_multi_udatta_padas(["- बा᳓धते → **बा᳙धते** (पा० ८.१.६६)", "- ए᳙व (*TB*)"]) != []
+  assert find_multi_udatta_padas(["- स्वः᳙ (*TS*)", "- मनुष्याः᳙ (*TS*)", "- नद्यः᳙ (*TS*)"]) == []
+  # Subordinate-clause पा० ८.१.६६ / ८.१.७१ verbs pass cleanly
+  assert find_unsplit_upasarga_tinantas([
+    "- प्र-चोद᳓यात् (यद्वृत्तान्नित्यम् पा० ८.१.६६, तिङि चोदात्तवति पा० ८.१.७१)",
+  ]) == []
   # Simplex verbs starting with अ-/आ-/वि- and 1st-pl -मः pass cleanly
   assert find_unsplit_upasarga_tinantas([
     "- विद्यते (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *RV*)",
@@ -119,6 +139,9 @@ def test_zero_accent_unresolved_and_upasarga_tinanta_guards():
     "- स्मः (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
     "- ख्यास्यामः (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
     "- वह (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- अवृत्रन् (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- अवादिषुः (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- अस्य (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
   ]) == []
   # Genuine vyatyasta svarita (e.g. tavyat) where ar carries wrong udāttas is NOT flagged as false_svarita_arrow
   assert find_false_post_udatta_svarita_arrows(

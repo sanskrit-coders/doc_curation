@@ -1075,30 +1075,118 @@ def reconcile_markdown_blocks(
   return out, all_logs
 
 
+_NON_MULA_STAGE_RE = re.compile(
+  r"\((?:उत्तरस्याम्|दक्षिणस्याम्|मध्ये|दश देवसेनाभ्यः)[^)]*\)|(?<!\[)\[[^\[\]]+\](?!\])"
+)
+
+
+def _split_toml_frontmatter(text: str) -> tuple[str, str]:
+  if text.startswith("+++"):
+    parts = text.split("+++", 2)
+    if len(parts) == 3:
+      lead_nl = "\n" * (len(parts[2]) - len(parts[2].lstrip("\n")))
+      return "+++" + parts[1] + "+++" + lead_nl, parts[2].lstrip("\n")
+  return "", text
+
+
+def _mask_non_mula_spans(
+  vp_body: str,
+  mula_body: str = "",
+  *,
+  mask_stage_brackets: bool = True,
+) -> tuple[str, list[tuple[str, str]]]:
+  """Mask ``<div class="js_include">...</div>`` and non-``मूलम्`` stage-direction/anuṣaṅga brackets."""
+  masks: list[tuple[str, str]] = []
+  out = vp_body
+  for s, e in reversed(find_js_include_spans(out)):
+    tok = f"\x01JSMASK{len(masks)}\x02"
+    masks.append((tok, out[s:e]))
+    out = out[:s] + tok + out[e:]
+
+  if mask_stage_brackets:
+    mula_bare = bare_devanagari(mula_body) if mula_body else ""
+
+    def _repl(m: re.Match) -> str:
+      frag = m.group(0)
+      frag_bare = bare_devanagari(frag)
+      if frag_bare and mula_bare and frag_bare in mula_bare:
+        return frag
+      tok = f"\x01STMASK{len(masks)}\x02"
+      masks.append((tok, frag))
+      return tok
+
+    out = _NON_MULA_STAGE_RE.sub(_repl, out)
+  return out, masks
+
+
+def _unmask_spans(text: str, masks: Sequence[tuple[str, str]]) -> str:
+  out = text
+  for tok, orig in reversed(masks):
+    out = out.replace(tok, orig)
+  return out
+
+
+def _slice_items_for_partial_vp(items: Sequence[PadapathaItem], vp_masked: str) -> Sequence[PadapathaItem]:
+  """Slice ``items`` to the prefix matching ``vp_masked`` when ``VP`` is an abbreviated pratīka (e.g. ``…``)."""
+  vp_clean = re.sub(r"\+\+\+.*?\+\+\+", "", vp_masked, flags=re.S)
+  vp_clean = re.sub(r"\[\[([^|\]]+)\|([^\]]+)\]\]", r"\1", vp_clean)
+  vp_n = len(syllables_with_marks(vp_clean)[0])
+  if vp_n == 0:
+    return []
+  pp_total = sum(len(syllables_with_marks(it.ref if it.ref != "?" else it.ar)[0]) for it in items)
+  if pp_total - vp_n <= 3:
+    return items
+  cum = 0
+  best_k = len(items)
+  best_diff = abs(pp_total - vp_n)
+  for k, it in enumerate(items, 1):
+    cum += len(syllables_with_marks(it.ref if it.ref != "?" else it.ar)[0])
+    diff = abs(cum - vp_n)
+    if diff < best_diff:
+      best_diff = diff
+      best_k = k
+  return items[:best_k]
+
+
 def reconcile_vp_and_tk_texts(
   vp_text: str,
   tk_text: str,
   *,
   extra_invalid_olds: AbstractSet[str] = frozenset(),
+  mask_stage_brackets: bool = True,
 ) -> tuple[str, list[str]]:
-  """Reconcile a split ``vishvAsa-prastutiH`` file against its paired ``sarvASh_TIkAH`` file."""
-  m_pp = re.search(r"<details[^>]*><summary>(पद-पाठः \(यान्त्रिकः[^<]*\))</summary>(.*?)</details>", tk_text, re.S)
-  if not m_pp:
+  """Reconcile a split ``vishvAsa-prastutiH`` (``vp``) file against its companion ``sarvASh_TIkAH`` (``tk``) file.
+
+  In split Hugo corpus layouts:
+  - ``vp_text`` (``vp`` = ``vishvAsa-prastutiH/<mantra>.md``) holds the reader-facing US-accented presentation text
+    (optionally followed or wrapped by ``<div class="js_include">`` blocks, stage directions, or ``…`` pratīka abbreviations).
+  - ``tk_text`` (``tk`` = ``sarvASh_TIkAH/<mantra>.md``, i.e. the ``टीका`` + ``मूलम्`` + ``पद-पाठः`` companion file)
+    holds ``<details><summary>मूलम्</summary>``, ``<details><summary>पद-पाठः (यान्त्रिकः...)</summary>``, and commentaries.
+
+  Only outer blocks outside ``<div class="js_include">...</div>`` are read from ``tk_text`` and modified in ``vp_text``.
+  Stage-direction parentheses and single-bracketed anuṣaṅga supplements absent from ``मूलम्`` are masked during alignment,
+  and abbreviated ``vp_text`` prefixes are aligned against the matching prefix of ``पद-पाठः`` items.
+  """
+  js_tk = find_js_include_spans(tk_text)
+  tk_blocks = [m for m in DETAILS_RE.finditer(tk_text) if not any(a <= m.start() < b for a, b in js_tk)]
+  m_pp = next((m for m in tk_blocks if m.group(1).strip().startswith("पद-पाठः (यान्त्रिकः")), None)
+  if m_pp is None:
     return vp_text, []
-  if vp_text.startswith("+++"):
-    parts = vp_text.split("+++", 2)
-    if len(parts) == 3:
-      lead_nl = "\n" * (len(parts[2]) - len(parts[2].lstrip("\n")))
-      vp_hdr = "+++" + parts[1] + "+++" + lead_nl
-      vp_body = parts[2].lstrip("\n")
-    else:
-      vp_hdr, vp_body = "", vp_text
-  else:
-    vp_hdr, vp_body = "", vp_text
-  if not has_us_accents(vp_body):
+  m_mula = next((m for m in tk_blocks if m.group(1).strip().startswith("मूलम्")), None)
+  mula_body = m_mula.group(2) if m_mula is not None else ""
+
+  vp_hdr, vp_body = _split_toml_frontmatter(vp_text)
+  vp_masked, masks = _mask_non_mula_spans(vp_body, mula_body, mask_stage_brackets=mask_stage_brackets)
+  if not has_us_accents(vp_masked):
     return vp_text, []
+
   items = parse_padapatha_items(m_pp.group(2).strip())
-  new_vp, logs = reconcile_vp_suggestions(vp_body, items, extra_invalid_olds=extra_invalid_olds)
-  if new_vp == vp_body:
+  sub_items = _slice_items_for_partial_vp(items, vp_masked)
+  if not sub_items:
     return vp_text, []
-  return vp_hdr + new_vp, logs
+
+  new_masked, logs = reconcile_vp_suggestions(vp_masked, sub_items, extra_invalid_olds=extra_invalid_olds)
+  new_vp_body = _unmask_spans(new_masked, masks)
+  if new_vp_body == vp_body:
+    return vp_text, []
+  return vp_hdr + new_vp_body, logs
