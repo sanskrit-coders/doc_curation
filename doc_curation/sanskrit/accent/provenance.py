@@ -38,7 +38,7 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   classical_padapatha_to_us,
 )
 
-PROVENANCE_CACHE_VERSION = 3
+PROVENANCE_CACHE_VERSION = 4
 DEFAULT_PROVENANCE_CACHE_PATH = os.path.expanduser(
   "~/.cache/doc_curation/vedic_corpus_counts_v1.pkl"
 )
@@ -51,18 +51,17 @@ CORPUS_TAGS: tuple[str, ...] = (
   "AV",
   "ŚB",
   "VS",
-  "TA",
   "KS",
   "MS",
 )
 CORPUS_TAG_SET: frozenset[str] = frozenset(CORPUS_TAGS)
+FORBIDDEN_CORPUS_TAGS: tuple[str, ...] = ("TA", "EK")
 
 DEFAULT_CORPUS_DIRS: dict[str, str] = {
   "TS": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH",
   "RV": "/home/vvasuki/gitland/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/sarvASh_TIkAH",
   "TB": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH",
   "TK": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/kAThakam/sarva-prastutiH",
-  "TA": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/AraNyakam/sarva-prastutiH",
   "ŚB": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH",
   "VS": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH",
   "AV": "/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH",
@@ -95,6 +94,8 @@ _METALANGUAGE_BARE: frozenset[str] = frozenset({
 _ZERO_ABBREV_RE = re.compile(r"([\u0905-\u0939][\u093e-\u094d\u0901-\u0903]*)\u0966")
 _CORPUS_TAG_PAT = "|".join(re.escape(t) for t in CORPUS_TAGS)
 _TAG_TOKEN_RE = re.compile(rf"\*({_CORPUS_TAG_PAT})\*(?:-(\d+))?")
+_FORBIDDEN_TAG_PAT = "|".join(re.escape(t) for t in FORBIDDEN_CORPUS_TAGS)
+_FORBIDDEN_SOURCE_RE = re.compile(rf"\*({_FORBIDDEN_TAG_PAT})\*(?:-(\d+))?")
 _TOK_SCAN_RE = re.compile(r"[\u0900-\u0963\u0971-\u097f\u1cd0-\u1cff\-]+")
 
 _DEGEM_PAIRS: tuple[tuple[str, str], ...] = (
@@ -273,7 +274,7 @@ def _samhita_surface_keys(norm_key: str) -> list[str]:
 
 
 class VedicCorpusCounter:
-  """Cached exact occurrence counter across all 10 Vedic corpora (`TS`, `RV`, `TB`, `TK`, `AV`, `ŚB`, `VS`, `TA`, `KS`, `MS`)."""
+  """Cached exact occurrence counter across 9 Vedic corpora (`TS`, `RV`, `TB`, `TK`, `AV`, `ŚB`, `VS`, `KS`, `MS`; excludes dubious `TA`/`EK`)."""
 
   def __init__(
     self,
@@ -300,7 +301,7 @@ class VedicCorpusCounter:
     *,
     mode: str = "sum",
   ) -> None:
-    if not key or not marks or freq <= 0:
+    if not key or not marks or freq <= 0 or corpus in FORBIDDEN_CORPUS_TAGS:
       return
     ex = self.exact_counts.setdefault(corpus, {})
     pair = (key, marks)
@@ -397,8 +398,8 @@ class VedicCorpusCounter:
     if vs_dir and os.path.isdir(vs_dir):
       counter._ingest_vs_dir(vs_dir)
 
-    # 4. TB, TK, TA, ŚB: deduplicated per section (`पद-पाठः` > `पद-पाठः (यान्त्रिकः...)` > `विश्वास-प्रस्तुतिः`)
-    for tag in ("TB", "TK", "TA", "ŚB"):
+    # 4. TB, TK, ŚB: deduplicated per section (`पद-पाठः` > `पद-पाठः (यान्त्रिकः...)` > `विश्वास-प्रस्तुतिः`)
+    for tag in ("TB", "TK", "ŚB"):
       cdir = dirs.get(tag, "")
       if cdir and os.path.isdir(cdir):
         counter._ingest_us_markdown_corpus(cdir, tag)
@@ -532,7 +533,7 @@ class VedicCorpusCounter:
   def _ingest_us_markdown_corpus(self, root_dir: str, corpus: str) -> None:
     for fp in sorted(glob.glob(os.path.join(root_dir, "**", "*.md"), recursive=True)):
       base = os.path.basename(fp)
-      if base == "_index.md" and corpus != "TA":
+      if base == "_index.md":
         continue
       txt = open(fp, encoding="utf-8", errors="ignore").read()
       inc = find_js_include_spans(txt)
@@ -836,6 +837,55 @@ def _prune_bare_corpus_tags_if_solid(prov: str) -> str:
   return prov
 
 
+def _strip_forbidden_sources_if_nonempty(prov: str) -> str:
+  """Drop segments citing forbidden sources (``*TA*`` / ``*EK*``) when non-empty provenance remains."""
+  if not _FORBIDDEN_SOURCE_RE.search(prov):
+    return prov
+  clauses = _split_top_level_semicolons(prov)
+  kept_clauses: list[str] = []
+  for cl in clauses:
+    segs: list[str] = []
+    depth = 0
+    cur: list[str] = []
+    for ch in cl:
+      if ch == "(":
+        depth += 1
+      elif ch == ")" and depth > 0:
+        depth -= 1
+      if ch == "," and depth == 0:
+        segs.append("".join(cur).strip())
+        cur = []
+      else:
+        cur.append(ch)
+    segs.append("".join(cur).strip())
+    kept_segs: list[str] = []
+    for seg in segs:
+      if not seg:
+        continue
+      if "(" not in seg:
+        seg_clean = re.sub(
+          rf"\s*/\s*\*(?:{_FORBIDDEN_TAG_PAT})\*(?:-\d+)?|\*(?:{_FORBIDDEN_TAG_PAT})\*(?:-\d+)?\s*/\s*",
+          "",
+          seg,
+        ).strip()
+        if seg_clean and not _FORBIDDEN_SOURCE_RE.search(seg_clean):
+          kept_segs.append(seg_clean)
+        continue
+      if _FORBIDDEN_SOURCE_RE.search(seg):
+        cleaned = re.sub(rf"(?:,\s*)?\*(?:{_FORBIDDEN_TAG_PAT})\*(?:-\d+)?", "", seg)
+        cleaned = re.sub(r"\(\s*,\s*", "(", cleaned).strip()
+        if re.search(r"\(\s*\)", cleaned):
+          continue
+        if cleaned and not _FORBIDDEN_SOURCE_RE.search(cleaned):
+          kept_segs.append(cleaned)
+      else:
+        kept_segs.append(seg)
+    if kept_segs:
+      kept_clauses.append(", ".join(kept_segs))
+  cand = "; ".join(kept_clauses)
+  return cand if cand else prov
+
+
 def annotate_padapatha_line_counts(
   line: str,
   counter: VedicCorpusCounter,
@@ -844,6 +894,8 @@ def annotate_padapatha_line_counts(
 ) -> tuple[str, list[tuple[str, str]]]:
   """Annotate ``*CORPUS*-N`` occurrence counts and normalize ``पा॰`` on one ``पद-पाठः`` bullet line.
 
+  Drops dubious ``*TA*`` / ``*EK*`` citations cleanly when other provenance remains; any remaining
+  unstrippable forbidden source is reported in ``unresolved``.
   Returns ``(updated_line, unresolved_tag_word_pairs)``.
   """
   stripped = line.lstrip()
@@ -864,6 +916,7 @@ def annotate_padapatha_line_counts(
   r_end = stripped.rfind(")")
   head = stripped[:p_idx]
   prov_inner = normalize_panini_abbreviations(stripped[p_idx + 1 : r_end])
+  prov_inner = _strip_forbidden_sources_if_nonempty(prov_inner)
   tail = stripped[r_end + 1 :]
 
   unresolved: list[tuple[str, str]] = []
@@ -880,6 +933,8 @@ def annotate_padapatha_line_counts(
       # Recompute remaining unresolved bare tags if any survived
       surviving_bare = set(re.findall(rf"\*({_CORPUS_TAG_PAT})\*(?!-\d)", new_prov))
       unresolved = [(tg, wd) for tg, wd in unresolved if tg in surviving_bare]
+  for fm in _FORBIDDEN_SOURCE_RE.finditer(new_prov):
+    unresolved.append((fm.group(1), it.ref))
   return f"{indent}{head}({new_prov}){tail}", unresolved
 
 

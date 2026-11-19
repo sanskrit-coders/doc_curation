@@ -578,7 +578,7 @@ def test_corpus_occurrence_count_provenance_accepted_by_validator_and_reconciler
 
 - यज्ञ᳓म् (*RV*-145, *TS*-82, *VS*-34, *TB*-19)
 - एव᳓ (*RV*-310, *TS*-290, *AV*-120)
-- एत᳓त् (*TS*-95, *RV*-41, *TA*-12)
+- एत᳓त् (*TS*-95, *RV*-41, *ŚB*-12)
 </details>
 """
   items = parse_padapatha_items(md.split("पद-पाठः (यान्त्रिकः)</summary>")[1].split("</details>")[0])
@@ -625,6 +625,22 @@ def test_weber_h_on_anudatta_before_8_2_6_svarita_is_preserved():
   assert unm == [] and vp == "मिथुन᳓म् एवै᳙त᳓त् ॥"
   # An aligned, unmarked Weber overrules a solo Śrīdharādi `᳘`
   _, vp2, _ = build_sb_vp_from_padapatha(
-    "मिथुनम् एवैतत् ॥", items, weber_text="मिथुन᳘मेवैत᳘त्॥", shri_text="मिथुन᳘मे᳘वैत᳘त्॥"
+    "मिथुन᳓म् एवैतत् ॥", items, weber_text="मिथुन᳘मेवैत᳘त्॥", shri_text="मिथुन᳘मे᳘वैत᳘त्॥"
   )
   assert "ै᳙" not in vp2
+
+
+def test_simplex_aa_initial_verbs_not_flagged_as_unsplit_upasarga():
+  # Regression (01/01/2.md::०७): `आसुः` and other simplex `आ`-initial perfect/imperfect/aorist verbs
+  # must NOT be flagged as unsplit `आ-` upasarga+tiṅanta.
+  lines = [
+    "- आसुः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *RV*-2, *TS*-1)",
+    "- आसन् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *RV*-1)",
+    "- आसीत् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *RV*-1)",
+    "- आहुः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *RV*-1)",
+    "- आपुः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आरुः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आस् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आसम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+  ]
+  assert find_unsplit_upasarga_tinantas(lines, forbid_compound_upasarga_tinanta=True) == []

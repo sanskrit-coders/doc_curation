@@ -300,3 +300,14 @@ def test_fill_vp_accents_and_filled_summary():
   assert "वे᳓दमनू᳓च्य ।" in updated_direct
   assert "पद-पाठः (यान्त्रिकः - 2/2 व्यत्यस्त-स्वराः)" in updated_direct
   assert any("REFILLED_VP" in lg for lg in dlogs)
+
+
+def test_is_solid_provenance_excludes_ta_ek_allows_sb():
+  from doc_curation.sanskrit.accent.reconciler import is_solid_provenance
+
+  assert is_solid_provenance("*ŚB*-12")
+  assert is_solid_provenance("*TS*-5, *ŚB*-2")
+  assert not is_solid_provenance("*TA*")
+  assert not is_solid_provenance("*TA*-12")
+  assert not is_solid_provenance("*EK*")
+  assert not is_solid_provenance("*EK* मूल-पाठः")

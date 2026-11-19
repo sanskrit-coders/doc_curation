@@ -259,3 +259,55 @@ def test_suspect_homograph_accents_and_parasavarna_ablatives():
     "- न᳓ (*TS*)",
   ]
   assert find_suspect_homograph_accents(good, "धर्मान् न प्रम॑दित॒व्यम् ।") == []
+
+
+def test_forbidden_ta_and_ek_sources_and_sb_allowed():
+  from doc_curation.sanskrit.accent.validator import find_forbidden_accent_sources
+
+  assert find_forbidden_accent_sources([
+    "- एत᳓त् (*TS*-95, *RV*-41, *TA*-12)",
+    "- स᳓मगन्महि (*EK* मूल-पाठः)",
+    "- एत᳓त् (*TS*-95, *ŚB*-12)",
+  ]) == [
+    "- एत᳓त् (*TS*-95, *RV*-41, *TA*-12)",
+    "- स᳓मगन्महि (*EK* मूल-पाठः)",
+  ]
+
+  issues_ta = validate_padapatha_block("पद-पाठः (यान्त्रिकः)", "- एत᳓त् (*TS*-95, *TA*-12)\n")
+  assert any(i.kind == "forbidden_accent_source" for i in issues_ta)
+  issues_ek = validate_padapatha_block("पद-पाठः (यान्त्रिकः)", "- अ᳓ग्निः (*EK* मूल-पाठः)\n")
+  assert any(i.kind == "forbidden_accent_source" for i in issues_ek)
+  assert validate_padapatha_block("पद-पाठः (यान्त्रिकः)", "- एत᳓त् (*TS*-95, *ŚB*-12)\n") == []
+
+
+def test_provenance_excludes_ta_and_ek_keeps_sb():
+  from doc_curation.sanskrit.accent.provenance import (
+    CORPUS_TAGS,
+    DEFAULT_CORPUS_DIRS,
+    FORBIDDEN_CORPUS_TAGS,
+    VedicCorpusCounter,
+    annotate_padapatha_line_counts,
+  )
+
+  assert "TA" not in CORPUS_TAGS
+  assert "EK" not in CORPUS_TAGS
+  assert "ŚB" in CORPUS_TAGS
+  assert "TA" not in DEFAULT_CORPUS_DIRS
+  assert "ŚB" in DEFAULT_CORPUS_DIRS
+  assert set(FORBIDDEN_CORPUS_TAGS) == {"TA", "EK"}
+
+  counter = VedicCorpusCounter()
+  counter._add("TA", "एतत्", ("", "U"), freq=5)
+  counter._add("ŚB", "एतत्", ("", "U"), freq=7)
+  counter._finalize_secondary_tables()
+  assert counter.count("एत᳓त्", "TA") == 0
+  assert counter.count("एत᳓त्", "EK") == 0
+  assert counter.count("एत᳓त्", "ŚB") == 7
+
+  cleaned, unres = annotate_padapatha_line_counts("- एत᳓त् (*ŚB*, *TA*-12, *EK* मूल-पाठः)", counter)
+  assert cleaned == "- एत᳓त् (*ŚB*-7)"
+  assert unres == []
+
+  only_bad, unres_bad = annotate_padapatha_line_counts("- एत᳓त् (*TA*)", counter)
+  assert only_bad == "- एत᳓त् (*TA*)"
+  assert ("TA", "एत᳓त्") in unres_bad

@@ -452,13 +452,14 @@ def test_pilot_01_01_1_gold_precision_and_vyatyasta_rejection(lex: UnifiedVedicL
     # Weber's continuous sandhi (`व्रतमुपैष्यन्`, `अन्तरतो`): compare words, not spacing/sandhi.
     assert verify_mantra_sandhi([it.ref for it in r.items], c.vp_body)[0]
     assert _word_norm(r.vp_accented) == _word_norm(c.vp_body)
-    # Every Vedic corpus citation in padapāṭha MUST carry an exact `-N` count (`N > 0`), and NEVER use `पा\u0966`!
+    # Every Vedic corpus citation in padapāṭha MUST carry an exact `-N` count (`N > 0`), NEVER `*TA*`, and NEVER `पा\u0966`!
     for it in r.items:
       assert "पा\u0966" not in it.prov, f"Deprecated पा+digit-zero in {it.prov}"
-      assert not re.search(r"\*(?:VS|TS|RV|AV|TB|TA)\*(?!-\d+|\s+[\d०-९])", it.prov), f"Uncounted corpus tag: {it.prov}"
-      assert not re.search(r"\*(?:VS|TS|RV|AV|TB|TA)\*-0\b", it.prov), f"Zero corpus count: {it.prov}"
+      assert "*TA*" not in it.prov, f"Forbidden *TA* citation in {it.prov}"
+      assert not re.search(r"\*(?:VS|TS|RV|AV|TB)\*(?!-\d+|\s+[\d०-९])", it.prov), f"Uncounted corpus tag: {it.prov}"
+      assert not re.search(r"\*(?:VS|TS|RV|AV|TB)\*-0\b", it.prov), f"Zero corpus count: {it.prov}"
 
-  # 1a. ZERO false AUTO_CLEAN across ALL 22 gold kaṇḍikās: every AUTO_CLEAN must match gold marks + words.
+  # 1a. ZERO false AUTO_CLEAN and ZERO `*TA*` across ALL 22 gold kaṇḍikās!
   n_auto = 0
   for h, c in by_h.items():
     if not c.vp_body or not c.weber:
@@ -468,6 +469,8 @@ def test_pilot_01_01_1_gold_precision_and_vyatyasta_rejection(lex: UnifiedVedicL
       c.weber, c.shri, c.visvara, c.sayana, c.harisvami, c.eggeling,
     )
     r = solve_kandika(sim, lex, kandika_id=f"01/01/1.md::{h}")
+    for it in r.items:
+      assert "*TA*" not in it.prov, f"Forbidden *TA* in §{h}: {it.prov}"
     if r.status == "AUTO_CLEAN":
       n_auto += 1
       assert _marks(r.vp_accented) == _marks(c.vp_body), f"False AUTO_CLEAN §{h}"
@@ -558,23 +561,33 @@ def test_verifier_v2_precision_regressions(lex: UnifiedVedicLexicon):
 
 
 def test_exact_corpus_counts_and_enrichment(lex: UnifiedVedicLexicon):
-  # Exact counts must be strictly positive, disjoint (`TB_VP`/`TA_VP` merged), and ordered descending!
+  # Exact counts must be strictly positive, disjoint (`TB_VP` merged, `TA` excluded!), and ordered descending!
   c_vrata = lookup_corpus_counts(lex, "व्रत᳓म्")
   assert c_vrata, "Expected attested corpus counts for व्रत᳓म्"
-  assert all(k in ("VS", "TS", "RV", "AV", "TB", "TA") and isinstance(v, int) and v > 0 for k, v in c_vrata.items())
+  assert "TA" not in c_vrata
+  assert all(k in ("VS", "TS", "RV", "AV", "TB") and isinstance(v, int) and v > 0 for k, v in c_vrata.items())
   vals = list(c_vrata.values())
   assert vals == sorted(vals, reverse=True)
 
   c_sarv = lookup_corpus_counts(lex, "सर्व᳓तः")
-  assert c_sarv and all(v > 0 for v in c_sarv.values())
+  assert c_sarv and "TA" not in c_sarv and all(v > 0 for v in c_sarv.values())
 
   # Enrich bare corpus citations while preserving editorial notes, Pāṇini sūtras, and explicit verse refs!
-  enriched = enrich_padapatha_corpus_counts(lex, "व्रत᳓म्", "*RV*, *TS*, *AV*; श्रीधरादि-पाठः")
+  enriched = enrich_padapatha_corpus_counts(lex, "व्रत᳓म्", "*RV*, *TS*, *AV*, *TA*-9, *TA*; श्रीधरादि-पाठः")
   assert "; श्रीधरादि-पाठः" in enriched
+  assert "*TA*" not in enriched
   assert re.search(r"\*RV\*-\d+", enriched)
   assert re.search(r"\*TS\*-\d+", enriched)
-  assert not re.search(r"\*(?:VS|TS|RV|AV|TB|TA)\*(?!-\d+)", enriched)
+  assert not re.search(r"\*(?:VS|TS|RV|AV|TB)\*(?!-\d+)", enriched)
   assert "-0" not in enriched
+
+  # Zero `TA`/`TA_VP` sources anywhere in the v8 lexicon!
+  assert not any(
+    src in ("TA", "TA_VP")
+    for by_m in lex.form_accents.values()
+    for srcs in by_m.values()
+    for src in srcs
+  )
 
   # Explicit verse citations like `*VS* 1.5` and dictionary tags `*MW* ŚBr.` remain untouched/uncounted
   enriched_ref = enrich_padapatha_corpus_counts(lex, "व्रत᳓म्", "*VS* 1.5, *TS*, *MW* ŚBr.")

@@ -314,8 +314,37 @@ SIMPLEX_TINANTA_ALLOWLIST: frozenset[str] = frozenset({
   "आशयति",
   "आशति",
   "आह",
+  "आहुः",
+  "आहतुः",
   "आत्थ",
   "आस",
+  "आसुः",
+  "आसन्",
+  "आसीत्",
+  "आसीः",
+  "आसम्",
+  "आस्थ",
+  "आस्म",
+  "आस्ताम्",
+  "आस्",
+  "आस्ते",
+  "आसते",
+  "आसाते",
+  "आप",
+  "आपुः",
+  "आप्नोति",
+  "आप्नुवन्ति",
+  "आप्नोत्",
+  "आर",
+  "आरुः",
+  "आन",
+  "आट्",
+  "आनशुः",
+  "आनृचुः",
+  "आदत्",
+  "आदन्",
+  "आर्चत्",
+  "आर्ध्नोत्",
   "विन्दति",
   "विदति",
   "विध्यति",
@@ -487,6 +516,20 @@ def find_unresolved_question_arrows(pp_lines: Sequence[str]) -> list[str]:
   for ln in pp_lines:
     it_list = parse_padapatha_items(ln)
     if it_list and "?" in it_list[0].ref:
+      hits.append(ln)
+  return hits
+
+
+_FORBIDDEN_ACCENT_SOURCE_RE = re.compile(r"\*(?:TA|EK)\*(?:-\d+)?")
+
+
+def find_forbidden_accent_sources(pp_lines: Sequence[str]) -> list[str]:
+  """Return padapāṭha bullet lines citing dubious sources (``*TA*`` / ``*EK*``)."""
+  hits: list[str] = []
+  for ln in pp_lines:
+    it_list = parse_padapatha_items(ln)
+    target = it_list[0].prov if it_list else ln
+    if _FORBIDDEN_ACCENT_SOURCE_RE.search(target):
       hits.append(ln)
   return hits
 
@@ -913,6 +956,7 @@ def validate_padapatha_block(
   check_upasarga_tinanta: bool = True,
   forbid_compound_upasarga_tinanta: bool = False,
   forbid_zero_abbreviation: bool = True,
+  forbid_dubious_sources: bool = True,
   check_nighata_arrows: bool = True,
   check_gati_kta: bool = True,
   check_homographs: bool = True,
@@ -937,6 +981,16 @@ def validate_padapatha_block(
             ln,
           )
         )
+
+  if forbid_dubious_sources:
+    for ln in find_forbidden_accent_sources(pp_lines):
+      issues.append(
+        AccentValidationIssue(
+          "forbidden_accent_source",
+          "Dubious accent sources *TA* and *EK* are forbidden in पद-पाठः (यान्त्रिकः) (*ŚB* is allowed)",
+          ln,
+        )
+      )
 
   for ln in pp_lines:
     if re.search(r"\*[A-Za-zŚś]+\*-0\b", ln):

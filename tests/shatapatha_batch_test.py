@@ -725,3 +725,119 @@ def test_run_solver_corpus_pass_export_all_adds_rel_path_and_auto_clean_drafts(t
   assert len(recs_full) == base["needs_adjudication"] + base["auto_clean"]
   assert all(r["rel_path"] == "01/01/1.md" and r["file"].endswith("01/01/1.md") for r in recs_full)
   assert full["auto_clean"] == base["auto_clean"]
+
+
+def test_verify_and_apply_reports_disagree_details(tmp_path):
+  sb_root = _make_synthetic_corpus(tmp_path)
+  adj = tmp_path / "bad_audit.jsonl"
+  # Wrong accent on `यज्ञ᳓म्` -> `य᳓ज्ञम्` against Weber/Shri `यज्ञ᳘मेॗवैत᳘त्॥`
+  adj.write_text(
+    json.dumps(
+      {
+        "rel_path": "01/01/1.md",
+        "heading": "०१",
+        "sub_idx": 0,
+        "vp_clean": "यज्ञम् एवैतत् ॥",
+        "items": [
+          {"pada": "य᳓ज्ञम्", "just": "*RV*", "vyat_from": None},
+          {"pada": "एव᳓", "just": "*RV*", "vyat_from": None},
+          {"pada": "एत᳓त्", "just": "*RV*", "vyat_from": None},
+        ],
+      },
+      ensure_ascii=False,
+    )
+    + "\n",
+    encoding="utf-8",
+  )
+  rep = verify_and_apply_adjudications(sb_root, adj, dry_run=True, enrich_counts=False)
+  assert rep.rejected == 1
+  rec = rep.records[0]
+  assert rec.disagree_details, "expected compact disagree_details on audit rejection"
+  d0 = rec.disagree_details[0]
+  assert {"pada_idx", "pada", "syl", "us_mark", "exp_w", "act_w", "exp_s", "act_s", "status"} <= set(d0.keys())
+  assert d0["pada_idx"] == 0 and d0["status"] == "both_disagree"
+
+
+def test_ta_source_is_dropped_by_enrichment_and_rejected_by_audit(tmp_path):
+  from doc_curation.sanskrit.accent.shatapatha_batch import (
+    SB_CORPUS_TAGS,
+    enrich_provenance_with_corpus_counts,
+  )
+
+  assert "TA" not in SB_CORPUS_TAGS
+  assert SB_CORPUS_TAGS == ("VS", "TS", "RV", "AV", "TB")
+
+  lex = UnifiedVedicLexicon.load_or_build(force_rebuild=False)
+  new_j, _ = enrich_provenance_with_corpus_counts(lex, "यज्ञ᳓म्", "*TA*, *TS*, *RV*")
+  assert "*TA*" not in new_j
+  assert "*TS*-" in new_j or "*RV*-" in new_j
+
+  # Inline *TA* citation is also dropped cleanly
+  new_j2, _ = enrich_provenance_with_corpus_counts(lex, "अन᳓स्तमिते", "*TA* अनस्तमिते, पा॰ ६.२.२")
+  assert "*TA*" not in new_j2 and "पा॰ ६.२.२" in new_j2
+
+  new_ek, _ = enrich_provenance_with_corpus_counts(lex, "यज्ञ᳓म्", "*EK* मूल-पाठः, *TS*, *RV*")
+  assert "*EK*" not in new_ek and "*TS*" in new_ek
+
+  # verify_and_apply_adjudications with enrich_counts=False rejects *TA*
+  sb_root = _make_synthetic_corpus(tmp_path)
+  adj = tmp_path / "ta_adj.jsonl"
+  adj.write_text(
+    json.dumps(
+      {
+        "rel_path": "12/01/1.md",
+        "heading": "०१",
+        "sub_idx": 0,
+        "vp_clean": "तद् अपः ॥",
+        "items": [
+          {"pada": "त᳓त्", "just": "*TA*-3, *TS*-1", "vyat_from": None},
+          {"pada": "अपः᳓", "just": "*RV*-1", "vyat_from": None},
+        ],
+      },
+      ensure_ascii=False,
+    )
+    + "\n",
+    encoding="utf-8",
+  )
+  rep = verify_and_apply_adjudications(sb_root, adj, dry_run=True, enrich_counts=False)
+  assert rep.rejected == 1
+  assert any("forbidden_ta_source" in e for e in rep.records[0].errors)
+
+  # audit_full_sb_corpus rejects any *TA* in a ŚB file's पद-पाठः
+  md_12 = sb_root / "12/01/1.md"
+  md_12.write_text(
+    """+++
+title = "12.1.1"
++++
+
+## ०१
+
+<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+त᳓द् अपः᳓ ॥
+</details>
+<details><summary>मूलम् - Weber</summary>
+
+त᳘दपः᳘॥
+</details>
+<details><summary>मूलम् - श्रीधरादि</summary>
+
+त᳘दपः᳘॥
+</details>
+<details><summary>पद-पाठः (यान्त्रिकः)</summary>
+
+- त᳓त् (*TA*-3, *TS*-1)
+- अपः᳓ (*RV*-1)
+</details>
+""",
+    encoding="utf-8",
+  )
+  aud = audit_full_sb_corpus(sb_root, files=[md_12])
+  assert not aud.passed
+  assert any(f.kind == "forbidden_ta_source" for f in aud.failures)
+
+  md_ek = sb_root / "12/01/1.md"
+  md_ek.write_text(md_12.read_text(encoding="utf-8").replace("*TA*-3", "*EK* मूल-पाठः"), encoding="utf-8")
+  aud_ek = audit_full_sb_corpus(sb_root, files=[md_ek])
+  assert not aud_ek.passed
+  assert any(f.kind == "forbidden_ek_source" for f in aud_ek.failures)

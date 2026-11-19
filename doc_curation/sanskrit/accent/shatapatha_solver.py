@@ -5,9 +5,10 @@ Provides four reusable layers for scaling US-accent conversion and
 
 1. :class:`UnifiedVedicLexicon` — aggregates attested US-accented forms,
    canonical padapāṭha hyphenations, and stem accents from ``VS``, ``TS``,
-   ``RV``, ``AV``, ``TB``, ``TA``, ``MW``, ``Macdonell``, ``Lanman``, and
-   ``Whitney``, persisted in a fast-reload pickle cache (``<0.5s``) and
-   paired with ``vidyut.kosha`` + ``doc_curation.sanskrit.hyphenator.lexicon``.
+   ``RV``, ``AV``, ``TB``, ``MW``, ``Macdonell``, ``Lanman``, and
+   ``Whitney`` (intentionally excluding ``TA``), persisted in a fast-reload
+   pickle cache (``<0.5s``) and paired with ``vidyut.kosha`` +
+   ``doc_curation.sanskrit.hyphenator.lexicon``.
 2. Sandhi-preserving clean ``विश्वास-प्रस्तुतिः`` builder and Vedic
    sandhi-inverting padapāṭha splitter that ALWAYS separates upasargas from
    finite ``तिङन्त`` verbs (in both main and subordinate clauses) while
@@ -95,8 +96,8 @@ from doc_curation.sanskrit.accent.validator import (
 # Paths & constants
 # ---------------------------------------------------------------------------
 
-# Increment cache version so v6 exact deduplicated per-corpus counts + persisted `_slp_stems` rebuild cleanly.
-LEXICON_CACHE_VERSION = 7
+# Increment cache version so v8 rebuilds cleanly with VS/TS/RV/AV/TB ONLY (zero TA ingestion).
+LEXICON_CACHE_VERSION = 8
 
 _VS_DETAILS_RE = re.compile(
   r"<details(?:\s+open)?>\s*<summary>\s*(?:<h\d>)?([^<]*?)(?:\s*\.\.\.\{Loading\}\.\.\.)?\s*(?:</h\d>)?\s*</summary>(.*?)</details>",
@@ -115,10 +116,6 @@ DEFAULT_VS_DIR = (
 DEFAULT_TB_DIR = (
   "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/"
   "taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH"
-)
-DEFAULT_TA_DIR = (
-  "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/"
-  "taittirIyam/sArasvata-vibhAgaH/AraNyakam/sarva-prastutiH"
 )
 DEFAULT_VIDYUT_KOSHA = (
   "/home/vvasuki/gitland/ambuda-org/vidyut/vidyut-data/data/build/vidyut-latest/kosha"
@@ -1166,7 +1163,6 @@ class UnifiedVedicLexicon:
     dict_root: str = DEFAULT_DICT_ROOT,
     vs_dir: str = DEFAULT_VS_DIR,
     tb_dir: str = DEFAULT_TB_DIR,
-    ta_dir: str = DEFAULT_TA_DIR,
     force_rebuild: bool = False,
   ) -> "UnifiedVedicLexicon":
     if not force_rebuild and cache_path and os.path.isfile(cache_path):
@@ -1186,7 +1182,7 @@ class UnifiedVedicLexicon:
       except Exception:
         pass
 
-    lex = cls.build(dict_root=dict_root, vs_dir=vs_dir, tb_dir=tb_dir, ta_dir=ta_dir)
+    lex = cls.build(dict_root=dict_root, vs_dir=vs_dir, tb_dir=tb_dir)
     lex._get_slp_stems()
     if cache_path:
       os.makedirs(os.path.dirname(cache_path), exist_ok=True)
@@ -1216,7 +1212,6 @@ class UnifiedVedicLexicon:
     dict_root: str = DEFAULT_DICT_ROOT,
     vs_dir: str = DEFAULT_VS_DIR,
     tb_dir: str = DEFAULT_TB_DIR,
-    ta_dir: str = DEFAULT_TA_DIR,
   ) -> "UnifiedVedicLexicon":
     lex = cls()
     # 1. Padasvara babylon files (RV, TS, AV)
@@ -1233,9 +1228,7 @@ class UnifiedVedicLexicon:
     if os.path.isdir(vs_dir):
       lex._ingest_vs_corpus(vs_dir)
 
-    # 3. TA & TB corpora (पद-पाठः (यान्त्रिकः), पद-पाठः, विश्वास-प्रस्तुतिः)
-    if os.path.isdir(ta_dir):
-      lex._ingest_ta_tb_corpus(ta_dir, "TA")
+    # 3. TB corpus ONLY (Taittirīya Āraṇyaka `TA` is intentionally excluded from ŚB!)
     if os.path.isdir(tb_dir):
       lex._ingest_ta_tb_corpus(tb_dir, "TB")
 
@@ -1254,8 +1247,8 @@ class UnifiedVedicLexicon:
       lex._ingest_whitney_roots(wh_p)
 
     # 5. Build fast SLP1 vocabulary lookup table ONLY from padapāṭha-grade sources
-    # (NEVER from fused saṁhitā VP tokens in VS/TB/TA, which contain `चैव`, `एवास्य`, `नैनम्`, `तदु`, etc.!)
-    padapatha_sources = frozenset({"RV", "TS", "AV", "TA", "TB", "Whitney", "Lanman", "MW", "MW_SB"})
+    # (NEVER from fused saṁhitā VP tokens in VS/TB, which contain `चैव`, `एवास्य`, `नैनम्`, `तदु`, etc.!)
+    padapatha_sources = frozenset({"RV", "TS", "AV", "TB", "Whitney", "Lanman", "MW", "MW_SB"})
     slp_vocab: dict[str, int] = {}
     for w_deva, by_marks in lex.form_accents.items():
       total_f = sum(
@@ -2503,7 +2496,7 @@ def _hyphenate_compound_pada(deva_w: str, lex: UnifiedVedicLexicon) -> str:
   bare = _normalize_lookup_key(clean_w)
   if "-" in clean_w or bare in _NEVER_HYPHENATE_WORDS:
     return clean_w
-  # 1. Canonical attested padapāṭha hyphenation (RV/AV ऽ, TA पद-पाठः)
+  # 1. Canonical attested padapāṭha hyphenation (RV/AV ऽ, TB पद-पाठः)
   ch = lex.get_canonical_hyphenation(bare)
   if ch and "-" in ch and _is_valid_compound_hyphenation(ch, bare):
     return ch
@@ -3104,13 +3097,13 @@ def split_vp_to_padas(vp_clean: str, lex: UnifiedVedicLexicon) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-_CORPUS_TIE_ORDER: dict[str, int] = {"VS": 0, "TS": 1, "RV": 2, "AV": 3, "TB": 4, "TA": 5}
+_CORPUS_TIE_ORDER: dict[str, int] = {"VS": 0, "TS": 1, "RV": 2, "AV": 3, "TB": 4}
 _CORPUS_NAMES: frozenset[str] = frozenset(_CORPUS_TIE_ORDER.keys())
 _DICT_ORDER: tuple[str, ...] = ("Whitney", "Macdonell", "Lanman", "MW_SB", "MW")
 
 
 def _aggregate_corpus_counts(srcs: dict[str, int]) -> dict[str, int]:
-  """Merge disjoint ``TB``/``TB_VP`` and ``TA``/``TA_VP`` counts and sort by ``(-count, VS>TS>RV>AV>TB>TA)``."""
+  """Merge disjoint ``TB``/``TB_VP`` counts and sort by ``(-count, VS>TS>RV>AV>TB)`` (never ``TA``)."""
   totals: dict[str, int] = {}
   for s, f in srcs.items():
     if f <= 0:
@@ -3119,8 +3112,6 @@ def _aggregate_corpus_counts(srcs: dict[str, int]) -> dict[str, int]:
       totals[s] = totals.get(s, 0) + int(f)
     elif s == "TB_VP":
       totals["TB"] = totals.get("TB", 0) + int(f)
-    elif s == "TA_VP":
-      totals["TA"] = totals.get("TA", 0) + int(f)
   ordered = sorted(totals.items(), key=lambda kv: (-kv[1], _CORPUS_TIE_ORDER[kv[0]]))
   return {k: v for k, v in ordered if v > 0}
 
@@ -3128,8 +3119,8 @@ def _aggregate_corpus_counts(srcs: dict[str, int]) -> dict[str, int]:
 def _format_corpus_prov(srcs: dict[str, int]) -> str:
   """Format provenance tags with exact Vedic corpus counts (e.g. ``*TS*-12, *RV*-2, *TB*-2``).
 
-  Vedic corpora (``VS``, ``TS``, ``RV``, ``AV``, ``TB``, ``TA``) are ordered by count
-  descending with tie-break ``VS > TS > RV > AV > TB > TA``. Non-corpus dictionaries
+  Vedic corpora (``VS``, ``TS``, ``RV``, ``AV``, ``TB``; ``TA`` is excluded) are ordered by count
+  descending with tie-break ``VS > TS > RV > AV > TB``. Non-corpus dictionaries
   and grammars (``*Whitney*``, ``*Macdonell*``, ``*Lanman*``, ``*MW* ŚBr.``, ``*MW*``)
   follow uncounted.
   """
@@ -3149,8 +3140,8 @@ def _format_corpus_prov(srcs: dict[str, int]) -> str:
 def lookup_corpus_counts(lex: UnifiedVedicLexicon, pada_us: str) -> dict[str, int]:
   """Return exact per-corpus occurrence counts ``{corpus: count}`` for a US-accented padapāṭha word.
 
-  Keys are a subset of ``{'VS', 'TS', 'RV', 'AV', 'TB', 'TA'}`` with strictly positive integer
-  counts, ordered by count descending (tie-break ``VS > TS > RV > AV > TB > TA``).
+  Keys are a subset of ``{'VS', 'TS', 'RV', 'AV', 'TB'}`` with strictly positive integer
+  counts, ordered by count descending (tie-break ``VS > TS > RV > AV > TB``). ``TA`` is excluded.
   """
   if not pada_us or not _DEVANAGARI_RE.search(pada_us):
     return {}
@@ -3166,8 +3157,9 @@ def lookup_corpus_counts(lex: UnifiedVedicLexicon, pada_us: str) -> dict[str, in
   return _aggregate_corpus_counts(srcs)
 
 
+# Match allowed Vedic corpora PLUS deprecated `*TA*`/`*EK*` so `enrich_padapatha_corpus_counts` strips them cleanly.
 _CORPUS_TAG_NO_REF_RE = re.compile(
-  r"\*(VS|TS|RV|AV|TB|TA)\*(?:-\d+)?(?![ \t]+[\d०-९])"
+  r"\*(VS|TS|RV|AV|TB|TA|EK)\*(?:-\d+)?(?![ \t]+[\d०-९])"
 )
 
 
@@ -3175,13 +3167,13 @@ def enrich_padapatha_corpus_counts(lex: UnifiedVedicLexicon, pada_us: str, just:
   """Deterministically enrich a padapāṭha justification string with exact ``*CORPUS*-N`` counts.
 
   - Replaces any bare or previously counted Vedic corpus tags (``*VS*``, ``*TS*``, ``*RV*``,
-    ``*AV*``, ``*TB*``, ``*TA*`` without an explicit verse citation like ``*VS* 1.5``) with
+    ``*AV*``, ``*TB*`` without an explicit verse citation like ``*VS* 1.5``) with
     the exact attested corpus counts for ``pada_us`` ordered by count descending
-    (``VS > TS > RV > AV > TB > TA``).
+    (``VS > TS > RV > AV > TB``), and drops any ``*TA*`` / ``*EK*`` tag cleanly.
   - Preserves explicit verse references (e.g. ``*VS* 1.5``, ``*RV* 6.16.15``), Pāṇini sūtras,
     dictionary tags (``*MW*``, ``*Macdonell*``, ``*Lanman*``, ``*Whitney*``), and editorial
     notes (``व्यत्यस्तः``, ``श्रीधरादि-पाठः``, ``Weber``) verbatim.
-  - Never emits ``-0`` or hallucinated counts.
+  - Never emits ``-0``, ``*TA*``, ``*EK*``, or hallucinated counts.
   """
   if not just:
     counts = lookup_corpus_counts(lex, pada_us)
@@ -3210,6 +3202,10 @@ def enrich_padapatha_corpus_counts(lex: UnifiedVedicLexicon, pada_us: str, just:
     had_plain_corpus = False
     for seg in items_c:
       if not seg:
+        continue
+      # Drop any forbidden `*TA*`/`*EK*` segment (including `*TA* 1.5` or `*EK* मूल-पाठः`)
+      if "*TA*" in seg or "*EK*" in seg:
+        had_plain_corpus = True
         continue
       # Check if segment is purely a bare/counted corpus tag (no verse number after it)
       if _CORPUS_TAG_NO_REF_RE.fullmatch(seg):
@@ -3714,7 +3710,7 @@ def generate_pada_candidates(
     pan_verb_marks = {mks for mks, _ in pan_verb_cands}
 
     # (a) Corpus-attested accented forms of this verb (only padapāṭha sources; reject 1-count glitches contradicting Pāṇini!)
-    verb_pp_srcs = frozenset({"RV", "TS", "AV", "TA", "TB", "Whitney", "Lanman", "MW", "MW_SB"})
+    verb_pp_srcs = frozenset({"RV", "TS", "AV", "TB", "Whitney", "Lanman", "MW", "MW_SB"})
     verb_acc_hits = [
       (mks, {s: f for s, f in srcs.items() if s in verb_pp_srcs})
       for mks, srcs in form_hits.items()
@@ -3763,7 +3759,7 @@ def generate_pada_candidates(
     bonus = 0.0
     if "VS" in srcs:
       bonus -= 0.12
-    if sum(1 for k in ("RV", "TS", "AV", "TB", "TA") if k in srcs) >= 2:
+    if sum(1 for k in ("RV", "TS", "AV", "TB") if k in srcs) >= 2:
       bonus -= 0.1
     prior = 0.15 - min(math.log1p(tot) * 0.04, 0.2) + bonus
     _add(mks, prov, "nominal", prior)
@@ -4590,7 +4586,7 @@ def _solve_kandika_impl(
     # Every open-class pada must carry an exact-form corpus count: sūtra/dictionary-only padas are where
     # bogus splits hide (`अंग्याः` tiṅanta, `अ᳓प-हते` as kta, `अ᳓वभारि` as vocative, `आणः`, `सवितः᳓`).
     # Only closed-class upasargas and always-anudātta enclitics are exempt.
-    _cc = {m.group(1): int(m.group(2)) for m in re.finditer(r"\*(VS|TS|RV|AV|TB|TA)\*-(\d+)", it.prov)}
+    _cc = {m.group(1): int(m.group(2)) for m in re.finditer(r"\*(VS|TS|RV|AV|TB)\*-(\d+)", it.prov)}
     if not _cc:
       if bare_it not in UPASARGA_DEVA_SET and bare_it not in ALWAYS_ANUDATTA_ENCLITICS:
         reasons.append(f"no_corpus_count@{i}:{it.ref}")

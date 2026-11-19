@@ -63,6 +63,7 @@ from doc_curation.sanskrit.accent.shatapatha import (
 from doc_curation.sanskrit.accent.shatapatha_batch import (
   AdjudicationBatchReport,
   AdjudicationRecordResult,
+  SB_CORPUS_TAGS,
   SbCorpusAuditReport,
   SbKandikaAuditFailure,
   audit_full_sb_corpus,
@@ -125,6 +126,7 @@ __all__ = [
   "KandikaCluster",
   "PadaCandidate",
   "PadapathaItem",
+  "SB_CORPUS_TAGS",
   "SIMPLEX_TINANTA_ALLOWLIST",
   "SbAuditReport",
   "SbCorpusAuditReport",

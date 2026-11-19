@@ -120,11 +120,11 @@ def apply_marks_to_token(tok: str, new_marks: Sequence[str]) -> str:
 
 def is_solid_provenance(prov: str) -> bool:
   """Return True when a padapāṭha provenance note cites solid Vedic/Pāṇinian authority (not bare ``*MW*``)."""
-  # Accept both canonical Devanagari abbreviation sign पा॰ (U+0970) and legacy TA पा\u0966 (U+0966).
+  # Accept both canonical Devanagari abbreviation sign पा॰ (U+0970) and legacy पा\u0966 (U+0966).
   prov_n = prov.replace("पा\u0966", "पा॰")
   if any(
     c in prov_n
-    for c in ("*TS*", "*RV*", "*TB*", "*AV*", "*VS*", "*KS*", "*MS*", "*ŚB*", "*TA*", "*TK*", "*Macdonell*", "*Lanman*")
+    for c in ("*TS*", "*RV*", "*TB*", "*AV*", "*VS*", "*KS*", "*MS*", "*ŚB*", "*TK*", "*Macdonell*", "*Lanman*")
   ):
     return True
   if any(

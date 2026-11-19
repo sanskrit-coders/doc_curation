@@ -64,7 +64,11 @@ _SB_MARKS_RE = re.compile(r"[\u1cd8\u1cdf\u0957]")
 _PRATIKA_PAREN_RE = re.compile(r"\(\s*[\u0900-\u097f\u1cd0-\u1cff\u0951-\u0957\sऽ]{1,14}\)")
 _SUG_SPAN_RE = re.compile(r"\[\[([^|\]]+)\|([^\]]+)\]\]")
 _INLINE_NOTE_RE = re.compile(r"\+\+\+.*?\+\+\+|\[\[(?:\?+|!+)\]\]", re.S)
-_ZERO_CORPUS_COUNT_RE = re.compile(r"\*(?:VS|TS|RV|AV|TB|TA)\*-0(?![0-9])")
+SB_CORPUS_TAGS: tuple[str, ...] = ("VS", "TS", "RV", "AV", "TB")
+_ZERO_CORPUS_COUNT_RE = re.compile(r"\*(?:VS|TS|RV|AV|TB|TA|EK)\*-0(?![0-9])")
+_FORBIDDEN_TA_RE = re.compile(r"\*TA\*(?:-\d+)?")
+_FORBIDDEN_EK_RE = re.compile(r"\*EK\*(?:-\d+)?")
+_FORBIDDEN_SRC_RE = re.compile(r"\*(?:TA|EK)\*(?:-\d+)?")
 
 _WORKER_LEXICON: UnifiedVedicLexicon | None = None
 
@@ -148,9 +152,10 @@ def _reason_bucket(reason: str) -> str:
 # Deterministic ``*CORPUS*-N`` occurrence-count enrichment of padapāṭha provenance
 # ---------------------------------------------------------------------------
 
-_CORPUS_RE = r"(?:VS|TS|RV|AV|TB|TA)"
-_BARE_TAGS_ONLY_RE = re.compile(rf"\*{_CORPUS_RE}\*(?:-\d+)?(?:\s*/\s*\*{_CORPUS_RE}\*(?:-\d+)?)*")
-_INLINE_FORM_TAG_RE = re.compile(rf"^\*({_CORPUS_RE})\*(?:-\d+)?(\s+(?![०-९\d\s]).+)$")
+_CORPUS_RE = r"(?:VS|TS|RV|AV|TB)"
+_ALL_CORPUS_RE = r"(?:VS|TS|RV|AV|TB|TA|EK)"
+_BARE_TAGS_ONLY_RE = re.compile(rf"\*{_ALL_CORPUS_RE}\*(?:-\d+)?(?:\s*/\s*\*{_ALL_CORPUS_RE}\*(?:-\d+)?)*")
+_INLINE_FORM_TAG_RE = re.compile(rf"^\*({_ALL_CORPUS_RE})\*(?:-\d+)?(\s+(?![०-९\d\s]).+)$")
 
 
 def enrich_provenance_with_corpus_counts(
@@ -160,19 +165,21 @@ def enrich_provenance_with_corpus_counts(
 ) -> tuple[str, list[str]]:
   """Rewrite corpus citations in ``just`` to exact ``*CORPUS*-N`` occurrence counts for ``pada_us``.
 
+  - Allowed ŚB Vedic corpora are :data:`SB_CORPUS_TAGS` (``VS, TS, RV, AV, TB``). Any ``*TA*`` or ``*EK*``
+    citation is dropped cleanly (Taittirīya Āraṇyaka and Ekāgnikāṇḍa are forbidden as dubious sources).
   - Standalone tags (``*TS*``, ``*RV*``, ``*TS*-3``) are replaced by one counts clause listing every
-    corpus attesting the exact US form, ordered by count (ties ``VS > TS > RV > AV > TB > TA``).
+    allowed corpus attesting the exact US form, ordered by count (ties ``VS > TS > RV > AV > TB``).
     The clause is inserted after the leading sūtra/rule segments (or first, if none) of the first ``;`` clause.
   - Inline form citations (``*TS* सँस्थि॑ते``) keep their form but gain the exact count (no duplicate tag).
   - Verse references (``*VS* १.५``), mixed forms (``*RV*/*TS* …``), dictionaries (``*MW*``, ``*Macdonell*``…),
     and editorial notes stay verbatim; ``पा\\u0966`` is normalized to ``पा॰``.
-  - Idempotent. Never emits ``-0``. When a cited corpus cannot be verified for the exact form, the original
-    bare tag is kept and reported in the second return value (``"<TAG>"``), so adjudicators can resolve it.
+  - Idempotent. Never emits ``-0``, ``*TA*``, or ``*EK*``. When a cited allowed corpus cannot be verified for the exact
+    form, it is dropped if solid provenance remains and reported in the second return value (``"<TAG>"``).
 
   Returns ``(new_just, unverified_tags)``.
   """
   just = just.replace("पा\u0966", "पा॰")
-  counts = lookup_corpus_counts(lex, pada_us)
+  counts = {c: n for c, n in lookup_corpus_counts(lex, pada_us).items() if c in SB_CORPUS_TAGS}
   unverified: list[str] = []
   used: set[str] = set()
   dropped_bare: list[str] = []
@@ -183,11 +190,22 @@ def enrich_provenance_with_corpus_counts(
       if not seg:
         continue
       if _BARE_TAGS_ONLY_RE.fullmatch(seg):
-        dropped_bare.append(seg)
+        # Strip any forbidden *TA*/*EK* tags before tracking bare tags
+        non_forbidden = [c for c in re.findall(rf"\*({_CORPUS_RE})\*", seg)]
+        if non_forbidden:
+          dropped_bare.append(", ".join(f"*{c}*" for c in non_forbidden))
         continue
+      if _FORBIDDEN_SRC_RE.search(seg):
+        # Drop any standalone *TA*/*EK* inline citation or strip it from a slash group
+        cleaned_seg = re.sub(r"\s*/\s*\*(?:TA|EK)\*(?:-\d+)?|\*(?:TA|EK)\*(?:-\d+)?\s*/\s*", "", seg).strip()
+        if not cleaned_seg or _FORBIDDEN_SRC_RE.search(cleaned_seg):
+          continue
+        seg = cleaned_seg
       m_inl = _INLINE_FORM_TAG_RE.match(seg)
       if m_inl and "/" not in seg.split(" ", 1)[0]:
         cname = m_inl.group(1)
+        if cname in ("TA", "EK"):
+          continue
         if cname in counts:
           used.add(cname)
           seg = f"*{cname}*-{counts[cname]}{m_inl.group(2)}"
@@ -497,6 +515,7 @@ class AdjudicationRecordResult:
   preserved_vp: bool
   errors: list[str]
   disagree_syllables: list[dict[str, Any]] = dataclasses.field(default_factory=list)
+  disagree_details: list[dict[str, Any]] = dataclasses.field(default_factory=list)
   validation_issues: list[str] = dataclasses.field(default_factory=list)
   reconcile_logs: list[str] = dataclasses.field(default_factory=list)
   unverified_corpus_tags: list[str] = dataclasses.field(default_factory=list)
@@ -886,6 +905,7 @@ def verify_and_apply_adjudications(
       items: list[PadapathaItem] = ent["items"]
       errors: list[str] = list(ent["item_errs"])
       disagree_syls_out: list[dict[str, Any]] = []
+      disagree_details_out: list[dict[str, Any]] = []
       val_strs: list[str] = []
       rec_logs_out: list[str] = []
 
@@ -895,6 +915,10 @@ def verify_and_apply_adjudications(
           errors.append(f"unmapped_vp_syllables: {ent['unmapped'][:6]}")
         if not ent["preserve_vp"] and _SB_MARKS_RE.search(ent["vp_acc"]):
           errors.append("leftover_sb_marks_in_vp")
+        if any(_FORBIDDEN_TA_RE.search(it.prov) for it in items):
+          errors.append("forbidden_ta_source: *TA* is forbidden in ŚB पद-पाठः (allowed: VS, TS, RV, AV, TB)")
+        if any(_FORBIDDEN_EK_RE.search(it.prov) for it in items):
+          errors.append("forbidden_ek_source: *EK* is forbidden in ŚB पद-पाठः (allowed: VS, TS, RV, AV, TB)")
 
         # 2. Forward-sandhi round-trip verification
         padas_ref = [it.ref for it in items]
@@ -927,6 +951,14 @@ def verify_and_apply_adjudications(
         if rep.possibly_spurious_vyatyasta_padas:
           spur_names = [f"{i}:{items[i].ref}" for i in rep.possibly_spurious_vyatyasta_padas if i < len(items)]
           errors.append(f"spurious_vyatyasta_padas: {spur_names}")
+        flagged_padas = set(rep.unflagged_vyatyasta_padas) | set(rep.possibly_spurious_vyatyasta_padas)
+        has_audit_err = bool(flagged_padas or rep.unmapped_vp_syllables)
+        _detail_status_map = {
+          "both_disagree": "both_disagree",
+          "weber_ok": "shri_only_disagree",
+          "shri_ok": "weber_only_disagree",
+          "unaligned": "unaligned",
+        }
         for s in rep.syllables:
           if s.status in ("both_disagree", "unaligned"):
             disagree_syls_out.append({
@@ -939,6 +971,20 @@ def verify_and_apply_adjudications(
               "act_s": s.act_shri,
               "padas": [items[pi].ref for pi in s.pada_indices if pi < len(items)],
             })
+          if has_audit_err and len(disagree_details_out) < 12 and s.status in _detail_status_map:
+            if s.status in ("both_disagree", "unaligned") or any(pi in flagged_padas for pi in s.pada_indices):
+              pi = next((p for p in s.pada_indices if p in flagged_padas), s.pada_indices[0] if s.pada_indices else -1)
+              disagree_details_out.append({
+                "pada_idx": pi,
+                "pada": items[pi].ref if 0 <= pi < len(items) else "",
+                "syl": s.token,
+                "us_mark": s.us_mark,
+                "exp_w": s.exp_weber,
+                "act_w": s.act_weber,
+                "exp_s": s.exp_shri,
+                "act_s": s.act_shri,
+                "status": _detail_status_map[s.status],
+              })
 
         # 4. Per-cluster validator + reconciler check
         pp_block = format_padapatha_block(items)
@@ -971,6 +1017,7 @@ def verify_and_apply_adjudications(
           preserved_vp=ent["preserve_vp"],
           errors=errors,
           disagree_syllables=disagree_syls_out,
+          disagree_details=disagree_details_out,
           validation_issues=val_strs,
           reconcile_logs=rec_logs_out,
         )
@@ -1272,6 +1319,28 @@ def audit_full_sb_corpus(
             sub_idx=sl.sub_idx,
             kind="zero_corpus_count",
             detail="Found invalid *CORPUS*-0 occurrence count in पद-पाठः",
+          )
+        )
+      if _FORBIDDEN_TA_RE.search(sl.pp_body):
+        failures.append(
+          SbKandikaAuditFailure(
+            kandika_id=kid,
+            rel_path=rel_posix,
+            heading=sl.heading,
+            sub_idx=sl.sub_idx,
+            kind="forbidden_ta_source",
+            detail="Found forbidden *TA* citation in ŚB पद-पाठः (allowed corpora: VS, TS, RV, AV, TB)",
+          )
+        )
+      if _FORBIDDEN_EK_RE.search(sl.pp_body):
+        failures.append(
+          SbKandikaAuditFailure(
+            kandika_id=kid,
+            rel_path=rel_posix,
+            heading=sl.heading,
+            sub_idx=sl.sub_idx,
+            kind="forbidden_ek_source",
+            detail="Found forbidden *EK* citation in ŚB पद-पाठः (allowed corpora: VS, TS, RV, AV, TB)",
           )
         )
 
