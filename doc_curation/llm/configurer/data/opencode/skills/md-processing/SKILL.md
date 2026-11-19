@@ -39,14 +39,6 @@ For various python utilities, see `doc_curation.md.content_processor.include` an
 ### Sections
 `doc_curation.md.content_processor.section_helper` has useful code — sections: `autonumber`, `fix_headers`, `denumerify_section_titles`, `drop_sections`, `deromanize_section_numbers` . See `doc_curation_projects/general_tasks/content/section_fix.py`.
 
-### Commentary/ translation interleaving
-
-`doc_curation.md.content_processor` subpackages:
-
-- `commentary` — commentary blocks. For *interleaving* a translation or ṭīkā alongside the mUlam, use the `interleaver` skill.
-
-
-
 ## Editing Metadata
 
 Files should have proper TOML metadata (preferred over YAML). Useful functions in `doc_curation.md.library.metadata_helper`:

@@ -15,18 +15,30 @@ from doc_curation.md.file import MdFile
 ```
 
 ## Common non-details text
-In most cases, the below suffices -
+In most cases, choose between plain sentence wrapping and local sense-unit + hyphenated block generation:
 
 ```python
-library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda c, *args, **kwargs: maker.generic_sanskrit_vipra_mUla(c))
-```
-splits non-detail text in the passed paths to sentences which are placed in विश्वास-प्रस्तुतिः and मूलम् blocks.
+# 1. Plain sentence-per-block wrapping (no hyphenation, uses doc_curation.sanskrit.split_to_sentences):
+library.apply_function(
+    fn=MdFile.transform, dir_path=dir_path,
+    content_transformer=lambda c, *args, **kwargs: maker.generic_sanskrit_vipra_mUla(c),
+)
 
-This internally uses
+# 2. Sense-unit block splitting (Tests 1–5) + fast local SLP1 ONNX hyphenation on विश्वास-प्रस्तुतिः
+#    (preserves मूलम् verbatim, converts ॒/॑ -> US ᳓/᳙ in विश्वास-प्रस्तुतिः, <20 ms/block on CPU):
+from doc_curation.llm.proofreader import text_to_vipra_mula_blocks
 
-```python
-from doc_curation.sanskrit import split_to_sentences
+library.apply_function(
+    fn=MdFile.transform, dir_path=dir_path,
+    content_transformer=lambda c, *args, **kwargs: text_to_vipra_mula_blocks(
+        c, use_local_hyphenator=True, clause_newlines=True,
+    ),
+)
 ```
+
+> **Tool-choice recommendation:** Use local `hyphene` / `text_to_vipra_mula_blocks(..., use_local_hyphenator=True)` for fast clean-text block creation and hyphenation; use `Qwen3-14B` (`proofread_text` / `ProofreaderBackend`, see **Specialist models** below and `doc_curation/llm/proofreader/README.md`) when OCR cleanup (`[[OLD|NEW]]`), discourse clause breaks, or translation-guided ambiguous boundary merges are also needed.
+>
+> **Mandatory random quality check & redo:** After running `generic_sanskrit_vipra_mUla`, `text_to_vipra_mula_blocks`, or `ProofreaderBackend`, always inspect a random sample of generated clusters across the file(s) against Tests 1–5 (same Ṛk, `yad`/`tad` correlatives, embedded quotes/frames, `-tvā`/`-ya` sequential actions, mid-sentence reference numbers), `मूलम्` byte-fidelity, US accent conversion, and hyphenation quality — re-splitting, merging, or redoing any flawed blocks directly.
 
 ## Common text in details blocks
 - **Editorial glosses in `विश्वास-प्रस्तुतिः` (`+++(...)+++`):** Always mask `+++(...)+++` when splitting on daṇḍas (`।`/`॥`). If `विश्वास-प्रस्तुतिः` explicitly supplies an elliptical finite verb inside `+++(...)+++` (e.g. `+++(निरमिमीत)+++`, `+++(आदधाति)+++`, `+++(भवति)+++`), treat that segment as having its finite verb (self-contained); only truly verb-less short segments (such as bare datives of purpose `रक्षसाम् अपहत्यै ।`, `सुवर्गस्य लोकस्य समष्ट्यै ।`, or bare `अथ + accusative` list items `अथ श्मश्रूणि ।` with no supplied verb and no `एव`) attach to the preceding action sentence under Test 5.

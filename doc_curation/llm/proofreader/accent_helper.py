@@ -31,11 +31,12 @@ _PADASVARA_REL_PATHS = (
 _DICT_INDEX_CACHE: dict[str, dict[str, list[str]]] = {}
 
 
-def _load_babylon_index(path: str, max_body_chars: int = 80) -> dict[str, list[str]]:
+def _load_babylon_index(path: str, max_body_chars: int = 110) -> dict[str, list[str]]:
   """Build and cache a compact in-memory ``{bare_headword: [variant_snippet, ...]}`` index.
 
-  For ``*padasvara*.babylon`` files, extracts the leading ``<sasvara> (<freq>)`` line
-  (already sorted by descending attestation frequency in the Babylon file).
+  Preserves multiple distinct accented variants / homographs per bare headword (e.g.
+  ``वे᳓द`` 'knowledge/Veda' vs ``वेद᳓`` 'tuft of grass', ``अ᳓न्तक`` 'Death' vs ``अन्तक᳓`` 'border',
+  ``वाचः᳓`` gen. sg. vs ``वा᳓चः`` nom./acc. pl.) rather than truncating at the first hit.
   """
   if path in _DICT_INDEX_CACHE:
     return _DICT_INDEX_CACHE[path]
@@ -58,13 +59,19 @@ def _load_babylon_index(path: str, max_body_chars: int = 80) -> dict[str, list[s
       # First <br>-delimited segment has "<sasvara_word> (<freq>)"
       snippet = regex.sub(r"<[^>]+>", "", body.split("<br>")[0]).strip()[:max_body_chars]
     else:
-      snippet = regex.sub(r"<[^>]+>", " ", body).strip()[:max_body_chars]
+      snippet = regex.sub(r"\s+", " ", regex.sub(r"<[^>]+>", " ", body)).strip()[:max_body_chars]
+    lead_tok = snippet.split()[0] if snippet else ""
     for h in head.split("|"):
       h_clean = accent.strip_accents(h.rstrip("+").strip())
-      if h_clean and len(idx.get(h_clean, ())) < 4:
-        existing = idx.setdefault(h_clean, [])
-        if snippet not in existing:
-          existing.append(snippet)
+      if not h_clean:
+        continue
+      existing = idx.setdefault(h_clean, [])
+      if snippet in existing:
+        continue
+      # Always retain an entry that introduces a new accented headword spelling, or up to 6 entries total.
+      has_same_lead = bool(lead_tok) and any(ex.split()[0] == lead_tok for ex in existing if ex)
+      if not has_same_lead or len(existing) < 6:
+        existing.append(snippet)
   _DICT_INDEX_CACHE[path] = idx
   return idx
 
@@ -75,11 +82,32 @@ def _lookup_query(q: str, dict_root: str) -> str | None:
     dpath = os.path.join(dict_root, rel)
     found = _load_babylon_index(dpath).get(q)
     if found:
-      limit = 3 if label != "MW" else 1
-      tag_snippets.append(f"*{label}*: {', '.join(found[:limit])}")
+      limit = 4
+      tag_snippets.append(f"*{label}*: {' ; '.join(found[:limit])}")
   if tag_snippets:
     return f"- {q}: " + " | ".join(tag_snippets)
   return None
+
+
+_CASE_SUFFIX_STRIP_ORDER = (
+  "ेभ्यः", "ाभ्याम्", "ाणाम्", "ानाम्", "स्य", "ाय", "ात्", "ेन", "ेषु", "भिः", "म्", "ान्", "ाः", "ः", "त्", "न्", "ं",
+)
+
+
+def _stem_fallbacks(clean_tok: str) -> list[str]:
+  """Derive candidate nominal stems from an inflected token so homographs in *RV*/*AV*/*MW* are surfaced."""
+  stems: list[str] = []
+  for suf in _CASE_SUFFIX_STRIP_ORDER:
+    if clean_tok.endswith(suf) and len(clean_tok) - len(suf) >= 2:
+      base = clean_tok[: -len(suf)]
+      if suf.startswith(("ा", "े")):
+        for cand in (base, base + "न्", base + "स्", base + "आ"):
+          if cand not in stems:
+            stems.append(cand)
+      else:
+        if base not in stems:
+          stems.append(base)
+  return stems
 
 
 def retrieve_accent_candidates(
@@ -87,7 +115,7 @@ def retrieve_accent_candidates(
   *,
   dict_root: str = DEFAULT_DICT_ROOT,
 ) -> list[str]:
-  """Look up candidate lexical accents for whole tokens and samāsa/sandhi members."""
+  """Look up candidate lexical accents for whole tokens, inflected stems, and samāsa/sandhi members."""
   bare = accent.strip_accents(mula_text)
   tokens = [
     t for t in regex.findall(r"[\u0900-\u0963\u0971-\u097f\-ऽ]+", bare) if len(t) >= 2
@@ -97,13 +125,14 @@ def retrieve_accent_candidates(
 
   for tok in tokens:
     clean_tok = tok.replace("-", "").replace("ऽ", "")
-    # Priority 1: whole token & anusvāra/halant normalization
-    whole_cands = [clean_tok]
-    if clean_tok.endswith("म्") or clean_tok.endswith("ं"):
-      whole_cands.append(clean_tok[:-2] if clean_tok.endswith("म्") else clean_tok[:-1])
+    # Priority 1: whole token & stem fallbacks (surfaces multi-accent homographs like वे᳓द vs वेद᳓, अ᳓न्तक vs अन्तक᳓)
+    whole_cands = [clean_tok] + _stem_fallbacks(clean_tok)
 
     # Priority 2: hyphenator-backed samāsa & sandhi member decomposition
-    member_cands = decompose_samasa_for_padasvara(tok)
+    member_cands: list[str] = []
+    for mc in decompose_samasa_for_padasvara(tok):
+      member_cands.append(mc)
+      member_cands.extend(_stem_fallbacks(mc))
 
     for q in whole_cands + member_cands:
       if q in seen_queries or len(q) < 2:

@@ -15,7 +15,7 @@
         "sec": "non_separable_mergers",
         "in": "अपीच्छा",
         "exp": "अपीच्छा",
-        "pred": "अ-पी-च्छा"
+        "pred": "अ-पीच्छा"
       },
       {
         "sec": "non_separable_mergers",
@@ -25,9 +25,9 @@
       },
       {
         "sec": "non_separable_mergers",
-        "in": "रामेति",
-        "exp": "रामेति",
-        "pred": "रामेत्य्"
+        "in": "सदैव",
+        "exp": "सदैव",
+        "pred": "सद्-एव"
       },
       {
         "sec": "yan_sandhi",
@@ -39,7 +39,7 @@
         "sec": "visarga_sandhi",
         "in": "दुष्प्रकृतेरस्य",
         "exp": "दुष्प्रकृतेर् अस्य",
-        "pred": "दुष्-प्रकृतेः अस्य"
+        "pred": "दुष्-प्रकृतेर् अस्य"
       },
       {
         "sec": "samasa_and_inflected_words",
@@ -55,17 +55,17 @@
       "no_newline_inside_brackets": true,
       "multiline_clause_count": "2/3",
       "outputs": [
-        "तत्र धर्मार्थ-कामानां कारण-विशेषे निश्चिते सती  \nईक्षणादयः प्रवर्तन्त  \nइति सिद्धम्।",
-        "अत्र प्रधानस्याचेतनस्यैवं-रूपो जगत्-कारण-भावो नोपपद्यत इत्य्-आह।",
-        "पृष्टो मृत्युः  \nतस्यार्थस्य निर्णयाय  \nस्व-प्रकाशाद् वितीयम्  \nआत्मानम् उपदिदेश।"
+        "तत्र धर्मार्थ-कामानां कारण-विशेषे निश्चिते सति  \nईक्षणादयः प्रवर्तन्त इति सिद्धम्।",
+        "अत्र प्रधानस्याचेतनस्यैवं-रूपो जगत्-कारण-भावो नोपपद्यत इत्य् आह।",
+        "पृष्टो मृत्युः  \nतस्यार्थस्य निर्णयाय  \nस्व-प्रकाशाद् वितीयम् आत्मानम् उपदिदेश।"
       ]
     }
   },
   "heldout_tasks_finetuned_lora": {
     "clause_newline_instruction_following": {
       "n": 8,
-      "clause_on_multiline_rate": 0.25,
-      "clause_off_singleline_rate": 0.875,
+      "clause_on_multiline_rate": 0.625,
+      "clause_off_singleline_rate": 0.625,
       "samples": [
         {
           "in": "तस्मादीदृशं जगदुपसंहारित्वरूपं भोक्तृत्वं परमात्मन एव ॥ ९॥",
@@ -74,37 +74,41 @@
         },
         {
           "in": "ब्रह्मजज्ञो – जीवः, ब्रह्मणो जातत्वात् ज्ञत्वाच्च।",
-          "on": "ब्रह्म-जज्ञो – जीवः, ब्रह्मणो जातत्वात् ज्ञत्वाच्च।",
-          "off": "एतावान्  \nअस्य महिमा।  \nअतो ज्यायांश्च पुरुषः।"
+          "on": "ब्रह्म-जज्ञो – जीवः, ब्रह्मणो जातत्वात् ज्ञत्वाच् च।",
+          "off": "एतावान् अस्य महिमा।  \nअतो ज्यायांश् च पुरुषः।"
         }
       ]
     },
     "translation_matcher": {
-      "n": 8,
+      "n": 16,
       "valid_json_rate": 1.0,
-      "exact_alignment_rate": 0.0
+      "exact_alignment_rate": 0.6875,
+      "valid_partition_rate": 1.0,
+      "span_word_f1": 0.944,
+      "within_2w_boundary_acc": 0.9318,
+      "mean_abs_word_error": 0.77
     },
     "commentary_interleaver": {
       "n": 16,
       "valid_json_rate": 1.0,
-      "exact_alignment_rate": 0.375,
-      "unmatched_from_acc": 0.875,
-      "segment_core_acc": 0.8403,
-      "segment_role_acc": 0.9916
+      "exact_alignment_rate": 0.4375,
+      "unmatched_from_acc": 0.9375,
+      "segment_core_acc": 0.8487,
+      "segment_role_acc": 1.0
     },
     "proofread_vp": {
       "n": 8,
-      "avg_char_similarity": 0.9548,
-      "suggestion_rate": 0.125,
+      "avg_char_similarity": 0.9695,
+      "suggestion_rate": 0.0,
       "sample": {
         "gold": "> ननु \"आत्मन आकाशसम्भूतः\" (तै.आन.१.२) इत्य्  \nआकाशस्यापि कार्यत्वं प्रतीयते।",
-        "pred": "ननु  \nआत्मन आकाश-सम्भूतः (तै.आन.१.२)  \nइत्य्-आकाशस्यापि कार्यत्वं प्रतीयते।"
+        "pred": "ननु  \nआत्मन् आकाश-सम्भूतः (तै.आन.१.२)  \nइत्य् आकाशस्यापि कार्यत्वं प्रतीयते।"
       }
     },
     "proofread_suggestions": {
       "n": 8,
-      "avg_char_similarity": 0.8311,
-      "suggestion_rate": 0.125,
+      "avg_char_similarity": 0.8402,
+      "suggestion_rate": 0.0,
       "sample": {
         "gold": "देवतामयी - [[इन्द्रियाघीनभोगा|इन्द्रियाधीन-भोगा]] ।",
         "pred": "देवता-मयी - इन्द्रियाघीन-भोगा ।"
@@ -112,96 +116,96 @@
     },
     "padapatha_accent": {
       "n": 8,
-      "avg_char_similarity": 0.4345,
+      "avg_char_similarity": 0.4651,
       "suggestion_rate": 0.0,
       "sample": {
         "gold": "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- वि᳓श्वेभ्यः (*TS*, *RV*)\n- देवे᳓भ्यः (*TS*)\n- स्वा᳓हा (*TS*)\n</details>",
-        "pred": "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- विश्वे॑भ्यो (*TS*, *RV*)\n- दे॒वेभ्यः॑ (*TS*, *RV*, *AV*)\n- स्वाहा॑ (*TS*, *RV*, *AV*)\n</details>"
+        "pred": "<details><summary>पद-पाठः (यान्त्रिकः - 2/3 व्यत्यस्त-स्वराः)</summary>\n\n- वि᳓श्वे (मूलम्) → **विश्वे᳓** (*TS*, *RV*)\n- देवे᳓भ्यस् (मूलम्) → **दे॒वेभ्यः᳓** (*TS*, *AV*)\n- स्वा᳓हा (मूलम्) → **स्वाहा᳓** (*TS*, *RV*, *AV*)\n</details>"
       }
     }
   },
   "training_meta": {
     "base_model": "Qwen/Qwen3-14B",
-    "total_steps": 22,
+    "total_steps": 24,
     "lora_r": 16,
-    "elapsed_min": 62.56,
+    "elapsed_min": 64.72,
     "loss_curve_head": [
       {
         "step": 1,
-        "loss": 0.2239,
-        "sec": 76.24
+        "loss": 0.1073,
+        "sec": 74.29
       },
       {
         "step": 2,
-        "loss": 0.119,
-        "sec": 82.66
+        "loss": 0.0572,
+        "sec": 86.61
       },
       {
         "step": 3,
-        "loss": 0.1118,
-        "sec": 83.03
+        "loss": 0.0681,
+        "sec": 82.31
       },
       {
         "step": 4,
-        "loss": 0.1243,
-        "sec": 90.22
+        "loss": 0.0739,
+        "sec": 83.75
       },
       {
         "step": 5,
-        "loss": 0.1141,
-        "sec": 81.52
+        "loss": 0.0882,
+        "sec": 89.53
       }
     ],
     "loss_curve_tail": [
       {
-        "step": 13,
-        "loss": 0.1074,
-        "sec": 67.81
-      },
-      {
-        "step": 14,
-        "loss": 0.2013,
-        "sec": 88.67
-      },
-      {
         "step": 15,
-        "loss": 0.0956,
-        "sec": 86.2
+        "loss": 0.0441,
+        "sec": 86.22
       },
       {
         "step": 16,
-        "loss": 0.1271,
-        "sec": 83.73
+        "loss": 0.0756,
+        "sec": 83.76
       },
       {
         "step": 17,
-        "loss": 0.0602,
-        "sec": 79.16
+        "loss": 0.0624,
+        "sec": 87.29
       },
       {
         "step": 18,
-        "loss": 0.1353,
-        "sec": 103.4
+        "loss": 0.0551,
+        "sec": 86.5
       },
       {
         "step": 19,
-        "loss": 0.1382,
-        "sec": 81.38
+        "loss": 0.0753,
+        "sec": 88.13
       },
       {
         "step": 20,
-        "loss": 0.0343,
-        "sec": 92.91
+        "loss": 0.0325,
+        "sec": 90.79
       },
       {
         "step": 21,
-        "loss": 0.1195,
-        "sec": 91.48
+        "loss": 0.0786,
+        "sec": 82.46
       },
       {
         "step": 22,
-        "loss": 0.0926,
-        "sec": 87.89
+        "loss": 0.0766,
+        "sec": 95.8
+      },
+      {
+        "step": 23,
+        "loss": 0.0647,
+        "sec": 89.55
+      },
+      {
+        "step": 24,
+        "loss": 0.0482,
+        "sec": 82.05
       }
     ]
   }

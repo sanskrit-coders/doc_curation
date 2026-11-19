@@ -72,6 +72,16 @@ cases = [
   { input = "आश्रितत्वाच्च", expected = "आश्रितत्वाच् च", note = "tva binds to its member; c+t is witnessed t-assim" },
   { input = "प्राणप्रज्ञात्मनोर्भेददर्शनं", expected = "प्राणप्रज्ञात्मनोर्भेद-दर्शनं", note = "no spurious avagraha (अर्भेद)" },
   { input = "अधिप्रज्ञं", expected = "अधिप्रज्ञं", note = "upasarga+stem compound stays whole" },
+  { input = "सर्वं", expected = "सर्वं", note = "do not split sarv-aM via yaN fallback" },
+  { input = "परस्य", expected = "परस्य", note = "-aH never becomes -ar before vowel" },
+  { input = "सर्वा", expected = "सर्वा", note = "saH never becomes sar before vA" },
+  { input = "सर्वकर्मा", expected = "सर्व-कर्मा", note = "do not split sarva-kar mA" },
+  { input = "क्रतुमयः", expected = "क्रतुमयः", note = "do not split -tum before -maya suffix" },
+  { input = "कल्याणाः", expected = "कल्याणाः", note = "do not split kaly-ARAH via kali yaN" },
+  { input = "अणीयस्त्वेन", expected = "अणीयस्त्वेन", note = "bound suffix -tvena never splits on visarga" },
+  { input = "सप्तम्यन्तेन", expected = "सप्तम्य्-अन्तेन", note = "never split -an before consonant -tena" },
+  { input = "इममेव", expected = "इमम् एव", note = "shift m-coda cut right instead of ima-meva" },
+  { input = "शारीरष्षष्ठ्या", expected = "शारीरष् षष्ठ्या", note = "geminate sibilant visarga sandhi" },
 ]
 
 [avagraha]

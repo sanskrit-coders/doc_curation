@@ -5,7 +5,7 @@ In the Mādhyandina Śatapatha Brāhmaṇa:
   an udātta before an anudātta (dependent svarita) or pause, or an anudātta/udātta/svarita
   immediately before an independent svarita.
 - In ``मूलम् - Weber`` (from TITUS), ``ॗ`` (U+0957) specifically marks the syllable preceding
-  an *independent* svarita (jātya, kṣaipra, abhinihita, and ŚB's ``पा० ८.२.६`` sandhi svarita
+  an *independent* svarita (jātya, kṣaipra, abhinihita, and ŚB's ``पा॰ ८.२.६`` sandhi svarita
   on udātta + word-initial anudātta vowel mergers), while ``᳘``/``᳟`` mark an udātta before
   an anudātta or pause.
 - In ``मूलम् - श्रीधरादि``, ``᳘`` is used for all pitch-drop positions alike (often doubled
@@ -14,7 +14,7 @@ In the Mādhyandina Śatapatha Brāhmaṇa:
 
 Because the ŚB → US direction is under-determined on its own while the US → ŚB forward
 projection is deterministic, this module:
-1. Projects a proposed ``पद-पाठः`` (US accents + ŚB ``पा० ८.२.४–६`` sandhi) forward into
+1. Projects a proposed ``पद-पाठः`` (US accents + ŚB ``पा॰ ८.२.४–६`` sandhi) forward into
    expected Weber and Śrīdharādi marks and audits every syllable against both sources.
 2. Builds clean, US-accented ``विश्वास-प्रस्तुतिः`` text with inline ``[[OLD|NEW]]``
    suggestions for genuine two-source *vyatyasta* accents and matching summary headers.
@@ -293,7 +293,7 @@ def _compute_vp_syllable_marks(
     vp_clean, vp_pieces, pp_keys, pp_meta, vp_keys, vp_meta, _pp_member_starts(items)
   )
 
-  # Map VP syllables to Weber and Śrīdharādi syllables so we can detect ŚB पा० ८.२.६ svarita triggers.
+  # Map VP syllables to Weber and Śrīdharādi syllables so we can detect ŚB पा॰ ८.२.६ svarita triggers.
   vp_to_weber = _align_key_sequences(vp_keys, [s.key for s in weber_syls]) if weber_syls else {}
   vp_to_shri = _align_key_sequences(vp_keys, [s.key for s in shri_syls]) if shri_syls else {}
 
@@ -334,7 +334,7 @@ def _compute_vp_syllable_marks(
         i1, _ = pp_meta[s1]
         i2, si2 = pp_meta[s2]
         # Check whether Weber marks ॗ on the preceding syllable (or Shri marks ᳘ on a preceding anudātta)
-        # to preserve ŚB's पा० ८.२.६ independent svarita on U + A vowel mergers.
+        # to preserve ŚB's पा॰ ८.२.६ independent svarita on U + A vowel mergers.
         prev_has_svarita_cue = False
         if flat_idx > 0:
           pw = vp_to_weber.get(flat_idx - 1)
@@ -391,7 +391,7 @@ def build_sb_vp_from_padapatha(
   """Populate US accents and inline ``[[OLD|NEW]]`` suggestions on a clean hyphenated ŚB ``विश्वास-प्रस्तुतिः``.
 
   Returns ``(new_summary, accented_vp_body, unmapped_syllables)``.
-  - Preserves ŚB's ``पा० ८.२.६`` independent svarita ``᳙`` where Weber marks ``ॗ`` on the preceding syllable.
+  - Preserves ŚB's ``पा॰ ८.२.६`` independent svarita ``᳙`` where Weber marks ``ॗ`` on the preceding syllable.
   - Emits ``[[OLD|NEW]]`` on tokens containing solid *vyatyasta* padas (``OLD`` = source US accent, ``NEW`` = corrected US accent).
   - Formats ``new_summary`` with the same ``(N/P व्यत्यस्त-स्वराः)`` appendix as ``पद-पाठः`` when ``N > 0``.
   """
@@ -619,6 +619,9 @@ def _extract_vp_clusters(part: str) -> list[_VpCluster]:
     shri_text = ""
     insert_pos = m.end()
     k = i + 1
+    while k < len(dmatches) and dmatches[k].group(1).strip().startswith("विश्वास-टिप्पनी"):
+      insert_pos = dmatches[k].end()
+      k += 1
     while k < len(dmatches):
       sum_k = dmatches[k].group(1).strip()
       if sum_k.startswith("मूलम्") and "Makoto" not in sum_k:
@@ -772,6 +775,11 @@ def apply_sb_kandika_updates(
         map_key = lead
 
       if map_key is None:
+        if preserve_existing_us and cl.existing_pp_match is not None and has_us_accents(cl.vp_match.group(2)):
+          vp_m = cl.vp_match
+          open_attr = " open" if "<details open>" in vp_m.group(0)[:20] else ""
+          masked_vp = f"<details{open_attr}><summary>विश्वास-प्रस्तुतिः (स्वराः पूर्याः)</summary>{vp_m.group(2)}</details>"
+          check_edits.append((vp_m.start(), vp_m.end(), masked_vp))
         continue
 
       matched_map_keys.add(map_key)

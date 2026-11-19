@@ -5,4 +5,4 @@ Load the proofreader-hyphenator skill and apply only its **Sanskrit hyphenation*
 
 $ARGUMENTS
 
-Skip the cleanup, doubtful-readings and final-formatting sections unless asked; do not restructure or rewrite the text. If no path or text is given, ask for one.
+Skip the cleanup, doubtful-readings and final-formatting sections unless asked; do not restructure or rewrite the text (for fast clean-text hyphenation on CPU, see `doc_curation.sanskrit.hyphenator.hyphene` in that skill). If no path or text is given, ask for one.

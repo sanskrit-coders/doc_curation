@@ -13,7 +13,8 @@ from doc_curation.md.content_processor.commentary import interleaver
 ```
 
 ## Preparation
-- **Generate or split `मूलम्` blocks if missing or coarse.** If the files have no `<details><summary>मूलम्</summary>` blocks (or have coarse blocks that should be split to sense units), use the `text_to_blocks` skill first.
+- **Generate or split `मूलम्` blocks if missing or coarse.** If the files have no `<details><summary>मूलम्</summary>` blocks (or have coarse blocks that should be split to sense units), use the `text_to_blocks` skill first (`text_to_vipra_mula_blocks(..., use_local_hyphenator=True)` / local `hyphene` for fast clean-text hyphenation; `Qwen3-14B` `proofread_text` when OCR cleanup & discourse clause breaks are also needed).
+- **Local DP aligners vs. `Qwen3-14B` LoRA (`doc_curation/llm/proofreader/README.md`):** Use the zero-GPU local DP aligners by default — `interleave_source_into_markdown(..., backend=None)` (`99.1%` segment-to-core & `100.0%` role in `<3 ms`/segment via Sandhi/Pratīka Viterbi DP) for Sanskrit commentaries, and `translation_matcher.insert_translation_details(..., backend=None)` (`100%` partition validity & `72.4%` span word-F1 in `~34 ms`/batch via Bilingual Monotonic DP) for instant zero-GPU plain-translation alignment; when specifically requested (or when free/idiomatic translations lack lexical anchors), `backend=ProofreaderBackend(...)` reaches `94.4%` span word-F1 (`0.77` words MAE, `68.8%` all-boundaries-exact) on `translation_matcher` and `100.0%` role / `93.8%` cutoff on `commentary_interleaver`.
 
 
 ## Commentary / translation insertion
@@ -155,6 +156,7 @@ withheld_viniyogas = res["withheld_viniyogas"]
 4. Host sections not being edited are byte-identical before/after.
 5. No stray sentinel text (e.g. `None`).
 6. Structural lint: block order within each group; no empty blocks; no commentary block starts or ends with a `**…॥**` heading; verse markers all still present, each once.
+7. **Random semantic spot-check & redo (mandatory whenever alignment tools are used):** Programmatic coverage/tag assertions catch dropped text, not semantic boundary drift. Always sample several random clusters across the page (early, middle, late, short/skip-adjacent cores, and section-boundary `> *Note:*` blocks) to verify that each translation/commentary slice truly explains its paired `मूलम्` block and carries the right role (`*विनियोगः` vs `*- अवतारिका` vs `*-टीका`, single-ṛk vs multi-ṛk *chandas*); re-slice or redo any misaligned blocks directly.
 
 
 

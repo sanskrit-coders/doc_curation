@@ -159,13 +159,17 @@ class ProofreaderBackend(LlmBackend):
     return content, data.get("usage", {})
 
   def new_chat(self, system_prompt: str, model_id: str | None = None) -> ProofreaderChat:
-    # Automatically disable proofreading lexical guards if called with JSON/interleaver prompt
-    is_json_task = "ONLY valid JSON" in system_prompt or "ONLY this JSON" in system_prompt
+    # Automatically disable proofreading lexical guards on JSON/interleaver or padapāṭha prompts
+    is_non_proofread_task = (
+      "ONLY valid JSON" in system_prompt
+      or "ONLY this JSON" in system_prompt
+      or "पद-पाठः" in system_prompt
+    )
     return ProofreaderChat(
       self,
       system_prompt=system_prompt,
       model_id=model_id or self.model,
-      apply_guards=self.apply_guards and not is_json_task,
+      apply_guards=self.apply_guards and not is_non_proofread_task,
       allow_suggestions=self.allow_suggestions,
       stateless_chunks=self.stateless_chunks,
     )

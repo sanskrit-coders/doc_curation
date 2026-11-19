@@ -287,3 +287,16 @@ def test_fill_vp_accents_and_filled_summary():
   filled_pr, unm_pr = fill_vp_accents_from_padapatha("स्वरः प्रोक्तो\nऽङ्गुष्ठञ्च", items_pr)
   assert unm_pr == []
   assert filled_pr == "स्व᳓रः प्रो᳓क्तो\nऽङ्गुष्ठ᳓ञ्च"
+
+  # Direct-filled (स्वराः व्यत्यस्ताः) VP blocks and PP summary counts refresh when पद-पाठः changes
+  md_direct = (
+    "<details open><summary>विश्वास-प्रस्तुतिः (स्वराः व्यत्यस्ताः 2/2)</summary>\n\n"
+    "वेद᳓मनू᳓च्य ।\n</details>\n\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः - 1/2 व्यत्यस्त-स्वराः)</summary>\n\n"
+    "- वे᳓द᳓म् → **वे᳓दम्** (श्रुत्यर्थे वे᳓दम् आद्युदात्तम् श्रेयः, पा० ६.१.२०३, *AV*; दर्भमुष्टौ वेद᳓म् *TS*)\n"
+    "- अ᳓नू᳓च्य᳓ → **अनू᳓च्य** (*TS*, *TB*, ल्यप् पा० ६.१.१९३, ६.२.१३९)\n</details>\n"
+  )
+  updated_direct, dlogs = reconcile_markdown_blocks(md_direct)
+  assert "वे᳓दमनू᳓च्य ।" in updated_direct
+  assert "पद-पाठः (यान्त्रिकः - 2/2 व्यत्यस्त-स्वराः)" in updated_direct
+  assert any("REFILLED_VP" in lg for lg in dlogs)

@@ -190,15 +190,23 @@ never insert blank lines between every sentence inside one paragraph.
   unless punctuation (`।` or `,`) justifies the pause. Never remove a
   pre-existing avagraha (`ऽ`).
 
-### Special hyphenation tools (only when explicitly directed)
+### Special hyphenation tools (only when specifically requested)
 
-**Distilled local SLP1 neural hyphenator (`doc_curation.sanskrit.hyphenator`)** — fast local ONNX model (`doc_curation/data/models/sanskrit-hyphenator-slp1/hyphenator_slp1.onnx`, `<10 ms`/sentence via `onnxruntime`, zero GPU/server needed), backed by `BytesTrie` merger-veto checks (`lexicon.py`). Performs hyphenation and optional clause soft-breaks (`clause_newlines=True/False`) without editorial source-word changes, while preserving `<details><summary>मूलम्...</summary>` blocks, `+++(...)+++` glosses, and Vedic US accents (`᳓`/`᳙`):
+> **Recommendation:** Use local `hyphene` (`doc_curation.sanskrit.hyphenator`) for fast clean-text hyphenation; use `Qwen3-14B` (`proofread_text` / `ProofreaderBackend` in `doc_curation.llm.proofreader`, when requested) when OCR cleanup (`[[OLD|NEW]]`) and discourse clause breaks (including cross-newline sandhi restoration) are also needed. See `doc_curation/llm/proofreader/README.md` and `doc_curation/llm/proofreader/distill/README.md`.
+>
+> **Mandatory random quality check & redo:** Whenever you run `hyphene`, `proofread_text` / `ProofreaderBackend`, or batch `gemini`, inspect a random sample of paragraphs/blocks across the file(s) (and review `git diff` hunks) for merger-veto violations, missed or bad splits (*yaṇ*, *visarga*, final-*m*, compounds), awkward `  \n` clause breaks, missed OCR typos or false `[[OLD|NEW]]` proposals, and untouched `मूलम्` / `+++(...)+++` spans. Redo or hand-correct any subpar passages directly (and fix `doc_curation` if you spot a systematic lexicon/rule gap).
+
+**Distilled local SLP1 neural hyphenator (`doc_curation.sanskrit.hyphenator`)** — fast local ONNX model (`doc_curation/data/models/sanskrit-hyphenator-slp1/hyphenator_slp1.onnx`, `60/60` on `hyphenations.toml`, `~3–16 ms`/sentence via `onnxruntime`, zero GPU/server needed), backed by `<2 ms` memory-mapped `BytesTrie` merger-veto & lexicon witnesses (`lexicon.py`, vocabulary in `doc_curation/llm/proofreader/data/vocabulary/`). Performs hyphenation and optional syntactic clause soft-breaks (`clause_newlines=True/False`) without editorial source-word changes, while preserving `<details><summary>मूलम्...</summary>` blocks, `+++(...)+++` glosses, and Vedic US accents (`᳓`/`᳙`):
 
 ```python
 from doc_curation.md import library
 from doc_curation.md.file import MdFile
-from doc_curation.sanskrit.hyphenator import hyphene
+from doc_curation.sanskrit.hyphenator import hyphene, hyphenate_word
 
+# Single string or word:
+clean_hyphenated = hyphene(text, clause_newlines=False)
+
+# Bulk directory transform:
 library.apply_function(
     fn=MdFile.transform, dir_path=dir_path,
     content_transformer=lambda c, *args, **kwargs: hyphene(c, clause_newlines=True),
@@ -215,14 +223,19 @@ library.apply_function(
 
 ## Specialist & batch LLM tools (only when specifically requested)
 
-**1. Fine-tuned `Qwen3-14B` Sanskrit proofreader LoRA (`doc_curation.llm.proofreader`)** — covers the **full skill** (cleanup, `[[OLD|NEW]]` source-error suggestions, `[[??]]` illegible spans, `[[P64]]` page tags, footnotes, syntactic clause soft-breaks, and sandhi-preserving hyphenation; pass `suggest_corrections=False` for hyphenation/formatting only). Local adapter weights live at `doc_curation/data/models/qwen3-14b-sanskrit-lora/` (Kaggle: `vishvasvasuki/qwen3-14b-sanskrit-proofreader-lora`), wrapped with deterministic `मूलम्` masking, inline merger-veto snap-back, and `[[OLD|NEW]]` silent-edit guards (`guards.py`). Use via an OpenAI-compatible `vLLM` Colab/Kaggle tunnel (`ProofreaderBackend` with `text_chunker` or `detail_chunker`) or offline Kaggle batch jobs (`kaggle_runner.stage_batch_dataset` / `apply_downloaded_outputs`):
+**1. Fine-tuned `Qwen3-14B` Sanskrit proofreader LoRA (`doc_curation.llm.proofreader`)** — covers the **full skill** when OCR cleanup (`[[OLD|NEW]]` source-error suggestions, `[[??]]` illegible spans, `[[P64]]` page tags, footnotes), discourse-aware syntactic clause soft-breaks (including cross-newline sandhi restoration), and sandhi-preserving hyphenation are needed together (pass `suggest_corrections=False` for hyphenation/formatting only; see `doc_curation/llm/proofreader/README.md`). Local adapter weights live at `doc_curation/data/models/qwen3-14b-sanskrit-lora/` (Kaggle: `vishvasvasuki/qwen3-14b-sanskrit-proofreader-lora`), wrapped with deterministic `मूलम्` masking, inline merger-veto snap-back, and `[[OLD|NEW]]` silent-edit guards (`guards.py`). Use via an OpenAI-compatible `vLLM` Colab/Kaggle tunnel (`proofread_text` or `ProofreaderBackend` with `text_chunker` / `detail_chunker`) or offline Kaggle batch jobs (`kaggle_runner.stage_batch_dataset` / `apply_downloaded_outputs`):
 
 ```python
 from doc_curation.llm import text_chunker
-from doc_curation.llm.proofreader import ProofreaderBackend, build_system_prompt
+from doc_curation.llm.proofreader import ProofreaderBackend, build_system_prompt, proofread_text
 from doc_curation.md import library
 
 backend = ProofreaderBackend(base_url="https://<tunnel>/v1")
+
+# Single string:
+cleaned = proofread_text(raw_md, backend=backend, clause_newlines=True, suggest_corrections=True)
+
+# Whole directory:
 prompt = build_system_prompt(clause_newlines=True, suggest_corrections=True)
 library.apply_function(
     fn=text_chunker.process_text_chunks, dir_path=dir_path,
@@ -252,5 +265,4 @@ standalone detail blocks).
 
 ## Report
 
-Report the edits and hyphenation performed, and list anything left for a human
-— doubtful readings, missing source images, style rules that did not apply.
+Report the edits and hyphenation performed, which random spot-checks you ran (and any blocks you redid/fixed after tool execution), and list anything left for a human — doubtful readings, missing source images, style rules that did not apply.

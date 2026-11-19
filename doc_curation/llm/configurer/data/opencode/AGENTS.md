@@ -26,7 +26,7 @@ Use and maintain existing code where possible — it is installed in the venv at
 Before writing text-processing code, check these in `~/gitland/sanskrit-coders/doc_curation`:
 
 - `doc_curation.md.library` has `apply_function` which is especially useful for bulk processing Markdown files within a path. Use it in combination with other functions as needed.
-- `doc_curation.sanskrit` includes `accent` (`sandhi_check` forward-sandhi verification, `reconciler` for `[[OLD|NEW]]` suggestions, `validator` for block integrity), `fixer`, `hyphenator`, and `seeker`.
+- `doc_curation.sanskrit` includes `accent` `sandhi_check` (forward-sandhi verification), `reconciler` for `[[OLD|NEW]]` suggestions, `validator` (for block integrity), `fixer`.
 
 For files with Sanskrit names you output, use something like `curation_utils.file_helper.get_storage_name(SANSKRIT_TEXT, source_script=sanscript.IAST)`.
 
