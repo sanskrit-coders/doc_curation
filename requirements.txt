@@ -1,4 +1,4 @@
-curation_utils
+curation_utils>=0.2.11
 indic_transliteration
 wordcloud
 urllib3

@@ -31,6 +31,7 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   build_clean_vp_base,
   classical_padapatha_to_us,
   decode_sb_accents_viterbi,
+  default_data_available,
   enrich_padapatha_corpus_counts,
   export_adjudication_jsonl,
   iast_accented_to_deva_us,
@@ -45,6 +46,8 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
 
 @pytest.fixture(scope="module")
 def lex() -> UnifiedVedicLexicon:
+  if not default_data_available():
+    pytest.skip("indic-dict padasvara lexica / VS corpus not installed locally")
   return UnifiedVedicLexicon.load_or_build(force_rebuild=False)
 
 
@@ -757,3 +760,30 @@ def test_visvara_pausal_visarga_resandhied():
   assert f("देवः अग्निः") == "देवो ऽग्निः"
   assert f("नाभिः ऋतस्य") == "नाभिर् ऋतस्य"
   assert f("मनुष्याः । अथ") == "मनुष्याः । अथ"  # never across a daṇḍa
+
+
+def test_coordinator_64_deterministic_upgrades(lex: UnifiedVedicLexicon):
+  # 1. `aa_hiatus` restoration (`-आ`/`-अ` before vowel hiatus -> `-आः`/`-अः`/`-ए`)
+  p_hiat = split_vp_to_padas("निष्टप्ता अरातयः", lex)
+  assert p_hiat[0] == "निष्टप्ताः" and p_hiat[1] == "अरातयः"
+  p_nida = split_vp_to_padas("नीड एव", lex)
+  assert p_nida[0] in ("नीडे", "नीडः") and p_nida[1] == "एव"
+  # 2. Never split `प्राणः` into `प्र + आणः`
+  p_prana = split_vp_to_padas("प्राणो वै", lex)
+  assert p_prana[0] == "प्राणः" and "आणः" not in p_prana
+  # 3. High-frequency ŚB sandhi splits (`अन्वेमि`/`अन्वेति`, `यद्यु`, `उतो`, `स्वरेव`, `प्रउगम्`, `बिभयाञ्चक्रुः`)
+  assert _strip_leading_upasargas_tinanta("anvemi", lex) == ["अनु", "एमि"]
+  assert _strip_leading_upasargas_tinanta("anveti", lex) == ["अनु", "एति"]
+  assert split_vp_to_padas("यद्यु", lex) == ["यदि", "उ"]
+  assert split_vp_to_padas("उतो", lex) == ["उत", "उ"]
+  assert split_vp_to_padas("स्वरेव", lex) == ["स्वः", "एव"]
+  assert split_vp_to_padas("प्रउगम्", lex) == ["प्रउगम्"]
+  p_periph = split_vp_to_padas("बिभयाञ्चक्रुः", lex)
+  assert p_periph == ["बिभयाम्", "चक्रुः"]
+  # 4. Direct Weber+Śrīdharādi OOV accent candidate (`Weber-पाठः, श्रीधरादि-पाठः`)
+  cl_oov = KandikaCluster(
+    heading="०१", sub_idx=0, vp_summary="विश्वास-प्रस्तुतिः", vp_body="", is_already_us=False,
+    weber="आ᳘रुणिरुवाच॥", shri="आ᳘रुणिरुवाच॥", visvara="आरुणिरुवाच ॥",
+  )
+  r_oov = solve_kandika(cl_oov, lex, kandika_id="test::oov")
+  assert r_oov.items and r_oov.items[0].ref == "आ᳓रुणिः"

@@ -321,7 +321,7 @@ def _compute_vp_syllable_marks(
       if len(src) == 1:
         pp_si = src[0]
         ii, si = pp_meta[pp_si]
-        if _skip_elided_avagraha_lead(pc, items[ii], si):
+        if _skip_elided_avagraha_lead(pc, items[ii], si, vsi):
           ref_marks.append("")
           ar_marks.append("")
           pada_map.append((ii,))
@@ -330,7 +330,7 @@ def _compute_vp_syllable_marks(
           ar_marks.append(pp_ars[pp_si] if items[ii].vyat else pp_refs[pp_si])
           pada_map.append((ii,))
       else:
-        s1, s2 = src[0], src[1]
+        s1, s2 = src[-2], src[-1]
         i1, _ = pp_meta[s1]
         i2, si2 = pp_meta[s2]
         # Check whether Weber marks ॗ on the preceding syllable (or Shri marks ᳘ on a preceding anudātta)
@@ -342,7 +342,7 @@ def _compute_vp_syllable_marks(
             # Weber is aligned: trust it. `ॗ` is the explicit cue; Weber's TITUS text also sometimes prints `᳘`
             # on the anudātta before a पा॰ ८.२.६ svarita. An unmarked Weber syllable overrules a solo Śrīdharādi `᳘`.
             wm = weber_syls[pw].mark
-            if wm == "G" or (wm == "H" and ref_marks[flat_idx - 1] in ("", "S")):
+            if wm == "G" or (wm == "H" and not weber_syls[pw].before_pause and ref_marks[flat_idx - 1] in ("", "S")):
               prev_has_svarita_cue = True
           else:
             ps = vp_to_shri.get(flat_idx - 1)
@@ -779,7 +779,7 @@ def apply_sb_kandika_updates(
         map_key = lead
 
       if map_key is None:
-        if preserve_existing_us and cl.existing_pp_match is not None and has_us_accents(cl.vp_match.group(2)):
+        if cl.existing_pp_match is not None and has_us_accents(cl.vp_match.group(2)):
           vp_m = cl.vp_match
           open_attr = " open" if "<details open>" in vp_m.group(0)[:20] else ""
           masked_vp = f"<details{open_attr}><summary>विश्वास-प्रस्तुतिः (स्वराः पूर्याः)</summary>{vp_m.group(2)}</details>"
@@ -796,7 +796,7 @@ def apply_sb_kandika_updates(
 
       vp_m = cl.vp_match
       existing_vp_has_us = has_us_accents(vp_m.group(2))
-      if preserve_existing_us and existing_vp_has_us:
+      if (preserve_existing_us or vp_clean is None) and existing_vp_has_us:
         preserved_us_keys.append(key_label)
         preserved_vp_literals.append(vp_m.group(0))
         # In the reconciliation-check copy, mark preserved hand-edited VP so non-preserved blocks are still strictly checked.

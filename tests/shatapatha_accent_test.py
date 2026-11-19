@@ -144,7 +144,7 @@ def test_sb_sandhi_and_validator_regressions():
   # Feminine noun `सं-स्था᳓म्` must not be flagged as unsplit upasarga+tiṅanta ending in `-थाम्`.
   md = """<details><summary>पद-पाठः (यान्त्रिकः)</summary>
 
-- सं-स्था᳓म् (*TS* सँ॒स्थाम्)
+- सं-स्था᳓म् (*TS*-1 सँ॒स्थाम्)
 </details>
 """
   assert validate_accented_markdown(md) == []
@@ -642,5 +642,82 @@ def test_simplex_aa_initial_verbs_not_flagged_as_unsplit_upasarga():
     "- आरुः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
     "- आस् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
     "- आसम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आर्षीत् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आसतुः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आवम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- अवृणीत (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- अवृणीध्वम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- सुस्राव (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- विनक्ति (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- विनक्तु (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- विच्य᳓ते (यद्वृत्तान्नित्यम् पा॰ ८.१.६६)",
+    "- प्रथस्व (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- प्रथताम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- विन्दन्ति (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- विन्देत (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आजन्त (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- विद्युः᳓ (यद्वृत्तान्नित्यम् पा॰ ८.१.६६)",
+    "- विजते (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- अतिष्ठन् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- अप्रीणन् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आ-शया᳓त् (*MW* ŚBr., *Macdonell*, *Lanman*)",
+    "- अवृज्यत (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- अपद्यत (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- निन्ये (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- अपादयत (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- अवपन् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- सुणोति (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- सुणुयात् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आदयन्ति (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आदित्या᳓त् (*TB*-1)",
   ]
   assert find_unsplit_upasarga_tinantas(lines, forbid_compound_upasarga_tinanta=True) == []
+  assert verify_mantra_sandhi(["द्या᳓वा-पृथिव्योः", "र᳓सम्"], "द्यावापृथिव्यो रसं")[0]
+  assert verify_mantra_sandhi(["च", "एव", "आ", "इत"], "चैवैत")[0]
+  assert verify_mantra_sandhi(["भस्म", "अयातयाम्न्यः"], "भस्मायातयाम्न्यः")[0]
+  assert verify_mantra_sandhi(["दधाति", "एतौ", "एव"], "दधाति एतावेव")[0]
+  assert verify_mantra_sandhi(["अभाः", "उखा", "इति"], "अभारुखेति")[0]
+  assert verify_mantra_sandhi(["उ᳓दङ्", "उ᳓त्"], "उदङ्ङुत्")[0]
+  assert verify_mantra_sandhi(["तस्मात्", "सम्-राट्"], "तस्मात् सम्म्राट्")[0]
+  assert verify_mantra_sandhi(["उभय᳓तः", "न्यू᳙नाम्"], "उभयतो न्यूनां")[0]
+  assert verify_mantra_sandhi(["अभि᳓", "सुनोति"], "अभिषुणोति")[0]
+  items_etad = parse_padapatha_items("- एत᳓त् (*RV*)\n- हि᳓ (*RV*)\n- अ᳓ग्रे (*RV*)")
+  _, vp_etad, unm_etad = build_sb_vp_from_padapatha("एतद्ध्यग्रे ॥", items_etad)
+  assert unm_etad == [] and vp_etad == "एत᳓द्ध्य᳓ग्रे ॥"
+
+
+def test_fused_avagraha_token_preserves_later_pada_initial_accents():
+  # Regression (#71): `_skip_elided_avagraha_lead` must only skip `vsi == 0` (the elided initial `अ`),
+  # never the initial syllable (`si == 0`, `vsi > 0`) of subsequent padas fused inside an `ऽ...` token.
+  items1 = parse_padapatha_items(
+    "- यः᳓ (*RV*)\n"
+    "- अस्मा᳓न् (*AV*, *RV*)\n"
+    "- धू᳓र्वति (यद्वृत्तान्नित्यम् पा॰ ८.१.६६, *TB*)\n"
+  )
+  _, vp1, unm1 = build_sb_vp_from_padapatha(
+    "यो ऽस्मान्धूर्वति ॥", items1, weber_text="यो ऽस्मान्धू᳘र्वति॥", shri_text="यो ऽस्मान्धू᳘र्वति॥"
+  )
+  assert unm1 == []
+  assert vp1 == "यो᳙ ऽस्मा᳓न्धू᳓र्वति ॥"
+  rep1 = audit_padapatha_against_sb(
+    "यो ऽस्मान्धूर्वति ॥", items1, "यो ऽस्मान्धू᳘र्वति॥", "यो ऽस्मान्धू᳘र्वति॥"
+  )
+  assert rep1.disagree_pada_indices == []
+  assert rep1.unflagged_vyatyasta_padas == []
+
+  items2 = parse_padapatha_items(
+    "- त᳓तः (*RV*, *TS*)\n"
+    "- अभि (तिङि चोदात्तवति पा॰ ८.१.७१)\n"
+    "- वि᳓ (*RV*, *TS*)\n"
+    "- पश्यति (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)\n"
+  )
+  _, vp2, unm2 = build_sb_vp_from_padapatha(
+    "ततो ऽभिविपश्यति ॥", items2, weber_text="त᳘तो ऽभिवि᳘पश्यति॥", shri_text="त᳘तो ऽभिवि᳘पश्यति॥"
+  )
+  assert unm2 == []
+  assert vp2 == "त᳓तो ऽभिवि᳓पश्यति ॥"
+  rep2 = audit_padapatha_against_sb(
+    "ततो ऽभिविपश्यति ॥", items2, "त᳘तो ऽभिवि᳘पश्यति॥", "त᳘तो ऽभिवि᳘पश्यति॥"
+  )
+  assert rep2.disagree_pada_indices == []
+  assert rep2.unflagged_vyatyasta_padas == []

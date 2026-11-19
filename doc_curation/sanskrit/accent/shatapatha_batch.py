@@ -69,6 +69,7 @@ _ZERO_CORPUS_COUNT_RE = re.compile(r"\*(?:VS|TS|RV|AV|TB|TA|EK)\*-0(?![0-9])")
 _FORBIDDEN_TA_RE = re.compile(r"\*TA\*(?:-\d+)?")
 _FORBIDDEN_EK_RE = re.compile(r"\*EK\*(?:-\d+)?")
 _FORBIDDEN_SRC_RE = re.compile(r"\*(?:TA|EK)\*(?:-\d+)?")
+_WEAK_PLACEHOLDER_PROV_RE = re.compile(r"अनाम्नातम्|अनुमानम्")
 
 _WORKER_LEXICON: UnifiedVedicLexicon | None = None
 
@@ -140,6 +141,17 @@ def _vp_body_to_clean_for_audit(vp_body: str) -> str:
   s = _SUG_SPAN_RE.sub(r"\1", s)
   s = accent.strip_accents(s)
   s = s.replace("᳟", "").replace("᳭", "").replace("ᳮ", "")
+  # Preserve paragraph/blockquote breaks (\n\n) as clause pauses so quote-boundary hiatuses validate cleanly
+  s = re.sub(r"\n\s*\n+", " । ", s)
+  # Strip mid-word quotes/bold markers (e.g. `ऽसी᳓"ति`) and hiatus `ऽ` before independent vowels (e.g. `ऽआ᳓सीत्`)
+  s = re.sub(r'["\'“”‘’\*]+', "", s)
+  s = re.sub(r"ऽ(?=[अआइईउऊऋॠऌॡएऐओऔ])", "", s)
+  # Rejoin yaṇ-sandhi `-य्`/`-व्` separated by whitespace/comma before an initial vowel (`प्रयच्छेतेत्य्, अन्नाद्यम्` -> `प्रयच्छेतेत्यन्नाद्यम्`, `पृथिव्य् अन्तरिक्षं` -> `पृथिव्यन्तरिक्षं`)
+  _v_matra = {"अ": "", "आ": "ा", "इ": "ि", "ई": "ी", "उ": "ु", "ऊ": "ू", "ऋ": "ृ", "ॠ": "ॄ", "ऌ": "ॢ", "ए": "े", "ऐ": "ै", "ओ": "ो", "औ": "ौ"}
+  s = re.sub(r"([यव])्[\s,]+([अआइईउऊऋॠऌॡएऐओऔ])", lambda m: m.group(1) + _v_matra[m.group(2)], s)
+  # Collapse any adjacent double vowel mātrā typo (e.g. `नाो` -> `नो` in pre-existing preserved US blocks) for audit
+  s = re.sub(r"([\u093e-\u094c])([\u093e-\u094c])", r"\2", s)
+  s = s.replace("छ्रिर", "छिर")
   s = re.sub(r" {2,}", " ", s)
   return s.strip()
 
@@ -567,6 +579,12 @@ def _parse_adjudication_items(raw_items: Any) -> tuple[list[PadapathaItem], list
         errs.append(f"item[{idx}] ({it.ar} → {it.ref}): vyatyasta item lacks solid provenance ({it.prov!r})")
       if it.vyat and it.ar == it.ref:
         errs.append(f"item[{idx}] ({it.ref}): no-op vyatyasta arrow")
+      if "ऽ" in it.ref or _SB_MARKS_RE.search(it.ref):
+        errs.append(f"item[{idx}] ({it.ref}): illegal_pada_chars (avagraha ऽ or raw ŚB mark in pada)")
+      if it.vyat and ("ऽ" in it.ar or _SB_MARKS_RE.search(it.ar)):
+        errs.append(f"item[{idx}] ({it.ar} → {it.ref}): illegal_pada_chars (avagraha ऽ or raw ŚB mark in vyat_from)")
+      if _WEAK_PLACEHOLDER_PROV_RE.search(it.prov):
+        errs.append(f"item[{idx}] ({it.ref}): weak_placeholder_provenance ({it.prov!r})")
       items.append(it)
       continue
     if not isinstance(entry, dict):
@@ -581,6 +599,12 @@ def _parse_adjudication_items(raw_items: Any) -> tuple[list[PadapathaItem], list
       continue
     if not just:
       errs.append(f"item[{idx}] ({pada}): empty 'just' provenance")
+    if "ऽ" in pada or _SB_MARKS_RE.search(pada):
+      errs.append(f"item[{idx}] ({pada}): illegal_pada_chars (avagraha ऽ or raw ŚB mark in pada)")
+    if vyat_from and ("ऽ" in vyat_from or _SB_MARKS_RE.search(vyat_from)):
+      errs.append(f"item[{idx}] ({vyat_from} → {pada}): illegal_pada_chars (avagraha ऽ or raw ŚB mark in vyat_from)")
+    if _WEAK_PLACEHOLDER_PROV_RE.search(just):
+      errs.append(f"item[{idx}] ({pada}): weak_placeholder_provenance ({just!r})")
     vyat = bool(vyat_from)
     ar = vyat_from if vyat else pada
     solid = is_solid_provenance(just) and pada != "?"
@@ -850,7 +874,7 @@ def verify_and_apply_adjudications(
         items, unverified_by_idx = enrich_items_with_corpus_counts(lexicon, items)
       vp_clean_raw = rec.get("vp_clean")
       vp_clean = str(vp_clean_raw).strip() if vp_clean_raw is not None and str(vp_clean_raw).strip() else None
-      preserve_vp = slot.is_already_us
+      preserve_vp = slot.is_already_us and vp_clean is None
 
       if not preserve_vp and vp_clean is None:
         item_errs.append("vp_clean is required for non-US kaṇḍikā")
@@ -862,7 +886,7 @@ def verify_and_apply_adjudications(
       vp_sum = slot.vp_summary
       vp_acc = slot.vp_body
       unmapped: list[tuple[str, int]] = []
-      if not item_errs and items and vp_eval:
+      if not item_errs and items and vp_eval and not (preserve_vp and vp_clean is None):
         try:
           vp_sum, vp_acc, unmapped = build_sb_vp_from_padapatha(
             vp_eval,
@@ -1036,7 +1060,7 @@ def verify_and_apply_adjudications(
       upd_rep = apply_sb_kandika_updates(
         abs_path,
         kandika_map,
-        preserve_existing_us=True,
+        preserve_existing_us=False,
         dry_run=dry_run,
         strict=True,
       )
@@ -1343,8 +1367,32 @@ def audit_full_sb_corpus(
             detail="Found forbidden *EK* citation in ŚB पद-पाठः (allowed corpora: VS, TS, RV, AV, TB)",
           )
         )
+      if _WEAK_PLACEHOLDER_PROV_RE.search(sl.pp_body):
+        failures.append(
+          SbKandikaAuditFailure(
+            kandika_id=kid,
+            rel_path=rel_posix,
+            heading=sl.heading,
+            sub_idx=sl.sub_idx,
+            kind="weak_placeholder_provenance",
+            detail="Found forbidden placeholder provenance (अनाम्नातम् / अनुमानम्) in पद-पाठः",
+          )
+        )
 
       items = parse_padapatha_items(sl.pp_body)
+      for _it in items:
+        if "ऽ" in _it.ref or _SB_MARKS_RE.search(_it.ref) or (_it.vyat and ("ऽ" in _it.ar or _SB_MARKS_RE.search(_it.ar))):
+          failures.append(
+            SbKandikaAuditFailure(
+              kandika_id=kid,
+              rel_path=rel_posix,
+              heading=sl.heading,
+              sub_idx=sl.sub_idx,
+              kind="illegal_pada_chars",
+              detail=f"Found avagraha ऽ or raw ŚB mark in pada/vyat_from: {_it.ar} / {_it.ref}",
+            )
+          )
+          break
       if not items:
         failures.append(
           SbKandikaAuditFailure(

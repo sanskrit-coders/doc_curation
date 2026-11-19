@@ -31,6 +31,11 @@ _PADASVARA_REL_PATHS = (
 _DICT_INDEX_CACHE: dict[str, dict[str, list[str]]] = {}
 
 
+def padasvara_data_available(dict_root: str = DEFAULT_DICT_ROOT) -> bool:
+  """Whether the indic-dict padasvara/MW babylon lexica backing lookups are installed."""
+  return all(os.path.isfile(os.path.join(dict_root, rel)) for _, rel in _PADASVARA_REL_PATHS)
+
+
 def _load_babylon_index(path: str, max_body_chars: int = 110) -> dict[str, list[str]]:
   """Build and cache a compact in-memory ``{bare_headword: [variant_snippet, ...]}`` index.
 

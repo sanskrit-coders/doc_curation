@@ -42,6 +42,26 @@ _ALL_V = _SHORT_V | _MERGED_V
 _HALANT_OK = frozenset("myvrsSzdcjgbRntkpl")
 
 
+def _slp1_avagraha(sanscript_mod) -> str:
+  """Avagraha character used by the installed indic_transliteration SLP1 scheme (``Z`` or ``'``)."""
+  return sanscript_mod.transliterate("ऽ", sanscript_mod.DEVANAGARI, sanscript_mod.SLP1) or "Z"
+
+
+def to_codec_slp1(text, sanscript_mod) -> str:
+  """Transliterate Devanagari to the codec's SLP1 alphabet (avagraha always ``Z``)."""
+  slp = sanscript_mod.transliterate(text, sanscript_mod.DEVANAGARI, sanscript_mod.SLP1)
+  avagraha = _slp1_avagraha(sanscript_mod)
+  return slp.replace(avagraha, "Z") if avagraha != "Z" else slp
+
+
+def from_codec_slp1(slp, sanscript_mod) -> str:
+  """Transliterate codec-SLP1 (avagraha ``Z``) back to Devanagari."""
+  avagraha = _slp1_avagraha(sanscript_mod)
+  if avagraha != "Z":
+    slp = slp.replace("Z", avagraha)
+  return sanscript_mod.transliterate(slp, sanscript_mod.SLP1, sanscript_mod.DEVANAGARI)
+
+
 def ensure_deps():
   needed = []
   for mod_name, pip_name in (
@@ -100,7 +120,7 @@ def locate_inputs() -> tuple[Path, Path | None]:
 
 
 def sandhi_skeleton(dev_txt: str, sanscript_mod) -> str:
-  slp = sanscript_mod.transliterate(dev_txt, sanscript_mod.DEVANAGARI, sanscript_mod.SLP1)
+  slp = to_codec_slp1(dev_txt, sanscript_mod)
   slp = re.sub(r"[\s\-–—।॥,;.?!\"'()0-9०-९]+", "", slp)
   slp = slp.replace("M", "m").replace("N", "m").replace("Y", "n").replace("R", "n")
   slp = re.sub(r"[sSzH]", "s", slp)
@@ -108,7 +128,7 @@ def sandhi_skeleton(dev_txt: str, sanscript_mod) -> str:
 
 
 def encode_teacher_pseudo(dev_pred: str, rng: random.Random, sanscript_mod) -> dict | None:
-  slp = sanscript_mod.transliterate(dev_pred.strip(), sanscript_mod.DEVANAGARI, sanscript_mod.SLP1)
+  slp = to_codec_slp1(dev_pred.strip(), sanscript_mod)
   slp = re.sub(r"[ \t]*\n[ \t]*", "\n", slp)
   slp = re.sub(r"[ \t]{2,}", " ", slp)
   has_cl = int("\n" in slp)
@@ -402,7 +422,7 @@ def export_and_benchmark_onnx(student, hyp_toml_path: Path, out_model_dir: Path,
         if idx_s > 0:
           slp_parts.append(" ")
           cur_pos += 1
-        st = sanscript_mod.transliterate(tok, sanscript_mod.DEVANAGARI, sanscript_mod.SLP1)
+        st = to_codec_slp1(tok, sanscript_mod)
         slp_parts.append(st)
         meta.append((cur_pos, cur_pos + len(st), st, any(x in tok for x in ("-", "–", "—"))))
         cur_pos += len(st)
@@ -419,7 +439,7 @@ def export_and_benchmark_onnx(student, hyp_toml_path: Path, out_model_dir: Path,
             cur.append(ch)
             sc = s_all[ms + ic]
             if ic < len(st) - 1 and sc != 0 and any(v in _ALL_V for v in st[:ic + 1]) and any(v in _ALL_V for v in st[ic + 1:]):
-              out_p.append(sanscript_mod.transliterate("".join(cur), sanscript_mod.SLP1, sanscript_mod.DEVANAGARI))
+              out_p.append(from_codec_slp1("".join(cur), sanscript_mod))
               if sc == 4 and ch in ("o", "e") and st[ic + 1] == "r":
                 out_p.append(" ")
                 cur = ["Z"]
@@ -427,7 +447,7 @@ def export_and_benchmark_onnx(student, hyp_toml_path: Path, out_model_dir: Path,
               out_p.append({1: "-", 2: "–", 3: " "}.get(sc, ""))
               cur = []
           if cur:
-            out_p.append(sanscript_mod.transliterate("".join(cur), sanscript_mod.SLP1, sanscript_mod.DEVANAGARI))
+            out_p.append(from_codec_slp1("".join(cur), sanscript_mod))
           buf.append("".join(out_p))
         last_e = ce
       buf.append(txt[last_e:])

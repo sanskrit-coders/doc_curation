@@ -74,10 +74,17 @@ def test_annotate_padapatha_line_counts_and_idempotence():
   )
   assert unres_v == []
 
-  # 5. Final stop voicing equivalence (`उ᳓त्` matches Taittirīya `उ᳓द्`)
+  # 5. Final stop voicing equivalence (`उ᳓त्` matches Taittirīya `उ᳓द्`) and unparenthesized `WORD *TS*, *RV*`
   ln_ut, unres_u = annotate_padapatha_line_counts("- उ᳓त् (*TS*, *RV*)", counter)
   assert ln_ut == "- उ᳓त् (*TS*-210, *RV*-340)"
   assert unres_u == []
+
+  ln_prec, unres_p = annotate_padapatha_line_counts(
+    "- सप्त᳓-अर्चिः (बहुव्रीहौ प्रकृत्या पूर्वपदम् पा॰ ६.२.१, सप्त᳓ *TS*, *RV*)",
+    counter,
+  )
+  assert ln_prec == "- सप्त᳓-अर्चिः (बहुव्रीहौ प्रकृत्या पूर्वपदम् पा॰ ६.२.१, सप्त᳓ *TS*-74, *RV*-122)"
+  assert unres_p == []
 
 
 def test_annotate_markdown_skips_js_include_and_validator_rejects_zero_abbrev():
@@ -101,3 +108,37 @@ def test_annotate_markdown_skips_js_include_and_validator_rejects_zero_abbrev():
   kinds = {i.kind for i in bad_issues}
   assert "zero_abbrev_sign" in kinds
   assert "zero_corpus_count" in kinds
+
+
+def test_samhita_snippet_and_spaced_yan_8_2_4():
+  from doc_curation.sanskrit.accent.reconciler import reconcile_vprastuti_and_tiikaa_texts
+
+  # 1. Classical saṁhitā snippets with unmarked leading anudātta syllables keep only genuine final udātta
+  assert word_to_key_and_marks("अप॒घ्नन्") == ("अपघ्नन्", ("", "", "U"))
+  assert word_to_key_and_marks("प्रथम॒जाः") == ("प्रथमजाः", ("", "", "", "U"))
+  assert word_to_key_and_marks("पृत॒ना॒ऽजित॑म्") == ("पृतनाजितम्", ("", "", "", "U", ""))
+
+  # 2. `ः-प` after `-अ` produces `स्` (`वाचस्पतये`), while after `-इ/-उ/-ओ` produces `ष्` (`वास्तोष्पते`),
+  # and `count()` matches Śākala visarga-retaining compounds (`जाःपत्यम्`, `विश्वतःपात्`) across `-` or `स्`
+  assert word_to_key_and_marks("वाचः᳓-प᳓तये") == ("वाचस्पतये", ("", "U", "U", "", ""))
+  assert word_to_key_and_marks("वा᳓स्तोः-पते") == ("वास्तोष्पते", ("U", "", "", ""))
+  c = VedicCorpusCounter()
+  c._add("RV", "जाःपत्यम्", ("", "", "U"), freq=1, mode="sum")
+  c._add("RV", "विश्वतःपात्", ("", "U", "", ""), freq=1, mode="sum")
+  c._finalize_secondary_tables()
+  assert c.count("जाः-पत्य᳓म्", "RV") == 1
+  assert c.count("जास्पत्य᳓म्", "RV") == 1
+  assert c.count("विश्व᳓तः-पात्", "RV") == 1
+  assert c.count("विश्व᳓तस्पात्", "RV") == 1
+
+  # 3. Spaced `ends_semi` yaṇ sandhi (`उच्चैश्-श्राव्य् अ-कर्ण᳓कः` from `उच्चैः-श्रावी᳓ + अ-कर्ण᳓कः`) yields svarita `अ᳙` by पा॰ ८.२.४
+  vp = "+++\ntitle = \"test\"\n+++\n\nउच्चै᳓श्-श्राव्य् अ-कर्ण᳓कः ।\n"
+  tk = (
+    "<details><summary>मूलम्</summary>\n\nउ॒च्चैश्श्रा॑व्यक॒र्णकः॑ ।\n</details>\n\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः - 1/2 व्यत्यस्त-स्वराः)</summary>\n\n"
+    "- उच्चैः᳓-श्रावी → **उच्चैः-श्रावी᳓** (णिनिः पा॰ ३.२.७८, ३.१.३, गतिकारकोपपदात् कृत् पा॰ ६.२.१३९)\n"
+    "- अ-कर्ण᳓कः (नञ्-बहुव्रीहौ कपि पूर्वम् पा॰ ६.२.१७३)\n"
+    "</details>\n"
+  )
+  reconciled, _ = reconcile_vprastuti_and_tiikaa_texts(vp, tk)
+  assert "[[उच्चै᳓श्-श्राव्य्|उच्चैश्-श्राव्य्]] [[अ-कर्ण᳓कः|अ᳙-कर्ण᳓कः]]" in reconciled

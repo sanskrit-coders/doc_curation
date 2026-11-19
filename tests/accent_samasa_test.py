@@ -1,4 +1,6 @@
-from doc_curation.llm.proofreader.accent_helper import retrieve_accent_candidates
+import pytest
+
+from doc_curation.llm.proofreader.accent_helper import padasvara_data_available, retrieve_accent_candidates
 from doc_curation.sanskrit.accent import decompose_samasa_for_padasvara
 
 
@@ -27,6 +29,10 @@ def test_decompose_samasa_vowel_mergers_and_nan():
   assert "निर्भिण्णः" in anir_members or any("निर्भि" in m for m in anir_members)
 
 
+@pytest.mark.skipif(
+  not padasvara_data_available(),
+  reason="indic-dict padasvara/MW babylon lexica not installed locally",
+)
 def test_retrieve_accent_candidates_ranks_by_frequency_and_splits_samasa():
   hits = retrieve_accent_candidates("रराणः प्राणापानौ अभवः तन्वः")
   joined = "\n".join(hits)

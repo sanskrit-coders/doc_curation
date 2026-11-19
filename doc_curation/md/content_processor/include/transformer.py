@@ -200,10 +200,28 @@ def prefill_includes(dir_path, file_name_filter=None, dry_run=False, *args, **kw
 
 
 _DIV_TAG_RE = regex.compile(r"<div\b[^>]*>|</div>", regex.S)
+_DETAILS_TAG_RE = regex.compile(r"<details\b[^>]*>|</details>", regex.S)
 _LOADING_WRAPPER_RE = regex.compile(
-  r"^(\s*<details[^>]*><summary>(?:<h(\d+)>)?.*?(?:\.\.\.|…)\{Loading\}(?:\.\.\.|…)(?:</h\d+>)?\s*</summary>)(.*)(</details>\s*)$",
+  r"^(\s*<details[^>]*><summary>(?:<h(\d+)>)?(?:(?!</summary>).)*?(?:\.\.\.|…)\{Loading\}(?:\.\.\.|…)(?:(?!</summary>).)*?(?:</h\d+>)?\s*</summary>)(.*)(</details>\s*)$",
   regex.S,
 )
+_HASH_LOADING_RE = regex.compile(
+  r"^(\s*(#+)\s+[^\n]*?(?:\.\.\.|…)\{Loading\}(?:\.\.\.|…)\s*\n)(.*)$",
+  regex.S,
+)
+
+
+def _has_balanced_details(text):
+  """Return True iff every ``<details>``/``</details>`` inside ``text`` nests cleanly and closes back to depth 0."""
+  depth = 0
+  for m in _DETAILS_TAG_RE.finditer(text):
+    if m.group(0).startswith("<details"):
+      depth += 1
+    else:
+      depth -= 1
+      if depth < 0:
+        return False
+  return depth == 0
 
 
 def find_js_include_divs(content):
@@ -269,6 +287,9 @@ def surgical_prefill_content(
     _, inc_content = MdFile(file_path=target_fp).read()
     cur_body = content[b_start:b_end]
     m_wrap = _LOADING_WRAPPER_RE.match(cur_body)
+    if m_wrap and not _has_balanced_details(m_wrap.group(3)):
+      m_wrap = None
+    m_hash = None if m_wrap else _HASH_LOADING_RE.match(cur_body)
     if m_wrap:
       wrap_head, h_lvl_str, old_inner, wrap_tail = m_wrap.group(1), m_wrap.group(2), m_wrap.group(3), m_wrap.group(4)
       if h_lvl_str:
@@ -281,6 +302,14 @@ def surgical_prefill_content(
       lead_ws = old_inner[: len(old_inner) - len(old_inner.lstrip())] or "\n\n"
       trail_ws = old_inner[len(old_inner.rstrip()) :] or "\n"
       new_body = wrap_head + lead_ws + rendered.strip() + trail_ws + wrap_tail
+    elif m_hash:
+      wrap_head, hashes, old_inner = m_hash.group(1), m_hash.group(2), m_hash.group(3)
+      h1_level = len(hashes)
+      rendered = fix_headers(inc_content, h1_level)
+      rendered = fix_rel_urls(content=rendered, from_path=target_fp, to_path=str(container_file_path))
+      lead_ws = old_inner[: len(old_inner) - len(old_inner.lstrip())] or "\n"
+      trail_ws = old_inner[len(old_inner.rstrip()) :] or "\n\n"
+      new_body = wrap_head + lead_ws + rendered.strip() + trail_ws
     else:
       m_nl = regex.search(r"""newlevelforh1=["']([^"']+)["']""", open_tok)
       h1_level = int(m_nl.group(1)) if (m_nl and m_nl.group(1).isdigit()) else 2

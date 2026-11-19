@@ -19,6 +19,28 @@ SLP1_CHARS = (
   "Z'~0123456789"
   " -–।॥,;.?!\"()>"
 )
+# ``indic_transliteration`` used to encode avagraha as ``Z`` in SLP1 and switched to ``'``.
+# The neural codec's alphabet (and thus its trained weights) keeps using ``Z``, so translate
+# between the installed scheme's character and ``Z`` at the boundaries.
+SLP1_AVAGRAHA = sanscript.transliterate("ऽ", sanscript.DEVANAGARI, sanscript.SLP1) or "Z"
+_CODEC_AVAGRAHA = "Z"
+
+
+def to_codec_slp1(text: str, from_scheme: str) -> str:
+  """Transliterate *text* into the codec's SLP1 alphabet (avagraha always ``Z``)."""
+  slp = sanscript.transliterate(text, from_scheme, sanscript.SLP1)
+  if SLP1_AVAGRAHA != _CODEC_AVAGRAHA:
+    slp = slp.replace(SLP1_AVAGRAHA, _CODEC_AVAGRAHA)
+  return slp
+
+
+def from_codec_slp1(slp: str, to_scheme: str) -> str:
+  """Transliterate codec-SLP1 (avagraha ``Z``) into *to_scheme*."""
+  if SLP1_AVAGRAHA != _CODEC_AVAGRAHA:
+    slp = slp.replace(_CODEC_AVAGRAHA, SLP1_AVAGRAHA)
+  return sanscript.transliterate(slp, sanscript.SLP1, to_scheme)
+
+
 CHAR_TO_ID: dict[str, int] = {ch: idx + 2 for idx, ch in enumerate(SLP1_CHARS)}
 VOCAB_SIZE = len(SLP1_CHARS) + 2
 
@@ -109,7 +131,7 @@ def encode_curated_sentence(
   if "<" in txt or "[[" in txt or not regex.search(r"[\u0905-\u0939]", txt):
     return None
 
-  slp = sanscript.transliterate(txt.strip(), sanscript.DEVANAGARI, sanscript.SLP1)
+  slp = to_codec_slp1(txt.strip(), sanscript.DEVANAGARI)
   slp = regex.sub(r"[ \t]*\n[ \t]*", "\n", slp)
   slp = regex.sub(r"[ \t]{2,}", " ", slp)
 
@@ -412,7 +434,7 @@ def reconstruct_token_from_slp1(
   n = len(slp_tok)
 
   def _flush(p_str: str) -> str:
-    return sanscript.transliterate(p_str, sanscript.SLP1, scheme) if p_str else ""
+    return from_codec_slp1(p_str, scheme) if p_str else ""
 
   i = 0
   while i < n:
@@ -490,7 +512,7 @@ def apply_slp1_predictions_to_paragraph(
     if idx > 0:
       slp_parts.append(" ")
       cursor_slp += 1
-    slp_clean, acc_map = strip_accents_tracking(sanscript.transliterate(tok, scheme, sanscript.SLP1))
+    slp_clean, acc_map = strip_accents_tracking(to_codec_slp1(tok, scheme))
     slp_parts.append(slp_clean)
     tok_meta.append((cursor_slp, cursor_slp + len(slp_clean), slp_clean, acc_map, scheme, already))
     cursor_slp += len(slp_clean)

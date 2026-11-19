@@ -26,7 +26,9 @@ _STOP_NORM = {
 }
 _SAME_ONSET_PAIRS = frozenset({
   ("स", "च"), ("च", "स"), ("द", "न"), ("द", "ल"), ("द", "ज"),
-  ("त", "च"), ("ग", "क"), ("ह", "ग"), ("ह", "द"),
+  ("त", "च"), ("ग", "क"), ("ह", "ग"), ("ह", "द"), ("ह", "ड"), ("ह", "ब"),
+  ("सत", "सट"), ("सट", "सत"), ("त", "सट"), ("सट", "त"), ("त", "सत"), ("सत", "त"),
+  ("व", "रव"), ("रव", "व"), ("व", "गव"), ("गव", "व"),
 })
 
 DETAILS_RE = re.compile(r"<details(?:\s+open)?><summary>([^<]*)</summary>(.*?)</details>", re.S)
@@ -246,7 +248,7 @@ def _same_onset(c1: str, c2: str) -> bool:
     return True
   if not c1 or not c2:
     return False
-  return c1[-1] == c2[-1] or (c1[-1], c2[-1]) in _SAME_ONSET_PAIRS
+  return c1[-1] == c2[-1] or (c1, c2) in _SAME_ONSET_PAIRS or (c1[-1], c2[-1]) in _SAME_ONSET_PAIRS
 
 
 def _no_punct_between(vp_work: str, pc_a: dict, pc_b: dict) -> bool:
@@ -333,6 +335,12 @@ def _extract_vp_pieces(vp_work: str) -> list[dict]:
         let_si += 1
       elif lt == "ऽ" and let_si > 0:
         avagraha_after.add(let_si - 1)
+    prev_ends_semi = bool(
+      vp_pieces
+      and vp_pieces[-1]["ends_semi"]
+      and ks[0][0] == ""
+      and _no_punct_between(vp_work, vp_pieces[-1], {"start": s})
+    )
     vp_pieces.append({
       "start": s,
       "end": e,
@@ -344,8 +352,9 @@ def _extract_vp_pieces(vp_work: str) -> list[dict]:
       "old_mks": old_mks,
       "new_mks": new_mks,
       "avagraha_after": avagraha_after,
-      "ends_semi": o.endswith(("य्", "व्य्", "त्य्", "प्य्", "र्य्")),
+      "ends_semi": o.endswith(("य्", "व्", "र्", "ल्")),
       "prev_yan_onset": prev_yan_onset,
+      "prev_ends_semi": prev_ends_semi,
     })
   return vp_pieces
 
@@ -507,15 +516,22 @@ def _align_replace_span(
         and (pp_keys[p][1] == vp_keys[v][1] or (pp_keys[p][1] == "a" and vp_keys[v][1] in ("o", "e")))
       )
       if same_on or resyl_ok:
-        sc = 4 if pp_keys[p] == vp_keys[v] else (3 if same_on and pp_keys[p][1] == vp_keys[v][1] else 2)
+        sc = 4 if pp_keys[p] == vp_keys[v] else (3 if pp_keys[p][1] == vp_keys[v][1] else 2)
         _consider(sc, ("map", (p, v)), _solve(p + 1, v + 1))
 
-    # 4. 2->1 sandhi coalescence (vowel sandhi, abhinihita, yaṇ, or resyllabified merge).
-    if p + 1 < i2 and v < j2 and pp_keys[p + 1][0] == "":
-      same_on = _same_onset(pp_keys[p][0], vp_keys[v][0])
+    # 4. 2->1 sandhi coalescence (vowel sandhi, abhinihita, yaṇ, ŚB `नु+वै->न्वै/न्वा`, or resyllabified merge).
+    if p + 1 < i2 and v < j2 and (
+      pp_keys[p + 1][0] == ""
+      or (pp_keys[p] == ("न", "u") and pp_keys[p + 1][0] == "व" and vp_keys[v][0] == "नव")
+    ):
+      nu_vai_merge = pp_keys[p] == ("न", "u") and pp_keys[p + 1][0] == "व" and vp_keys[v][0] == "नव"
+      same_on = (_same_onset(pp_keys[p][0], vp_keys[v][0]) and pp_keys[p][1] not in ("ai", "au")) or nu_vai_merge
       yan_ok = (
         pp_keys[p][1] in ("i", "u", "r", "l")
-        and pp_keys[p][0] in vp_keys[v][0]
+        and (
+          pp_keys[p][0] in vp_keys[v][0]
+          or _same_onset(pp_keys[p][0], re.sub(r"[यवरल]+$", "", vp_keys[v][0]))
+        )
         and any(sv in vp_keys[v][0] for sv in ("य", "व", "र", "ल"))
       )
       resyl_merge = (
@@ -532,7 +548,35 @@ def _align_replace_span(
         and _same_onset(pp_keys[p][0], prev_yan)
       )
       if same_on or yan_ok or resyl_merge or spaced_yan:
-        _consider(3, ("merge", (p, p + 1, v)), _solve(p + 2, v + 1))
+        sc_m = 4 if (same_on or yan_ok or spaced_yan) else 3
+        _consider(sc_m, ("merge", (p, p + 1, v)), _solve(p + 2, v + 1))
+
+    # 5. 3->1 double coalescence:
+    #    (a) yaṇ (i/u/r/l) + vowel + vowel -> 1 syllable (`अभि + आ + इहि -> अभ्येहि`, `वि + आ + अहरन् -> व्याहरन्`)
+    #    (b) vowel + vowel + vowel (e.g. `न + आ + अश्नीयात् -> नाश्नीयात्`)
+    if (
+      p + 2 < i2
+      and v < j2
+      and pp_keys[p + 1][0] == ""
+      and pp_keys[p + 2][0] == ""
+      and (
+        (
+          pp_keys[p][1] in ("i", "u", "r", "l")
+          and (
+            pp_keys[p][0] in vp_keys[v][0]
+            or _same_onset(pp_keys[p][0], re.sub(r"[यवरल]+$", "", vp_keys[v][0]))
+          )
+          and any(sv in vp_keys[v][0] for sv in ("य", "व", "र", "ल"))
+        )
+        or (
+          pp_keys[p][1] == "a"
+          and _same_onset(pp_keys[p][0], vp_keys[v][0])
+          and pp_keys[p + 1][1] == "a"
+          and pp_keys[p + 2][1] == "a"
+        )
+      )
+    ):
+      _consider(4, ("merge", (p, p + 1, p + 2, v)), _solve(p + 3, v + 1))
 
     memo[state] = best
     return best
@@ -546,7 +590,7 @@ def _align_replace_span(
     if kind == "map":
       local_map[payload[0]] = payload[1]
     else:
-      local_merges.append((payload[0], payload[1], payload[2]))
+      local_merges.append(payload)
   return local_map, local_merges
 
 
@@ -612,7 +656,9 @@ def _map_pp_to_vp_syllables(
           pp_to_vp[i1] = j1
           merged_pp_pairs.append((i1 + 1, i1 + 2, j1 + 1))
         elif pp_keys[i1 + 1][0] != "":
-          if pp_keys[i1][0] == "" and _same_onset(pp_keys[i1 + 1][0], vp_keys[j1][0]):
+          if pp_keys[i1] == ("न", "u") and pp_keys[i1 + 1][0] == "व" and vp_keys[j1][0] == "नव":
+            merged_pp_pairs.append((i1, i1 + 1, j1))
+          elif pp_keys[i1][0] == "" and _same_onset(pp_keys[i1 + 1][0], vp_keys[j1][0]):
             pp_to_vp[i1 + 1] = j1
             if i1 > 0 and j1 > 0 and (pp_meta[i1][1] == 0 or i1 in member_starts):
               pi_prev, pi_cur = vp_meta[j1 - 1][0], vp_meta[j1][0]
@@ -634,7 +680,10 @@ def _map_pp_to_vp_syllables(
           _same_onset(pp_keys[i1][0], vp_keys[j1][0])
           or (
             pp_keys[i1][1] in ("i", "u", "r")
-            and pp_keys[i1][0] in vp_keys[j1][0]
+            and (
+              pp_keys[i1][0] in vp_keys[j1][0]
+              or _same_onset(pp_keys[i1][0], re.sub(r"[यवरल]+$", "", vp_keys[j1][0]))
+            )
             and any(sv in vp_keys[j1][0] for sv in ("य", "व", "र"))
           )
         ):
@@ -727,11 +776,12 @@ def _map_pp_to_vp_syllables(
 
   pc_syl_sources = [[[] for _ in pc["keys"]] for pc in vp_pieces]
   merged_at_vs: set[int] = set()
-  for s1, s2, vs in merged_pp_pairs:
-    if 0 <= s1 < len(pp_meta) and 0 <= s2 < len(pp_meta) and 0 <= vs < len(vp_meta):
+  for tup in merged_pp_pairs:
+    *srcs_p, vs = tup
+    if all(0 <= s < len(pp_meta) for s in srcs_p) and 0 <= vs < len(vp_meta):
       pi, vsi = vp_meta[vs]
       merged_at_vs.add(vs)
-      pc_syl_sources[pi][vsi].append((s1, s2))
+      pc_syl_sources[pi][vsi].append(tuple(srcs_p))
   for pp_si, vs in pp_to_vp.items():
     if vs in merged_at_vs:
       continue
@@ -749,10 +799,11 @@ def _map_pp_to_vp_syllables(
     if full_aligned is not None:
       pc_syl_sources = [[[] for _ in pc["keys"]] for pc in vp_pieces]
       merged_at_vs = set()
-      for s1, s2, vs in full_aligned[1]:
+      for tup in full_aligned[1]:
+        *srcs_p, vs = tup
         pi, vsi = vp_meta[vs]
         merged_at_vs.add(vs)
-        pc_syl_sources[pi][vsi].append((s1, s2))
+        pc_syl_sources[pi][vsi].append(tuple(srcs_p))
       for pp_si, vs in full_aligned[0].items():
         if vs not in merged_at_vs:
           pi, vsi = vp_meta[vs]
@@ -790,7 +841,7 @@ def _merged_valid_marks(
         len(pc["keys"][vsi][0]) > len(pp_keys[s1][0])
         and any(sv in pc["keys"][vsi][0] for sv in ("य", "व", "र", "ल"))
       )
-      or (vsi == 0 and pc.get("prev_yan_onset") is not None)
+      or (vsi == 0 and (pc.get("prev_yan_onset") is not None or pc.get("prev_ends_semi", False)))
     )
   )
   if r1 == "U" and r2 == "" and is_yan_merge:
@@ -799,6 +850,8 @@ def _merged_valid_marks(
     return {"S", "U"}, "S"
   if allow_8_2_6_ekadesha_svarita and r1 == "U" and r2 == "" and is_pAdAdi_s2 and pp_keys[s2][0] == "":
     return {"S", "U"}, ("S" if prefer_8_2_6_svarita else "U")
+  if allow_8_2_6_ekadesha_svarita and is_abhinihita and r1 == "" and r2 == "U":
+    return {"S", "U"}, ("S" if prefer_8_2_6_svarita else "U")
   if "U" in (r1, r2):
     return ({"U", "S"} if (r2 == "" and is_yan_merge) else {"U"}), "U"
   if "S" in (r1, r2):
@@ -806,8 +859,14 @@ def _merged_valid_marks(
   return {""}, ""
 
 
-def _skip_elided_avagraha_lead(pc: dict, it: PadapathaItem, si: int) -> bool:
-  return bool(pc["old"].startswith("ऽ") and si == 0)
+def _skip_elided_avagraha_lead(pc: dict, it: PadapathaItem, si: int, vsi: int = 0) -> bool:
+  old = pc["old"]
+  if not (vsi == 0 and old.startswith("ऽ") and si == 0):
+    return False
+  # `ऽ` before an independent vowel (`ऽआसीत्`, `ऽअतः`, `ऽउग्रः`) is a hiatus marker, NOT an elided `अ`.
+  if len(old) > 1 and old[1] in DEVANAGARI_VOWELS:
+    return False
+  return True
 
 
 def _reconcile_plain_piece(
@@ -844,7 +903,7 @@ def _reconcile_plain_piece(
       pp_si = src[0]
       ii, si = pp_meta[pp_si]
       it = items[ii]
-      if _skip_elided_avagraha_lead(pc, it, si):
+      if _skip_elided_avagraha_lead(pc, it, si, vsi):
         continue
       if not (it.solid and (it.vyat or single_item_full or len(syl_sources) == len(syllables_with_marks(it.ref)[0]))):
         continue
@@ -856,8 +915,8 @@ def _reconcile_plain_piece(
           continue
       target_mks[vsi] = ref_mk
       reasons.append(f"{it.ar}->{it.ref} ({it.prov})")
-    elif len(src) == 2:
-      s1, s2 = src
+    elif len(src) >= 2:
+      s1, s2 = src[-2], src[-1]
       i1, _ = pp_meta[s1]
       i2, si2 = pp_meta[s2]
       it1, it2 = items[i1], items[i2]
@@ -915,15 +974,15 @@ def _validate_existing_sug_piece(
       pp_si = src[0]
       ii, si = pp_meta[pp_si]
       it = items[ii]
-      if it.ref == "?" or _skip_elided_avagraha_lead(pc, it, si) or not it.solid:
+      if it.ref == "?" or _skip_elided_avagraha_lead(pc, it, si, vsi) or not it.solid:
         continue
       ref_mk = pp_refs[pp_si]
       valid_mks = {ref_mk} | ({"S"} if ref_mk == "U" else set())
       if nmk not in valid_mks:
         repaired_mks[vsi] = ref_mk
         reasons.append(f"REVAL({it.ar}->{it.ref})")
-    elif len(src) == 2:
-      s1, s2 = src
+    elif len(src) >= 2:
+      s1, s2 = src[-2], src[-1]
       i1, _ = pp_meta[s1]
       i2, si2 = pp_meta[s2]
       it1, it2 = items[i1], items[i2]
@@ -1084,17 +1143,17 @@ def fill_vp_accents_from_padapatha(
       if len(src) == 1:
         pp_si = src[0]
         ii, si = pp_meta[pp_si]
-        if not _skip_elided_avagraha_lead(pc, items[ii], si):
+        if not _skip_elided_avagraha_lead(pc, items[ii], si, vsi):
           target_mks[vsi] = pp_refs[pp_si]
-      elif len(src) == 2:
-        _, si2 = pp_meta[src[1]]
+      elif len(src) >= 2:
+        _, si2 = pp_meta[src[-1]]
         _, pref_mk = _merged_valid_marks(
           pp_refs,
           pp_keys,
           pc,
           vsi,
-          src[0],
-          src[1],
+          src[-2],
+          src[-1],
           next_starts_av,
           allow_8_2_6_ekadesha_svarita=allow_8_2_6_ekadesha_svarita,
           prefer_8_2_6_svarita=prefer_8_2_6_svarita,

@@ -16,11 +16,17 @@ from doc_curation.sanskrit.accent import (
   run_solver_corpus_pass,
   verify_and_apply_adjudications,
 )
+from doc_curation.sanskrit.accent.shatapatha_solver import default_data_available
 
 PILOT_SB_ROOT = Path(
   "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH"
 )
 PILOT_01_01_1 = PILOT_SB_ROOT / "01/01/1.md"
+
+needs_local_data = pytest.mark.skipif(
+  not default_data_available(),
+  reason="indic-dict padasvara lexica / VS corpus not installed locally",
+)
 
 
 def _make_synthetic_corpus(tmp_path: Path) -> Path:
@@ -673,6 +679,7 @@ def test_enrich_provenance_with_corpus_counts_formats_dedupes_and_is_idempotent(
   assert out[0].prov == "*TS*-12, *RV*-2, *TB*-2"
 
 
+@needs_local_data
 def test_verify_and_apply_adjudications_enriches_counts_end_to_end(tmp_path):
   sb_root = _make_synthetic_corpus(tmp_path)
   lex = UnifiedVedicLexicon.load_or_build(force_rebuild=False)
@@ -758,6 +765,7 @@ def test_verify_and_apply_reports_disagree_details(tmp_path):
   assert d0["pada_idx"] == 0 and d0["status"] == "both_disagree"
 
 
+@needs_local_data
 def test_ta_source_is_dropped_by_enrichment_and_rejected_by_audit(tmp_path):
   from doc_curation.sanskrit.accent.shatapatha_batch import (
     SB_CORPUS_TAGS,

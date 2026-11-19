@@ -182,3 +182,96 @@ def test_surgical_prefill_preserves_wrappers_and_nested_children(tmp_path):
   # Inner matching prefill updated cleanly
   assert "अ᳓दिते᳓ऽनु मन्यस्व।" in updated
   assert "अदि॒तेऽनु॑" not in updated
+
+
+def test_surgical_prefill_titleless_with_nested_loading_and_hash_loading(tmp_path):
+  # 1. Titleless outer include (`includetitle="false"`) containing an initial `<details>` note
+  #    plus a nested `js_include` with `{Loading}` and ending with `</details>` must NOT mistake
+  #    those inner tags for an outer `{Loading}` wrapper (regression for puruSha-sUktam.md).
+  sub_dir = tmp_path / "vedAH_yajuH" / "content" / "AraNyakam" / "12_sahasra-shIrShA"
+  sub_dir.mkdir(parents=True)
+  (sub_dir / "_index.md").write_text(
+    textwrap.dedent("""\
+      +++
+      title = "१२ सहस्रशीर्षा"
+      +++
+      <details><summary>त्रिभुवनः - Note</summary>
+
+      The Puruṣa Sūkta.
+      </details>
+
+      <div class="js_include" newlevelforh1="2" title="सर्वाष् टीकाः" unfilled url="/vedAH_Rk/10/090/_index.md">
+      <details open><summary><h2>सर्वाष् टीकाः …{Loading}…</h2></summary>
+
+      टीका
+      </details>
+      </div>
+
+      <details><summary>पद-पाठः (यान्त्रिकः)</summary>
+
+      - सह᳓स्र-शीर्षा (*TS*-1, *RV*-1)
+      </details>
+    """),
+    encoding="utf-8",
+  )
+
+  # 2. Markdown `### Title …{Loading}…` wrapper (`hash_title=True`) must keep its `{Loading}` header.
+  vp_dir = tmp_path / "vedAH_yajuH" / "static" / "shrautam"
+  vp_dir.mkdir(parents=True)
+  (vp_dir / "01.md").write_text(
+    '+++\ntitle = "01 मन्त्रान्तेः"\n+++\nमन्त्रान्ते कर्मादीन् संनिपातयेत् १\n',
+    encoding="utf-8",
+  )
+
+  host_dir = tmp_path / "vedAH_yajuH" / "content" / "host"
+  host_dir.mkdir(parents=True)
+  host_path = host_dir / "puruSha.md"
+  host_path.write_text(
+    textwrap.dedent("""\
+      +++
+      title = "पुरुष-सूक्तम्"
+      +++
+
+      <div class="js_include" includetitle="false" newlevelforh1="5" unfilled url="/vedAH_yajuH/AraNyakam/12_sahasra-shIrShA/">
+      <details><summary>त्रिभुवनः - Note</summary>
+
+      The Puruṣa Sūkta.
+      </details>
+
+      <div class="js_include" newlevelforh1="2" title="सर्वाष् टीकाः" unfilled url="/vedAH_Rk/10/090/_index.md">
+      <details open><summary><h7>सर्वाष् टीकाः …{Loading}…</h7></summary>
+
+      टीका
+      </details>
+      </div>
+
+      <details><summary>पद-पाठः (यान्त्रिकः)</summary>
+
+      - सह᳓स्र-शीर्षा (*TS*, *RV*)
+      </details>
+      </div>
+
+      <div class="js_include" includetitle="true" newlevelforh1="3" unfilled url="/vedAH_yajuH/shrautam/01.md">
+
+      ### 01 मन्त्रान्तेः …{Loading}…
+
+      stale sUtra
+
+      </div>
+    """),
+    encoding="utf-8",
+  )
+
+  include_helper.surgical_prefill_includes(
+    dir_path=str(host_dir),
+    hugo_base_dir=str(tmp_path),
+  )
+
+  updated = host_path.read_text(encoding="utf-8")
+  assert updated.count("<div") == updated.count("</div>") == 3
+  assert updated.count("<details") == updated.count("</details>") == 3
+  assert updated.count("<summary>त्रिभुवनः - Note</summary>") == 1
+  assert "- सह᳓स्र-शीर्षा (*TS*-1, *RV*-1)" in updated
+  assert "### 01 मन्त्रान्तेः …{Loading}…" in updated
+  assert "मन्त्रान्ते कर्मादीन् संनिपातयेत् १" in updated
+  assert "stale sUtra" not in updated

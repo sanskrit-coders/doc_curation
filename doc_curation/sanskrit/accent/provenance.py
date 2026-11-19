@@ -152,7 +152,8 @@ _PADAPATHA_INTERNAL_SANDHI_PAIRS: tuple[tuple[re.Pattern[str], str], ...] = (
   (re.compile(r"प्(?=[भधदगघजझब])"), "द्"),
   (re.compile(r"त्(?=[भधदगघब])"), "द्"),
   (re.compile(r"क्(?=[भधदगघब])"), "ग्"),
-  (re.compile(r"ः([कखपफ])"), r"ष्\1"),
+  (re.compile(r"([िीुूृेोौ])ः([कखपफ])"), r"\1ष्\2"),
+  (re.compile(r"ः([कखपफ])"), r"स्\1"),
   (re.compile(r"ःअ"), "र"),
   (re.compile(r"ःआ"), "रा"),
   (re.compile(r"ःइ"), "रि"),
@@ -241,6 +242,18 @@ def word_to_key_and_marks(word: str) -> tuple[str, tuple[str, ...]] | None:
     "S" if US_SVARITA in mks else ("U" if US_UDATTA in mks else "")
     for mks, _ in scanned
   )
+  # When a classical saṁhitā snippet (e.g. `अप॒घ्नन्`, `प्रथम॒जाः`, `संविदा॒नः`, `पृत॒ना॒ऽजित॑म्`)
+  # is cited in isolation, leading anudātta syllables before `॒` carry no `॒` mark (inherited from the
+  # preceding word in saṁhitā), causing `to_US_accents` to mark them `U` as well. For non-dual-accent words,
+  # only the final `U`/`S` (the syllable licensed by `॒`) is genuine.
+  if (
+    ("\u0951" in s or "\u0952" in s)
+    and not has_us_accents(s)
+    and sum(1 for mk in marks if mk) > 1
+    and not _is_dual_accent_word(norm_key)
+  ):
+    last_idx = max(i for i, mk in enumerate(marks) if mk)
+    marks = tuple(mk if i == last_idx else "" for i, mk in enumerate(marks))
   return norm_key, marks
 
 
@@ -652,6 +665,41 @@ class VedicCorpusCounter:
       if c_n > 0:
         return c_n
 
+    # 3b. Śākala RV/AV padapāṭha de-retroflexion across explicit `-` compound seams (`प्र᳓-णेतः` -> `प्रनेतः`, `परि-ष्व᳓जे` -> `परिस्वजे`, `शत्रु-ह᳓णः` -> `शत्रुहनः`)
+    if "-" in word:
+      deretro = ak
+      for r_src, r_dst in (
+        ("प्रण", "प्रन"),
+        ("परिष", "परिस"),
+        ("विष", "विस"),
+        ("निष", "निस"),
+        ("अभिष", "अभिस"),
+        ("सुष", "सुस"),
+        ("दुष", "दुस"),
+        ("हण", "हन"),
+      ):
+        if r_src in deretro:
+          deretro = deretro.replace(r_src, r_dst)
+      if deretro != ak:
+        c_dr = allo_tbl.get((deretro, marks), 0)
+        if c_dr > 0:
+          return c_dr
+      retro = ak
+      for r_src, r_dst in (("सुस", "सुष"), ("अभिस", "अभिष"), ("परिस", "परिष"), ("विस", "विष"), ("निस", "निष")):
+        if r_src in retro:
+          retro = retro.replace(r_src, r_dst)
+      if retro != ak:
+        c_rt = allo_tbl.get((retro, marks), 0)
+        if c_rt > 0:
+          return c_rt
+
+    # 3c. Śākala RV/AV padapāṭha visarga retention vs saṁhitā sibilant before voiceless stops (`जास्पत्य᳓म्` <-> `जाःपत्यम्`, `विश्व᳓तस्पात्` <-> `विश्वतःपात्`)
+    vis_de = re.sub(r"[सषश]्(?=[कखपफचछतथ])", "ः", ak)
+    if vis_de != ak:
+      c_vd = allo_tbl.get((vis_de, marks), 0)
+      if c_vd > 0:
+        return c_vd
+
     # 4. Stem citation fallback (when `word` is an uninflected stem like `ब्राह्मण᳓` or `अङ्गिरस्`)
     stem_c = self.stem_prefix_counts.get(corpus, {}).get((ak, marks), 0)
     if stem_c > 0:
@@ -704,11 +752,23 @@ _NESTED_MEMBER_PAREN_RE = re.compile(
   + r")\*[^()]*\))"
 )
 
+# Pattern A2: `ACCENTED_WORD *TAG1*, *TAG2*` (explicit Sanskrit example word immediately before unparenthesized corpus tags)
+_PRECEDING_WORD_TAG_GROUP_RE = re.compile(
+  r"([\u0900-\u0963\u0971-\u097f\u1cd0-\u1cff\u0951\u0952\-]+)"
+  r"(\s+)(\*(?:"
+  + _CORPUS_TAG_PAT
+  + r")\*(?:-\d+)?(?:\s*,\s*\*(?:"
+  + _CORPUS_TAG_PAT
+  + r")\*(?:-\d+)?)*)"
+)
+
 # Pattern B: `*TAG1*(?:-\d+)?(?:,\s*\*TAG2\*(?:-\d+)?)*(?:\s+[०-९\d.]+)?\s+ACCENTED_WORD`
 _TAG_GROUP_WITH_EXAMPLE_RE = re.compile(
-  r"((?:\*(?:"
+  r"(\*(?:"
   + _CORPUS_TAG_PAT
-  + r")\*(?:-\d+)?(?:\s*,\s*)?)+)"
+  + r")\*(?:-\d+)?(?:\s*,\s*\*(?:"
+  + _CORPUS_TAG_PAT
+  + r")\*(?:-\d+)?)*)"
   r"(\s+(?:[०-९\d]+(?:\.[०-९\d]+)+\s+)?)"
   r"([\u0900-\u0963\u0971-\u097f\u1cd0-\u1cff\u0951\u0952\-]+)"
 )
@@ -748,6 +808,24 @@ def _annotate_clause(
     s, e = m.start(2), m.end(2)
     protected_spans.append((s, e))
     replacements.append((s, e, new_paren))
+
+  # 1b. Pattern A2: `ACCENTED_WORD *TS*, *RV*` (without inner parens, not followed by another accented example word)
+  for m in _PRECEDING_WORD_TAG_GROUP_RE.finditer(clause):
+    s, e = m.start(3), m.end(3)
+    if any(not (e <= ps or s >= pe) for ps, pe in protected_spans):
+      continue
+    w_tok = m.group(1)
+    has_explicit_acc = any(ch in w_tok for ch in (US_UDATTA, US_SVARITA, "\u0951", "\u0952"))
+    if not (has_explicit_acc and _is_sanskrit_example_word(w_tok)):
+      continue
+    # Skip if the tag group itself is immediately followed by an accented example word (handled by Pattern B)
+    after_tags = clause[e : e + 40]
+    m_after = re.match(r"^\s+(?:[०-९\d]+(?:\.[०-९\d]+)+\s+)?([\u0900-\u0963\u0971-\u097f\u1cd0-\u1cff\u0951\u0952\-]+)", after_tags)
+    if m_after and any(ch in m_after.group(1) for ch in (US_UDATTA, US_SVARITA, "\u0951", "\u0952")) and _is_sanskrit_example_word(m_after.group(1)):
+      continue
+    new_grp = _TAG_TOKEN_RE.sub(lambda tm: _fmt_tag(tm.group(1), w_tok), m.group(3))
+    protected_spans.append((s, e))
+    replacements.append((s, e, new_grp))
 
   # 2. Pattern B: `*TS*, *RV* १०.१९०.२ अहोरा॒त्राणि॑` or `*AV*, *RV* वे᳓दः`
   for m in _TAG_GROUP_WITH_EXAMPLE_RE.finditer(clause):

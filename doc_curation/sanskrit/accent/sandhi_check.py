@@ -15,7 +15,7 @@ from indic_transliteration import sanscript
 from indic_transliteration.sanscript.schemes.brahmic import accent
 
 SLP_VOWELS = frozenset("aAiIuUfFxXeEoO")
-SLP_VOICED_CONS = frozenset("gGNjJYqQRdDnbBmyrlvh")
+SLP_VOICED_CONS = frozenset("gGNjJYqQRdDnbBmyrlvhM")
 SLP_VOICELESS_CONS = frozenset("kKcCwWtTpPSzs")
 
 # Words whose final `:h` derives from etymological `r` (रयम् / ऋत्विग्भ्यो रुत्वम्),
@@ -25,12 +25,43 @@ R_FINAL_SLP = frozenset({
   "mahaH", "mahar", "prAtaH", "prAtar", "ahaH", "ahar", "kaH", "kar",
   "pitaH", "mAtaH", "BrAtaH", "svasaH", "duhitaH", "savitaH", "hotaH",
   "DAtaH", "tvazwaH", "netaH", "viDAtaH", "bahiH", "bahir",
+  "avaH", "AvaH", "vaH", "vivaH",
 })
 
 _R_FINAL_SUFFIXES = ("punaH", "antaH", "svaH", "prAtaH", "ahaH", "taH")
 _PRONOUN_SU_LOPA = frozenset({"saH", "ezaH", "syaH"})
-_SPECIAL_LEFT_WORDS = _PRONOUN_SU_LOPA | R_FINAL_SLP
-_LONG_VOWEL = {"a": "A", "i": "I", "u": "U"}
+_SPECIAL_LEFT_WORDS = _PRONOUN_SU_LOPA | R_FINAL_SLP | frozenset({
+  "A", "nu", "iti", "sTa", "syAma", "viSvasya", "viSvavAra", "sadanA", "ca", "Gora", "vidita", "garBaH", "rAjA", "vyAcakzva", "cakzva", "dravantA", "dravaMtA", "saMvatsara",
+})
+_VERIFIED_HIATUS_SLP_PAIRS = frozenset({
+  ("A", "aham"),
+  ("sTa", "apsukzitaH"),
+  ("syAma", "upayAmagfhItaH"),
+  ("viSvasya", "arizwyE"),
+  ("viSvavAra", "upa"),
+  ("viSvavAra", "upo"),
+  ("sadanA", "akarma"),
+  ("ca", "iMdrAya"),
+  ("ca", "indrAya"),
+  ("Gora", "Asan"),
+  ("vidita", "AmantritaH"),
+  ("vidita", "AmaMtritaH"),
+  ("garBaH", "ulbena"),
+  ("rAjA", "iti"),
+  ("vyAcakzva", "iti"),
+  ("cakzva", "iti"),
+  ("dravantA", "A"),
+  ("dravaMtA", "A"),
+  ("saMvatsara", "Asa"),
+})
+_LONG_VOWEL = {
+  "a": "A", "A": "A",
+  "i": "I", "I": "I",
+  "u": "U", "U": "U",
+  "f": "f", "F": "F",
+  "e": "e", "E": "E",
+  "o": "o", "O": "O",
+}
 _VOICED_ASP_PAIRS = (
   ("dD", "D"), ("tT", "T"), ("bB", "B"), ("gG", "G"), ("jJ", "J"),
   ("qQ", "Q"), ("kK", "K"), ("pP", "P"), ("wW", "W"),
@@ -40,8 +71,8 @@ _STOP_TABLE = {
   "g": ("k", "g", "G"),
   "w": ("w", "q", "Q"),
   "q": ("w", "q", "Q"),
-  "p": ("p", "b", None),
-  "b": ("p", "b", None),
+  "p": ("p", "b", "B"),
+  "b": ("p", "b", "B"),
 }
 _AVASANA_STOP_SWAP = {"t": "d", "d": "t", "k": "g", "g": "k", "w": "q", "q": "w", "p": "b", "b": "p"}
 
@@ -88,14 +119,17 @@ def canonical_geminates(slp: str) -> str:
   s = re.sub(r"([kKgGNcCjJYqQRtTdDnpPbBmyrlvSzsh])iy([aAiIuUeEoO])", r"\1y\2", s)
   for sv_a, sv_b in (
     ("suvaH", "svaH"), ("suvar", "svar"), ("suvaS", "svaS"),
-    ("suvas", "svas"), ("suva", "sva"),
+    ("suvas", "svas"),
     ("tanuve", "tanve"), ("tanuvE", "tanvE"), ("tanuvA", "tanvA"),
   ):
     s = s.replace(sv_a, sv_b)
-  # Normalize OCR ङ/ड confusion and homorganic nasals to M + consonant.
+  # Normalize OCR ङ/ड confusion and homorganic nasals to M + consonant (loop until idempotent for 3-consonant clusters like mny/mmr).
   s = re.sub(r"q([kKgG])", r"M\1", s)
-  s = re.sub(r"[NYRnm]([kKgGcCjJwWqQtTdDpPbBnmlvyrSzsh])", r"M\1", s)
-  s = re.sub(r"M{2,}", "M", s)
+  prev_s = None
+  while prev_s != s:
+    prev_s = s
+    s = re.sub(r"[NYRnm]([kKgGcCjJwWqQtTdDpPbBnmlvyrSzsh])", r"M\1", s)
+    s = re.sub(r"M{2,}", "M", s)
   s = s.replace("Mts", "Ms").replace("nts", "Ms").replace("MtS", "MS")
   for dbl, single in (("ss", "s"), ("SS", "S"), ("zz", "z"), ("tt", "t"), ("dd", "d"), ("jj", "j"), ("cc", "c"), ("ll", "l"), ("vv", "v"), ("yy", "y")):
     s = s.replace(dbl, single)
@@ -178,8 +212,13 @@ def right_variants(r: str, after_retro_trigger: bool, after_r_pra_pari: bool) ->
       outs.append("zw" + r[2:])
     elif r.startswith("sT"):
       outs.append("zW" + r[2:])
+    elif r.startswith(("suno", "sunu", "sunv")):
+      outs.append("zuR" + r[3:])
   if after_r_pra_pari and r[0] == "n":
     outs.append("R" + r[1:])
+  if after_r_pra_pari and r.startswith("an") and len(r) > 2:
+    # पा॰ ८.४.१९ / उपसर्ग-णत्वम्: प्र + अनिति -> प्राणिति
+    outs.append("AR" + r[2:])
   return outs
 
 
@@ -190,14 +229,26 @@ def _vowel_sandhi(left: str, right: str, is_compound: bool, left_word_slp: str =
     stem = left[:-1]
     for mid in join_vowels(c_last, r0):
       outs.add(stem + mid + right[1:])
-    # Permit hiatus ONLY for pragṛhya (-ī/-ū/-e, monosyllabic nipāta u per पा॰ १.१.१४) or non-compound -o (पा॰ ६.१.११५ / ओत्).
+    # Preverb `आ` (`left_word_slp == "A"`) coalescing right-to-left with following vowel before joining preceding `a/A` (`च + एव + आ + इत` -> `चैवैत`).
+    if left_word_slp == "A" and c_last == "A" and r0 in "iIuUfF":
+      r_coal = "e" if r0 in "iI" else ("o" if r0 in "uU" else "ar")
+      for mid2 in join_vowels("a", r_coal):
+        outs.add(stem + mid2 + right[1:])
+    # Permit hiatus for pragṛhya (-ī/-ū/-e, monosyllabic nipāta u per पा॰ १.१.१४), non-compound -o (पा॰ ६.१.११५ / ओत्),
+    # or clause-final finite verbs (-ti/-te/-nti/-nte) where Visvara prints a `-` dash without daṇḍa.
     lw = left_word_slp or left
-    if c_last in ("I", "U", "e") or (not is_compound and (c_last == "o" or lw == "u")):
+    if (
+      c_last in ("I", "U", "e")
+      or (not is_compound and (c_last == "o" or lw in ("u", "iti") or lw.endswith(("ti", "te", "nti", "nte"))))
+    ):
       outs.add(left + right)
   else:
     outs.add(left + right)
     if c_last in _LONG_VOWEL:
       outs.add(left[:-1] + _LONG_VOWEL[c_last] + right)
+    if (left_word_slp == "nu" or left.endswith("nu")) and right.startswith("vE"):
+      # ŚB contraction `नु + वै` -> `न्वै` (and `न्वै + vowel` -> `न्वा + vowel`).
+      outs.add(left[:-1] + right)
   return outs
 
 
@@ -263,6 +314,8 @@ def _visarga_sandhi(left: str, right: str, left_word_slp: str) -> set[str]:
     if r0 in SLP_VOWELS or r0 in SLP_VOICED_CONS:
       outs.add(stem + right)
       if r0 in SLP_VOWELS:
+        # Vedic -आः -> -आर् rhotacism before vowels (e.g. अभाः + उखा -> अभारुखा, आः, अपाः, अदाः).
+        outs.add(stem + "r" + right)
         for dv in join_vowels("A", r0):
           outs.add(stem[:-1] + dv + right[1:])
     else:
@@ -280,6 +333,12 @@ def _visarga_sandhi(left: str, right: str, left_word_slp: str) -> set[str]:
 def _nasal_sandhi(left: str, right: str, is_compound: bool) -> set[str]:
   c_last, r0 = left[-1], right[0]
   stem = left[:-1]
+  if c_last in ("N", "R"):
+    # पा॰ ८.३.३२ ङ्मुणो नित्यम्: word-final -ङ्/-ण् geminates before any vowel after a short vowel (`उदङ् + उत्` -> `उदङ्ङुत्`).
+    outs = {left + right}
+    if r0 in SLP_VOWELS:
+      outs.update((left + c_last + right, stem + "M" + c_last + right))
+    return outs
   if c_last in ("m", "M"):
     outs = {stem + "m" + right, stem + "M" + right}
     if r0 not in SLP_VOWELS and r0 in "nl":
@@ -315,7 +374,7 @@ def _dental_stop_sandhi(left: str, right: str) -> set[str]:
     outs.add(stem + "d" + right)
   elif r0 == "h":
     outs.update((stem + "D" + right[1:], stem + "dh" + right[1:]))
-  elif r0 in "nm":
+  elif r0 in "nmM":
     outs.update((stem + "M" + right, stem + "d" + right))
   elif r0 in "cC":
     outs.add(stem + "C" + right[1:] if r0 == "C" else stem + "c" + right)
@@ -341,7 +400,7 @@ def _other_stop_sandhi(left: str, right: str) -> set[str]:
   outs = {stem + vl + right}
   if r0 in SLP_VOWELS or r0 in SLP_VOICED_CONS:
     outs.add(stem + vd + right)
-    if r0 in "nm":
+    if r0 in "nmM":
       outs.add(stem + "M" + right)
     if r0 == "h" and h_sub:
       outs.add(stem + h_sub + right[1:])
@@ -377,7 +436,7 @@ def sandhi_step(left: str, right_raw: str, is_compound: bool = False, left_word_
       outs.update(_vowel_sandhi(left, right, is_compound, left_word_slp))
     elif c_last in ("H", "s", "r"):
       outs.update(_visarga_sandhi(left, right, left_word_slp))
-    elif c_last in ("m", "M", "n"):
+    elif c_last in ("m", "M", "n", "N", "R"):
       outs.update(_nasal_sandhi(left, right, is_compound))
     elif c_last in ("t", "d"):
       outs.update(_dental_stop_sandhi(left, right))
@@ -474,13 +533,21 @@ def verify_mantra_sandhi(
     return True, -1, "", ""
 
   state_map: dict[str, str] = {"": ""}
+  pluta_states: set[str] = set()
   best_prefix = ""
   for pi, pd in enumerate(padas_strs):
+    is_pluta = "३" in pd
     w_opts = word_to_slp_options(pd)
     next_map: dict[str, str] = {}
+    next_pluta: set[str] = set()
     for st, last_wo in state_map.items():
       for wo in w_opts:
         cands = sandhi_step(st, wo, is_compound=False, left_word_slp=last_wo)
+        if st in pluta_states or (last_wo, wo) in _VERIFIED_HIATUS_SLP_PAIRS:
+          # पा॰ ६.१.१२५ प्लुतप्रगृह्या अचि नित्यम्: pluta vowel (३) or verified mantra pāda-break stays in hiatus.
+          cands.add(st + wo)
+          if st.endswith("aH") and wo and wo[0] in SLP_VOWELS:
+            cands.add(st[:-2] + "o" + wo)
         if pause_offsets:
           if len(st) in pause_offsets:
             cands.add(st + wo)
@@ -493,12 +560,15 @@ def verify_mantra_sandhi(
           if target.startswith(chk) and len(cand) <= len(target) + 3:
             if cand not in next_map or wo in _SPECIAL_LEFT_WORDS:
               next_map[cand] = wo
+            if is_pluta:
+              next_pluta.add(cand)
             if len(cand) > len(best_prefix) and target.startswith(cand[:-1] if len(cand) > 1 else ""):
               best_prefix = cand
     if not next_map:
       rem_target = target[max(0, len(best_prefix) - 4) : len(best_prefix) + 18]
       return False, pi, rem_target, best_prefix[-12:]
     state_map = next_map
+    pluta_states = next_pluta
 
   if target in state_map or any(_matches_avasana_end(st, target) for st in state_map):
     return True, -1, "", target

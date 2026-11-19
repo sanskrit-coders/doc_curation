@@ -28,6 +28,7 @@ import difflib
 import functools
 import glob
 import json
+import logging
 import math
 import os
 import pickle
@@ -104,9 +105,9 @@ _VS_DETAILS_RE = re.compile(
   re.S,
 )
 
-DEFAULT_CACHE_PATH = (
-  "/home/vvasuki/.gemini/antigravity-cli/brain/"
-  "a1bfd549-5617-4f61-ae6b-a2769ed28079/scratch/unified_vedic_lexicon.pkl"
+DEFAULT_CACHE_PATH = os.path.join(
+  os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"),
+  "doc_curation", "unified_vedic_lexicon.pkl",
 )
 DEFAULT_DICT_ROOT = os.path.expanduser("~/gitland/sanskrit/raw_etexts/koshaH/indic-dict")
 DEFAULT_VS_DIR = (
@@ -120,6 +121,27 @@ DEFAULT_TB_DIR = (
 DEFAULT_VIDYUT_KOSHA = (
   "/home/vvasuki/gitland/ambuda-org/vidyut/vidyut-data/data/build/vidyut-latest/kosha"
 )
+
+
+def default_data_available(
+  dict_root: str = DEFAULT_DICT_ROOT,
+  vs_dir: str = DEFAULT_VS_DIR,
+) -> bool:
+  """Whether the local indic-dict padasvara lexica and VS corpus read by
+  :meth:`UnifiedVedicLexicon.build` are installed.
+
+  Tests asserting on corpus-derived counts/accents skip when this is ``False``
+  (a clean CI checkout has no local Sanskrit data).
+  """
+  padasvara = (
+    "kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon",
+    "kAvya/kyv-ts-padasvara/kyv-ts-padasvara.babylon",
+    "kAvya/av-padasvara/av-padasvara.babylon",
+  )
+  return os.path.isdir(vs_dir) and all(
+    os.path.isfile(os.path.join(dict_root, rel)) for rel in padasvara
+  )
+
 
 SCHEME = sanscript.SCHEMES[sanscript.DEVANAGARI]
 
@@ -260,6 +282,7 @@ SB_FUNCTION_WORDS_SLP: frozenset[str] = frozenset({
   "tvam", "tvAm", "tvA", "tvayA", "tuByam", "te", "tvat", "tava", "tvayi",
   "yUyam", "yuzmAn", "vaH", "yuzmABiH", "yuzmaByam", "yuzmAkam",
   "kaH", "kA", "kim", "kam", "kAm", "kena", "kayA", "kasmE", "kasmAt", "kasya",
+  "praugam", "praugaH", "prauge", "praugasya", "praugAni",
   "kasmin", "kO", "ke", "kAH", "kAn", "kAni",
   "ca", "vA", "vE", "hi", "u", "ha", "sma", "eva", "iva", "iti", "aTa", "aTo",
   "na", "nu", "tu", "net", "cet", "Kalu", "api", "atra", "tatra", "yatra",
@@ -1185,24 +1208,29 @@ class UnifiedVedicLexicon:
     lex = cls.build(dict_root=dict_root, vs_dir=vs_dir, tb_dir=tb_dir)
     lex._get_slp_stems()
     if cache_path:
-      os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-      tmp_path = cache_path + ".tmp"
-      with open(tmp_path, "wb") as f:
-        pickle.dump(
-          {
-            "version": LEXICON_CACHE_VERSION,
-            "form_accents": lex.form_accents,
-            "form_hyphens": lex.form_hyphens,
-            "stem_accents": lex.stem_accents,
-            "stem_hyphens": lex.stem_hyphens,
-            "slp_vocab": lex.slp_vocab,
-            "vs_mantra_tokens": lex.vs_mantra_tokens,
-            "slp_stems": lex._slp_stems,
-          },
-          f,
-          protocol=pickle.HIGHEST_PROTOCOL,
-        )
-      os.replace(tmp_path, cache_path)
+      try:
+        os.makedirs(os.path.dirname(cache_path) or ".", exist_ok=True)
+        tmp_path = cache_path + ".tmp"
+        with open(tmp_path, "wb") as f:
+          pickle.dump(
+            {
+              "version": LEXICON_CACHE_VERSION,
+              "form_accents": lex.form_accents,
+              "form_hyphens": lex.form_hyphens,
+              "stem_accents": lex.stem_accents,
+              "stem_hyphens": lex.stem_hyphens,
+              "slp_vocab": lex.slp_vocab,
+              "vs_mantra_tokens": lex.vs_mantra_tokens,
+              "slp_stems": lex._slp_stems,
+            },
+            f,
+            protocol=pickle.HIGHEST_PROTOCOL,
+          )
+        os.replace(tmp_path, cache_path)
+      except OSError as exc:
+        # Caching is an optimization: an unwritable cache location (read-only HOME, CI
+        # sandbox, ...) must not break lexicon construction.
+        logging.warning("Could not write lexicon cache at %s: %s", cache_path, exc)
     return lex
 
   @classmethod
@@ -1793,7 +1821,7 @@ _NEVER_SINGLE_PADA_SLP: frozenset[str] = frozenset({
   "etadDa", "tadu", "yadu", "yadve", "yadvA", "tadyat", "tadyad", "evAsya",
   "evAsmi", "evEtat", "evEtad", "evEzaH", "evEza", "tasmAdvA", "tatpraTamena",
   "vApaH", "tA", "gfhA", "no", "so", "yo", "aTAtaH", "aTEnam", "aTEtat",
-  "At", "Im", "sIm", "hAH", "udA", "upA", "samA", "prA", "vyA", "aByA", "pratyA",
+  "At", "Im", "sIm", "hAH", "udA", "upA", "samA", "prA", "vyA", "aByA", "pratyA", "ARaH", "ARo", "ARam", "aRaH", "uto",
 })
 _FUSED_PREFIX_BLOCK_SLP: tuple[str, ...] = (
   "tat", "tad", "yat", "yad", "etad", "etat", "tasmAt", "tasmAd",
@@ -2197,6 +2225,7 @@ _PRONOMINAL_NEVER_SPLIT_SLP: frozenset[str] = frozenset({
   "etasyAH", "etasyAm", "etayoH", "eteByaH", "etezAm", "etezu", "ezaH", "ezA", "eza",
   "enam", "enAm", "enAn", "enAni", "ene", "enayoH", "eva", "evam", "evaM",
   "ekaH", "ekA", "ekam", "ekena", "ekasya", "ekasmAt", "ekasmE", "ekasmin", "eke",
+  "prARaH", "prARa", "prARam",
 })
 
 
@@ -2218,6 +2247,9 @@ def _strip_leading_upasargas_tinanta_uncached(slp_w: str, lex: UnifiedVedicLexic
   deva_w = _slp_to_deva(slp_w)
   if deva_w in SIMPLEX_TINANTA_ALLOWLIST:
     return None
+  # Explicit high-frequency ŚB `अनु + इ` / `अनु + आ` prefixed finite verbs (`अन्वेमि`, `अन्वेति`, `अन्वेषि`, `अन्वेतु`)
+  if slp_w in ("anvemi", "anveti", "anvezi", "anvetu", "anvemaH", "anvemuH"):
+    return ["अनु", _slp_to_deva(slp_w[3:])]
   # Never split `-तः` directional/ablative adverbs (`उत्तरतः`, `अन्तरतः`, `अभितः`, `परितः`, `सर्वतः`) as 3du verbs!
   if deva_w.endswith(("उत्तरतः", "अन्तरतः", "दक्षिणतः", "पुरतः", "पृष्ठतः", "अभितः", "परितः", "सर्वतः", "उभयतः", "अन्यतः", "अग्रतः", "मध्यतः", "पश्चात्", "अधस्तात्", "उपरिष्टात्")):
     return None
@@ -2591,11 +2623,11 @@ def _generate_chunk_transitions(
     next_ch = slp[end] if end < L else ""
 
     if at_chunk_end:
-      # Pragṛhya `ओत्` (पा॰ १.१.१५): `नो`/`तथो`/`अथो`/`मो`/`तेनो` before unelided vowel or as `a/A + u`
-      if seg in ("no", "taTo", "aTo", "mo", "teno", "pro") and (
-        (next_tok_starts_vowel and not next_tok_is_avagraha) or seg in ("taTo", "aTo", "teno", "pro")
+      # Pragṛhya `ओत्` (पा॰ १.१.१५): `नो`/`तथो`/`अथो`/`मो`/`तेनो`/`प्रो`/`उतो` before unelided vowel or as `a/A + u`
+      if seg in ("no", "taTo", "aTo", "mo", "teno", "pro", "uto") and (
+        (next_tok_starts_vowel and not next_tok_is_avagraha) or seg in ("taTo", "aTo", "teno", "pro", "uto")
       ):
-        u_left = {"no": "na", "taTo": "taTA", "aTo": "aTa", "mo": "mA", "teno": "tena", "pro": "pra"}[seg]
+        u_left = {"no": "na", "taTo": "taTA", "aTo": "aTa", "mo": "mA", "teno": "tena", "pro": "pra", "uto": "uta"}[seg]
         c_l = _eval_word(u_left, 0.0)
         if c_l is not None:
           out.append((end, "u", u_left, c_l))  # Handled via internal vowel merger below too!
@@ -2611,7 +2643,7 @@ def _generate_chunk_transitions(
           raw_pen = 4.5
         elif next_tok_starts_vowel and seg.endswith(("a", "A")) and len(seg) >= 2:
           if lex.word_score_slp(seg + "H") >= 20 or (seg.endswith("smA") and lex.word_score_slp(seg[:-1] + "E") >= 20):
-            raw_pen = 4.0
+            raw_pen = 1.5
         final_cands.append((seg, raw_pen))
       if seg.endswith("M") and len(seg) >= 2:
         final_cands.append((seg[:-1] + "m", 0.0))
@@ -2720,6 +2752,9 @@ def _generate_chunk_transitions(
             out.append((end, "", seg[:-1] + "m", c_m))
       # Palatal nasal `Y` (`ञ्`): before `c/C/j/J/S` -> `n` (`देवाञ्` -> `देवान्`, पा॰ ८.४.४०) OR `m` (`व्रतञ्च` -> `व्रतम्`)
       if seg.endswith("Y") and len(seg) >= 2 and next_ch in "cCjJS":
+        # Periphrastic perfect (`बिभयाञ्चक्रुः` -> `बिभयाम् + चक्रुः`, `आञ्चकार` -> `आम् + चकार`)
+        if seg.endswith("AY") and slp[end:].startswith(("cakr", "cakAr", "cakf")):
+          out.append((end, "", seg[:-1] + "m", 1.8))
         c_n = _eval_word(seg[:-1] + "n", 0.12)
         if c_n is not None:
           out.append((end, "", seg[:-1] + "n", c_n))
@@ -2785,6 +2820,11 @@ def _generate_chunk_transitions(
           out.append((end, "", seg + "H", c_v))
     else:
       if seg[-1] not in SLP_VOWELS:
+        # High-frequency ŚB prevocalic splits: `यद्यु` -> `यदि + उ`, `स्वरेव` -> `स्वः + एव`
+        if seg == "yady" and next_ch == "u":
+          out.append((end, "", "yadi", 2.2))
+        elif seg == "svar":
+          out.append((end, "", "svaH", 2.4))
         for w_c, pen in _prevocalic_cons_restorations(seg, next_ch=next_ch):
           c = _eval_word(w_c, pen)
           if c is not None:
@@ -3075,6 +3115,49 @@ def _split_vp_with_diagnostics(
       clause_ids.append(cur_clause)
       if _normalize_lookup_key(pd) == "इति":
         cur_clause += 1
+  # Post-pass: repair uncoalesced `-अ`/`-आ` + vowel hiatus (`aa_hiatus`, पा॰ ८.३.१९) within a clause
+  # by restoring `-आः`/`-ऐ` or `-अः`/`-ए` using `lex`/`vidyut.kosha` (fallback `-ः`).
+  _VOWEL_INIT_DEVA = frozenset("अआइईउऊऋॠऌएऐओऔ")
+  for idx in range(len(padas) - 1):
+    if clause_ids[idx] != clause_ids[idx + 1]:
+      continue
+    cur_p = padas[idx]
+    nxt_p = padas[idx + 1]
+    if not cur_p or not nxt_p or nxt_p[0] not in _VOWEL_INIT_DEVA:
+      continue
+    cur_bare = cur_p.replace("-", "")
+    if not cur_bare or cur_bare in ("प्र", "आ", "अव", "अप", "उप", "परा", "अथ", "च", "न", "एव", "इव", "वा", "तथा", "यथा", "उत"):
+      continue
+    if lex.analyze_morph(cur_bare)["is_avyaya"]:
+      continue
+    last_ch_d = cur_bare[-1]
+    cands_r: list[str] = []
+    if last_ch_d == "ा":
+      cands_r = [cur_p + "ः", cur_p[:-1] + "ै"]
+    elif "\u0915" <= last_ch_d <= "\u0939":
+      cands_r = [cur_p + "ः", cur_p + "े"]
+    if not cands_r:
+      continue
+    # Only repair when `cur_p` + `nxt_p` actually appeared uncoalesced in `vp_clean` (i.e. hiatus, not merged!)
+    # Check if `cur_p` + `nxt_p` fails `aa_hiatus` (last_ch_d in a/A and nxt_p starts with vowel and raw hiatus in vp_clean)
+    best_r = cands_r[0]
+    best_score = (-1, -1, -1)
+    for cand in cands_r:
+      c_bare = cand.replace("-", "")
+      c_slp = _deva_to_slp(c_bare)
+      w_sc = lex.word_score_slp(c_slp)
+      m_c = lex.analyze_morph(c_bare)
+      m_ok = 1 if (m_c["has_non_voc_subanta"] or m_c["is_tinanta"] or m_c["is_avyaya"]) else 0
+      vis_pref = 1 if cand.endswith("ः") else 0
+      sc_tup = (1 if w_sc >= 20 else (1 if w_sc > 0 else 0), w_sc, m_ok * 2 + vis_pref)
+      if sc_tup > best_score:
+        best_score = sc_tup
+        best_r = cand
+    # Verify that `best_r` + `nxt_p` is valid forward sandhi against `cur_p + " " + nxt_p` (hiatus in VP)
+    if best_r != cur_p and verify_mantra_sandhi([best_r, nxt_p], f"{cur_p} {nxt_p}")[0]:
+      # Only apply if `cur_p` + `nxt_p` actually appears with whitespace/hiatus in `vp_clean` (not merged!)
+      if re.search(re.escape(cur_bare[-2:] if len(cur_bare) >= 2 else cur_bare) + r"\s+" + re.escape(nxt_p[0]), vp_clean):
+        padas[idx] = best_r
   return padas, clause_ids, minor_breaks, morph_ambigs
 
 
@@ -3941,7 +4024,7 @@ def _decode_sb_accents_viterbi_full(
         if len(src) == 1:
           pp_si = src[0]
           ii, si = pp_meta[pp_si]
-          skip_av = _skip_elided_avagraha_lead(pc, dummy_items[ii], si)
+          skip_av = _skip_elided_avagraha_lead(pc, dummy_items[ii], si, vsi)
           vp_syl_info.append({
             "kind": "single",
             "owner": ii,
@@ -3950,7 +4033,7 @@ def _decode_sb_accents_viterbi_full(
             "skip_av": skip_av,
           })
         else:
-          s1, s2 = src[0], src[1]
+          s1, s2 = src[-2], src[-1]
           i1, si1 = pp_meta[s1]
           i2, si2 = pp_meta[s2]
           vp_syl_info.append({
@@ -3987,6 +4070,59 @@ def _decode_sb_accents_viterbi_full(
     if not c_list:
       zm = tuple("" for _ in range(max(1, pp_pada_syl_counts[i])))
       c_list = [PadaCandidate(ref=padas_bare[i], marks=zm, prov="अनाम्नातम् (अनुमानम्)", role="guess", solid=False, prior_cost=5.0)]
+    # Direct Weber+Śrīdharādi witness candidates for OOV / ŚB-specific accents (`#64` item 4):
+    # Whenever Weber/Shri explicitly mark `H` (udātta) or preceding `G` (independent svarita) on an owned
+    # syllable of a non-enclitic, non-upasarga pada, add it with `prior_cost=1.6` (2.0 single-witness) so
+    # attested corpus/Pāṇinian candidates still win when they agree, while OOV/`both_disagree` padas adopt
+    # the exact Weber+Śrīdharādi accent rather than failing `unflagged_vyatyasta_padas`.
+    n_syl_i = pp_pada_syl_counts[i]
+    bare_i = _normalize_lookup_key(padas_bare[i])
+    if n_syl_i > 0 and bare_i not in UPASARGA_DEVA_SET and bare_i not in ALWAYS_ANUDATTA_ENCLITICS:
+      existing_mks = {c.marks for c in c_list}
+      for v in owned_by_pada[i]:
+        info_v = vp_syl_info[v]
+        if info_v["kind"] == "single" and info_v["pada"] == i and not info_v["skip_av"]:
+          si_v = info_v["syl"]
+        elif info_v["kind"] == "merge" and info_v["p2"] == i:
+          si_v = info_v["s2"]
+        else:
+          continue
+        if not (0 <= si_v < n_syl_i):
+          continue
+        aw_v, as_v = act_w[v], act_s[v]
+        # 1. Explicit `U` marked by both Weber and Śrīdharādi (or one witness when the other is unaligned)
+        if aw_v == "H" and as_v == "H":
+          w_mks = tuple("U" if j == si_v else "" for j in range(n_syl_i))
+          if w_mks not in existing_mks:
+            try:
+              ref_w = _fast_apply_us_marks(padas_bare[i], w_mks)
+              c_list.append(PadaCandidate(ref=ref_w, marks=w_mks, prov="Weber-पाठः, श्रीधरादि-पाठः", role="witness_ws", solid=True, prior_cost=1.6))
+              existing_mks.add(w_mks)
+            except ValueError:
+              pass
+        elif (aw_v == "H" and as_v is None) or (as_v == "H" and aw_v is None):
+          w_mks = tuple("U" if j == si_v else "" for j in range(n_syl_i))
+          if w_mks not in existing_mks:
+            try:
+              ref_w = _fast_apply_us_marks(padas_bare[i], w_mks)
+              prov_w = "Weber-पाठः" if aw_v == "H" else "श्रीधरादि-पाठः"
+              c_list.append(PadaCandidate(ref=ref_w, marks=w_mks, prov=prov_w, role="witness_single", solid=True, prior_cost=2.0))
+              existing_mks.add(w_mks)
+            except ValueError:
+              pass
+        # 2. Explicit `S` (independent jātya svarita) signaled by Weber `G` (`ॗ`) on `v - 1`:
+        # ONLY on syllables containing a `य`/`व` semivowel (`वीर्य᳙`, `अनोवाह्य᳙म्`, `मनुष्याः᳙`), NEVER on
+        # plain vowels where `G` is a cross-pada `पा॰ ८.२.६` sandhi svarita (`उतो᳙`, `एव᳙`, `वै᳙`)!
+        if v > 0 and act_w[v - 1] == "G" and ("्य" in bare_i or "्व" in bare_i or "िय" in bare_i or "ुव" in bare_i):
+          s_mks = tuple("S" if j == si_v else "" for j in range(n_syl_i))
+          if s_mks not in existing_mks:
+            try:
+              ref_s = _fast_apply_us_marks(padas_bare[i], s_mks)
+              prov_s = "Weber-पाठः, श्रीधरादि-पाठः" if act_s[v - 1] == "H" else "Weber-पाठः"
+              c_list.append(PadaCandidate(ref=ref_s, marks=s_mks, prov=prov_s, role="witness_ws", solid=True, prior_cost=1.6))
+              existing_mks.add(s_mks)
+            except ValueError:
+              pass
     all_cands.append(c_list)
 
   def _eval_vp_syl_mark(v: int, prev_c: PadaCandidate | None, cur_c: PadaCandidate, prev_vp_u: str) -> str:

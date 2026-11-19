@@ -379,10 +379,16 @@ class MdFile(object):
       short_title = text_utils.title_from_text(text=title, num_words=6, target_title_length=24)
       title_in_file_name = title[:max_length]
       if source_script is not None:
-        title_in_file_name = file_helper.get_storage_name(text=title, source_script=source_script,
+        # Fold unicode dashes before sanitizing: older curation_utils releases drop them
+        # entirely, turning `१३–१४` into `1314` rather than the expected `13-14`.
+        title_for_file_name = regex.sub(r"[–—−‑]", "-", title)
+        title_in_file_name = file_helper.get_storage_name(text=title_for_file_name, source_script=source_script,
                                                           maybe_use_dravidian_variant=maybe_use_dravidian_variant,
                                                           mixed_languages_in_titles=mixed_languages_in_titles,
                                                           max_length=max_length)
+        # Symbols such as `§` are dropped by clean_file_path, leaving boundary separators
+        # (`_1_Die_Handschriften`); strip them so names do not depend on the installed version.
+        title_in_file_name = regex.sub(r"^[ _]+|[ _]+$", "", title_in_file_name)
       if title_in_file_name == "":
         raise ValueError(f"title: {title_in_file_name}")
       file_name = file_helper.clean_file_path("%s.md" % title_in_file_name)

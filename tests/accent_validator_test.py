@@ -67,7 +67,7 @@ def test_validate_accented_markdown_and_paired():
     "<details><summary>मूलम्</summary>\n\n"
     "स इ॒दम् ॥\n</details>\n"
     "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n"
-    "- सः᳓ (*TS*)\n- इद᳓म् (*TS*)\n</details>\n"
+    "- सः᳓ (*TS*-766)\n- इद᳓म् (*TS*-512)\n</details>\n"
   )
   assert validate_accented_markdown(clean_md) == []
 
@@ -311,3 +311,102 @@ def test_provenance_excludes_ta_and_ek_keeps_sb():
   only_bad, unres_bad = annotate_padapatha_line_counts("- एत᳓त् (*TA*)", counter)
   assert only_bad == "- एत᳓त् (*TA*)"
   assert ("TA", "एत᳓त्") in unres_bad
+
+
+def test_tinanta_sutra_and_missing_aa_upasarga_guards():
+  from doc_curation.sanskrit.accent.validator import (
+    find_missing_aa_upasarga_splits,
+    find_tinanta_sutra_on_non_tinanta,
+  )
+
+  # 1. पा॰ ८.१.२८–६८ (e.g. हि च ८.१.३४ / यद्वृत्तान्नित्यम् ८.१.६६) must never apply to non-tiṅantas (`अस्य`, `मम`, `उत्`)
+  #    or bleed across clause boundaries (`मा रिषामा`).
+  bad_hicha = [
+    "- भद्रा᳓ (*TS*-2, *RV*-42)",
+    "- हि᳓ (*TS*-456, *RV*-662)",
+    "- नः (अनुदात्तम्, पा॰ ८.१.१८)",
+    "- प्र᳓-मतिः (*TS*-1, *RV*-23)",
+    "- अस्य → **अस्य᳓** (हि च पा॰ ८.१.३४)",
+    "- सँ-स᳓दि (*TS*-2, *RV*-6)",
+    "- अ᳓ग्ने (पादादावामन्त्रितम् आद्युदात्तम्, पा॰ ६.१.१९८)",
+    "- सख्ये᳓ (*RV*-40)",
+    "- मा᳓ (*TS*-205, *RV*-389)",
+    "- रिषामा → **रि᳓षामा** (हि च पा॰ ८.१.३४)",
+    "- वय᳓म् (*TS*-88, *RV*-297)",
+    "- त᳓व (*TS*-25, *RV*-113)",
+  ]
+  hits = find_tinanta_sutra_on_non_tinanta(bad_hicha)
+  assert len(hits) == 2
+  assert any("अस्य᳓" in h for h in hits)
+  assert any("रि᳓षामा" in h for h in hits)
+
+  # Legitimate हि-clause verb and legitimate 2sg loṭ `वि` + `अस्य` pass cleanly
+  good_hicha = [
+    "- सः᳓ (*TS*-766)",
+    "- हि᳓ (*TS*-456)",
+    "- वे᳓द (हि च पा॰ ८.१.३४)",
+    "- वि᳓ (*TS*-379)",
+    "- अस्य (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+  ]
+  assert find_tinanta_sutra_on_non_tinanta(good_hicha) == []
+
+  # 2. Missing `आ᳓` upasarga split (`जै᳓त्र्याय᳓ → **जै᳓त्र्याय**` + `अविशताम्`) and double-canceling `आ` + `अ-`verb arrows
+  bad_aa = [
+    "- हि᳓रण्यम् (*TS*-52, *RV*-18)",
+    "- जै᳓त्र्याय᳓ → **जै᳓त्र्याय** (ष्यञ् पा॰ ६.१.१९७)",
+    "- अविशताम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+  ]
+  assert len(find_missing_aa_upasarga_splits(bad_aa)) == 1
+  block_issues = validate_padapatha_block("पद-पाठः (यान्त्रिकः - 1/3 व्यत्यस्त-स्वराः)", "\n".join(bad_aa))
+  assert any(i.kind == "missing_aa_upasarga_split" for i in block_issues)
+  assert any(i.kind == "unsplit_upasarga_tinanta" for i in block_issues)
+
+  good_aa = [
+    "- हि᳓रण्यम् (*TS*-52, *RV*-18)",
+    "- जै᳓त्र्याय (ष्यञ् पा॰ ६.१.१९७)",
+    "- आ᳓ (*TS*-1107, *RV*-2810)",
+    "- विशताम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *AV*-1)",
+  ]
+  assert validate_padapatha_block("पद-पाठः (यान्त्रिकः)", "\n".join(good_aa)) == []
+
+  double_cancel = [
+    "- नः (अनुदात्तम्, पा॰ ८.१.१८)",
+    "- आ → **आ᳓** (*TS*-1107)",
+    "- अ᳓गात् → **अगात्** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+  ]
+  assert len(find_missing_aa_upasarga_splits(double_cancel)) == 1
+
+
+def test_uncounted_tags_fake_sutras_and_rubberstamp_provenance_guards():
+  from doc_curation.sanskrit.accent.validator import (
+    find_invalid_or_rubberstamp_provenance,
+    find_uncounted_corpus_tags,
+  )
+
+  # 1. Uncounted *CORPUS* tags
+  assert len(find_uncounted_corpus_tags([
+    "- शूल-हस्ता᳓न् (*AV*, बहुव्रीहौ समासस्य — हरदत्तः)",
+    "- वायु᳓-रक्षितम् (*TS*, *RV*, *TB*)",
+    "- शू᳓ल-हस्तान् (बहुव्रीहौ प्रकृत्या पूर्वपदम् पा॰ ६.२.१, शू᳓लम् *TS*-1, *RV*-1)",
+  ])) == 2
+
+  # 2. Fake/oxymoronic sūtra, out-of-bounds sūtra, bare समासस्वरः, rubber-stamped मूल-पाठः/अनाम्नातम्, and misaccented ल्यप्
+  bad_prov = [
+    "- शूल-हस्ता᳓न् (*AV*-1, बहुव्रीहौ समासस्य — हरदत्तः)",
+    "- अ᳓ग्निः (पा॰ ६.१.२९९)",
+    "- व᳓ह्नि-शिखा (व᳓ह्नि (*MW*) + शि᳓खा (*TB*-1), समासस्वरः)",
+    "- विधुर᳓म् (मूल-पाठः (अनाम्नातम्))",
+    "- उरस्-पेशा᳓न् (मूल-पाठः — हरदत्तः)",
+    "- नि᳓-विश्य (ल्यप् पा॰ ३.१.४, ६.२.१३९)",
+    "- प्रति-गृह्य᳓ (ल्यप् पा॰ ६.२.१३९)",
+  ]
+  assert len(find_invalid_or_rubberstamp_provenance(bad_prov)) == 7
+
+  good_prov = [
+    "- शूल-हस्ता᳓न् → **शू᳓ल-हस्तान्** (बहुव्रीहौ प्रकृत्या पूर्वपदम् पा॰ ६.२.१, शू᳓लम् *TS*-1, *RV*-1, *MW* — हरदत्तः)",
+    "- विधुर᳓म् (कुरच् उणादि॰ १.५१, चितः पा॰ ६.१.१६३ — हरदत्तः)",
+    "- नि᳓-विश्य → **नि-वि᳓श्य** (ल्यप् पा॰ ३.१.४, गतिकारकोपपदात् कृत् पा॰ ६.२.१३९)",
+    "- प्रति-गृह्य᳓ → **प्रति-गृ᳓ह्य** (*TS*-1, *RV*-1, ल्यप् पा॰ ३.१.४, ६.२.१३९)",
+    "- हा᳓वु (सामगाननिपात आद्युदात्तः, आरण्यक-पाठः — भास्करः)",
+  ]
+  assert validate_padapatha_block("पद-पाठः (यान्त्रिकः - 3/5 व्यत्यस्त-स्वराः)", "\n".join(good_prov)) == []
