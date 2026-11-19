@@ -26,7 +26,7 @@ def test_apply_marks_to_token_preserves_clusters():
 def test_reconcile_bold_sandhi_and_repeated_words():
   items = parse_padapatha_items(
     "- हृद᳓यम् → **हृ᳓दयम्** (*TS*, *RV*, *TB*)\n"
-    "- च (अनुदात्तम्, पा० ८.१.१८)\n"
+    "- च (अनुदात्तम्, पा॰ ८.१.१८)\n"
     "- अपि → **अ᳓पि** (*TS*, *RV*, *TB*, *AV*)\n"
     "- अधो᳓-मुखम् (*TS*)"
   )
@@ -35,8 +35,8 @@ def test_reconcile_bold_sandhi_and_repeated_words():
 
   items_rep = parse_padapatha_items(
     "- शा᳓न्तिः (*TS*, *RV*)\n"
-    "- शा᳓न्तिः → **शान्तिः** (द्विर्वचने परस्यानुदात्तत्वम्, पा० ८.१.३)\n"
-    "- शा᳓न्तिः → **शान्तिः** (द्विर्वचने परस्यानुदात्तत्वम्, पा० ८.१.३)"
+    "- शा᳓न्तिः → **शान्तिः** (द्विर्वचने परस्यानुदात्तत्वम्, पा॰ ८.१.३)\n"
+    "- शा᳓न्तिः → **शान्तिः** (द्विर्वचने परस्यानुदात्तत्वम्, पा॰ ८.१.३)"
   )
   out_rep, _ = reconcile_vp_suggestions("शा᳓न्तिश्शा᳓न्तिश्शा᳓न्तिः ।", items_rep)
   assert out_rep == "[[शा᳓न्तिश्शा᳓न्तिश्शा᳓न्तिः|शा᳓न्तिश्शान्तिश्शान्तिः]] ।"
@@ -51,9 +51,9 @@ def test_reconcile_onsetless_yan_and_space_rightward_sandhi():
   assert reconcile_vp_suggestions("दुरिता᳓त्य् अग्निः᳓॥", it_09)[0] == "दुरिता᳓त्य् अग्निः᳓॥"
 
   it_m = parse_padapatha_items(
-    "- नः (अनुदात्तम्, पा० ८.१.१८)\n"
+    "- नः (अनुदात्तम्, पा॰ ८.१.१८)\n"
     "- आ → **आ᳓** (*TS*, *RV*, *AV*)\n"
-    "- अ᳓गात् → **अगात्** (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *TS*, *RV*)"
+    "- अ᳓गात् → **अगात्** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *TS*, *RV*)"
   )
   assert reconcile_vp_suggestions("न **आ᳓गाद्**", it_m)[0] == "न **आ᳓गाद्**"
 
@@ -61,7 +61,7 @@ def test_reconcile_onsetless_yan_and_space_rightward_sandhi():
     "- प्रथम᳓म् (*TS*)\n"
     "- नु → **नु᳓** (*TS*)\n"
     "- आ → **आ᳓** (*TS*, *RV*, *AV*)\n"
-    "- अगन् (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)"
+    "- अगन् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)"
   )
   assert reconcile_vp_suggestions("प्रथमं᳓ न्व् **आ᳓गन्**", it_ag)[0] == "प्रथमं᳓ न्व् **आ᳓गन्**"
 
@@ -81,9 +81,9 @@ def test_reconcile_onsetless_yan_and_space_rightward_sandhi():
 
 
 def test_reconcile_spaced_avagraha_ekadesha_and_revalidation():
-  # पा० ८.२.५: anudātta + udātta अ᳓ -> udātta on Word1 (even across spaced ऽ)
+  # पा॰ ८.२.५: anudātta + udātta अ᳓ -> udātta on Word1 (even across spaced ऽ)
   it_vid = parse_padapatha_items(
-    "- विद्यते (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *RV*)\n"
+    "- विद्यते (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *RV*)\n"
     "- अ᳓यनाय (प्रातिपदिकम् अ᳓यन (*MW*))"
   )
   out_vid, logs_vid = reconcile_vp_suggestions("ना᳓न्यः᳓ प᳓न्था [[विद्यते᳓|विद्यते]] ऽयनाय । २", it_vid)
@@ -91,14 +91,14 @@ def test_reconcile_spaced_avagraha_ekadesha_and_revalidation():
   assert any("UNWRAP_SUG" in lg for lg in logs_vid)
 
   it_vac = parse_padapatha_items(
-    "- वा᳓चस्पते (आमन्त्रितम् आद्युदात्तम्, पा० ६.१.१९८, *TB*)\n"
+    "- वा᳓चस्पते (आमन्त्रितम् आद्युदात्तम्, पा॰ ६.१.१९८, *TB*)\n"
     "- अ᳓च्छिद्रया (आरण्यक-पाठः (अनाम्नातम्))"
   )
   assert reconcile_vp_suggestions("[[वा᳓चस्पते᳓|वा᳓चस्पते]] ऽच्छिद्रया वाचा᳓ ।", it_vac)[0] == "वा᳓चस्पते᳓ ऽच्छिद्रया वाचा᳓ ।"
 
   # Update both Word1 ekādeśa and unelided tail of ऽWord2
   it_viv = parse_padapatha_items(
-    "- वि᳓विच्यन्ते → **विविच्यन्ते** (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)\n"
+    "- वि᳓विच्यन्ते → **विविच्यन्ते** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)\n"
     "- अथ᳓ → **अ᳓थ** (*TS*, *RV*, *TB*, *TK*)"
   )
   out_viv, _ = reconcile_vp_suggestions("इह᳓ [[वि᳓विच्यन्ते|विविच्यन्ते]]\nऽथा᳓ यन्ति", it_viv)
@@ -113,21 +113,21 @@ def test_reconcile_spaced_avagraha_ekadesha_and_revalidation():
 
   # Punctuation prevents false cross-comma coalescence
   it_comma = parse_padapatha_items(
-    "- ब्रह्म-कोश᳓म् (*TS*)\n- प्र᳓ (*TS*)\n- पद्ये (पा० ८.१.२८)\n- अमृ᳓तम् (*TS*, *RV*, *TB*)"
+    "- ब्रह्म-कोश᳓म् (*TS*)\n- प्र᳓ (*TS*)\n- पद्ये (पा॰ ८.१.२८)\n- अमृ᳓तम् (*TS*, *RV*, *TB*)"
   )
   assert reconcile_vp_suggestions("ब्रह्मकोशं᳓ प्र᳓पद्ये,\nऽमृ᳓तं", it_comma)[0] == "ब्रह्मकोशं᳓ प्र᳓पद्ये,\nऽमृ᳓तं"
 
-  # Savarṇa-dīrgha आ᳓ + अ stays आ᳓ (पा० ८.२.५), while ए᳓ + अ allows both S and U (पा० ८.२.६)
+  # Savarṇa-dīrgha आ᳓ + अ stays आ᳓ (पा॰ ८.२.५), while ए᳓ + अ allows both S and U (पा॰ ८.२.६)
   it_sav = parse_padapatha_items("- आ᳓ (*TS*, *RV*, *AV*)\n- अस्मा᳓सु (*TS*, *RV*)")
   assert reconcile_vp_suggestions("आ᳓ ऽस्मा᳓सु", it_sav)[0] == "आ᳓ ऽस्मा᳓सु"
 
   it_ehi = parse_padapatha_items(
-    "- शेषे (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)\n- आ᳓ (*TS*, *RV*, *AV*)\n- इहि (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)"
+    "- शेषे (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)\n- आ᳓ (*TS*, *RV*, *AV*)\n- इहि (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)"
   )
   assert reconcile_vp_suggestions("उ᳓पशेष **[[ए᳓हि|एहि]]** ।", it_ehi)[0] == "उ᳓पशेष **ए᳓हि** ।"
 
   # Stale 1-to-1 suggestion matching PP is unwrapped cleanly
-  it_pat = parse_padapatha_items("- पत᳓यन्ति (तिङः परं तिङ् न निहन्यते, पा० ८.१.२८)")
+  it_pat = parse_padapatha_items("- पत᳓यन्ति (तिङः परं तिङ् न निहन्यते, पा॰ ८.१.२८)")
   assert reconcile_vp_suggestions("[[पत᳓यन्ति|पतयन्ति]] विद्यु᳓त", it_pat)[0] == "पत᳓यन्ति विद्यु᳓त"
 
 
@@ -138,10 +138,10 @@ def test_reconcile_markdown_blocks_skips_js_include_and_summary():
   md = (
     '<div class="js_include" url="/foo">\n'
     "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\n[[विद्यते᳓|विद्यते]] ऽयनाय\n</details>\n"
-    "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- विद्यते (पा० ८.१.२८)\n- अ᳓यनाय (*TS*)\n</details>\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- विद्यते (पा॰ ८.१.२८)\n- अ᳓यनाय (*TS*)\n</details>\n"
     "</div>\n\n"
     "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\n[[विद्यते᳓|विद्यते]] ऽयनाय\n</details>\n"
-    "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- विद्यते (पा० ८.१.२८)\n- अ᳓यनाय (*TS*)\n</details>\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- विद्यते (पा॰ ८.१.२८)\n- अ᳓यनाय (*TS*)\n</details>\n"
   )
   updated, logs = reconcile_markdown_blocks(md)
   assert len(logs) == 1
@@ -155,7 +155,7 @@ def test_reconcile_vprastuti_and_tiikaa_texts_preserves_frontmatter():
   tk = (
     "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n"
     "- न᳓ (*TS*)\n- अन्यः᳓ (*TS*)\n- प᳓न्थाः (*TS*)\n"
-    "- विद्यते (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *RV*)\n"
+    "- विद्यते (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *RV*)\n"
     "- अ᳓यनाय (*TS*)\n</details>\n"
   )
   out, _ = reconcile_vprastuti_and_tiikaa_texts(vp, tk)
@@ -183,17 +183,17 @@ def test_reconcile_vprastuti_and_tiikaa_texts_preserves_frontmatter():
 
 def test_reconcile_intra_compound_and_samasa_sutra_provenance():
   items = parse_padapatha_items(
-    "- हिरण्य-कक्ष्या᳓न् → **हि᳓रण्य-कक्ष्यान्** (बहुव्रीहौ पा० ६.२.१; *KS* हि᳓रण्यकेशान्)\n"
-    "- सु-धु᳓रान् (*KS*, *RV* सुधु᳓रम्; पा० ६.२.११९)\n"
-    "- हिरण्य-अक्षा᳓न् (*KS*, *RV* हिरण्याक्षः᳓; पा० ५.४.११३, ६.१.१६३)\n"
-    "- अयस्-शफा᳓न् → **अ᳓यस्-शफान्** (पा० ६.२.१; *KS* अ᳓यश्शफान्)\n"
+    "- हिरण्य-कक्ष्या᳓न् → **हि᳓रण्य-कक्ष्यान्** (बहुव्रीहौ पा॰ ६.२.१; *KS* हि᳓रण्यकेशान्)\n"
+    "- सु-धु᳓रान् (*KS*, *RV* सुधु᳓रम्; पा॰ ६.२.११९)\n"
+    "- हिरण्य-अक्षा᳓न् (*KS*, *RV* हिरण्याक्षः᳓; पा॰ ५.४.११३, ६.१.१६३)\n"
+    "- अयस्-शफा᳓न् → **अ᳓यस्-शफान्** (पा॰ ६.२.१; *KS* अ᳓यश्शफान्)\n"
     "- अ᳓श्वान् (*TS*, *RV*, *TB*)\n"
-    "- अन᳓श्यतः → **अ᳓नश्यतः** (पा० ६.२.२; *KS* अ᳓नश्यतो)\n"
+    "- अन᳓श्यतः → **अ᳓नश्यतः** (पा॰ ६.२.२; *KS* अ᳓नश्यतो)\n"
     "- दानम् → **दा᳓नम्** (*TS*, *RV*)\n"
     "- यमः᳓ (*TS*, *RV*, *AV*)\n"
     "- राजा → **रा᳓जा** (*TS*, *RV*, *TB*)\n"
     "- अभि → **अभि᳓** (*TS*, *RV*, *TB*, *TK*)\n"
-    "- ति᳓ष्ठति → **तिष्ठति** (तिङन्तम् अनुदात्तम्, पा० ८.१.२८, *TS*, *RV*)"
+    "- ति᳓ष्ठति → **तिष्ठति** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *TS*, *RV*)"
   )
   vp = (
     "हिरण्य-कक्ष्यान्+++(=कुक्षीन्)+++ सु-धुरान्  \n"
@@ -210,13 +210,13 @@ def test_reconcile_intra_compound_and_samasa_sutra_provenance():
   )
 
   it_sapta = parse_padapatha_items(
-    "- सप्त᳓-अर्चिषः (सप्त᳓ (*TS*, *RV*) + अर्चिः᳓ (*TB*), पा० ६.२.१; मूले स॒प्तार्चिष॑स्)"
+    "- सप्त᳓-अर्चिषः (सप्त᳓ (*TS*, *RV*) + अर्चिः᳓ (*TB*), पा॰ ६.२.१; मूले स॒प्तार्चिष॑स्)"
   )
   assert reconcile_vp_suggestions("सप्ता᳓र्चि᳓षस्", it_sapta)[0] == "[[सप्ता᳓र्चि᳓षस्|सप्ता᳓र्चिषस्]]"
 
   # Compound item split across clause punctuation in VP must not emit a half-compound suggestion
   it_bp = parse_padapatha_items(
-    "- ब्र᳓ह्म-पूता᳓ → **ब्र᳓ह्म-पूता** (पा० ६.२.२; *AV* ब्रह्म॑पूता)\n- पुनातु (पा० ८.१.२८)"
+    "- ब्र᳓ह्म-पूता᳓ → **ब्र᳓ह्म-पूता** (पा॰ ६.२.२; *AV* ब्रह्म॑पूता)\n- पुनातु (पा॰ ८.१.२८)"
   )
   vp_bp = "ब्र᳓ह्म +++(च)+++, +++(सा)+++ पूता᳓ पुनातु"
   assert reconcile_vp_suggestions(vp_bp, it_bp)[0] == vp_bp
@@ -226,7 +226,7 @@ def test_reconcile_spaced_yan_and_panini_provenance():
   items = parse_padapatha_items(
     "- पाणि᳓ना (प्रातिपदिकम् पाणि᳓ (*MW*))\n"
     "- हि → **हि᳓** (*TS*, *RV*, *TB*, *TK*)\n"
-    "- अव-म᳓र्शतु (हि च पा० ८.१.३४, तिङि चोदात्तवति पा० ८.१.७१)"
+    "- अव-म᳓र्शतु (हि च पा॰ ८.१.३४, तिङि चोदात्तवति पा॰ ८.१.७१)"
   )
   vp = "पाणि᳓ना ह्य् **अवम᳓र्शतु** ।"
   out1, _ = reconcile_vp_suggestions(vp, items)
@@ -236,11 +236,11 @@ def test_reconcile_spaced_yan_and_panini_provenance():
   assert out2 == out1
   assert logs2 == []
 
-  # Pāṇinian kṛt/taddhita rules (पा० ३.१.३, ५.२.११५, ८.१.६६) count as solid provenance
+  # Pāṇinian kṛt/taddhita rules (पा॰ ३.१.३, ५.२.११५, ८.१.६६) count as solid provenance
   it_pan = parse_padapatha_items(
-    "- दन्तिः → **दन्तिः᳓** (*MS*, पा० ५.२.११५, ३.१.३ — भास्करः)\n"
-    "- स्तब्धः → **स्तब्धः᳓** (प्रत्ययः पा० ३.१.३)\n"
-    "- श्रूयते → **श्रूय᳓ते** (यद्वृत्तान्नित्यम् पा० ८.१.६६, पा० ३.१.६७)"
+    "- दन्तिः → **दन्तिः᳓** (*MS*, पा॰ ५.२.११५, ३.१.३ — भास्करः)\n"
+    "- स्तब्धः → **स्तब्धः᳓** (प्रत्ययः पा॰ ३.१.३)\n"
+    "- श्रूयते → **श्रूय᳓ते** (यद्वृत्तान्नित्यम् पा॰ ८.१.६६, पा॰ ३.१.६७)"
   )
   assert reconcile_vp_suggestions("दन्तिः स्तब्धो श्रूयते", it_pan)[0] == (
     "[[दन्तिः|दन्तिः᳓]] [[स्तब्धो|स्तब्धो᳓]] [[श्रूयते|श्रूय᳓ते]]"
@@ -249,18 +249,18 @@ def test_reconcile_spaced_yan_and_panini_provenance():
   # Resyllabified consonant-final pada + compound merge + polysyllabic spaced yaṇ
   it_up = parse_padapatha_items(
     "- त᳓त् (*TS*)\n"
-    "- उ᳓प-आसितव्य᳓म् → **उप-आसितव्य᳙म्** (पा० ३.१.९६, ६.१.१८५, ६.२.१३९)"
+    "- उ᳓प-आसितव्य᳓म् → **उप-आसितव्य᳙म्** (पा॰ ३.१.९६, ६.१.१८५, ६.२.१३९)"
   )
   assert reconcile_vp_suggestions("त᳓दु᳓पासितव्य᳓म्", it_up)[0] == "[[त᳓दु᳓पासितव्य᳓म्|त᳓दुपासितव्य᳙म्]]"
 
   it_atm = parse_padapatha_items(
     "- वि᳓श्वस्य (*TS*)\n"
-    "- आत्म-ई᳓श्वरम् → **आत्म-ईश्वर᳓म्** (पा० ६.१.२२३)"
+    "- आत्म-ई᳓श्वरम् → **आत्म-ईश्वर᳓म्** (पा॰ ६.१.२२३)"
   )
   assert reconcile_vp_suggestions("वि᳓श्वस्यात्मे᳓श्वरँ", it_atm)[0] == "[[वि᳓श्वस्यात्मे᳓श्वरँ|वि᳓श्वस्यात्मेश्वरँ᳓]]"
 
   it_jag = parse_padapatha_items(
-    "- जगति → **ज᳓गति** (*RV*)\n- अस्मिन् (अनुदात्तम्, पा० २.४.३२)"
+    "- जगति → **ज᳓गति** (*RV*)\n- अस्मिन् (अनुदात्तम्, पा॰ २.४.३२)"
   )
   assert reconcile_vp_suggestions("जगत्य् अस्मिन्", it_jag)[0] == "[[जगत्य्|ज᳓गत्य्]] अस्मिन्"
 
@@ -274,15 +274,15 @@ def test_fill_vp_accents_and_filled_summary():
   items_30 = parse_padapatha_items(
     "- ब्राह्मणे᳙भ्यः → **ब्राह्मणे᳓भ्यः** (*AV*, *TS*)\n"
     "- हि → **हि᳓** (*TS*, *RV*)\n"
-    "- अनु-ज्ञानम् → **अनु-ज्ञा᳓नम्** (पा० ३.३.११५, ६.१.१९३)\n"
-    "- गच्छ᳓ → **ग᳓च्छ** (*TS*, *RV*; पा० ८.१.३४)"
+    "- अनु-ज्ञानम् → **अनु-ज्ञा᳓नम्** (पा॰ ३.३.११५, ६.१.१९३)\n"
+    "- गच्छ᳓ → **ग᳓च्छ** (*TS*, *RV*; पा॰ ८.१.३४)"
   )
   filled, unmapped = fill_vp_accents_from_padapatha("ब्राह्मणेभ्यो ह्य् अनुज्ञानङ्\nगच्छ", items_30)
   assert unmapped == []
   assert filled == "ब्राह्मणे᳓भ्यो ह्य् अ᳙नुज्ञा᳓नङ्\nग᳓च्छ"
 
   items_pr = parse_padapatha_items(
-    "- स्व᳓रः (*TS*)\n- प्र-उक्तः → **प्र᳓-उक्तः** (पा० ६.२.४९)\n- अङ्गु᳓ष्ठ᳓म् → **अङ्गुष्ठ᳓म्** (*TS*)\n- च (पा० ८.१.१८)"
+    "- स्व᳓रः (*TS*)\n- प्र-उक्तः → **प्र᳓-उक्तः** (पा॰ ६.२.४९)\n- अङ्गु᳓ष्ठ᳓म् → **अङ्गुष्ठ᳓म्** (*TS*)\n- च (पा॰ ८.१.१८)"
   )
   filled_pr, unm_pr = fill_vp_accents_from_padapatha("स्वरः प्रोक्तो\nऽङ्गुष्ठञ्च", items_pr)
   assert unm_pr == []
@@ -293,8 +293,8 @@ def test_fill_vp_accents_and_filled_summary():
     "<details open><summary>विश्वास-प्रस्तुतिः (स्वराः व्यत्यस्ताः 2/2)</summary>\n\n"
     "वेद᳓मनू᳓च्य ।\n</details>\n\n"
     "<details><summary>पद-पाठः (यान्त्रिकः - 1/2 व्यत्यस्त-स्वराः)</summary>\n\n"
-    "- वे᳓द᳓म् → **वे᳓दम्** (श्रुत्यर्थे वे᳓दम् आद्युदात्तम् श्रेयः, पा० ६.१.२०३, *AV*; दर्भमुष्टौ वेद᳓म् *TS*)\n"
-    "- अ᳓नू᳓च्य᳓ → **अनू᳓च्य** (*TS*, *TB*, ल्यप् पा० ६.१.१९३, ६.२.१३९)\n</details>\n"
+    "- वे᳓द᳓म् → **वे᳓दम्** (श्रुत्यर्थे वे᳓दम् आद्युदात्तम् श्रेयः, पा॰ ६.१.२०३, *AV*; दर्भमुष्टौ वेद᳓म् *TS*)\n"
+    "- अ᳓नू᳓च्य᳓ → **अनू᳓च्य** (*TS*, *TB*, ल्यप् पा॰ ६.१.१९३, ६.२.१३९)\n</details>\n"
   )
   updated_direct, dlogs = reconcile_markdown_blocks(md_direct)
   assert "वे᳓दमनू᳓च्य ।" in updated_direct

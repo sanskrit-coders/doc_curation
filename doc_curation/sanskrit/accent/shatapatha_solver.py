@@ -96,7 +96,12 @@ from doc_curation.sanskrit.accent.validator import (
 # ---------------------------------------------------------------------------
 
 # Increment cache version so v6 exact deduplicated per-corpus counts + persisted `_slp_stems` rebuild cleanly.
-LEXICON_CACHE_VERSION = 6
+LEXICON_CACHE_VERSION = 7
+
+_VS_DETAILS_RE = re.compile(
+  r"<details(?:\s+open)?>\s*<summary>\s*(?:<h\d>)?([^<]*?)(?:\s*\.\.\.\{Loading\}\.\.\.)?\s*(?:</h\d>)?\s*</summary>(.*?)</details>",
+  re.S,
+)
 
 DEFAULT_CACHE_PATH = (
   "/home/vvasuki/.gemini/antigravity-cli/brain/"
@@ -873,6 +878,9 @@ def _is_valid_compound_hyphenation(hyph_bare: str, bare_key: str) -> bool:
     return False
   if len(parts[-1]) < 2 and parts[-1] not in ("गः", "जः", "दः", "पः"):
     return False
+  # Nañ never takes a lyap gerund (`ल्यप्` needs a non-nañ prefix, पा॰ ७.१.३७): `अवधाय` is `अव-धा᳓य`, not `अ-वधाय`.
+  if parts[0] in ("अ", "अन्") and parts[-1].endswith("य") and re.match(r"(?:अव|अति|अधि|अनु|अन्त|अप|अपि|अभि)", "".join(parts)):
+    return False
   return True
 
 
@@ -1295,7 +1303,8 @@ class UnifiedVedicLexicon:
       # Deduplicate per section (`## ...`): scan AT MOST ONE accented layer (`मूलम्` preferred over `विश्वास-प्रस्तुतिः`)!
       sections = re.split(r"(?=\n##[ \t]+)", txt)
       for sec in sections:
-        blocks = [(m.group(1).strip(), m.group(2)) for m in DETAILS_RE.finditer(sec)]
+        # VS sarva-prastutiH wraps summaries in `<h3>... ...{Loading}...</h3>` (which `DETAILS_RE` misses).
+        blocks = [(m.group(1).strip(), m.group(2)) for m in _VS_DETAILS_RE.finditer(sec)]
         chosen_body = ""
         for hdr, body in blocks:
           if "मूलम्" in hdr and ("\u0951" in body or "\u0952" in body):
@@ -2017,6 +2026,45 @@ def _pause_norm_slp(slp: str) -> str:
 
 _VISVARA_QUOTE_ITI_BREAK_RE = re.compile(r"[ेोैौािीुू][\"”’']\s*[-—–]?\s*इति")
 _VISVARA_BOGUS_AA_AVAGRAHA_RE = re.compile(r"ा\s*ऽ")
+_VISVARA_QUOTE_ITI_FIX_RE = re.compile(r"([\u0915-\u0939\u093c]*)([ेोैौािीुू]?)[\"”’']\s*[-—–]?\s*इति")
+
+
+_VIS_GAP = r"[\"“”'‘’]?\s*[-—–]?\s*[\"“”'‘’]?\s*"
+
+
+def _restore_visvara_visarga_sandhi(text: str) -> str:
+  """Re-apply external visarga sandhi before vowels that विस्वरम् editorially left pausal
+  (`सप्रथाः इति` → `सप्रथा इति`, `अमानुषः इव` → `अमानुष इव`, `नाभिः ऋतस्य` → `नाभिर् ऋतस्य`),
+  never across a daṇḍa. The result is still checked against Weber/Śrīdharādi downstream."""
+  s = re.sub(r"ाः" + _VIS_GAP + r"(?=[अआइईउऊऋएऐओऔ])", "ा ", text)
+  s = re.sub(r"([\u0915-\u0939\u093c])ः" + _VIS_GAP + r"अ", r"\1ो ऽ", s)
+  s = re.sub(r"([\u0915-\u0939\u093c])ः" + _VIS_GAP + r"(?=[आइईउऊऋएऐओऔ])", r"\1 ", s)
+  s = re.sub(r"([िीुूृेैोौ])ः" + _VIS_GAP + r"(?=[अआइईउऊऋएऐओऔ])", r"\1र् ", s)
+  return s
+
+
+def _repair_visvara_quote_iti(text: str) -> str:
+  """Re-apply the vowel sandhi that editorial quotes broke before ``इति`` (``ईडते"- इति`` → ``ईडत इति``).
+
+  ``अ/आ + इ`` → ``एति``, ``इ/ई + इ`` → ``ईति``, ``उ/ऊ + इ`` → ``्विति``, ``ए + इ`` → ``अ इति``. Other
+  endings just lose the quote/dash; the result is still checked against Weber/Śrīdharādi downstream.
+  """
+  def _fix(m: re.Match) -> str:
+    cons, mat = m.group(1), m.group(2)
+    if not cons:
+      return m.group(0).replace("\"", "").replace("”", "").replace("’", "").replace("'", "")
+    if mat == "":
+      return cons + "ेति"
+    if mat == "ा":
+      return cons + "ेति"
+    if mat in ("ि", "ी"):
+      return cons + "ीति"
+    if mat in ("ु", "ू"):
+      return cons + "्विति"
+    if mat == "े":
+      return cons + " इति"
+    return cons + mat + " इति"
+  return _VISVARA_QUOTE_ITI_FIX_RE.sub(_fix, text)
 
 
 def _clean_shri_geminates(text: str) -> str:
@@ -2030,6 +2078,28 @@ def _clean_visvara_for_sandhi(visvara: str, ref_clean: str) -> str:
   v_trim = _strip_visvara_preamble(visvara, ref_clean)
   v_trim = re.sub(r"['‘’]", " ", v_trim)
   return normalize_sb_orthography(v_trim)
+
+
+_HOMORGANIC_NASAL = {
+  **{c: "ङ्" for c in "कखगघ"}, **{c: "ञ्" for c in "चछजझ"}, **{c: "ण्" for c in "टठडढ"},
+  **{c: "न्" for c in "तथदध"}, **{c: "म्" for c in "पफबभ"},
+}
+
+
+def _prefer_ws_nasal_spelling(v_clean: str, w_clean: str, s_clean: str) -> str:
+  """Respell विस्वरम् anusvāra-before-stop (`पंचदश`) as Weber/Śrīdharādi's homorganic nasal (`पञ्चदश`) when
+  that exact token occurs in either ŚB witness."""
+  ws_tokens = set(re.findall(r"[\u0900-\u0963\u0971-\u097f]+", accent.strip_accents(f"{w_clean} {s_clean}")))
+  if not ws_tokens:
+    return v_clean
+
+  def _fix(m: re.Match) -> str:
+    tok = m.group(0)
+    if "ं" not in tok:
+      return tok
+    alt = re.sub(r"ं(?=[कखगघचछजझटठडढतथदधपफबभ])", lambda mm: _HOMORGANIC_NASAL[tok[mm.end()]], tok)
+    return alt if alt in ws_tokens else tok
+  return re.sub(r"[\u0900-\u0963\u0971-\u097f]+", _fix, v_clean)
 
 
 def build_clean_vp_base(weber: str, shri: str, visvara: str) -> tuple[str, str]:
@@ -2054,13 +2124,16 @@ def build_clean_vp_base(weber: str, shri: str, visvara: str) -> tuple[str, str]:
   vp_n = ""
   if visvara:
     v_trim = _strip_visvara_preamble(visvara, ref_clean)
+    # Repair quote-broken `इति` sandhi (still verified against Weber/Śrīdharādi below) instead of
+    # discarding all of विस्वरम्'s clause punctuation.
+    v_trim = _restore_visvara_visarga_sandhi(_repair_visvara_quote_iti(v_trim))
     has_bad_visvara_sandhi = bool(
       "ऽऽ" in v_trim
       or _VISVARA_BOGUS_AA_AVAGRAHA_RE.search(v_trim)
       or _VISVARA_QUOTE_ITI_BREAK_RE.search(v_trim)
     )
-    v_trim = re.sub(r"['‘’]", " ", v_trim)
-    v_clean = normalize_sb_orthography(v_trim)
+    v_trim = re.sub(r"[\"“”'‘’]", " ", v_trim)
+    v_clean = _prefer_ws_nasal_spelling(normalize_sb_orthography(v_trim), w_clean, s_clean)
     n_v = _fast_syllable_count(v_clean)
     vp_n = _pause_norm_slp(to_norm_slp(v_clean)) if v_clean else ""
     ws_agree = bool(wp_n and sp_n and (wp_n == sp_n or difflib.SequenceMatcher(None, wp_n, sp_n).ratio() >= 0.996))
@@ -2084,13 +2157,13 @@ def build_clean_vp_base(weber: str, shri: str, visvara: str) -> tuple[str, str]:
     w_score = (difflib.SequenceMatcher(None, wp_n, vp_n).ratio() if vp_n else 0.99) - _ocr_penalty(w_clean)
     s_score = (difflib.SequenceMatcher(None, sp_n, vp_n).ratio() if vp_n else 0.98) - _ocr_penalty(s_clean)
     if s_score > w_score + 0.004:
-      s_fmt = re.sub(r"॥\s*(?=.+॥)", " ", s_clean)
+      s_fmt = re.sub(r"॥\s*(?=.+॥)", " । ", s_clean)
       return _format_vp_clauses(s_fmt), "shri"
 
   if w_clean:
-    w_fmt = re.sub(r"॥\s*(?=.+॥)", " ", w_clean)
+    w_fmt = re.sub(r"॥\s*(?=.+॥)", " । ", w_clean)
     return _format_vp_clauses(w_fmt), "weber"
-  s_fmt = re.sub(r"॥\s*(?=.+॥)", " ", s_clean)
+  s_fmt = re.sub(r"॥\s*(?=.+॥)", " । ", s_clean)
   return _format_vp_clauses(s_fmt), "shri"
 
 
@@ -2098,6 +2171,9 @@ def _format_vp_clauses(text: str) -> str:
   """Normalize spaces, convert trailing ASCII dashes to `` — ``, and add Markdown line breaks after ``।`` / ``॥``."""
   s = re.sub(r"(?<=[\u0900-\u097f])-(?=\s)", " —", text)
   s = re.sub(r"(?<=\s)-(?=[\u0900-\u097f])", "— ", s)
+  # Word-final virāma + independent vowel (`नाभिर्ऋतस्य`) must stay two tokens (`नाभिर् ऋतस्य`),
+  # otherwise script joining coalesces `र्ऋ` → `रृ` and drifts the bare text.
+  s = re.sub(r"([\u0915-\u0939]\u094d)(?=[\u0905-\u0914])", r"\1 ", s)
   s = re.sub(r"\s+", " ", s).strip()
   s = re.sub(r"\s*।\s*(?!$)", " ।  \n", s)
   s = re.sub(r"\s*॥\s*(?!$)", " ॥  \n", s)
@@ -2431,6 +2507,10 @@ def _hyphenate_compound_pada(deva_w: str, lex: UnifiedVedicLexicon) -> str:
   ch = lex.get_canonical_hyphenation(bare)
   if ch and "-" in ch and _is_valid_compound_hyphenation(ch, bare):
     return ch
+  # 1b. Attested UNhyphenated in the RV/AV padapāṭha (which marks compounds with `ऽ`): not a compound for
+  # the tradition (`अध्वराणाम्`, never MW's `अ-ध्वराणाम्`).
+  if any(src in ("RV", "AV") for srcs in lex.form_accents.get(bare, {}).values() for src in srcs):
+    return clean_w
   # 2. Stem hyphenation from MW / Macdonell
   for _, _, h in lex.project_stem_accents(bare):
     if h and "-" in h and _is_valid_compound_hyphenation(h, bare):
@@ -2447,7 +2527,7 @@ def _hyphenate_compound_pada(deva_w: str, lex: UnifiedVedicLexicon) -> str:
         if k["prefixes"]
         and any(t in k["krt"] for t in ("ktvA", "tumun", "tumu~n", "kta", "Satf", "SAnac", "cAnaS"))
         # Never turn a genitive `-स्य` non-kṛdanta noun/pronoun (`विश्वस्य`) into a `ktvA` gerund (`वि-श्वस्य`)!
-        and not (morph["has_non_krt_subanta"] and "ktvA" in k["krt"])
+        and not (morph["has_non_krt_subanta"] and "ktvA" in k["krt"] and morph["slp"].endswith("sya"))
       ]
       if pref_krt and not any(not k["prefixes"] for k in morph["krt_entries"]):
         slp = morph["slp"]
@@ -2856,7 +2936,7 @@ def split_chunk_to_padas_dp(
 
   for pos in range(L):
     # Prune beam at each position to top-8 states for guaranteed linear-time splitting
-    states = sorted(set(by_pos[pos]), key=lambda st: dp[st][0])[:8]
+    states = sorted(dict.fromkeys(by_pos[pos]), key=lambda st: (dp[st][0], st))[:8]  # hash-seed independent ties
     for st in states:
       cur_cost = dp[st][0]
       _, req_pf = st
@@ -3110,7 +3190,13 @@ def enrich_padapatha_corpus_counts(lex: UnifiedVedicLexicon, pada_us: str, just:
   # Normalize deprecated `पा\u0966` -> `पा\u0970` (Devanagari abbreviation sign)
   just = just.replace("पा\u0966", "पा\u0970")
   counts = lookup_corpus_counts(lex, pada_us)
-  formatted_corpora = ", ".join(f"*{c}*-{n}" for c, n in counts.items())
+  # Corpora already counted on an inline prose/form citation (`*TS* सँ॒स्थाम्`) must NOT be repeated
+  # in the standalone counts clause.
+  inline_corpora: set[str] = set()
+  for seg in (c.strip() for part in just.split(";") for c in part.split(",")):
+    if seg and not _CORPUS_TAG_NO_REF_RE.fullmatch(seg):
+      inline_corpora.update(m.group(1) for m in _CORPUS_TAG_NO_REF_RE.finditer(seg) if m.group(1) in counts)
+  formatted_corpora = ", ".join(f"*{c}*-{n}" for c, n in counts.items() if c not in inline_corpora)
 
   # Split top-level `;` clauses so editorial suffixes (e.g. `; श्रीधरादि-पाठः`) stay cleanly separated
   semi_parts = [p.strip() for p in just.split(";")]
@@ -3208,9 +3294,9 @@ def _derive_paninian_tinanta_accent(
           _add(idx, "स्यतासी पा॰ ३.१.३३, पा॰ ३.१.३")
           break
       continue
-    # 5. Athematic optative `-यात्` (पा॰ ३.४.१०३ लिङ्सलोपौ)
+    # 5. Athematic optative `-यात्` (पा॰ ३.४.१०३ यासुट् परस्मैपदेषूदात्तो ङिच्च)
     if lak == "viDili~N" and slp.endswith(("yAt", "yAtAm", "yuH", "yAH", "yAm", "yAma")):
-      _add(n_syl - 1, "लिङ्सलोपौ पा॰ ३.४.१०३")
+      _add(n_syl - 1, "यासुट् परस्मैपदेषूदात्तो ङिच्च पा॰ ३.४.१०३")
       continue
     # 6. Gaṇa-specific present/imperative/optative accent (ONLY on sārvadhātuka `la~w`/`lo~w`/`viDili~N`, NEVER `li~w` perfects!)
     if lak in ("la~w", "lo~w", "viDili~N"):
@@ -3583,9 +3669,9 @@ def generate_pada_candidates(
     _add(u_mks, src_u, "gati_main", 0.05)
     # Subordinate-clause anudātta upasarga (पा॰ ८.१.७१ तिङि चोदात्तवति) — constrained by Viterbi transition!
     _add(zero_marks, "तिङि चोदात्तवति पा॰ ८.१.७१", "gati_sub", 0.15 if ctx["in_subordinate"] else 0.8)
-    # Main-clause chained gati (पा॰ ८.१.७० गतिर्गतावत्) — constrained by Viterbi transition!
+    # Main-clause chained gati (पा॰ ८.१.७० गतिर्गतौ) — constrained by Viterbi transition!
     if next_pada_deva and _normalize_lookup_key(next_pada_deva) in UPASARGA_DEVA_SET:
-      _add(zero_marks, "गतिर्गतावत् पा॰ ८.१.७०", "gati_chain", 0.05)
+      _add(zero_marks, "गतिर्गतौ पा॰ ८.१.७०", "gati_chain", 0.05)
     return list(cands.values())
 
   # 4. Anvādeśa pronouns (`अस्य`, `अस्मै`, `एतत्`, `एनम्`, etc.)
@@ -4240,6 +4326,131 @@ def _find_masked_ambiguous_padas(
 
 
 # ---------------------------------------------------------------------------
+# Segmentation-ambiguity gate (alternative vowel-sandhi resegmentations re-decoded against ŚB marks)
+# ---------------------------------------------------------------------------
+
+_FWD_VOWEL_SANDHI: dict[tuple[str, str], str] = {
+  (x, y): sv for sv, pairs in _INV_VOWEL_SANDHI.items() for x, y in pairs if x not in ("aH", "AH")
+}
+_SEG_ALT_SURFACE_VOWELS = frozenset({"A", "E", "O", "e", "o", "I", "U"})
+
+
+def _vowel_len_norm(slp: str) -> str:
+  return slp.translate(str.maketrans("AIUF", "aiuf"))
+
+
+def _post_process_split_word(w_slp: str, lex: UnifiedVedicLexicon) -> list[str]:
+  split_tin = _strip_leading_upasargas_tinanta(w_slp, lex)
+  if split_tin is not None:
+    return list(split_tin)
+  return [_hyphenate_compound_pada(_slp_to_deva(w_slp), lex)]
+
+
+def _alternative_segmentations(
+  padas: Sequence[str], lex: UnifiedVedicLexicon, *, min_score: int = 20,
+) -> list[tuple[int, int, list[str], str]]:
+  """Enumerate corpus-attested alternative splits of each adjacent pada pair at a vowel-sandhi joint.
+
+  Returns ``(i, n_replaced, replacement_padas, label)``: replacing ``padas[i:i+n_replaced]``.
+  Covers `त᳓स्यै | त᳓त्` ↔ `त᳓स्य | एत᳓त्`, `रा᳓ज्ञा | घ्नन्` ↔ `रा᳓ज्ञा | अघ्नन्`, `हरे | अति` ↔ `हर | इति`,
+  and over-splits `प्र | आणः` ↔ `प्राणः`.
+  """
+  def _known(w: str) -> bool:
+    return bool(w) and (len(w) > 1 or w in ("A", "u")) and lex.word_score_slp(w) >= min_score
+
+  def _known_joined(w: str) -> bool:
+    # Compounds are often attested only in saṁhitā text (VS `दि॒वि॒सद॑म्`), which `slp_vocab` excludes.
+    return _known(w) or bool(lex.form_accents.get(_slp_to_deva(w)))
+
+  out: list[tuple[int, int, list[str], str]] = []
+  slps = [_deva_to_slp(_normalize_lookup_key(p).replace("-", "")) for p in padas]
+  for i in range(len(padas) - 1):
+    a, b = slps[i], slps[i + 1]
+    if not a or not b:
+      continue
+    alts: list[list[str]] = []
+    if a[-1] in _SEG_ALT_SURFACE_VOWELS and b[0] not in SLP_VOWELS:
+      # Case X: no merge chosen; try `a[:-1]+x | y+b` producing the same surface vowel.
+      for x, y in _INV_VOWEL_SANDHI.get(a[-1], ()):
+        if x in ("aH", "AH"):
+          continue
+        a2, b2 = a[:-1] + x, y + b
+        if _known(a2) and _known(b2):
+          alts.append([a2, b2])
+    elif a[-1] in SLP_VOWELS and b[0] in SLP_VOWELS:
+      sv = _FWD_VOWEL_SANDHI.get((a[-1], b[0]))
+      if sv is None or (a[-1], b[0]) == ("e", "a"):
+        if (a[-1], b[0]) != ("e", "a"):
+          continue
+        sv = "e"
+      # Case Y1: no merge (`a[:-1]+sv | b[1:]`)
+      a2, b2 = a[:-1] + sv, b[1:]
+      if b2 and b2[0] not in SLP_VOWELS and _known(a2) and _known(b2):
+        alts.append([a2, b2])
+      # Case Y2: other inverse pairs for the same surface vowel
+      for x, y in _INV_VOWEL_SANDHI.get(sv, ()):
+        if x in ("aH", "AH") or (x, y) == (a[-1], b[0]):
+          continue
+        a2, b2 = a[:-1] + x, y + b[1:]
+        if _known(a2) and _known(b2):
+          alts.append([a2, b2])
+      # Case M: the pair is really one word (`प्र | आणः` → `प्राणः`)
+      joined = a[:-1] + sv + b[1:]
+      if _known_joined(joined):
+        alts.append([joined])
+    if b[0] not in SLP_VOWELS and a[-1] not in ("H",):
+      # Case J: plain-concatenation compound vs split (`दिवि᳓ | स᳓दम्` vs `दिवि-स᳓दम्`), whose split adds a
+      # second udātta that U+U masking hides from both witnesses.
+      joined = a + b
+      if _known_joined(joined):
+        alts.append([joined])
+    for alt in alts:
+      # Pure vowel-length variants (`एव | एतत्` vs RV-only `एवा | एतत्`) are not real ŚB alternatives.
+      if len(alt) == 2 and alt[1] == b and _vowel_len_norm(alt[0]) == _vowel_len_norm(a):
+        continue
+      if len(alt) == 2 and alt[0] == a and alt[1] == b:
+        continue
+      repl: list[str] = []
+      for w in alt:
+        repl.extend(_post_process_split_word(w, lex))
+      cur_bare = [_normalize_lookup_key(p) for p in padas[i:i + 2]]
+      if [_normalize_lookup_key(p) for p in repl] == cur_bare:
+        continue
+      out.append((i, 2, repl, f"{'+'.join(padas[i:i + 2])}|{'+'.join(repl)}"))
+  return out
+
+
+def _find_segmentation_ambiguities(
+  vp_clean: str,
+  padas: Sequence[str],
+  clause_ids: Sequence[int],
+  minor_breaks: set[int],
+  weber: str,
+  shri: str,
+  lex: UnifiedVedicLexicon,
+  next_first_mark: str | None,
+  *,
+  max_alts: int = 12,
+) -> list[str]:
+  """Return labels of alternative segmentations that ALSO reconstruct the text and fit every ŚB mark."""
+  found: list[str] = []
+  for i, n_rep, repl, label in _alternative_segmentations(padas, lex)[:max_alts]:
+    alt_padas = list(padas[:i]) + repl + list(padas[i + n_rep:])
+    if not verify_mantra_sandhi(alt_padas, vp_clean)[0]:
+      continue
+    shift = len(repl) - n_rep
+    alt_cids = list(clause_ids[:i]) + [clause_ids[i]] * len(repl) + list(clause_ids[i + n_rep:])
+    alt_mb = {m if m <= i else m + shift for m in minor_breaks}
+    _, _, unm, vd = _decode_sb_accents_viterbi_full(
+      vp_clean, alt_padas, weber, shri, lex,
+      next_first_mark=next_first_mark, clause_ids=alt_cids, minor_breaks=alt_mb,
+    )
+    if vd and not unm and vd.get("both_disagree_count", 1) == 0 and vd.get("unaligned_count", 1) == 0:
+      found.append(label)
+  return found
+
+
+# ---------------------------------------------------------------------------
 # Component 4: Self-Certifying Classifier & Adjudication Queue Exporter
 # ---------------------------------------------------------------------------
 
@@ -4252,7 +4463,32 @@ def solve_kandika(
   next_first_mark: str | None = None,
   fast_pass1: bool = False,
 ) -> SolveResult:
-  """Solve, verify, and self-certify one Śatapatha Brāhmaṇa kaṇḍikā."""
+  """Solve, verify, and self-certify one Śatapatha Brāhmaṇa kaṇḍikā.
+
+  Never raises on corpus data: any ``ValueError``/``IndexError``/``KeyError`` (e.g. bare-text drift in
+  ``apply_marks_to_token``) yields ``NEEDS_ADJUDICATION`` with an ``exception:`` reason.
+  """
+  try:
+    return _solve_kandika_impl(
+      cluster, lex, kandika_id=kandika_id, next_first_mark=next_first_mark, fast_pass1=fast_pass1,
+    )
+  except (ValueError, IndexError, KeyError) as e:
+    return SolveResult(
+      kandika_id=kandika_id or cluster.key, heading=cluster.heading, sub_idx=cluster.sub_idx,
+      status="NEEDS_ADJUDICATION", vp_clean=cluster.vp_body, vp_summary=cluster.vp_summary,
+      vp_accented=cluster.vp_body if cluster.is_already_us else "", items=[], padapatha_block="",
+      preserve_vp=cluster.is_already_us, reasons=[f"exception:{type(e).__name__}:{str(e)[:160]}"],
+    )
+
+
+def _solve_kandika_impl(
+  cluster: KandikaCluster,
+  lex: UnifiedVedicLexicon,
+  *,
+  kandika_id: str = "",
+  next_first_mark: str | None = None,
+  fast_pass1: bool = False,
+) -> SolveResult:
   kid = kandika_id or cluster.key
 
   # Skip non-mantra unaccented intro blocks (e.g. `हरिः-ओ३म्।`, `१०.6.३`)
@@ -4349,6 +4585,26 @@ def solve_kandika(
     slp_p = _deva_to_slp(bare_it)
     if slp_p in _NEVER_SINGLE_PADA_SLP:
       reasons.append(f"fused_sandhi_pada@{i}:{it.ref}")
+    # Dictionary/stem-projection-only provenance (no exact-form corpus count, no sūtra) is never certifiable
+    # (`आणः (*MW*, *Macdonell*)`, `सवितः᳓ (*MW*, …)`, `बर्हि (*Lanman*)`, `आ᳓र्तयस् (*MW*, *Lanman*)`).
+    # Every open-class pada must carry an exact-form corpus count: sūtra/dictionary-only padas are where
+    # bogus splits hide (`अंग्याः` tiṅanta, `अ᳓प-हते` as kta, `अ᳓वभारि` as vocative, `आणः`, `सवितः᳓`).
+    # Only closed-class upasargas and always-anudātta enclitics are exempt.
+    _cc = {m.group(1): int(m.group(2)) for m in re.finditer(r"\*(VS|TS|RV|AV|TB|TA)\*-(\d+)", it.prov)}
+    if not _cc:
+      if bare_it not in UPASARGA_DEVA_SET and bare_it not in ALWAYS_ANUDATTA_ENCLITICS:
+        reasons.append(f"no_corpus_count@{i}:{it.ref}")
+    elif set(_cc) == {"VS"} and sum(_cc.values()) <= 1 and "पा॰" not in it.prov:
+      # A lone saṃhitā token can be a tokenisation artefact (`स्वर्ण᳓` for RV `स्वः᳙ न`).
+      reasons.append(f"thin_vs_attestation@{i}:{it.ref}")
+    # Raw sandhi-final `स्`/`श्`/`ष्` or other non-pausal finals never appear in a padapāṭha word.
+    if re.search(r"[सशषर]्$", bare_it.replace("-", "")):
+      reasons.append(f"non_pausal_final@{i}:{it.ref}")
+    # Āmreḍita (`कर्मणः-कर्मणः`, पा॰ ८.१.१/८.१.३) needs separate padas with the second anudātta.
+    if "-" in bare_it:
+      _hp = bare_it.split("-")
+      if len(_hp) == 2 and _hp[0] == _hp[1]:
+        reasons.append(f"amredita@{i}:{it.ref}")
     if ctxs_check[i]["in_subordinate"] and not has_us_accents(it.ref) and "८.१.२८" in it.prov:
       reasons.append(f"subordinate_verb_anudatta@{i}:{it.ref}")
     if (
@@ -4363,6 +4619,12 @@ def solve_kandika(
   audit: SbAuditReport | None = None
   v_issues: list[str] = []
   rec_logs: list[str] = []
+  if not reasons and not fast_pass1:
+    seg_amb = _find_segmentation_ambiguities(
+      vp_clean, padas_bare, clause_ids, minor_breaks, cluster.weber, cluster.shri, lex, next_first_mark,
+    )
+    if seg_amb:
+      reasons.append(f"split_ambiguous:{seg_amb[:3]}")
   if not reasons and not fast_pass1:
     if preserve_vp:
       vp_sum = cluster.vp_summary
@@ -4382,6 +4644,14 @@ def solve_kandika(
     if disagree_syls:
       reasons.append(f"disagree_syls:{len(disagree_syls)}")
     unaligned_syls = [s for s in audit.syllables if s.status == "unaligned"]
+    # An explicit Śrīdharādi udātta (`᳘`) overruled only by Weber *silence* is a genuine witness split
+    # (e.g. `01/01/1.md::२०` Shri `उत्त᳘रतो` vs Weber `उत्तरतो`), never a certifiable typo.
+    overruled = [
+      s for s in audit.syllables
+      if s.status == "weber_ok" and s.act_shri == "H" and s.exp_shri == "" and s.act_weber == ""
+    ]
+    if overruled:
+      reasons.append(f"shri_mark_overruled:{sorted({p for s in overruled for p in s.pada_indices})[:6]}")
     if unaligned_syls:
       reasons.append(f"unaligned_syls:{len(unaligned_syls)}")
     if audit.unflagged_vyatyasta_padas:
@@ -4415,10 +4685,9 @@ def solve_kandika(
 
   status = "AUTO_CLEAN" if not reasons else "NEEDS_ADJUDICATION"
 
-  lex_hits: list[str] = []
+  lex_hits: list[str] = _summarize_lexicon_hits(padas_bare, lex)
   fast_disagree: list[dict] = []
   if status == "NEEDS_ADJUDICATION":
-    lex_hits = _summarize_lexicon_hits(padas_bare, lex)
     if audit is None and vdiag:
       vp_pcs = vdiag["vp_pieces"]
       vp_mt = vdiag["vp_meta"]
@@ -4560,14 +4829,19 @@ def solve_sb_file(
 def export_adjudication_jsonl(
   file_results: Sequence[tuple[str, Sequence[KandikaCluster], Sequence[SolveResult]]],
   out_jsonl_path: str,
+  *,
+  include_auto_clean: bool = False,
+  rel_root: str = "",
 ) -> int:
-  """Export all ``NEEDS_ADJUDICATION`` kaṇḍikās into a compact JSONL adjudication queue."""
-  os.makedirs(os.path.dirname(out_jsonl_path), exist_ok=True)
+  """Export ``NEEDS_ADJUDICATION`` kaṇḍikās (plus ``AUTO_CLEAN`` drafts when ``include_auto_clean``) into a
+  compact JSONL adjudication queue. Each record carries ``file`` (as given) and ``rel_path`` (relative to
+  ``rel_root`` when set)."""
+  os.makedirs(os.path.dirname(out_jsonl_path) or ".", exist_ok=True)
   written = 0
   with open(out_jsonl_path, "w", encoding="utf-8") as f:
     for md_path, clusters, results in file_results:
       for cl, res in zip(clusters, results):
-        if res.status != "NEEDS_ADJUDICATION":
+        if res.status != "NEEDS_ADJUDICATION" and not (include_auto_clean and res.status == "AUTO_CLEAN"):
           continue
         disagree_details = []
         if res.audit:
@@ -4588,6 +4862,8 @@ def export_adjudication_jsonl(
         rec = {
           "id": res.kandika_id,
           "file": md_path,
+          "rel_path": os.path.relpath(md_path, rel_root) if rel_root else md_path,
+          "status": res.status,
           "heading": cl.heading,
           "sub_idx": cl.sub_idx,
           "preserve_vp": res.preserve_vp,

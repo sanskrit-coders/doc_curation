@@ -167,6 +167,7 @@ UPASARGA_PREFIXES: tuple[str, ...] = (
 
 SIMPLEX_TINANTA_ALLOWLIST: frozenset[str] = frozenset({
   "अभवत्",
+  "अभिनत्",
   "अभूत्",
   "अभुवन्",
   "अब्रुवन्",
@@ -182,6 +183,7 @@ SIMPLEX_TINANTA_ALLOWLIST: frozenset[str] = frozenset({
   "अविशताम्",
   "अवित्सि",
   "अविन्दन्",
+  "अवृणोत्",
   "अवृञ्जन्",
   "असृजत",
   "अजायत",
@@ -196,6 +198,8 @@ SIMPLEX_TINANTA_ALLOWLIST: frozenset[str] = frozenset({
   "अगन्",
   "अद्मि",
   "आद्मि",
+  "आदयत",
+  "आर्त",
   "अवतु",
   "अवन्तु",
   "अवतात्",
@@ -341,7 +345,6 @@ DEFAULT_VERIFIED_AA_HIATUSES: frozenset[tuple[str, str]] = frozenset({
   ("सरमा", "इति"),
   ("च", "उग्रात्"),
   ("वह्नि-शिखा", "अणीयस्-ऊर्ध्वा"),
-  ("ब्रह्म", "उत्तरा"),
   ("ऊत", "एकम्"),
   ("इन्द्रियाय", "ऋषिभ्यः"),
   ("सम्मा", "असि"),
@@ -454,6 +457,7 @@ def find_unexplained_aa_hiatuses(
       padas.append(accent.strip_accents(body_l.split()[0].strip("*.,")))
 
   flat_mula = re.sub(r"\+\+\+\([^)]*\)\+\+\+", "", mula_clean)
+  flat_mula = re.sub(r"\n\s*\n", " । ", flat_mula)
   mula_joined_bare = accent.strip_accents(re.sub(r"\s+", " ", flat_mula).strip())
   hits: list[tuple[str, str, str]] = []
   for pi in range(len(padas) - 1):
@@ -468,7 +472,7 @@ def find_unexplained_aa_hiatuses(
       pat = rf"{re.escape(w1_c[-3:] if len(w1_c) >= 3 else w1_c)}\s+{re.escape(w2_c[:2])}"
       m_unm = re.search(pat, mula_joined_bare)
       if m_unm and not any(d in mula_joined_bare[m_unm.start():m_unm.end()] for d in "।॥;"):
-        # Avoid false positives when a separate `वै` + vowel pair (पा० ८.३.१९ -> `वा V`) produces the matched
+        # Avoid false positives when a separate `वै` + vowel pair (पा॰ ८.३.१९ -> `वा V`) produces the matched
         # substring while the queried `वा` + `आ...` pair itself appears coalesced (e.g. `स वा आरण्यम्` vs `या वारण्या`).
         if w1_c == "वा" and w2_c.startswith("आ") and ("वा" + w2_c[1:4]) in mula_joined_bare:
           if any(padas[k] == "वै" and k + 1 < len(padas) and padas[k + 1].replace("-", "").startswith(w2_c[:2]) for k in range(len(padas))):
@@ -497,7 +501,7 @@ def find_malformed_arrows(pp_lines: Sequence[str]) -> list[str]:
 
 
 def find_bad_gati_kta_purvapadas(pp_lines: Sequence[str]) -> list[str]:
-  """Return bahuvrīhi / gati-kta compounds placing udātta on ``-त/-न/-ण`` instead of the gati (``पा० ६.२.४९ गतिरनन्तरः``)."""
+  """Return bahuvrīhi / gati-kta compounds placing udātta on ``-त/-न/-ण`` instead of the gati (``पा॰ ६.२.४९ गतिरनन्तरः``)."""
   gati_prefixes = (
     "प्र", "परा", "अप", "सम्", "सङ्", "सं", "सञ्", "सन्", "सँ",
     "अनु", "अव", "निस्", "निर्", "निः", "वि", "आ", "नि",
@@ -514,7 +518,7 @@ def find_bad_gati_kta_purvapadas(pp_lines: Sequence[str]) -> list[str]:
     it = it_list[0]
     if "?" in it.ref or "-" not in it.ref:
       continue
-    # Only check bahuvrīhis retaining pūrvapada prakṛtisvara (पा० ६.२.१) or explicit ६.२.४९ compounds
+    # Only check bahuvrīhis retaining pūrvapada prakṛtisvara (पा॰ ६.२.१) or explicit ६.२.४९ compounds
     is_bv_621 = ("६.२.१" in it.prov or "बहुव्री" in it.prov) and not any(
       ap in it.prov for ap in ("६.२.१७२", "६.२.१७७", "६.२.१९९", "५.४.११३", "६.२.१०६", "६.२.११७", "६.२.११९")
     )
@@ -538,7 +542,7 @@ def find_false_nighata_arrows(
   pp_lines: Sequence[str],
   mula_clean: str = "",
 ) -> list[str]:
-  """Return ``X᳓ → **X**`` nighāta arrows (``पा० ८.१.२८`` / ``८.१.१९``) blocked by ``पादादि`` (``८.१.१८``), ``अतिङः``, ``८.१.७२``, or ``८.१.५९``."""
+  """Return ``X᳓ → **X**`` nighāta arrows (``पा॰ ८.१.२८`` / ``८.१.१९``) blocked by ``पादादि`` (``८.१.१८``), ``अतिङः``, ``८.१.७२``, or ``८.१.५९``."""
   items_per_line = [parse_padapatha_items(ln) for ln in pp_lines]
   flat_items = [it_l[0] for it_l in items_per_line if it_l]
   if len(flat_items) != len(pp_lines):
@@ -577,7 +581,7 @@ def find_false_nighata_arrows(
     if any(k in it.prov for k in ("मिथ्या", "पाठदोष", "८.१.३", "द्विर्वचन")):
       continue
 
-    # (a) Mantra-initial (#0) stands at पादादि (पा० ८.१.१८ / ६.१.१९८)
+    # (a) Mantra-initial (#0) stands at पादादि (पा॰ ८.१.१८ / ६.१.१९८)
     if i == 0:
       hits.append(ln)
       continue
@@ -585,7 +589,7 @@ def find_false_nighata_arrows(
     prev = flat_items[i - 1]
     prev_bare = bare_devanagari(prev.ref)
 
-    # (b) Immediately after a pāda-initial vocative (#0 -> #1): पा० ८.१.७२ आमन्त्रितं पूर्वमविद्यमानवत्
+    # (b) Immediately after a pāda-initial vocative (#0 -> #1): पा॰ ८.१.७२ आमन्त्रितं पूर्वमविद्यमानवत्
     if i == 1 and ("६.१.१९८" in prev.prov or "आमन्त्रित" in prev.prov) and has_us_accents(prev.ref):
       hits.append(ln)
       continue
@@ -598,7 +602,7 @@ def find_false_nighata_arrows(
         hits.append(ln)
         continue
 
-    # (d) चवायोगे प्रथमा (पा० ८.१.५९): finite verb followed immediately by च/वा + another verb + च/वा
+    # (d) चवायोगे प्रथमा (पा॰ ८.१.५९): finite verb followed immediately by च/वा + another verb + च/वा
     if is_8128 and i + 1 < len(flat_items) and bare_devanagari(flat_items[i + 1].ref) in ("च", "वा"):
       tail = flat_items[i + 2 : min(len(flat_items), i + 7)]
       if any("८.१.२८" in t.prov or "तिङन्त" in t.prov for t in tail) and any(
@@ -607,7 +611,7 @@ def find_false_nighata_arrows(
         hits.append(ln)
         continue
 
-    # (e) Subordinate यद्वृत्त / हि clause without intervening correlative (पा० ८.१.६६ / ८.१.३४)
+    # (e) Subordinate यद्वृत्त / हि clause without intervening correlative (पा॰ ८.१.६६ / ८.१.३४)
     if is_8128 and sum(1 for ch in it.ar if ch in ("\u1cd3", "\u1cd9")) == 1:
       win_items = flat_items[max(0, i - 6) : i]
       win_bares = [bare_devanagari(x.ref) for x in win_items]
@@ -624,7 +628,7 @@ def find_false_nighata_arrows(
           hits.append(ln)
           continue
 
-    # (f) Metrical पादादि (पा० ८.१.१८ / ६.१.१९८) in single-accented Vedic mantras
+    # (f) Metrical पादादि (पा॰ ८.१.१८ / ६.१.१९८) in single-accented Vedic mantras
     if segs and sum(1 for ch in it.ar if ch in ("\u1cd3", "\u1cd9")) == 1:
       if prev_bare in gati_bare_set and has_us_accents(prev.ref):
         continue
@@ -673,12 +677,12 @@ def find_unsplit_upasarga_tinantas(
   """Return tiṅanta bullets that retain an unseparated upasarga or misclassify a nominal.
 
   Catches:
-  1. Unaccented ``पा० ८.१.२८`` bullets retaining a leading upasarga (including coalesced ``ऐतु``/``अवैत्``) or nominal ending.
+  1. Unaccented ``पा॰ ८.१.२८`` bullets retaining a leading upasarga (including coalesced ``ऐतु``/``अवैत्``) or nominal ending.
   2. Accented ``upasarga + tiṅanta`` bullets (e.g. ``- प्रचोद᳓यात् (*TS*, *RV*; *TS*, *RV*, *TB*)``) whose provenance
-     lacks an explicit subordinate-clause license (``पा० ८.१.६६``, ``८.१.३४``, ``८.१.३०``, ``८.१.५९``, ``८.१.६३``, ``८.१.७१``).
+     lacks an explicit subordinate-clause license (``पा॰ ८.१.६६``, ``८.१.३४``, ``८.१.३०``, ``८.१.५९``, ``८.१.६३``, ``८.१.७१``).
   3. When ``forbid_compound_upasarga_tinanta=True`` (auto-enabled on ŚB clusters), ANY accented upasarga+tiṅanta
      bullet — including subordinate-clause hyphenated or unhyphenated forms like ``उप-स्पृश᳓ति`` / ``उद्-य᳓च्छति`` /
-     ``उप-आ-व᳓र्तते`` — so upasargas are always emitted as separate ``पा० ८.१.७१`` bullets while ``गतिकृदन्त``
+     ``उप-आ-व᳓र्तते`` — so upasargas are always emitted as separate ``पा॰ ८.१.७१`` bullets while ``गतिकृदन्त``
      (participles, gerunds, infinitives, action nouns) remain hyphenated.
   """
   hits: list[str] = []
@@ -732,7 +736,7 @@ def find_unsplit_upasarga_tinantas(
       if any(bare.startswith(up) and len(bare) > len(up) + 1 for up in UPASARGA_PREFIXES):
         hits.append(ln)
     else:
-      # Catch missed पा० ८.१.२८ svara-nighāta on Vedic 2pl imperative -तन/-थन (e.g. युयोतन → **युयो᳓तन**)
+      # Catch missed पा॰ ८.१.२८ svara-nighāta on Vedic 2pl imperative -तन/-थन (e.g. युयोतन → **युयो᳓तन**)
       if "→ **" in ln and not has_us_accents(it.ar) and bare.endswith(("तन", "थन")) and not any(t in it.prov for t in subordinate_verb_tags):
         hits.append(ln)
         continue
@@ -740,7 +744,7 @@ def find_unsplit_upasarga_tinantas(
       is_verb_prov = any(t in it.prov for t in subordinate_verb_tags) or any(t in it.prov for t in extra_verb_tags)
       if forbid_compound_upasarga_tinanta and not is_nominal_prov:
         if bare not in UPASARGA_PREFIXES and bare not in ("सम्", "निस्", "निर्", "दुस्", "दुर्", "उद्"):
-          # पा० ८.१.७१ applies only to a separate anudātta upasarga bullet, never an accented compound tiṅanta.
+          # पा॰ ८.१.७१ applies only to a separate anudātta upasarga bullet, never an accented compound tiṅanta.
           if "८.१.७१" in it.prov:
             hits.append(ln)
             continue
@@ -752,7 +756,7 @@ def find_unsplit_upasarga_tinantas(
               hits.append(ln)
               continue
             # Unhyphenated subordinate upasarga+tiṅanta leaves the leading upasarga anudātta (marks[0] == ""),
-            # unlike augmented simplex past verbs (पा० ६.४.७१) which carry udātta on syllable 0 (`अ᳓वदत्`).
+            # unlike augmented simplex past verbs (पा॰ ६.४.७१) which carry udātta on syllable 0 (`अ᳓वदत्`).
             _, ref_marks = syllables_with_marks(it.ref)
             if ref_marks and ref_marks[0] == "" and any(
               bare.startswith(up) and len(bare) > len(up) + 1 for up in UPASARGA_PREFIXES
@@ -821,6 +825,69 @@ def find_multi_udatta_padas(pp_lines: Sequence[str]) -> list[str]:
   return hits
 
 
+def find_suspect_homograph_accents(
+  pp_lines: Sequence[str],
+  mula_clean: str = "",
+) -> list[str]:
+  """Flag sense-sensitive homograph padas where a rare/wrong-sense accent or case was chosen without justification.
+
+  Specifically guards against:
+  1. Antodātta ``वेद᳓`` ('darbha-bunch / wealth') proposed via ``→ **वेद᳓...**`` or ``घञ्`` without ``दर्भ/मुष्टि/कुश/बर्हि/शिखा/धन`` sense (instead of ādyudātta ``वे᳓द`` 'Śruti/Veda', ``पा॰ ६.१.२०३``).
+  2. Antodātta ``अन्तक᳓`` ('border/boundary') without ``सीम/पर्यन्त`` sense (instead of ādyudātta ``अ᳓न्तक`` 'Death/ender').
+  3. Antodātta ``→ **महः᳓**`` (oblique of ``मह्``) without ``पा॰ ६.१.१६८`` / ``षष्ठ/पञ्चम/द्वितीयाबहु`` justification (instead of neuter ``म᳓हः`` 'greatness/light', ``पा॰ ६.१.१९७``).
+  4. Antodātta ``→ **धर्म...᳓**`` / ``→ **धर्मा...᳓**`` ('bearer/supporter') without ``धर्त/धारयित/स्थूण`` agent sense (instead of ādyudātta ``ध᳓र्म`` 'duty/law', ``पा॰ ६.१.१९७``).
+  5. Parasavarṇa ablative ``-आन् न`` (``सत्यान् न``, ``धर्मान् न``, ``कुशलान् न``) mis-restored as feminine accusative ``-आम्`` before ``न᳓`` instead of ablative ``-आत्``.
+  """
+  hits: list[str] = []
+  parsed: list[tuple[str, object]] = []
+  for ln in pp_lines:
+    it_list = parse_padapatha_items(ln)
+    if it_list:
+      parsed.append((ln, it_list[0]))
+
+  mula_bare_no_sp = re.sub(r"\s+", "", bare_devanagari(mula_clean)) if mula_clean else ""
+  for idx, (ln, it) in enumerate(parsed):
+    ref = it.ref
+    bare = bare_devanagari(ref)
+    prov = it.prov
+    _, mks = syllables_with_marks(ref)
+
+    # 1. वेद᳓म् / वेदः᳓ / वेदाः᳓ (antodātta grass-bunch/wealth vs ādyudātta वे᳓द Śruti)
+    if bare in ("वेदम्", "वेदः", "वेदाः", "वेदेन", "वेदात्", "वेदस्य", "वेदे") and len(mks) == 2 and mks == ["", "U"]:
+      if (it.vyat or "घञ्" in prov) and not any(
+        kw in prov for kw in ("दर्भ", "मुष्टि", "कुश", "बर्हि", "शिखा", "धन", "धर्मसाधन")
+      ):
+        hits.append(ln)
+        continue
+
+    # 2. अन्तकः᳓ / अन्तक᳓म् / अन्तका᳓य (antodātta 'border' vs ādyudātta अ᳓न्तक 'Death')
+    if bare in ("अन्तकः", "अन्तकम्", "अन्तकाय", "अन्तकात्") and len(mks) == 3 and mks == ["", "", "U"]:
+      if not any(kw in prov for kw in ("सीम", "पर्यन्त")):
+        hits.append(ln)
+        continue
+
+    # 3. म᳓हः᳓ → **महः᳓** without पा॰ ६.१.१६८ / oblique case justification
+    if bare == "महः" and it.vyat and mks == ["", "U"]:
+      if not any(kw in prov for kw in ("६.१.१६८", "षष्ठ", "पञ्चम", "द्वितीयाबहु")):
+        hits.append(ln)
+        continue
+
+    # 4. → **धर्म...᳓** / → **धर्मा...᳓** without agent ('धर्ता/धारयिता') justification
+    if bare in ("धर्मः", "धर्मम्", "धर्मात्", "धर्माम्", "धर्माय", "धर्मे") and it.vyat and len(mks) == 2 and mks == ["", "U"]:
+      if not any(kw in prov for kw in ("धर्त", "धारयित", "स्थूण")):
+        hits.append(ln)
+        continue
+
+    # 5. -आम् before न (parasavarṇa of ablative -आत् + न -> -आन् न)
+    if bare in ("सत्याम्", "धर्माम्", "कुशलाम्") and idx + 1 < len(parsed):
+      next_bare = bare_devanagari(parsed[idx + 1][1].ref)
+      stem_prefix = bare[:-2]  # सत्य / धर्मा / कुशला -> strip आम् -> सत्या / धर्मा / कुशला
+      if next_bare == "न" and (not mula_bare_no_sp or f"{stem_prefix}न्न" in mula_bare_no_sp):
+        hits.append(ln)
+        continue
+  return hits
+
+
 def find_vp_integrity_issues(vp_body: str) -> list[str]:
   """Check a ``विश्वास-प्रस्तुतिः`` block for ``virama+vowel`` glitches or unbalanced ``[[|]]`` brackets."""
   issues: list[str] = []
@@ -845,8 +912,10 @@ def validate_padapatha_block(
   check_unresolved_arrows: bool = True,
   check_upasarga_tinanta: bool = True,
   forbid_compound_upasarga_tinanta: bool = False,
+  forbid_zero_abbreviation: bool = True,
   check_nighata_arrows: bool = True,
   check_gati_kta: bool = True,
+  check_homographs: bool = True,
 ) -> list[AccentValidationIssue]:
   """Run all integrity checks on a single ``(VP, मूलम्, पद-पाठः)`` mantra tuple."""
   issues: list[AccentValidationIssue] = []
@@ -857,6 +926,27 @@ def validate_padapatha_block(
   pp_lines = [ln.strip() for ln in pp_body.splitlines() if ln.strip().startswith("- ")]
   for ln in find_virama_matra_glitches(pp_lines):
     issues.append(AccentValidationIssue("virama_matra_glitch", "Invalid virāma+mātrā in padapāṭha", ln))
+
+  if forbid_zero_abbreviation:
+    for ln in pp_lines:
+      if re.search(r"[\u0905-\u0939][\u093e-\u094d\u0901-\u0903]*\u0966", ln):
+        issues.append(
+          AccentValidationIssue(
+            "zero_abbrev_sign",
+            "Use Devanagari abbreviation sign पा॰ (U+0970), never digit-zero पा\u0966 (U+0966)",
+            ln,
+          )
+        )
+
+  for ln in pp_lines:
+    if re.search(r"\*[A-Za-zŚś]+\*-0\b", ln):
+      issues.append(
+        AccentValidationIssue(
+          "zero_corpus_count",
+          "Corpus occurrence count in padapāṭha must be strictly positive (>= 1), never *-0",
+          ln,
+        )
+      )
 
   for ln in find_malformed_arrows(pp_lines):
     issues.append(AccentValidationIssue("malformed_arrow", "Multiple arrows on a single padapāṭha bullet", ln))
@@ -870,7 +960,7 @@ def validate_padapatha_block(
       issues.append(
         AccentValidationIssue(
           "bad_gati_kta_purvapada",
-          "Gati+kta pūrvapada places udātta on -ta instead of gati (पा० ६.२.४९ गतिरनन्तरः + ६.२.१)",
+          "Gati+kta pūrvapada places udātta on -ta instead of gati (पा॰ ६.२.४९ गतिरनन्तरः + ६.२.१)",
           ln,
         )
       )
@@ -880,7 +970,7 @@ def validate_padapatha_block(
       issues.append(
         AccentValidationIssue(
           "unlicensed_anudatta",
-          "Zero-accent pada violates पा० ६.१.१५८ without explicit पा० ८.१.* / २.४.* nighāta rule",
+          "Zero-accent pada violates पा॰ ६.१.१५८ without explicit पा॰ ८.१.* / २.४.* nighāta rule",
           ln,
         )
       )
@@ -893,7 +983,7 @@ def validate_padapatha_block(
       msg = (
         "Tiṅanta retains unseparated upasarga (must split upasarga into its own bullet) or misclassifies nominal/kṛdanta"
         if forbid_compound_upasarga_tinanta
-        else "Main-clause पा० ८.१.२८ tiṅanta retains unseparated upasarga or misclassifies nominal/kṛdanta"
+        else "Main-clause पा॰ ८.१.२८ tiṅanta retains unseparated upasarga or misclassifies nominal/kṛdanta"
       )
       issues.append(AccentValidationIssue("unsplit_upasarga_tinanta", msg, ln))
 
@@ -901,7 +991,7 @@ def validate_padapatha_block(
     issues.append(
       AccentValidationIssue(
         "multi_udatta",
-        "Pada carries >1 accent violating पा० ६.१.१५८ without पा० ६.२.१४०/१४१ license",
+        "Pada carries >1 accent violating पा॰ ६.१.१५८ without पा॰ ६.२.१४०/१४१ license",
         ln,
       )
     )
@@ -918,7 +1008,17 @@ def validate_padapatha_block(
       issues.append(
         AccentValidationIssue(
           "false_nighata_arrow",
-          "False पा० ८.१.२८/८.१.१९ de-accenting arrow at पादादि (८.१.१८), after तिङ्, after पादादि-आमन्त्रित (८.१.७२), चवायोगे (८.१.५९), or in यद्वृत्त/हि clause (८.१.६६/८.१.३४)",
+          "False पा॰ ८.१.२८/८.१.१९ de-accenting arrow at पादादि (८.१.१८), after तिङ्, after पादादि-आमन्त्रित (८.१.७२), चवायोगे (८.१.५९), or in यद्वृत्त/हि clause (८.१.६६/८.१.३४)",
+          ln,
+        )
+      )
+
+  if check_homographs:
+    for ln in find_suspect_homograph_accents(pp_lines, mula_clean):
+      issues.append(
+        AccentValidationIssue(
+          "suspect_homograph_accent",
+          "Sense-sensitive homograph or parasavarṇa ablative uses unjustified rare/wrong-sense accent or case",
           ln,
         )
       )
@@ -941,6 +1041,7 @@ def validate_accented_markdown(
   check_hiatus: bool = True,
   check_vp: bool = True,
   forbid_compound_upasarga_tinanta: bool | None = None,
+  forbid_zero_abbreviation: bool | None = None,
 ) -> list[AccentValidationIssue]:
   """Validate all ``पद-पाठः (यान्त्रिकः)`` and ``विश्वास-प्रस्तुतिः`` blocks in one Markdown document."""
   issues: list[AccentValidationIssue] = []
@@ -975,6 +1076,7 @@ def validate_accented_markdown(
       if check_vp and not vp_b and jh.startswith("विश्वास-प्रस्तुतिः"):
         vp_b = jb
     forbid_up_tin = is_sb_cluster if forbid_compound_upasarga_tinanta is None else forbid_compound_upasarga_tinanta
+    forbid_zero_ab = True if forbid_zero_abbreviation is None else forbid_zero_abbreviation
     issues.extend(
       validate_padapatha_block(
         hdr,
@@ -984,9 +1086,24 @@ def validate_accented_markdown(
         verified_prakrtibhava_pairs=verified_prakrtibhava_pairs,
         check_hiatus=check_hiatus,
         forbid_compound_upasarga_tinanta=forbid_up_tin,
+        forbid_zero_abbreviation=forbid_zero_ab,
       )
     )
   return issues
+
+
+def _strip_spans(text: str, spans: Sequence[tuple[int, int]]) -> str:
+  if not spans:
+    return text
+  parts: list[str] = []
+  last = 0
+  for a, b in sorted(spans):
+    if a > last:
+      parts.append(text[last:a])
+    if b > last:
+      last = b
+  parts.append(text[last:])
+  return "".join(parts)
 
 
 def validate_paired_vp_and_tk(
@@ -996,10 +1113,11 @@ def validate_paired_vp_and_tk(
   verified_prakrtibhava_pairs: AbstractSet[tuple[str, str]] | None = None,
   check_html_balance: bool = True,
   check_hiatus: bool = True,
+  forbid_zero_abbreviation: bool | None = None,
 ) -> list[AccentValidationIssue]:
   """Validate a split ``vishvAsa-prastutiH`` (``vp``) + ``sarvASh_TIkAH`` (``tk`` = ``टीका``/``मूलम्``/``पद-पाठः``) file pair."""
   js_tk = find_js_include_spans(tk_text)
-  tk_outer = "".join(tk_text[i : i + 1] for i in range(len(tk_text)) if not any(a <= i < b for a, b in js_tk))
+  tk_outer = _strip_spans(tk_text, js_tk)
   if check_html_balance and (tk_text.count("<details") != tk_text.count("</details>") or tk_text.count("<div") != tk_text.count("</div>")):
     issues = [AccentValidationIssue("tag_unbalanced", "Mismatched <details> or <div> closing tags")]
   else:
@@ -1011,11 +1129,12 @@ def validate_paired_vp_and_tk(
       check_html_balance=False,
       check_hiatus=check_hiatus,
       check_vp=False,
+      forbid_zero_abbreviation=forbid_zero_abbreviation,
     )
   )
   vp_body = vp_text.split("+++", 2)[2] if vp_text.startswith("+++") and len(vp_text.split("+++", 2)) == 3 else vp_text
   js_vp = find_js_include_spans(vp_body)
-  vp_outer = "".join(vp_body[i : i + 1] for i in range(len(vp_body)) if not any(a <= i < b for a, b in js_vp))
+  vp_outer = _strip_spans(vp_body, js_vp)
   for msg in find_vp_integrity_issues(vp_outer):
     issues.append(AccentValidationIssue("vp_integrity", msg))
   return issues

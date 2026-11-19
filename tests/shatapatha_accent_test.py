@@ -605,10 +605,26 @@ def test_panini_abbreviation_sign_guard_sb_vs_ta():
   sb_ok = sb_zero.replace("पा\u0966", "पा॰")
   assert validate_accented_markdown(sb_ok) == []
 
-  # Legacy non-ŚB (TA) clusters remain backward compatible
+  # `पा\u0966` is now rejected everywhere by default (user rule); legacy TA data can opt out explicitly
   ta_legacy = sb_zero.replace("मूलम् - Weber", "मूलम्")
-  assert validate_accented_markdown(ta_legacy) == []
+  assert any(iss.kind == "zero_abbrev_sign" for iss in validate_accented_markdown(ta_legacy))
+  assert validate_accented_markdown(ta_legacy, forbid_zero_abbreviation=False) == []
 
 
 
 
+
+
+def test_weber_h_on_anudatta_before_8_2_6_svarita_is_preserved():
+  # Real 01/09/2.md::२२ pattern: Weber/Shri print ᳘ (not ॗ) on `मे` before पा॰ ८.२.६ svarita `वै᳙`.
+  pp = "- मिथुन᳓म् (*RV*)\n- एव᳓ (*RV*)\n- एत᳓त् (*RV*)"
+  items = parse_padapatha_items(pp)
+  _, vp, unm = build_sb_vp_from_padapatha(
+    "मिथुनम् एवैतत् ॥", items, weber_text="मिथुन᳘मे᳘वैत᳘त्॥", shri_text="मिथुन᳘मे᳘वैत᳘त्॥"
+  )
+  assert unm == [] and vp == "मिथुन᳓म् एवै᳙त᳓त् ॥"
+  # An aligned, unmarked Weber overrules a solo Śrīdharādi `᳘`
+  _, vp2, _ = build_sb_vp_from_padapatha(
+    "मिथुनम् एवैतत् ॥", items, weber_text="मिथुन᳘मेवैत᳘त्॥", shri_text="मिथुन᳘मे᳘वैत᳘त्॥"
+  )
+  assert "ै᳙" not in vp2

@@ -338,8 +338,12 @@ def _compute_vp_syllable_marks(
         prev_has_svarita_cue = False
         if flat_idx > 0:
           pw = vp_to_weber.get(flat_idx - 1)
-          if pw is not None and weber_syls[pw].mark == "G":
-            prev_has_svarita_cue = True
+          if pw is not None:
+            # Weber is aligned: trust it. `ॗ` is the explicit cue; Weber's TITUS text also sometimes prints `᳘`
+            # on the anudātta before a पा॰ ८.२.६ svarita. An unmarked Weber syllable overrules a solo Śrīdharādi `᳘`.
+            wm = weber_syls[pw].mark
+            if wm == "G" or (wm == "H" and ref_marks[flat_idx - 1] in ("", "S")):
+              prev_has_svarita_cue = True
           else:
             ps = vp_to_shri.get(flat_idx - 1)
             if ps is not None and shri_syls[ps].mark == "H" and ref_marks[flat_idx - 1] in ("", "S"):

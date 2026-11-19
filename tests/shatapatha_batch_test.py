@@ -630,3 +630,98 @@ def test_verify_adjudications_edge_guards_and_multipass_preserved_human_us(tmp_p
   assert any("01/01/1.md::०३" in n and "reconcile_diff" in n for n in pres_audit.preserved_us_notes)
 
 
+
+
+def test_enrich_provenance_with_corpus_counts_formats_dedupes_and_is_idempotent(monkeypatch):
+  import doc_curation.sanskrit.accent.shatapatha_batch as sbb
+  from doc_curation.sanskrit.accent import PadapathaItem, enrich_items_with_corpus_counts
+  from doc_curation.sanskrit.accent.shatapatha_batch import enrich_provenance_with_corpus_counts as enrich
+
+  fake = {
+    "सर्व᳓तः": {"TS": 12, "RV": 2, "TB": 2},
+    "सं-स्था᳓म्": {"TS": 2, "VS": 1},
+    "अ᳓स्मि": {},
+  }
+  monkeypatch.setattr(sbb, "lookup_corpus_counts", lambda lex, pada: dict(fake.get(pada, {})))
+
+  # 1. Bare tags -> exact counts, editorial/sūtra segments verbatim, पा\u0966 -> पा॰
+  new, unv = enrich(None, "सर्व᳓तः", "*RV*, *TS*; श्रीधरादि-पाठः")
+  assert new == "*TS*-12, *RV*-2, *TB*-2; श्रीधरादि-पाठः" and unv == []
+  new, _ = enrich(None, "सर्व᳓तः", "अनुदात्तम्, पा\u0966 ८.१.१८, *TS*")
+  assert new == "अनुदात्तम्, पा॰ ८.१.१८, *TS*-12, *RV*-2, *TB*-2"
+  # 2. Inline form citation keeps its form, gains its count, no duplicate tag
+  new, _ = enrich(None, "सं-स्था᳓म्", "*TS* सँ॒स्थाम्")
+  assert new == "*TS*-2 सँ॒स्थाम्, *VS*-1"
+  # 3. Verse refs and dictionary tags untouched
+  new, _ = enrich(None, "सर्व᳓तः", "*VS* १.५, *MW*")
+  assert new.startswith("*VS* १.५, *MW*") and "*TS*-12" in new
+  # 4. Unattested exact form: unverifiable bare tag dropped when sūtra support remains (reported, never -0);
+  #    kept verbatim (and reported) when it is the only support
+  new, unv = enrich(None, "अ᳓स्मि", "यद्वृत्तान्नित्यम् पा॰ ८.१.६६, *TS*")
+  assert new == "यद्वृत्तान्नित्यम् पा॰ ८.१.६६" and unv == ["TS"] and "-0" not in new
+  new, unv = enrich(None, "अ᳓स्मि", "*TS*")
+  assert new == "*TS*" and unv == ["TS"]
+  # 5. Idempotent
+  for pada, just in (("सर्व᳓तः", "*RV*, *TS*; श्रीधरादि-पाठः"), ("सं-स्था᳓म्", "*TS* सँ॒स्थाम्")):
+    once, _ = enrich(None, pada, just)
+    twice, _ = enrich(None, pada, once)
+    assert once == twice
+  # 6. Item-level helper keeps solidity and arrows
+  items = [PadapathaItem(ar="सर्वतः", ref="सर्व᳓तः", prov="*TS*", vyat=True, solid=True)]
+  out, warn = enrich_items_with_corpus_counts(None, items)
+  assert out[0].vyat and out[0].solid and out[0].ar == "सर्वतः" and warn == {}
+  assert out[0].prov == "*TS*-12, *RV*-2, *TB*-2"
+
+
+def test_verify_and_apply_adjudications_enriches_counts_end_to_end(tmp_path):
+  sb_root = _make_synthetic_corpus(tmp_path)
+  lex = UnifiedVedicLexicon.load_or_build(force_rebuild=False)
+  adj = tmp_path / "adj_counts.jsonl"
+  adj.write_text(
+    json.dumps(
+      {
+        "rel_path": "12/01/1.md",
+        "heading": "०१",
+        "sub_idx": 0,
+        "vp_clean": "तद् अपः ॥",
+        "items": [
+          {"pada": "त᳓त्", "just": "*RV*, *TS*", "vyat_from": None},
+          {"pada": "अपः᳓", "just": "*RV*, *TS*", "vyat_from": None},
+        ],
+      },
+      ensure_ascii=False,
+    )
+    + "\n",
+    encoding="utf-8",
+  )
+  rep = verify_and_apply_adjudications(sb_root, adj, lexicon=lex)
+  assert rep.accepted == 1 and rep.rejected == 0
+  txt = (sb_root / "12/01/1.md").read_text(encoding="utf-8")
+  import re as _re
+  bullets = [ln for ln in txt.splitlines() if ln.startswith("- त᳓त्") or ln.startswith("- अपः᳓")]
+  assert len(bullets) == 2
+  for ln in bullets:
+    tags = _re.findall(r"\*(?:VS|TS|RV|AV|TB|TA)\*-(\d+)", ln)
+    assert tags and all(int(n) > 0 for n in tags)
+  assert audit_full_sb_corpus(sb_root, files=[sb_root / "12/01/1.md"]).failures == []
+
+
+def test_apply_marks_to_token_preserves_virama_independent_vowel_hiatus():
+  from doc_curation.sanskrit.accent import apply_marks_to_token
+
+  # Regression (14/01-05/.../03/1.md): `र्ऋ` must not be coalesced into `रृ` by join_strings
+  assert apply_marks_to_token("नाभिर्ऋतस्य", ["U", "", "", "U", ""]) == "ना᳓भिर्ऋत᳓स्य"
+  assert apply_marks_to_token("स्वर्अश्वः", ["", "U", ""]) == "स्वर्अ᳓श्वः"
+
+
+def test_run_solver_corpus_pass_export_all_adds_rel_path_and_auto_clean_drafts(tmp_path):
+  sb_root = _make_synthetic_corpus(tmp_path)
+  lex = UnifiedVedicLexicon.load_or_build(force_rebuild=False)
+  base = run_solver_corpus_pass(sb_root, tmp_path / "o1", kandas=["01"], lexicon=lex)
+  full = run_solver_corpus_pass(sb_root, tmp_path / "o2", kandas=["01"], lexicon=lex, export_all_to_adjudication=True)
+  recs_base = [json.loads(x) for x in (tmp_path / "o1/kanda_01_adjudication.jsonl").read_text(encoding="utf-8").splitlines()]
+  recs_full = [json.loads(x) for x in (tmp_path / "o2/kanda_01_adjudication.jsonl").read_text(encoding="utf-8").splitlines()]
+  assert len(recs_base) == base["needs_adjudication"]
+  assert len(recs_full) == base["needs_adjudication"] + base["auto_clean"]
+  assert all(r["rel_path"] == "01/01/1.md" and r["file"].endswith("01/01/1.md") for r in recs_full)
+  assert full["auto_clean"] == base["auto_clean"]

@@ -131,7 +131,7 @@ def join_vowels(v1: str, v2: str) -> list[str]:
     elif v2 in "uU":
       res.add("o")
     elif v2 in "fF":
-      # Include `f` prakṛtibhāva per पा० ६.१.१२८ ऋत्यकः.
+      # Include `f` prakṛtibhāva per पा॰ ६.१.१२८ ऋत्यकः.
       res.update(("ar", "Ar", v1 + v2))
     elif v2 in "eE":
       res.add("E")
@@ -190,7 +190,7 @@ def _vowel_sandhi(left: str, right: str, is_compound: bool, left_word_slp: str =
     stem = left[:-1]
     for mid in join_vowels(c_last, r0):
       outs.add(stem + mid + right[1:])
-    # Permit hiatus ONLY for pragṛhya (-ī/-ū/-e, monosyllabic nipāta u per पा० १.१.१४) or non-compound -o (पा० ६.१.११५ / ओत्).
+    # Permit hiatus ONLY for pragṛhya (-ī/-ū/-e, monosyllabic nipāta u per पा॰ १.१.१४) or non-compound -o (पा॰ ६.१.११५ / ओत्).
     lw = left_word_slp or left
     if c_last in ("I", "U", "e") or (not is_compound and (c_last == "o" or lw == "u")):
       outs.add(left + right)
@@ -411,7 +411,7 @@ def word_to_slp_options(pada_deva: str) -> set[str]:
 def _matches_avasana_end(st: str, target: str) -> bool:
   if st == target:
     return True
-  # पा० ८.४.५६ वाऽवसाने: optional devoicing/voicing of final stops at pause.
+  # पा॰ ८.४.५६ वाऽवसाने: optional devoicing/voicing of final stops at pause.
   if st and st[-1] in _AVASANA_STOP_SWAP and st[:-1] + _AVASANA_STOP_SWAP[st[-1]] == target:
     return True
   if (st.endswith("m") and st[:-1] + "M" == target) or st + "M" == target or st + "n" == target or st == target + "H":

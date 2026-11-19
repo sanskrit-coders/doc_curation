@@ -30,6 +30,15 @@ _NASALS = frozenset("NYRnm")
 _SIBILANTS = frozenset("Szsh")
 _STOPS = frozenset("kKgGcCjJwWqQtTdDpPbB")
 _HALANT_CODA_OK = frozenset("myvrsSzdcjgbRntkpl")
+_BOUND_SUFFIXES = frozenset({
+  "tva", "tvam", "tvaM", "tvena", "tvAt", "tvAd", "tve", "tvasya", "tvayoH",
+  "tvAni", "tvAByAm", "tveByaH", "tvAnAm", "tvezu",
+  "tA", "tAm", "tAyAH", "tAsu",
+  "maya", "mayaH", "mayI", "mayam", "mayAm",
+  "tama", "tamaH", "tamam", "tara", "taraH", "taram",
+})
+_VOICELESS_CONSONANTS = frozenset("kKcCwWtTpPSzs")
+_R_STEM_WORDS = ("punar", "prAtar", "antar", "svar", "ahar")
 _ACCENT_RE = regex.compile(r"[\u0951-\u0954\u1cd0-\u1cff]")
 _ANNO_RE = regex.compile(r"\+\+\+\(.*?\)\+\+\+", regex.DOTALL)
 _DEV_SPAN_RE = regex.compile(r"[\u0900-\u0963\u0966-\u097f\u1cd0-\u1cff\-–—]+")
@@ -178,6 +187,7 @@ def _recover_subthreshold_cuts(
   closed: dict,
 ) -> None:
   from .lexicon import (
+    is_merger_veto_slp1,
     is_valid_member_slp1,
     restore_left_member_slp1,
     split_vowel_merger_slp1,
@@ -187,6 +197,9 @@ def _recover_subthreshold_cuts(
 
   n = len(slp_tok)
   upas, prons, parts = closed["upasargas"], closed["pronouns"], closed["particles"]
+  tok_valid = is_valid_member_slp1(slp_tok, is_right=True) or (
+    slp_tok.endswith("M") and is_valid_member_slp1(slp_tok[:-1] + "m", is_right=True)
+  )
   for i in range(1, n - 1):
     if cuts[i] != 0:
       continue
@@ -202,7 +215,12 @@ def _recover_subthreshold_cuts(
       if a_score >= 5 and word_count_slp1(r_seg_next) == 0 and is_valid_member_slp1(l_piece[:-1] + "aH", is_right=True):
         cuts[i] = 4
         continue
-    if l_piece.endswith("tum") and len(l_piece) >= 5 and r_piece[0] in _ALL_VOWELS and is_valid_member_slp1(r_seg_next, is_right=True):
+    if (
+      l_piece.endswith("tum") and len(l_piece) >= 5 and r_piece[0] in _ALL_VOWELS
+      and not tok_valid
+      and not slp_tok[i:].startswith(("maya", "mayI", "mayA", "maye", "mAn", "mat"))
+      and is_valid_member_slp1(r_seg_next, is_right=True)
+    ):
       cuts[i] = 3
       continue
     if p_non_zero[i] >= 0.10:
@@ -215,14 +233,54 @@ def _recover_subthreshold_cuts(
         l_stem_ok = word_count_slp1(l_piece) >= 2 or any(word_count_slp1(ru) >= 5 and len(ru) >= 4 for _, ru in split_vowel_merger_slp1(l_piece))
         if l_stem_ok:
           cuts[i] = best_cls[i]
-    if cuts[i] == 0 and n <= 22:
-      if ch in ("s", "S", "z", "r") and (r_piece in prons or r_piece in parts) and is_valid_member_slp1(l_piece[:-1] + "H", is_right=True):
+    if (
+      ch in ("s", "S", "z") and not tok_valid and len(l_piece) >= 4
+      and i + 1 < n - 1 and slp_tok[i + 1] == ch and r_seg_next not in ("su", "zu")
+      and not l_piece.endswith(("nis", "dus", "niS", "duS"))
+    ):
+      l_vis_ok = is_valid_member_slp1(l_piece[:-1] + "H", is_right=True) or any(
+        is_valid_member_slp1(lt[:-1] + "H", is_right=True) for lt in (l_piece[-8:], l_piece[-6:]) if len(lt) >= 4
+      )
+      r_sib_ok = (
+        word_count_slp1(r_seg_next) >= 1
+        or is_valid_member_slp1(r_seg_next, is_right=True)
+        or any(word_count_slp1(r_seg_next[:k]) >= 10 for k in range(4, min(8, len(r_seg_next))))
+      )
+      if l_vis_ok and r_sib_ok:
         cuts[i] = 3
-      elif ch in ("y", "v") and slp_tok[i - 1] not in _ALL_VOWELS and r_piece[0] in _ALL_VOWELS and word_count_slp1(slp_tok) == 0:
+        continue
+    if cuts[i] == 0 and n <= 22:
+      if ch == "m" and not tok_valid and len(l_piece) >= 4 and (r_seg_next in prons or r_seg_next in parts) and r_seg_next[0] in _ALL_VOWELS and is_valid_member_slp1(l_piece, is_right=True):
+        cuts[i] = 3
+      elif ch in ("s", "S", "z", "r") and not tok_valid and (r_seg_next in prons or r_seg_next in parts):
+        visarga_ok = (
+          (ch == "s" and r_seg_next[0] in "tTs")
+          or (ch == "S" and r_seg_next[0] in "cCS")
+          or (ch == "z" and r_seg_next[0] in "wWz")
+          or (
+            ch == "r" and len(l_piece) >= 3 and r_seg_next[0] not in _VOICELESS_CONSONANTS
+            and (l_piece[-2] not in ("a", "A") or l_piece.endswith(_R_STEM_WORDS))
+          )
+        )
+        l_cand = l_piece[:-1] + "H"
+        if visarga_ok and (word_count_slp1(l_cand) >= 2 or (len(l_cand) >= 6 and is_valid_member_slp1(l_cand, is_right=True))):
+          cuts[i] = 3
+      elif (
+        ch in ("y", "v") and not tok_valid
+        and slp_tok[i - 1] not in _ALL_VOWELS and r_seg_next[0] in _ALL_VOWELS
+        and not is_valid_member_slp1(l_piece + r_seg_next, is_right=True)
+        and not (r_seg_next[0] in _MERGED_VOWELS and is_merger_veto_slp1(slp_tok, i + 1))
+      ):
         all_rests = restore_left_member_slp1(l_piece)
         if not any(c in upas for c in all_rests):
           rests = [c for c in all_rests if word_count_slp1(c) >= 5]
-          if rests and is_valid_member_slp1(r_piece, is_right=True):
+          a_stem_wc = max(word_count_slp1(l_piece + "a"), word_count_slp1(l_piece + "A"))
+          if (
+            rests
+            and a_stem_wc < max(word_count_slp1(c) for c in rests)
+            and (len(r_seg_next) >= 3 or r_seg_next in prons or r_seg_next in parts)
+            and is_valid_member_slp1(r_seg_next, is_right=True)
+          ):
             cuts[i] = 3 if rests[0] == "iti" else 1
       elif ch == "a" and r_piece in ("ja", "jA", "jam", "jaM", "jaH") and word_count_slp1(l_piece[max(0, i - 7):]) >= 5:
         cuts[i] = 1
@@ -286,6 +344,12 @@ def refine_token_cuts_with_lexicon(slp_tok: str, raw_sep_preds, is_prob_matrix: 
             cuts[pos] = 0
             break
     if cuts[pos] in (1, 2):
+      if ch in _SHORT_VOWELS and word_count_slp1(r_seg) == 0 and pos + 1 < next_cut - 1 and slp_tok[pos + 1] in _HALANT_CODA_OK:
+        l_sh, r_sh = l_seg + slp_tok[pos + 1], slp_tok[pos + 2:next_cut]
+        if (word_count_slp1(l_seg) < 5 or r_sh in prons or r_sh in parts) and any(v in _ALL_VOWELS for v in r_sh) and any(is_valid_member_slp1(c, is_right=True) for c in restore_left_member_slp1(l_sh)) and word_count_slp1(r_sh) >= 2:
+          cuts[pos] = 0
+          cuts[pos + 1] = 3 if (r_sh in prons or r_sh in parts or slp_tok[pos + 1] == "m") else 1
+          continue
       if word_count_slp1(l_seg + r_seg) >= 3 and word_count_slp1(l_seg) == 0 and ch in _ALL_VOWELS:
         cuts[pos] = 0
         continue
@@ -299,9 +363,32 @@ def refine_token_cuts_with_lexicon(slp_tok: str, raw_sep_preds, is_prob_matrix: 
       if "or" in slp_tok[pos + 1:] and l_seg == "prARa" and "Atmanor" in slp_tok:
         cuts[pos] = 0
         continue
-    if cuts[pos] == 3 and ch == "r" and l_seg.endswith("Atmanor") and word_count_slp1(r_seg) >= 5 and r_seg not in prons and r_seg not in parts:
-      cuts[pos] = 0
-      continue
+    if cuts[pos] == 3:
+      if r_seg in _BOUND_SUFFIXES or (l_seg == "an" and r_seg[0] not in _ALL_VOWELS):
+        cuts[pos] = 0
+        continue
+      if ch in ("s", "S", "z", "r") and p_non_zero[pos] < 0.70:
+        l_tails = [l_seg[max(0, len(l_seg) - k):] for k in (len(l_seg), 8, 6)]
+        l_ok = any(is_valid_member_slp1(c, is_right=True) for lt in l_tails for c in restore_left_member_slp1(lt))
+        r_sib_ok = is_valid_member_slp1(r_seg, is_right=True) or any(
+          word_count_slp1(r_seg[:k]) >= 10 for k in range(4, min(8, len(r_seg)))
+        )
+        if not l_ok and not r_sib_ok:
+          cuts[pos] = 0
+          continue
+      if ch == "d" and pos >= prev_cut + 3 and slp_tok[pos - 2] == "d" and slp_tok[pos - 1] in _ALL_VOWELS:
+        l_tails = [l_seg[max(0, len(l_seg) - k):] for k in (len(l_seg), 8, 6)]
+        l_ok = any(word_count_slp1(c) >= 2 for lt in l_tails for c in restore_left_member_slp1(lt))
+        r_back_ok = word_count_slp1(slp_tok[pos - 1:next_cut]) >= 5 or any(
+          word_count_slp1(slp_tok[pos - 1:pos - 1 + k]) >= 10 for k in range(4, min(10, next_cut - pos + 2))
+        )
+        if not l_ok and word_count_slp1(r_seg) == 0 and r_back_ok:
+          cuts[pos] = 0
+          cuts[pos - 2] = 3
+          continue
+      if ch == "r" and l_seg.endswith("Atmanor") and word_count_slp1(r_seg) >= 5 and r_seg not in prons and r_seg not in parts:
+        cuts[pos] = 0
+        continue
     if cuts[pos] in (1, 2):
       if r_seg in parts or (r_seg == "Di" and ch == "d") or (l_seg.endswith(("yEtad", "yatad", "yEtat")) and ch in ("d", "t")):
         cuts[pos] = 3
@@ -331,7 +418,7 @@ def reconstruct_token_from_slp1(
   while i < n:
     ch, acc = slp_tok[i], accents.get(i, "")
     cl_act = clause_preds[i] if (clause_preds is not None and i < len(clause_preds)) else 0
-    if cl_act == 2 and ch in ("s", "S", "z", "r") and i < n - 1:
+    if cl_act == 2 and ch in ("s", "S", "z", "r") and i < n - 1 and sep_preds[i] != 0:
       cur_slp.append("H" + acc)
       pieces_out.extend((_flush("".join(cur_slp)), "  \n"))
       cur_slp, i = [], i + 1
@@ -416,7 +503,7 @@ def apply_slp1_predictions_to_paragraph(
     gap = work[last_end:st_char]
     if i_sp > 0 and clause_newlines and "\n" not in gap:
       prev_end = tok_meta[i_sp - 1][1] - 1
-      if 0 <= prev_end < len(clause_all) and clause_all[prev_end] == 1:
+      if 0 <= prev_end < len(clause_all) and clause_all[prev_end] == 1 and not regex.search(r"[\(\[\{“‘\"']\s*$", gap):
         gap = regex.sub(r"[ \t]+$", "", gap) + "  \n"
       elif "।" in gap or "॥" in gap:
         gap = regex.sub(r"([।॥]+)[ \t]+", r"\1  \n", gap)

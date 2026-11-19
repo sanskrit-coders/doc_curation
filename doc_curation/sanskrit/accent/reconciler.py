@@ -92,6 +92,9 @@ def syllables_with_marks(text: str) -> tuple[list[tuple[str, str]], list[str]]:
 def apply_marks_to_token(tok: str, new_marks: Sequence[str]) -> str:
   """Apply per-syllable US marks onto Devanagari ``tok`` preserving consonants/mātrās via ``SCHEME.join_strings``."""
   clean = sanitize_us_accents(tok)
+  # Protect virāma + independent-vowel hiatus (e.g. `र्ऋ` in नाभिर्ऋतस्य) from being coalesced into a matra by
+  # SCHEME.join_strings, via a ZWNJ sentinel that is stripped again below.
+  clean = re.sub(r"्(?=[अआइईउऊऋॠऌॡएऐओऔ])", "्\u200c", clean)
   lets = SCHEME.split_vyanjanas_and_svaras(clean)
   out: list[str] = []
   si = 0
@@ -109,7 +112,7 @@ def apply_marks_to_token(tok: str, new_marks: Sequence[str]) -> str:
   if si != len(new_marks):
     raise ValueError(f"Syllable count mismatch for {tok!r}: {si} != {len(new_marks)}")
   # Must rejoin separated consonant+vowel elements via SCHEME.join_strings, never "".join(out).
-  res = SCHEME.join_strings(out)
+  res = SCHEME.join_strings(out).replace("\u200c", "") if "\u200c" not in tok else SCHEME.join_strings(out)
   if bare_devanagari(res) != bare_devanagari(tok):
     raise ValueError(f"Bare Devanagari drifted for {tok!r} -> {res!r}")
   return res
@@ -117,54 +120,56 @@ def apply_marks_to_token(tok: str, new_marks: Sequence[str]) -> str:
 
 def is_solid_provenance(prov: str) -> bool:
   """Return True when a padapāṭha provenance note cites solid Vedic/Pāṇinian authority (not bare ``*MW*``)."""
+  # Accept both canonical Devanagari abbreviation sign पा॰ (U+0970) and legacy TA पा\u0966 (U+0966).
+  prov_n = prov.replace("पा\u0966", "पा॰")
   if any(
-    c in prov
+    c in prov_n
     for c in ("*TS*", "*RV*", "*TB*", "*AV*", "*VS*", "*KS*", "*MS*", "*ŚB*", "*TA*", "*TK*", "*Macdonell*", "*Lanman*")
   ):
     return True
   if any(
-    r in prov
+    r in prov_n
     for r in (
-      "पा० २.४.",
-      "पा० ३.१.",
-      "पा० ३.२.",
-      "पा० ३.३.",
-      "पा० ३.४.",
-      "पा० ४.१.",
-      "पा० ४.२.",
-      "पा० ४.३.",
-      "पा० ४.४.",
-      "पा० ५.१.",
-      "पा० ५.२.",
-      "पा० ५.३.",
-      "पा० ५.४.",
-      "पा० ६.१.१६",
-      "पा० ६.१.१७",
-      "पा० ६.१.१८",
-      "पा० ६.१.१९",
-      "पा० ६.१.२०",
-      "पा० ६.१.२१",
-      "पा० ६.१.२२",
-      "पा० ६.२.",
-      "पा० ६.४.",
-      "पा० ८.१.२८",
-      "पा० ८.१.१८",
-      "पा० ८.१.३",
-      "पा० ८.१.१९",
-      "पा० ८.१.३०",
-      "पा० ८.१.५९",
-      "पा० ८.१.६३",
-      "पा० ८.१.६५",
-      "पा० ८.१.७०",
-      "पा० ८.१.७१",
-      "पा० ८.१.७२",
+      "पा॰ २.४.",
+      "पा॰ ३.१.",
+      "पा॰ ३.२.",
+      "पा॰ ३.३.",
+      "पा॰ ३.४.",
+      "पा॰ ४.१.",
+      "पा॰ ४.२.",
+      "पा॰ ४.३.",
+      "पा॰ ४.४.",
+      "पा॰ ५.१.",
+      "पा॰ ५.२.",
+      "पा॰ ५.३.",
+      "पा॰ ५.४.",
+      "पा॰ ६.१.१६",
+      "पा॰ ६.१.१७",
+      "पा॰ ६.१.१८",
+      "पा॰ ६.१.१९",
+      "पा॰ ६.१.२०",
+      "पा॰ ६.१.२१",
+      "पा॰ ६.१.२२",
+      "पा॰ ६.२.",
+      "पा॰ ६.४.",
+      "पा॰ ८.१.२८",
+      "पा॰ ८.१.१८",
+      "पा॰ ८.१.३",
+      "पा॰ ८.१.१९",
+      "पा॰ ८.१.३०",
+      "पा॰ ८.१.५९",
+      "पा॰ ८.१.६३",
+      "पा॰ ८.१.६५",
+      "पा॰ ८.१.७०",
+      "पा॰ ८.१.७१",
+      "पा॰ ८.१.७२",
     )
   ):
     return True
-  if "पा० ६.१.१५८" in prov and "अनाम्नातम्" not in prov:
+  if "पा॰ ६.१.१५८" in prov_n and "अनाम्नातम्" not in prov_n:
     return True
-  if ("पा० ८.१.६६" in prov or "पा० ८.१.३४" in prov) and any(
-    x in prov for x in ("अनेकोदात्त", "अनुदात्त-दोषः", "यद्वृत्तान्नित्यम्", "हि च", "*TS*", "*RV*", "*TB*", "*TK*", "पा० ३.", "पा० ६.")
+  if ("पा॰ ८.१.६६" in prov_n or "पा॰ ८.१.३४" in prov_n) and any(
+    x in prov_n for x in ("अनेकोदात्त", "अनुदात्त-दोषः", "यद्वृत्तान्नित्यम्", "हि च", "*TS*", "*RV*", "*TB*", "*TK*", "पा॰ ३.", "पा॰ ६.")
   ):
     return True
   return False
@@ -1133,6 +1138,8 @@ def reconcile_markdown_blocks(
   extra_invalid_olds: AbstractSet[str] = frozenset(),
   skip_js_includes: bool = True,
   allow_8_2_6_ekadesha_svarita: bool | None = None,
+  refill_direct_vp: bool = True,
+  refresh_pp_summaries: bool = True,
 ) -> tuple[str, list[str]]:
   """Reconcile paired ``विश्वास-प्रस्तुतिः`` and ``पद-पाठः (यान्त्रिकः)`` details blocks inside Markdown text."""
   js_divs = find_js_include_spans(markdown_text) if skip_js_includes else []
@@ -1141,9 +1148,19 @@ def reconcile_markdown_blocks(
   all_logs: list[str] = []
 
   for i, m in enumerate(dmatches):
-    if not m.group(1).startswith("पद-पाठः (यान्त्रिकः"):
+    pp_hdr = m.group(1).strip()
+    if not pp_hdr.startswith("पद-पाठः (यान्त्रिकः"):
       continue
     items = parse_padapatha_items(m.group(2).strip())
+    n_vyat = sum(1 for it in items if it.vyat)
+    p_total = len(items)
+    if refresh_pp_summaries and p_total > 0:
+      expected_pp_hdr = format_padapatha_summary(n_vyat, p_total)
+      if expected_pp_hdr != pp_hdr:
+        pp_open = " open" if "<details open>" in m.group(0)[:20] else ""
+        replacements.append((m.start(), m.end(), f"<details{pp_open}><summary>{expected_pp_hdr}</summary>{m.group(2)}</details>"))
+        all_logs.append(f"PP_HDR: {pp_hdr} -> {expected_pp_hdr}")
+
     is_sb_cluster = False
     for j in range(i - 1, max(-1, i - 8), -1):
       ps = dmatches[j].group(1)
@@ -1154,13 +1171,13 @@ def reconcile_markdown_blocks(
       if ps in ("मूलम् - Weber", "मूलम् - श्रीधरादि"):
         is_sb_cluster = True
       if ps.startswith("विश्वास-प्रस्तुतिः"):
+        allow_826 = is_sb_cluster if allow_8_2_6_ekadesha_svarita is None else allow_8_2_6_ekadesha_svarita
         if (
           "स्वराः पूर्याः" not in ps
           and "यन्त्र-स्वरः" not in ps
           and "स्वराः व्यत्यस्ताः" not in ps
           and has_us_accents(dmatches[j].group(2))
         ):
-          allow_826 = is_sb_cluster if allow_8_2_6_ekadesha_svarita is None else allow_8_2_6_ekadesha_svarita
           new_vp, vlogs = reconcile_vp_suggestions(
             dmatches[j].group(2),
             items,
@@ -1171,6 +1188,22 @@ def reconcile_markdown_blocks(
             open_attr = " open" if "<details open>" in dmatches[j].group(0)[:20] else ""
             replacements.append((dmatches[j].start(), dmatches[j].end(), f"<details{open_attr}><summary>{ps}</summary>{new_vp}</details>"))
             all_logs.extend(vlogs)
+        elif refill_direct_vp and ("स्वराः व्यत्यस्ताः" in ps or "यन्त्र-स्वरः" in ps) and "[[" not in dmatches[j].group(2):
+          new_vp, unmapped = fill_vp_accents_from_padapatha(
+            dmatches[j].group(2),
+            items,
+            allow_8_2_6_ekadesha_svarita=allow_826,
+          )
+          new_ps = format_filled_vp_summary(
+            ps.strip(),
+            n_vyat,
+            p_total,
+            mula_has_accents=("यन्त्र-स्वरः" not in ps),
+          )
+          if not unmapped and (new_vp != dmatches[j].group(2) or new_ps != ps.strip()):
+            open_attr = " open" if "<details open>" in dmatches[j].group(0)[:20] else ""
+            replacements.append((dmatches[j].start(), dmatches[j].end(), f"<details{open_attr}><summary>{new_ps}</summary>{new_vp}</details>"))
+            all_logs.append(f"REFILLED_VP: {ps.strip()} -> {new_ps}")
         break
 
   if not replacements:

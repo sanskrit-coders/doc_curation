@@ -37,6 +37,7 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   lookup_corpus_counts,
   parse_sb_markdown_clusters,
   solve_kandika,
+  solve_sb_file,
   split_vp_to_padas,
   split_vp_to_padas_with_clauses,
 )
@@ -404,10 +405,19 @@ def test_preserve_already_us_vp_verbatim(lex: UnifiedVedicLexicon):
   assert [it.ref for it in res.items] == ["सः᳓", "वै᳓", "अपः᳓", "उ᳓प", "स्पृशति"]
 
 
+def _unelide(text: str) -> str:
+  """Restore prodelided `अ` (`ते ऽपः` → `ते अपः`): gold may un-elide at clause breaks."""
+  return text.replace("ऽ", "अ")
+
+
+def _marks(text: str) -> list[str]:
+  return syllables_with_marks(_unelide(text))[1]
+
+
 def _word_norm(text: str) -> str:
   """Pause/sandhi-insensitive word identity (also folds ङमुट् `पा॰ ८.३.३२` doubling `न्न् अ` → `न् अ`)."""
   # `to_norm_slp` renders the doubled `न्न्` as anusvāra+`n` (`Mn`).
-  slp = re.sub(r"(?<=[aiuf])Mn(?=[aAiIuUfFeEoO])", "n", to_norm_slp(text))
+  slp = re.sub(r"(?<=[aiuf])Mn(?=[aAiIuUfFeEoO])", "n", to_norm_slp(_unelide(text)))
   return _pause_norm_slp(slp)
 
 
@@ -426,7 +436,10 @@ def test_pilot_01_01_1_gold_precision_and_vyatyasta_rejection(lex: UnifiedVedicL
   # 1. Clean kaṇḍikās (e.g. §01, §04, §16) achieve AUTO_CLEAN with BOTH exact text AND exact marks vs gold!
   # (§06 is deliberately NOT here: v2 flags `अमानुष इव` -ः/-ए ambiguity, masked `एवा᳘स्मि` and Shri `ब्रत`
   # typo → NEEDS_ADJUDICATION, which is the precision-safe outcome.)
-  for h in ("०१", "०४", "१६"):
+  # (§16 `य᳘द्वेॗवापः᳘` splits `अपः᳓`/`आ᳓पः` with tied text cost; the deterministic pick is caught by
+  # `disagree_syls` → NEEDS_ADJUDICATION, never a false AUTO_CLEAN — see the all-kaṇḍikā sweep below.)
+  # (v2 `#31` gates send §01/§04 to adjudication for dictionary-only padas such as `पू᳓तिः`/`द्वय᳓म्`.)
+  for h in ("१२",):
     c = by_h[h]
     sim = KandikaCluster(
       c.heading, c.sub_idx, "विश्वास-प्रस्तुतिः", "", False,
@@ -434,7 +447,7 @@ def test_pilot_01_01_1_gold_precision_and_vyatyasta_rejection(lex: UnifiedVedicL
     )
     r = solve_kandika(sim, lex, kandika_id=f"01/01/1.md::{h}")
     assert r.status == "AUTO_CLEAN", f"Expected AUTO_CLEAN on §{h}, got {r.reasons}"
-    assert syllables_with_marks(r.vp_accented)[1] == syllables_with_marks(c.vp_body)[1]
+    assert _marks(r.vp_accented) == _marks(c.vp_body)
     # Gold may write uncoalesced pause forms (`व्रतम् उपैष्यन्न्`, `अन्तरतः ।`) where the solver keeps
     # Weber's continuous sandhi (`व्रतमुपैष्यन्`, `अन्तरतो`): compare words, not spacing/sandhi.
     assert verify_mantra_sandhi([it.ref for it in r.items], c.vp_body)[0]
@@ -444,6 +457,22 @@ def test_pilot_01_01_1_gold_precision_and_vyatyasta_rejection(lex: UnifiedVedicL
       assert "पा\u0966" not in it.prov, f"Deprecated पा+digit-zero in {it.prov}"
       assert not re.search(r"\*(?:VS|TS|RV|AV|TB|TA)\*(?!-\d+|\s+[\d०-९])", it.prov), f"Uncounted corpus tag: {it.prov}"
       assert not re.search(r"\*(?:VS|TS|RV|AV|TB|TA)\*-0\b", it.prov), f"Zero corpus count: {it.prov}"
+
+  # 1a. ZERO false AUTO_CLEAN across ALL 22 gold kaṇḍikās: every AUTO_CLEAN must match gold marks + words.
+  n_auto = 0
+  for h, c in by_h.items():
+    if not c.vp_body or not c.weber:
+      continue
+    sim = KandikaCluster(
+      c.heading, c.sub_idx, "विश्वास-प्रस्तुतिः", "", False,
+      c.weber, c.shri, c.visvara, c.sayana, c.harisvami, c.eggeling,
+    )
+    r = solve_kandika(sim, lex, kandika_id=f"01/01/1.md::{h}")
+    if r.status == "AUTO_CLEAN":
+      n_auto += 1
+      assert _marks(r.vp_accented) == _marks(c.vp_body), f"False AUTO_CLEAN §{h}"
+      assert _word_norm(r.vp_accented) == _word_norm(c.vp_body), f"False AUTO_CLEAN text §{h}"
+  assert n_auto >= 1
 
   # 1b. §13 (`अनिरुक्तौ` solo Shri typo vs Weber `प्रजापतिह्`) MUST NOT certify AUTO_CLEAN!
   # Pause-normalized text comparison still catches real word drift (`अनिरुक्तौ` vs `अनिरुक्तो`).
@@ -495,13 +524,14 @@ def test_verifier_v2_precision_regressions(lex: UnifiedVedicLexicon):
   mw_nai = _mw_deva_to_us("नै—दाघ॑")
   assert mw_nai is not None and mw_nai[2] is None
 
-  # #7: Reject visvara quote-broken sandhi before `इति` and bogus `आ ऽ` avagraha; normalize Shri `व्व -> व`
+  # #7 (+ #31 B.6): Repair visvara quote-broken sandhi before `इति` (keeping its punctuation) instead of
+  # falling back to unpunctuated Weber; still reject bogus `आ ऽ` avagraha; normalize Shri `व्व -> व`
   vp_q, src_q = build_clean_vp_base(
     weber="तं᳘ हवि᳘ष्मन्त ईडत इ᳘ति॥",
     shri="तं᳘ हवि᳘ष्मन्त ऽईडत इ᳘ति॥",
     visvara='\"तं हविष्मन्त ईडते\"- इति ॥',
   )
-  assert src_q != "visvara" and "ईडत इति" in vp_q
+  assert src_q == "visvara" and "ईडत इति" in vp_q and '"' not in vp_q
 
   vp_vv, _ = build_clean_vp_base(
     weber="", shri="स᳘र्व्वे देवा᳘ व्वसन्ति॥", visvara="",
@@ -583,3 +613,134 @@ def test_export_adjudication_jsonl(lex: UnifiedVedicLexicon):
     ):
       assert req_key in rec
     assert rec["id"] == "test.md::१९"
+    assert rec["rel_path"] == "test.md"
+    assert rec["status"] == "NEEDS_ADJUDICATION"
+
+    # Also verify `include_auto_clean=True` + `rel_root` for Phase 3 full-file export (`#41`).
+    cl_ac = KandikaCluster(
+      heading="०१", sub_idx=0, vp_summary="विश्वास-प्रस्तुतिः", vp_body="", is_already_us=False,
+      weber="अ᳘थ सो᳘मं यजति॥", shri="अ᳘थ सो᳘मं यजति॥", visvara="अथ सोमं यजति ॥",
+    )
+    res_ac = solve_kandika(cl_ac, lex, kandika_id="01/09/2.md::०९")
+    assert res_ac.status == "AUTO_CLEAN"
+    out_all = os.path.join(td, "queue_all.jsonl")
+    n_all = export_adjudication_jsonl(
+      [("/root/01/09/2.md", [cl_ac, cl], [res_ac, res])],
+      out_all,
+      include_auto_clean=True,
+      rel_root="/root",
+    )
+    assert n_all == 2
+    recs_all = [json.loads(ln) for ln in open(out_all, encoding="utf-8").read().strip().splitlines()]
+    assert [r["status"] for r in recs_all] == ["AUTO_CLEAN", "NEEDS_ADJUDICATION"]
+    assert recs_all[0]["rel_path"] == "01/09/2.md"
+    assert recs_all[0]["lexicon_hits"]
+
+
+def test_vs_corpus_ingested_from_h3_wrapped_summaries(lex: UnifiedVedicLexicon):
+  # VS sarva-prastutiH wraps summaries in `<h3>मूलम् ...{Loading}...</h3>`; these must be ingested.
+  if not lookup_corpus_counts(lex, "यज्ञ᳓म्"):
+    pytest.skip("Corpora not present in environment")
+  assert lookup_corpus_counts(lex, "यज्ञ᳓म्").get("VS", 0) > 0
+  assert lookup_corpus_counts(lex, "अग्नि᳓म्").get("VS", 0) > 0
+
+
+def test_enrich_counts_no_duplicate_with_inline_form_citation(lex: UnifiedVedicLexicon):
+  counts = lookup_corpus_counts(lex, "व्रत᳓म्")
+  if "TS" not in counts:
+    pytest.skip("Corpora not present in environment")
+  j = enrich_padapatha_corpus_counts(lex, "व्रत᳓म्", "*TS* व्र॒तम्, *RV*; श्रीधरादि-पाठः")
+  assert j.count("*TS*") == 1 and j.count("*RV*") == 1
+  assert j.startswith(f"*TS*-{counts['TS']} व्र॒तम्")
+  assert j.endswith("; श्रीधरादि-पाठः")
+  assert enrich_padapatha_corpus_counts(lex, "व्रत᳓म्", j) == j  # idempotent
+
+
+def test_verifier_31_gates(lex: UnifiedVedicLexicon):
+  from doc_curation.sanskrit.accent import shatapatha_solver as ss
+  # B.4: nañ never takes lyap → `अव-धाय`, never `अ-वधाय`; nañ on non-lyap words still allowed.
+  assert ss._hyphenate_compound_pada("अवधाय", lex) == "अव-धाय"
+  assert not ss._is_valid_compound_hyphenation("अ-वधाय", "अवधाय")
+  # B.1: alternative vowel-sandhi resegmentations are enumerated (`तस्यै+तत्` ↔ `तस्य+एतत्`, augment `अघ्नन्`).
+  labels = [lbl for _, _, _, lbl in ss._alternative_segmentations(["तस्यै", "तत्"], lex)]
+  assert any("तस्य+एतत्" in lbl for lbl in labels)
+  labels = [lbl for _, _, _, lbl in ss._alternative_segmentations(["राज्ञा", "घ्नन्"], lex)]
+  assert any("अघ्नन्" in lbl for lbl in labels)
+  # …but RV-only length variants (`एवा`) are not alternatives to ŚB `एव`.
+  labels = [lbl for _, _, _, lbl in ss._alternative_segmentations(["एव", "एतत्"], lex)]
+  assert not any("एवा+" in lbl for lbl in labels)
+  # A: word-final virāma + independent vowel stays two tokens (no `र्ऋ` → `रृ` drift).
+  assert "नाभिर् ऋतस्य" in ss._format_vp_clauses("नाभिर्ऋतस्य")
+  # B.5: canonical sūtra names.
+  src = open(ss.__file__, encoding="utf-8").read()
+  assert "गतिर्गतावत्" not in src and "लिङ्सलोपौ" not in src
+  # B.6: quote-broken `इति` repaired.
+  assert ss._repair_visvara_quote_iti('सो ऽस्मि” इति') == "सो ऽस्मीति"
+
+
+def test_verifier_31_live_cases_never_auto_clean(lex: UnifiedVedicLexicon):
+  base = (
+    "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/"
+    "mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH/"
+  )
+  if not os.path.exists(base + "01/01/2.md"):
+    pytest.skip("ŚB corpus not present in environment")
+  cases = [
+    ("01/01/2.md", "१४"), ("04/01/1.md", "२१"), ("11/01/1.md", "०१"), ("02/05/4.md", "०४"),
+    ("05/05/5.md", "०२"), ("05/01/1.md", "१४"), ("01/03/3.md", "०९"), ("01/06/1.md", "१६"),
+    ("01/02/2.md", "०१"),
+  ]
+  for f, h in cases:
+    c = [c for c in parse_sb_markdown_clusters(open(base + f, encoding="utf-8").read()) if c.heading == h][0]
+    r = solve_kandika(c, lex, kandika_id=f"{f}::{h}")
+    assert r.status == "NEEDS_ADJUDICATION", f"{f}::{h} falsely AUTO_CLEAN"
+  # A: the live crash file must solve without raising.
+  crash = base + "14/01-05_bRhad-AraNyakopaniShat/03-04_muni-kANDaH/03/1.md"
+  if os.path.exists(crash):
+    assert isinstance(solve_sb_file(crash, lex), list)
+
+
+def test_rv_av_unhyphenated_attestation_blocks_mw_hyphenation(lex: UnifiedVedicLexicon):
+  from doc_curation.sanskrit.accent import shatapatha_solver as ss
+  if "RV" not in lookup_corpus_counts(lex, "अध्वरा᳓णाम्"):
+    pytest.skip("Corpora not present in environment")
+  assert ss._hyphenate_compound_pada("अध्वराणाम्", lex) == "अध्वराणाम्"  # never MW's `अ-ध्वराणाम्`
+  assert ss._hyphenate_compound_pada("प्रजापतिम्", lex) == "प्रजा-पतिम्"
+
+
+def test_verifier_40_gates(lex: UnifiedVedicLexicon):
+  from doc_curation.sanskrit.accent import shatapatha_solver as ss
+  if not lookup_corpus_counts(lex, "यज्ञ᳓म्"):
+    pytest.skip("Corpora not present in environment")
+  alt = lambda pr: [lbl for *_, lbl in ss._alternative_segmentations(pr, lex)]
+  # (d) compound vs split with a masked extra udātta, and particle `अह` vs verb `आह`.
+  assert any("दिवि-सदम्" in lbl or "दिविसदम्" in lbl for lbl in alt(["दिवि", "सदम्"]))
+  assert any("अत्र+अह" in lbl for lbl in alt(["अत्र", "आह"]))
+  # Visvara anusvāra respelled as the ŚB witnesses' homorganic nasal.
+  assert ss._prefer_ws_nasal_spelling("पंचदश पर्यंग्याः", "प᳘ञ्चदश पर्यङ्ग्याः", "") == "पञ्चदश पर्यङ्ग्याः"
+  # Weber-internal `॥` survives as `।` when visvara is unusable.
+  vp, src = build_clean_vp_base(weber="अ᳘थ सो᳘मं यजति॥ रे᳘तो वै सो᳘मः॥", shri="", visvara="")
+  assert src == "weber" and "।" in vp
+
+  # Live `#40` cases must all route to NEEDS_ADJUDICATION (and `13/02/2.md::१०` respells `पंचदश` → `पञ्चदश`).
+  base = (
+    "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/"
+    "mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH/"
+  )
+  if os.path.exists(base + "13/02/2.md"):
+    for f, h in (("13/02/2.md", "१०"), ("05/01/2.md", "०६"), ("03/07/1.md", "१५"), ("09/04/2.md", "२१")):
+      c = [c for c in parse_sb_markdown_clusters(open(base + f, encoding="utf-8").read()) if c.heading == h][0]
+      r = solve_kandika(c, lex, kandika_id=f"{f}::{h}")
+      assert r.status == "NEEDS_ADJUDICATION", f"{f}::{h} falsely AUTO_CLEAN"
+      if (f, h) == ("13/02/2.md", "१०"):
+        assert "प᳓ञ्चदश" in r.vp_accented and "पं᳓चदश" not in r.vp_accented
+
+
+def test_visvara_pausal_visarga_resandhied():
+  from doc_curation.sanskrit.accent import shatapatha_solver as ss
+  f = ss._restore_visvara_visarga_sandhi
+  assert f("सप्रथाः - इति ।") == "सप्रथा इति ।"
+  assert f("अमानुषः इव") == "अमानुष इव"
+  assert f("देवः अग्निः") == "देवो ऽग्निः"
+  assert f("नाभिः ऋतस्य") == "नाभिर् ऋतस्य"
+  assert f("मनुष्याः । अथ") == "मनुष्याः । अथ"  # never across a daṇḍa

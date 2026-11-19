@@ -53,6 +53,7 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   SolveResult,
   UnifiedVedicLexicon,
   export_adjudication_jsonl,
+  lookup_corpus_counts,
   parse_sb_markdown_clusters,
   solve_sb_file,
 )
@@ -144,8 +145,125 @@ def _reason_bucket(reason: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Deterministic ``*CORPUS*-N`` occurrence-count enrichment of padapāṭha provenance
+# ---------------------------------------------------------------------------
+
+_CORPUS_RE = r"(?:VS|TS|RV|AV|TB|TA)"
+_BARE_TAGS_ONLY_RE = re.compile(rf"\*{_CORPUS_RE}\*(?:-\d+)?(?:\s*/\s*\*{_CORPUS_RE}\*(?:-\d+)?)*")
+_INLINE_FORM_TAG_RE = re.compile(rf"^\*({_CORPUS_RE})\*(?:-\d+)?(\s+(?![०-९\d\s]).+)$")
+
+
+def enrich_provenance_with_corpus_counts(
+  lex: UnifiedVedicLexicon,
+  pada_us: str,
+  just: str,
+) -> tuple[str, list[str]]:
+  """Rewrite corpus citations in ``just`` to exact ``*CORPUS*-N`` occurrence counts for ``pada_us``.
+
+  - Standalone tags (``*TS*``, ``*RV*``, ``*TS*-3``) are replaced by one counts clause listing every
+    corpus attesting the exact US form, ordered by count (ties ``VS > TS > RV > AV > TB > TA``).
+    The clause is inserted after the leading sūtra/rule segments (or first, if none) of the first ``;`` clause.
+  - Inline form citations (``*TS* सँस्थि॑ते``) keep their form but gain the exact count (no duplicate tag).
+  - Verse references (``*VS* १.५``), mixed forms (``*RV*/*TS* …``), dictionaries (``*MW*``, ``*Macdonell*``…),
+    and editorial notes stay verbatim; ``पा\\u0966`` is normalized to ``पा॰``.
+  - Idempotent. Never emits ``-0``. When a cited corpus cannot be verified for the exact form, the original
+    bare tag is kept and reported in the second return value (``"<TAG>"``), so adjudicators can resolve it.
+
+  Returns ``(new_just, unverified_tags)``.
+  """
+  just = just.replace("पा\u0966", "पा॰")
+  counts = lookup_corpus_counts(lex, pada_us)
+  unverified: list[str] = []
+  used: set[str] = set()
+  dropped_bare: list[str] = []
+  new_clauses: list[list[str]] = []
+  for clause in just.split(";"):
+    kept: list[str] = []
+    for seg in (s.strip() for s in clause.split(",")):
+      if not seg:
+        continue
+      if _BARE_TAGS_ONLY_RE.fullmatch(seg):
+        dropped_bare.append(seg)
+        continue
+      m_inl = _INLINE_FORM_TAG_RE.match(seg)
+      if m_inl and "/" not in seg.split(" ", 1)[0]:
+        cname = m_inl.group(1)
+        if cname in counts:
+          used.add(cname)
+          seg = f"*{cname}*-{counts[cname]}{m_inl.group(2)}"
+        else:
+          unverified.append(cname)
+      kept.append(seg)
+    new_clauses.append(kept)
+
+  for seg in dropped_bare:
+    unverified.extend(c for c in re.findall(rf"\*({_CORPUS_RE})\*", seg) if c not in counts)
+  remaining = {c: n for c, n in counts.items() if c not in used}
+  counts_clause = ", ".join(f"*{c}*-{n}" for c, n in remaining.items())
+  if counts_clause:
+    first = new_clauses[0] if new_clauses else []
+    if not new_clauses:
+      new_clauses.append(first)
+    first.append(counts_clause)
+  elif dropped_bare:
+    # Nothing attested for the exact form: unverifiable bare tags are dropped when the remaining provenance is
+    # still solid (sūtra / inline cited form); otherwise they are kept verbatim so solidity is not lost.
+    # Either way they are reported, and counts are never invented.
+    for seg in dropped_bare:
+      unverified.extend(re.findall(rf"\*({_CORPUS_RE})\*", seg))
+    rest = "; ".join(", ".join(k) for k in new_clauses if k)
+    if not is_solid_provenance(rest):
+      first = new_clauses[0] if new_clauses else []
+      if not new_clauses:
+        new_clauses.append(first)
+      first.append(", ".join(dropped_bare))
+  new_just = "; ".join(", ".join(k) for k in new_clauses if k)
+  return new_just, sorted(set(unverified))
+
+
+def enrich_items_with_corpus_counts(
+  lex: UnifiedVedicLexicon,
+  items: Sequence[PadapathaItem],
+) -> tuple[list[PadapathaItem], dict[int, list[str]]]:
+  """Apply :func:`enrich_provenance_with_corpus_counts` to every item; returns ``(items, {idx: unverified_tags})``."""
+  out: list[PadapathaItem] = []
+  warn: dict[int, list[str]] = {}
+  for i, it in enumerate(items):
+    new_prov, unv = enrich_provenance_with_corpus_counts(lex, it.ref if it.ref != "?" else it.ar, it.prov)
+    if unv:
+      warn[i] = unv
+    out.append(
+      PadapathaItem(
+        ar=it.ar,
+        ref=it.ref,
+        prov=new_prov,
+        vyat=it.vyat,
+        solid=is_solid_provenance(new_prov) and it.ref != "?",
+      )
+    )
+  return out, warn
+
+
+# ---------------------------------------------------------------------------
 # 1. Corpus-wide solver runner (Phase 2)
 # ---------------------------------------------------------------------------
+
+
+def _add_rel_path_to_jsonl(jsonl_path: Path, root: Path) -> None:
+  """Add a ``rel_path`` field (relative to ``root``) to every record of an exported adjudication JSONL."""
+  lines = [ln for ln in jsonl_path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+  out: list[str] = []
+  for ln in lines:
+    rec = json.loads(ln)
+    src = rec.get("file") or rec.get("rel_path")
+    if src:
+      try:
+        rec["rel_path"] = Path(src).relative_to(root).as_posix() if Path(src).is_absolute() else Path(src).as_posix()
+      except ValueError:
+        rec["rel_path"] = Path(src).name
+      rec.setdefault("file", str(src))
+    out.append(json.dumps(rec, ensure_ascii=False))
+  jsonl_path.write_text("".join(o + "\n" for o in out), encoding="utf-8")
 
 
 def run_solver_corpus_pass(
@@ -156,6 +274,7 @@ def run_solver_corpus_pass(
   apply_auto_clean: bool = False,
   max_workers: int = 1,
   lexicon: UnifiedVedicLexicon | None = None,
+  export_all_to_adjudication: bool = False,
 ) -> dict[str, Any]:
   """Run :func:`solve_sb_file` across ŚB content files, export per-kāṇḍa JSONLs, and optionally apply ``AUTO_CLEAN``.
 
@@ -173,6 +292,9 @@ def run_solver_corpus_pass(
     :func:`apply_sb_kandika_updates(..., preserve_existing_us=True, strict=True)`.
   - ``max_workers``: defaults to ``1`` to stay polite on local CPU; capped at ``os.cpu_count()``.
   - ``lexicon``: optional pre-loaded :class:`UnifiedVedicLexicon` (used when ``max_workers <= 1``).
+  - ``export_all_to_adjudication``: when ``True``, ``AUTO_CLEAN`` drafts are ALSO written to
+    ``kanda_<XX>_adjudication.jsonl`` (reason ``auto_clean_draft``) so Phase 3 covers every non-skipped kaṇḍikā.
+    Adjudication records always carry both ``file`` (absolute) and ``rel_path``.
   """
   t0 = time.monotonic()
   root = Path(sb_root)
@@ -286,8 +408,30 @@ def run_solver_corpus_pass(
           except Exception as exc:  # noqa: BLE001
             apply_errors.append({"rel_path": rel_posix, "error": str(exc)})
 
-    adj_written = export_adjudication_jsonl(k_entries, str(adj_jsonl_path))
-    assert adj_written == k_adj
+    export_entries = k_entries
+    if export_all_to_adjudication:
+      # Every non-skipped kaṇḍikā (including AUTO_CLEAN drafts) goes to Phase 3: no unreviewed auto-application.
+      export_entries = [
+        (
+          md_s,
+          cls_,
+          [
+            dataclasses.replace(r, reasons=list(r.reasons) or ["auto_clean_draft"])
+            if r.status == "AUTO_CLEAN"
+            else r
+            for r in res_
+          ],
+        )
+        for md_s, cls_, res_ in k_entries
+      ]
+    adj_written = export_adjudication_jsonl(
+      export_entries,
+      str(adj_jsonl_path),
+      include_auto_clean=export_all_to_adjudication,
+      rel_root=str(root),
+    )
+    assert adj_written == (k_adj + k_auto if export_all_to_adjudication else k_adj)
+    _add_rel_path_to_jsonl(adj_jsonl_path, root)
 
     total_kandikas += k_total
     total_auto += k_auto
@@ -355,6 +499,7 @@ class AdjudicationRecordResult:
   disagree_syllables: list[dict[str, Any]] = dataclasses.field(default_factory=list)
   validation_issues: list[str] = dataclasses.field(default_factory=list)
   reconcile_logs: list[str] = dataclasses.field(default_factory=list)
+  unverified_corpus_tags: list[str] = dataclasses.field(default_factory=list)
 
   def to_dict(self) -> dict[str, Any]:
     return dataclasses.asdict(self)
@@ -521,6 +666,8 @@ def verify_and_apply_adjudications(
   adj_jsonl_path: str | os.PathLike[str],
   *,
   dry_run: bool = False,
+  enrich_counts: bool = True,
+  lexicon: UnifiedVedicLexicon | None = None,
 ) -> AdjudicationBatchReport:
   """Independently verify adjudicated kaṇḍikā JSONL records, apply passing files, and return structured diagnostics.
 
@@ -677,6 +824,11 @@ def verify_and_apply_adjudications(
 
       slot = slots[slot_idx]
       items, item_errs = _parse_adjudication_items(rec.get("items"))
+      unverified_by_idx: dict[int, list[str]] = {}
+      if enrich_counts and items and not item_errs:
+        if lexicon is None:
+          lexicon = UnifiedVedicLexicon.load_or_build(force_rebuild=False)
+        items, unverified_by_idx = enrich_items_with_corpus_counts(lexicon, items)
       vp_clean_raw = rec.get("vp_clean")
       vp_clean = str(vp_clean_raw).strip() if vp_clean_raw is not None and str(vp_clean_raw).strip() else None
       preserve_vp = slot.is_already_us
@@ -720,6 +872,7 @@ def verify_and_apply_adjudications(
         "vp_sum": vp_sum,
         "vp_acc": vp_acc,
         "unmapped": unmapped,
+        "unverified": sorted({t for v in unverified_by_idx.values() for t in v}),
       })
 
     # Verify each parsed record independently with cross-kaṇḍikā next_first_mark.
@@ -853,6 +1006,7 @@ def verify_and_apply_adjudications(
           applied=upd_rep.wrote,
           preserved_vp=ent["preserve_vp"],
           errors=[],
+          unverified_corpus_tags=ent["unverified"],
         )
     except Exception as exc:  # noqa: BLE001
       for ent in accepted_entries:
@@ -1303,3 +1457,70 @@ def audit_full_sb_corpus(
     per_kanda=per_kanda,
     preserved_us_notes=preserved_notes,
   )
+
+
+def _cli(argv: Sequence[str] | None = None) -> int:
+  """CLI: ``python -m doc_curation.sanskrit.accent.shatapatha_batch {solve,apply,audit} ...`` (JSON on stdout)."""
+  import argparse
+  import sys
+
+  ap = argparse.ArgumentParser(prog="shatapatha_batch", description=__doc__.splitlines()[0])
+  sub = ap.add_subparsers(dest="cmd", required=True)
+
+  p_solve = sub.add_parser("solve", help="run_solver_corpus_pass")
+  p_solve.add_argument("sb_root")
+  p_solve.add_argument("out_dir")
+  p_solve.add_argument("--kandas", nargs="*", default=None)
+  p_solve.add_argument("--apply-auto-clean", action="store_true")
+  p_solve.add_argument("--max-workers", type=int, default=1)
+  p_solve.add_argument(
+    "--export-all", action="store_true", help="write AUTO_CLEAN drafts to the adjudication queue too (Phase 3 covers all)"
+  )
+
+  p_apply = sub.add_parser("apply", help="verify_and_apply_adjudications")
+  p_apply.add_argument("sb_root")
+  p_apply.add_argument("adj_jsonl")
+  p_apply.add_argument("--dry-run", action="store_true")
+  p_apply.add_argument("--no-enrich-counts", action="store_true")
+
+  p_audit = sub.add_parser("audit", help="audit_full_sb_corpus")
+  p_audit.add_argument("sb_root")
+  p_audit.add_argument("--kandas", nargs="*", default=None)
+  p_audit.add_argument("--files", nargs="*", default=None)
+  p_audit.add_argument("--preserved-ids", default=None, help="corpus_summary.json (preserved_existing_us_ids) or newline list")
+
+  a = ap.parse_args(argv)
+  if a.cmd == "solve":
+    out = run_solver_corpus_pass(
+      a.sb_root,
+      a.out_dir,
+      kandas=a.kandas,
+      apply_auto_clean=a.apply_auto_clean,
+      max_workers=a.max_workers,
+      export_all_to_adjudication=a.export_all,
+    )
+    json.dump({k: v for k, v in out.items() if k != "per_kanda"}, sys.stdout, ensure_ascii=False, indent=2)
+    rc = 0
+  elif a.cmd == "apply":
+    rep = verify_and_apply_adjudications(
+      a.sb_root, a.adj_jsonl, dry_run=a.dry_run, enrich_counts=not a.no_enrich_counts
+    )
+    json.dump(rep.to_dict(), sys.stdout, ensure_ascii=False, indent=2)
+    rc = 0 if rep.rejected == 0 else 1
+  else:
+    pres: set[str] | None = None
+    if a.preserved_ids:
+      raw = Path(a.preserved_ids).read_text(encoding="utf-8")
+      try:
+        pres = set(json.loads(raw).get("preserved_existing_us_ids", []))
+      except (json.JSONDecodeError, AttributeError):
+        pres = {ln.strip() for ln in raw.splitlines() if ln.strip()}
+    rep = audit_full_sb_corpus(a.sb_root, kandas=a.kandas, files=a.files, preserved_kandika_ids=pres)
+    json.dump(rep.to_dict(), sys.stdout, ensure_ascii=False, indent=2)
+    rc = 0 if rep.passed else 1
+  sys.stdout.write("\n")
+  return rc
+
+
+if __name__ == "__main__":
+  raise SystemExit(_cli())
