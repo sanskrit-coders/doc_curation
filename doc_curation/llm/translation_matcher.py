@@ -307,25 +307,12 @@ def _validate_batch(starts, skip, next_en, c_start, c_end, wlen,
 
 
 def seq_match_texts_to_translation(
-    texts, translation_text, generate_fn,
+    texts, translation_text, generate_fn=None,
     batch_core_chars=800, window_en_chars=8000, max_retries=2):
-  """Align core texts to translation spans via batched LLM word mapping.
-
-  :param texts: core sentences in order (any language).
-  :param translation_text: full translation text, UNSPLIT (the model
-    splits it as it pleases: takes are word spans, so clause-level
-    splits land precisely).
-  :param generate_fn: ``fn(prompt_text) -> str`` (e.g. wrapping
-    ``LlmBackend.generate_content``); called once per batch plus
-    retries of failed batches only.
-  :param batch_core_chars: soft budget for core text per call.
-  :param window_en_chars: cap for the translation window per call.
-  :param max_retries: retries of an invalid batch reply (with the
-    validation error appended); then RuntimeError.
-  :return: list of translation strings, ``len == len(texts)``; each is
-    the verbatim window words joined with single spaces (``""``
-    for empty spans).
-  """
+  """Align core texts to translation spans via batched LLM (or local DP) word mapping."""
+  if generate_fn is None:
+    from doc_curation.llm.proofreader.translation_aligner import local_translation_generate_fn
+    generate_fn = local_translation_generate_fn
   texts = [regex.sub(r"\s+", " ", (t or "").strip()) for t in (texts or [])]
   n = len(texts)
   if n == 0:
@@ -662,19 +649,14 @@ def _has_bare_devanagari(rest):
   return bool(regex.search(r"[\u0900-\u097F]{2,}", bare))
 
 
-def _has_unmapped_mula(text):
+def _has_unmapped_mula(text, valid_titles=("Translation", "Translation - Notes")):
   """True if some मूलम् block lacks a Translation block directly above."""
-  return any(not mapped for _, _, mapped in _mula_entries(text))
+  return any(not mapped for _, _, mapped in _mula_entries(text, valid_titles=valid_titles))
 
 
-def _split_leading_mapped(text):
-  """(done_head, todo_tail): cut after the leading run of mapped मूलम् blocks.
-
-  Checkpoints move mapped blocks before the progress marker so the todo
-  region always starts at the first unmapped sentence; resume counting
-  then needs no skip logic in the steady state.
-  """
-  entries = _mula_entries(text)
+def _split_leading_mapped(text, valid_titles=("Translation", "Translation - Notes")):
+  """(done_head, todo_tail): cut after the leading run of mapped मूलम् blocks."""
+  entries = _mula_entries(text, valid_titles=valid_titles)
   run = 0
   while run < len(entries) and entries[run][2]:
     run += 1
@@ -732,13 +714,14 @@ def _update_pos_tags(files_data, used_paths, next_en):
 
 
 def _appendix_text(total_core, total_paras, used_files, done_text, tagged,
-                   scope=None, unmatched=0):
+                   scope=None, unmatched=0, translation_title="Translation",
+                   notes_title="Translation - Notes"):
   """Appendix block; counts Notes/skipped blocks in done_text."""
-  notes = len(regex.findall(r"<summary>Translation - Notes</summary>",
+  notes = len(regex.findall(rf"<summary>{regex.escape(notes_title)}</summary>",
                             done_text))
   skipped = done_text.count(TRANSLATION_SKIPPED_TAG)
   empty = len(regex.findall(
-    r"<summary>Translation</summary>\n\n\s*</details>", done_text))
+    rf"<summary>{regex.escape(translation_title)}</summary>\n\n\s*</details>", done_text))
   paras = total_paras if total_paras is not None else "?"
   text = (
     "<details><summary>Appendix</summary>\n\n"
@@ -779,16 +762,8 @@ def _mula_blocks(rest):
 TRANSLATION_SKIPPED_TAG = "<!-- TRANSLATION-SKIPPED -->"
 
 
-def _mula_entries(text):
-  """[(block_text, sentence, mapped)] for each मूलम् block, in order.
-
-  ``mapped`` is True when a Translation [/ Notes] block sits directly
-  above (blank-line separated), or when a ``TRANSLATION-SKIPPED`` marker
-  does (skipped cores are done: no Translation block is ever inserted
-  for them).  Mapped blocks may linger in the todo
-  region (checkpoints never move them); callers skip the leading mapped
-  run so batches always start at the first unmapped sentence.
-  """
+def _mula_entries(text, valid_titles=("Translation", "Translation - Notes")):
+  """[(block_text, sentence, mapped)] for each मूलम् block, in order."""
   all_blocks = list(regex.finditer(r"<details\b.*?</details>", text,
                                    flags=regex.DOTALL))
   out = []
@@ -809,33 +784,34 @@ def _mula_entries(text):
         ptitle = regex.search(r"<summary>(.*?)</summary>", prev.group(0),
                               flags=regex.DOTALL)
         mapped = (ptitle is not None
-                  and ptitle.group(1).strip() in (
-                    "Translation", "Translation - Notes"))
+                  and ptitle.group(1).strip() in valid_titles)
       mapped = mapped or skipped_here
     out.append((tag, body.strip(), mapped))
   return out
 
 
 def _finalize_appendix(md_path, total_core, total_paras, used_files,
-                       tagged):
+                       tagged, translation_title="Translation",
+                       notes_title="Translation - Notes"):
   """Strip any marker, verify fully mapped, append Appendix. Returns summary."""
+  valid_titles = (translation_title, notes_title)
   with open(md_path, encoding="utf-8") as f:
     cur_text = f.read()
   cur_header, cur_rest = _split_header_rest(cur_text)
   cur_rest_nomarker = regex.sub(
     r"<!--\s*TRANSLATION-MATCH-CONTINUE.*?-->", "", cur_rest,
     flags=regex.DOTALL)
-  if _has_unmapped_mula(cur_rest_nomarker):
+  if _has_unmapped_mula(cur_rest_nomarker, valid_titles=valid_titles):
     raise RuntimeError(f"{md_path}: unmapped मूलम् remains at finalize.")
   body_nodetails = regex.sub(r"<details\b.*?</details>", "",
                              cur_rest_nomarker, flags=regex.DOTALL)
   if regex.search(r"[\u0900-\u097F]{2,}", body_nodetails):
     raise RuntimeError(f"{md_path}: bare Sanskrit remains at finalize.")
-  notes = len(regex.findall(r"<summary>Translation - Notes</summary>",
+  notes = len(regex.findall(rf"<summary>{regex.escape(notes_title)}</summary>",
                             cur_rest_nomarker))
   skipped = cur_rest_nomarker.count(TRANSLATION_SKIPPED_TAG)
   empty = len(regex.findall(
-    r"<summary>Translation</summary>\n\n\s*</details>", cur_rest_nomarker))
+    rf"<summary>{regex.escape(translation_title)}</summary>\n\n\s*</details>", cur_rest_nomarker))
   paras_txt = total_paras if total_paras is not None else "?"
   appendix = (
     "<details><summary>Appendix</summary>\n\n"
@@ -858,55 +834,16 @@ def _finalize_appendix(md_path, total_core, total_paras, used_files,
 def insert_translation_details(md_path, translation_dir_path, start_file=None,
                                end_file=None, end_after=None, generate_fn=None,
                                batch_core_chars=800, window_en_chars=8000,
-                               max_retries=2, dry_run=False):
-  """Map translations onto pre-made मूलम् sentences and insert them.
-
-  Assumes :func:`doc_curation.md.content_processor.details.maker.generic_sanskrit_vipra_mUla`
-  has already run: every sentence to translate already sits in its own
-  ``मूलम्`` block (with a विश्वास-प्रस्तुतिः twin).  This function gathers
-  those मूलम् sentences into an array, maps them with the batched index
-  protocol of :func:`seq_match_texts_to_translation`, and inserts just
-  the Translation [/ Translation - Notes] details directly above each
-  corresponding मूलम् block.  Cores the model explicitly skips (no
-  English counterpart) get no Translation block at all — only a
-  ``<!-- TRANSLATION-SKIPPED -->`` marker — and are listed in the
-  Appendix; output never contains empty Translation blocks.
-
-  After EVERY validated LLM response the md file is reread from disk
-  and rewritten (mapped blocks + progress marker + remaining bare मूलम्
-  blocks) before the next call, so concurrent edits survive and reruns
-  resume after the marker.  On full success the marker is replaced by an
-  Appendix block.  Bare Sanskrit outside details (i.e. the maker step
-  was skipped) raises RuntimeError; reruns on finished files are no-ops.
-
-  Translation-file carryover: every translation file carries a
-  ``<!-- TRANSLATION-MATCH-POS -->`` tag recording consumed words;
-  the EN word stream is rebuilt from disk every batch honoring those
-  tags, so unmatched tail words of a file automatically continue the
-  next call's window; after each mapped batch the tags advance in the
-  files themselves (consumed heads are never deleted; footnote defs
-  never move).
-
-  :param md_path: md file rewritten in place.
-  :param translation_dir_path: directory of translation ``*.md`` files,
-    or a single translation ``*.md`` file path.
-  :param start_file: basename to start from (e.g. ``"12.md"``); ``None``
-    starts with the first file.
-  :param end_file: basename to stop at (inclusive); ``None`` runs to the
-    last file.  Use when the md file's scope ends before the directory
-    does, so the final batch is not forced to swallow foreign tail
-    material (e.g. later sūtras for a later adhikaraṇa file).
-  :param end_after: distinctive phrase or **regex** from the last
-    in-scope stretch (any script), matched locally (case-sensitive then
-    case-insensitive) on the word-joined text; the stream truncates at
-    the next word boundary after the match.  Refines ``end_file`` when
-    the scope ends mid-file.  Empty/zero/multiple matches raise
-    ValueError (fail-stop); ``None`` consumes to the end of ``end_file``.
-  :param generate_fn: ``fn(prompt_text) -> str``.
-  :param dry_run: map everything but write nothing (no md, tag, or
-    Appendix writes).
-  :return: dict summary.
-  """
+                               max_retries=2, dry_run=False,
+                               translation_title="Translation",
+                               notes_title=None):
+  """Map translations onto pre-made मूलम् sentences and insert them."""
+  if generate_fn is None:
+    from doc_curation.llm.proofreader.translation_aligner import local_translation_generate_fn
+    generate_fn = local_translation_generate_fn
+  if notes_title is None:
+    notes_title = "Translation - Notes" if translation_title == "Translation" else f"{translation_title} - Note"
+  valid_titles = (translation_title, notes_title)
   used_paths = _translation_files_sorted(translation_dir_path, start_file,
                                            end_file)
   used_files = [os.path.basename(p) for p in used_paths]
@@ -937,9 +874,7 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
               "files": used_files}
     total_core = len(blocks)
     total_paras = total_core  # 1:1 sentences↔blocks from here on
-    if not _has_unmapped_mula(rest):
-      # Fully mapped (e.g. rerun after success, or Appendix deleted):
-      # never duplicate translations; just ensure the Appendix exists.
+    if not _has_unmapped_mula(rest, valid_titles=valid_titles):
       if "<summary>Appendix</summary>" in rest:
         return {"status": "already-done",
                 "sentences": total_core, "paragraphs": total_paras,
@@ -949,7 +884,8 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
                 "paragraphs": total_paras, "notes": 0, "empty": 0,
                 "files": used_files, "tagged": []}
       return _finalize_appendix(md_path, total_core, total_paras,
-                                used_files, [])
+                                used_files, [], translation_title=translation_title,
+                                notes_title=notes_title)
     done_core, next_en = 0, 0
     if not dry_run:
       # Fresh md run: stale position tags would mislead the next input,
@@ -1027,7 +963,7 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
     # starts at the first unmapped sentence.  Those skipped sentences
     # are already counted in done_core, so g0 stays cur_done_core.
     # A mapped block after an unmapped one means corruption → raise.
-    todo_entries = _mula_entries(cur_todo)
+    todo_entries = _mula_entries(cur_todo, valid_titles=valid_titles)
     skipped = 0
     while skipped < len(todo_entries) and todo_entries[skipped][2]:
       skipped += 1
@@ -1125,7 +1061,7 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
       fresh_todo_parsed = regex.split(
         r"<!--\s*TRANSLATION-MATCH-CONTINUE.*?-->", fresh_todo_parsed,
         maxsplit=1, flags=regex.DOTALL)[1]
-    fresh_entries = _mula_entries(fresh_todo_parsed)
+    fresh_entries = _mula_entries(fresh_todo_parsed, valid_titles=valid_titles)
     fresh_skip = 0
     while (fresh_skip < len(fresh_entries) and fresh_entries[fresh_skip][2]):
       fresh_skip += 1
@@ -1147,15 +1083,16 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
         if mk in footnote_defs]
       notes = "\n".join(footnote_defs[mk] for mk in markers) or None
       new_todo2 = new_todo2.replace(
-        tag, translation_details(tr, notes) + "\n\n" + tag, 1)
+        tag,
+        translation_details(tr, notes, translation_title=translation_title, notes_title=notes_title) + "\n\n" + tag,
+        1,
+      )
     new_done_core = cur_done_core + len(batch_texts)
-    # Move the mapped leading run before the marker: the todo region
-    # then always starts at the first unmapped sentence.
-    done_add, todo_new_raw = _split_leading_mapped(new_todo2)
+    done_add, todo_new_raw = _split_leading_mapped(new_todo2, valid_titles=valid_titles)
     parts = [p for p in (done_body_prev.strip(), done_add.strip()) if p]
     done_combined = "\n\n".join(parts)
     todo_new = todo_new_raw.strip()
-    if _has_unmapped_mula(todo_new):
+    if _has_unmapped_mula(todo_new, valid_titles=valid_titles):
       marker_txt = _continue_marker(
         new_done_core, total_core, next_en_new, m, total_paras, used_files)
       _atomic_write(md_path, cur_header + done_combined
@@ -1164,7 +1101,6 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
         if b not in tagged:
           tagged.append(b)
     else:
-      # No bare sentences left (only Tamil details maybe): finalize now.
       todo_tail = ("\n\n" + todo_new) if todo_new else ""
       scope = None
       if end_after is not None:
@@ -1172,7 +1108,8 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
                  f"to words [0,{m}) of {full_m}")
       appendix = _appendix_text(
         total_core, total_paras, used_files, done_combined + todo_tail,
-        tagged, scope, unmatched=m - next_en_new)
+        tagged, scope, unmatched=m - next_en_new,
+        translation_title=translation_title, notes_title=notes_title)
       _atomic_write(md_path, cur_header + done_combined + todo_tail + "\n\n"
                     + appendix + "\n")
       for b in _update_pos_tags(files_data, used_paths, next_en_new):
@@ -1181,16 +1118,15 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
       done_core, next_en = new_done_core, next_en_new
       finalized = True
       final_notes = len(regex.findall(
-        r"<summary>Translation - Notes</summary>",
+        rf"<summary>{regex.escape(notes_title)}</summary>",
         done_combined + todo_tail))
       final_empty = len(regex.findall(
-        r"<summary>Translation</summary>\n\n\s*</details>",
+        rf"<summary>{regex.escape(translation_title)}</summary>\n\n\s*</details>",
         done_combined + todo_tail))
       final_skipped = (done_combined + todo_tail).count(
         TRANSLATION_SKIPPED_TAG)
       break
 
-  # ---- finalize: drop marker, append appendix ----
   if dry_run:
     return {"status": "done", "sentences": total_core,
             "paragraphs": total_paras, "notes": 0, "empty": 0,
@@ -1201,4 +1137,5 @@ def insert_translation_details(md_path, translation_dir_path, start_file=None,
             "empty": final_empty, "skipped": final_skipped,
             "files": used_files, "tagged": tagged}
   return _finalize_appendix(md_path, total_core, total_paras, used_files,
-                            tagged)
+                            tagged, translation_title=translation_title,
+                            notes_title=notes_title)

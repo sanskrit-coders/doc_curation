@@ -1,20 +1,18 @@
-"""LLM-assisted commentary & translation interleaving without retyping source text.
+"""Hybrid deterministic + LLM commentary & translation interleaver ("no retyping, ever").
 
-Implements the ``/interleaver`` skill's strict "no retyping, ever" invariant:
-1. For plain core↔translation streams, delegates directly to
-   ``doc_curation.llm.translation_matcher`` using ``backend.generate_content``.
-2. For multi-role Sanskrit commentaries & Vedic/śāstric translations (where
-   segments must be classified into ``viniyoga``, ``avatarika``, ``translation``,
-   ``tika``, ``note``, ``viniyoga_sangraha``, or ``heading`` and placed in canonical
-   order around ``विश्वास-प्रस्तुतिः`` and ``मूलम्``), slices the source quote-safely,
-   asks the LLM ONLY for JSON segment-to-core & role assignments, and reassembles
-   verbatim text in Python.
+Supports both:
+1. **Zero-GPU local alignment (`backend=None`):** Uses ``interleave_aligner``'s
+   sandhi-restored pratīka, headword, and stem-IDF Monotonic Viterbi DP solver.
+2. **LLM + DP hybrid (`backend=ProofreaderBackend(...)`):** Enriches prompts with
+   pre-computed pratīka/anchor & role cues + ``UPCOMING CORES`` lookahead, asks
+   the LLM ONLY for 0-based JSON indices, and post-guards with ``refine_interleave_plan``.
 """
 from __future__ import annotations
 
 import json
 import regex
 
+from .interleave_aligner import align_commentary_segments, refine_interleave_plan
 from .prompts import INTERLEAVER_SYSTEM_PROMPT
 
 VALID_ROLES = frozenset({
@@ -30,28 +28,40 @@ VALID_ROLES = frozenset({
 
 def split_quote_safe_segments(text: str) -> list[str]:
   """Split commentary/translation text into sentence/paragraph segments without
-  cutting inside quotes (``"..."``, ``“...”``, ``'...'``) or parentheses ``(...)``."""
+  cutting inside ``"..."``, ``“...”``, ``‘...’``, Sanskrit ``'...'``, ``(...)``,
+  ``[...]``, or ``+++...+++`` editorial glosses."""
   if not text or not text.strip():
     return []
   segments: list[str] = []
   buf: list[str] = []
   paren_depth = 0
   in_dquote = False
+  in_squote = False
+  in_plus = False
   n = len(text)
   i = 0
   while i < n:
+    if text[i:i + 3] == "+++":
+      in_plus = not in_plus
+      buf.append("+++")
+      i += 3
+      continue
     ch = text[i]
     buf.append(ch)
-    if ch == '"' and (i == 0 or text[i - 1] != "\\"):
-      in_dquote = not in_dquote
-    elif not in_dquote:
-      if ch in "([“":
-        paren_depth += 1
-      elif ch in ")]”" and paren_depth > 0:
-        paren_depth -= 1
+    if not in_plus:
+      if ch == '"' and (i == 0 or text[i - 1] != "\\"):
+        in_dquote = not in_dquote
+      elif not in_dquote:
+        if ch == "'" and not (i > 0 and text[i - 1].isascii() and text[i - 1].isalpha()):
+          if in_squote or ("'" in text[i + 1:i + 140]):
+            in_squote = not in_squote
+        elif not in_squote:
+          if ch in "([“‘":
+            paren_depth += 1
+          elif ch in ")]”’" and paren_depth > 0:
+            paren_depth -= 1
 
-    # Check sentence/paragraph boundary outside quotes & parens
-    if not in_dquote and paren_depth == 0:
+    if not in_plus and not in_dquote and not in_squote and paren_depth == 0:
       if text[i:i + 2] == "\n\n":
         seg = "".join(buf).strip()
         if seg:
@@ -60,8 +70,7 @@ def split_quote_safe_segments(text: str) -> list[str]:
         while i + 1 < n and text[i + 1] in "\n\r ":
           i += 1
       elif ch in "।॥" or (ch in ".!?" and i + 1 < n and text[i + 1].isspace()):
-        # Absorb doubled danda ॥ or trailing digits/spaces on same danda
-        while i + 1 < n and text[i + 1] in "।॥०१२३४५६७८९0123456789":
+        while i + 1 < n and text[i + 1] in "।॥०१२३४५६७८९0123456789*":
           i += 1
           buf.append(text[i])
         seg = "".join(buf).strip()
@@ -77,8 +86,7 @@ def split_quote_safe_segments(text: str) -> list[str]:
 
 
 def sanitize_details_footnotes(text: str) -> str:
-  """Convert ``[^32]`` to ``[32]`` inside ``<details>`` so Hugo/Markdown renderers
-  keep notes inline inside the details block instead of hoisting them to page end."""
+  """Convert ``[^32]`` to ``[32]`` inside ``<details>`` so renderers keep notes inline."""
   return regex.sub(r"\[\^([^\]]+)\]", r"[\1]", text)
 
 
@@ -89,38 +97,90 @@ _TM_WORDS_SECTION_RE = regex.compile(
 
 
 def annotate_translation_matcher_prompt(prompt_text: str) -> str:
-  """Prefix each whitespace-delimited word in ``TRANSLATION WORDS:`` with its exact
-  0-based index ``[i]`` so a non-thinking LLM can read exact ``starts`` / ``next_en``
-  indices directly instead of mentally counting 150+ unnumbered words."""
-  if "TRANSLATION WORDS:\n" not in prompt_text or "[0] " in prompt_text:
+  """Enrich a ``translation_matcher`` prompt with unambiguous ``[i]`` word indices,
+  sentence-start line breaks, and pre-computed bilingual DP anchor hints."""
+  if "TRANSLATION WORDS:\n" not in prompt_text or "TRANSLATION WORDS (pre-indexed" in prompt_text:
     return prompt_text
+  from .translation_aligner import (
+    align_cores_to_translation_dp,
+    candidate_word_starts,
+    parse_translation_matcher_prompt,
+  )
+
+  parsed = parse_translation_matcher_prompt(prompt_text)
+  updated = regex.sub(
+    r"The translation is one unsplit text — split it yourself by regex \\s[^\n]*",
+    "Each translation word below is ALREADY pre-indexed with its exact 0-based tag "
+    "[0], [1], ... — do NOT re-split or recount; copy the exact [i] integer standing "
+    "immediately before the first word of each core's English rendering.",
+    prompt_text,
+    count=1,
+  )
 
   def _repl(m: regex.Match) -> str:
     words = m.group(2).split()
-    numbered = " ".join(f"[{idx}] {w}" for idx, w in enumerate(words))
+    cands = candidate_word_starts(words)
+    parts = []
+    for idx, w in enumerate(words):
+      sep = "\n" if idx > 0 and cands.get(idx, 0.0) >= 1.8 else (" " if idx > 0 else "")
+      parts.append(f"{sep}[{idx}] {w}")
     hdr = (
-      "TRANSLATION WORDS (each whitespace-split string is prefixed with its exact "
-      "0-based index [i] — use these [i] integers directly in \"starts\" and \"next_en\"):\n"
+      "TRANSLATION WORDS (pre-indexed 0-based [i] tags — use these [i] integers "
+      "directly in \"starts\" and \"next_en\"):\n"
     )
-    return hdr + numbered + m.group(3)
+    hint_block = ""
+    if parsed and parsed["cores"]:
+      dp = align_cores_to_translation_dp(
+        parsed["cores"], words, c_start=parsed["c_start"], upcoming_cores=parsed["upcoming_cores"]
+      )
+      hint_block = (
+        f"\n\nBILINGUAL ANCHOR PRIOR (heuristic starting estimate — refine semantically where needed):\n"
+        f"{json.dumps(dp, ensure_ascii=False)}"
+      )
+    return hdr + "".join(parts) + hint_block + m.group(3)
 
-  return _TM_WORDS_SECTION_RE.sub(_repl, prompt_text, count=1)
+  return _TM_WORDS_SECTION_RE.sub(_repl, updated, count=1)
 
 
 def format_interleave_prompt(
   cores: list[str],
   segments: list[str],
   *,
+  upcoming_cores: list[str] | None = None,
   author_label: str = "टीका",
   is_sarvash_tikah: bool = False,
+  include_hints: bool = True,
 ) -> str:
-  """Build the user prompt for JSON segment-to-core & role alignment."""
+  """Build the user prompt for JSON segment-to-core & role alignment, optionally
+  enriched with sandhi-resolved pratīka/anchor cues and read-only ``upcoming_cores``."""
   core_lines = "\n".join(
-    f"[CORE {idx}] { regex.sub(r'\\s+', ' ', c).strip() }"
-    for idx, c in enumerate(cores)
+    f"[CORE {idx}] {regex.sub(r'\\s+', ' ', c).strip()}" for idx, c in enumerate(cores)
   )
+  upcoming = list(upcoming_cores or [])
+  up_block = ""
+  if upcoming:
+    up_lines = "\n".join(
+      f"[UPCOMING {idx}] {regex.sub(r'\\s+', ' ', c).strip()}" for idx, c in enumerate(upcoming)
+    )
+    up_block = (
+      f"UPCOMING CORES (read-only lookahead — set unmatched_from at the first segment belonging to these):\n"
+      f"{up_lines}\n\n"
+    )
+
+  hints_by_seg: dict[int, str] = {}
+  if include_hints and cores and segments:
+    dp = align_commentary_segments(
+      cores, segments, upcoming_cores=upcoming, is_sarvash_tikah=is_sarvash_tikah
+    )
+    for h in dp["hints"]:
+      if h["score"] >= 3.0 and h["witness"]:
+        tag = f"{{cue: {h['best_target']} via '{h['witness'][:24]}', role={h['role_hint']}}} "
+      else:
+        tag = f"{{cue: cont, role={h['role_hint']}}} "
+      hints_by_seg[h["seg"]] = tag
+
   seg_lines = "\n".join(
-    f"[SEG {idx}] {s}" for idx, s in enumerate(segments)
+    f"[SEG {idx}] {hints_by_seg.get(idx, '')}{s}" for idx, s in enumerate(segments)
   )
   ctx = "sarvASh_TIkAH (intrinsic mantra-only file: no viniyoga blocks allowed inside)" if is_sarvash_tikah else "sarva-prastutiH"
   return (
@@ -129,6 +189,7 @@ def format_interleave_prompt(
     f"TOTAL CORES: {len(cores)} (indices 0..{len(cores) - 1})\n"
     f"TOTAL SEGMENTS: {len(segments)} (indices 0..{len(segments) - 1})\n\n"
     f"CORE MULA BLOCKS:\n{core_lines}\n\n"
+    f"{up_block}"
     f"SOURCE SEGMENTS:\n{seg_lines}"
   )
 
@@ -180,7 +241,6 @@ def summary_for_role(author_label: str, role: str, *, is_sanskrit_commentary: bo
     return "विनियोगसङ्ग्रहः"
   if role == "translation":
     return base
-  # Default: tika
   if is_sanskrit_commentary and not author_label.endswith(("टीका", "भाष्यम्", "प्रस्तुतिः", "टिप्पनी", "प्रकाशिका", "(सं)")):
     return f"{base.rstrip('ः')}-टीका"
   return author_label
@@ -195,19 +255,22 @@ def assemble_cluster_blocks(
   is_sanskrit_commentary: bool = True,
   is_sarvash_tikah: bool = False,
 ) -> tuple[str, list[str]]:
-  """Insert verbatim source segments into clusters in canonical order.
-
-  Each input item in ``clusters`` is ``{"pre": str, "vp": str, "mula": str, "post": str}``
-  holding verbatim ``<details>`` strings. Returns ``(assembled_markdown, host_only_blocks)``
-  where ``host_only_blocks`` collects any ``*विनियोगः`` blocks withheld when
-  ``is_sarvash_tikah=True`` (so callers can place them in the ``sarva-prastutiH`` host).
-  """
+  """Insert verbatim source segments into clusters in canonical ``/interleaver`` order."""
   by_core: dict[int, dict[str, list[str]]] = {
     i: {r: [] for r in VALID_ROLES} for i in range(len(clusters))
   }
   for item in parsed_plan["assignments"]:
     seg_text = sanitize_details_footnotes(segments[item["seg"]])
-    by_core[item["core"]][item["role"]].append(seg_text)
+    role = item["role"]
+    if role != "heading":
+      # Hoist any opening `**name॥**` line out of commentary block per skill rule
+      hm = regex.match(r"^\*\*([^*।\n]+॥)\*\*\s*\n+(.+)$", seg_text, flags=regex.DOTALL)
+      if hm:
+        by_core[item["core"]]["heading"].append(hm.group(1))
+        seg_text = hm.group(2).strip()
+    if role == "translation" and by_core[item["core"]]["viniyoga"]:
+      seg_text = regex.sub(r"\s*\[P[0-9.]*\]", "", seg_text)
+    by_core[item["core"]][role].append(seg_text)
 
   out_clusters: list[str] = []
   withheld_host_blocks: list[str] = []
@@ -233,7 +296,11 @@ def assemble_cluster_blocks(
           parts.append(blk)
 
     if cl.get("vp"):
-      parts.append(cl["vp"].strip())
+      vp_str = cl["vp"].strip()
+      if bucket["heading"] and parts and parts[-1].startswith("### "):
+        parts[-1] = f"{parts[-1]}\n{vp_str}"  # No blank line between hoisted ### and विश्वास-प्रस्तुतिः
+      else:
+        parts.append(vp_str)
 
     for role_mid in ("translation", "note"):
       if bucket[role_mid]:
@@ -241,7 +308,6 @@ def assemble_cluster_blocks(
         parts.append(f"<details><summary>{lbl}</summary>\n\n" + "\n\n".join(bucket[role_mid]) + "\n</details>")
 
     parts.append(cl["mula"].strip())
-
     if cl.get("post"):
       parts.append(cl["post"].strip())
 
@@ -253,7 +319,212 @@ def assemble_cluster_blocks(
     out_clusters.append("\n\n".join(p for p in parts if p))
 
   assembled = "\n\n".join(out_clusters)
-  # Structural sanity check: details tags must stay balanced
   if assembled.count("<details") != assembled.count("</details>"):
     raise RuntimeError("Unbalanced <details> tags after interleaving assembly")
   return assembled, withheld_host_blocks
+
+
+_DETAIL_SPAN_RE = regex.compile(
+  r"<details(?P<attrs>[^>]*)><summary>(?P<title>.*?)</summary>(?P<body>.*?)</details>",
+  flags=regex.DOTALL,
+)
+
+
+def parse_markdown_clusters(md_text: str) -> tuple[str, list[dict[str, str]], str, list[str]]:
+  """Parse host Markdown into ``(preamble, clusters, postamble, core_mula_bodies)``."""
+  matches = list(_DETAIL_SPAN_RE.finditer(md_text or ""))
+  mula_indices = [i for i, m in enumerate(matches) if m.group("title").strip().startswith("मूलम्")]
+  if not mula_indices:
+    return md_text, [], "", []
+
+  # Group each मूलम् with its preceding विश्वास-प्रस्तुतिः/viniyoga/translation and following tika
+  first_start = matches[0].start()
+  preamble = md_text[:first_start]
+  clusters: list[dict[str, str]] = []
+  mula_bodies: list[str] = []
+
+  def _is_upper_layer(title: str) -> bool:
+    t = title.strip()
+    return (
+      t.startswith("विश्वास-प्रस्तुतिः")
+      or t.endswith(("विनियोगः", "अवतारिका", "- Note"))
+      or not any(k in t for k in ("टीका", "भाष्य", "प्रकाशिका", "पद-पाठः", "विनियोगसङ्ग्रहः"))
+    )
+
+  # Partition matches around each मूलम्
+  group_starts = [0]
+  for k in range(len(mula_indices) - 1):
+    mi = mula_indices[k]
+    nxt_mi = mula_indices[k + 1]
+    split_at = nxt_mi
+    for j in range(mi + 1, nxt_mi):
+      between_txt = md_text[matches[j - 1].end():matches[j].start()]
+      if regex.search(r"(?m)^#{1,6}\s+\S", between_txt) or _is_upper_layer(matches[j].group("title")):
+        split_at = j
+        break
+    group_starts.append(split_at)
+  group_starts.append(len(matches))
+
+  for k, mi in enumerate(mula_indices):
+    g0, g1 = group_starts[k], group_starts[k + 1]
+    pre_lead = md_text[matches[g0 - 1].end():matches[g0].start()].strip() if g0 > 0 else ""
+    vp_idx = next(
+      (j for j in range(g0, mi) if matches[j].group("title").strip().startswith("विश्वास-प्रस्तुतिः")),
+      None,
+    )
+    if vp_idx is not None:
+      pre_end = matches[vp_idx].start()
+      pre_part = (
+        (pre_lead + "\n\n" if pre_lead else "") + md_text[matches[g0].start():pre_end].strip()
+      ).strip() if vp_idx > g0 else pre_lead
+      vp_and_mid = md_text[matches[vp_idx].start():matches[mi].start()].strip()
+    else:
+      pre_part = (
+        (pre_lead + "\n\n" if pre_lead else "") + md_text[matches[g0].start():matches[mi].start()].strip()
+      ).strip() if mi > g0 else pre_lead
+      vp_and_mid = ""
+
+    mula_raw = md_text[matches[mi].start():matches[mi].end()]
+    post_part = md_text[matches[mi].end():matches[g1 - 1].end()].strip() if g1 - 1 > mi else ""
+    clusters.append({"pre": pre_part, "vp": vp_and_mid, "mula": mula_raw, "post": post_part})
+    mula_bodies.append(matches[mi].group("body").strip())
+
+  postamble = md_text[matches[-1].end():]
+  return preamble, clusters, postamble, mula_bodies
+
+
+def verify_interleaved_markdown(
+  assembled_md: str,
+  placed_segments: list[str],
+  *,
+  withheld_blocks: list[str] | None = None,
+  is_sarvash_tikah: bool = False,
+) -> dict:
+  """Run the ``/interleaver`` 6-point verification checklist programmatically."""
+  norm = lambda s: regex.sub(r"[\s>*#]+", "", sanitize_details_footnotes(s))
+  norm_page = norm(assembled_md + "\n" + "\n".join(withheld_blocks or ()))
+  missing = []
+  for idx, seg in enumerate(placed_segments):
+    probe = regex.sub(r"\[P[0-9.]*\]", "", seg)
+    probe_n = regex.sub(r"[॥।*]+$", "", norm(probe))
+    if probe_n and probe_n not in norm_page:
+      missing.append({"seg": idx, "head": seg[:80]})
+
+  open_count = assembled_md.count("<details")
+  close_count = assembled_md.count("</details>")
+  closed_vp = bool(regex.search(r"<details>\s*<summary>विश्वास-प्रस्तुतिः", assembled_md))
+  illegal_viniyoga = bool(
+    is_sarvash_tikah and regex.search(r"<summary>[^<]*विनियोगः</summary>", assembled_md)
+  )
+  empty_blocks = bool(regex.search(r"<details[^>]*><summary>[^<]*</summary>\s*</details>", assembled_md))
+  bold_edge = False
+  for m in _DETAIL_SPAN_RE.finditer(assembled_md):
+    t = m.group("title").strip()
+    b = m.group("body").strip()
+    if any(k in t for k in ("टीका", "भाष्य", "प्रकाशिका")):
+      if regex.match(r"^\*\*[^*\n]+॥\*\*", b) or regex.search(r"\*\*[^*\n]+॥\*\*\s*$", b):
+        bold_edge = True
+
+  ok = (
+    not missing
+    and open_count == close_count
+    and not closed_vp
+    and not illegal_viniyoga
+    and not empty_blocks
+    and not bold_edge
+  )
+  return {
+    "ok": ok,
+    "missing": missing,
+    "details_balanced": open_count == close_count,
+    "all_vp_open": not closed_vp,
+    "sarvash_tikah_clean": not illegal_viniyoga,
+    "no_empty_blocks": not empty_blocks,
+    "no_bold_edge_headings": not bold_edge,
+  }
+
+
+def interleave_source_into_markdown(
+  host_md: str,
+  source_text: str,
+  *,
+  author_label: str = "टीका",
+  is_sanskrit_commentary: bool = True,
+  is_sarvash_tikah: bool = False,
+  backend=None,
+  batch_cores: int = 4,
+) -> dict:
+  """Interleave ``source_text`` into ``host_md`` verbatim using local DP or LLM+DP."""
+  preamble, clusters, postamble, mula_bodies = parse_markdown_clusters(host_md)
+  segments = split_quote_safe_segments(source_text)
+  if not clusters or not segments:
+    return {
+      "markdown": host_md,
+      "withheld_viniyogas": [],
+      "unmatched_segments": segments,
+      "verification": verify_interleaved_markdown(host_md, [], is_sarvash_tikah=is_sarvash_tikah),
+    }
+
+  seg_cursor = 0
+  global_assignments: list[dict] = []
+  n_cores = len(clusters)
+  n_segs = len(segments)
+  eff_batch = n_cores if backend is None else max(1, batch_cores)
+
+  for c_start in range(0, n_cores, eff_batch):
+    if seg_cursor >= n_segs:
+      break
+    c_end = min(n_cores, c_start + eff_batch)
+    batch_mulas = mula_bodies[c_start:c_end]
+    upcoming_mulas = mula_bodies[c_end:c_end + 2]
+    max_win = n_segs - seg_cursor if c_end == n_cores else min(n_segs - seg_cursor, max(12, (c_end - c_start) * 5))
+    win_segs = segments[seg_cursor:seg_cursor + max_win]
+
+    if backend is None:
+      plan = align_commentary_segments(
+        batch_mulas, win_segs, upcoming_cores=upcoming_mulas, is_sarvash_tikah=is_sarvash_tikah
+      )
+    else:
+      prompt = format_interleave_prompt(
+        batch_mulas,
+        win_segs,
+        upcoming_cores=upcoming_mulas,
+        author_label=author_label,
+        is_sarvash_tikah=is_sarvash_tikah,
+        include_hints=True,
+      )
+      raw_json = backend.new_chat(INTERLEAVER_SYSTEM_PROMPT).send_text(prompt)
+      raw_plan = parse_interleave_json(raw_json, num_cores=len(batch_mulas), num_segments=len(win_segs))
+      plan = refine_interleave_plan(
+        raw_plan, batch_mulas, win_segs, upcoming_cores=upcoming_mulas, is_sarvash_tikah=is_sarvash_tikah
+      )
+
+    for a in plan["assignments"]:
+      global_assignments.append({
+        "seg": seg_cursor + a["seg"],
+        "core": c_start + a["core"],
+        "role": a["role"],
+      })
+    seg_cursor += plan["unmatched_from"]
+
+  merged_plan = {"assignments": global_assignments, "unmatched_from": seg_cursor}
+  assembled_body, withheld = assemble_cluster_blocks(
+    clusters,
+    segments,
+    merged_plan,
+    author_label=author_label,
+    is_sanskrit_commentary=is_sanskrit_commentary,
+    is_sarvash_tikah=is_sarvash_tikah,
+  )
+  full_md = (preamble.rstrip() + "\n\n" if preamble.strip() else preamble) + assembled_body + (
+    "\n\n" + postamble.lstrip() if postamble.strip() else "\n"
+  )
+  ver = verify_interleaved_markdown(
+    full_md, segments[:seg_cursor], withheld_blocks=withheld, is_sarvash_tikah=is_sarvash_tikah
+  )
+  return {
+    "markdown": full_md,
+    "withheld_viniyogas": withheld,
+    "unmatched_segments": segments[seg_cursor:],
+    "verification": ver,
+  }

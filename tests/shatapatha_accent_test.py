@@ -1,0 +1,524 @@
+"""Unit tests for Śatapatha Brāhmaṇa accent analysis, auditing, and US conversion."""
+
+from doc_curation.sanskrit.accent import (
+  PadapathaItem,
+  SbFileUpdateReport,
+  apply_sb_kandika_updates,
+  audit_padapatha_against_sb,
+  build_sb_vp_from_padapatha,
+  extract_sb_syllables,
+  find_unsplit_upasarga_tinantas,
+  format_suggested_vp_summary,
+  normalize_sb_orthography,
+  parse_padapatha_items,
+  reconcile_markdown_blocks,
+  us_marks_to_sb_marks,
+  validate_accented_markdown,
+  verify_mantra_sandhi,
+)
+
+
+def test_us_marks_to_sb_marks_all_nine_transitions():
+  # Sequence exercising all 9 transitions: U->U, U->A, A->A, A->S, S->S, S->U, U->S, S->A, A->U, U->end
+  us = ["U", "U", "", "", "S", "S", "U", "S", "", "U"]
+  weber = us_marks_to_sb_marks(us, style="weber")
+  shri = us_marks_to_sb_marks(us, style="shri")
+  assert weber == ["", "H", "", "G", "G", "", "G", "", "", "H"]
+  assert shri == ["", "H", "", "H", "H", "", "H", "", "", "H"]
+
+
+def test_extract_sb_syllables_collapses_anunasika_double_marks_and_strips_pratikas():
+  weber = "अ᳘थ स᳘ᳫं᳘स्थिते वि᳘सृजते॥ [^wbr_1]\n\n[^wbr_1]: note"
+  shri = "(त्य᳘) अ᳘थ स᳘ᳫं᳘स्थिते व्वि᳘सृजते॥"
+  ws = extract_sb_syllables(weber, source="weber")
+  ss = extract_sb_syllables(shri, source="shri")
+  assert [s.mark for s in ws] == ["H", "", "H", "", "", "H", "", "", ""]
+  assert [s.mark for s in ss] == ["H", "", "H", "", "", "H", "", "", ""]
+
+
+def test_normalize_sb_orthography():
+  raw = "(न्न᳘) अ᳘न्तरेणाहवनी᳘यञ्च व्व्रत᳘म् ऽउ᳘पस्पृशति सो ऽग्नि᳘म् स᳘ᳫँ᳭स्थिते"
+  clean = normalize_sb_orthography(raw)
+  assert clean == "अन्तरेणाहवनीयञ्च व्रतम् उपस्पृशति सो ऽग्निम् संस्थिते"
+
+
+def test_build_sb_vp_preserves_8_2_6_svarita_and_formats_summary():
+  # यज्ञ᳓म् + एव᳓ + एत᳓त् -> यज्ञ᳓म् एवै᳙त᳓त् (Weber marks ॗ on मे!)
+  pp_body = "\n".join([
+    "- यज्ञ᳓म् (*RV*, *TS*)",
+    "- एव᳓ (*RV*, *TS*)",
+    "- एत᳓त् (*RV*, *TS*)",
+  ])
+  items = parse_padapatha_items(pp_body)
+  weber = "यज्ञ᳘मेॗवैत᳘त्॥"
+  shri = "यज्ञ᳘मे᳘वैत᳘त्॥"
+  summary, vp_out, unmapped = build_sb_vp_from_padapatha(
+    "यज्ञम् एवैतत् ॥", items, weber_text=weber, shri_text=shri
+  )
+  assert unmapped == []
+  assert summary == "विश्वास-प्रस्तुतिः"
+  assert vp_out == "यज्ञ᳓म् एवै᳙त᳓त् ॥"
+
+  rep = audit_padapatha_against_sb("यज्ञम् एवैतत् ॥", items, weber, shri)
+  assert rep.disagree_pada_indices == []
+  assert all(s.status == "both_ok" for s in rep.syllables)
+
+
+def test_audit_prefers_weber_when_shri_disagrees_and_flags_mutual_error():
+  # SB 1.1.1.1 opening: Weber `व्रतमु᳘पैष्यन्` (right: व्रत᳓म् + उ᳓पैष्यन्) vs Shri `व्व्रत᳘मुपैष्यन्` (wrong)
+  items_ok = parse_padapatha_items(
+    "- व्रत᳓म् (*RV*, *TS*)\n- उ᳓पैष्यन् (पा० ६.२.४९ / Weber)"
+  )
+  rep = audit_padapatha_against_sb(
+    "व्रतम् उपैष्यन् ।", items_ok, "व्रतमु᳘पैष्यन्॥", "व्व्रत᳘मुपैष्यन्।"
+  )
+  assert rep.disagree_pada_indices == []
+  assert rep.weber_only_pada_indices == [0, 1]
+
+  # Now test a mutual two-source error (both Weber and Shri misplace accent on `व्रतम्` as `व्र᳘तम्`).
+  items_vyat = parse_padapatha_items(
+    "- व्र᳓तम् → **व्रत᳓म्** (*RV*, *TS*)\n- उ᳓पैष्यन् (पा० ६.२.४९)"
+  )
+  rep2 = audit_padapatha_against_sb(
+    "व्रतम् उपैष्यन् ।", items_vyat, "व्र᳘तमु᳘पैष्यन्॥", "व्व्र᳘तमु᳘पैष्यन्।"
+  )
+  assert rep2.disagree_pada_indices == [0]
+  assert rep2.unflagged_vyatyasta_padas == []
+  assert rep2.possibly_spurious_vyatyasta_padas == []
+
+  summary, vp_out, _ = build_sb_vp_from_padapatha(
+    "व्रतम् उपैष्यन् ।", items_vyat, weber_text="व्र᳘तमु᳘पैष्यन्॥", shri_text="व्व्र᳘तमु᳘पैष्यन्।"
+  )
+  assert summary == "विश्वास-प्रस्तुतिः (1/2 व्यत्यस्त-स्वराः)"
+  assert vp_out == "[[व्र᳓तम्|व्रत᳓म्]] उ᳓पैष्यन् ।"
+
+
+def test_reconciler_and_validator_sb_cluster_with_8_2_6():
+  md = """## ०१
+
+<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+यज्ञ᳓म् एवै᳙त᳓त् ॥
+</details>
+
+<details><summary>मूलम् - श्रीधरादि</summary>
+
+यज्ञ᳘मे᳘वैत᳘त्॥
+</details>
+
+<details><summary>मूलम् - Weber</summary>
+
+यज्ञ᳘मेॗवैत᳘त्॥
+</details>
+
+<details><summary>मूलम् - विस्वरम्</summary>
+
+यज्ञमेवैतत् ॥
+</details>
+
+<details><summary>पद-पाठः (यान्त्रिकः)</summary>
+
+- यज्ञ᳓म् (*RV*, *TS*)
+- एव᳓ (*RV*, *TS*)
+- एत᳓त् (*RV*, *TS*)
+</details>
+"""
+  # Reconciler in SB cluster must preserve पा० ८.२.६ `एवै᳙त᳓त्` without flagging it!
+  reconciled, logs = reconcile_markdown_blocks(md)
+  assert reconciled == md
+  assert logs == []
+  assert validate_accented_markdown(md) == []
+  ok, _, _, _ = verify_mantra_sandhi(["यज्ञ᳓म्", "एव᳓", "एत᳓त्"], "यज्ञ᳘मेॗवैत᳘त्॥")
+  assert ok
+
+
+def test_format_suggested_vp_summary():
+  assert format_suggested_vp_summary("विश्वास-प्रस्तुतिः", 2, 15) == "विश्वास-प्रस्तुतिः (2/15 व्यत्यस्त-स्वराः)"
+  assert format_suggested_vp_summary("विश्वास-प्रस्तुतिः (1/10 व्यत्यस्त-स्वराः)", 0, 10) == "विश्वास-प्रस्तुतिः"
+
+
+def test_sb_sandhi_and_validator_regressions():
+  # पा० १.१.१४ pragṛhya उ (`यद्य् उ अश्नाति`) and triple-consonant nasal sandhi (`तन् न्वेव`).
+  assert verify_mantra_sandhi(["त᳓त्", "नु᳓", "एव᳓"], "तॗन्न्वेव")[0]
+  assert verify_mantra_sandhi(["य᳓दि", "उ", "अश्ना᳓ति"], "य᳘द्यु अश्ना᳘ति")[0]
+  # Feminine noun `सं-स्था᳓म्` must not be flagged as unsplit upasarga+tiṅanta ending in `-थाम्`.
+  md = """<details><summary>पद-पाठः (यान्त्रिकः)</summary>
+
+- सं-स्था᳓म् (*TS* सँ॒स्थाम्)
+</details>
+"""
+  assert validate_accented_markdown(md) == []
+  # `स वै + आरण्यम् -> स वा आरण्यम्` must not trigger a false `aa_hiatus` on coalesced `याः वा + आरण्याः -> या वारण्या`.
+  md2 = """<details><summary>मूलम् - Weber</summary>
+
+स वा᳘ आरण्य᳘मेॗवाश्नीयात्॥ या᳘ वारण्या ओ᳘षधयः॥
+</details>
+
+<details><summary>पद-पाठः (यान्त्रिकः)</summary>
+
+- सः᳓ (*RV*)
+- वै᳓ (*RV*)
+- आरण्य᳓म् (*TS*)
+- एव᳓ (*RV*)
+- अश्नीयात् (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)
+- याः᳓ (*RV*)
+- वा (अनुदात्तम्, पा० ८.१.१८)
+- आरण्याः᳓ (*TS*)
+- ओ᳓षधयः (*RV*)
+</details>
+"""
+  assert validate_accented_markdown(md2) == []
+
+
+def test_separated_8_1_71_upasarga_tinanta_vyatyasta_and_double_upasarga():
+  # 1. Subordinate-clause vyatyasta tiṅanta separated from पा० ८.१.७१ upasarga (`उत्` + `यच्छति → **य᳓च्छति**`).
+  pp_lines = [
+    "- व᳓ज्रम् (*RV*, *TS*; Weber-पाठः)",
+    "- उत् (तिङि चोदात्तवति पा० ८.१.७१; Weber-पाठः; श्रीधरादि उ᳘त्)",
+    "- यच्छति → **य᳓च्छति** (यद्वृत्तान्नित्यम् पा० ८.१.६६; Weber उद्यछति, श्रीधरादि उ᳘द्यछति)",
+  ]
+  items = parse_padapatha_items("\n".join(pp_lines))
+  vp_clean = "वज्रम् उद्यच्छति ॥"
+  weber = "व᳘ज्रमुद्यछति॥"
+  shri = "व्वज्रमु᳘द्यछति॥"
+
+  assert verify_mantra_sandhi([it.ref for it in items], vp_clean)[0]
+  assert verify_mantra_sandhi([it.ref for it in items], weber)[0]
+  vp_sum, vp_acc, unmapped = build_sb_vp_from_padapatha(vp_clean, items, weber_text=weber, shri_text=shri)
+  assert unmapped == []
+  assert vp_sum == "विश्वास-प्रस्तुतिः (1/3 व्यत्यस्त-स्वराः)"
+  assert vp_acc == "व᳓ज्रम् [[उद्यच्छति|उद्य᳓च्छति]] ॥"
+
+  rep = audit_padapatha_against_sb(vp_clean, items, weber, shri)
+  assert rep.disagree_pada_indices == [2]
+  assert rep.unflagged_vyatyasta_padas == []
+  assert rep.possibly_spurious_vyatyasta_padas == []
+
+  md = (
+    f"<details open><summary>{vp_sum}</summary>\n\n{vp_acc}\n</details>\n\n"
+    f"<details><summary>मूलम् - श्रीधरादि</summary>\n\n{shri}\n</details>\n\n"
+    f"<details><summary>मूलम् - Weber</summary>\n\n{weber}\n</details>\n\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः - 1/3 व्यत्यस्त-स्वराः)</summary>\n\n"
+    + "\n".join(pp_lines)
+    + "\n</details>\n"
+  )
+  assert validate_accented_markdown(md) == []
+  rec_out, rec_logs = reconcile_markdown_blocks(md)
+  assert rec_out == md
+  assert rec_logs == []
+
+  # 2. Double upasarga in subordinate clause (`उप` + `आ` + `व᳓र्तते`) with पा० ८.२.६ svarita (`एवो᳙पाव᳓र्तते`).
+  pp_dbl = [
+    "- सः᳓ (*RV*, *TS*)",
+    "- या᳓न् (*RV*, *TS*)",
+    "- एव᳓ (*RV*, *TS*)",
+    "- उप (तिङि चोदात्तवति पा० ८.१.७१)",
+    "- आ (तिङि चोदात्तवति पा० ८.१.७१)",
+    "- व᳓र्तते (यद्वृत्तान्नित्यम् पा० ८.१.६६, *TS* उ॒पाव॑र्तते)",
+  ]
+  items_dbl = parse_padapatha_items("\n".join(pp_dbl))
+  vp_dbl = "स यान् एवोपावर्तते ॥"
+  weber_dbl = "स या᳘नेॗवोपाव᳘र्तते॥"
+  shri_dbl = "स या᳘ने᳘वोपाव᳘र्तते॥"
+  assert verify_mantra_sandhi([it.ref for it in items_dbl], vp_dbl)[0]
+  sum_dbl, acc_dbl, unm_dbl = build_sb_vp_from_padapatha(vp_dbl, items_dbl, weber_text=weber_dbl, shri_text=shri_dbl)
+  assert unm_dbl == []
+  assert sum_dbl == "विश्वास-प्रस्तुतिः"
+  assert acc_dbl == "स᳓ या᳓न् एवो᳙पाव᳓र्तते ॥"
+  rep_dbl = audit_padapatha_against_sb(vp_dbl, items_dbl, weber_dbl, shri_dbl)
+  assert rep_dbl.disagree_pada_indices == []
+  assert rep_dbl.unflagged_vyatyasta_padas == []
+  assert rep_dbl.possibly_spurious_vyatyasta_padas == []
+
+  # 3. Vowel-coalesced upasarga + vyatyasta tiṅanta (`उप` + `एति → **ए᳓ति**` -> `[[उपैति|उपै᳓ति]]`) must not falsely
+  #    flag the non-vyatyasta `उप` partner as unflagged when both sources omit accent on the merged `पै` syllable.
+  pp_coal = [
+    "- व्रत᳓म् (*RV*, *TS*)",
+    "- उप (तिङि चोदात्तवति पा० ८.१.७१)",
+    "- एति → **ए᳓ति** (यद्वृत्तान्नित्यम् पा० ८.१.६६, *TS* उ॒पैति॑)",
+  ]
+  items_coal = parse_padapatha_items("\n".join(pp_coal))
+  sum_c, acc_c, unm_c = build_sb_vp_from_padapatha("व्रतम् उपैति ॥", items_coal, weber_text="व्रत᳘मुपैति॥", shri_text="व्व्रत᳘मुपैति॥")
+  assert unm_c == []
+  assert sum_c == "विश्वास-प्रस्तुतिः (1/3 व्यत्यस्त-स्वराः)"
+  assert acc_c == "व्रत᳓म् [[उपैति|उपै᳓ति]] ॥"
+  rep_c = audit_padapatha_against_sb("व्रतम् उपैति ॥", items_coal, "व्रत᳘मुपैति॥", "व्व्रत᳘मुपैति॥")
+  assert rep_c.unflagged_vyatyasta_padas == []
+  assert rep_c.possibly_spurious_vyatyasta_padas == []
+
+
+def test_forbid_compound_upasarga_tinanta_sb_auto_and_ta_compat():
+  unsplit_lines = [
+    "- उप-स्पृश᳓ति (यद्वृत्तान्नित्यम् पा० ८.१.६६, तिङि चोदात्तवति पा० ८.१.७१, तुदादिभ्यः शः पा० ३.१.७७)",
+    "- उद्यच्छति → **उद्-य᳓च्छति** (यद्वृत्तान्नित्यम् पा० ८.१.६६, तिङि चोदात्तवति पा० ८.१.७१)",
+    "- उप-आ-व᳓र्तते (यद्वृत्तान्नित्यम् पा० ८.१.६६, पा० ८.१.७१, *TS* उ॒पाव॑र्तते)",
+    "- उपस्पृश᳓ति (यद्वृत्तान्नित्यम् पा० ८.१.६६)",
+    "- उपै᳓ति (यद्वृत्तान्नित्यम् पा० ८.१.६६)",
+  ]
+  # Default (TA compatibility) allows subordinate-clause compound upasarga+tiṅanta
+  assert find_unsplit_upasarga_tinantas(unsplit_lines) == []
+  # ŚB strict mode catches all 5
+  assert len(find_unsplit_upasarga_tinantas(unsplit_lines, forbid_compound_upasarga_tinanta=True)) == 5
+
+  # Separated upasargas, simplex verbs (including augmented `अ᳓वदत्` and `आप᳓यति`), and गतिकृदन्त stay valid
+  valid_sb_lines = [
+    "- उप (तिङि चोदात्तवति पा० ८.१.७१)",
+    "- स्पृश᳓ति (यद्वृत्तान्नित्यम् पा० ८.१.६६, तुदादिभ्यः शः पा० ३.१.७७)",
+    "- अभि (तिङि चोदात्तवति पा० ८.१.७१)",
+    "- आप᳓यति (यद्वृत्तान्नित्यम् पा० ८.१.६६, णिच् पा० ३.१.३)",
+    "- ए᳓ति (यद्वृत्तान्नित्यम् पा० ८.१.६६, *TS* उ॒पैति॑)",
+    "- अ᳓वदत् (यद्वृत्तान्नित्यम् पा० ८.१.६६)",
+    "- उप-एष्य᳓न् (*TS* ए॒ष्यन्, पा० ६.२.१३९ गतिकारकोपपदात् कृत्)",
+    "- उत्-सि᳓च्य (लिति पा० ६.१.१९३)",
+    "- अति-हृ᳓त्य (लिति पा० ६.१.१९३)",
+    "- उ᳓द्-यन्तुम् (*TS* उद्य॑न्तुम्)",
+    "- स᳓ं-स्थिते (*TS*, गतिरनन्तरः पा० ६.२.४९)",
+    "- नि-वाते᳓ (*TS*, *AV*, *MW*)",
+    "- सम्-प्र᳓ति (*TS*, *MW*)",
+  ]
+  assert find_unsplit_upasarga_tinantas(valid_sb_lines, forbid_compound_upasarga_tinanta=True) == []
+
+  # validate_accented_markdown auto-enables forbid_compound_upasarga_tinanta on ŚB clusters (Weber/श्रीधरादि)
+  sb_bad_md = (
+    "<details><summary>मूलम् - Weber</summary>\n\nअप᳘ उपस्पृश᳘ति॥\n</details>\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n"
+    "- अपः᳓ (*RV*)\n"
+    "- उप-स्पृश᳓ति (यद्वृत्तान्नित्यम् पा० ८.१.६६, पा० ८.१.७१)\n"
+    "</details>\n"
+  )
+  issues = validate_accented_markdown(sb_bad_md)
+  assert any(iss.kind == "unsplit_upasarga_tinanta" for iss in issues)
+
+  # Non-ŚB (TA) cluster keeps backward compatibility
+  ta_ok_md = (
+    "<details><summary>मूलम्</summary>\n\nप्र॒चोद॑यात् ॥\n</details>\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n"
+    "- प्र-चोद᳓यात् (यद्वृत्तान्नित्यम् पा० ८.१.६६, तिङि चोदात्तवति पा० ८.१.७१)\n"
+    "</details>\n"
+  )
+  assert validate_accented_markdown(ta_ok_md) == []
+
+
+def test_audit_cross_pada_ripple_and_boundary_svarita():
+  # 1. Cross-pada ripple: `त᳓त्` + `वदति → **व᳓दति**` against `त᳘द्वदति` must blame only `व᳓दति`, not `त᳓त्`.
+  items1 = parse_padapatha_items(
+    "- त᳓त् (*RV*, *TS*)\n- वदति → **व᳓दति** (यद्वृत्तान्नित्यम् पा० ८.१.६६, *RV*)"
+  )
+  rep1 = audit_padapatha_against_sb("तद् वदति ॥", items1, "त᳘द्वदति॥", "त᳘द्वदति॥")
+  assert rep1.disagree_pada_indices == [1]
+  assert rep1.unflagged_vyatyasta_padas == []
+  assert rep1.possibly_spurious_vyatyasta_padas == []
+
+  # 2. Cross-pada ripple with monosyllabic vyat between two udāttas (`सः᳓` + `यत् → **य᳓त्**` + `त᳓त्`).
+  items2 = parse_padapatha_items(
+    "- सः᳓ (*RV*)\n- यत् → **य᳓त्** (*RV*)\n- त᳓त् (*RV*)"
+  )
+  rep2 = audit_padapatha_against_sb("स यत् तत् ॥", items2, "स᳘ यत्त᳘त्॥", "स᳘ यत्त᳘त्॥")
+  assert rep2.disagree_pada_indices == [1]
+  assert rep2.unflagged_vyatyasta_padas == []
+  assert rep2.possibly_spurious_vyatyasta_padas == []
+
+  # 3. Śrīdharādi-only `S -> S` (पा० ८.२.६ merger immediately after jātya svarita `S`).
+  items3 = parse_padapatha_items(
+    "- मनुष्ये᳙ (*TS*)\n- न᳓ (*RV*)\n- अस्ति (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)"
+  )
+  _, vp3, unm3 = build_sb_vp_from_padapatha("मनुष्ये नास्ति ॥", items3, shri_text="मनुष्ये᳘ नास्ति॥")
+  assert unm3 == []
+  assert vp3 == "मनुष्ये᳙ ना᳙स्ति ॥"
+
+  # 4. Boundary `idx == n - 1` ending in `S` with unknown next_first_mark allows Weber G/"" and Shri H/"".
+  items4 = parse_padapatha_items("- त᳓त् (*RV*)\n- वीर्य᳙म् (*RV*, *TS*)")
+  rep4 = audit_padapatha_against_sb("तद् वीर्यम् ॥", items4, "त᳘द्वी᳘र्यॗम्॥", "त᳘द्वी᳘र्यं᳘॥")
+  assert rep4.disagree_pada_indices == []
+
+
+def test_apply_sb_kandika_updates_preserves_layers_existing_us_and_layouts(tmp_path):
+  md_file = tmp_path / "sb_sample.md"
+  initial = """+++
+title = "१"
++++
+
+<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+हरिः-ओ३म्।
+</details>
+
+<details><summary>मूलम् - श्रीधरादि</summary>
+
+हरिः-ओ३म्।
+</details>
+
+##  ०१
+
+<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+यज्ञ᳘मे᳘वैत᳘त्॥
+</details>
+
+<details><summary>मूलम् - श्रीधरादि</summary>
+
+यज्ञ᳘मे᳘वैत᳘त्॥
+</details>
+
+<details><summary>मूलम् - Weber</summary>
+
+यज्ञ᳘मेॗवैत᳘त्॥
+</details>
+
+<details><summary>मूलम् - विस्वरम्</summary>
+
+यज्ञमेवैतत् ॥
+</details>
+
+<details><summary>सायणः</summary>
+
+सायणभाष्यम्।
+</details>
+
+<details><summary>हरिस्वामी</summary>
+
+हरिस्वामिभाष्यम्।
+</details>
+
+<details><summary>Eggeling</summary>
+
+Eggeling translation.
+</details>
+
+<details><summary>मूलम् - Makoto</summary>
+
+Makoto text.
+</details>
+
+## ०२
+
+<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+त᳓द् वै᳓[[!!]] अपः᳓ ॥
+</details>
+
+<details><summary>मूलम् - श्रीधरादि</summary>
+
+त᳘द्वै ऽअपः᳘॥
+</details>
+
+<details><summary>मूलम् - Weber</summary>
+
+त᳘द्वै अपः᳘॥
+</details>
+
+## ०३
+
+<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+त᳘दपः᳘॥
+</details>
+
+<details><summary>मूलम् - श्रीधरादि</summary>
+
+त᳘दपः᳘॥
+</details>
+
+<details><summary>Eggeling</summary>
+
+Eggeling before visvaram.
+</details>
+
+<details><summary>मूलम् - विस्वरम्</summary>
+
+तदपः ॥
+</details>
+
+## ०४
+
+<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+त᳘त्॥
+</details>
+
+<details><summary>मूलम् - श्रीधरादि</summary>
+
+त᳘त्॥
+</details>
+
+<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+यज्ञ᳘मे᳘वैत᳘त्॥
+</details>
+
+<details><summary>मूलम् - श्रीधरादि</summary>
+
+यज्ञ᳘मे᳘वैत᳘त्॥
+</details>
+
+<details><summary>मूलम् - Weber</summary>
+
+यज्ञ᳘मेॗवैत᳘त्॥
+</details>
+"""
+  md_file.write_text(initial, encoding="utf-8")
+
+  kandika_map = {
+    "०१": (
+      "यज्ञम् एवैतत् ॥",
+      ["- यज्ञ᳓म् (*RV*, *TS*)", "- एव᳓ (*RV*, *TS*)", "- एत᳓त् (*RV*, *TS*)"],
+    ),
+    "०२": (
+      None,
+      ["- त᳓त् (*RV*, *TS*)", "- वै᳓ (*RV*, *TS*)", "- अपः᳓ (*RV*, *TS*)"],
+    ),
+    "०३": (
+      "तद् अपः ॥",
+      ["- त᳓त् (*RV*, *TS*)", "- अपः᳓ (*RV*, *TS*)"],
+    ),
+    ("०४", 1): (
+      "यज्ञम् एवैतत् ॥",
+      ["- यज्ञ᳓म् (*RV*, *TS*)", "- एव᳓ (*RV*, *TS*)", "- एत᳓त् (*RV*, *TS*)"],
+    ),
+  }
+
+  # Ambiguous plain key on multi-VP section ०४ must fail safely before writing
+  import pytest
+  with pytest.raises(ValueError, match="Ambiguous section key"):
+    apply_sb_kandika_updates(md_file, {"०४": ("तत् ॥", ["- त᳓त् (*RV*)"])})
+  assert md_file.read_text(encoding="utf-8") == initial
+
+  # Invalid unsplit upasarga+tiṅanta must fail validation BEFORE writing to disk
+  with pytest.raises(ValueError, match="unsplit_upasarga_tinanta"):
+    apply_sb_kandika_updates(
+      md_file,
+      {"०१": ("उपस्पृशति ॥", ["- उप-स्पृश᳓ति (यद्वृत्तान्नित्यम् पा० ८.१.६६, पा० ८.१.७१)"])},
+    )
+  assert md_file.read_text(encoding="utf-8") == initial
+
+  rep = apply_sb_kandika_updates(md_file, kandika_map, preserve_existing_us=True)
+  assert isinstance(rep, SbFileUpdateReport)
+  assert rep.wrote is True
+  assert rep.validation_issues == []
+  assert rep.reconcile_logs == []
+  assert rep.updated_keys == ["०१", "०२", "०३", "०४[1]"]
+  assert rep.preserved_us_keys == ["०२"]
+
+  out = md_file.read_text(encoding="utf-8")
+  # Intro VP block untouched
+  assert "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nहरिः-ओ३म्।\n</details>" in out
+  # Already-US VP in ०२ preserved byte-for-byte verbatim (with [[!!]])
+  assert "त᳓द् वै᳓[[!!]] अपः᳓ ॥" in out
+  # ०१ has पा० ८.२.६ svarita and पद-पाठः placed BEFORE सायणः (not after Makoto!)
+  assert "यज्ञ᳓म् एवै᳙त᳓त् ॥" in out
+  sec1 = out.split("##  ०१")[1].split("## ०२")[0]
+  assert sec1.index("पद-पाठः (यान्त्रिकः)") < sec1.index("सायणः") < sec1.index("हरिस्वामी") < sec1.index("मूलम् - Makoto")
+  # ०३ places पद-पाठः right after मूलम् - श्रीधरादि, BEFORE Eggeling
+  sec3 = out.split("## ०३")[1].split("## ०४")[0]
+  assert sec3.index("मूलम् - श्रीधरादि") < sec3.index("पद-पाठः (यान्त्रिकः)") < sec3.index("Eggeling")
+  # ०४[0] stays untouched while ०४[1] gets updated
+  sec4 = out.split("## ०४")[1]
+  assert "त᳘त्॥" in sec4
+  assert "यज्ञ᳓म् एवै᳙त᳓त् ॥" in sec4
+
+  # Re-running is 100% idempotent
+  rep2 = apply_sb_kandika_updates(md_file, kandika_map, preserve_existing_us=True)
+  assert rep2.wrote is True
+  assert md_file.read_text(encoding="utf-8") == out
+
+

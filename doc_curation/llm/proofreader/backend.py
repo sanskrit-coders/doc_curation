@@ -181,14 +181,17 @@ class ProofreaderBackend(LlmBackend):
   ) -> tuple[str, dict]:
     """Single-shot generation (used directly by ``translation_matcher``, etc.)."""
     if isinstance(contents, str):
-      prompt_text = contents
+      raw_prompt = contents
     else:
-      prompt_text = "\n\n".join(str(c) for c in contents if c is not None)
-    prompt_text = annotate_translation_matcher_prompt(prompt_text)
+      raw_prompt = "\n\n".join(str(c) for c in contents if c is not None)
+    is_tm = "TRANSLATION WORDS" in raw_prompt and "CORE TEXTS:" in raw_prompt
+    prompt_text = annotate_translation_matcher_prompt(raw_prompt) if is_tm else raw_prompt
     messages = [{"role": "user", "content": prompt_text}]
     text, meta = self._chat_completion(messages, model_id=model_id)
-    # Strip any stray <think> wrapper while leaving JSON intact
     text = regex.sub(r"^\s*<think>.*?</think>\s*", "", text, flags=regex.DOTALL)
+    if is_tm and self.apply_guards:
+      from .translation_aligner import refine_translation_mapping
+      text = refine_translation_mapping(text, prompt_text)
     return text, meta
 
 

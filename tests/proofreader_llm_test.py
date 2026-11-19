@@ -366,6 +366,184 @@ def test_text_to_blocks_skill_both_local_and_14b_backend(monkeypatch):
   assert "जगत्कारणम्" in blocks_14b.split("<summary>मूलम्</summary>")[1]
 
 
+def test_interleave_aligner_sandhi_roles_upcoming_and_end_to_end(monkeypatch):
+  from doc_curation.llm.proofreader import (
+    align_commentary_segments,
+    interleave_source_into_markdown,
+    refine_interleave_plan,
+  )
+
+  # 1. Prefix-sensitive derivative headwords + upcoming_cores cutoff
+  cores_rain = ["वर्ष॑ते॒ स्वाहा॑ ।", "अ॒भि॒वर्ष॑ते॒ स्वाहा॑ ।", "प॒रि॒वर्ष॑ते॒ स्वाहा॑ ।"]
+  segs_rain = [
+    "वर्षणं धारापातनम् ।",
+    "अभिवर्षणं उपर्युपरि वर्षणम् ।",
+    "परिवर्षणं सर्वतो वर्षणम् ।",
+    "संवर्षणं सङ्गतपटलवर्षणम् ।",
+  ]
+  plan_rain = align_commentary_segments(cores_rain, segs_rain, upcoming_cores=["सं॒वर्ष॑ते॒ स्वाहा॑ ।"])
+  assert plan_rain["unmatched_from"] == 3
+  assert [a["core"] for a in plan_rain["assignments"]] == [0, 1, 2]
+
+  # 2. Multi-rk vs single-rk chandas + viniyoga kalpa continuation + sutra quote masking
+  cores_ved = [
+    "धा॒ता द॑दातु नो र॒यिम् ईशा॑नो॒ जग॑त॒स्पतिः॑ । स नः॑ पू॒र्णेन॑ वावनत् ।",
+    "धा॒ता प्र॒जाया॑ उ॒त रा॒य ई॑शे धा॒ता पु॒त्रं यज॑मानाय॒ दाता॑ ।",
+  ]
+  segs_ved = [
+    "तिस्रस्त्रिष्टुभः ॥",  # multi-rk chandas -> avatarika
+    "सीमन्तोन्नयने होममन्त्राः - धाता ददात्विति ॥",  # -> viniyoga
+    "तत्र पुरोनुवाक्यामाह-",  # kalpa continuation -> viniyoga
+    "प्रथमा त्रिष्टुप् । धाता विश्वस्य धारयिता नो धनं ददातु ।",  # single-rk chandas + gloss -> tika (core 0)
+    "'षष्ठ्याः पतिपुत्र' इति सत्वम् । स देवोस्मान् पूर्णेन वावनत् ॥",  # sutra quote 'पतिपुत्र' must NOT jump to core 1!
+    "धाता प्रजायाः पुत्रादेः ईशे ईष्टे । धातेव पुत्रं यजमानाय दाता ॥",  # -> tika (core 1)
+  ]
+  plan_ved = align_commentary_segments(cores_ved, segs_ved)
+  assert plan_ved["assignments"] == [
+    {"seg": 0, "core": 0, "role": "avatarika"},
+    {"seg": 1, "core": 0, "role": "viniyoga"},
+    {"seg": 2, "core": 0, "role": "viniyoga"},
+    {"seg": 3, "core": 0, "role": "tika"},
+    {"seg": 4, "core": 0, "role": "tika"},
+    {"seg": 5, "core": 1, "role": "tika"},
+  ]
+
+  # 3. Hyphenated samāsa pratīkas (`तत्-स्वरूप-...`), savarṇadīrgha (`सत्यपीति`), & end-pratīka dominance
+  cores_sp = [
+    "सत्यपि दीपे ज्ञानेन विना विषयप्रकाशाभावात्।",
+    "प्रतिपन्नश्चेत्; तत्स्वरूपज्ञाननिवर्त्यं तदज्ञानं कथमिव तिष्ठति।",
+  ]
+  segs_sp = [
+    "कथं प्रकाशकत्वम् इति शङ्कायां तद् उपपादयति - सत्यपीति ।",
+    "विषयप्रकाशाभावाद् इत्य् उक्त्वा इदानीम् उत्तरं शङ्कते - तत्-स्वरूप-ज्ञान-निवर्त्यम् इति ।",
+  ]
+  plan_sp = align_commentary_segments(cores_sp, segs_sp)
+  assert [a["core"] for a in plan_sp["assignments"]] == [0, 1]
+
+  # 4. End-to-end interleave_source_into_markdown (local + post-guarded LLM + sarvASh_TIkAH withholding)
+  host_md = (
+    "+++\ntitle = \"test\"\n+++\n\n"
+    "## अनुवाकः १\n\n"
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nवेषा᳓य त्वा।\n</details>\n\n"
+    "<details><summary>मूलम्</summary>\n\nवेषा॑य त्वा ।\n</details>\n\n"
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nमे॒घाय॒ स्वाहा᳓।\n</details>\n\n"
+    "<details><summary>मूलम्</summary>\n\nमे॒घाय॒ स्वाहा॑ ।\n</details>\n"
+  )
+  src_comm = (
+    "**प्रथमः खण्डः॥**\n\n"
+    "शूर्पम् आदत्ते - वेषाय त्वेति ॥\n\n"
+    "**वेषाय** वेवेष्टि व्याप्नोतीति वेषः कामः, तस्मै **त्वा** ।\n\n"
+    "मेघाय वर्षहेतवे[^5] ॥"
+  )
+  res_local = interleave_source_into_markdown(
+    host_md, src_comm, author_label="भट्टभास्करः", is_sarvash_tikah=False, backend=None
+  )
+  assert res_local["verification"]["ok"], res_local["verification"]
+  md_out = res_local["markdown"]
+  assert "### प्रथमः खण्डः" in md_out
+  assert md_out.index("भास्करोक्त-विनियोगः") < md_out.index("विश्वास-प्रस्तुतिः")
+  assert "[5]" in md_out and "[^5]" not in md_out
+
+  res_st = interleave_source_into_markdown(
+    host_md, src_comm, author_label="भट्टभास्करः", is_sarvash_tikah=True, backend=None
+  )
+  assert res_st["verification"]["ok"]
+  assert "विनियोगः" not in res_st["markdown"]
+  assert len(res_st["withheld_viniyogas"]) == 1
+
+  # refine_interleave_plan snaps broken LLM core assignment back onto unique strong pratīka anchor
+  bad_llm_plan = {
+    "assignments": [
+      {"seg": 0, "core": 0, "role": "tika"},
+      {"seg": 1, "core": 0, "role": "tika"},  # Wrong: तत्-स्वरूप-ज्ञान-निवर्त्यम् uniquely anchors CORE 1!
+    ],
+    "unmatched_from": 2,
+  }
+  repaired = refine_interleave_plan(bad_llm_plan, cores_sp, segs_sp)
+  assert [a["core"] for a in repaired["assignments"]] == [0, 1]
+
+
+def test_translation_interleaving_c0_bug_bilingual_dp_and_custom_title(tmp_path):
+  from doc_curation.llm import translation_matcher
+  from doc_curation.llm.proofreader import (
+    align_cores_to_translation_dp,
+    refine_translation_mapping,
+  )
+
+  # 1. Regression for c_start == 0 (`[0]` in CORE TEXTS must NOT suppress word indexing!)
+  raw_c0 = translation_matcher._prompt_for_batch(
+    ["एवं च सति ब्रह्मशब्दो मुख्यः।", "तत्र सन्देहः – किमिह प्रत्यगात्मा;", "किं युक्तम्?"],
+    c_start=0,
+    en_window=(
+      "This being so, the word Brahman is primary. "
+      "--Here a doubt arises whether it is the individual soul. "
+      "--The Purvapakshin replies."
+    ).split(),
+    e_start=0,
+    total_core=4,
+    total_en=21,
+    upcoming=(3, ["क्षेत्रज्ञ इति।"]),
+  )
+  # Even with `[0]` in legacy style, annotate_translation_matcher_prompt must still index words
+  legacy_c0 = raw_c0.replace("core[0]:", "[0]")
+  ann = annotate_translation_matcher_prompt(legacy_c0)
+  assert "TRANSLATION WORDS (pre-indexed" in ann
+  assert "[0] This" in ann
+  assert "split it yourself by regex" not in ann
+  assert "BILINGUAL ANCHOR PRIOR" in ann
+
+  # 2. Local bilingual DP aligns pivots (`This being so`, `--Here a doubt`), skips `किं युक्तम्?`,
+  #    and stops at `next_en=18` before `--The Purvapakshin replies.`!
+  en_w = (
+    "This being so, the word Brahman is primary. "
+    "--Here a doubt arises whether it is the individual soul. "
+    "--The Purvapakshin replies."
+  ).split()
+  dp_res = align_cores_to_translation_dp(
+    ["एवं च सति ब्रह्मशब्दो मुख्यः।", "तत्र सन्देहः – किमिह प्रत्यगात्मा;", "किं युक्तम्?"],
+    en_w,
+    c_start=0,
+    upcoming_cores=["क्षेत्रज्ञ इति।"],
+  )
+  assert dp_res == {"starts": {"0": 0, "1": 8, "2": 18}, "skip": [2], "next_en": 18}
+
+  # 3. refine_translation_mapping repairs 2x-doubled indices & snaps ±1 off-by-one onto sentence break
+  doubled_reply = json.dumps({"starts": {"0": 0, "1": 16, "2": 36}, "skip": [2], "next_en": 36})
+  fixed_doubled = json.loads(refine_translation_mapping(doubled_reply, ann))
+  assert fixed_doubled == {"starts": {"0": 0, "1": 8, "2": 18}, "skip": [2], "next_en": 18}
+
+  off_by_one = json.dumps({"starts": {"0": 0, "1": 7, "2": 18}, "skip": [], "next_en": 18})
+  snapped = json.loads(refine_translation_mapping(off_by_one, ann))
+  assert snapped["starts"]["1"] == 8 and snapped["skip"] == [2]
+
+  # 4. End-to-end insert_translation_details with generate_fn=None (local DP) & custom translation_title
+  md_file = tmp_path / "host.md"
+  tr_file = tmp_path / "01.md"
+  md_file.write_text(
+    "+++\ntitle = \"test\"\n+++\n\n"
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nएवं च सति ब्रह्म-शब्दो मुख्यः।\n</details>\n\n"
+    "<details><summary>मूलम्</summary>\n\nएवं च सति ब्रह्मशब्दो मुख्यः।\n</details>\n\n"
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nतत्र सन्देहः – किम् इह प्रत्यगात्मा।\n</details>\n\n"
+    "<details><summary>मूलम्</summary>\n\nतत्र सन्देहः – किमिह प्रत्यगात्मा।\n</details>\n",
+    encoding="utf-8",
+  )
+  tr_file.write_text(
+    "This being so, the word Brahman is primary.[^1]\n\n"
+    "--Here a doubt arises whether it is the individual soul.\n\n"
+    "[^1]: Primary sense note.\n",
+    encoding="utf-8",
+  )
+  summary = translation_matcher.insert_translation_details(
+    str(md_file), str(tr_file), generate_fn=None, translation_title="Thibaut"
+  )
+  assert summary["status"] == "done" and summary["sentences"] == 2 and summary["notes"] == 1
+  final_md = md_file.read_text(encoding="utf-8")
+  assert final_md.count("<summary>Thibaut</summary>") == 2
+  assert "<summary>Thibaut - Note</summary>" in final_md
+
+
+
+
 
 
 

@@ -206,12 +206,33 @@ def format_filled_vp_summary(
   mula_has_accents: bool = True,
 ) -> str:
   """Format the ``<summary>`` title of a ``विश्वास-प्रस्तुतिः`` block after filling US accents from ``पद-पाठः``."""
-  base = re.sub(r"\s*\((?:स्वराः पूर्याः|यन्त्र-स्वरः|स्वराः व्यत्यस्ताः[^)]*)\)\s*", "", orig_summary).strip()
+  base = re.sub(
+    r"\s*\((?:स्वराः पूर्याः|यन्त्र-स्वरः|स्वराः व्यत्यस्ताः[^)]*|\d+/\d+\s*व्यत्यस्त-स्वराः)\)\s*",
+    "",
+    orig_summary,
+  ).strip()
   base = re.sub(r"\s{2,}", " ", base) or "विश्वास-प्रस्तुतिः"
   if not mula_has_accents:
     return f"{base} (यन्त्र-स्वरः)"
   if n_vyat > 0 and p_total > 0:
     return f"{base} (स्वराः व्यत्यस्ताः {n_vyat}/{p_total})"
+  return base
+
+
+def format_suggested_vp_summary(
+  orig_summary: str,
+  n_vyat: int,
+  p_total: int,
+) -> str:
+  """Format ``विश्वास-प्रस्तुतिः`` summary with the same ``N/P व्यत्यस्त-स्वराः`` appendix as ``पद-पाठः``."""
+  base = re.sub(
+    r"\s*\((?:स्वराः पूर्याः|यन्त्र-स्वरः|स्वराः व्यत्यस्ताः[^)]*|\d+/\d+\s*व्यत्यस्त-स्वराः)\)\s*",
+    "",
+    orig_summary,
+  ).strip()
+  base = re.sub(r"\s{2,}", " ", base) or "विश्वास-प्रस्तुतिः"
+  if n_vyat > 0 and p_total > 0:
+    return f"{base} ({n_vyat}/{p_total} व्यत्यस्त-स्वराः)"
   return base
 
 
@@ -260,7 +281,7 @@ def unwrap_stale_suggestions(
 
 def _extract_vp_pieces(vp_work: str) -> list[dict]:
   chars = list(vp_work)
-  for m in re.finditer(r"\+\+\+.*?\+\+\+|\[\[\?\?\]\]", vp_work, re.S):
+  for m in re.finditer(r"\+\+\+.*?\+\+\+|\[\[(?:\?+|!+)\]\]", vp_work, re.S):
     for k in range(m.start(), m.end()):
       chars[k] = " "
   masked = "".join(chars)
@@ -742,6 +763,10 @@ def _merged_valid_marks(
   s1: int,
   s2: int,
   next_starts_av: bool,
+  *,
+  allow_8_2_6_ekadesha_svarita: bool = False,
+  prefer_8_2_6_svarita: bool = False,
+  is_pAdAdi_s2: bool = True,
 ) -> tuple[set[str], str]:
   """Compute valid Pāṇini 8.2.4-8.2.6 sandhi accents ``(valid_marks, preferred_mark)`` for ``s1 + s2``."""
   r1, r2 = pp_refs[s1], pp_refs[s2]
@@ -767,6 +792,8 @@ def _merged_valid_marks(
     return {"S"}, "S"
   if r1 == "U" and r2 == "" and is_abhinihita:
     return {"S", "U"}, "S"
+  if allow_8_2_6_ekadesha_svarita and r1 == "U" and r2 == "" and is_pAdAdi_s2 and pp_keys[s2][0] == "":
+    return {"S", "U"}, ("S" if prefer_8_2_6_svarita else "U")
   if "U" in (r1, r2):
     return ({"U", "S"} if (r2 == "" and is_yan_merge) else {"U"}), "U"
   if "S" in (r1, r2):
@@ -787,6 +814,9 @@ def _reconcile_plain_piece(
   pp_refs: list[str],
   pp_ars: list[str],
   next_starts_av: bool,
+  *,
+  allow_8_2_6_ekadesha_svarita: bool = False,
+  prefer_8_2_6_svarita: bool = False,
 ) -> tuple[int, int, str, str, bool, str, str] | None:
   cur_mks = pc["old_mks"]
   target_mks = list(cur_mks)
@@ -824,14 +854,25 @@ def _reconcile_plain_piece(
     elif len(src) == 2:
       s1, s2 = src
       i1, _ = pp_meta[s1]
-      i2, _ = pp_meta[s2]
+      i2, si2 = pp_meta[s2]
       it1, it2 = items[i1], items[i2]
       intra_ok = single_item_full and i1 == i2 and it1.solid and pp_refs[s1] == pp_ars[s1] and pp_refs[s2] == pp_ars[s2]
       if not (intra_ok or (it1.vyat and it1.solid) or (it2.vyat and it2.solid)):
         continue
       if not ((it1.solid or not it1.vyat) and (it2.solid or not it2.vyat)):
         continue
-      valid_mks, pref_mk = _merged_valid_marks(pp_refs, pp_keys, pc, vsi, s1, s2, next_starts_av)
+      valid_mks, pref_mk = _merged_valid_marks(
+        pp_refs,
+        pp_keys,
+        pc,
+        vsi,
+        s1,
+        s2,
+        next_starts_av,
+        allow_8_2_6_ekadesha_svarita=allow_8_2_6_ekadesha_svarita,
+        prefer_8_2_6_svarita=prefer_8_2_6_svarita,
+        is_pAdAdi_s2=(si2 == 0),
+      )
       if vp_mk not in valid_mks:
         target_mks[vsi] = pref_mk
         r_desc = f"{it1.ar}->{it1.ref}" if it1.vyat else f"{it2.ar}->{it2.ref}"
@@ -852,6 +893,9 @@ def _validate_existing_sug_piece(
   pp_meta: list,
   pp_refs: list[str],
   next_starts_av: bool,
+  *,
+  allow_8_2_6_ekadesha_svarita: bool = False,
+  prefer_8_2_6_svarita: bool = False,
 ) -> tuple[int, int, str, str, bool, str, str] | None:
   new_mks = pc["new_mks"]
   repaired_mks = list(new_mks)
@@ -876,13 +920,24 @@ def _validate_existing_sug_piece(
     elif len(src) == 2:
       s1, s2 = src
       i1, _ = pp_meta[s1]
-      i2, _ = pp_meta[s2]
+      i2, si2 = pp_meta[s2]
       it1, it2 = items[i1], items[i2]
       if it1.ref == "?" or it2.ref == "?":
         continue
       if not ((it1.solid or not it1.vyat) and (it2.solid or not it2.vyat)):
         continue
-      valid_mks, pref_mk = _merged_valid_marks(pp_refs, pp_keys, pc, vsi, s1, s2, next_starts_av)
+      valid_mks, pref_mk = _merged_valid_marks(
+        pp_refs,
+        pp_keys,
+        pc,
+        vsi,
+        s1,
+        s2,
+        next_starts_av,
+        allow_8_2_6_ekadesha_svarita=allow_8_2_6_ekadesha_svarita,
+        prefer_8_2_6_svarita=prefer_8_2_6_svarita,
+        is_pAdAdi_s2=(si2 == 0),
+      )
       if nmk not in valid_mks:
         repaired_mks[vsi] = pref_mk
         reasons.append(f"REVAL_MERGE({it1.ar}->{it1.ref}+{it2.ar}->{it2.ref})")
@@ -902,6 +957,8 @@ def reconcile_vp_suggestions(
   items: Sequence[PadapathaItem],
   *,
   extra_invalid_olds: AbstractSet[str] = frozenset(),
+  allow_8_2_6_ekadesha_svarita: bool = False,
+  prefer_8_2_6_svarita: bool = False,
 ) -> tuple[str, list[str]]:
   """Align ``विश्वास-प्रस्तुतिः`` against ``पद-पाठः (यान्त्रिकः)`` and add, unwrap, or update ``[[OLD|NEW]]`` spans."""
   logs: list[str] = []
@@ -944,9 +1001,30 @@ def reconcile_vp_suggestions(
           )
           if not (adj_prev or adj_next):
             continue
-      ed = _reconcile_plain_piece(pc, pc_syl_sources[pi], items, pp_keys, pp_meta, pp_refs, pp_ars, next_starts_av)
+      ed = _reconcile_plain_piece(
+        pc,
+        pc_syl_sources[pi],
+        items,
+        pp_keys,
+        pp_meta,
+        pp_refs,
+        pp_ars,
+        next_starts_av,
+        allow_8_2_6_ekadesha_svarita=allow_8_2_6_ekadesha_svarita,
+        prefer_8_2_6_svarita=prefer_8_2_6_svarita,
+      )
     else:
-      ed = _validate_existing_sug_piece(pc, pc_syl_sources[pi], items, pp_keys, pp_meta, pp_refs, next_starts_av)
+      ed = _validate_existing_sug_piece(
+        pc,
+        pc_syl_sources[pi],
+        items,
+        pp_keys,
+        pp_meta,
+        pp_refs,
+        next_starts_av,
+        allow_8_2_6_ekadesha_svarita=allow_8_2_6_ekadesha_svarita,
+        prefer_8_2_6_svarita=prefer_8_2_6_svarita,
+      )
     if ed is not None:
       edits.append(ed)
 
@@ -964,6 +1042,9 @@ def reconcile_vp_suggestions(
 def fill_vp_accents_from_padapatha(
   vp_body: str,
   items: Sequence[PadapathaItem],
+  *,
+  allow_8_2_6_ekadesha_svarita: bool = False,
+  prefer_8_2_6_svarita: bool = False,
 ) -> tuple[str, list[tuple[str, int]]]:
   """Directly populate US accents (``᳓``/``᳙``) onto an unaccented ``विश्वास-प्रस्तुतिः`` body from ``items``.
 
@@ -1001,7 +1082,19 @@ def fill_vp_accents_from_padapatha(
         if not _skip_elided_avagraha_lead(pc, items[ii], si):
           target_mks[vsi] = pp_refs[pp_si]
       elif len(src) == 2:
-        _, pref_mk = _merged_valid_marks(pp_refs, pp_keys, pc, vsi, src[0], src[1], next_starts_av)
+        _, si2 = pp_meta[src[1]]
+        _, pref_mk = _merged_valid_marks(
+          pp_refs,
+          pp_keys,
+          pc,
+          vsi,
+          src[0],
+          src[1],
+          next_starts_av,
+          allow_8_2_6_ekadesha_svarita=allow_8_2_6_ekadesha_svarita,
+          prefer_8_2_6_svarita=prefer_8_2_6_svarita,
+          is_pAdAdi_s2=(si2 == 0),
+        )
         target_mks[vsi] = pref_mk
     if target_mks != pc["old_mks"]:
       new_tok = apply_marks_to_token(pc["old"], target_mks)
@@ -1039,6 +1132,7 @@ def reconcile_markdown_blocks(
   *,
   extra_invalid_olds: AbstractSet[str] = frozenset(),
   skip_js_includes: bool = True,
+  allow_8_2_6_ekadesha_svarita: bool | None = None,
 ) -> tuple[str, list[str]]:
   """Reconcile paired ``विश्वास-प्रस्तुतिः`` and ``पद-पाठः (यान्त्रिकः)`` details blocks inside Markdown text."""
   js_divs = find_js_include_spans(markdown_text) if skip_js_includes else []
@@ -1050,8 +1144,15 @@ def reconcile_markdown_blocks(
     if not m.group(1).startswith("पद-पाठः (यान्त्रिकः"):
       continue
     items = parse_padapatha_items(m.group(2).strip())
-    for j in range(i - 1, max(-1, i - 5), -1):
+    is_sb_cluster = False
+    for j in range(i - 1, max(-1, i - 8), -1):
       ps = dmatches[j].group(1)
+      if ps.startswith("पद-पाठः (यान्त्रिकः"):
+        break
+      if "\n##" in markdown_text[dmatches[j].end() : m.start()]:
+        break
+      if ps in ("मूलम् - Weber", "मूलम् - श्रीधरादि"):
+        is_sb_cluster = True
       if ps.startswith("विश्वास-प्रस्तुतिः"):
         if (
           "स्वराः पूर्याः" not in ps
@@ -1059,7 +1160,13 @@ def reconcile_markdown_blocks(
           and "स्वराः व्यत्यस्ताः" not in ps
           and has_us_accents(dmatches[j].group(2))
         ):
-          new_vp, vlogs = reconcile_vp_suggestions(dmatches[j].group(2), items, extra_invalid_olds=extra_invalid_olds)
+          allow_826 = is_sb_cluster if allow_8_2_6_ekadesha_svarita is None else allow_8_2_6_ekadesha_svarita
+          new_vp, vlogs = reconcile_vp_suggestions(
+            dmatches[j].group(2),
+            items,
+            extra_invalid_olds=extra_invalid_olds,
+            allow_8_2_6_ekadesha_svarita=allow_826,
+          )
           if new_vp != dmatches[j].group(2):
             open_attr = " open" if "<details open>" in dmatches[j].group(0)[:20] else ""
             replacements.append((dmatches[j].start(), dmatches[j].end(), f"<details{open_attr}><summary>{ps}</summary>{new_vp}</details>"))

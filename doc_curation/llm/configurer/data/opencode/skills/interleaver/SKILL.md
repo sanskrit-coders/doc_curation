@@ -26,13 +26,49 @@ from doc_curation.md.content_processor.commentary import interleaver
 
 **Verifying alignment & digitization artifacts:** Never align solely by translation item numbers—verify lexical/semantic correspondence against the Sanskrit so shifted, misplaced, or duplicated translation passages are caught. Check section-level `> *Note:*` blocks carefully (print/OCR sources often leave the introductory note for section `N+1` at the end of section `N`, or duplicate an inline footnote) and place each note only at the section or block it actually introduces.
 
-#### Sanskrit commentary - rough alignment
-If you are interleaving a Sanskrit commentary where a rough alignment is explicitly allowed by the prompt, call:
+#### Sanskrit commentary - alignment engines
+1. **Multi-role Vedic & Śāstric interleaving (`interleave_source_into_markdown`, zero retyping):**
+   Slices source text quote-safely (never cutting inside `"..."`, `“...”`, Sanskrit `'...'`, `(...)`, or `+++...+++`), extracts sandhi-restored pratīkas (`**bold**`, unquoted `... इति`, dash lead-ins, opening headwords, stem-IDF overlap — while masking `'...' इति` sūtra citations), classifies `/interleaver` roles (`heading`, `viniyoga` + *kalpa* continuations, `avatarika` including multi-ṛk *chandas* & edition notes, `tika` including single-ṛk *chandas* notes, `translation`, `note`, `viniyoga_sangraha`), solves global Monotonic Viterbi DP, and runs the 6-point verification checklist automatically:
 
 ```python
-interleaver.interleave_TIkA_below_mUla(dest_file, commentary_file)
+from doc_curation.llm.proofreader import interleave_source_into_markdown
+
+res = interleave_source_into_markdown(
+    host_md,
+    source_commentary_text,
+    author_label="भट्टभास्करः",
+    is_sarvash_tikah=is_sarvash_tikah,
+    backend=None,  # Pure local sandhi/pratīka Viterbi DP (no GPU/LLM needed)
+)
+assert res["verification"]["ok"], res["verification"]
+updated_md = res["markdown"]
+host_only_viniyogas = res["withheld_viniyogas"]
 ```
-Both arguments are **file paths (str)**, not `MdFile` objects — the function calls `open()` internally. Note that `interleaver.py` matches `<details><summary>टीका</summary>` by default (`TIKA_RE` / `TIKA_FMT`); when a specific summary title (such as `भट्टभास्कर-टीका` or `सायण-टीका`) is used, set or rename the `<summary>` tag accordingly.
+
+2. **Plain `*-टीका` below `मूलम्` (`interleave_TIkA_below_mUla`):**
+   When placing a single-role Sanskrit commentary directly below `<details><summary>मूलम्</summary>` from file paths:
+
+```python
+interleaver.interleave_TIkA_below_mUla(dest_file, commentary_file, tika_title="भट्टभास्कर-टीका")
+interleaver.verify_sentence_order(dest_file, commentary_file, tika_title="भट्टभास्कर-टीका")
+```
+Both file arguments are **file paths (str)**, not `MdFile` objects; `tika_title` defaults to `"टीका"` across `interleave_TIkA_below_mUla`, `verify_sentence_order`, `remove_commentary_blocks`, and `realign_TIkA_below_mUla`.
+
+#### Plain translation streams - alignment engine
+When placing a plain English/vernacular translation stream above `<details><summary>मूलम्</summary>` (and below `विश्वास-प्रस्तुतिः`) with **zero retyping**, use `doc_curation.llm.translation_matcher.insert_translation_details`. With `generate_fn=None` (default when `backend=None`), it runs the fast local bilingual Monotonic DP aligner (`doc_curation.llm.proofreader.translation_aligner.local_translation_generate_fn` — discourse-pivot, sūtra-number, technical-lexicon, and IAST→SLP1 stem anchors at `~34 ms/batch` with `100%` partition validity):
+
+```python
+from doc_curation.llm import translation_matcher
+
+translation_matcher.insert_translation_details(
+    dest_md_path,
+    translation_md_path,
+    backend=None,        # Pure local bilingual Monotonic DP (no GPU/LLM needed)
+    generate_fn=None,
+    translation_title="Thibaut",  # Custom <AuthorName> summary; defaults to "Translation"
+    dry_run=False,
+)
+```
 
 
 ### Order
@@ -92,26 +128,24 @@ A source heading opening a commentary block is hoisted to a real `###` heading i
 
 When explicitly asked to run `/interleaver` with the fine-tuned `Qwen3-14B` Sanskrit interleaver LoRA (`doc_curation/data/models/qwen3-14b-sanskrit-lora/`, Kaggle: `vishvasvasuki/qwen3-14b-sanskrit-proofreader-lora`), use `ProofreaderBackend` and `interleave_helper` — both operate strictly by **0-based JSON indices ("no retyping, ever")**:
 
-1. **Plain translation streams (`doc_curation.llm.translation_matcher`):** Pass `backend=ProofreaderBackend(base_url="https://<tunnel>/v1")` (`backend.generate_content` automatically annotates `TRANSLATION WORDS:` with `[0] w0 [1] w1 ...` word indices matching the model's cursor-alignment training).
-2. **Multi-role commentaries & Vedic translations (`doc_curation.llm.proofreader.interleave_helper`):**
+1. **Plain translation streams (`doc_curation.llm.translation_matcher`):** Pass `backend=ProofreaderBackend(base_url="https://<tunnel>/v1")` and `translation_title="<AuthorName>"` to `translation_matcher.insert_translation_details(...)` (`backend.generate_content` pre-indexes `TRANSLATION WORDS:` with unambiguous `[0]..[W-1]` word tags + `BILINGUAL ANCHOR PRIOR` cues and post-guards replies with `refine_translation_mapping` — repairing `2×` whitespace-split index offsets, snapping `±1` boundaries to sentence/dash starts, enforcing `skip` consistency, and falling back to `local_translation_generate_fn` on invalid partitions).
+2. **Multi-role commentaries & Vedic translations (`interleave_source_into_markdown` with `ProofreaderBackend`):**
+   Pass `backend=ProofreaderBackend(...)` to enrich prompts with sandhi-resolved `{cue: CORE k via '...', role=...}` hints + `UPCOMING CORES` lookahead and post-guard LLM JSON replies with `refine_interleave_plan`:
 
 ```python
-from doc_curation.llm.proofreader import INTERLEAVER_SYSTEM_PROMPT, ProofreaderBackend
-from doc_curation.llm.proofreader.interleave_helper import (
-    assemble_cluster_blocks,
-    format_interleave_prompt,
-    parse_interleave_json,
-    split_quote_safe_segments,
-)
+from doc_curation.llm.proofreader import ProofreaderBackend, interleave_source_into_markdown
 
 backend = ProofreaderBackend(base_url="https://<tunnel>/v1")
-segments = split_quote_safe_segments(source_commentary_text)
-prompt = format_interleave_prompt(core_mula_list, segments, author_label="भट्टभास्करः", is_sarvash_tikah=is_sarvash_tikah)
-raw_json = backend.new_chat(INTERLEAVER_SYSTEM_PROMPT).send_text(prompt)
-plan = parse_interleave_json(raw_json, num_cores=len(clusters), num_segments=len(segments))
-assembled_md, withheld_viniyogas = assemble_cluster_blocks(
-    clusters, segments, plan, author_label="भट्टभास्करः", is_sarvash_tikah=is_sarvash_tikah,
+res = interleave_source_into_markdown(
+    host_md,
+    source_commentary_text,
+    author_label="भट्टभास्करः",
+    is_sarvash_tikah=is_sarvash_tikah,
+    backend=backend,
 )
+assert res["verification"]["ok"], res["verification"]
+updated_md = res["markdown"]
+withheld_viniyogas = res["withheld_viniyogas"]
 ```
 
 ## Verification checklist

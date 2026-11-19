@@ -1,53 +1,9 @@
 {
-  "hyphenations_toml_base_zero_shot": {
-    "total": 23,
-    "exact_acc": 0.7391,
-    "segment_acc": 0.8261,
-    "merger_veto_acc": 0.7143,
-    "sample_diffs": [
-      {
-        "sec": "non_separable_mergers",
-        "in": "अपीच्छा",
-        "exp": "अपीच्छा",
-        "pred": "अपी-च्छा"
-      },
-      {
-        "sec": "non_separable_mergers",
-        "in": "स्वप्रकाशाद्वितीय",
-        "exp": "स्वप्रकाशाद्वितीय",
-        "pred": "स्व-प्रकाशाद्वितीय"
-      },
-      {
-        "sec": "yan_sandhi",
-        "in": "इत्येवम्",
-        "exp": "इत्य्-एवम्",
-        "pred": "इत्य् एवम्"
-      },
-      {
-        "sec": "visarga_sandhi",
-        "in": "दुष्प्रकृतेरस्य",
-        "exp": "दुष्प्रकृतेर् अस्य",
-        "pred": "दुष्प्रकृतेर्-अस्य"
-      },
-      {
-        "sec": "final_m_sandhi",
-        "in": "अर्थमिति",
-        "exp": "अर्थम् इति",
-        "pred": "अर्थमिति"
-      },
-      {
-        "sec": "bad_split_regressions",
-        "in": "हिततमः",
-        "exp": "हिततमः",
-        "pred": "हित-तमः"
-      }
-    ]
-  },
   "hyphenations_toml_finetuned_lora": {
     "total": 23,
-    "exact_acc": 0.7391,
-    "segment_acc": 0.7826,
-    "merger_veto_acc": 0.5714,
+    "exact_acc": 0.6957,
+    "segment_acc": 0.7391,
+    "merger_veto_acc": 0.4286,
     "sample_diffs": [
       {
         "sec": "non_separable_mergers",
@@ -59,13 +15,19 @@
         "sec": "non_separable_mergers",
         "in": "अपीच्छा",
         "exp": "अपीच्छा",
-        "pred": "अ-पीच्छा"
+        "pred": "अ-पी-च्छा"
       },
       {
         "sec": "non_separable_mergers",
         "in": "स्वप्रकाशाद्वितीय",
         "exp": "स्वप्रकाशाद्वितीय",
         "pred": "स्व-प्रकाशाद्-वितीय"
+      },
+      {
+        "sec": "non_separable_mergers",
+        "in": "रामेति",
+        "exp": "रामेति",
+        "pred": "रामेत्य्"
       },
       {
         "sec": "yan_sandhi",
@@ -77,7 +39,7 @@
         "sec": "visarga_sandhi",
         "in": "दुष्प्रकृतेरस्य",
         "exp": "दुष्प्रकृतेर् अस्य",
-        "pred": "दुष्-प्रकृतेर् अस्य"
+        "pred": "दुष्-प्रकृतेः अस्य"
       },
       {
         "sec": "samasa_and_inflected_words",
@@ -88,28 +50,18 @@
     ]
   },
   "updated_skill_probe": {
-    "base_zero_shot": {
-      "inline_mergers_intact": true,
-      "no_newline_inside_brackets": true,
-      "multiline_clause_count": "0/3",
-      "outputs": [
-        "तत्र धर्मार्थकामानां कारणविशेषे निश्चिते सति  ईक्षणादयः प्रवर्तन्त इति सिद्धम्।",
-        "अत्र प्रधानस्याचेतनस्य  एवं-रूपो जगत्कारणभावो नोपपद्यत इत्याह।",
-        "पृष्टो मृत्युः तस्यार्थस्य निर्णयाय स्वप्रकाशाद्वितीयमात्मानमुपदिदेश।"
-      ]
-    },
     "finetuned_lora": {
       "inline_mergers_intact": false,
       "no_newline_inside_brackets": true,
-      "multiline_clause_count": "0/3",
+      "multiline_clause_count": "2/3",
       "outputs": [
-        "तत्र धर्मार्थ-कामानां कारण-विशेषे निश्चिते सतीक्षणादयः प्रवर्तन्त इति सिद्धम्।",
-        "अत्र प्रधानस्याचेतनस्यैवं-रूपो जगत्-कारण-भावो नोपपद्यत इत्य् आह।",
-        "पृष्टो मृत्युः तस्यार्थस्य निर्णयाय स्व-प्रकाशाद् वितीयम् आत्मानम् उपदिदेश।"
+        "तत्र धर्मार्थ-कामानां कारण-विशेषे निश्चिते सती  \nईक्षणादयः प्रवर्तन्त  \nइति सिद्धम्।",
+        "अत्र प्रधानस्याचेतनस्यैवं-रूपो जगत्-कारण-भावो नोपपद्यत इत्य्-आह।",
+        "पृष्टो मृत्युः  \nतस्यार्थस्य निर्णयाय  \nस्व-प्रकाशाद् वितीयम्  \nआत्मानम् उपदिदेश।"
       ]
     }
   },
-  "heldout_tasks_base_zero_shot": {
+  "heldout_tasks_finetuned_lora": {
     "clause_newline_instruction_following": {
       "n": 8,
       "clause_on_multiline_rate": 0.25,
@@ -117,13 +69,13 @@
       "samples": [
         {
           "in": "तस्मादीदृशं जगदुपसंहारित्वरूपं भोक्तृत्वं परमात्मन एव ॥ ९॥",
-          "on": "तस्मादीदृशं जगदुपसंहारित्वरूपं भोक्तृत्वं परमात्मन एव ॥ ९॥",
-          "off": "आत्मानं रथिनं विद्धि शरीरं रथमेव च (कठ.१.३.३) इत्यादि नोपासको जीव उच्यते।"
+          "on": "तस्माद् इदृशं जगद्-उपसंहारित्व-रूपं भोक्तृत्वं परमात्मन एव ॥ ९॥",
+          "off": "आत्मानं रथिनं विद्धि शरीरं रथम् एव च (कठ.१.३.३) इत्य्-आदिनोपासको जीव उच्यते।"
         },
         {
           "in": "ब्रह्मजज्ञो – जीवः, ब्रह्मणो जातत्वात् ज्ञत्वाच्च।",
-          "on": "ब्रह्मजज्ञो – जीवः, ब्रह्मणो जातत्वात् ज्ञत्वाच्च।",
-          "off": "एतावानस्य महिमा।  \nअतः ज्यायांश्च पुरुषः।"
+          "on": "ब्रह्म-जज्ञो – जीवः, ब्रह्मणो जातत्वात् ज्ञत्वाच्च।",
+          "off": "एतावान्  \nअस्य महिमा।  \nअतो ज्यायांश्च पुरुषः।"
         }
       ]
     },
@@ -133,79 +85,26 @@
       "exact_alignment_rate": 0.0
     },
     "commentary_interleaver": {
-      "n": 8,
+      "n": 16,
       "valid_json_rate": 1.0,
-      "exact_alignment_rate": 0.375
+      "exact_alignment_rate": 0.375,
+      "unmatched_from_acc": 0.875,
+      "segment_core_acc": 0.8403,
+      "segment_role_acc": 0.9916
     },
     "proofread_vp": {
       "n": 8,
-      "avg_char_similarity": 0.9283,
-      "suggestion_rate": 0.0,
+      "avg_char_similarity": 0.9548,
+      "suggestion_rate": 0.125,
       "sample": {
         "gold": "> ननु \"आत्मन आकाशसम्भूतः\" (तै.आन.१.२) इत्य्  \nआकाशस्यापि कार्यत्वं प्रतीयते।",
-        "pred": "ननु आत्मन आकाशसम्भूतः (तै.आन.१.२) इत्याकाशस्यापि कार्यत्वं प्रतीयते।"
+        "pred": "ननु  \nआत्मन आकाश-सम्भूतः (तै.आन.१.२)  \nइत्य्-आकाशस्यापि कार्यत्वं प्रतीयते।"
       }
     },
     "proofread_suggestions": {
       "n": 8,
-      "avg_char_similarity": 0.8312,
-      "suggestion_rate": 0.0,
-      "sample": {
-        "gold": "देवतामयी - [[इन्द्रियाघीनभोगा|इन्द्रियाधीन-भोगा]] ।",
-        "pred": "देवतामयी - इन्द्रियाघीनभोगा ।"
-      }
-    },
-    "padapatha_accent": {
-      "n": 8,
-      "avg_char_similarity": 0.1856,
-      "suggestion_rate": 0.0,
-      "sample": {
-        "gold": "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- वि᳓श्वेभ्यः (*TS*, *RV*)\n- देवे᳓भ्यः (*TS*)\n- स्वा᳓हा (*TS*)\n</details>",
-        "pred": "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n- विश्वे॑ → **विश्वे॑** (प्रातिपदिकम्: विश्व, विश्वे विश्वस्य विश्वेभ्यः इति विश्व-प्रातिपदिकम्, तस्य विश्वे विश्वस्य विश्वेभ्यः इति विश्व-प्रातिपदिकम्, तस्य विश्वे विश्वस्य विश्वेभ्यः इति वि"
-      }
-    }
-  },
-  "heldout_tasks_finetuned_lora": {
-    "clause_newline_instruction_following": {
-      "n": 8,
-      "clause_on_multiline_rate": 0.25,
-      "clause_off_singleline_rate": 1.0,
-      "samples": [
-        {
-          "in": "तस्मादीदृशं जगदुपसंहारित्वरूपं भोक्तृत्वं परमात्मन एव ॥ ९॥",
-          "on": "तस्माद् इदृशं जगद् उपसंहारित्व-रूपं भोक्तृत्वं परमात्मन एव ॥ ९॥",
-          "off": "आत्मानं रथिनं विद्धि शरीरं रथम् एव च (कठोपनिषद् १.३.३) इत्य्-आदिनोपासको जीव उच्यते।"
-        },
-        {
-          "in": "ब्रह्मजज्ञो – जीवः, ब्रह्मणो जातत्वात् ज्ञत्वाच्च।",
-          "on": "ब्रह्मजज्ञो – जीवः, ब्रह्मणो जातत्वात् ज्ञत्वाच्च।",
-          "off": "एतावान् अस्य महिमा। अतो ज्यायांश्च पुरुषः।"
-        }
-      ]
-    },
-    "translation_matcher": {
-      "n": 8,
-      "valid_json_rate": 1.0,
-      "exact_alignment_rate": 0.0
-    },
-    "commentary_interleaver": {
-      "n": 8,
-      "valid_json_rate": 1.0,
-      "exact_alignment_rate": 0.5
-    },
-    "proofread_vp": {
-      "n": 8,
-      "avg_char_similarity": 0.9616,
-      "suggestion_rate": 0.0,
-      "sample": {
-        "gold": "> ननु \"आत्मन आकाशसम्भूतः\" (तै.आन.१.२) इत्य्  \nआकाशस्यापि कार्यत्वं प्रतीयते।",
-        "pred": "ननु आत्मन् आकाश-सम्भूतः (तै.आन.१.२) इत्य् आकाशस्य् अपि कार्यत्वं प्रतीयते।"
-      }
-    },
-    "proofread_suggestions": {
-      "n": 8,
-      "avg_char_similarity": 0.8511,
-      "suggestion_rate": 0.0,
+      "avg_char_similarity": 0.8311,
+      "suggestion_rate": 0.125,
       "sample": {
         "gold": "देवतामयी - [[इन्द्रियाघीनभोगा|इन्द्रियाधीन-भोगा]] ।",
         "pred": "देवता-मयी - इन्द्रियाघीन-भोगा ।"
@@ -213,96 +112,96 @@
     },
     "padapatha_accent": {
       "n": 8,
-      "avg_char_similarity": 0.4682,
+      "avg_char_similarity": 0.4345,
       "suggestion_rate": 0.0,
       "sample": {
         "gold": "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- वि᳓श्वेभ्यः (*TS*, *RV*)\n- देवे᳓भ्यः (*TS*)\n- स्वा᳓हा (*TS*)\n</details>",
-        "pred": "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- विश्वे॑भ्यो (*TS*, *RV*)\n- दे॒वेभ्य॒स् (*TS*, *RV*)\n- स्वाहा॑ (*TS*, *RV*)\n</details>"
+        "pred": "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- विश्वे॑भ्यो (*TS*, *RV*)\n- दे॒वेभ्यः॑ (*TS*, *RV*, *AV*)\n- स्वाहा॑ (*TS*, *RV*, *AV*)\n</details>"
       }
     }
   },
   "training_meta": {
     "base_model": "Qwen/Qwen3-14B",
-    "total_steps": 115,
+    "total_steps": 22,
     "lora_r": 16,
-    "elapsed_min": 316.67,
+    "elapsed_min": 62.56,
     "loss_curve_head": [
       {
         "step": 1,
-        "loss": 0.5307,
-        "sec": 140.72
+        "loss": 0.2239,
+        "sec": 76.24
       },
       {
         "step": 2,
-        "loss": 0.4094,
-        "sec": 141.73
+        "loss": 0.119,
+        "sec": 82.66
       },
       {
         "step": 3,
-        "loss": 0.4059,
-        "sec": 140.92
+        "loss": 0.1118,
+        "sec": 83.03
       },
       {
         "step": 4,
-        "loss": 0.3857,
-        "sec": 139.37
+        "loss": 0.1243,
+        "sec": 90.22
       },
       {
         "step": 5,
-        "loss": 0.1866,
-        "sec": 129.53
+        "loss": 0.1141,
+        "sec": 81.52
       }
     ],
     "loss_curve_tail": [
       {
-        "step": 106,
-        "loss": 0.0078,
-        "sec": 133.6
+        "step": 13,
+        "loss": 0.1074,
+        "sec": 67.81
       },
       {
-        "step": 107,
-        "loss": 0.0116,
-        "sec": 134.8
+        "step": 14,
+        "loss": 0.2013,
+        "sec": 88.67
       },
       {
-        "step": 108,
-        "loss": 0.0067,
-        "sec": 135.11
+        "step": 15,
+        "loss": 0.0956,
+        "sec": 86.2
       },
       {
-        "step": 109,
-        "loss": 0.0134,
-        "sec": 131.8
+        "step": 16,
+        "loss": 0.1271,
+        "sec": 83.73
       },
       {
-        "step": 110,
-        "loss": 0.0017,
-        "sec": 133.07
+        "step": 17,
+        "loss": 0.0602,
+        "sec": 79.16
       },
       {
-        "step": 111,
-        "loss": 0.0004,
-        "sec": 132.33
+        "step": 18,
+        "loss": 0.1353,
+        "sec": 103.4
       },
       {
-        "step": 112,
-        "loss": 0.0092,
-        "sec": 137.38
+        "step": 19,
+        "loss": 0.1382,
+        "sec": 81.38
       },
       {
-        "step": 113,
-        "loss": 0.0038,
-        "sec": 136.17
+        "step": 20,
+        "loss": 0.0343,
+        "sec": 92.91
       },
       {
-        "step": 114,
-        "loss": 0.0032,
-        "sec": 138.57
+        "step": 21,
+        "loss": 0.1195,
+        "sec": 91.48
       },
       {
-        "step": 115,
-        "loss": 0.014,
-        "sec": 137.13
+        "step": 22,
+        "loss": 0.0926,
+        "sec": 87.89
       }
     ]
   }

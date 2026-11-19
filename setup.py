@@ -119,6 +119,10 @@ setup(
             'data/*/*/*.md',
             'data/*/*/*.toml',
         ],
+        'doc_curation.llm.proofreader': [
+            'data/*.toml',
+            'data/vocabulary/*',
+        ],
     },
 
     # Although 'package_data' is the preferred approach, in some case you may

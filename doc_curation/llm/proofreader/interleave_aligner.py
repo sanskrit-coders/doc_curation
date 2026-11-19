@@ -62,9 +62,11 @@ def _clean_sanskrit_surface(text: str) -> str:
   # Restore initial/post-space/post-o/e avagraha as word-initial `अ`
   s = regex.sub(r"(^|[\s,।॥\-–—ोे])ऽ", r"\1 अ", s)
   s = s.replace("ऽ", "")
-  # Normalize Vedic sandhi geminates & sibilant-visarga assimilations
+  # Normalize Vedic sandhi geminates & word-final sibilant-visarga assimilations
   s = s.replace("त्त्र", "त्र").replace("द्ध्व", "ध्व")
-  s = regex.sub(r"([अ-हइ-औि-ौ])[शषस]्(?=\s*[कखपफशषसतमनवय])", r"\1ः ", s)
+  s = regex.sub(r"([अ-हइ-औि-ौ])[शषस]्(?=(?:\s+|[-–—]|$))", r"\1ः ", s)
+  s = regex.sub(r"([अ-हइ-औि-ौ])स्(?=स्[क-ह])", r"\1ः ", s)
+  s = regex.sub(r"([अ-हइ-औि-ौ])श्(?=श[क-हअ-औि-ौ])", r"\1ः ", s)
   s = regex.sub(r"थ्(?=\s+स)", "त्", s)
   s = regex.sub(r"[*_+#>]", " ", s)
   return s
@@ -75,9 +77,9 @@ def _stem_of(word: str) -> str:
   w = word.strip("ःंम्")
   for suf in (
     "यिष्यते", "िष्यते", "ष्यते", "मानाय", "मानाः", "माना", "मानम्",
-    "यन्ते", "यते", "न्ते", "न्ति", "ेभ्यः", "ेभ्यस्", "ेभ्य", "ाभ्याम्",
-    "ायै", "ायाः", "ाय", "स्य", "स्मिन्", "ेषु", "ासु", "ानाम्", "ीनाम्",
-    "त्वम्", "त्वात्", "णम्", "नम्", "नः", "नाः", "ते", "ति",
+    "यन्ते", "यते", "न्ते", "न्ति", "ेभ्यः", "ेभ्यस्", "ेभ्य", "ीभ्यः", "ीभ्य", "ोभ्यः", "ोभ्य",
+    "ाभ्याम्", "भ्यः", "भ्य", "ायै", "ायाः", "ाय", "स्य", "स्मिन्", "ेषु", "ासु", "ानाम्", "ीनाम्",
+    "त्वम्", "त्वात्", "णम्", "नम्", "नः", "नाः", "ेन", "ेण", "ते", "ति",
   ):
     if len(w) >= len(suf) + 3 and w.endswith(suf):
       w = w[:-len(suf)]
@@ -86,7 +88,8 @@ def _stem_of(word: str) -> str:
   w = w.replace("ग्रही", "ग्रह")
   if len(w) >= 3 and "ै" in w[:3]:
     w = w.replace("ै", "े", 1)
-  return w.rstrip("ःं्ोेािी") or word[:4]
+  res = w.rstrip("ःं्ोेािी")
+  return res if len(res) >= 2 else word[:3]
 
 
 def normalize_for_alignment(text: str) -> dict:
@@ -110,7 +113,7 @@ def normalize_for_alignment(text: str) -> dict:
     if regex.search(r"[अ-ह]", w)
   ]
   content_words = [w for w in raw_words if w not in _STOPWORDS and len(w) >= 3]
-  stems = [_stem_of(w) for w in content_words if len(_stem_of(w)) >= 3]
+  stems = [_stem_of(w) for w in content_words]
   return {
     "compact": "".join(out_chars),
     "starts": frozenset(starts),
@@ -131,7 +134,9 @@ def _iti_candidates_from_match(text: str, m: regex.Match, max_words: int = 3) ->
   elif after and regex.match(r"[ऀ-ॿ]", after[0]) and not after.startswith(_ITI_CONTS):
     return []
 
-  seg = regex.split(r"[-–—।॥:;\n'‘’\"“”()]+", text[:m.start()])[-1]
+  seg = regex.split(r"(?:\s+[-–—]\s*|[-–—]\s+|[–—।॥:;\n'‘’\"“”()])+", text[:m.start()])[-1]
+  # Collapse samāsa hyphens inside compound words (`तत्-स्वरूप-ज्ञान` -> `तत्स्वरूपज्ञान`)
+  seg = regex.sub(r"(?<=[ऀ-ॿ])-(?=[ऀ-ॿ])", "", seg)
   words = [w for w in regex.findall(r"[ऀ-ॿ]+", seg) if regex.search(r"[अ-ह]", w)]
   if not words:
     return []
@@ -181,10 +186,22 @@ def extract_segment_cues(segment: str) -> dict:
           explicit.append(n)
 
   masked = _SUTRA_QUOTE_RE.sub(" ", raw)
-  for im in _ITI_RE.finditer(masked):
-    for n in _iti_candidates_from_match(masked, im):
-      if n not in explicit:
-        explicit.append(n)
+  # End-pratīka dominance: if a single-sentence segment ends with `... इति ।/॥`
+  # (and has no bold word-by-word glosses), that closing pratīka governs alone.
+  iti_matches = list(_ITI_RE.finditer(masked))
+  end_cands: list[str] = []
+  if bold_count == 0 and iti_matches:
+    last_im = iti_matches[-1]
+    tail_after = masked[last_im.end():]
+    if not regex.search(r"[अ-ह]", regex.sub(r"^\u094d", "", tail_after)):
+      end_cands = _iti_candidates_from_match(masked, last_im)
+  if end_cands:
+    explicit.extend(n for n in end_cands if n not in explicit)
+  else:
+    for im in iti_matches:
+      for n in _iti_candidates_from_match(masked, im):
+        if n not in explicit:
+          explicit.append(n)
 
   # Double-quoted mula quotes (excluding external `(तै.आन...)` / `(सं॰...)` citations)
   for qm in regex.finditer(r'(?:"([^"\n]{3,80})"|“([^”\n]{3,80})”)(?!\s*\([^)\n]*[॰.])', raw):
@@ -193,8 +210,10 @@ def extract_segment_cues(segment: str) -> dict:
     if len(n) >= 4 and n not in explicit:
       explicit.append(n)
 
-  # Opening headword after stripping leading digits / ordinal-meter prefixes
-  stripped_head = regex.sub(r"^\s*[0-9०-९]+\s*(?:[ऀ-ॿ]{3,10}\s*[-–—]\s*)?", "", masked)
+  # Leading source-edition mantra serial number (e.g. `5पञ्चमी -`, `14बार्हस्पत्ये`, `15-17प्रस्तरं`)
+  lead_num_m = regex.match(r"^\s*([0-9०-९]{1,3})(?:-[0-9०-९]{1,3})?\s*[ऀ-ॿA-Za-z*]", raw)
+  lead_num = int(lead_num_m.group(1).translate(str.maketrans("०१२३४५६७८९", "0123456789"))) if lead_num_m else None
+  stripped_head = regex.sub(r"^\s*[0-9०-९]+(?:-[0-9०-९]+)?\s*(?:[ऀ-ॿ]{3,10}\s*[-–—]\s*)?", "", masked)
   head_words = [
     w for w in regex.findall(r"[ऀ-ॿ]{3,}", _clean_sanskrit_surface(stripped_head))[:2]
     if w not in _STOPWORDS
@@ -203,8 +222,10 @@ def extract_segment_cues(segment: str) -> dict:
   has_grammar_cue = has_sutra_quote or any(g in raw for g in _GRAMMAR_CONT)
   return {
     "explicit_pratikas": explicit,
+    "has_end_pratika": bool(end_cands),
     "bold_count": bold_count,
     "headwords": head_words,
+    "lead_num": lead_num,
     "is_heading_only": is_heading_only,
     "is_colophon": bool(_COLOPHON_RE.match(raw)),
     "is_nigada_siddha": ("निगदसिद्ध" in raw or "निगदव्याख्यात" in raw),
@@ -256,22 +277,6 @@ def classify_segment_role(
   return "tika"
 
 
-def _prefix_or_edit_match(needle: str, compact_mula: str, starts: frozenset[int]) -> bool:
-  """Anchored word-start match with 80% coverage or <=1 OSA edit on >=5-char words."""
-  if len(needle) < 2 or len(compact_mula) < 2:
-    return False
-  need = len(needle) if len(needle) < 5 else min((4 * len(needle) + 4) // 5, 12)
-  sub = needle[:need]
-  if any(compact_mula.startswith(sub, o) for o in starts):
-    return True
-  if len(needle) >= 5:
-    for o in starts:
-      window = compact_mula[o:o + need]
-      if len(window) == need and sum(a != b for a, b in zip(sub, window)) <= 1:
-        return True
-  return False
-
-
 def score_segment_against_cores(
   cues: dict,
   seg_norm: dict,
@@ -279,22 +284,42 @@ def score_segment_against_cores(
   stem_idf: dict[str, float],
 ) -> tuple[list[float], dict[int, str]]:
   """Score a segment against every core (target + lookahead) with matched witness."""
+  def _anchored_match(needle: str, cm: str, st: frozenset[int]) -> bool:
+    if len(needle) < 2 or len(cm) < 2:
+      return False
+    need = len(needle) if len(needle) < 5 else min((4 * len(needle) + 4) // 5, 12)
+    sub = needle[:need]
+    if any(cm.startswith(sub, o) for o in st):
+      return True
+    return len(needle) >= 5 and any(
+      len(cm[o:o + need]) == need and sum(a != b for a, b in zip(sub, cm[o:o + need])) <= 1 for o in st
+    )
+
   n_cores = len(core_norms)
   scores = [0.0] * n_cores
   witness: dict[int, str] = {}
 
   # Tier 1: Explicit pratīkas (`**bold**`, unquoted `... इति`, `"..."`)
+  max_t1_hits = max(4, n_cores // 5)
   for pr in cues["explicit_pratikas"]:
-    hits = [j for j in range(n_cores) if _prefix_or_edit_match(pr, core_norms[j]["compact"], core_norms[j]["starts"])]
-    if hits and len(hits) <= 4:
-      bonus = 12.0 if len(hits) == 1 else (7.5 / math.sqrt(len(hits)))
+    hits = [j for j in range(n_cores) if _anchored_match(pr, core_norms[j]["compact"], core_norms[j]["starts"])]
+    if hits and (len(hits) <= max_t1_hits or len(pr) >= 7):
+      bonus = 18.0 if len(hits) == 1 else (8.5 / math.sqrt(len(hits)))
       if len(pr) >= 5:
-        bonus += 2.0
+        bonus += 2.5
       for j in hits:
-        scores[j] += bonus
+        cm, st = core_norms[j]["compact"], core_norms[j]["starts"]
+        extra = 2.5 if any(cm.startswith(pr, o) for o in st) else 0.0
+        if 0 in st and _anchored_match(pr, cm, frozenset({0})):
+          extra += (4.5 if cues.get("has_end_pratika") else 2.0)
+        scores[j] += bonus + extra
         witness.setdefault(j, pr)
 
+  if cues.get("has_end_pratika") and sum(1 for v in scores if v >= 15.0) == 1:
+    return scores, witness
+
   # Tier 2: Opening headword / root-derivative word-start match (`मेघायते`, `अभिवर्षणं` -> `अभिवर्षते`)
+  max_t2_hits = max(3, n_cores // 6)
   for idx_h, hw in enumerate(cues["headwords"][:2]):
     hw_norm = normalize_for_alignment(hw)["compact"]
     hw_stem = _stem_of(hw)
@@ -302,12 +327,12 @@ def score_segment_against_cores(
     hits = []
     for j in range(n_cores):
       cm, st = core_norms[j]["compact"], core_norms[j]["starts"]
-      if _prefix_or_edit_match(hw_norm, cm, st) or (
+      if _anchored_match(hw_norm, cm, st) or (
         len(hw_stem) >= 3 and any(cm.startswith(hw_stem, o) for o in st)
       ):
         hits.append(j)
-    if hits and len(hits) <= 3:
-      bonus = (9.5 if len(hits) == 1 else 5.0) * weight
+    if hits and len(hits) <= max_t2_hits:
+      bonus = (12.0 if len(hits) == 1 else 5.0) * weight
       for j in hits:
         scores[j] += bonus
         witness.setdefault(j, hw)
@@ -326,6 +351,77 @@ def score_segment_against_cores(
   return scores, witness
 
 
+def _viterbi_best_path(
+  score_mat: list[list[float]],
+  seg_cues: list[dict],
+  prelim_roles: list[str],
+  num_cores: int,
+  total_c: int,
+) -> list[int]:
+  """Solve monotonic Viterbi path ``c_0 <= c_1 <= ...`` across ``total_c`` cores."""
+  num_segs = len(score_mat)
+  neg_inf = -1e9
+  dp = [[neg_inf] * total_c for _ in range(num_segs)]
+  back = [[0] * total_c for _ in range(num_segs)]
+  for c in range(total_c):
+    dp[0][c] = score_mat[0][c] - 1.6 * c
+
+  last_seen_num = seg_cues[0]["lead_num"]
+  for i in range(1, num_segs):
+    cues_i = seg_cues[i]
+    role_i = prelim_roles[i]
+    max_sig = max(score_mat[i]) if score_mat[i] else 0.0
+    prev_nigada = seg_cues[i - 1]["is_nigada_siddha"]
+    cur_num = cues_i["lead_num"]
+    new_mantra_num = cur_num is not None and (last_seen_num is None or cur_num > last_seen_num)
+    if cur_num is not None:
+      last_seen_num = cur_num
+    for c in range(total_c):
+      emit = score_mat[i][c] + (6.0 if cues_i["is_colophon"] and c == num_cores - 1 else 0.0)
+      best_prev, best_p = neg_inf, 0
+      for p in range(c + 1):
+        trans = 0.0
+        if p == c:
+          if new_mantra_num:
+            trans -= 7.0
+          elif cues_i["is_sutra_continuation"] or max_sig < 3.0:
+            trans += 2.2
+          if prelim_roles[i - 1] in ("viniyoga", "avatarika", "heading") and role_i == "tika" and not prev_nigada and not new_mantra_num:
+            trans += 4.0
+          if role_i in ("viniyoga", "avatarika", "heading") and prelim_roles[i - 1] == "tika":
+            trans -= 4.5
+          if prev_nigada and role_i == "tika":
+            trans -= 3.5
+        else:
+          jump = c - p
+          trans -= (1.25 * jump if jump <= 2 else 2.5 + 3.2 * (jump - 2))
+          if p < num_cores and c >= num_cores:
+            best_active = max(score_mat[i][:num_cores]) if num_cores else 0.0
+            strong_upcoming = emit >= 9.0 and (emit - best_active) >= 2.5
+            if not (strong_upcoming or new_mantra_num or (role_i in ("viniyoga", "avatarika", "heading") and prelim_roles[i - 1] == "tika")):
+              trans -= 12.0
+          if new_mantra_num and jump == 1:
+            trans += 5.5
+          elif cues_i["is_sutra_continuation"]:
+            trans -= 6.0
+          elif max_sig < 2.8 and role_i == "tika" and not cues_i["is_colophon"] and not prev_nigada and not new_mantra_num:
+            trans -= 2.4
+          if role_i in ("viniyoga", "avatarika", "heading") and prelim_roles[i - 1] == "tika" and jump == 1:
+            trans += 3.5
+        cand_v = dp[i - 1][p] + trans + emit
+        if cand_v > best_prev:
+          best_prev, best_p = cand_v, p
+      dp[i][c] = best_prev
+      back[i][c] = best_p
+
+  best_end = max(range(total_c), key=lambda c: dp[num_segs - 1][c])
+  path = [0] * num_segs
+  path[num_segs - 1] = best_end
+  for i in range(num_segs - 1, 0, -1):
+    path[i - 1] = back[i][path[i]]
+  return path
+
+
 def align_commentary_segments(
   cores: list[str],
   segments: list[str],
@@ -342,19 +438,16 @@ def align_commentary_segments(
   all_cores = list(cores) + list(upcoming_cores or [])
   total_c = len(all_cores)
   core_norms = [normalize_for_alignment(c) for c in all_cores]
-  seg_norms = [normalize_for_alignment(s) for s in segments]
+  seg_norms = [normalize_for_alignment(_SUTRA_QUOTE_RE.sub(" ", s)) for s in segments]
   seg_cues = [extract_segment_cues(s) for s in segments]
 
-  # Compute stem IDF across all cores
   df: dict[str, int] = {}
   for cn in core_norms:
     for st in set(cn["stems"]):
       df[st] = df.get(st, 0) + 1
   stem_idf = {st: math.log((total_c + 1.0) / (cnt + 0.5)) + 0.5 for st, cnt in df.items()}
 
-  score_mat: list[list[float]] = []
-  wit_mat: list[dict[int, str]] = []
-  prelim_roles: list[str] = []
+  score_mat, wit_mat, prelim_roles = [], [], []
   prev_r: str | None = None
   seen_tika = False
   for s_idx, seg in enumerate(segments):
@@ -364,59 +457,10 @@ def align_commentary_segments(
     best_s = max(sc) if sc else 0.0
     role = classify_segment_role(seg, cues=seg_cues[s_idx], prev_role=prev_r, seen_tika_on_core=(seen_tika and best_s < 6.0))
     prelim_roles.append(role)
-    if role == "tika":
-      seen_tika = True
-    elif role in ("viniyoga", "avatarika", "heading"):
-      seen_tika = False
+    seen_tika = True if role == "tika" else (False if role in ("viniyoga", "avatarika", "heading") else seen_tika)
     prev_r = role
 
-  # Viterbi DP over states c in 0..total_c-1 (monotonic non-decreasing)
-  neg_inf = -1e9
-  dp = [[neg_inf] * total_c for _ in range(num_segs)]
-  back = [[0] * total_c for _ in range(num_segs)]
-  for c in range(total_c):
-    start_pen = -1.6 * c if not (c == 1 and s_idx > 0) else -1.6 * c
-    dp[0][c] = score_mat[0][c] + start_pen
-
-  for i in range(1, num_segs):
-    cues_i = seg_cues[i]
-    role_i = prelim_roles[i]
-    max_sig = max(score_mat[i]) if score_mat[i] else 0.0
-    prev_nigada = seg_cues[i - 1]["is_nigada_siddha"]
-    for c in range(total_c):
-      emit = score_mat[i][c]
-      if cues_i["is_colophon"] and c == num_cores - 1:
-        emit += 6.0
-      best_prev, best_p = neg_inf, 0
-      for p in range(c + 1):
-        trans = 0.0
-        if p == c:
-          if cues_i["is_sutra_continuation"] or max_sig < 2.5:
-            trans += 2.2
-          if role_i in ("viniyoga", "avatarika", "heading") and prelim_roles[i - 1] == "tika":
-            trans -= 4.5  # Lead-in after tika strongly introduces the NEXT core!
-          if prev_nigada and role_i == "tika":
-            trans -= 3.5  # Previous core was declared nigada-siddha; advance!
-        else:
-          jump = c - p
-          trans -= 0.75 * (jump - 1)
-          if cues_i["is_sutra_continuation"]:
-            trans -= 6.0
-          elif max_sig < 2.2 and role_i == "tika" and not cues_i["is_colophon"] and not prev_nigada:
-            trans -= 2.4
-          if role_i in ("viniyoga", "avatarika", "heading") and prelim_roles[i - 1] == "tika" and jump == 1:
-            trans += 2.5
-        cand_v = dp[i - 1][p] + trans + emit
-        if cand_v > best_prev:
-          best_prev, best_p = cand_v, p
-      dp[i][c] = best_prev
-      back[i][c] = best_p
-
-  best_end = max(range(total_c), key=lambda c: dp[num_segs - 1][c])
-  path = [0] * num_segs
-  path[num_segs - 1] = best_end
-  for i in range(num_segs - 1, 0, -1):
-    path[i - 1] = back[i][path[i]]
+  path = _viterbi_best_path(score_mat, seg_cues, prelim_roles, num_cores, total_c)
 
   # Finalize unmatched_from (first segment assigned to upcoming core >= num_cores)
   unmatched_from = next((i for i, c in enumerate(path) if c >= num_cores), num_segs)
@@ -435,6 +479,17 @@ def align_commentary_segments(
       seen_tika_core.add(c)
     prev_role_on_core[c] = role
     assignments.append({"seg": i, "core": c, "role": role})
+
+  # Intra-core ordering invariant: segments on core c preceding its last viniyoga
+  # (without bold word-by-word glosses) belong to that core's leading viniyoga block.
+  last_vin_by_core: dict[int, int] = {}
+  for a in assignments:
+    if a["role"] == "viniyoga":
+      last_vin_by_core[a["core"]] = a["seg"]
+  for a in assignments:
+    last_v = last_vin_by_core.get(a["core"], -1)
+    if a["seg"] < last_v and a["role"] == "tika" and seg_cues[a["seg"]]["bold_count"] == 0:
+      a["role"] = "viniyoga"
 
   hints = []
   for i in range(num_segs):

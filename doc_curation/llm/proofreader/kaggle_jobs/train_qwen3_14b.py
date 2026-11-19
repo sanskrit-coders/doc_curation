@@ -254,11 +254,12 @@ class _NullCtx:
 class _BenchmarkSuite:
   """Zero-shot vs fine-tuned LoRA benchmark suite."""
 
-  def __init__(self, model, tokenizer, torch_mod, max_per_task: int):
+  def __init__(self, model, tokenizer, torch_mod, max_per_task: int, skip_base: bool = False):
     self.model = model
     self.tokenizer = tokenizer
     self.torch = torch_mod
     self.max_per_task = max_per_task
+    self.modes = (("finetuned_lora", False),) if skip_base else (("base_zero_shot", True), ("finetuned_lora", False))
 
   def eval_updated_skill_probe(self) -> dict:
     probes = [
@@ -267,7 +268,7 @@ class _BenchmarkSuite:
       "पृष्टो मृत्युस्तस्यार्थस्य निर्णयाय स्वप्रकाशाद्वितीयमात्मानमुपदिदेश।",
     ]
     out = {}
-    for mode_name, disable_lora in (("base_zero_shot", True), ("finetuned_lora", False)):
+    for mode_name, disable_lora in self.modes:
       with (self.model.disable_adapter() if disable_lora else _NullCtx()):
         msgs = [
           [{"role": "system", "content": _CANONICAL_CLAUSE_ON_PROMPT}, {"role": "user", "content": p}]
@@ -313,7 +314,7 @@ class _BenchmarkSuite:
       cases = mergers + others
 
     out = {}
-    for mode_name, disable_lora in (("base_zero_shot", True), ("finetuned_lora", False)):
+    for mode_name, disable_lora in self.modes:
       exact_ok, seg_ok, merger_ok, merger_tot, diffs = 0, 0, 0, 0, []
       with (self.model.disable_adapter() if disable_lora else _NullCtx()):
         msgs_all = [[{"role": "system", "content": sys_hyp}, {"role": "user", "content": inp}] for _, inp, _ in cases]
@@ -335,13 +336,63 @@ class _BenchmarkSuite:
       }
     return out
 
+  @staticmethod
+  def _score_json_task(jtask: str, sub: list[dict], preds: list[str]) -> dict:
+    v_json, v_part, ex_ok, cut_ok, sc_ok, sr_ok, seg_tot = 0, 0, 0, 0, 0, 0, 0
+    f1s, b_ok2, b_tot, abs_errs = [], 0, 0, []
+    for r, pred in zip(sub, preds):
+      gold = json.loads(r["messages"][-1]["content"])
+      try:
+        parsed = json.loads(re.sub(r"^\s*```(?:json)?\s*|\s*```\s*$", "", pred.strip()))
+        v_json += 1
+        if jtask == "translation_matcher":
+          ex_ok += int(parsed.get("starts") == gold.get("starts") and parsed.get("next_en") == gold.get("next_en"))
+          g_st = {int(k): int(v) for k, v in gold["starts"].items()}
+          p_st = {int(k): int(v) for k, v in parsed.get("starts", {}).items()}
+          keys = sorted(g_st)
+          g_ne, p_ne = int(gold["next_en"]), int(parsed.get("next_en", -1))
+          if sorted(p_st) == keys and p_st[keys[0]] == 0 and all(p_st[keys[k]] <= p_st[keys[k + 1]] for k in range(len(keys) - 1)) and p_st[keys[-1]] <= p_ne:
+            v_part += 1
+            gb = [g_st[k] for k in keys] + [g_ne]
+            pb = [p_st[k] for k in keys] + [p_ne]
+            for a, b in zip(gb[1:], pb[1:]):
+              b_tot += 1
+              err = abs(a - b)
+              abs_errs.append(err)
+              b_ok2 += int(err <= 2)
+            for k in range(len(keys)):
+              gs, ps = set(range(gb[k], gb[k + 1])), set(range(pb[k], pb[k + 1]))
+              f1s.append(1.0 if (not gs and not ps) else (0.0 if (not gs or not ps) else 2 * len(gs & ps) / (len(gs) + len(ps))))
+        else:
+          ex_ok += int(parsed.get("assignments") == gold.get("assignments") and parsed.get("unmatched_from") == gold.get("unmatched_from"))
+          cut_ok += int(parsed.get("unmatched_from") == gold.get("unmatched_from"))
+          pmap = {int(a["seg"]): a for a in parsed.get("assignments", []) if "seg" in a}
+          for ga in gold.get("assignments", []):
+            seg_tot += 1
+            pa = pmap.get(int(ga["seg"]))
+            if pa:
+              sc_ok += int(pa.get("core") == ga["core"])
+              sr_ok += int(pa.get("role") == ga["role"])
+      except Exception:
+        pass
+    m_entry = {"n": len(sub), "valid_json_rate": round(v_json / len(sub), 4), "exact_alignment_rate": round(ex_ok / len(sub), 4)}
+    if jtask == "translation_matcher" and f1s:
+      m_entry["valid_partition_rate"] = round(v_part / len(sub), 4)
+      m_entry["span_word_f1"] = round(sum(f1s) / len(f1s), 4)
+      m_entry["within_2w_boundary_acc"] = round(b_ok2 / max(1, b_tot), 4)
+      m_entry["mean_abs_word_error"] = round(sum(abs_errs) / max(1, len(abs_errs)), 2)
+    elif jtask == "commentary_interleaver" and seg_tot > 0:
+      m_entry["unmatched_from_acc"] = round(cut_ok / len(sub), 4)
+      m_entry["segment_core_acc"] = round(sc_ok / seg_tot, 4)
+      m_entry["segment_role_acc"] = round(sr_ok / seg_tot, 4)
+    return m_entry
   def eval_heldout_tasks(self, eval_records: list[dict]) -> dict:
     by_task: dict[str, list[dict]] = {}
     for r in eval_records:
       by_task.setdefault(r["task_type"], []).append(r)
 
     out = {}
-    for mode_name, disable_lora in (("base_zero_shot", True), ("finetuned_lora", False)):
+    for mode_name, disable_lora in self.modes:
       metrics: dict[str, dict] = {}
       with (self.model.disable_adapter() if disable_lora else _NullCtx()):
         cl_on = by_task.get("clause_newlines_on", [])[:self.max_per_task]
@@ -364,23 +415,11 @@ class _BenchmarkSuite:
           }
 
         for jtask in ("translation_matcher", "commentary_interleaver"):
-          sub = by_task.get(jtask, [])[:self.max_per_task]
+          sub = by_task.get(jtask, [])[:max(self.max_per_task, 16)]
           if not sub:
             continue
-          preds = generate_replies_batch(self.model, self.tokenizer, [r["messages"][:-1] for r in sub], self.torch, 320, 4)
-          v_json, ex_ok = 0, 0
-          for r, pred in zip(sub, preds):
-            gold = json.loads(r["messages"][-1]["content"])
-            try:
-              parsed = json.loads(re.sub(r"^\s*```(?:json)?\s*|\s*```\s*$", "", pred.strip()))
-              v_json += 1
-              if jtask == "translation_matcher":
-                ex_ok += int(parsed.get("starts") == gold.get("starts") and parsed.get("next_en") == gold.get("next_en"))
-              else:
-                ex_ok += int(parsed.get("assignments") == gold.get("assignments"))
-            except Exception:
-              pass
-          metrics[jtask] = {"n": len(sub), "valid_json_rate": round(v_json / len(sub), 4), "exact_alignment_rate": round(ex_ok / len(sub), 4)}
+          preds = generate_replies_batch(self.model, self.tokenizer, [r["messages"][:-1] for r in sub], self.torch, 384, 4)
+          metrics[jtask] = self._score_json_task(jtask, sub, preds)
 
         for stask in ("proofread_vp", "proofread_suggestions", "padapatha_accent"):
           sub = by_task.get(stask, [])[:self.max_per_task]
@@ -515,15 +554,16 @@ def main():
   ap.add_argument("--data-dir", default=None)
   ap.add_argument("--resume-adapter", default=None, help="Optional existing LoRA dir (auto-detected in /kaggle/input if present)")
   ap.add_argument("--out-dir", default="/kaggle/working/adapter")
-  ap.add_argument("--max-seq-len", type=int, default=1408)
-  ap.add_argument("--batch-size", type=int, default=2)
-  ap.add_argument("--grad-accum", type=int, default=8)
+  ap.add_argument("--max-seq-len", type=int, default=2304)
+  ap.add_argument("--batch-size", type=int, default=1)
+  ap.add_argument("--grad-accum", type=int, default=16)
   ap.add_argument("--lr", type=float, default=1.5e-4)
   ap.add_argument("--lora-r", type=int, default=16)
   ap.add_argument("--lora-alpha", type=int, default=32)
   ap.add_argument("--epochs", type=float, default=1.0)
   ap.add_argument("--max-steps", type=int, default=115)
   ap.add_argument("--eval-per-task", type=int, default=8)
+  ap.add_argument("--skip-base-eval", action="store_true")
   ap.add_argument("--seed", type=int, default=42)
   args = ap.parse_args()
 
@@ -557,7 +597,7 @@ def main():
   model.config.use_cache = True
   torch.cuda.empty_cache()
   print("[eval] Running Zero-Shot Base vs Fine-Tuned LoRA benchmarks...", flush=True)
-  suite = _BenchmarkSuite(model, tokenizer, torch, args.eval_per_task)
+  suite = _BenchmarkSuite(model, tokenizer, torch, args.eval_per_task, skip_base=args.skip_base_eval)
   bench = {}
   if (data_dir / "hyphenations.toml").is_file():
     bench.update(suite.eval_hyphenations_toml(data_dir / "hyphenations.toml"))

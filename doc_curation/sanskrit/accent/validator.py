@@ -300,6 +300,36 @@ SIMPLEX_TINANTA_ALLOWLIST: frozenset[str] = frozenset({
   "विदन्",
   "अपतत्",
   "आपयेत्",
+  "आपयति",
+  "आपयन्ति",
+  "आपयते",
+  "आप्नुयाम्",
+  "आप्नुयाम",
+  "आप्नुहि",
+  "आप्नुवते",
+  "आशयति",
+  "आशति",
+  "आह",
+  "आत्थ",
+  "आस",
+  "विन्दति",
+  "विदति",
+  "विध्यति",
+  "सुनोति",
+  "सुन्वन्ति",
+  "सुवते",
+  "सुवन्ति",
+  "प्रथते",
+  "प्रथयति",
+})
+
+_GATI_HYPHEN_PREFIXES: frozenset[str] = frozenset({
+  "प्र", "परा", "अप", "सम्", "सं", "सँ", "सङ्", "सञ्", "सण्", "सन्",
+  "अनु", "अव", "निस्", "निर्", "निः", "निष्", "निश्",
+  "दुस्", "दुर्", "दुः", "दुष्", "दुश्",
+  "वि", "आ", "नि", "अधि", "अपि", "अति", "सु",
+  "उत्", "उद्", "उच्", "उज्", "उन्", "उल्",
+  "अभि", "प्रति", "परि", "उप",
 })
 
 DEFAULT_VERIFIED_AA_HIATUSES: frozenset[tuple[str, str]] = frozenset({
@@ -438,6 +468,11 @@ def find_unexplained_aa_hiatuses(
       pat = rf"{re.escape(w1_c[-3:] if len(w1_c) >= 3 else w1_c)}\s+{re.escape(w2_c[:2])}"
       m_unm = re.search(pat, mula_joined_bare)
       if m_unm and not any(d in mula_joined_bare[m_unm.start():m_unm.end()] for d in "।॥;"):
+        # Avoid false positives when a separate `वै` + vowel pair (पा० ८.३.१९ -> `वा V`) produces the matched
+        # substring while the queried `वा` + `आ...` pair itself appears coalesced (e.g. `स वा आरण्यम्` vs `या वारण्या`).
+        if w1_c == "वा" and w2_c.startswith("आ") and ("वा" + w2_c[1:4]) in mula_joined_bare:
+          if any(padas[k] == "वै" and k + 1 < len(padas) and padas[k + 1].replace("-", "").startswith(w2_c[:2]) for k in range(len(padas))):
+            continue
         hits.append((w1, w2, mula_joined_bare[m_unm.start():m_unm.end()]))
   return hits
 
@@ -630,13 +665,21 @@ def find_unlicensed_unaccented_padas(pp_lines: Sequence[str]) -> list[str]:
   return hits
 
 
-def find_unsplit_upasarga_tinantas(pp_lines: Sequence[str]) -> list[str]:
-  """Return main-clause tiṅanta bullets that retain an unseparated upasarga or misclassify a nominal.
+def find_unsplit_upasarga_tinantas(
+  pp_lines: Sequence[str],
+  *,
+  forbid_compound_upasarga_tinanta: bool = False,
+) -> list[str]:
+  """Return tiṅanta bullets that retain an unseparated upasarga or misclassify a nominal.
 
-  Catches both:
+  Catches:
   1. Unaccented ``पा० ८.१.२८`` bullets retaining a leading upasarga (including coalesced ``ऐतु``/``अवैत्``) or nominal ending.
   2. Accented ``upasarga + tiṅanta`` bullets (e.g. ``- प्रचोद᳓यात् (*TS*, *RV*; *TS*, *RV*, *TB*)``) whose provenance
      lacks an explicit subordinate-clause license (``पा० ८.१.६६``, ``८.१.३४``, ``८.१.३०``, ``८.१.५९``, ``८.१.६३``, ``८.१.७१``).
+  3. When ``forbid_compound_upasarga_tinanta=True`` (auto-enabled on ŚB clusters), ANY accented upasarga+tiṅanta
+     bullet — including subordinate-clause hyphenated or unhyphenated forms like ``उप-स्पृश᳓ति`` / ``उद्-य᳓च्छति`` /
+     ``उप-आ-व᳓र्तते`` — so upasargas are always emitted as separate ``पा० ८.१.७१`` bullets while ``गतिकृदन्त``
+     (participles, gerunds, infinitives, action nouns) remain hyphenated.
   """
   hits: list[str] = []
   nominal_8128_endings = ("तः", "ताः", "तौ", "तिः", "निः", "नीः", "लः", "रः", "णः", "कः", "शः", "षः", "नः", "भः", "यः", "हः", "भिः", "भ्यः", "षु", "सु", "स्य", "नाम्", "णाम्")
@@ -645,8 +688,14 @@ def find_unsplit_upasarga_tinantas(pp_lines: Sequence[str]) -> list[str]:
     "अहः", "वेत्थ", "आत्थ", "तारिषः", "मोषीः", "भैषीः", "शारीः", "अस्य", "सुवः", "कः", "वृहः",
     "रीरिषः", "अबिभः", "मांस्ताः", "जीह्वरः", "दहः", "उरुष्यः", "अवीः", "पूरिष्ठाः", "अहाः",
   })
-  coalesced_up_tinantas = frozenset({"ऐतु", "अवैत्", "प्रैत्", "उपैत्", "उपैति", "प्रेरते", "उपेहि", "अपेहि", "एहि", "परेहि", "परीहि"})
+  coalesced_up_tinantas = frozenset({
+    "ऐतु", "ऐति", "अवैत्", "अवैति", "अवेति", "प्रैत्", "प्रैति", "प्रैतु", "प्रेति",
+    "उपैत्", "उपैति", "उपैतु", "समेति", "समैति", "उदैति", "प्रेरते",
+    "उपेहि", "अपेहि", "एहि", "परेहि", "परीहि",
+    "प्रेयात्", "उपेयात्", "अवेयात्", "अपेयात्", "समेयात्",
+  })
   subordinate_verb_tags = ("८.१.६६", "८.१.३४", "८.१.३०", "८.१.५९", "८.१.६३", "८.१.७१", "८.१.७२", "पादादि")
+  extra_verb_tags = ("तिङन्त", "वाक्यादि", "८.१.२८", "लेट्", "लट्", "लङ्", "लोट्", "लिङ्", "लिट्", "लुङ्", "लृट्")
   nominal_prov_tags = (
     "६.२.", "६.१.२२३", "२.१.", "५.४.", "४.३.", "मयट्", "अव्ययीभाव", "बहुव्रीह", "तत्पुरुष", "कर्मधारय", "नञ्",
     "क्त्वा", "ल्यप्", "तुमुन्", "तवै", "शतृ", "शानच्", "निष्ठा", "क्त", "घञ्", "ल्युट्", "क्तिन्",
@@ -687,7 +736,30 @@ def find_unsplit_upasarga_tinantas(pp_lines: Sequence[str]) -> list[str]:
       if "→ **" in ln and not has_us_accents(it.ar) and bare.endswith(("तन", "थन")) and not any(t in it.prov for t in subordinate_verb_tags):
         hits.append(ln)
         continue
-      if any(t in it.prov for t in subordinate_verb_tags) or any(t in it.prov for t in nominal_prov_tags):
+      is_nominal_prov = any(t in it.prov for t in nominal_prov_tags)
+      is_verb_prov = any(t in it.prov for t in subordinate_verb_tags) or any(t in it.prov for t in extra_verb_tags)
+      if forbid_compound_upasarga_tinanta and not is_nominal_prov:
+        if bare not in UPASARGA_PREFIXES and bare not in ("सम्", "निस्", "निर्", "दुस्", "दुर्", "उद्"):
+          # पा० ८.१.७१ applies only to a separate anudātta upasarga bullet, never an accented compound tiṅanta.
+          if "८.१.७१" in it.prov:
+            hits.append(ln)
+            continue
+          if is_verb_prov:
+            if "-" in it.ref and bare_devanagari(it.ref.split("-", 1)[0]) in _GATI_HYPHEN_PREFIXES:
+              hits.append(ln)
+              continue
+            if bare in coalesced_up_tinantas:
+              hits.append(ln)
+              continue
+            # Unhyphenated subordinate upasarga+tiṅanta leaves the leading upasarga anudātta (marks[0] == ""),
+            # unlike augmented simplex past verbs (पा० ६.४.७१) which carry udātta on syllable 0 (`अ᳓वदत्`).
+            _, ref_marks = syllables_with_marks(it.ref)
+            if ref_marks and ref_marks[0] == "" and any(
+              bare.startswith(up) and len(bare) > len(up) + 1 for up in UPASARGA_PREFIXES
+            ):
+              hits.append(ln)
+              continue
+      if any(t in it.prov for t in subordinate_verb_tags) or is_nominal_prov:
         continue
       if bare in UPASARGA_PREFIXES or bare in ("सम्", "निस्", "निर्", "दुस्", "दुर्", "उद्"):
         continue
@@ -706,7 +778,7 @@ def find_unsplit_upasarga_tinantas(pp_lines: Sequence[str]) -> list[str]:
             bare == "अधिधाः"
             or (
               rest.endswith(("यात्", "याताम्", "न्ताम्", "थाम्", "ध्वम्", "मसि", "महि", "ैषम्", "ार्षम्"))
-              and not bare.endswith(("ताम्", "नाम्", "णाम्"))
+              and not bare.endswith(("ताम्", "नाम्", "णाम्", "स्थाम्"))
             )
           ):
             hits.append(ln)
@@ -755,7 +827,7 @@ def find_vp_integrity_issues(vp_body: str) -> list[str]:
   # Glitches like `्अ` (without intervening space) usually come from broken syl joining.
   for m in re.finditer(r".{0,10}्[अआइईउऊऋएऐओऔ].{0,10}", vp_body):
     issues.append(f"virama_vowel: {m.group(0)!r}")
-  cleaned = re.sub(r"\[\[(?:\d+|P\d+|\?\?|[^\[\]\n|]+\|[^\[\]\n|]+)\]\]", "", vp_body)
+  cleaned = re.sub(r"\[\[(?:\d+|P\d+|\?+|!+|[^\[\]\n|]+\|[^\[\]\n|]+)\]\]", "", vp_body)
   if "[[" in cleaned or "]]" in cleaned:
     issues.append(f"unbalanced_brackets: {cleaned.strip()[:120]!r}")
   return issues
@@ -772,6 +844,7 @@ def validate_padapatha_block(
   check_zero_accent: bool = True,
   check_unresolved_arrows: bool = True,
   check_upasarga_tinanta: bool = True,
+  forbid_compound_upasarga_tinanta: bool = False,
   check_nighata_arrows: bool = True,
   check_gati_kta: bool = True,
 ) -> list[AccentValidationIssue]:
@@ -813,14 +886,16 @@ def validate_padapatha_block(
       )
 
   if check_upasarga_tinanta:
-    for ln in find_unsplit_upasarga_tinantas(pp_lines):
-      issues.append(
-        AccentValidationIssue(
-          "unsplit_upasarga_tinanta",
-          "Main-clause पा० ८.१.२८ tiṅanta retains unseparated upasarga or misclassifies nominal/kṛdanta",
-          ln,
-        )
+    for ln in find_unsplit_upasarga_tinantas(
+      pp_lines,
+      forbid_compound_upasarga_tinanta=forbid_compound_upasarga_tinanta,
+    ):
+      msg = (
+        "Tiṅanta retains unseparated upasarga (must split upasarga into its own bullet) or misclassifies nominal/kṛdanta"
+        if forbid_compound_upasarga_tinanta
+        else "Main-clause पा० ८.१.२८ tiṅanta retains unseparated upasarga or misclassifies nominal/kṛdanta"
       )
+      issues.append(AccentValidationIssue("unsplit_upasarga_tinanta", msg, ln))
 
   for ln in find_multi_udatta_padas(pp_lines):
     issues.append(
@@ -831,7 +906,9 @@ def validate_padapatha_block(
       )
     )
 
-  mula_clean = re.sub(r"\+\+\+\([^)]*\)\+\+\+", "", mula_body.strip())
+  mula_clean = re.sub(r"(?m)^\[\^[^\]]+\]:.*$", "", mula_body.strip())
+  mula_clean = re.sub(r"\[\^[^\]]+\]", "", mula_clean)
+  mula_clean = re.sub(r"\+\+\+\([^)]*\)\+\+\+", "", mula_clean)
   mula_clean = re.sub(r"\[\[([^|\]]*)\|([^\]]*)\]\]", r"\1", mula_clean)
   for ln in find_false_post_udatta_svarita_arrows(pp_lines, mula_clean):
     issues.append(AccentValidationIssue("false_svarita_arrow", "Classical ॑ after udātta allows ᳙ without vyatyasta arrow", ln))
@@ -863,6 +940,7 @@ def validate_accented_markdown(
   check_html_balance: bool = True,
   check_hiatus: bool = True,
   check_vp: bool = True,
+  forbid_compound_upasarga_tinanta: bool | None = None,
 ) -> list[AccentValidationIssue]:
   """Validate all ``पद-पाठः (यान्त्रिकः)`` and ``विश्वास-प्रस्तुतिः`` blocks in one Markdown document."""
   issues: list[AccentValidationIssue] = []
@@ -875,17 +953,28 @@ def validate_accented_markdown(
     if not hdr.startswith("पद-पाठः (यान्त्रिकः"):
       continue
     mula_b = ""
+    mula_prio = -1
     vp_b = ""
+    is_sb_cluster = False
     for j in range(i - 1, -1, -1):
       _, je, jh, jb = blocks[j]
-      if s - je > 3500:
+      if jh.startswith("पद-पाठः (यान्त्रिकः"):
         break
-      if not mula_b and jh.startswith("मूलम्"):
-        mula_b = jb
+      if "\n##" in text[je:s]:
+        break
+      if s - je > 12000:
+        break
+      if jh in ("मूलम् - Weber", "मूलम् - श्रीधरादि"):
+        is_sb_cluster = True
+      if jh.startswith("मूलम्"):
+        # Prefer accented मूलम् (Weber > श्रीधरादि > plain मूलम्) over unaccented विस्वरम् / Makoto.
+        prio = 3 if "Weber" in jh else (2 if "श्रीधरादि" in jh else (0 if ("विस्वर" in jh or "Makoto" in jh) else 1))
+        if prio > mula_prio:
+          mula_b = jb
+          mula_prio = prio
       if check_vp and not vp_b and jh.startswith("विश्वास-प्रस्तुतिः"):
         vp_b = jb
-      if mula_b and (vp_b or not check_vp):
-        break
+    forbid_up_tin = is_sb_cluster if forbid_compound_upasarga_tinanta is None else forbid_compound_upasarga_tinanta
     issues.extend(
       validate_padapatha_block(
         hdr,
@@ -894,6 +983,7 @@ def validate_accented_markdown(
         vp_b,
         verified_prakrtibhava_pairs=verified_prakrtibhava_pairs,
         check_hiatus=check_hiatus,
+        forbid_compound_upasarga_tinanta=forbid_up_tin,
       )
     )
   return issues

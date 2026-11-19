@@ -17,7 +17,7 @@ import marisa_trie
 
 DATA_DIR = os.path.join(
   os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-  "data", "vocabulary", "sanskrit",
+  "llm", "proofreader", "data", "vocabulary",
 )
 RA_SOURCES_TOML = os.path.join(DATA_DIR, "rAmAnujIya-sources.toml")
 MISC_VOCAB_TOML = os.path.join(DATA_DIR, "misc-vocab.toml")

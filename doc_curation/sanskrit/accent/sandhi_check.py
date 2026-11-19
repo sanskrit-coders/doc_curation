@@ -48,18 +48,22 @@ _AVASANA_STOP_SWAP = {"t": "d", "d": "t", "k": "g", "g": "k", "w": "q", "q": "w"
 
 def clean_deva_for_sandhi(text: str) -> str:
   """Normalize Devanagari saṁhitā or padapāṭha text before SLP1 conversion."""
-  s = re.sub(r"<[^>]+>", " ", text)
+  s = re.sub(r"(?m)^\[\^[^\]]+\]:.*$", " ", text)
+  s = re.sub(r"\[\^[^\]]+\]", " ", s)
+  s = re.sub(r"<[^>]+>", " ", s)
   s = re.sub(r"\[\[([^|\]]+)\|([^\]]+)\]\]", r"\1", s)
   s = re.sub(r"\[\[.*?\]\]", " ", s, flags=re.S)
   s = re.sub(r"\+\+\+\(.*?\)\+\+\+", " ", s, flags=re.S)
   s = re.sub(r"\[\d+\]|\(\d+\)", " ", s)
   s = accent.strip_accents(s)
-  # Drop strikethrough deletions and brief inline textual-variant parentheticals.
+  # Drop strikethrough deletions and brief inline textual-variant / ŚB pratīka parentheticals.
   s = re.sub(r"\(?~~.*?~~\)?", "", s)
-  s = re.sub(r"\([\u0900-\u097f]{1,3}\)", "", s)
+  s = re.sub(r"\([\u0900-\u097f\u1cd0-\u1cff\sऽ]{1,8}\)", "", s)
   s = s.replace("ॐ", "ओम्").replace("शिश्ञ", "शिश्न")
-  # Normalize Taittirīya anunāsika ligatures (व्ँ / य्ँ / ल्ँ) to anusvāra.
+  # Normalize Taittirīya and Mādhyandina Śatapatha anunāsika marks to anusvāra.
   for src, dst in (
+    ("ᳫँ᳭", "ं"), ("ᳫं᳭", "ं"), ("ᳫँ", "ं"), ("ᳫं", "ं"), ("ᳫ", "ं"),
+    ("᳭", ""), ("ᳮ", ""), ("᳟", ""),
     ("व्विं", "ंवि"), ("य्यिं", "ंयि"), ("व्वृं", "ंवृ"), ("सव्विं", "संवि"),
     ("व्व्ँ", "ंव"), ("य्य्ँ", "ंय"), ("ल्ल्ँ", "ंल"),
     ("वँय", "ंव्य"), ("वँव", "ंव"),
@@ -77,7 +81,7 @@ def canonical_geminates(slp: str) -> str:
   for a, b in _VOICED_ASP_PAIRS:
     s = s.replace(a, b)
   s = s.replace("cC", "C").replace("tS", "C")
-  # Taittirīya gemination after r and before semivowels y/v.
+  # Taittirīya & Mādhyandina gemination after r and before semivowels y/v/r.
   s = re.sub(r"r([kKgGNcCjJYqQdDnbBmylvh])\1", r"r\1", s)
   s = re.sub(r"([tdnmyvl])\1([yv])", r"\1\2", s)
   # Vedic metrical distraction (-iya- <-> -ya-, suva <-> sva, tanuv- <-> tanv-).
@@ -91,8 +95,9 @@ def canonical_geminates(slp: str) -> str:
   # Normalize OCR ङ/ड confusion and homorganic nasals to M + consonant.
   s = re.sub(r"q([kKgG])", r"M\1", s)
   s = re.sub(r"[NYRnm]([kKgGcCjJwWqQtTdDpPbBnmlvyrSzsh])", r"M\1", s)
+  s = re.sub(r"M{2,}", "M", s)
   s = s.replace("Mts", "Ms").replace("nts", "Ms").replace("MtS", "MS")
-  for dbl, single in (("ss", "s"), ("SS", "S"), ("zz", "z"), ("tt", "t"), ("dd", "d"), ("jj", "j"), ("cc", "c"), ("ll", "l")):
+  for dbl, single in (("ss", "s"), ("SS", "S"), ("zz", "z"), ("tt", "t"), ("dd", "d"), ("jj", "j"), ("cc", "c"), ("ll", "l"), ("vv", "v"), ("yy", "y")):
     s = s.replace(dbl, single)
   return s
 
@@ -178,15 +183,16 @@ def right_variants(r: str, after_retro_trigger: bool, after_r_pra_pari: bool) ->
   return outs
 
 
-def _vowel_sandhi(left: str, right: str, is_compound: bool) -> set[str]:
+def _vowel_sandhi(left: str, right: str, is_compound: bool, left_word_slp: str = "") -> set[str]:
   outs: set[str] = set()
   c_last, r0 = left[-1], right[0]
   if r0 in SLP_VOWELS:
     stem = left[:-1]
     for mid in join_vowels(c_last, r0):
       outs.add(stem + mid + right[1:])
-    # Permit hiatus ONLY for pragṛhya (-ī/-ū/-e) or non-compound -o (पा० ६.१.११५ / ओत्).
-    if c_last in ("I", "U", "e") or (not is_compound and c_last == "o"):
+    # Permit hiatus ONLY for pragṛhya (-ī/-ū/-e, monosyllabic nipāta u per पा० १.१.१४) or non-compound -o (पा० ६.१.११५ / ओत्).
+    lw = left_word_slp or left
+    if c_last in ("I", "U", "e") or (not is_compound and (c_last == "o" or lw == "u")):
       outs.add(left + right)
   else:
     outs.add(left + right)
@@ -368,7 +374,7 @@ def sandhi_step(left: str, right_raw: str, is_compound: bool = False, left_word_
   outs: set[str] = set()
   for right in right_variants(right_raw, retro_trig, natva_trig):
     if c_last in SLP_VOWELS:
-      outs.update(_vowel_sandhi(left, right, is_compound))
+      outs.update(_vowel_sandhi(left, right, is_compound, left_word_slp))
     elif c_last in ("H", "s", "r"):
       outs.update(_visarga_sandhi(left, right, left_word_slp))
     elif c_last in ("m", "M", "n"):

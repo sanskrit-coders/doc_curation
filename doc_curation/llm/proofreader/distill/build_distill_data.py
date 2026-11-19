@@ -151,7 +151,7 @@ def build_distillation_dataset(
   out.mkdir(parents=True, exist_ok=True)
 
   hyp_toml = str(
-    Path(__file__).resolve().parents[3] / "data" / "vocabulary" / "sanskrit" / "hyphenations.toml"
+    Path(__file__).resolve().parents[1] / "data" / "vocabulary" / "hyphenations.toml"
   )
   heldout_keys = _load_heldout_reference_keys(hyp_toml)
 

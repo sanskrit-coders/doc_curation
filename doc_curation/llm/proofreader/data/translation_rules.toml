@@ -1,0 +1,92 @@
+# Bilingual Sanskrit <-> English anchor & structural rules for translation interleaving.
+
+# Bare rhetorical / colophon patterns that translators legitimately omit ("skip")
+skip_regexes = [
+  "^\\s*(?:किं\\s+युक्तम्|कुतः|कथम्|कस्मात्|किमर्थम्|कोऽर्थः|को\\s+ऽर्थः)\\s*[?।॥]*\\s*$",
+  "^\\s*इति\\s+[^।॥\\n]{2,80}(?:अधिकरणम्|पादः|अध्यायः|प्रपाठकः|अनुवाकः|सूक्तम्|समाप्तम्)\\s*[।॥0-9०-९\\-\\s]*$",
+]
+
+# Opening discourse / dialectical pivots: [sanskrit_substring, [english_opening_prefixes]]
+opening_pivots = [
+  ["अथवा", ["or else", "or we", "alternatively"]],
+  ["यद्वा", ["or else", "or "]],
+  ["सन्देहः", ["--here a doubt", "here a doubt", "a doubt"]],
+  ["संशयः", ["a doubt", "--here a doubt", "here a doubt", "doubt"]],
+  ["उत ", ["or the", "or whether", "or is", "or does"]],
+  ["ननु", ["--but", "but,", "but it", "if it be said", "an objection"]],
+  ["चेन्न", ["not so", "we reply", "--not so"]],
+  ["अपि च", ["moreover", "further", "besides", "again"]],
+  ["किं च", ["moreover", "further", "and further", "besides"]],
+  ["इतश्च", ["for the following reason also", "moreover", "further"]],
+  ["तस्मात्", ["therefore", "hence", "for this reason", "so that", "consequently"]],
+  ["अत एव", ["for this very reason", "hence", "therefore"]],
+  ["अतः", ["hence", "therefore", "consequently"]],
+  ["यतः", ["so that", "because", "for ", "since"]],
+  ["एवं च सति", ["this being so", "thus"]],
+  ["तदेवं", ["thus", "therefore"]],
+  ["यथोक्तं", ["as is said", "as has been said", "as declared"]],
+  ["तथा हि", ["for ", "thus", "to explain"]],
+  ["तथा च", ["and thus", "accordingly", "so also", "similarly"]],
+  ["इदमाम्नायते", ["we read", "it is declared", "scripture"]],
+  ["अत्र ", ["we here", "here ", "in this"]],
+  ["इदानीम्", ["now ", "next "]],
+]
+
+# High-precision Sanskrit stem -> English stem/phrase anchors
+[lexicon]
+"ब्रह्म" = ["brahman"]
+"प्रत्यगात्म" = ["individual soul", "inner self"]
+"परमात्म" = ["highest self", "supreme self"]
+"क्षेत्रज्ञ" = ["individual soul", "embodied soul"]
+"जीव" = ["individual soul", "soul", "jiva"]
+"प्रधान" = ["pradhana", "pradhāna", "matter"]
+"मनोमय" = ["made of mind", "consists of mind", "mind"]
+"मन" = ["mind"]
+"प्राणशरीर" = ["breath for its body", "body is breath"]
+"प्राण" = ["breath", "prana", "prāṇa", "life"]
+"भारूप" = ["form is light", "light"]
+"आकाश" = ["ether", "space", "akasa", "ākāśa"]
+"तेज" = ["fire", "light", "heat"]
+"अग्नि" = ["fire", "agni"]
+"इन्द्र" = ["indra"]
+"वरुण" = ["varuna", "varuṇa"]
+"सूर्य" = ["sun", "surya", "sūrya"]
+"आदित्य" = ["sun", "aditya", "āditya"]
+"पृथिवी" = ["earth"]
+"अन्तरिक्ष" = ["atmosphere", "sky", "air"]
+"द्यौ" = ["heaven", "sky"]
+"आप" = ["water", "waters"]
+"उदक" = ["water"]
+"यजमान" = ["sacrificer"]
+"स्वाहा" = ["hail", "svaha", "svāhā"]
+"हवि" = ["oblation", "offering"]
+"यज्ञ" = ["sacrifice"]
+"गायत्री" = ["gayatri", "gāyatrī"]
+"त्रिष्टु" = ["tristubh", "triṣṭubh"]
+"जगती" = ["jagati", "jagatī"]
+"अनुष्टु" = ["anustubh", "anuṣṭubh"]
+"छान्दोग्य" = ["chandogya", "chāndogya", "cḥāndogya"]
+"छा." = ["chandogya", "chāndogya", "cḥāndogya"]
+"मुण्डक" = ["mundaka", "muṇḍaka"]
+"तैत्तिरीय" = ["taittiriya", "taittirīya"]
+"ऐतरेय" = ["aitareya"]
+"कठ" = ["katha", "kaṭha"]
+"सूत्र" = ["sutra", "sūtra"]
+"उपासन" = ["meditation", "meditate"]
+"उपासीत" = ["meditate", "let a man meditate"]
+"क्रतु" = ["thought", "purpose", "resolve"]
+"जगत्कारण" = ["cause of the world"]
+"कारण" = ["cause"]
+"आनन्द" = ["bliss"]
+"ईक्षण" = ["thought", "seeing", "thinking"]
+"शान्त" = ["calm", "tranquil"]
+"पूर्वपक्ष" = ["purvapakshin", "pūrvapakshin", "objector"]
+"सिद्धान्त" = ["siddhanta", "siddhānta"]
+"सद्" = ["being"]
+"सदेव" = ["being only"]
+"अज्ञान" = ["nescience", "ignorance"]
+"मिथ्या" = ["false", "unreal", "illusory"]
+"जगत्" = ["world"]
+"भूतानि" = ["beings"]
+"हृदय" = ["heart"]
+"गुण" = ["attribute", "attributes", "quality", "qualities"]
