@@ -1,0 +1,6 @@
+{
+  "slp1_chars": "aAiIuUfFxXeEoOMHkKgGNcCjJYwWqQRtTdDnpPbBmyrlvSzshL|Z'~0123456789 -\u2013\u0964\u0965,;.?!\"()>",
+  "vocab_size": 80,
+  "d_model": 256,
+  "n_layers": 8
+}

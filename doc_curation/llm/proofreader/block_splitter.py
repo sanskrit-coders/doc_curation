@@ -47,7 +47,7 @@ _TAD_CORREL_SLP = frozenset({
   "tatra", "tadA", "taTA", "tarhi", "tAvat", "etad", "etat", "eza", "ezaH",
 })
 _QUOTE_OPENERS_SLP = (
-  "abravIt", "ZbravIt", "uvAca", "Aha", "AhuH", "vadati", "vadanti",
+  "abravIt", "ZbravIt", "bravIt", "uvAca", "Aha", "AhuH", "vadati", "vadanti",
   "brUyAt", "apfcCat", "prcCati",
 )
 

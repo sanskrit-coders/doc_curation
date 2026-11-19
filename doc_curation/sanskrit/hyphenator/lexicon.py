@@ -2,12 +2,10 @@
 
 Uses the compact vocabulary tries (`padas.trie`, `nominal-stems.trie`, `verb-stems.trie`,
 `avyayas.trie`, `dcs-stems.trie`) and `misc-vocab.toml` to support:
-1. Microsecond dictionary-backed *dīrgha/guṇa/vṛddhi* merger veto in `slp1_codec.py`
-   (protecting inline mergers in the distilled local SLP1 neural hyphenator),
+1. Microsecond dictionary-backed *dīrgha/guṇa/vṛddhi* merger veto and neural probability
+   refinement in `slp1_codec.py`,
 2. Samāsa & vowel-merger member decomposition in `doc_curation.sanskrit.accent.samasa`,
 3. Corpus source listing from `rAmAnujIya-sources.toml`.
-
-All obsolete non-LLM DP/n-gram/badsplit hyphenator code and `rAmAnujIya*.trie` files are gone.
 """
 from __future__ import annotations
 
@@ -33,7 +31,7 @@ _SLP_TO_HK_MAP = {
 }
 
 _TRIES: dict[str, marisa_trie.BytesTrie] | None = None
-_CLOSED_SLP: frozenset[str] | None = None
+_CLOSED_SETS: dict[str, frozenset[str]] | None = None
 
 _MERGER_EXPS_SLP: dict[str, tuple[tuple[str, str], ...]] = {
   "A": (("a", "a"), ("a", "A"), ("A", "a"), ("A", "A")),
@@ -50,7 +48,7 @@ _INFLECTED_TAILS_SLP = (
   "An", "EH", "eByaH", "ezu", "AnAm", "ARAm", "A", "Am", "AM", "ayA", "AbhiH",
   "ABiH", "Asu", "iH", "im", "inA", "aye", "eH", "ayaH", "In", "iBiH",
   "InAm", "uH", "um", "unA", "ave", "oH", "avaH", "Un", "uBiH", "UnAm",
-  "tA", "tva", "tvam", "tvaM", "tvena", "tvAt", "tvAd",
+  "tA", "tva", "tvam", "tvaM", "tvena", "tvAt", "tvAd", "yaH", "yoH",
 )
 
 
@@ -73,11 +71,33 @@ def _get_tries() -> dict[str, marisa_trie.BytesTrie]:
   return loaded
 
 
+def load_closed_sets() -> dict[str, frozenset[str]]:
+  global _CLOSED_SETS
+  if _CLOSED_SETS is not None:
+    return _CLOSED_SETS
+  from indic_transliteration import sanscript
+  upas, prons = set(), set()
+  if os.path.isfile(MISC_VOCAB_TOML):
+    with open(MISC_VOCAB_TOML, "rb") as f:
+      cfg = tomllib.load(f)
+    upas = {sanscript.transliterate(w, sanscript.HK, sanscript.SLP1) for w in cfg.get("upasargas", ())}
+    prons = {sanscript.transliterate(w, sanscript.HK, sanscript.SLP1) for w in cfg.get("pronouns", ())}
+  particles = {"ca", "vA", "eva", "iti", "api", "hi", "Di", "tu", "na", "no", "sma", "ha", "vE"}
+  prons |= {"te", "me", "tvA", "mA", "naH", "vaH", "asya", "ayam", "ayaM", "idam", "idaM", "etad", "etat", "tad", "tat", "tena", "tasmAt", "tasmAd", "yasya"}
+  _CLOSED_SETS = {
+    "upasargas": frozenset(upas),
+    "pronouns": frozenset(prons),
+    "particles": frozenset(particles),
+    "all": frozenset(upas | prons | particles | {"a", "an", "su"}),
+  }
+  return _CLOSED_SETS
+
+
 def word_count_slp1(slp_w: str) -> int:
   """Return combined attestation score across vocabulary tries in O(len(word)) time."""
   if not slp_w:
     return 0
-  if slp_w in load_closed_slp1():
+  if slp_w in load_closed_sets()["all"]:
     return 50
   hk = slp1_to_hk(slp_w)
   total = 0
@@ -107,27 +127,11 @@ def list_ramanujIya_source_files() -> list[str]:
   return out
 
 
-def load_closed_slp1() -> frozenset[str]:
-  global _CLOSED_SLP
-  if _CLOSED_SLP is not None:
-    return _CLOSED_SLP
-  from indic_transliteration import sanscript
-  items: set[str] = {"a", "an", "su", "dus", "dur", "duz", "duS", "na", "ca", "vA", "eva", "iti", "api", "hi", "tu"}
-  if os.path.isfile(MISC_VOCAB_TOML):
-    with open(MISC_VOCAB_TOML, "rb") as f:
-      cfg = tomllib.load(f)
-    for k in ("upasargas", "pronouns"):
-      for hk_w in cfg.get(k, ()):
-        items.add(sanscript.transliterate(hk_w, sanscript.HK, sanscript.SLP1))
-  _CLOSED_SLP = frozenset(items)
-  return _CLOSED_SLP
-
-
 def stem_base_slp1(slp_w: str) -> str | None:
   for tail in _INFLECTED_TAILS_SLP:
     if slp_w.endswith(tail) and len(slp_w) >= len(tail) + 2:
       pre = slp_w[:-len(tail)]
-      for fin in ("a", "A", "i", "I", "u", "U", ""):
+      for fin in ("a", "A", "i", "I", "u", "U", "f", "t", "n", "s", ""):
         cand = pre + fin
         if len(cand) >= 2 and word_count_slp1(cand) >= 2:
           return cand
@@ -137,7 +141,9 @@ def stem_base_slp1(slp_w: str) -> str | None:
 def is_valid_member_slp1(slp_w: str, *, is_right: bool = False) -> bool:
   if not slp_w or len(slp_w) < 2:
     return False
-  if slp_w in load_closed_slp1() or word_count_slp1(slp_w) >= 2:
+  if slp_w in load_closed_sets()["all"] or word_count_slp1(slp_w) >= 2:
+    return True
+  if is_right and slp_w in ("ja", "jA", "jAH", "jam", "jaM", "da", "dA", "ga", "gA", "vit", "jYa", "jYaM", "jYaH"):
     return True
   return bool(is_right and stem_base_slp1(slp_w) is not None)
 

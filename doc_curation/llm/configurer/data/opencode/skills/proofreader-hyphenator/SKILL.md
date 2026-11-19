@@ -190,9 +190,9 @@ never insert blank lines between every sentence inside one paragraph.
   unless punctuation (`।` or `,`) justifies the pause. Never remove a
   pre-existing avagraha (`ऽ`).
 
-### Special hyphenation & specialist models (only when explicitly directed)
+### Special hyphenation tools (only when explicitly directed)
 
-**1. Distilled local SLP1 neural hyphenator (`doc_curation.sanskrit.hyphenator`)** — fast local ONNX model (`doc_curation/data/models/sanskrit-hyphenator-slp1/hyphenator_slp1.onnx`, `<10 ms`/sentence via `onnxruntime`, zero GPU/server needed), backed by `BytesTrie` merger-veto checks (`lexicon.py`). Automatically preserves `<details><summary>मूलम्...</summary>` blocks, `+++(...)+++` glosses, and Vedic US accents (`᳓`/`᳙`), and supports both inline-only (`clause_newlines=False`) and phrase/clause soft-break (`clause_newlines=True`) modes:
+**Distilled local SLP1 neural hyphenator (`doc_curation.sanskrit.hyphenator`)** — fast local ONNX model (`doc_curation/data/models/sanskrit-hyphenator-slp1/hyphenator_slp1.onnx`, `<10 ms`/sentence via `onnxruntime`, zero GPU/server needed), backed by `BytesTrie` merger-veto checks (`lexicon.py`). Performs hyphenation and optional clause soft-breaks (`clause_newlines=True/False`) without editorial source-word changes, while preserving `<details><summary>मूलम्...</summary>` blocks, `+++(...)+++` glosses, and Vedic US accents (`᳓`/`᳙`):
 
 ```python
 from doc_curation.md import library
@@ -205,7 +205,17 @@ library.apply_function(
 )
 ```
 
-**2. Fine-tuned `Qwen3-14B` Sanskrit proofreader LoRA (`doc_curation.llm.proofreader`)** — adapter stored locally at `doc_curation/data/models/qwen3-14b-sanskrit-lora/` (and on Kaggle at `vishvasvasuki/qwen3-14b-sanskrit-proofreader-lora`), wrapped with deterministic `मूलम्` masking, inline merger-veto snap-back, and `[[OLD|NEW]]` silent-edit guards (`guards.py`). Use via an OpenAI-compatible `vLLM` Colab/Kaggle tunnel (`ProofreaderBackend` with `text_chunker` or `detail_chunker`) or offline Kaggle batch jobs (`kaggle_runner.stage_batch_dataset` / `apply_downloaded_outputs`):
+## Final Markdown formatting
+
+- **Quotes & mantras**: quotes under five words in `"..."`; longer quotes and mantras as blockquotes (`>`).
+- **Structure**: end verse pāda lines, prose sentence lines within a paragraph, and separated syntactic phrase/clause lines with two trailing spaces (`  `, soft break); use a blank line (`\n\n`) only between paragraphs, blockquotes, or blocks.
+- **Page numbers**: format page numbers (e.g. `६४`) as `[[P64]]` at the precise break point, even mid-paragraph.
+- **Footnotes**: Markdown footnote syntax `[^n]`, definitions placed next to the paragraph containing the reference, references unique and reflecting the source numbering where possible (e.g. page-12's footnote 1 → `12_1`).
+- Preserve `<details><summary>मूलम्...</summary>...</details>` blocks untouched and process only text outside them.
+
+## Specialist & batch LLM tools (only when specifically requested)
+
+**1. Fine-tuned `Qwen3-14B` Sanskrit proofreader LoRA (`doc_curation.llm.proofreader`)** — covers the **full skill** (cleanup, `[[OLD|NEW]]` source-error suggestions, `[[??]]` illegible spans, `[[P64]]` page tags, footnotes, syntactic clause soft-breaks, and sandhi-preserving hyphenation; pass `suggest_corrections=False` for hyphenation/formatting only). Local adapter weights live at `doc_curation/data/models/qwen3-14b-sanskrit-lora/` (Kaggle: `vishvasvasuki/qwen3-14b-sanskrit-proofreader-lora`), wrapped with deterministic `मूलम्` masking, inline merger-veto snap-back, and `[[OLD|NEW]]` silent-edit guards (`guards.py`). Use via an OpenAI-compatible `vLLM` Colab/Kaggle tunnel (`ProofreaderBackend` with `text_chunker` or `detail_chunker`) or offline Kaggle batch jobs (`kaggle_runner.stage_batch_dataset` / `apply_downloaded_outputs`):
 
 ```python
 from doc_curation.llm import text_chunker
@@ -220,7 +230,7 @@ library.apply_function(
 )
 ```
 
-**3. Gemini free Flash (`llm/gemini`)** — non-thorough job, for cursory sanskrit-only processing:
+**2. Gemini free Flash (`llm/gemini`)** — non-thorough job, for cursory sanskrit-only processing:
 
 ```python
 import os
@@ -239,14 +249,6 @@ library.apply_function(
 To process only details blocks, use `gemini.process_details_with_keys` instead
 (using `bare-hyphenator.md` in the same directory when processing `मूलम्` or
 standalone detail blocks).
-
-## Final Markdown formatting
-
-- **Quotes & mantras**: quotes under five words in `"..."`; longer quotes and mantras as blockquotes (`>`).
-- **Structure**: end verse pāda lines, prose sentence lines within a paragraph, and separated syntactic phrase/clause lines with two trailing spaces (`  `, soft break); use a blank line (`\n\n`) only between paragraphs, blockquotes, or blocks.
-- **Page numbers**: format page numbers (e.g. `६४`) as `[[P64]]` at the precise break point, even mid-paragraph.
-- **Footnotes**: Markdown footnote syntax `[^n]`, definitions placed next to the paragraph containing the reference, references unique and reflecting the source numbering where possible (e.g. page-12's footnote 1 → `12_1`).
-- Preserve `<details><summary>मूलम्...</summary>...</details>` blocks untouched and process only text outside them.
 
 ## Report
 

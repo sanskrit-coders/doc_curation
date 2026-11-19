@@ -48,19 +48,14 @@ def _load_heldout_reference_keys(hyp_toml_path: str) -> set[str]:
 
 
 def _collect_curated_files() -> list[str]:
+  """Use ONLY the curated hyphenated rAmAnujIya corpus (``rAmAnujIya-sources.toml``)
+  so unhyphenated Vedic mantra repositories never dilute compound-hyphen supervision."""
   seen = set()
   files: list[str] = []
   for fp in list_ramanujIya_source_files():
     if os.path.isfile(fp) and fp not in seen:
       seen.add(fp)
       files.append(fp)
-  for root in _EXTRA_CURATED_ROOTS:
-    if not os.path.isdir(root):
-      continue
-    for fp in sorted(glob.glob(os.path.join(root, "**", "*.md"), recursive=True)):
-      if fp not in seen and not fp.endswith("_index.md"):
-        seen.add(fp)
-        files.append(fp)
   return files
 
 
@@ -71,17 +66,23 @@ def _extract_curated_paragraphs(md_path: str, heldout_keys: set[str]) -> list[st
     return []
   if "[यान्त्रिकम्]" in text[:600]:
     return []
+  blocks = [
+    m.group(2) for m in DETAILS_RE.finditer(text)
+    if m.group(1).strip().startswith(("विश्वास-प्रस्तुतिः", "विश्वास-टिप्पनी")) and "यान्त्रिक" not in m.group(1)
+  ]
+  if not blocks and "<details" not in text:
+    blocks = [text]
   out: list[str] = []
-  for m in DETAILS_RE.finditer(text):
-    summary = m.group(1).strip()
-    if not summary.startswith("विश्वास-प्रस्तुतिः") or "यान्त्रिक" in summary:
-      continue
-    cleaned = clean_prastuti_target(m.group(2))
+  for body in blocks:
+    cleaned = clean_prastuti_target(body)
     if not cleaned or MANIPRAVALA_RE.search(cleaned):
       continue
     for para in regex.split(r"\n\s*\n+", cleaned):
       p = para.strip()
-      if len(p) < 12 or len(p) > 900:
+      if len(p) < 10 or len(p) > 850:
+        continue
+      # Skip paragraphs that appear unhyphenated (long >=22-char plain Devanāgarī words with zero hyphens in para)
+      if "-" not in p and "–" not in p and any(len(w) >= 22 for w in regex.findall(r"[\u0900-\u097f]+", p)):
         continue
       norm_key = regex.sub(r"[\s\-–—]+", "", p)
       if any(hk in norm_key for hk in heldout_keys):
@@ -167,21 +168,31 @@ def build_distillation_dataset(
     paras = _extract_curated_paragraphs(fp, heldout_keys)
     for p in paras:
       has_cl = has_meaningful_prose_clause_breaks(p)
-      # Augment rich compounds / lost-avagraha / endash paragraphs twice in train
-      n_aug = 1 if is_eval else (2 if ("–" in p or " ऽर्" in p or has_cl) else 1)
+      # Augment rich compounds / lost-avagraha / endash paragraphs in train
+      n_aug = 1 if is_eval else (4 if ("ऽर्" in p or " ऽर्" in p) else (2 if ("–" in p or "-" in p or has_cl) else 1))
       for _ in range(n_aug):
         enc = encode_curated_sentence(p, rng, has_clause_breaks=has_cl)
-        if enc is None:
+        if enc is None or len(enc[0]) > 510:
           continue
-        slp_s, sep_y, cl_y = enc
-        if len(slp_s) > 510:
-          continue
-        rec = {"slp": slp_s, "sep": sep_y, "clause": cl_y, "has_clause": int(has_cl)}
+        rec = {"slp": enc[0], "sep": enc[1], "clause": enc[2], "has_clause": int(has_cl)}
         if is_eval:
           if len(eval_recs) < max_eval_examples:
             eval_recs.append(rec)
         else:
           train_recs.append(rec)
+
+      # Also sample isolated 1–3 word snippets from training paragraphs so single-word
+      # inputs (`hyphene("मध्वरिः")`, `hyphene("रामोर्थः")`, `hyphene("जगत्कारणम्")`) match
+      # full-sentence accuracy without length/punctuation bias!
+      if not is_eval:
+        words = [w.strip("।॥,;.?!()\"") for w in regex.split(r"\s+", p) if w.strip("।॥,;.?!()\"")]
+        for idx_w, w in enumerate(words):
+          is_interesting = ("-" in w or "–" in w or "ऽ" in w or len(w) >= 8)
+          if is_interesting and rng.random() < 0.35:
+            span_w = " ".join(words[idx_w:min(len(words), idx_w + rng.choice((1, 1, 2)))])
+            enc_w = encode_curated_sentence(span_w, rng, has_clause_breaks=False)
+            if enc_w is not None and 4 <= len(enc_w[0]) <= 120:
+              train_recs.append({"slp": enc_w[0], "sep": enc_w[1], "clause": enc_w[2], "has_clause": 0})
 
   rng.shuffle(train_recs)
   if len(train_recs) > max_train_examples:

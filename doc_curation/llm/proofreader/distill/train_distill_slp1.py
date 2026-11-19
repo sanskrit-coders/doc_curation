@@ -1,16 +1,13 @@
 """Kaggle 2×T4 Knowledge Distillation & ONNX Export for the Local SLP1 Hyphenator.
 
-Pipeline:
-1. Teacher Stage: Loads ``Qwen/Qwen3-14B`` + trained Sanskrit Proofreader LoRA adapter,
-   runs batched greedy inference on uncurated ``मूलम्`` passages across śāstra/kāvya/purāṇa,
-   filters strictly for 100% sandhi-skeleton fidelity, and encodes teacher pseudo-labels
-   into phonemic Extended-SLP1 boundary sequences (upweighted 2×).
-2. Student Stage: Trains an 8-layer Bidirectional SLP1 Conformer-Transformer (~7.9M params:
-   Multi-Head Self-Attention + Depthwise-Separable 7-gram Phonotactic Conv + SwiGLU/SiLU FFN)
-   with dual heads (Head 1: inline ``-``/``–``/`` ``/`` Z``; Head 2: ``  \\n`` clause & sandhi-revert).
-3. Export & Eval Stage: Exports ``hyphenator_slp1.onnx`` + ``hyphenator_slp1_int8.onnx`` (~8 MB),
-   verifies both via ``onnxruntime`` on held-out passages and ``hyphenations.toml``, and writes
-   ``distill_eval_report.json``.
+Memory & speed design:
+1. Teacher Stage runs in an isolated child subprocess (`--_teacher-out`) sorted by length,
+   writing sandhi-verified teacher pseudo-labels to JSONL and exiting cleanly so the OS
+   reclaims 100% of `Qwen3-14B`'s ~26 GB host RAM & CUDA memory before student training.
+2. Student Stage pre-packs all ~39k sequences into contiguous `int16` tensors (<160 MB RAM),
+   trains an 8-layer Bidirectional SLP1 Conformer-Transformer (~8.08M params) on `cuda:0`
+   using fused `F.scaled_dot_product_attention` (~6–10s/epoch), and switches to pure
+   opset-17 `matmul + softmax` for `.onnx` + Dynamic INT8 `.onnx` export.
 """
 from __future__ import annotations
 
@@ -18,7 +15,6 @@ import os as _early_os
 _early_os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import argparse
-import gc
 import json
 import math
 import os
@@ -108,8 +104,7 @@ def sandhi_skeleton(dev_txt: str, sanscript_mod) -> str:
   slp = re.sub(r"[\s\-–—।॥,;.?!\"'()0-9०-९]+", "", slp)
   slp = slp.replace("M", "m").replace("N", "m").replace("Y", "n").replace("R", "n")
   slp = re.sub(r"[sSzH]", "s", slp)
-  slp = re.sub(r"[tdc]", "t", slp)
-  return slp
+  return re.sub(r"[tdc]", "t", slp)
 
 
 def encode_teacher_pseudo(dev_pred: str, rng: random.Random, sanscript_mod) -> dict | None:
@@ -135,12 +130,10 @@ def encode_teacher_pseudo(dev_pred: str, rng: random.Random, sanscript_mod) -> d
       sep_y[-1] = 1 if ch == "-" else 2
       i += 1
       continue
-    if ch == " " and raw_c and i + 1 < n:
-      prev, nxt = raw_c[-1], slp[i + 1]
-      if (nxt == "Z" or prev in _HALANT_OK) and rng.random() < 0.90:
-        sep_y[-1] = 3
-        i += 1
-        continue
+    if ch == " " and raw_c and i + 1 < n and (slp[i + 1] == "Z" or raw_c[-1] in _HALANT_OK) and rng.random() < 0.90:
+      sep_y[-1] = 3
+      i += 1
+      continue
     raw_c.append(ch)
     sep_y.append(0)
     cl_y.append(0)
@@ -150,40 +143,30 @@ def encode_teacher_pseudo(dev_pred: str, rng: random.Random, sanscript_mod) -> d
   return {"slp": "".join(raw_c), "sep": sep_y, "clause": cl_y, "has_clause": has_cl}
 
 
-def run_teacher_distillation(
-  uncurated_path: Path,
-  lora_dir: Path | None,
-  base_model: str,
-  limit: int,
-  torch,
-  sanscript_mod,
-  rng: random.Random,
-) -> tuple[list[dict], dict]:
-  if not uncurated_path.is_file() or lora_dir is None or limit <= 0:
-    print("[teacher] Skipping teacher stage (no uncurated file or LoRA adapter).", flush=True)
-    return [], {"ran": False, "accepted": 0, "total": 0}
-
+def run_teacher_worker(uncurated_path: Path, lora_dir: Path, base_model: str, limit: int, out_jsonl: Path, seed: int):
+  import torch
+  from indic_transliteration import sanscript
   from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
   from peft import PeftModel
 
   t0 = time.time()
+  rng = random.Random(seed)
   raw_items = [json.loads(l)["text"] for l in open(uncurated_path, encoding="utf-8") if l.strip()][:limit]
-  print(f"[teacher] Distilling {len(raw_items)} uncurated passages with {base_model} + {lora_dir}...", flush=True)
+  # Sort by character length so batches have near-zero padding waste (3x faster on T4!)
+  raw_items.sort(key=len)
+  print(f"[teacher-worker] Distilling {len(raw_items)} length-sorted passages with {base_model} + {lora_dir}...", flush=True)
 
   tok = AutoTokenizer.from_pretrained(base_model, trust_remote_code=True)
   if tok.pad_token_id is None:
     tok.pad_token = tok.eos_token
   tok.padding_side = "left"
-  bnb_cfg = BitsAndBytesConfig(
-    load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True, bnb_4bit_compute_dtype=torch.float16
-  )
+  bnb_cfg = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True, bnb_4bit_compute_dtype=torch.float16)
   n_gpus = torch.cuda.device_count()
   base = AutoModelForCausalLM.from_pretrained(
     base_model, quantization_config=bnb_cfg, dtype=torch.float16, device_map="auto",
     max_memory={0: "13GiB", 1: "14GiB"} if n_gpus >= 2 else None, attn_implementation="sdpa", trust_remote_code=True,
   )
-  teacher = PeftModel.from_pretrained(base, str(lora_dir))
-  teacher.eval()
+  teacher = PeftModel.from_pretrained(base, str(lora_dir)).eval()
   first_dev = next(teacher.parameters()).device
   eos_ids = sorted({t for t in (tok.eos_token_id, tok.convert_tokens_to_ids("<|im_end|>"), tok.convert_tokens_to_ids("<|endoftext|>")) if isinstance(t, int) and t >= 0})
 
@@ -194,19 +177,14 @@ def run_teacher_distillation(
     "2. Split separable boundaries: yaṇ (`इत्य् एवम्`, `मध्व्-अरिः`), visarga (`रामो ऽस्ति`, `नमस् ते`), final `म्` before vowel (`फलम् अश्नुते`), assimilation (`तद् धि`, `जगत्-कारणम्`), plain samāsa (`-`, and `–` at nested upapada seams).\n"
     "3. Do NOT alter source characters or emit `[[OLD|NEW]]`; output ONLY the hyphenated text."
   )
-
-  distilled: list[dict] = []
-  accepted = 0
-  bs = 12
+  distilled, accepted, bs = [], 0, 16
   for st in range(0, len(raw_items), bs):
     batch_txt = raw_items[st:st + bs]
-    prompts = [
-      tok.apply_chat_template([{"role": "system", "content": sys_p}, {"role": "user", "content": x}], tokenize=False, add_generation_prompt=True, enable_thinking=False)
-      for x in batch_txt
-    ]
+    prompts = [tok.apply_chat_template([{"role": "system", "content": sys_p}, {"role": "user", "content": x}], tokenize=False, add_generation_prompt=True, enable_thinking=False) for x in batch_txt]
     enc = tok(prompts, return_tensors="pt", padding=True, add_special_tokens=False)
     inp_len = enc["input_ids"].shape[1]
-    dyn_max = min(280, max(64, int(inp_len * 0.85)))
+    u_lens = [len(tok(x, add_special_tokens=False)["input_ids"]) for x in batch_txt]
+    dyn_max = min(220, max(48, int(max(u_lens) * 1.35) + 16))
     inputs = {k: v.to(first_dev) for k, v in enc.items()}
     with torch.no_grad(), torch.amp.autocast("cuda", dtype=torch.float16):
       gen = teacher.generate(**inputs, max_new_tokens=dyn_max, do_sample=False, temperature=None, top_p=None, top_k=None, pad_token_id=tok.pad_token_id, eos_token_id=eos_ids)
@@ -216,23 +194,18 @@ def run_teacher_distillation(
         if stop_s in dec:
           dec = dec.split(stop_s, 1)[0]
       pred = dec.strip()
-      if "[[" in pred or "<" in pred or not pred:
-        continue
-      if sandhi_skeleton(src_t, sanscript_mod) == sandhi_skeleton(pred, sanscript_mod):
+      if pred and "[[" not in pred and "<" not in pred and sandhi_skeleton(src_t, sanscript) == sandhi_skeleton(pred, sanscript):
         accepted += 1
-        for _ in range(2):  # 2x weight for verified teacher pseudo-labels
-          rec = encode_teacher_pseudo(pred, rng, sanscript_mod)
+        for _ in range(3):  # 3x weight for verified non-Rāmānujīya teacher pseudo-labels
+          rec = encode_teacher_pseudo(pred, rng, sanscript)
           if rec is not None:
             distilled.append(rec)
-    if (st // bs) % 10 == 0:
-      print(f"[teacher] {min(len(raw_items), st + bs)}/{len(raw_items)} processed (accepted={accepted})", flush=True)
+    print(f"[teacher-worker] {min(len(raw_items), st + bs)}/{len(raw_items)} done (accepted={accepted})", flush=True)
 
   elapsed = round(time.time() - t0, 1)
-  print(f"[teacher] Done in {elapsed}s: accepted {accepted}/{len(raw_items)} ({len(distilled)} augmented sequences). Freeing VRAM...", flush=True)
-  del teacher, base, tok
-  gc.collect()
-  torch.cuda.empty_cache()
-  return distilled, {"ran": True, "total": len(raw_items), "accepted": accepted, "distilled_sequences": len(distilled), "elapsed_sec": elapsed}
+  payload = {"meta": {"ran": True, "total": len(raw_items), "accepted": accepted, "distilled_sequences": len(distilled), "elapsed_sec": elapsed}, "records": distilled}
+  out_jsonl.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+  print(f"[teacher-worker] Saved {len(distilled)} sequences in {elapsed}s; exiting subprocess to free 100% RAM.", flush=True)
 
 
 def build_conformer_student(torch):
@@ -242,68 +215,56 @@ def build_conformer_student(torch):
   class ConformerBlock(nn.Module):
     def __init__(self, d_model: int = 256, n_heads: int = 8, d_ff: int = 1024, conv_k: int = 7, dropout: float = 0.1):
       super().__init__()
-      self.n_heads = n_heads
-      self.d_head = d_model // n_heads
+      self.n_heads, self.d_head = n_heads, d_model // n_heads
       self.norm_attn = nn.LayerNorm(d_model)
       self.qkv = nn.Linear(d_model, 3 * d_model)
       self.out_proj = nn.Linear(d_model, d_model)
       self.drop = nn.Dropout(dropout)
-
       self.norm_conv = nn.LayerNorm(d_model)
       self.pw1 = nn.Linear(d_model, 2 * d_model)
       self.dw_conv = nn.Conv1d(d_model, d_model, kernel_size=conv_k, padding=conv_k // 2, groups=d_model)
       self.conv_norm = nn.LayerNorm(d_model)
       self.pw2 = nn.Linear(d_model, d_model)
-
       self.norm_ff = nn.LayerNorm(d_model)
       self.ff1 = nn.Linear(d_model, d_ff)
       self.ff2 = nn.Linear(d_ff, d_model)
 
-    def forward(self, x, pad_mask_float):
-      # 1. Bidirectional Multi-Head Attention (pure MatMul/Softmax for clean ONNX opset 17)
+    def forward(self, x, pad_mask_float, export_mode: bool = False):
       b, t, d = x.shape
       h = self.norm_attn(x)
       qkv = self.qkv(h).view(b, t, 3, self.n_heads, self.d_head).permute(2, 0, 3, 1, 4)
       q, k, v = qkv[0], qkv[1], qkv[2]
-      scores = torch.matmul(q, k.transpose(-2, -1)) * (1.0 / math.sqrt(self.d_head))
-      scores = scores + pad_mask_float
-      attn = torch.softmax(scores, dim=-1)
-      ctx = torch.matmul(attn, v).transpose(1, 2).contiguous().view(b, t, d)
-      x = x + self.drop(self.out_proj(ctx))
+      if export_mode:
+        scores = torch.matmul(q, k.transpose(-2, -1)) * (1.0 / math.sqrt(self.d_head)) + pad_mask_float
+        ctx = torch.matmul(torch.softmax(scores, dim=-1), v)
+      else:
+        ctx = F.scaled_dot_product_attention(q, k, v, attn_mask=pad_mask_float)
+      x = x + self.drop(self.out_proj(ctx.transpose(1, 2).contiguous().view(b, t, d)))
 
-      # 2. Local 7-gram Phonotactic Depthwise Conv with GLU
-      hc = self.pw1(self.norm_conv(x))
-      a_g, b_g = hc.chunk(2, dim=-1)
-      hc = a_g * torch.sigmoid(b_g)
-      hc = self.dw_conv(hc.transpose(1, 2)).transpose(1, 2)
-      hc = F.silu(self.conv_norm(hc))
-      x = x + self.drop(self.pw2(hc))
-
-      # 3. Positionwise FFN
-      hf = self.ff2(self.drop(F.silu(self.ff1(self.norm_ff(x)))))
-      return x + self.drop(hf)
+      a_g, b_g = self.pw1(self.norm_conv(x)).chunk(2, dim=-1)
+      hc = self.dw_conv((a_g * torch.sigmoid(b_g)).transpose(1, 2)).transpose(1, 2)
+      x = x + self.drop(self.pw2(F.silu(self.conv_norm(hc))))
+      return x + self.drop(self.ff2(self.drop(F.silu(self.ff1(self.norm_ff(x))))))
 
   class Slp1ConformerTagger(nn.Module):
-    def __init__(self, d_model: int = 256, n_layers: int = 8, n_heads: int = 8, max_len: int = 516):
+    def __init__(self, d_model: int = 256, n_layers: int = 8, n_heads: int = 8):
       super().__init__()
+      self.export_mode = False
       self.char_emb = nn.Embedding(VOCAB_SIZE, d_model, padding_idx=0)
       self.cat_emb = nn.Embedding(12, d_model)
-      self.pos_emb = nn.Embedding(max_len, d_model)
       self.in_drop = nn.Dropout(0.1)
+      # Translation-invariant Conformer stack (8 × kernel_size=7 depthwise convs = 49-phoneme
+      # relative receptive field + global attention, with zero absolute-position bias on 1-word inputs!)
       self.layers = nn.ModuleList([ConformerBlock(d_model=d_model, n_heads=n_heads) for _ in range(n_layers)])
       self.final_norm = nn.LayerNorm(d_model)
       self.sep_head = nn.Linear(d_model, NUM_SEP_CLASSES)
       self.clause_head = nn.Linear(d_model, NUM_CLAUSE_CLASSES)
 
     def forward(self, char_ids, phon_cats):
-      b, t = char_ids.shape
-      pos = torch.arange(t, device=char_ids.device).unsqueeze(0).expand(b, t)
-      x = self.in_drop(self.char_emb(char_ids) + self.cat_emb(phon_cats) + self.pos_emb(pos))
-      # Float additive mask: 0.0 for valid tokens, -1e4 for PAD (char_ids == 0)
-      is_pad = (char_ids == 0).to(x.dtype) * -10000.0
-      pad_mask_float = is_pad.unsqueeze(1).unsqueeze(2)
+      x = self.in_drop(self.char_emb(char_ids) + self.cat_emb(phon_cats))
+      pad_mask_float = ((char_ids == 0).to(x.dtype) * -10000.0).unsqueeze(1).unsqueeze(2)
       for blk in self.layers:
-        x = blk(x, pad_mask_float)
+        x = blk(x, pad_mask_float, export_mode=self.export_mode)
       x = self.final_norm(x)
       return self.sep_head(x), self.clause_head(x)
 
@@ -311,54 +272,61 @@ def build_conformer_student(torch):
 
 
 def train_student_model(student, train_recs: list[dict], eval_recs: list[dict], args, torch, rng: random.Random) -> list[dict]:
-  import torch.nn as nn
+  import numpy as np
   import torch.nn.functional as F
 
-  def _enc(r: dict):
-    s = r["slp"][:512]
-    L = len(s)
-    sup_cl = bool(r.get("has_clause", 0)) or (L < 72 and "।" in s)
-    return [CHAR_TO_ID.get(c, 1) for c in s], [phon_cat(c) for c in s], r["sep"][:L], (r["clause"][:L] if sup_cl else [-100] * L)
+  def _pack_tensors(recs: list[dict]):
+    # Sort by length once so contiguous slices of batch_size have minimal padding!
+    recs_sorted = sorted(recs, key=lambda r: len(r["slp"]))
+    n = len(recs_sorted)
+    ci = np.zeros((n, 512), dtype=np.int16)
+    pc = np.zeros((n, 512), dtype=np.int16)
+    sy = np.full((n, 512), -100, dtype=np.int16)
+    cy = np.full((n, 512), -100, dtype=np.int16)
+    lens = np.zeros(n, dtype=np.int16)
+    for idx, r in enumerate(recs_sorted):
+      s = r["slp"][:512]
+      L = len(s)
+      lens[idx] = L
+      ci[idx, :L] = [CHAR_TO_ID.get(c, 1) for c in s]
+      pc[idx, :L] = [phon_cat(c) for c in s]
+      sy[idx, :L] = r["sep"][:L]
+      if bool(r.get("has_clause", 0)) or (L < 72 and "।" in s):
+        cy[idx, :L] = r["clause"][:L]
+    return torch.from_numpy(ci), torch.from_numpy(pc), torch.from_numpy(sy), torch.from_numpy(cy), lens
 
-  encoded_train, encoded_eval = [_enc(r) for r in train_recs], [_enc(r) for r in eval_recs]
-
-  def _collate(batch):
-    m_len = min(512, ((max(len(x[0]) for x in batch) + 7) // 8) * 8)
-    ci, pc, sy, cy = [], [], [], []
-    for c_i, p_c, s_t, c_t in batch:
-      pad = m_len - len(c_i)
-      ci.append(c_i + [0] * pad)
-      pc.append(p_c + [0] * pad)
-      sy.append(s_t + [-100] * pad)
-      cy.append(c_t + [-100] * pad)
-    return tuple(torch.tensor(a, dtype=torch.long) for a in (ci, pc, sy, cy))
+  tr_ci, tr_pc, tr_sy, tr_cy, tr_len = _pack_tensors(train_recs)
+  ev_ci, ev_pc, ev_sy, _, ev_len = _pack_tensors(eval_recs)
+  del train_recs, eval_recs
 
   dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
   student = student.to(dev)
-  net = nn.DataParallel(student) if torch.cuda.device_count() >= 2 else student
-  sep_w = torch.tensor([1.0, 2.0, 3.5, 2.0, 4.5], device=dev)
-  cl_w = torch.tensor([1.0, 2.5, 4.0, 4.0, 4.0, 4.0, 4.0], device=dev)
+  sep_w = torch.tensor([1.0, 1.8, 3.0, 1.8, 4.0], device=dev)
+  cl_w = torch.tensor([1.0, 2.2, 3.5, 3.5, 3.5, 3.5, 3.5], device=dev)
   opt = torch.optim.AdamW(student.parameters(), lr=args.lr, weight_decay=0.01)
-  tot_steps = math.ceil(len(encoded_train) / args.batch_size) * args.epochs
+  n_tr = tr_ci.size(0)
+  batch_starts = list(range(0, n_tr, args.batch_size))
+  tot_steps = len(batch_starts) * args.epochs
   sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=args.lr, total_steps=max(1, tot_steps), pct_start=0.08)
   scaler = torch.amp.GradScaler("cuda", enabled=torch.cuda.is_available())
 
   history, best_f1, best_state = [], -1.0, None
   for ep in range(1, args.epochs + 1):
     ep_t0, ep_loss = time.time(), 0.0
-    net.train()
-    rng.shuffle(encoded_train)
-    for w in range(0, len(encoded_train), args.batch_size * 8):
-      encoded_train[w:w + args.batch_size * 8] = sorted(encoded_train[w:w + args.batch_size * 8], key=lambda z: len(z[0]))
-    chunks = [encoded_train[k:k + args.batch_size] for k in range(0, len(encoded_train), args.batch_size)]
-    rng.shuffle(chunks)
-    for b_items in chunks:
-      ci, pc, sy, cy = [t.to(dev, non_blocking=True) for t in _collate(b_items)]
+    student.train()
+    rng.shuffle(batch_starts)
+    for st in batch_starts:
+      en = min(n_tr, st + args.batch_size)
+      ml = min(512, ((int(tr_len[en - 1]) + 7) // 8) * 8)
+      ci = tr_ci[st:en, :ml].long().to(dev, non_blocking=True)
+      pc = tr_pc[st:en, :ml].long().to(dev, non_blocking=True)
+      sy = tr_sy[st:en, :ml].long().to(dev, non_blocking=True)
+      cy = tr_cy[st:en, :ml].long().to(dev, non_blocking=True)
       opt.zero_grad(set_to_none=True)
       with torch.amp.autocast("cuda", dtype=torch.float16, enabled=torch.cuda.is_available()):
-        s_log, c_log = net(ci, pc)
-        loss_s = F.cross_entropy(s_log.view(-1, NUM_SEP_CLASSES), sy.view(-1), weight=sep_w, ignore_index=-100)
-        loss_c = F.cross_entropy(c_log.view(-1, NUM_CLAUSE_CLASSES), cy.view(-1), weight=cl_w, ignore_index=-100) if (cy != -100).any() else (loss_s * 0.0)
+        s_log, c_log = student(ci, pc)
+        loss_s = F.cross_entropy(s_log.reshape(-1, NUM_SEP_CLASSES), sy.reshape(-1), weight=sep_w, ignore_index=-100)
+        loss_c = F.cross_entropy(c_log.reshape(-1, NUM_CLAUSE_CLASSES), cy.reshape(-1), weight=cl_w, ignore_index=-100) if (cy != -100).any() else (loss_s * 0.0)
         loss = loss_s + 0.65 * loss_c
       scaler.scale(loss).backward()
       scaler.unscale_(opt)
@@ -368,12 +336,16 @@ def train_student_model(student, train_recs: list[dict], eval_recs: list[dict], 
       sched.step()
       ep_loss += float(loss.item())
 
-    net.eval()
+    student.eval()
     tp, fp_c, fn_c = 0, 0, 0
-    with torch.no_grad():
-      for k in range(0, len(encoded_eval), args.batch_size):
-        ci, pc, sy, _ = [t.to(dev) for t in _collate(encoded_eval[k:k + args.batch_size])]
-        s_pred = net(ci, pc)[0].argmax(dim=-1)
+    with torch.no_grad(), torch.amp.autocast("cuda", dtype=torch.float16, enabled=torch.cuda.is_available()):
+      for st in range(0, ev_ci.size(0), args.batch_size):
+        en = min(ev_ci.size(0), st + args.batch_size)
+        ml = min(512, ((int(ev_len[en - 1]) + 7) // 8) * 8)
+        ci = ev_ci[st:en, :ml].long().to(dev)
+        pc = ev_pc[st:en, :ml].long().to(dev)
+        sy = ev_sy[st:en, :ml].long().to(dev)
+        s_pred = student(ci, pc)[0].argmax(dim=-1)
         valid = sy != -100
         g, p = sy[valid], s_pred[valid]
         tp += int(((p > 0) & (p == g)).sum().item())
@@ -381,7 +353,7 @@ def train_student_model(student, train_recs: list[dict], eval_recs: list[dict], 
         fn_c += int(((p == 0) & (g > 0)).sum().item())
     prec, rec = tp / max(1, tp + fp_c), tp / max(1, tp + fn_c)
     f1 = 2 * prec * rec / max(1e-8, prec + rec)
-    row = {"epoch": ep, "loss": round(ep_loss / max(1, len(chunks)), 4), "sep_prec": round(prec, 4), "sep_rec": round(rec, 4), "sep_exact_f1": round(f1, 4), "sec": round(time.time() - ep_t0, 1)}
+    row = {"epoch": ep, "loss": round(ep_loss / max(1, len(batch_starts)), 4), "sep_prec": round(prec, 4), "sep_rec": round(rec, 4), "sep_exact_f1": round(f1, 4), "sec": round(time.time() - ep_t0, 1)}
     history.append(row)
     print(f"[epoch {ep:02d}/{args.epochs:02d}] loss={row['loss']:.4f} P={prec:.4f} R={rec:.4f} F1={f1:.4f} ({row['sec']}s)", flush=True)
     if f1 > best_f1:
@@ -399,6 +371,7 @@ def export_and_benchmark_onnx(student, hyp_toml_path: Path, out_model_dir: Path,
 
   out_model_dir.mkdir(parents=True, exist_ok=True)
   student_cpu = student.eval().cpu()
+  student_cpu.export_mode = True
   dummy = (torch.ones((1, 32), dtype=torch.long), torch.ones((1, 32), dtype=torch.long))
   fp32_onnx, int8_onnx = out_model_dir / "hyphenator_slp1.onnx", out_model_dir / "hyphenator_slp1_int8.onnx"
   dyn_ax = {k: {0: "batch", 1: "seq"} for k in ("char_ids", "phon_cats", "sep_logits", "clause_logits")}
@@ -488,37 +461,49 @@ def export_and_benchmark_onnx(student, hyp_toml_path: Path, out_model_dir: Path,
 def main():
   ap = argparse.ArgumentParser()
   ap.add_argument("--teacher-base", default="Qwen/Qwen3-14B")
-  ap.add_argument("--teacher-limit", type=int, default=750)
-  ap.add_argument("--epochs", type=int, default=16)
-  ap.add_argument("--batch-size", type=int, default=96)
-  ap.add_argument("--lr", type=float, default=8e-4)
+  ap.add_argument("--teacher-limit", type=int, default=160)
+  ap.add_argument("--_teacher-out", default=None)
+  ap.add_argument("--epochs", type=int, default=22)
+  ap.add_argument("--batch-size", type=int, default=128)
+  ap.add_argument("--lr", type=float, default=1e-3)
   ap.add_argument("--out-dir", default="/kaggle/working/model")
   ap.add_argument("--seed", type=int, default=42)
   args = ap.parse_args()
 
   t0 = time.time()
   ensure_deps()
+  data_dir, lora_dir = locate_inputs()
+
+  if args._teacher_out:
+    run_teacher_worker(data_dir / "uncurated_for_teacher.jsonl", lora_dir, args.teacher_base, args.teacher_limit, Path(args._teacher_out), args.seed)
+    return
+
+  distilled_recs, teacher_meta = [], {"ran": False, "accepted": 0, "total": 0}
+  if (data_dir / "uncurated_for_teacher.jsonl").is_file() and lora_dir is not None and args.teacher_limit > 0:
+    tmp_json = Path("/tmp/teacher_distilled.json")
+    subprocess.check_call([
+      sys.executable, str(Path(__file__).resolve()),
+      "--teacher-base", args.teacher_base,
+      "--teacher-limit", str(args.teacher_limit),
+      "--seed", str(args.seed),
+      "--_teacher-out", str(tmp_json),
+    ])
+    payload = json.loads(tmp_json.read_text(encoding="utf-8"))
+    distilled_recs, teacher_meta = payload["records"], payload["meta"]
+    tmp_json.unlink(missing_ok=True)
+
   import torch
   from indic_transliteration import sanscript
 
   rng = random.Random(args.seed)
   torch.manual_seed(args.seed)
-  data_dir, lora_dir = locate_inputs()
-
   train_recs = [json.loads(l) for l in open(data_dir / "train_slp1.jsonl", encoding="utf-8") if l.strip()]
   eval_recs = [json.loads(l) for l in open(data_dir / "eval_slp1.jsonl", encoding="utf-8") if l.strip()]
-  print(f"[data] Loaded {len(train_recs)} curated train + {len(eval_recs)} eval SLP1 sequences.", flush=True)
-
-  distilled_recs, teacher_meta = run_teacher_distillation(
-    data_dir / "uncurated_for_teacher.jsonl", lora_dir, args.teacher_base, args.teacher_limit, torch, sanscript, rng
-  )
   all_train = train_recs + distilled_recs
-  print(f"[student] Training 8-layer SLP1 Conformer-Transformer on {len(all_train)} total sequences...", flush=True)
+  print(f"[student] Training 8-layer SLP1 Conformer-Transformer on {len(all_train)} total sequences (RAM-clean parent process)...", flush=True)
 
   student = build_conformer_student(torch)
   n_params = sum(p.numel() for p in student.parameters())
-  print(f"[student] Parameters: {n_params:,} (~{n_params * 4 / (1024 ** 2):.1f} MB FP32)", flush=True)
-
   history = train_student_model(student, all_train, eval_recs, args, torch, rng)
   onnx_bench = export_and_benchmark_onnx(student, data_dir / "hyphenations.toml", Path(args.out_dir), torch, sanscript)
 
@@ -526,7 +511,7 @@ def main():
     "student_params": n_params,
     "curated_train_count": len(train_recs),
     "teacher_distillation": teacher_meta,
-    "epoch_history_tail": history[-5:],
+    "epoch_history_tail": history[-6:],
     "onnx_benchmark": onnx_bench,
     "elapsed_min": round((time.time() - t0) / 60.0, 2),
   }

@@ -19,13 +19,6 @@ from .lexicon import (
   restore_left_member_slp1,
   word_count_slp1,
 )
-from .neural_slp1 import (
-  DEFAULT_LOCAL_HYPHENATOR_DIR,
-  is_neural_hyphenator_available,
-  neural_hyphene,
-  predict_slp1_tags,
-  resolve_onnx_model_path,
-)
 
 
 def _fallback_lexicon_split_word(word: str) -> str:
@@ -84,6 +77,14 @@ def hyphene(text: str, show_progress: bool = False, *, clause_newlines: bool = F
 hyphen = hyphene
 hyphenate = hyphene
 hyphenate_text = hyphene
+
+from .neural_slp1 import (  # noqa: E402
+  DEFAULT_LOCAL_HYPHENATOR_DIR,
+  is_neural_hyphenator_available,
+  neural_hyphene,
+  predict_slp1_tags,
+  resolve_onnx_model_path,
+)
 
 __all__ = [
   "DATA_DIR",

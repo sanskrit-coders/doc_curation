@@ -1,6 +1,9 @@
 from doc_curation.sanskrit.accent.validator import (
   check_padapatha_header,
+  find_bad_gati_kta_purvapadas,
+  find_false_nighata_arrows,
   find_false_post_udatta_svarita_arrows,
+  find_malformed_arrows,
   find_unexplained_aa_hiatuses,
   find_unlicensed_unaccented_padas,
   find_unresolved_question_arrows,
@@ -161,3 +164,74 @@ def test_sanskrit_package_reexports():
   import doc_curation.sanskrit.accent as dsa
   for sym in dsa.__all__:
     assert hasattr(ds, sym), f"Missing {sym} in doc_curation.sanskrit"
+
+
+def test_gati_kta_purvapada_and_false_nighata_guards():
+  # 1. Gati+kta pūrvapada in bahuvrīhi (पा० ६.२.४९ गतिरनन्तरः + ६.२.१)
+  assert len(find_bad_gati_kta_purvapadas([
+    "- सङ्गत-उपस्थौ → **सङ्गत᳓-उपस्थौ** (बहुव्रीहौ पा० ६.२.१)",
+  ])) == 1
+  assert find_bad_gati_kta_purvapadas([
+    "- सङ्गत-उपस्थौ → **स᳓ङ्गत-उपस्थौ** (गतिरनन्तरः पा० ६.२.४९, बहुव्रीहौ पा० ६.२.१)",
+    "- मुक्त-किल्बि᳓षः᳓ → **मुक्त᳓-किल्बिषः** (बहुव्रीहौ पा० ६.२.१)",
+    "- वि᳓शीर्ष्णी᳓म् → **वि-शीर्ष्णी᳓म्** (प्रादिबहुव्रीहौ पा० ६.२.१७७)",
+  ]) == []
+
+  # 2. Malformed double arrows
+  assert len(find_malformed_arrows([
+    "- श᳓म्-त᳓मा → **श᳓म्-तमा** (*TS*) → **श᳓न्तमः** (पा० ६.१.१५८)",
+  ])) == 1
+
+  # 3. False पा० ८.१.२८ / ८.१.१९ nighāta arrows:
+  # (a) Unmarked 8-syllable anuṣṭubh pāda d (स᳓हस्व) while pāda c's तिष्ठ after अभि᳓ is NOT flagged
+  mula_ashma = "आति॑ष्ठे॒ममश्मा॑न॒मश्मे॑व॒ त्वँ स्थि॒रा भ॑व ।\nअ॒भिति॑ष्ठ पृतन्य॒तस्सह॑स्व पृतनाय॒तः ।"
+  pp_ashma = [
+    "- आ᳓ (*TS*)",
+    "- तिष्ठ (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- इम᳓म् (*TS*)",
+    "- अ᳓श्मानम् (*TS*)",
+    "- अ᳓श्मा (*TS*)",
+    "- इव (अनुदात्तम्, पा० ८.१.१८)",
+    "- त्व᳓म् (*TS*)",
+    "- स्थिरा᳓ (*TS*)",
+    "- भव (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- अभि᳓ (*TS*)",
+    "- तिष्ठ (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- पृतन्यतः᳓ (*TS*)",
+    "- स᳓हस्व → **सहस्व** (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- पृतनायतः᳓ (*TS*)",
+  ]
+  assert len(find_false_nighata_arrows(pp_ashma, mula_ashma)) == 1
+  assert "सहस्व" in find_false_nighata_arrows(pp_ashma, mula_ashma)[0]
+
+  # (b) Mantra-initial (#0), after पादादि-आमन्त्रित (८.१.७२), after तिङ् (अतिङः), चवायोगे (८.१.५९), and यद्वृत्त (८.१.६६)
+  assert len(find_false_nighata_arrows(["- अ᳓पश्यम् → **अपश्यम्** (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)"])) == 1
+  assert len(find_false_nighata_arrows([
+    "- अ᳓ग्ने (आमन्त्रितम् आद्युदात्तम्, पा० ६.१.१९८)",
+    "- न᳓य → **नय** (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+  ])) == 1
+  assert len(find_false_nighata_arrows([
+    "- स᳓म् (*TS*)",
+    "- एत (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- प᳓श्यत → **पश्यत** (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+  ])) == 1
+  assert len(find_false_nighata_arrows([
+    "- त᳓या (*TS*)",
+    "- व᳓र्धस्व → **वर्धस्व** (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- च (अनुदात्तम्, पा० ८.१.१८)",
+    "- आ᳓ (*TS*)",
+    "- प्यायस्व (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- च (अनुदात्तम्, पा० ८.१.१८)",
+  ])) == 1
+  assert len(find_false_nighata_arrows([
+    "- या᳓साम् (*TS*)",
+    "- रा᳓जा (*TS*)",
+    "- व᳓रुणः (*TS*)",
+    "- या᳓ति → **याति** (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+  ])) == 1
+  # Non-initial vocative after a finite verb (८.१.१९ has NO अतिङः) is valid and NOT flagged
+  assert find_false_nighata_arrows([
+    "- यम᳓म् (*TS*)",
+    "- गाय (तिङन्तम् अनुदात्तम्, पा० ८.१.२८)",
+    "- भङ्ग्य-श्र᳓वः → **भङ्ग्य-श्रवः** (आमन्त्रितम् अनुदात्तम्, पा० ८.१.१९)",
+  ]) == []

@@ -2,7 +2,7 @@
 
 Loads ``doc_curation/data/models/sanskrit-hyphenator-slp1/hyphenator_slp1.onnx``
 (or ``hyphenator_slp1_int8.onnx``) lazily on first call with ``intra_op_num_threads=2``
-so local CPU usage stays negligible (~3–6 ms per sentence, <40 MB RAM).
+so local CPU usage stays negligible (~3–15 ms per sentence, <40 MB RAM).
 """
 from __future__ import annotations
 
@@ -60,42 +60,53 @@ def _get_session(onnx_path: str):
   return sess
 
 
-def predict_slp1_tags(slp_str: str, model_dir: str | None = None) -> tuple[list[int], list[int]]:
-  """Predict ``(sep_labels, clause_labels)`` across ``slp_str`` with sliding-window overlap."""
-  if not slp_str:
-    return [], []
+def predict_slp1_probs(slp_str: str, model_dir: str | None = None):
+  """Return ``(sep_probs [L, 5], clause_preds [L])`` across ``slp_str``."""
   import numpy as np
 
+  if not slp_str:
+    return np.zeros((0, 5), dtype=np.float32), []
   onnx_path = resolve_onnx_model_path(model_dir)
   if onnx_path is None:
     raise FileNotFoundError(f"No ONNX hyphenator model found in {model_dir or DEFAULT_LOCAL_HYPHENATOR_DIR}")
   sess = _get_session(onnx_path)
 
+  def _softmax(x):
+    e = np.exp(x - x.max(axis=-1, keepdims=True))
+    return e / e.sum(axis=-1, keepdims=True)
+
   ids, cats = text_to_ids_and_cats(slp_str)
   total = len(ids)
   if total <= _MAX_WINDOW:
-    inp_ids = np.asarray([ids], dtype=np.int64)
-    inp_cats = np.asarray([cats], dtype=np.int64)
-    sep_logits, clause_logits = sess.run(None, {"char_ids": inp_ids, "phon_cats": inp_cats})
-    return sep_logits[0].argmax(axis=-1).tolist(), clause_logits[0].argmax(axis=-1).tolist()
+    s_log, c_log = sess.run(None, {"char_ids": np.asarray([ids], dtype=np.int64), "phon_cats": np.asarray([cats], dtype=np.int64)})
+    return _softmax(s_log[0]), c_log[0].argmax(axis=-1).tolist()
 
-  sep_out = [0] * total
+  sep_probs = np.zeros((total, 5), dtype=np.float32)
   clause_out = [0] * total
   step = _MAX_WINDOW - _OVERLAP
   for start in range(0, total, step):
     end = min(total, start + _MAX_WINDOW)
-    inp_ids = np.asarray([ids[start:end]], dtype=np.int64)
-    inp_cats = np.asarray([cats[start:end]], dtype=np.int64)
-    s_log, c_log = sess.run(None, {"char_ids": inp_ids, "phon_cats": inp_cats})
-    s_pred = s_log[0].argmax(axis=-1).tolist()
-    c_pred = c_log[0].argmax(axis=-1).tolist()
-    write_from = 0 if start == 0 else (_OVERLAP // 2)
-    for k in range(write_from, end - start):
-      sep_out[start + k] = s_pred[k]
-      clause_out[start + k] = c_pred[k]
+    s_log, c_log = sess.run(
+      None,
+      {
+        "char_ids": np.asarray([ids[start:end]], dtype=np.int64),
+        "phon_cats": np.asarray([cats[start:end]], dtype=np.int64),
+      },
+    )
+    sp = _softmax(s_log[0])
+    cp = c_log[0].argmax(axis=-1).tolist()
+    w_from = 0 if start == 0 else (_OVERLAP // 2)
+    sep_probs[start + w_from:end] = sp[w_from:end - start]
+    for k in range(w_from, end - start):
+      clause_out[start + k] = cp[k]
     if end == total:
       break
-  return sep_out, clause_out
+  return sep_probs, clause_out
+
+
+def predict_slp1_tags(slp_str: str, model_dir: str | None = None) -> tuple[list[int], list[int]]:
+  sp, cp = predict_slp1_probs(slp_str, model_dir=model_dir)
+  return (sp.argmax(axis=-1).tolist() if len(sp) else []), cp
 
 
 def neural_hyphene(
@@ -104,11 +115,12 @@ def neural_hyphene(
   clause_newlines: bool = False,
   model_dir: str | None = None,
 ) -> str:
-  """Hyphenate Sanskrit / mixed Markdown text using the distilled local ONNX SLP1 model."""
+  """Hyphenate Sanskrit / mixed Markdown text using the distilled local ONNX SLP1 model
+  combined with fast ``BytesTrie`` lexicon & sandhi refinement."""
   if not text:
     return text
   return apply_slp1_predictions_to_text(
     text,
-    lambda s: predict_slp1_tags(s, model_dir=model_dir),
+    lambda s: predict_slp1_probs(s, model_dir=model_dir),
     clause_newlines=clause_newlines,
   )

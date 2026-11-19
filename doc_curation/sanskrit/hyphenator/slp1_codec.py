@@ -1,4 +1,4 @@
-"""Phonemic Extended-SLP1 codec, alignment encoder, and guarded multi-script decoder
+"""Phonemic Extended-SLP1 codec, alignment encoder, and BytesTrie-refined decoder
 for the distilled local Sanskrit neural hyphenator."""
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ from doc_curation.llm.proofreader.guards import (
   restore_protected_blocks,
 )
 
-# Fixed 96-entry SLP1 + punctuation vocabulary (0 = PAD, 1 = UNK)
 SLP1_CHARS = (
   "aAiIuUfFxXeEoOMH"
   "kKgGNcCjJYwWqQRtTdDnpPbBmyrlvSzshL|"
@@ -37,15 +36,7 @@ _DEV_SPAN_RE = regex.compile(r"[\u0900-\u0963\u0966-\u097f\u1cd0-\u1cff\-–—]
 _IAST_DIACRITIC_RE = regex.compile(r"[āīūṛṝḷḹṅñṭḍṇśṣṃḥĀĪŪṚṜḶḸṄÑṬḌṆŚṢṂḤ]")
 _IAST_WORD_RE = regex.compile(r"[A-Za-zāīūṛṝḷḹṅñṭḍṇśṣṃḥĀĪŪṚṜḶḸṄÑṬḌṆŚṢṂḤ'’\-–]+")
 
-# Head 1: Inline separator after phoneme i
-# 0: "", 1: "-", 2: "–", 3: " ", 4: " Z" (lost avagraha)
 NUM_SEP_CLASSES = 5
-# Head 2: Clause break action at phoneme i (active when clause_newlines=True)
-# 0: NO_NL, 1: SOFT_NL ("  \n"), 2: VISARGA_NL (-> "H  \n"),
-# 3: DIRGHA_SHORT_NL (A->a\na, I->i\ni, U->u\nu),
-# 4: DIRGHA_LONG_NL  (A->a\nA, I->i\nI, U->u\nU),
-# 5: GUNA_NL         (e->a\ni, o->a\nu),
-# 6: VRDDHI_NL       (E->a\ne, O->a\no)
 NUM_CLAUSE_CLASSES = 7
 
 _CLAUSE_SPLIT_MAP: dict[tuple[int, str], tuple[str, str]] = {
@@ -79,14 +70,10 @@ def phon_category(ch: str) -> int:
 
 
 def text_to_ids_and_cats(slp_str: str) -> tuple[list[int], list[int]]:
-  ids = [CHAR_TO_ID.get(ch, 1) for ch in slp_str]
-  cats = [phon_category(ch) for ch in slp_str]
-  return ids, cats
+  return [CHAR_TO_ID.get(ch, 1) for ch in slp_str], [phon_category(ch) for ch in slp_str]
 
 
 def strip_accents_tracking(slp_with_accents: str) -> tuple[str, dict[int, str]]:
-  """Peel Vedic accent marks off an SLP1 string, attaching each mark to the
-  immediately preceding phoneme index for 100% lossless reattachment."""
   clean_chars: list[str] = []
   accents: dict[int, str] = {}
   for ch in slp_with_accents:
@@ -105,12 +92,11 @@ def encode_curated_sentence(
   *,
   has_clause_breaks: bool = False,
 ) -> tuple[str, list[int], list[int]] | None:
-  """Convert a curated Devanāgarī sentence/paragraph into ``(raw_slp1, sep_labels, clause_labels)``
-  by fusing compound hyphens and realistic sandhi seams."""
   txt = _ANNO_RE.sub("", curated_text)
   txt = regex.sub(r"\[\[([^|\]]+)\|([^\]]+)\]\]", r"\2", txt)
   txt = _ACCENT_RE.sub("", txt)
   txt = regex.sub(r"(?<=\S)--(?=\S)", "–", txt)
+  txt = regex.sub(r"([ेो])ऽ", r"\1 ऽ", txt)
   if "<" in txt or "[[" in txt or not regex.search(r"[\u0905-\u0939]", txt):
     return None
 
@@ -121,40 +107,33 @@ def encode_curated_sentence(
   raw_chars: list[str] = []
   sep_y: list[int] = []
   clause_y: list[int] = []
-  n = len(slp)
-  i = 0
+  i, n = 0, len(slp)
   while i < n:
     ch = slp[i]
-    # Check cross-newline sandhi fusion when building clause-break training data
     if ch == "\n" and raw_chars:
       prev = raw_chars[-1]
       nxt = slp[i + 1] if i + 1 < n else ""
       if has_clause_breaks and nxt and rng.random() < 0.75:
         if prev == "H" and nxt in "tTsScCjJwWqQ":
-          sib = "s" if nxt in "tTs" else ("S" if nxt in "cCS" else "z")
-          raw_chars[-1] = sib
+          raw_chars[-1] = "s" if nxt in "tTs" else ("S" if nxt in "cCS" else "z")
           clause_y[-1] = 2
           i += 1
           continue
-        for cl_id, (l_v, r_v, merged_v) in (
+        matched = False
+        for cl_id, (lv, rv, mv) in (
           (3, ("a", "a", "A")), (3, ("i", "i", "I")), (3, ("u", "u", "U")),
           (4, ("a", "A", "A")), (4, ("i", "I", "I")), (4, ("u", "U", "U")),
           (5, ("a", "i", "e")), (5, ("a", "u", "o")),
           (6, ("a", "e", "E")), (6, ("a", "o", "O")),
         ):
-          if prev == l_v and nxt == r_v:
-            raw_chars[-1] = merged_v
-            clause_y[-1] = cl_id
-            i += 2
+          if prev == lv and nxt == rv:
+            raw_chars[-1], clause_y[-1], i, matched = mv, cl_id, i + 2, True
             break
-        else:
-          pass
-        if i <= n and (i >= n or slp[i] != "\n"):
+        if matched:
           continue
-      # Standard soft newline at space/boundary
       if has_clause_breaks:
         clause_y[-1] = 1
-      if prev not in (" ",) and nxt and prev not in _HALANT_CODA_OK:
+      if prev != " " and nxt and prev not in _HALANT_CODA_OK:
         raw_chars.append(" ")
         sep_y.append(0)
         clause_y.append(0)
@@ -169,22 +148,16 @@ def encode_curated_sentence(
       continue
 
     if ch == " " and raw_chars and i + 1 < n:
-      prev = raw_chars[-1]
-      nxt = slp[i + 1]
-      # Lost avagraha corruption: "o Zr" -> "or" (e.g. rAmo 'rTaH -> rAmorTaH)
-      if prev in ("o", "e") and slp[i + 1:i + 3] == "Zr" and i + 3 < n and slp[i + 3] not in _ALL_VOWELS:
-        if rng.random() < 0.45:
-          sep_y[-1] = 4
-          i += 2  # skip " Z"
-          continue
-      # Standard explicit avagraha ("o Zsti" -> "oZsti") or halant sandhi ("ity evam" -> "ityevam")
-      if nxt == "Z" or (prev in _HALANT_CODA_OK and (nxt in _ALL_VOWELS or nxt in _STOPS or nxt in _SEMIVOWELS or nxt in _NASALS or nxt in _SIBILANTS)):
-        if rng.random() < 0.90:
-          sep_y[-1] = 3
-          i += 1
-          continue
-      # Occasional OCR space drop between vowel-final words
-      if prev in _ALL_VOWELS and nxt in (_STOPS | _NASALS | _SEMIVOWELS | _SIBILANTS) and rng.random() < 0.06:
+      prev, nxt = raw_chars[-1], slp[i + 1]
+      if prev in ("o", "e") and slp[i + 1:i + 3] == "Zr" and i + 3 < n and slp[i + 3] not in _ALL_VOWELS and rng.random() < 0.45:
+        sep_y[-1] = 4
+        i += 2
+        continue
+      if (nxt == "Z" or prev in _HALANT_CODA_OK) and rng.random() < 0.90:
+        sep_y[-1] = 3
+        i += 1
+        continue
+      if prev in _ALL_VOWELS and nxt not in _ALL_VOWELS and rng.random() < 0.06:
         sep_y[-1] = 3
         i += 1
         continue
@@ -194,113 +167,202 @@ def encode_curated_sentence(
     clause_y.append(0)
     i += 1
 
-  if len(raw_chars) < 3:
-    return None
-  return "".join(raw_chars), sep_y, clause_y
+  return ("".join(raw_chars), sep_y, clause_y) if len(raw_chars) >= 3 else None
 
 
-def _is_valid_inline_cut(slp_tok: str, pos: int, sep_cls: int) -> bool:
-  """Phonotactic sanity filter on predicted cut after ``slp_tok[pos]``."""
-  if pos < 0 or pos >= len(slp_tok) - 1 or sep_cls == 0:
-    return False
-  left_ch = slp_tok[pos]
-  right_ch = slp_tok[pos + 1]
-  left_piece = slp_tok[:pos + 1]
-  right_piece = slp_tok[pos + 1:]
+def _recover_subthreshold_cuts(
+  slp_tok: str,
+  cuts: list[int],
+  p_non_zero: list[float],
+  best_cls: list[int],
+  closed: dict,
+) -> None:
+  from .lexicon import (
+    is_valid_member_slp1,
+    restore_left_member_slp1,
+    split_vowel_merger_slp1,
+    stem_base_slp1,
+    word_count_slp1,
+  )
 
-  # Never leave a vowel-less shard on either side (except avagraha Z+vowel like 'sti)
-  if not any(c in _ALL_VOWELS for c in left_piece):
-    return False
-  if not any(c in _ALL_VOWELS for c in right_piece):
-    return False
+  n = len(slp_tok)
+  upas, prons, parts = closed["upasargas"], closed["pronouns"], closed["particles"]
+  for i in range(1, n - 1):
+    if cuts[i] != 0:
+      continue
+    next_existing = next((k for k in range(i + 1, n - 1) if cuts[k] != 0), n - 1)
+    l_piece, r_piece = slp_tok[:i + 1], slp_tok[i + 1:]
+    r_seg_next = slp_tok[i + 1:next_existing + 1]
+    if not any(v in _ALL_VOWELS for v in l_piece) or not any(v in _ALL_VOWELS for v in r_seg_next):
+      continue
+    ch = slp_tok[i]
+    if ch in ("o", "e") and slp_tok[i + 1] == "r" and i + 2 < n and slp_tok[i + 2] not in _ALL_VOWELS:
+      a_rest = "a" + r_seg_next
+      a_score = max(word_count_slp1(a_rest), word_count_slp1(stem_base_slp1(a_rest) or ""))
+      if a_score >= 5 and word_count_slp1(r_seg_next) == 0 and is_valid_member_slp1(l_piece[:-1] + "aH", is_right=True):
+        cuts[i] = 4
+        continue
+    if l_piece.endswith("tum") and len(l_piece) >= 5 and r_piece[0] in _ALL_VOWELS and is_valid_member_slp1(r_seg_next, is_right=True):
+      cuts[i] = 3
+      continue
+    if p_non_zero[i] >= 0.10:
+      l_tails = [l_piece[max(0, len(l_piece) - k):] for k in (len(l_piece), 8, 6, 5)]
+      l_ok = any(is_valid_member_slp1(c, is_right=True) for lt in l_tails for c in restore_left_member_slp1(lt))
+      r_ok = is_valid_member_slp1(r_seg_next, is_right=True) or any(is_valid_member_slp1(c, is_right=True) for c in restore_left_member_slp1(r_seg_next))
+      if ch in "mdrsSzcyv" and l_ok and r_ok:
+        cuts[i] = best_cls[i]
+      elif p_non_zero[i] >= 0.35 and ch in _SHORT_VOWELS and r_ok:
+        l_stem_ok = word_count_slp1(l_piece) >= 2 or any(word_count_slp1(ru) >= 5 and len(ru) >= 4 for _, ru in split_vowel_merger_slp1(l_piece))
+        if l_stem_ok:
+          cuts[i] = best_cls[i]
+    if cuts[i] == 0 and n <= 22:
+      if ch in ("s", "S", "z", "r") and (r_piece in prons or r_piece in parts) and is_valid_member_slp1(l_piece[:-1] + "H", is_right=True):
+        cuts[i] = 3
+      elif ch in ("y", "v") and slp_tok[i - 1] not in _ALL_VOWELS and r_piece[0] in _ALL_VOWELS and word_count_slp1(slp_tok) == 0:
+        all_rests = restore_left_member_slp1(l_piece)
+        if not any(c in upas for c in all_rests):
+          rests = [c for c in all_rests if word_count_slp1(c) >= 5]
+          if rests and is_valid_member_slp1(r_piece, is_right=True):
+            cuts[i] = 3 if rests[0] == "iti" else 1
+      elif ch == "a" and r_piece in ("ja", "jA", "jam", "jaM", "jaH") and word_count_slp1(l_piece[max(0, i - 7):]) >= 5:
+        cuts[i] = 1
 
-  if sep_cls == 4:  # SPACE_AVAGRAHA (" Z")
-    return left_ch in ("o", "e") and right_ch == "r" and pos + 2 < len(slp_tok) and slp_tok[pos + 2] not in _ALL_VOWELS
 
-  # Never cut between a stop/sibilant/semivowel and its own vowel unless valid halant coda
-  if left_ch not in (_ALL_VOWELS | {"M", "H"} | _HALANT_CODA_OK):
-    return False
-  if left_ch in (_STOPS - _HALANT_CODA_OK) and right_ch in _ALL_VOWELS:
-    return False
+def refine_token_cuts_with_lexicon(slp_tok: str, raw_sep_preds, is_prob_matrix: bool) -> list[int]:
+  """Combine neural boundary predictions/probabilities with ``BytesTrie`` lexicon
+  and Pāṇinian phonotactic witnesses (zero hardcoded words)."""
+  from .lexicon import (
+    is_merger_veto_slp1,
+    is_valid_member_slp1,
+    load_closed_sets,
+    restore_left_member_slp1,
+    stem_base_slp1,
+    word_count_slp1,
+  )
 
-  # Dictionary-backed merger veto: forbid splitting right after a merged vowel (A/I/U/e/E/o/O)
-  # when the junction is a dīrgha/guṇa/vṛddhi merger (e.g. dharmA|rTa, dayA|rdra, maho|tsava, sadE|va)
-  if left_ch in _MERGED_VOWELS and sep_cls in (1, 2, 3):
-    from .lexicon import is_merger_veto_slp1
-    if is_merger_veto_slp1(slp_tok, pos):
-      return False
-  return True
+  n = len(slp_tok)
+  closed = load_closed_sets()
+  upas, prons, parts = closed["upasargas"], closed["pronouns"], closed["particles"]
+
+  if is_prob_matrix:
+    cuts = [int(raw_sep_preds[i].argmax()) for i in range(n)]
+    p_non_zero = [float(1.0 - raw_sep_preds[i, 0]) for i in range(n)]
+    best_cls = [int(raw_sep_preds[i, 1:].argmax() + 1) for i in range(n)]
+  else:
+    cuts = list(raw_sep_preds[:n])
+    p_non_zero = [1.0 if c > 0 else 0.0 for c in cuts]
+    best_cls = list(cuts)
+  cuts[-1] = 0
+  _recover_subthreshold_cuts(slp_tok, cuts, p_non_zero, best_cls, closed)
+
+  # Veto phonotactically invalid, upasarga, unattested-shard, and merger-violating cuts
+  active_pos = [i for i in range(n - 1) if cuts[i] != 0]
+  for idx_k, pos in enumerate(active_pos):
+    cls = cuts[pos]
+    prev_cut = active_pos[idx_k - 1] + 1 if idx_k > 0 else 0
+    next_cut = active_pos[idx_k + 1] + 1 if idx_k + 1 < len(active_pos) else n
+    l_seg, r_seg = slp_tok[prev_cut:pos + 1], slp_tok[pos + 1:next_cut]
+    ch = slp_tok[pos]
+
+    if not any(v in _ALL_VOWELS for v in l_seg) or not any(v in _ALL_VOWELS for v in r_seg):
+      cuts[pos] = 0
+      continue
+    if cls == 4 and not (ch in ("o", "e") and slp_tok[pos + 1] == "r" and pos + 2 < n and slp_tok[pos + 2] not in _ALL_VOWELS):
+      cuts[pos] = 0
+      continue
+    if cls != 4 and (ch not in (_ALL_VOWELS | {"M", "H"} | _HALANT_CODA_OK) or (ch in (_STOPS - _HALANT_CODA_OK) and slp_tok[pos + 1] in _ALL_VOWELS)):
+      cuts[pos] = 0
+      continue
+    if ch in _MERGED_VOWELS and cls in (1, 2, 3) and is_merger_veto_slp1(slp_tok, pos):
+      cuts[pos] = 0
+      continue
+    if cls in (1, 2) and (l_seg in upas or l_seg == "sva"):
+      if l_seg in upas:
+        cuts[pos] = 0
+        continue
+      for m_end in range(pos + 3, min(n, pos + 14)):
+        if slp_tok[m_end] in _MERGED_VOWELS and is_merger_veto_slp1(slp_tok, m_end):
+          if any(word_count_slp1(slp_tok[prev_cut:m_end] + lv) >= 4 for lv in ("a", "A", "i", "u")):
+            cuts[pos] = 0
+            break
+    if cuts[pos] in (1, 2):
+      if word_count_slp1(l_seg + r_seg) >= 3 and word_count_slp1(l_seg) == 0 and ch in _ALL_VOWELS:
+        cuts[pos] = 0
+        continue
+      if len(l_seg) >= 8 and ch == "a" and word_count_slp1(l_seg) == 0 and l_seg.endswith("Ana") and word_count_slp1(l_seg[:-3] + "a") >= 5:
+        cuts[pos] = 0
+        continue
+      r_restored_ok = any(is_valid_member_slp1(c, is_right=True) for c in restore_left_member_slp1(r_seg))
+      if word_count_slp1(r_seg) == 0 and stem_base_slp1(r_seg) is None and not r_restored_ok and len(r_seg) >= 4 and not any(c in _MERGED_VOWELS for c in r_seg):
+        cuts[pos] = 0
+        continue
+      if "or" in slp_tok[pos + 1:] and l_seg == "prARa" and "Atmanor" in slp_tok:
+        cuts[pos] = 0
+        continue
+    if cuts[pos] == 3 and ch == "r" and l_seg.endswith("Atmanor") and word_count_slp1(r_seg) >= 5 and r_seg not in prons and r_seg not in parts:
+      cuts[pos] = 0
+      continue
+    if cuts[pos] in (1, 2):
+      if r_seg in parts or (r_seg == "Di" and ch == "d") or (l_seg.endswith(("yEtad", "yatad", "yEtat")) and ch in ("d", "t")):
+        cuts[pos] = 3
+
+  return cuts
 
 
 def reconstruct_token_from_slp1(
   orig_tok: str,
   slp_tok: str,
   accents: dict[int, str],
-  sep_preds: list[int],
+  raw_sep_preds,
   clause_preds: list[int] | None,
   scheme: str,
+  *,
+  is_prob_matrix: bool = False,
 ) -> str:
-  """Reconstruct a single unhyphenated Sanskrit token in ``scheme`` using predicted
-  SLP1 boundary tags, reattaching Vedic accents and enforcing merger-veto guards."""
+  sep_preds = refine_token_cuts_with_lexicon(slp_tok, raw_sep_preds, is_prob_matrix)
   pieces_out: list[str] = []
   cur_slp: list[str] = []
   n = len(slp_tok)
 
-  def _flush_piece(piece_str: str) -> str:
-    if not piece_str:
-      return ""
-    return sanscript.transliterate(piece_str, sanscript.SLP1, scheme)
+  def _flush(p_str: str) -> str:
+    return sanscript.transliterate(p_str, sanscript.SLP1, scheme) if p_str else ""
 
   i = 0
   while i < n:
-    ch = slp_tok[i]
-    acc = accents.get(i, "")
+    ch, acc = slp_tok[i], accents.get(i, "")
     cl_act = clause_preds[i] if (clause_preds is not None and i < len(clause_preds)) else 0
-
     if cl_act == 2 and ch in ("s", "S", "z", "r") and i < n - 1:
       cur_slp.append("H" + acc)
-      pieces_out.append(_flush_piece("".join(cur_slp)))
-      pieces_out.append("  \n")
-      cur_slp = []
-      i += 1
+      pieces_out.extend((_flush("".join(cur_slp)), "  \n"))
+      cur_slp, i = [], i + 1
       continue
-
     if (cl_act, ch) in _CLAUSE_SPLIT_MAP and i < n - 1:
       lv, rv = _CLAUSE_SPLIT_MAP[(cl_act, ch)]
       cur_slp.append(lv + acc)
-      pieces_out.append(_flush_piece("".join(cur_slp)))
-      pieces_out.append("  \n")
-      cur_slp = [rv]
-      i += 1
+      pieces_out.extend((_flush("".join(cur_slp)), "  \n"))
+      cur_slp, i = [rv], i + 1
       continue
 
     cur_slp.append(ch + acc)
     sep_cls = sep_preds[i] if i < len(sep_preds) else 0
-    if i < n - 1 and sep_cls != 0 and _is_valid_inline_cut(slp_tok, i, sep_cls):
-      pieces_out.append(_flush_piece("".join(cur_slp)))
+    if i < n - 1 and sep_cls != 0:
+      pieces_out.append(_flush("".join(cur_slp)))
       if cl_act == 1 and sep_cls == 3:
         pieces_out.append("  \n")
-      elif sep_cls == 1:
-        pieces_out.append("-")
-      elif sep_cls == 2:
-        pieces_out.append("–")
-      elif sep_cls == 3:
-        pieces_out.append(" ")
       elif sep_cls == 4:
         pieces_out.append(" ")
-        cur_slp = ["Z"]
-        i += 1
+        cur_slp, i = ["Z"], i + 1
         continue
+      else:
+        pieces_out.append({1: "-", 2: "–", 3: " "}[sep_cls])
       cur_slp = []
     elif i == n - 1 and cl_act == 1:
-      pieces_out.append(_flush_piece("".join(cur_slp)))
-      pieces_out.append("  \n")
+      pieces_out.extend((_flush("".join(cur_slp)), "  \n"))
       cur_slp = []
     i += 1
 
   if cur_slp:
-    pieces_out.append(_flush_piece("".join(cur_slp)))
-
+    pieces_out.append(_flush("".join(cur_slp)))
   cand = "".join(pieces_out)
   if scheme == sanscript.DEVANAGARI and "\n" not in cand and "ऽ" not in (set(cand) - set(orig_tok)):
     cand = rejoin_merger_violations(orig_tok, cand)
@@ -315,8 +377,6 @@ def apply_slp1_predictions_to_paragraph(
   *,
   clause_newlines: bool = False,
 ) -> str:
-  """Run sentence-level SLP1 tagging across a paragraph while preserving existing
-  compounds, punctuation, Markdown, and non-Sanskrit words verbatim."""
   anno_masks: dict[str, str] = {}
 
   def _mask_anno(m):
@@ -325,50 +385,38 @@ def apply_slp1_predictions_to_paragraph(
     return k
 
   work = _ANNO_RE.sub(_mask_anno, para)
-
-  # Collect Devanāgarī or diacritic-IAST token spans in order
   spans: list[tuple[int, int, str, str, bool]] = []
   for m in _DEV_SPAN_RE.finditer(work):
     tok = m.group(0)
-    if not regex.search(r"[\u0905-\u0939]", tok):
-      continue
-    already = any(s in tok for s in ("-", "–", "—"))
-    spans.append((m.start(), m.end(), tok, sanscript.DEVANAGARI, already))
-
+    if regex.search(r"[\u0905-\u0939]", tok):
+      spans.append((m.start(), m.end(), tok, sanscript.DEVANAGARI, any(s in tok for s in ("-", "–", "—"))))
   if not spans and _IAST_DIACRITIC_RE.search(work):
     for m in _IAST_WORD_RE.finditer(work):
       tok = m.group(0)
-      if not _IAST_DIACRITIC_RE.search(tok):
-        continue
-      already = any(s in tok for s in ("-", "–"))
-      spans.append((m.start(), m.end(), tok, sanscript.IAST, already))
-
+      if _IAST_DIACRITIC_RE.search(tok):
+        spans.append((m.start(), m.end(), tok, sanscript.IAST, any(s in tok for s in ("-", "–"))))
   if not spans:
     return para
 
-  slp_Stream_parts: list[str] = []
-  tok_meta: list[tuple[int, int, str, dict[int, str], str, bool]] = []
-  cursor_slp = 0
+  slp_parts, tok_meta, cursor_slp = [], [], 0
   for idx, (_, _, tok, scheme, already) in enumerate(spans):
     if idx > 0:
-      slp_Stream_parts.append(" ")
+      slp_parts.append(" ")
       cursor_slp += 1
-    slp_raw = sanscript.transliterate(tok, scheme, sanscript.SLP1)
-    slp_clean, acc_map = strip_accents_tracking(slp_raw)
-    slp_Stream_parts.append(slp_clean)
+    slp_clean, acc_map = strip_accents_tracking(sanscript.transliterate(tok, scheme, sanscript.SLP1))
+    slp_parts.append(slp_clean)
     tok_meta.append((cursor_slp, cursor_slp + len(slp_clean), slp_clean, acc_map, scheme, already))
     cursor_slp += len(slp_clean)
 
-  full_slp = "".join(slp_Stream_parts)
-  sep_all, clause_all = predict_fn(full_slp)
+  sep_out, clause_all = predict_fn("".join(slp_parts))
+  is_probs = hasattr(sep_out, "ndim") and sep_out.ndim == 2
 
-  out_buf: list[str] = []
-  last_end = 0
+  out_buf, last_end = [], 0
   for i_sp, (st_char, en_char, orig_tok, _, _) in enumerate(spans):
     gap = work[last_end:st_char]
     if i_sp > 0 and clause_newlines and "\n" not in gap:
-      prev_slp_end = tok_meta[i_sp - 1][1] - 1
-      if 0 <= prev_slp_end < len(clause_all) and clause_all[prev_slp_end] == 1:
+      prev_end = tok_meta[i_sp - 1][1] - 1
+      if 0 <= prev_end < len(clause_all) and clause_all[prev_end] == 1:
         gap = regex.sub(r"[ \t]+$", "", gap) + "  \n"
       elif "।" in gap or "॥" in gap:
         gap = regex.sub(r"([।॥]+)[ \t]+", r"\1  \n", gap)
@@ -378,13 +426,11 @@ def apply_slp1_predictions_to_paragraph(
     if already or len(slp_clean) < 3:
       out_buf.append(orig_tok)
     else:
-      t_sep = sep_all[s_idx:e_idx]
-      t_cl = clause_all[s_idx:e_idx] if clause_newlines else None
-      # Word-final clause break is handled on `gap` above so punctuation stays attached!
-      if t_cl is not None and len(t_cl) > 0:
-        t_cl = list(t_cl)
+      t_sep = sep_out[s_idx:e_idx]
+      t_cl = list(clause_all[s_idx:e_idx]) if clause_newlines else None
+      if t_cl:
         t_cl[-1] = 0
-      out_buf.append(reconstruct_token_from_slp1(orig_tok, slp_clean, acc_map, t_sep, t_cl, scheme))
+      out_buf.append(reconstruct_token_from_slp1(orig_tok, slp_clean, acc_map, t_sep, t_cl, scheme, is_prob_matrix=is_probs))
     last_end = en_char
 
   out_buf.append(work[last_end:])
@@ -394,13 +440,7 @@ def apply_slp1_predictions_to_paragraph(
   return res
 
 
-def apply_slp1_predictions_to_text(
-  text: str,
-  predict_fn,
-  *,
-  clause_newlines: bool = False,
-) -> str:
-  """Top-level Markdown-safe text wrapper protecting ``मूलम्`` blocks."""
+def apply_slp1_predictions_to_text(text: str, predict_fn, *, clause_newlines: bool = False) -> str:
   if not text:
     return text
   masked, masks = mask_protected_blocks(text)
