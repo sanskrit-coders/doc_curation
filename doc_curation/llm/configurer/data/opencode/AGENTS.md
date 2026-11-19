@@ -17,6 +17,19 @@
 
 - Do NOT run CPU-heavy tasks on the local machine; offload them to Kaggle or Google Colab instead. Avoid grinding the local CPU.
 
+## Asking the user
+
+- The chat client may not be able to render interactive prompts: the `question` tool can fail with "The question couldn't be shown to the user in this client" (seen with OpenCode over ACP inside IntelliJ Air). Do not treat that as a hard stop — fall back in this order:
+  1. `~/.local/bin/ask-gui "Question?"` — free-text answer on stdout.
+  2. `~/.local/bin/ask-gui -c "Pick one" "A" "B" ...` (or `-m` for multi-select) — chosen option(s) on stdout.
+  3. Ask in the reply text and end the turn.
+  The scripts pop a zenity (falling back to kdialog/yad) dialog on `DISPLAY` (default `:1`), time out after 300 s (`ASK_GUI_TIMEOUT`), and exit 1 if the user cancels. Only use them for genuine blocking decisions; otherwise make a stated assumption and continue.
+
+## Privileged commands (sudo)
+
+- `sudo` requires a password on this machine. Prompt for it in a GUI dialog rather than failing or asking for the password in chat: `SUDO_ASKPASS=~/.local/bin/sudo-askpass sudo -A <command>`. `sudo -A -v` primes the sudo timestamp, after which plain `sudo` keeps working for `timestamp_timeout`. `pkexec <command>` also works (the polkit-gnome agent is running).
+- Never request, echo, or store the password in plain text or in files. Prefer doing the unprivileged part (download, extract, verify) first and then running a single, clearly-explained privileged command.
+
 ## Existing code
 
 Use and maintain existing code where possible — it is installed in the venv at `~/gitland/python_venv`, so invoke `~/gitland/python_venv/bin/python` (**not** the default `python3`).
