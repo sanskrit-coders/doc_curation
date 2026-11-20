@@ -1,9 +1,9 @@
 """Vedic corpus occurrence counting and ``पद-पाठः (यान्त्रिकः)`` provenance formatting.
 
 Computes exact per-corpus occurrence counts (e.g. ``सर्व᳓तः (*TS*-12, *RV*-2, *TB*-3)``)
-across all ten accented Vedic corpora hosted locally (`TS`, `RV`, `TB`, `TK`, `AV`,
-`ŚB`, `VS`, `TA`, `KS`, `MS`), and normalizes Pāṇinian abbreviation signs to canonical
-``पा॰`` (``U+0970``, ``DEVANAGARI ABBREVIATION SIGN``).
+across all accented Vedic corpora hosted locally (`TS`, `RV`, `TB`, `TK`, `AV`,
+`ŚB` / `SB-M`, `SB-K`, `VS`, `TA`, `KS`, `MS`), and normalizes Pāṇinian abbreviation signs
+to canonical ``पा॰`` (``U+0970``, ``DEVANAGARI ABBREVIATION SIGN``).
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   us_padasvara_to_entry,
 )
 
-PROVENANCE_CACHE_VERSION = 7
+PROVENANCE_CACHE_VERSION = 8
 DEFAULT_PROVENANCE_CACHE_PATH = os.path.expanduser(
   "~/.cache/doc_curation/vedic_corpus_counts_v1.pkl"
 )
@@ -51,6 +51,8 @@ CORPUS_TAGS: tuple[str, ...] = (
   "TK",
   "AV",
   "ŚB",
+  "SB-M",
+  "SB-K",
   "VS",
   "KS",
   "MS",
@@ -65,6 +67,8 @@ DEFAULT_CORPUS_DIRS: dict[str, str] = {
   "TB": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH",
   "TK": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/kAThakam/sarva-prastutiH",
   "ŚB": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH",
+  "SB-M": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH",
+  "SB-K": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/shatapatha-brAhmaNam/sarva-prastutiH",
   "VS": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH",
   "AV": "/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH",
   "KS": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/kaTha-kapiShTalAH/saMhitA/mUlam/schroeder",
@@ -199,7 +203,7 @@ def word_to_key_and_marks(word: str) -> tuple[str, tuple[str, ...]] | None:
   # Remove pluta numeral 3 (`हा३᳓` -> `हा᳓`) and normalize Taittirīya `[वयलर]्ँ` -> `ं` BEFORE syllable scanning
   # so a trailing US accent mark (`मेधाव्ँ᳓`) stays attached to the preceding vowel instead of being skipped!
   s_clean = re.sub(r"[३3]", "", s)
-  s_clean = re.sub(r"[वयलर]्ँ", "ं", s_clean)
+  s_clean = re.sub(r"[वयलर]्ँ", "ं", s_clean).replace("\ua8f3", "ं")
   # Apply internal compound sandhi across `-` (`उत्-धृतः` -> `उद्धृतः`, `उत्-मुच्य` -> `उन्मुच्य`)
   if "-" in s_clean:
     bare_parts = [re.sub(r"[\u0951-\u0957\u1cd0-\u1cff]", "", p) for p in s_clean.split("-") if p]
@@ -416,8 +420,11 @@ class VedicCorpusCounter:
     if vs_dir and os.path.isdir(vs_dir):
       counter._ingest_vs_dir(vs_dir)
 
-    # 4. TB, TK, ŚB: deduplicated per section (`पद-पाठः` > `पद-पाठः (यान्त्रिकः...)` > `विश्वास-प्रस्तुतिः`)
-    for tag in ("TB", "TK", "ŚB"):
+    # 4. TB, TK, ŚB / SB-M, SB-K: deduplicated per section (`पद-पाठः` > `पद-पाठः (यान्त्रिकः...)` > `विश्वास-प्रस्तुतिः`)
+    for tag in ("TB", "TK", "ŚB", "SB-M", "SB-K"):
+      if tag == "SB-M" and dirs.get("SB-M") and dirs.get("SB-M") == dirs.get("ŚB"):
+        counter.exact_counts["SB-M"] = dict(counter.exact_counts.get("ŚB", {}))
+        continue
       cdir = dirs.get(tag, "")
       if cdir and os.path.isdir(cdir):
         counter._ingest_us_markdown_corpus(cdir, tag)
@@ -478,7 +485,7 @@ class VedicCorpusCounter:
     """Supplement ``corpus`` with US-accented ``विश्वास-प्रस्तुतिः`` tokens only where ``exact_counts`` is 0."""
     local: dict[tuple[str, tuple[str, ...]], int] = defaultdict(int)
     for fp in sorted(glob.glob(os.path.join(root_dir, "**", "*.md"), recursive=True)):
-      if fp.endswith("_index.md"):
+      if os.path.basename(fp) in ("_index.md", "file_list.md"):
         continue
       txt = open(fp, encoding="utf-8", errors="ignore").read()
       if US_UDATTA not in txt and US_SVARITA not in txt:
@@ -499,7 +506,7 @@ class VedicCorpusCounter:
   def _ingest_classical_padapatha_dir(self, root_dir: str, corpus: str, *, mode: str = "max") -> None:
     local: dict[tuple[str, tuple[str, ...]], int] = defaultdict(int)
     for fp in sorted(glob.glob(os.path.join(root_dir, "**", "*.md"), recursive=True)):
-      if fp.endswith("_index.md"):
+      if os.path.basename(fp) in ("_index.md", "file_list.md"):
         continue
       txt = open(fp, encoding="utf-8", errors="ignore").read()
       if "पद-पाठः</summary>" not in txt:
@@ -522,7 +529,7 @@ class VedicCorpusCounter:
 
   def _ingest_vs_dir(self, vs_dir: str) -> None:
     for fp in sorted(glob.glob(os.path.join(vs_dir, "**", "*.md"), recursive=True)):
-      if fp.endswith("_index.md"):
+      if os.path.basename(fp) in ("_index.md", "file_list.md"):
         continue
       txt = open(fp, encoding="utf-8", errors="ignore").read()
       sections = re.split(r"(?=\n##[ \t]+)", txt)
@@ -568,7 +575,7 @@ class VedicCorpusCounter:
   def _ingest_us_markdown_corpus(self, root_dir: str, corpus: str) -> None:
     for fp in sorted(glob.glob(os.path.join(root_dir, "**", "*.md"), recursive=True)):
       base = os.path.basename(fp)
-      if base == "_index.md":
+      if base in ("_index.md", "file_list.md"):
         continue
       txt = open(fp, encoding="utf-8", errors="ignore").read()
       inc = find_js_include_spans(txt)
@@ -603,19 +610,19 @@ class VedicCorpusCounter:
             if accent.detect_fake_US_accents(clean):
               continue
             self._ingest_us_samhita_tokens(clean, corpus)
-        elif corpus == "ŚB":
+        elif corpus in ("ŚB", "SB-M"):
           weber_blocks = [b for h, b in blocks if h == "मूलम् - Weber"]
           for body in weber_blocks:
             w_clean = re.sub(r"\[\^?[^\]]*\]|\([^)]*\)", " ", body)
             # Restore Weber prevocalic visarga-lopa before avagraha (`शारीर᳘ ऽआत्मा᳘` -> `शारीर᳘ः आत्मा᳘`)
             w_clean = re.sub(r"([\u0905-\u0939][\u093e-\u094c]?[\u1cd8\u1cda\u0957]*)\s+(?=ऽ)", r"\1ः ", w_clean)
             w_us = w_clean.replace("\u1cd8", US_UDATTA).replace("\u1cda", US_UDATTA)
-            self._ingest_us_samhita_tokens(w_us, "ŚB")
+            self._ingest_us_samhita_tokens(w_us, corpus)
 
   def _ingest_samhita_or_pp_dir(self, root_dir: str, corpus: str, *, mode: str = "sum") -> None:
     local: dict[tuple[str, tuple[str, ...]], int] = defaultdict(int)
     for fp in sorted(glob.glob(os.path.join(root_dir, "**", "*.md"), recursive=True)):
-      if fp.endswith("_index.md"):
+      if os.path.basename(fp) in ("_index.md", "file_list.md"):
         continue
       txt = open(fp, encoding="utf-8", errors="ignore").read()
       inc = find_js_include_spans(txt)

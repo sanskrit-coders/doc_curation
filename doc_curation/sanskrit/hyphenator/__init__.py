@@ -78,6 +78,18 @@ hyphen = hyphene
 hyphenate = hyphene
 hyphenate_text = hyphene
 
+from .iast import (  # noqa: E402
+  DEFAULT_HYBRID_ENGLISH_SUFFIXES,
+  apply_iast_hyphenation_map,
+  build_validated_iast_map,
+  find_iast_merger_violations,
+  has_iast_merger_violation,
+  iast_to_devanagari,
+  is_valid_iast_hyphen_edit,
+  mask_iast_protected_spans,
+  reconcile_iast_hyphenation,
+  restore_iast_protected_spans,
+)
 from .neural_slp1 import (  # noqa: E402
   DEFAULT_LOCAL_HYPHENATOR_DIR,
   is_neural_hyphenator_available,
@@ -88,16 +100,26 @@ from .neural_slp1 import (  # noqa: E402
 
 __all__ = [
   "DATA_DIR",
+  "DEFAULT_HYBRID_ENGLISH_SUFFIXES",
   "DEFAULT_LOCAL_HYPHENATOR_DIR",
   "RA_SOURCES_TOML",
+  "apply_iast_hyphenation_map",
+  "build_validated_iast_map",
+  "find_iast_merger_violations",
+  "has_iast_merger_violation",
   "hyphen",
   "hyphenate",
   "hyphenate_text",
   "hyphenate_word",
   "hyphene",
+  "iast_to_devanagari",
   "is_neural_hyphenator_available",
+  "is_valid_iast_hyphen_edit",
   "list_ramanujIya_source_files",
+  "mask_iast_protected_spans",
   "neural_hyphene",
   "predict_slp1_tags",
+  "reconcile_iast_hyphenation",
   "resolve_onnx_model_path",
+  "restore_iast_protected_spans",
 ]

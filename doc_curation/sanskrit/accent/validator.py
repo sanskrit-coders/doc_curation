@@ -1376,12 +1376,12 @@ _ASHTADHYAYI_PADA_MAX: tuple[int, ...] = (
   74, 108, 119, 68,
 )
 _DEVA_DIGIT_TRANS = str.maketrans("०१२३४५६७८९", "0123456789")
-_BARE_CORPUS_TAG_RE = re.compile(r"\*(?:TS|RV|TB|TK|AV|ŚB|VS|KS|MS)\*(?!-\d)")
+_BARE_CORPUS_TAG_RE = re.compile(r"\*(?:TS|RV|TB|TK|AV|ŚB|SB-M|SB-K|VS|KS|MS)\*(?!-\d)")
 _SUTRA_CITE_RE = re.compile(r"पा॰\s*([०-९0-9]+)\.([०-९0-9]+)\.([०-९0-9]+)(?:[–\-]([०-९0-9]+))?")
 
 
 def find_uncounted_corpus_tags(pp_lines: Sequence[str]) -> list[str]:
-  """Return padapāṭha bullets citing ``*TS*``, ``*RV*``, ``*TB*``, ``*TK*``, ``*AV*``, ``*ŚB*``, ``*VS*``, ``*KS*``, or ``*MS*`` without a positive ``-N`` frequency count."""
+  """Return padapāṭha bullets citing ``*TS*``, ``*RV*``, ``*TB*``, ``*TK*``, ``*AV*``, ``*ŚB*``, ``*SB-M*``, ``*SB-K*``, ``*VS*``, ``*KS*``, or ``*MS*`` without a positive ``-N`` frequency count."""
   hits: list[str] = []
   for ln in pp_lines:
     it_list = parse_padapatha_items(ln)
@@ -1558,9 +1558,9 @@ def validate_padapatha_block(
       )
 
   for ln in pp_lines:
-    bad_zero = bool(re.search(r"\*[A-Za-zŚś]+\*-0(?![/0-9])", ln))
+    bad_zero = bool(re.search(r"\*[A-Za-zŚś][A-Za-z0-9Śś-]*\*-0(?![/0-9])", ln))
     if not bad_zero:
-      for m_slash in re.finditer(r"\*[A-Za-zŚś]+\*-(\d+)/(\d+)\b", ln):
+      for m_slash in re.finditer(r"\*[A-Za-zŚś][A-Za-z0-9Śś-]*\*-(\d+)/(\d+)\b", ln):
         m_cnt, n_cnt = int(m_slash.group(1)), int(m_slash.group(2))
         if n_cnt <= 0 or n_cnt <= m_cnt:
           bad_zero = True
@@ -1579,7 +1579,7 @@ def validate_padapatha_block(
       issues.append(
         AccentValidationIssue(
           "uncounted_corpus_tag",
-          "Corpus tag (*TS*, *RV*, *TB*, *TK*, *AV*, *ŚB*, *VS*, *KS*, *MS*) lacks positive -N frequency count",
+          "Corpus tag (*TS*, *RV*, *TB*, *TK*, *AV*, *ŚB*, *SB-M*, *SB-K*, *VS*, *KS*, *MS*) lacks positive -N frequency count",
           ln,
         )
       )
@@ -1716,6 +1716,10 @@ def validate_accented_markdown(
       issues.append(AccentValidationIssue("tag_unbalanced", "Mismatched <details> or <div> closing tags"))
 
   blocks = [(m.start(), m.end(), m.group(1).strip(), m.group(2)) for m in DETAILS_RE.finditer(text)]
+  has_kanva_sb_doc = (
+    "<summary>C R Swaminathan</summary>" in text
+    or any(bh == "मूलम्" and "\u1cd8" in bb for _, _, bh, bb in blocks)
+  )
   for i, (s, _, hdr, body) in enumerate(blocks):
     if not hdr.startswith("पद-पाठः (यान्त्रिकः"):
       continue
@@ -1731,7 +1735,7 @@ def validate_accented_markdown(
         break
       if s - je > 12000:
         break
-      if jh in ("मूलम् - Weber", "मूलम् - श्रीधरादि"):
+      if jh in ("मूलम् - Weber", "मूलम् - श्रीधरादि") or (jh == "मूलम्" and ("\u1cd8" in jb or has_kanva_sb_doc)):
         is_sb_cluster = True
       if jh.startswith("मूलम्"):
         # Prefer accented मूलम् (Weber > श्रीधरादि > plain मूलम्) over unaccented विस्वरम् / Makoto.

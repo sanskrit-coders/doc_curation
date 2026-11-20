@@ -139,7 +139,7 @@ def is_solid_provenance(prov: str) -> bool:
   prov_n = prov.replace("पा\u0966", "पा॰")
   if any(
     c in prov_n
-    for c in ("*TS*", "*RV*", "*TB*", "*AV*", "*VS*", "*KS*", "*MS*", "*ŚB*", "*TK*", "*Macdonell*", "*Lanman*")
+    for c in ("*TS*", "*RV*", "*TB*", "*AV*", "*VS*", "*KS*", "*MS*", "*ŚB*", "*SB-M*", "*SB-K*", "*TK*", "*Macdonell*", "*Lanman*")
   ):
     return True
   if any(
@@ -1306,13 +1306,16 @@ def reconcile_markdown_blocks(
         all_logs.append(f"PP_HDR: {pp_hdr} -> {expected_pp_hdr}")
 
     is_sb_cluster = False
+    has_kanva_sb_doc = "\u1cd8" in markdown_text or "<summary>C R Swaminathan</summary>" in markdown_text
     for j in range(i - 1, max(-1, i - 8), -1):
       ps = dmatches[j].group(1)
       if ps.startswith("पद-पाठः (यान्त्रिकः"):
         break
       if "\n##" in markdown_text[dmatches[j].end() : m.start()]:
         break
-      if ps in ("मूलम् - Weber", "मूलम् - श्रीधरादि"):
+      if ps in ("मूलम् - Weber", "मूलम् - श्रीधरादि") or (
+        ps == "मूलम्" and ("\u1cd8" in dmatches[j].group(2) or has_kanva_sb_doc)
+      ):
         is_sb_cluster = True
       if ps.startswith("विश्वास-प्रस्तुतिः"):
         allow_826 = is_sb_cluster if allow_8_2_6_ekadesha_svarita is None else allow_8_2_6_ekadesha_svarita

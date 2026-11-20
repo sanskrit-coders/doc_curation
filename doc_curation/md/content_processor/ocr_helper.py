@@ -278,3 +278,104 @@ def fix_pandoc_md(text):
   from doc_curation.md.content_processor import space_helper
   text = space_helper.fix_markup(text=text)
   return text
+
+
+def _collect_page_marker_issues(text, expected_pages=None):
+  """Check page-marker completeness, uniqueness, monotonic order, and spacing."""
+  found_ids = regex.findall(r"\[\[P([0-9]+[a-zA-Z]?)\]\]", text)
+  seen = set()
+  duplicate_pages = []
+  for pid in found_ids:
+    if pid in seen and pid not in duplicate_pages:
+      duplicate_pages.append(pid)
+    seen.add(pid)
+
+  missing_pages = []
+  if expected_pages is not None:
+    expected_strs = [str(p) for p in expected_pages]
+    missing_pages = [p for p in expected_strs if p not in seen]
+
+  numeric_pages = [int(pid) for pid in found_ids if pid.isdigit()]
+  out_of_order_pages = [
+    numeric_pages[i] for i in range(1, len(numeric_pages)) if numeric_pages[i] < numeric_pages[i - 1]
+  ]
+  unspaced_page_markers = [
+    m.group(0)
+    for m in regex.finditer(r"\S*(\[\[P[0-9]+[a-zA-Z]?\]\])\S*", text)
+    if m.group(0) != m.group(1)
+  ]
+  return {
+    "found_pages": found_ids,
+    "missing_pages": missing_pages,
+    "duplicate_pages": duplicate_pages,
+    "out_of_order_pages": out_of_order_pages,
+    "unspaced_page_markers": unspaced_page_markers,
+  }
+
+
+def _collect_footnote_issues(text):
+  """Check Markdown footnote ref/definition parity and duplicated number prefixes."""
+  refs = regex.findall(r"\[\^([^\]\n]+)\](?!:)", text)
+  defs = regex.findall(r"(?m)^\[\^([^\]\n]+)\]:", text)
+  ref_set = set(refs)
+  def_set = set(defs)
+  duplicate_fn_prefixes = regex.findall(r"(?m)^\[\^\d+_(\d+)\]:\s*\1\b\.?", text)
+  return {
+    "fn_refs": len(refs),
+    "fn_defs": len(defs),
+    "missing_defs": sorted(ref_set - def_set),
+    "orphan_defs": sorted(def_set - ref_set),
+    "duplicate_fn_prefixes": duplicate_fn_prefixes,
+  }
+
+
+def validate_proofread_markdown(
+  text: str,
+  *,
+  expected_pages=None,
+  ignore_html_tags=(),
+) -> dict:
+  """Validate multi-page scan-proofread Markdown structure and editorial markers.
+
+  Checks ``[[Pnnn]]`` page coverage, ordering, duplicates, spacing, continuity
+  artifacts (``[[CONT*]]`` / ``[[FN_CONT*]]``), ``[^id]`` footnote pairing,
+  raw HTML tags, unbalanced italic asterisks, and collects ``[[OLD|NEW]]`` /
+  ``[[??]]`` editorial flags for human review.
+  """
+  page_info = _collect_page_marker_issues(text, expected_pages=expected_pages)
+  fn_info = _collect_footnote_issues(text)
+
+  leftover_tags = regex.findall(r"\[\[(?:CONT|CONT_HYPH|FN_CONT)[^\]]*\]\]", text)
+  flags = regex.findall(r"\[\[(?!P\d+[a-zA-Z]?\]\]|(?:CONT|CONT_HYPH|FN_CONT)\b)[^\]]+\]\]", text)
+  ignored_tag_names = {t.lower() for t in ignore_html_tags}
+  html_tags = [
+    tag for tag in regex.findall(r"<[^>]+>", text)
+    if (m := regex.match(r"^</?\s*([A-Za-z0-9_-]+)", tag)) is None or m.group(1).lower() not in ignored_tag_names
+  ]
+  odd_asterisk_paragraphs = [
+    idx for idx, para in enumerate(text.split("\n\n"), 1)
+    if para.replace("\\*", "").count("*") % 2 != 0
+  ]
+
+  report = {
+    "chars": len(text),
+    **page_info,
+    **fn_info,
+    "leftover_tags": leftover_tags,
+    "flags": flags,
+    "html_tags": html_tags,
+    "odd_asterisk_paragraphs": odd_asterisk_paragraphs,
+  }
+  report["ok"] = not (
+    report["missing_pages"]
+    or report["duplicate_pages"]
+    or report["out_of_order_pages"]
+    or report["unspaced_page_markers"]
+    or report["leftover_tags"]
+    or report["missing_defs"]
+    or report["orphan_defs"]
+    or report["duplicate_fn_prefixes"]
+    or report["html_tags"]
+    or report["odd_asterisk_paragraphs"]
+  )
+  return report

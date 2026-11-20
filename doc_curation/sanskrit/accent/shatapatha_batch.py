@@ -65,7 +65,8 @@ _PRATIKA_PAREN_RE = re.compile(r"\(\s*[\u0900-\u097f\u1cd0-\u1cff\u0951-\u0957\s
 _SUG_SPAN_RE = re.compile(r"\[\[([^|\]]+)\|([^\]]+)\]\]")
 _INLINE_NOTE_RE = re.compile(r"\+\+\+.*?\+\+\+|\[\[(?:\?+|!+)\]\]", re.S)
 SB_CORPUS_TAGS: tuple[str, ...] = ("VS", "TS", "RV", "AV", "TB")
-_ZERO_CORPUS_COUNT_RE = re.compile(r"\*(?:VS|TS|RV|AV|TB|TA|EK)\*-0(?:/0)?(?![0-9/])")
+SB_K_CORPUS_TAGS: tuple[str, ...] = ("SB-M", "VS", "TS", "RV", "AV", "TB")
+_ZERO_CORPUS_COUNT_RE = re.compile(r"\*(?:SB-M|SB-K|VS|TS|RV|AV|TB|TA|EK)\*-0(?:/0)?(?![0-9/])")
 _FORBIDDEN_TA_RE = re.compile(r"\*TA\*(?:-\d+(?:/\d+)?)?")
 _FORBIDDEN_EK_RE = re.compile(r"\*EK\*(?:-\d+(?:/\d+)?)?")
 _FORBIDDEN_SRC_RE = re.compile(r"\*(?:TA|EK)\*(?:-\d+(?:/\d+)?)?")
@@ -74,34 +75,38 @@ _WEAK_PLACEHOLDER_PROV_RE = re.compile(r"अनाम्नातम्|अन�
 _WORKER_LEXICON: UnifiedVedicLexicon | None = None
 
 
-def _init_solver_worker() -> None:
+def _init_solver_worker(include_sb_m: bool = False) -> None:
   global _WORKER_LEXICON
-  _WORKER_LEXICON = UnifiedVedicLexicon.load_or_build(force_rebuild=False)
+  _WORKER_LEXICON = UnifiedVedicLexicon.load_or_build(include_sb_m=include_sb_m, force_rebuild=False)
 
 
-def _solve_one_file_worker(args: tuple[str, str]) -> tuple[str, list[KandikaCluster], list[SolveResult]]:
-  md_path, sb_root = args
+def _solve_one_file_worker(args: tuple[str, str, str]) -> tuple[str, list[KandikaCluster], list[SolveResult]]:
+  md_path, sb_root, witness_mode = args
   assert _WORKER_LEXICON is not None
   txt = Path(md_path).read_text(encoding="utf-8")
   clusters = parse_sb_markdown_clusters(txt)
-  results = solve_sb_file(md_path, _WORKER_LEXICON, rel_root=sb_root)
+  results = solve_sb_file(md_path, _WORKER_LEXICON, rel_root=sb_root, witness_mode=witness_mode)
   return md_path, clusters, results
+
+
+def _normalize_kanda_token(val: str | int) -> str:
+  s = str(val).strip()
+  m = re.match(r"^(\d+)(?:_.*)?$", s)
+  if m:
+    return f"{int(m.group(1)):02d}"
+  return s
 
 
 def _normalize_kandas_filter(kandas: Sequence[str | int] | None) -> set[str] | None:
   if kandas is None:
     return None
-  norm: set[str] = set()
-  for k in kandas:
-    s = str(k).strip()
-    norm.add(f"{int(s):02d}" if s.isdigit() else s)
-  return norm
+  return {_normalize_kanda_token(k) for k in kandas}
 
 
 def _kanda_tag_for_rel(rel_posix: str) -> str:
   parts = rel_posix.split("/")
   if len(parts) >= 2:
-    return parts[0]
+    return _normalize_kanda_token(parts[0])
   return "00"
 
 
@@ -140,7 +145,7 @@ def _vp_body_to_clean_for_audit(vp_body: str) -> str:
   s = _PRATIKA_PAREN_RE.sub(" ", s)
   s = _SUG_SPAN_RE.sub(r"\1", s)
   s = accent.strip_accents(s)
-  s = s.replace("᳟", "").replace("᳭", "").replace("ᳮ", "")
+  s = s.replace("᳟", "").replace("᳭", "").replace("ᳮ", "").replace("\ua8f3", "ं")
   # Preserve paragraph/blockquote breaks (\n\n) as clause pauses so quote-boundary hiatuses validate cleanly
   s = re.sub(r"\n\s*\n+", " । ", s)
   # Strip mid-word quotes/bold markers (e.g. `ऽसी᳓"ति`) and hiatus `ऽ` before independent vowels (e.g. `ऽआ᳓सीत्`)
@@ -164,8 +169,8 @@ def _reason_bucket(reason: str) -> str:
 # Deterministic ``*CORPUS*-N`` occurrence-count enrichment of padapāṭha provenance
 # ---------------------------------------------------------------------------
 
-_CORPUS_RE = r"(?:VS|TS|RV|AV|TB)"
-_ALL_CORPUS_RE = r"(?:VS|TS|RV|AV|TB|TA|EK)"
+_CORPUS_RE = r"(?:SB-M|SB-K|VS|TS|RV|AV|TB)"
+_ALL_CORPUS_RE = r"(?:SB-M|SB-K|VS|TS|RV|AV|TB|TA|EK)"
 _CNT_OPT = r"(?:-\d+(?:/\d+)?)?"
 _BARE_TAGS_ONLY_RE = re.compile(rf"\*{_ALL_CORPUS_RE}\*{_CNT_OPT}(?:\s*/\s*\*{_ALL_CORPUS_RE}\*{_CNT_OPT})*")
 _INLINE_FORM_TAG_RE = re.compile(rf"^\*({_ALL_CORPUS_RE})\*{_CNT_OPT}(\s+(?![०-९\d\s]).+)$")
@@ -175,13 +180,16 @@ def enrich_provenance_with_corpus_counts(
   lex: UnifiedVedicLexicon,
   pada_us: str,
   just: str,
+  *,
+  corpus_tags: AbstractSet[str] = SB_CORPUS_TAGS,
 ) -> tuple[str, list[str]]:
   """Rewrite corpus citations in ``just`` to exact ``*CORPUS*-N`` occurrence counts for ``pada_us``.
 
-  - Allowed ŚB Vedic corpora are :data:`SB_CORPUS_TAGS` (``VS, TS, RV, AV, TB``). Any ``*TA*`` or ``*EK*``
+  - Allowed ŚB Vedic corpora default to :data:`SB_CORPUS_TAGS` (``VS, TS, RV, AV, TB``) or ``corpus_tags``
+    (e.g. :data:`SB_K_CORPUS_TAGS` including ``SB-M``). Any ``*TA*`` or ``*EK*``
     citation is dropped cleanly (Taittirīya Āraṇyaka and Ekāgnikāṇḍa are forbidden as dubious sources).
   - Standalone tags (``*TS*``, ``*RV*``, ``*TS*-3``) are replaced by one counts clause listing every
-    allowed corpus attesting the exact US form, ordered by count (ties ``VS > TS > RV > AV > TB``).
+    allowed corpus attesting the exact US form, ordered by count.
     The clause is inserted after the leading sūtra/rule segments (or first, if none) of the first ``;`` clause.
   - Inline form citations (``*TS* सँस्थि॑ते``) keep their form but gain the exact count (no duplicate tag).
   - Verse references (``*VS* १.५``), mixed forms (``*RV*/*TS* …``), dictionaries (``*MW*``, ``*Macdonell*``…),
@@ -192,7 +200,8 @@ def enrich_provenance_with_corpus_counts(
   Returns ``(new_just, unverified_tags)``.
   """
   just = just.replace("पा\u0966", "पा॰")
-  counts = {c: n for c, n in lookup_corpus_counts(lex, pada_us).items() if c in SB_CORPUS_TAGS}
+  allowed_set = frozenset(corpus_tags)
+  counts = {c: n for c, n in lookup_corpus_counts(lex, pada_us).items() if c in allowed_set}
   unverified: list[str] = []
   used: set[str] = set()
   dropped_bare: list[str] = []
@@ -255,12 +264,16 @@ def enrich_provenance_with_corpus_counts(
 def enrich_items_with_corpus_counts(
   lex: UnifiedVedicLexicon,
   items: Sequence[PadapathaItem],
+  *,
+  corpus_tags: AbstractSet[str] = SB_CORPUS_TAGS,
 ) -> tuple[list[PadapathaItem], dict[int, list[str]]]:
   """Apply :func:`enrich_provenance_with_corpus_counts` to every item; returns ``(items, {idx: unverified_tags})``."""
   out: list[PadapathaItem] = []
   warn: dict[int, list[str]] = {}
   for i, it in enumerate(items):
-    new_prov, unv = enrich_provenance_with_corpus_counts(lex, it.ref if it.ref != "?" else it.ar, it.prov)
+    new_prov, unv = enrich_provenance_with_corpus_counts(
+      lex, it.ref if it.ref != "?" else it.ar, it.prov, corpus_tags=corpus_tags
+    )
     if unv:
       warn[i] = unv
     out.append(
@@ -306,6 +319,8 @@ def run_solver_corpus_pass(
   max_workers: int = 1,
   lexicon: UnifiedVedicLexicon | None = None,
   export_all_to_adjudication: bool = False,
+  include_sb_m: bool = False,
+  witness_mode: str = "dual",
 ) -> dict[str, Any]:
   """Run :func:`solve_sb_file` across ŚB content files, export per-kāṇḍa JSONLs, and optionally apply ``AUTO_CLEAN``.
 
@@ -337,20 +352,21 @@ def run_solver_corpus_pass(
 
   eff_workers = max(1, min(int(max_workers), os.cpu_count() or 2))
   if eff_workers <= 1 or len(files) <= 1:
-    lex = lexicon or UnifiedVedicLexicon.load_or_build(force_rebuild=False)
+    lex = lexicon or UnifiedVedicLexicon.load_or_build(include_sb_m=include_sb_m, force_rebuild=False)
     for md_path in files:
       txt = md_path.read_text(encoding="utf-8")
       clusters = parse_sb_markdown_clusters(txt)
-      results = solve_sb_file(str(md_path), lex, rel_root=str(root))
+      results = solve_sb_file(str(md_path), lex, rel_root=str(root), witness_mode=witness_mode)
       solved_files.append((str(md_path), clusters, results))
   else:
     # Ensure on-disk lexicon pickle exists before spawning worker processes.
     if lexicon is None:
-      UnifiedVedicLexicon.load_or_build(force_rebuild=False)
-    work_items = [(str(p), str(root)) for p in files]
+      UnifiedVedicLexicon.load_or_build(include_sb_m=include_sb_m, force_rebuild=False)
+    work_items = [(str(p), str(root), witness_mode) for p in files]
     with concurrent.futures.ProcessPoolExecutor(
       max_workers=eff_workers,
       initializer=_init_solver_worker,
+      initargs=(include_sb_m,),
     ) as pool:
       for item in pool.map(_solve_one_file_worker, work_items):
         solved_files.append(item)
@@ -655,6 +671,7 @@ class _FileClusterSlot:
   has_pp: bool
   pp_body: str
   pp_raw: str = ""
+  mula_header: str = "मूलम् - श्रीधरादि"
 
 
 def _parse_file_slots(md_text: str) -> list[_FileClusterSlot]:
@@ -665,8 +682,8 @@ def _parse_file_slots(md_text: str) -> list[_FileClusterSlot]:
       continue
     norm_hdr = re.sub(r"\s+", " ", m_hdr.group(1).strip())
     for cl in _extract_vp_clusters(part):
-      vp_sum = cl.vp_match.group(1).strip()
-      vp_body = cl.vp_match.group(2).strip()
+      vp_sum = cl.vp_match.group(1).strip() if cl.vp_match is not None else "विश्वास-प्रस्तुतिः"
+      vp_body = cl.vp_match.group(2).strip() if cl.vp_match is not None else ""
       pp_body = cl.existing_pp_match.group(2).strip() if cl.existing_pp_match is not None else ""
       pp_raw = cl.existing_pp_match.group(0) if cl.existing_pp_match is not None else ""
       slots.append(
@@ -675,12 +692,13 @@ def _parse_file_slots(md_text: str) -> list[_FileClusterSlot]:
           sub_idx=cl.subidx,
           vp_summary=vp_sum,
           vp_body=vp_body,
-          is_already_us=has_us_accents(vp_body),
+          is_already_us=(cl.vp_match is not None and has_us_accents(vp_body)),
           weber=cl.weber_text,
           shri=cl.shri_text,
           has_pp=cl.existing_pp_match is not None,
           pp_body=pp_body,
           pp_raw=pp_raw,
+          mula_header=cl.mula_header,
         )
       )
   return slots
@@ -698,7 +716,7 @@ def _build_cluster_validation_snippet(
     f"<details open><summary>{vp_summary}</summary>\n\n{vp_body}\n</details>",
   ]
   if slot.shri:
-    parts.append(f"<details><summary>मूलम् - श्रीधरादि</summary>\n\n{slot.shri}\n</details>")
+    parts.append(f"<details><summary>{slot.mula_header}</summary>\n\n{slot.shri}\n</details>")
   if slot.weber:
     parts.append(f"<details><summary>मूलम् - Weber</summary>\n\n{slot.weber}\n</details>")
   parts.append(pp_block)
@@ -712,6 +730,8 @@ def verify_and_apply_adjudications(
   dry_run: bool = False,
   enrich_counts: bool = True,
   lexicon: UnifiedVedicLexicon | None = None,
+  include_sb_m: bool = False,
+  corpus_tags: Sequence[str] | AbstractSet[str] = SB_CORPUS_TAGS,
 ) -> AdjudicationBatchReport:
   """Independently verify adjudicated kaṇḍikā JSONL records, apply passing files, and return structured diagnostics.
 
@@ -871,8 +891,10 @@ def verify_and_apply_adjudications(
       unverified_by_idx: dict[int, list[str]] = {}
       if enrich_counts and items and not item_errs:
         if lexicon is None:
-          lexicon = UnifiedVedicLexicon.load_or_build(force_rebuild=False)
-        items, unverified_by_idx = enrich_items_with_corpus_counts(lexicon, items)
+          lexicon = UnifiedVedicLexicon.load_or_build(include_sb_m=include_sb_m, force_rebuild=False)
+        items, unverified_by_idx = enrich_items_with_corpus_counts(
+          lexicon, items, corpus_tags=frozenset(corpus_tags)
+        )
       vp_clean_raw = rec.get("vp_clean")
       vp_clean = str(vp_clean_raw).strip() if vp_clean_raw is not None and str(vp_clean_raw).strip() else None
       preserve_vp = slot.is_already_us and vp_clean is None
@@ -887,6 +909,11 @@ def verify_and_apply_adjudications(
       vp_sum = slot.vp_summary
       vp_acc = slot.vp_body
       unmapped: list[tuple[str, int]] = []
+      mula_has_acc = bool(
+        "\u1cd8" in (slot.weber + slot.shri)
+        or "\u0951" in (slot.weber + slot.shri)
+        or "\u0957" in slot.weber
+      )
       if not item_errs and items and vp_eval and not (preserve_vp and vp_clean is None):
         try:
           vp_sum, vp_acc, unmapped = build_sb_vp_from_padapatha(
@@ -896,6 +923,8 @@ def verify_and_apply_adjudications(
             shri_text=slot.shri,
             orig_summary=slot.vp_summary,
           )
+          if not mula_has_acc:
+            vp_sum = "विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)"
           if not preserve_vp:
             fm = _first_us_mark(vp_acc)
             if fm is not None:
@@ -913,6 +942,7 @@ def verify_and_apply_adjudications(
         "vp_clean": vp_clean,
         "vp_eval": vp_eval,
         "preserve_vp": preserve_vp,
+        "mula_has_acc": mula_has_acc,
         "vp_sum": vp_sum,
         "vp_acc": vp_acc,
         "unmapped": unmapped,
@@ -959,57 +989,58 @@ def verify_and_apply_adjudications(
             bad_p = padas_ref[fail_i] if 0 <= fail_i < len(padas_ref) else "END"
             errors.append(f"sandhi_vp_fail: idx={fail_i} pada={bad_p!r} win={win_vp!r} pref={pref_vp!r}")
 
-        # 3. Two-source ŚB audit with cross-kaṇḍikā boundary mark
-        nxt_first = slot_first_marks[slot_idx + 1] if slot_idx + 1 < len(slots) else None
-        rep = audit_padapatha_against_sb(
-          ent["vp_eval"],
-          items,
-          slot.weber,
-          slot.shri,
-          next_first_mark=nxt_first,
-        )
-        if rep.unmapped_vp_syllables:
-          errors.append(f"audit_unmapped: {rep.unmapped_vp_syllables[:6]}")
-        if rep.unflagged_vyatyasta_padas:
-          unflag_names = [f"{i}:{items[i].ref}" for i in rep.unflagged_vyatyasta_padas if i < len(items)]
-          errors.append(f"unflagged_vyatyasta_padas: {unflag_names}")
-        if rep.possibly_spurious_vyatyasta_padas:
-          spur_names = [f"{i}:{items[i].ref}" for i in rep.possibly_spurious_vyatyasta_padas if i < len(items)]
-          errors.append(f"spurious_vyatyasta_padas: {spur_names}")
-        flagged_padas = set(rep.unflagged_vyatyasta_padas) | set(rep.possibly_spurious_vyatyasta_padas)
-        has_audit_err = bool(flagged_padas or rep.unmapped_vp_syllables)
-        _detail_status_map = {
-          "both_disagree": "both_disagree",
-          "weber_ok": "shri_only_disagree",
-          "shri_ok": "weber_only_disagree",
-          "unaligned": "unaligned",
-        }
-        for s in rep.syllables:
-          if s.status in ("both_disagree", "unaligned"):
-            disagree_syls_out.append({
-              "syl_idx": s.vp_syl_idx,
-              "token": s.token,
-              "us": s.us_mark,
-              "exp_w": s.exp_weber,
-              "exp_s": s.exp_shri,
-              "act_w": s.act_weber,
-              "act_s": s.act_shri,
-              "padas": [items[pi].ref for pi in s.pada_indices if pi < len(items)],
-            })
-          if has_audit_err and len(disagree_details_out) < 12 and s.status in _detail_status_map:
-            if s.status in ("both_disagree", "unaligned") or any(pi in flagged_padas for pi in s.pada_indices):
-              pi = next((p for p in s.pada_indices if p in flagged_padas), s.pada_indices[0] if s.pada_indices else -1)
-              disagree_details_out.append({
-                "pada_idx": pi,
-                "pada": items[pi].ref if 0 <= pi < len(items) else "",
-                "syl": s.token,
-                "us_mark": s.us_mark,
+        # 3. ŚB audit with cross-kaṇḍikā boundary mark (skipped when source `मूलम्` has 0 accent marks, i.e. यन्त्र-स्वरः)
+        if ent.get("mula_has_acc", True):
+          nxt_first = slot_first_marks[slot_idx + 1] if slot_idx + 1 < len(slots) else None
+          rep = audit_padapatha_against_sb(
+            ent["vp_eval"],
+            items,
+            slot.weber,
+            slot.shri,
+            next_first_mark=nxt_first,
+          )
+          if rep.unmapped_vp_syllables:
+            errors.append(f"audit_unmapped: {rep.unmapped_vp_syllables[:6]}")
+          if rep.unflagged_vyatyasta_padas:
+            unflag_names = [f"{i}:{items[i].ref}" for i in rep.unflagged_vyatyasta_padas if i < len(items)]
+            errors.append(f"unflagged_vyatyasta_padas: {unflag_names}")
+          if rep.possibly_spurious_vyatyasta_padas:
+            spur_names = [f"{i}:{items[i].ref}" for i in rep.possibly_spurious_vyatyasta_padas if i < len(items)]
+            errors.append(f"spurious_vyatyasta_padas: {spur_names}")
+          flagged_padas = set(rep.unflagged_vyatyasta_padas) | set(rep.possibly_spurious_vyatyasta_padas)
+          has_audit_err = bool(flagged_padas or rep.unmapped_vp_syllables)
+          _detail_status_map = {
+            "both_disagree": "both_disagree",
+            "weber_ok": "shri_only_disagree",
+            "shri_ok": "weber_only_disagree",
+            "unaligned": "unaligned",
+          }
+          for s in rep.syllables:
+            if s.status in ("both_disagree", "unaligned"):
+              disagree_syls_out.append({
+                "syl_idx": s.vp_syl_idx,
+                "token": s.token,
+                "us": s.us_mark,
                 "exp_w": s.exp_weber,
-                "act_w": s.act_weber,
                 "exp_s": s.exp_shri,
+                "act_w": s.act_weber,
                 "act_s": s.act_shri,
-                "status": _detail_status_map[s.status],
+                "padas": [items[pi].ref for pi in s.pada_indices if pi < len(items)],
               })
+            if has_audit_err and len(disagree_details_out) < 12 and s.status in _detail_status_map:
+              if s.status in ("both_disagree", "unaligned") or any(pi in flagged_padas for pi in s.pada_indices):
+                pi = next((p for p in s.pada_indices if p in flagged_padas), s.pada_indices[0] if s.pada_indices else -1)
+                disagree_details_out.append({
+                  "pada_idx": pi,
+                  "pada": items[pi].ref if 0 <= pi < len(items) else "",
+                  "syl": s.token,
+                  "us_mark": s.us_mark,
+                  "exp_w": s.exp_weber,
+                  "act_w": s.act_weber,
+                  "exp_s": s.exp_shri,
+                  "act_s": s.act_shri,
+                  "status": _detail_status_map[s.status],
+                })
 
         # 4. Per-cluster validator + reconciler check
         pp_block = format_padapatha_block(items)
@@ -1495,7 +1526,7 @@ def audit_full_sb_corpus(
                 detail=f"VP summary {sl.vp_summary!r} != actual {n_vyat_pp}/{len(items)}",
               )
             )
-        elif not is_preserved:
+        elif not is_preserved and "यन्त्र-स्वरः" not in sl.vp_summary:
           failures.append(
             SbKandikaAuditFailure(
               kandika_id=kid,
@@ -1507,60 +1538,66 @@ def audit_full_sb_corpus(
             )
           )
 
-      # (f) Two-source ŚB audit with cross-kaṇḍikā next_first_mark
-      nxt_first = first_marks[idx + 1] if idx + 1 < len(slots) else None
-      rep = audit_padapatha_against_sb(
-        vp_for_audit,
-        items,
-        sl.weber,
-        sl.shri,
-        next_first_mark=nxt_first,
+      # (f) ŚB audit with cross-kaṇḍikā next_first_mark (skip when `मूलम्` is completely unaccented)
+      mula_has_acc = bool(
+        "\u1cd8" in (sl.weber + sl.shri)
+        or "\u0951" in (sl.weber + sl.shri)
+        or "\u0957" in sl.weber
       )
-      if is_preserved and rep.unmapped_vp_syllables and (sl.weber or sl.shri):
-        fallback_vp = normalize_sb_orthography(sl.weber or sl.shri)
+      if mula_has_acc or "यन्त्र-स्वरः" not in sl.vp_summary:
+        nxt_first = first_marks[idx + 1] if idx + 1 < len(slots) else None
         rep = audit_padapatha_against_sb(
-          fallback_vp,
+          vp_for_audit,
           items,
           sl.weber,
           sl.shri,
           next_first_mark=nxt_first,
         )
-        preserved_notes.append(f"{kid}: audited padapāṭha via normalized mula fallback for preserved editorial VP")
-      if rep.unmapped_vp_syllables:
-        failures.append(
-          SbKandikaAuditFailure(
-            kandika_id=kid,
-            rel_path=rel_posix,
-            heading=sl.heading,
-            sub_idx=sl.sub_idx,
-            kind="audit_unmapped",
-            detail=f"{rep.unmapped_vp_syllables[:6]}",
+        if is_preserved and rep.unmapped_vp_syllables and (sl.weber or sl.shri):
+          fallback_vp = normalize_sb_orthography(sl.weber or sl.shri)
+          rep = audit_padapatha_against_sb(
+            fallback_vp,
+            items,
+            sl.weber,
+            sl.shri,
+            next_first_mark=nxt_first,
           )
-        )
-      if rep.unflagged_vyatyasta_padas:
-        unflag_names = [f"{i}:{items[i].ref}" for i in rep.unflagged_vyatyasta_padas if i < len(items)]
-        failures.append(
-          SbKandikaAuditFailure(
-            kandika_id=kid,
-            rel_path=rel_posix,
-            heading=sl.heading,
-            sub_idx=sl.sub_idx,
-            kind="audit_unflagged_vyatyasta",
-            detail=f"{unflag_names}",
+          preserved_notes.append(f"{kid}: audited padapāṭha via normalized mula fallback for preserved editorial VP")
+        if rep.unmapped_vp_syllables:
+          failures.append(
+            SbKandikaAuditFailure(
+              kandika_id=kid,
+              rel_path=rel_posix,
+              heading=sl.heading,
+              sub_idx=sl.sub_idx,
+              kind="audit_unmapped",
+              detail=f"{rep.unmapped_vp_syllables[:6]}",
+            )
           )
-        )
-      if rep.possibly_spurious_vyatyasta_padas:
-        spur_names = [f"{i}:{items[i].ref}" for i in rep.possibly_spurious_vyatyasta_padas if i < len(items)]
-        failures.append(
-          SbKandikaAuditFailure(
-            kandika_id=kid,
-            rel_path=rel_posix,
-            heading=sl.heading,
-            sub_idx=sl.sub_idx,
-            kind="audit_spurious_vyatyasta",
-            detail=f"{spur_names}",
+        if rep.unflagged_vyatyasta_padas:
+          unflag_names = [f"{i}:{items[i].ref}" for i in rep.unflagged_vyatyasta_padas if i < len(items)]
+          failures.append(
+            SbKandikaAuditFailure(
+              kandika_id=kid,
+              rel_path=rel_posix,
+              heading=sl.heading,
+              sub_idx=sl.sub_idx,
+              kind="audit_unflagged_vyatyasta",
+              detail=f"{unflag_names}",
+            )
           )
-        )
+        if rep.possibly_spurious_vyatyasta_padas:
+          spur_names = [f"{i}:{items[i].ref}" for i in rep.possibly_spurious_vyatyasta_padas if i < len(items)]
+          failures.append(
+            SbKandikaAuditFailure(
+              kandika_id=kid,
+              rel_path=rel_posix,
+              heading=sl.heading,
+              sub_idx=sl.sub_idx,
+              kind="audit_spurious_vyatyasta",
+              detail=f"{spur_names}",
+            )
+          )
 
     ks["failures"] += len(failures) - file_fail_start
 
@@ -1577,8 +1614,12 @@ def audit_full_sb_corpus(
   )
 
 
-# External Vedic corpora auto-surfaced for ŚB `A/B` stem counts (TA convention, excluding self-referential `ŚB`).
+# External Vedic corpora auto-surfaced for ŚB `A/B` stem counts:
+# - Mādhyandina (`SB-M` / legacy `ŚB`): excludes self-referential `ŚB`/`SB-M`; can cite `SB-K` once built.
+# - Kāṇva (`SB-K`): includes `SB-M`, excludes self-referential `SB-K` / ambiguous `ŚB`.
 SB_PROVENANCE_MAJOR_CORPORA: tuple[str, ...] = ("TS", "RV", "TB", "AV", "VS")
+SB_M_WITH_K_PROVENANCE_MAJOR_CORPORA: tuple[str, ...] = ("TS", "RV", "TB", "AV", "VS", "SB-K")
+SB_K_PROVENANCE_MAJOR_CORPORA: tuple[str, ...] = ("SB-M", "TS", "RV", "TB", "AV", "VS")
 
 
 def annotate_sb_padapatha_counts(
@@ -1588,13 +1629,10 @@ def annotate_sb_padapatha_counts(
   files: Sequence[str | os.PathLike[str]] | None = None,
   counter: Any | None = None,
   dry_run: bool = False,
+  major_corpora: Sequence[str] = SB_PROVENANCE_MAJOR_CORPORA,
+  skip_tags: AbstractSet[str] = frozenset({"ŚB", "SB-M"}),
 ) -> dict[str, Any]:
-  """Apply the TA ``*CORPUS*-M/N`` stem-count convention across ŚB ``पद-पाठः (यान्त्रिकः...)`` blocks.
-
-  Uses :func:`doc_curation.sanskrit.accent.provenance.annotate_padapatha_markdown_counts` with
-  ``major_corpora=SB_PROVENANCE_MAJOR_CORPORA``, ``skip_tags=frozenset({"ŚB"})``,
-  ``prune_unverified_standalone_tags=True``, and ``enrich_major_corpora=True``.
-  """
+  """Apply the TA ``*CORPUS*-M/N`` stem-count convention across ŚB ``पद-पाठः (यान्त्रिकः...)`` blocks."""
   from doc_curation.sanskrit.accent.provenance import VedicCorpusCounter, annotate_padapatha_markdown_counts
 
   root = Path(sb_root)
@@ -1607,6 +1645,7 @@ def annotate_sb_padapatha_counts(
   files_changed = 0
   total_unresolved = 0
   changed_paths: list[str] = []
+  skip_set = frozenset(skip_tags)
   for p in md_files:
     txt = p.read_text(encoding="utf-8")
     new_txt, unres = annotate_padapatha_markdown_counts(
@@ -1614,8 +1653,8 @@ def annotate_sb_padapatha_counts(
       vc,
       prune_unverified_standalone_tags=True,
       enrich_major_corpora=True,
-      major_corpora=SB_PROVENANCE_MAJOR_CORPORA,
-      skip_tags=frozenset({"ŚB"}),
+      major_corpora=tuple(major_corpora),
+      skip_tags=skip_set,
     )
     total_unresolved += len(unres)
     if new_txt != txt:
@@ -1650,12 +1689,15 @@ def _cli(argv: Sequence[str] | None = None) -> int:
   p_solve.add_argument(
     "--export-all", action="store_true", help="write AUTO_CLEAN drafts to the adjudication queue too (Phase 3 covers all)"
   )
+  p_solve.add_argument("--include-sb-m", action="store_true", help="Include Mādhyandina ŚB (SB-M) in lexicon (for Kāṇva)")
+  p_solve.add_argument("--witness-mode", choices=("dual", "single"), default="dual")
 
   p_apply = sub.add_parser("apply", help="verify_and_apply_adjudications")
   p_apply.add_argument("sb_root")
   p_apply.add_argument("adj_jsonl")
   p_apply.add_argument("--dry-run", action="store_true")
   p_apply.add_argument("--no-enrich-counts", action="store_true")
+  p_apply.add_argument("--include-sb-m", action="store_true")
 
   p_audit = sub.add_parser("audit", help="audit_full_sb_corpus")
   p_audit.add_argument("sb_root")
@@ -1668,6 +1710,7 @@ def _cli(argv: Sequence[str] | None = None) -> int:
   p_counts.add_argument("--kandas", nargs="*", default=None)
   p_counts.add_argument("--files", nargs="*", default=None)
   p_counts.add_argument("--dry-run", action="store_true")
+  p_counts.add_argument("--corpus-mode", choices=("sb-m", "sb-m-with-k", "sb-k"), default="sb-m")
 
   a = ap.parse_args(argv)
   if a.cmd == "solve":
@@ -1678,17 +1721,32 @@ def _cli(argv: Sequence[str] | None = None) -> int:
       apply_auto_clean=a.apply_auto_clean,
       max_workers=a.max_workers,
       export_all_to_adjudication=a.export_all,
+      include_sb_m=a.include_sb_m,
+      witness_mode=a.witness_mode,
     )
     json.dump({k: v for k, v in out.items() if k != "per_kanda"}, sys.stdout, ensure_ascii=False, indent=2)
     rc = 0
   elif a.cmd == "apply":
     rep = verify_and_apply_adjudications(
-      a.sb_root, a.adj_jsonl, dry_run=a.dry_run, enrich_counts=not a.no_enrich_counts
+      a.sb_root,
+      a.adj_jsonl,
+      dry_run=a.dry_run,
+      enrich_counts=not a.no_enrich_counts,
+      include_sb_m=a.include_sb_m,
+      corpus_tags=SB_K_CORPUS_TAGS if a.include_sb_m else SB_CORPUS_TAGS,
     )
     json.dump(rep.to_dict(), sys.stdout, ensure_ascii=False, indent=2)
     rc = 0 if rep.rejected == 0 else 1
   elif a.cmd == "counts":
-    rep = annotate_sb_padapatha_counts(a.sb_root, kandas=a.kandas, files=a.files, dry_run=a.dry_run)
+    if a.corpus_mode == "sb-k":
+      mc, st = SB_K_PROVENANCE_MAJOR_CORPORA, frozenset({"SB-K", "ŚB"})
+    elif a.corpus_mode == "sb-m-with-k":
+      mc, st = SB_M_WITH_K_PROVENANCE_MAJOR_CORPORA, frozenset({"ŚB", "SB-M"})
+    else:
+      mc, st = SB_PROVENANCE_MAJOR_CORPORA, frozenset({"ŚB", "SB-M"})
+    rep = annotate_sb_padapatha_counts(
+      a.sb_root, kandas=a.kandas, files=a.files, dry_run=a.dry_run, major_corpora=mc, skip_tags=st
+    )
     json.dump(rep, sys.stdout, ensure_ascii=False, indent=2)
     rc = 0
   else:

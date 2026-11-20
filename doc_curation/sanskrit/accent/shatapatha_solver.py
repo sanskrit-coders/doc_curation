@@ -83,6 +83,7 @@ from doc_curation.sanskrit.accent.shatapatha import (
   build_sb_vp_from_padapatha,
   extract_sb_syllables,
   format_padapatha_block,
+  normalize_kanva_mula_for_sb,
   normalize_sb_orthography,
   strip_shri_pratika,
   strip_weber_footnotes,
@@ -109,7 +110,15 @@ DEFAULT_CACHE_PATH = os.path.join(
   os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"),
   "doc_curation", "unified_vedic_lexicon.pkl",
 )
+DEFAULT_SB_M_CACHE_PATH = os.path.join(
+  os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"),
+  "doc_curation", "unified_vedic_lexicon_sbm.pkl",
+)
 DEFAULT_DICT_ROOT = os.path.expanduser("~/gitland/sanskrit/raw_etexts/koshaH/indic-dict")
+DEFAULT_SB_M_DIR = (
+  "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/"
+  "vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH"
+)
 DEFAULT_VS_DIR = (
   "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/"
   "vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH"
@@ -315,7 +324,7 @@ NEVER_COMPOUND_LEFT_SLP: frozenset[str] = frozenset({
 _PARASAVARNA_RE = re.compile(
   r"ङ्(?=[कखगघ])|ञ्(?=[चछजझ])|ण्(?=[टठडढ])|न्(?=[तथदध])|म्(?=[पफबभ])"
 )
-_DEVANAGARI_RE = re.compile(r"[\u0905-\u0939]")
+_DEVANAGARI_RE = re.compile(r"[\u0905-\u0939\u0950]")
 
 
 # ---------------------------------------------------------------------------
@@ -352,6 +361,8 @@ class KandikaCluster:
   sayana: str = ""
   harisvami: str = ""
   eggeling: str = ""
+  swaminathan: str = ""
+  mula_header: str = "मूलम् - श्रीधरादि"
 
   @property
   def key(self) -> str:
@@ -408,7 +419,7 @@ def _normalize_lookup_key(word_deva: str) -> str:
   w = _ALL_ACCENT_MARKS_RE.sub("", word_deva).replace("-", "").replace("ऽ", "").strip()
   w = _join_virama_vowels(w)
   for src, dst in (
-    ("ᳫँ᳭", "ं"), ("ᳫं᳭", "ं"), ("ᳫँ", "ं"), ("ᳫं", "ं"), ("ᳫ", "ं"),
+    ("ᳫँ᳭", "ं"), ("ᳫं᳭", "ं"), ("ᳫँ", "ं"), ("ᳫं", "ं"), ("ᳫ", "ं"), ("\ua8f3", "ं"),
     ("᳭", ""), ("ᳮ", ""), ("᳟", ""),
     ("व्ँ", "ं"), ("य्ँ", "ं"), ("ल्ँ", "ं"), ("ँ", "ं"),
   ):
@@ -664,7 +675,7 @@ def _fast_syllables_with_marks(text: str) -> tuple[list[tuple[str, str]], list[s
 
 def _fast_extract_sb_syllables(text: str, *, source: str = "weber") -> list[SbSyllable]:
   """Pure-Python O(len) equivalent of ``shatapatha.extract_sb_syllables`` (20x faster)."""
-  clean = strip_weber_footnotes(text) if source == "weber" else strip_shri_pratika(text)
+  clean = strip_weber_footnotes(text) if source == "weber" else normalize_kanva_mula_for_sb(strip_shri_pratika(text))
   if "्ं" in clean or "्ः" in clean or "्ँ" in clean or "ॐ" in clean:
     return extract_sb_syllables(text, source=source)
   n = len(clean)
@@ -1226,17 +1237,22 @@ class UnifiedVedicLexicon:
   def load_or_build(
     cls,
     *,
-    cache_path: str = DEFAULT_CACHE_PATH,
+    cache_path: str | None = None,
     dict_root: str = DEFAULT_DICT_ROOT,
     vs_dir: str = DEFAULT_VS_DIR,
     tb_dir: str = DEFAULT_TB_DIR,
+    sb_m_dir: str = DEFAULT_SB_M_DIR,
+    include_sb_m: bool = False,
     force_rebuild: bool = False,
   ) -> "UnifiedVedicLexicon":
-    if not force_rebuild and cache_path and os.path.isfile(cache_path):
+    eff_cache = cache_path if cache_path is not None else (
+      DEFAULT_SB_M_CACHE_PATH if include_sb_m else DEFAULT_CACHE_PATH
+    )
+    if not force_rebuild and eff_cache and os.path.isfile(eff_cache):
       try:
-        with open(cache_path, "rb") as f:
+        with open(eff_cache, "rb") as f:
           payload = pickle.load(f)
-        if isinstance(payload, dict) and payload.get("version") == LEXICON_CACHE_VERSION:
+        if isinstance(payload, dict) and payload.get("version") == LEXICON_CACHE_VERSION and bool(payload.get("include_sb_m", False)) == bool(include_sb_m):
           return cls(
             form_accents=payload["form_accents"],
             form_hyphens=payload["form_hyphens"],
@@ -1249,16 +1265,23 @@ class UnifiedVedicLexicon:
       except Exception:
         pass
 
-    lex = cls.build(dict_root=dict_root, vs_dir=vs_dir, tb_dir=tb_dir)
+    lex = cls.build(
+      dict_root=dict_root,
+      vs_dir=vs_dir,
+      tb_dir=tb_dir,
+      sb_m_dir=sb_m_dir,
+      include_sb_m=include_sb_m,
+    )
     lex._get_slp_stems()
-    if cache_path:
+    if eff_cache:
       try:
-        os.makedirs(os.path.dirname(cache_path) or ".", exist_ok=True)
-        tmp_path = cache_path + ".tmp"
+        os.makedirs(os.path.dirname(eff_cache) or ".", exist_ok=True)
+        tmp_path = eff_cache + ".tmp"
         with open(tmp_path, "wb") as f:
           pickle.dump(
             {
               "version": LEXICON_CACHE_VERSION,
+              "include_sb_m": include_sb_m,
               "form_accents": lex.form_accents,
               "form_hyphens": lex.form_hyphens,
               "stem_accents": lex.stem_accents,
@@ -1270,11 +1293,11 @@ class UnifiedVedicLexicon:
             f,
             protocol=pickle.HIGHEST_PROTOCOL,
           )
-        os.replace(tmp_path, cache_path)
+        os.replace(tmp_path, eff_cache)
       except OSError as exc:
         # Caching is an optimization: an unwritable cache location (read-only HOME, CI
         # sandbox, ...) must not break lexicon construction.
-        logging.warning("Could not write lexicon cache at %s: %s", cache_path, exc)
+        logging.warning("Could not write lexicon cache at %s: %s", eff_cache, exc)
     return lex
 
   @classmethod
@@ -1284,6 +1307,8 @@ class UnifiedVedicLexicon:
     dict_root: str = DEFAULT_DICT_ROOT,
     vs_dir: str = DEFAULT_VS_DIR,
     tb_dir: str = DEFAULT_TB_DIR,
+    sb_m_dir: str = DEFAULT_SB_M_DIR,
+    include_sb_m: bool = False,
   ) -> "UnifiedVedicLexicon":
     lex = cls()
     # 1. Padasvara babylon files (RV, TS, AV)
@@ -1304,6 +1329,10 @@ class UnifiedVedicLexicon:
     if os.path.isdir(tb_dir):
       lex._ingest_ta_tb_corpus(tb_dir, "TB")
 
+    # 3b. Optional Mādhyandina Śatapatha (SB-M) padapāṭha corpus (used when solving Kāṇva SB-K!)
+    if include_sb_m and sb_m_dir and os.path.isdir(sb_m_dir):
+      lex._ingest_ta_tb_corpus(sb_m_dir, "SB-M")
+
     # 4. Dictionaries: MW, Macdonell, Lanman, Whitney-roots
     mw_p = os.path.join(dict_root, "sanskrit/sa-head/en-entries/mw-cologne/mw-cologne.babylon")
     if os.path.isfile(mw_p):
@@ -1320,7 +1349,7 @@ class UnifiedVedicLexicon:
 
     # 5. Build fast SLP1 vocabulary lookup table ONLY from padapāṭha-grade sources
     # (NEVER from fused saṁhitā VP tokens in VS/TB, which contain `चैव`, `एवास्य`, `नैनम्`, `तदु`, etc.!)
-    padapatha_sources = frozenset({"RV", "TS", "AV", "TB", "Whitney", "Lanman", "MW", "MW_SB"})
+    padapatha_sources = frozenset({"RV", "TS", "AV", "TB", "SB-M", "Whitney", "Lanman", "MW", "MW_SB"})
     slp_vocab: dict[str, int] = {}
     for w_deva, by_marks in lex.form_accents.items():
       total_f = sum(
@@ -1418,7 +1447,7 @@ class UnifiedVedicLexicon:
 
     tok_re = re.compile(r"[\u0900-\u0963\u0971-\u097f\u1cd0-\u1cff\-]+")
     for fp in sorted(glob.glob(os.path.join(root_dir, "**", "*.md"), recursive=True)):
-      if fp.endswith("_index.md"):
+      if os.path.basename(fp) in ("_index.md", "file_list.md"):
         continue
       txt = open(fp, encoding="utf-8", errors="ignore").read()
       # Deduplicate per section (`## ...`): pick AT MOST ONE layer (`पद-पाठः` > `पद-पाठः (यान्त्रिकः...)` > `विश्वास-प्रस्तुतिः`), always `freq=1`!
@@ -2015,41 +2044,83 @@ def parse_sb_markdown_clusters(markdown_text: str) -> list[KandikaCluster]:
       continue
     heading = re.sub(r"\s+", " ", m_hdr.group(1)).strip()
     blocks = [(m.group(1).strip(), m.group(2).strip()) for m in DETAILS_RE.finditer(part)]
-    # Partition blocks into sub-clusters starting at each `विश्वास-प्रस्तुतिः` block.
+    # Partition blocks into sub-clusters starting at each `विश्वास-प्रस्तुतिः` block,
+    # OR from a single `<summary>मूलम्</summary>` witness in un-bootstrapped Kāṇva files.
     vp_indices = [i for i, (h, _) in enumerate(blocks) if h.startswith("विश्वास-प्रस्तुतिः")]
-    for sub_idx, start_i in enumerate(vp_indices):
-      end_i = vp_indices[sub_idx + 1] if sub_idx + 1 < len(vp_indices) else len(blocks)
-      sub_blocks = blocks[start_i:end_i]
-      vp_sum, vp_body = sub_blocks[0]
-      weber = shri = visvara = sayana = harisvami = eggeling = ""
-      for bh, bb in sub_blocks[1:]:
-        if bh == "मूलम् - Weber" and not weber:
-          weber = bb
-        elif bh == "मूलम् - श्रीधरादि" and not shri:
-          shri = bb
-        elif bh == "मूलम् - विस्वरम्" and not visvara:
-          visvara = bb
-        elif bh == "सायणः" and not sayana:
-          sayana = bb
-        elif bh == "हरिस्वामी" and not harisvami:
-          harisvami = bb
-        elif bh == "Eggeling" and not eggeling:
-          eggeling = bb
-      clusters.append(
-        KandikaCluster(
-          heading=heading,
-          sub_idx=sub_idx,
-          vp_summary=vp_sum,
-          vp_body=vp_body,
-          is_already_us=has_us_accents(vp_body),
-          weber=weber,
-          shri=shri,
-          visvara=visvara,
-          sayana=sayana,
-          harisvami=harisvami,
-          eggeling=eggeling,
+    if vp_indices:
+      for sub_idx, start_i in enumerate(vp_indices):
+        end_i = vp_indices[sub_idx + 1] if sub_idx + 1 < len(vp_indices) else len(blocks)
+        sub_blocks = blocks[start_i:end_i]
+        vp_sum, vp_body = sub_blocks[0]
+        weber = shri = visvara = sayana = harisvami = eggeling = swaminathan = ""
+        mula_hdr = "मूलम् - श्रीधरादि"
+        for bh, bb in sub_blocks[1:]:
+          if bh == "मूलम् - Weber" and not weber:
+            weber = bb
+          elif bh == "मूलम् - श्रीधरादि" and not shri:
+            shri = bb
+            mula_hdr = bh
+          elif bh == "मूलम्" and not shri:
+            shri = bb
+            mula_hdr = bh
+          elif bh == "मूलम् - विस्वरम्" and not visvara:
+            visvara = bb
+          elif bh == "सायणः" and not sayana:
+            sayana = bb
+          elif bh == "हरिस्वामी" and not harisvami:
+            harisvami = bb
+          elif bh == "Eggeling" and not eggeling:
+            eggeling = bb
+          elif bh == "C R Swaminathan" and not swaminathan:
+            swaminathan = bb
+        clusters.append(
+          KandikaCluster(
+            heading=heading,
+            sub_idx=sub_idx,
+            vp_summary=vp_sum,
+            vp_body=vp_body,
+            is_already_us=has_us_accents(vp_body),
+            weber=weber,
+            shri=shri,
+            visvara=visvara,
+            sayana=sayana,
+            harisvami=harisvami,
+            eggeling=eggeling,
+            swaminathan=swaminathan,
+            mula_header=mula_hdr,
+          )
         )
-      )
+    else:
+      mula_idx = next((i for i, (h, _) in enumerate(blocks) if h == "मूलम्"), None)
+      if mula_idx is not None:
+        mula_bb = blocks[mula_idx][1]
+        swaminathan = sayana = harisvami = eggeling = ""
+        for bh, bb in blocks[mula_idx + 1 :]:
+          if bh == "C R Swaminathan" and not swaminathan:
+            swaminathan = bb
+          elif bh == "सायणः" and not sayana:
+            sayana = bb
+          elif bh == "हरिस्वामी" and not harisvami:
+            harisvami = bb
+          elif bh == "Eggeling" and not eggeling:
+            eggeling = bb
+        clusters.append(
+          KandikaCluster(
+            heading=heading,
+            sub_idx=0,
+            vp_summary="विश्वास-प्रस्तुतिः",
+            vp_body="",
+            is_already_us=False,
+            weber="",
+            shri=mula_bb,
+            visvara="",
+            sayana=sayana,
+            harisvami=harisvami,
+            eggeling=eggeling,
+            swaminathan=swaminathan,
+            mula_header="मूलम्",
+          )
+        )
   return clusters
 
 
@@ -2243,6 +2314,9 @@ def build_clean_vp_base(weber: str, shri: str, visvara: str) -> tuple[str, str]:
   if w_clean:
     w_fmt = re.sub(r"॥\s*(?=.+॥)", " । ", w_clean)
     return _format_vp_clauses(w_fmt), "weber"
+  if not weber and not visvara:
+    # Single-witness Kāṇva `मूलम्`: strip trailing kaṇḍikā number (`॥१॥` / `॥ १ ॥` -> `॥`) like Mādhyandina VP.
+    s_clean = re.sub(r"॥\s*[०-९\d]+\s*॥\s*$", "॥", s_clean).strip()
   s_fmt = re.sub(r"॥\s*(?=.+॥)", " । ", s_clean)
   return _format_vp_clauses(s_fmt), "shri"
 
@@ -2537,8 +2611,12 @@ def _is_vedic_prefixed_tinanta_fallback(slp_w: str, lex: UnifiedVedicLexicon) ->
   """Fallback splitter for Vedic prefixed finite verbs missing from classical ``vidyut.kosha``."""
   if len(slp_w) < 4 or not slp_w.endswith(_VEDIC_FINITE_ENDINGS_SLP):
     return None
-  # Reject obvious nominal/kṛdanta endings
+  # Reject obvious nominal/kṛdanta endings (including `-स्यन्`/`-ष्यन्` future `शतृ` homographs of augmentless `लृङ्`)
   if slp_w.endswith(("aH", "am", "ena", "eRa", "Aya", "asya", "ezu", "AnAm", "ARAm", "mARaH", "mARam", "mAnaH", "mAnam")):
+    return None
+  if slp_w.endswith(("syan", "zyan")) and any(
+    k.get("krt") == "Satf~" for k in lex.analyze_morph(_slp_to_deva(slp_w))["krt_entries"]
+  ):
     return None
   for pf in ("prati", "pari", "aBi", "aDi", "anu", "apa", "ava", "ati", "api", "upa", "parA", "sam", "pra", "niH", "duH", "ut", "vi", "ni", "A"):
     rem = _peel_one_upasarga_slp(slp_w, pf, is_last_prefix=True, lex=lex)
@@ -2915,8 +2993,8 @@ def _generate_chunk_transitions(
         if c is not None:
           out.append((end, rv, w_c, c))
 
-    # Inverse *abhinihita* `e'` / `o'`
-    if next_ch == "'" and last_ch in ("e", "o"):
+    # Inverse *abhinihita* `e'` / `o'` (note `_deva_to_slp` maps Devanagari `ऽ` to `'Z'`)
+    if next_ch in ("'", "Z") and last_ch in ("e", "o"):
       if last_ch == "o":
         c_v = _eval_word(seg[:-1] + "aH", 0.05)
         if c_v is not None:
@@ -2995,12 +3073,14 @@ def split_chunk_to_padas_dp(
         if _strip_leading_upasargas_tinanta(whole_slp, lex) is None:
           return [cand]
 
-  # Convert chunk to SLP1 keeping internal avagraha `'`
+  # Convert chunk to SLP1 keeping internal avagraha `'`/`Z` (`ॐ` -> `ओम्`)
   clean_d = accent.strip_accents(raw).replace("-", "")
+  if clean_d == "ॐ":
+    return ["ओम्"]
   if clean_d.startswith("ऽ"):
     leading_avagraha = True
     clean_d = clean_d.lstrip("ऽ")
-  slp = _deva_to_slp(clean_d)
+  slp = _deva_to_slp(clean_d.replace("ॐ", "ओम्"))
   slp = re.sub(r"[^a-zA-Z']", "", slp)
   if not slp:
     return []
@@ -3239,7 +3319,7 @@ def split_vp_to_padas(vp_clean: str, lex: UnifiedVedicLexicon) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-_CORPUS_TIE_ORDER: dict[str, int] = {"VS": 0, "TS": 1, "RV": 2, "AV": 3, "TB": 4}
+_CORPUS_TIE_ORDER: dict[str, int] = {"SB-M": 0, "VS": 1, "TS": 2, "RV": 3, "AV": 4, "TB": 5, "SB-K": 6}
 _CORPUS_NAMES: frozenset[str] = frozenset(_CORPUS_TIE_ORDER.keys())
 _DICT_ORDER: tuple[str, ...] = ("Whitney", "Macdonell", "Lanman", "MW_SB", "MW")
 
@@ -3301,7 +3381,7 @@ def lookup_corpus_counts(lex: UnifiedVedicLexicon, pada_us: str) -> dict[str, in
 
 # Match allowed Vedic corpora PLUS deprecated `*TA*`/`*EK*` so `enrich_padapatha_corpus_counts` strips them cleanly.
 _CORPUS_TAG_NO_REF_RE = re.compile(
-  r"\*(VS|TS|RV|AV|TB|TA|EK)\*(?:-\d+)?(?![ \t]+[\d०-९])"
+  r"\*(SB-M|SB-K|VS|TS|RV|AV|TB|TA|EK)\*(?:-\d+)?(?![ \t]+[\d०-९])"
 )
 
 
@@ -3832,7 +3912,9 @@ def generate_pada_candidates(
       morph["is_subanta"]
       and bool(morph["tin_entries"])
       and all(
-        (t["purusha"] == "maDyama" and t["vacana"] == "dvi") or t["lakara"] == "lu~w"
+        (t["purusha"] == "maDyama" and t["vacana"] == "dvi")
+        or t["lakara"] == "lu~w"
+        or (t["lakara"] == "lf~N" and bare.endswith(("स्यन्", "ष्यन्")))
         for t in morph["tin_entries"]
       )
       and bare not in _COMMON_VEDIC_VERBS_DEVA
@@ -3852,7 +3934,7 @@ def generate_pada_candidates(
     pan_verb_marks = {mks for mks, _ in pan_verb_cands}
 
     # (a) Corpus-attested accented forms of this verb (only padapāṭha sources; reject 1-count glitches contradicting Pāṇini!)
-    verb_pp_srcs = frozenset({"RV", "TS", "AV", "TB", "Whitney", "Lanman", "MW", "MW_SB"})
+    verb_pp_srcs = frozenset({"SB-M", "SB-K", "RV", "TS", "AV", "TB", "Whitney", "Lanman", "MW", "MW_SB"})
     verb_acc_hits = [
       (mks, {s: f for s, f in srcs.items() if s in verb_pp_srcs})
       for mks, srcs in form_hits.items()
@@ -3899,9 +3981,11 @@ def generate_pada_candidates(
       continue
     prov = _format_corpus_prov(srcs)
     bonus = 0.0
+    if "SB-M" in srcs:
+      bonus -= 0.14
     if "VS" in srcs:
       bonus -= 0.12
-    if sum(1 for k in ("RV", "TS", "AV", "TB") if k in srcs) >= 2:
+    if sum(1 for k in ("SB-M", "RV", "TS", "AV", "TB") if k in srcs) >= 2:
       bonus -= 0.1
     prior = 0.15 - min(math.log1p(tot) * 0.04, 0.2) + bonus
     _add(mks, prov, "nominal", prior)
@@ -3921,12 +4005,18 @@ def generate_pada_candidates(
   # 9. Vocative candidates (`आमन्त्रित`: पा॰ ६.१.१९८ initial vs पा॰ ८.१.१९ non-initial)
   if _can_be_vocative(bare, morph) and not is_tin:
     voc_init_mks = tuple("U" if i == 0 else "" for i in range(n_syl))
-    _add(voc_init_mks, "पादादिः आमन्त्रितम् आद्युदात्तम्, पा॰ ६.१.१९८", "voc_init", 1.8 if ctx["is_clause_start"] else 8.0)
-    _add(zero_marks, "अपादादिः आमन्त्रितम् अनुदात्तम्, पा॰ ८.१.१९", "voc_noninit", 8.0 if ctx["is_clause_start"] else 4.5)
+    src_vi = _format_corpus_prov(form_hits.get(voc_init_mks, {}))
+    prov_vi = f"पादादिः आमन्त्रितम् आद्युदात्तम्, पा॰ ६.१.१९८{', ' + src_vi if src_vi else ''}"
+    _add(voc_init_mks, prov_vi, "voc_init", 1.8 if ctx["is_clause_start"] else 8.0)
+    src_vn = _format_corpus_prov(form_hits.get(zero_marks, {}))
+    prov_vn = f"अपादादिः आमन्त्रितम् अनुदात्तम्, पा॰ ८.१.१९{', ' + src_vn if src_vn else ''}"
+    _add(zero_marks, prov_vn, "voc_noninit", 8.0 if ctx["is_clause_start"] else 4.5)
 
   # 10. Āmreḍita (`पा॰ ८.१.३ अनुदात्तं च`)
   if ctx["is_amredita"]:
-    _add(zero_marks, "आम्रेडितम् अनुदात्तम्, पा॰ ८.१.३", "amredita", 0.1)
+    src_am = _format_corpus_prov(form_hits.get(zero_marks, {}))
+    prov_am = f"आम्रेडितम् अनुदात्तम्, पा॰ ८.१.३{', ' + src_am if src_am else ''}"
+    _add(zero_marks, prov_am, "amredita", 0.1)
 
   # 11. Fallback (unattested single-accent candidates marked non-solid -> NEVER allowed in AUTO_CLEAN!)
   if not cands:
@@ -4039,6 +4129,7 @@ def _decode_sb_accents_viterbi_full(
   next_first_mark: str | None = None,
   clause_ids: Sequence[int] | None = None,
   minor_breaks: set[int] | None = None,
+  witness_mode: str = "dual",
 ) -> tuple[list[PadapathaItem], list[dict], list[tuple[str, int]], dict]:
   """Internal 3-state Viterbi ŚB accent decoder returning items plus alignment diagnostics."""
   if not padas_bare:
@@ -4149,13 +4240,16 @@ def _decode_sb_accents_viterbi_full(
         if not (0 <= si_v < n_syl_i):
           continue
         aw_v, as_v = act_w[v], act_s[v]
+        form_hits_i = lex.lookup_form(bare_i)
         # 1. Explicit `U` marked by both Weber and Śrīdharādi (or one witness when the other is unaligned)
         if aw_v == "H" and as_v == "H":
           w_mks = tuple("U" if j == si_v else "" for j in range(n_syl_i))
           if w_mks not in existing_mks:
             try:
               ref_w = _fast_apply_us_marks(padas_bare[i], w_mks)
-              c_list.append(PadaCandidate(ref=ref_w, marks=w_mks, prov="Weber-पाठः, श्रीधरादि-पाठः", role="witness_ws", solid=True, prior_cost=1.6))
+              corp_w = _format_corpus_prov(form_hits_i.get(w_mks, {}))
+              prov_w = corp_w or "Weber-पाठः, श्रीधरादि-पाठः"
+              c_list.append(PadaCandidate(ref=ref_w, marks=w_mks, prov=prov_w, role="witness_ws", solid=True, prior_cost=1.6))
               existing_mks.add(w_mks)
             except ValueError:
               pass
@@ -4164,7 +4258,8 @@ def _decode_sb_accents_viterbi_full(
           if w_mks not in existing_mks:
             try:
               ref_w = _fast_apply_us_marks(padas_bare[i], w_mks)
-              prov_w = "Weber-पाठः" if aw_v == "H" else "श्रीधरादि-पाठः"
+              corp_w = _format_corpus_prov(form_hits_i.get(w_mks, {}))
+              prov_w = corp_w or ("Weber-पाठः" if aw_v == "H" else ("काण्व-मूल-पाठः" if witness_mode == "single" else "श्रीधरादि-पाठः"))
               c_list.append(PadaCandidate(ref=ref_w, marks=w_mks, prov=prov_w, role="witness_single", solid=True, prior_cost=2.0))
               existing_mks.add(w_mks)
             except ValueError:
@@ -4177,7 +4272,8 @@ def _decode_sb_accents_viterbi_full(
           if s_mks not in existing_mks:
             try:
               ref_s = _fast_apply_us_marks(padas_bare[i], s_mks)
-              prov_s = "Weber-पाठः, श्रीधरादि-पाठः" if act_s[v - 1] == "H" else "Weber-पाठः"
+              corp_s = _format_corpus_prov(form_hits_i.get(s_mks, {}))
+              prov_s = corp_s or ("Weber-पाठः, श्रीधरादि-पाठः" if act_s[v - 1] == "H" else "Weber-पाठः")
               c_list.append(PadaCandidate(ref=ref_s, marks=s_mks, prov=prov_s, role="witness_ws", solid=True, prior_cost=1.6))
               existing_mks.add(s_mks)
             except ValueError:
@@ -4653,6 +4749,7 @@ def solve_kandika(
   kandika_id: str = "",
   next_first_mark: str | None = None,
   fast_pass1: bool = False,
+  witness_mode: str = "dual",
 ) -> SolveResult:
   """Solve, verify, and self-certify one Śatapatha Brāhmaṇa kaṇḍikā.
 
@@ -4661,7 +4758,8 @@ def solve_kandika(
   """
   try:
     return _solve_kandika_impl(
-      cluster, lex, kandika_id=kandika_id, next_first_mark=next_first_mark, fast_pass1=fast_pass1,
+      cluster, lex, kandika_id=kandika_id, next_first_mark=next_first_mark,
+      fast_pass1=fast_pass1, witness_mode=witness_mode,
     )
   except (ValueError, IndexError, KeyError) as e:
     return SolveResult(
@@ -4679,6 +4777,7 @@ def _solve_kandika_impl(
   kandika_id: str = "",
   next_first_mark: str | None = None,
   fast_pass1: bool = False,
+  witness_mode: str = "dual",
 ) -> SolveResult:
   kid = kandika_id or cluster.key
 
@@ -4715,6 +4814,7 @@ def _solve_kandika_impl(
   items, ambiguous_padas, viterbi_unmapped, vdiag = _decode_sb_accents_viterbi_full(
     vp_clean, padas_bare, cluster.weber, cluster.shri, lex,
     next_first_mark=next_first_mark, clause_ids=clause_ids, minor_breaks=minor_breaks,
+    witness_mode=witness_mode,
   )
   pp_block = format_padapatha_block(items)
 
@@ -4731,13 +4831,16 @@ def _solve_kandika_impl(
     verify_mantra_sandhi(padas_ref, s_ref_clean)
     if s_ref_clean else (False, 0, "", "")
   )
-  # Require strict 2-of-3 witness consensus (W+S, or W+V, or S+V) so solo Weber/Shri typos (`अनिरुक्तौ`) NEVER certify AUTO_CLEAN!
-  ok_2of3 = ok_w and ok_s
-  if not ok_2of3 and (ok_w or ok_s) and cluster.visvara:
-    v_sandhi_ref = _clean_visvara_for_sandhi(cluster.visvara, w_ref_clean or s_ref_clean)
-    if v_sandhi_ref:
-      ok_v, _, _, _ = verify_mantra_sandhi(padas_ref, v_sandhi_ref)
-      ok_2of3 = ok_v and (ok_w or ok_s)
+  # Require strict 2-of-3 witness consensus (W+S, or W+V, or S+V) in dual mode; single witness in single mode.
+  if witness_mode == "single" and not cluster.weber and cluster.shri:
+    ok_2of3 = ok_s
+  else:
+    ok_2of3 = ok_w and ok_s
+    if not ok_2of3 and (ok_w or ok_s) and cluster.visvara:
+      v_sandhi_ref = _clean_visvara_for_sandhi(cluster.visvara, w_ref_clean or s_ref_clean)
+      if v_sandhi_ref:
+        ok_v, _, _, _ = verify_mantra_sandhi(padas_ref, v_sandhi_ref)
+        ok_2of3 = ok_v and (ok_w or ok_s)
 
   reasons: list[str] = []
   if not ok_vp:
@@ -4758,8 +4861,10 @@ def _solve_kandika_impl(
     reasons.append(f"weak_prov:{weak_padas[:6]}")
   if ambiguous_padas:
     reasons.append(f"ambiguous_padas:{[a['pada_idx'] for a in ambiguous_padas[:6]]}")
-  if not cluster.weber or not cluster.shri:
+  if witness_mode != "single" and (not cluster.weber or not cluster.shri):
     reasons.append("missing_one_sb_source")
+  elif witness_mode == "single" and not cluster.weber and cluster.shri and "\u1cd8" not in cluster.shri and "\u0951" not in cluster.shri:
+    reasons.append("unaccented_single_witness")
 
   ctxs_check = vdiag["ctxs"]
   _DANGLING_LYAP_TAILS = frozenset({"धाय", "हृत्य", "कृत्य", "गत्य", "एत्य", "दाय", "स्थाय", "नीय", "भूय", "श्रुत्य"})
@@ -4781,7 +4886,7 @@ def _solve_kandika_impl(
     # Every open-class pada must carry an exact-form corpus count: sūtra/dictionary-only padas are where
     # bogus splits hide (`अंग्याः` tiṅanta, `अ᳓प-हते` as kta, `अ᳓वभारि` as vocative, `आणः`, `सवितः᳓`).
     # Only closed-class upasargas and always-anudātta enclitics are exempt.
-    _cc = {m.group(1): int(m.group(2)) for m in re.finditer(r"\*(VS|TS|RV|AV|TB)\*-(\d+)", it.prov)}
+    _cc = {m.group(1): int(m.group(2)) for m in re.finditer(r"\*(SB-M|SB-K|VS|TS|RV|AV|TB)\*-(\d+)", it.prov)}
     if not _cc:
       if bare_it not in UPASARGA_DEVA_SET and bare_it not in ALWAYS_ANUDATTA_ENCLITICS:
         reasons.append(f"no_corpus_count@{i}:{it.ref}")
@@ -4853,7 +4958,7 @@ def _solve_kandika_impl(
       assembled = (
         f"## {cluster.heading}\n\n"
         f"<details open><summary>{vp_sum}</summary>\n\n{vp_acc}\n</details>\n\n"
-        + (f"<details><summary>मूलम् - श्रीधरादि</summary>\n\n{cluster.shri}\n</details>\n\n" if cluster.shri else "")
+        + (f"<details><summary>{cluster.mula_header}</summary>\n\n{cluster.shri}\n</details>\n\n" if cluster.shri else "")
         + (f"<details><summary>मूलम् - Weber</summary>\n\n{cluster.weber}\n</details>\n\n" if cluster.weber else "")
         + f"{pp_block}\n"
       )
@@ -4966,6 +5071,7 @@ def solve_sb_file(
   lex: UnifiedVedicLexicon,
   *,
   rel_root: str = "",
+  witness_mode: str = "dual",
 ) -> list[SolveResult]:
   """Solve and self-certify all kaṇḍikās in one Śatapatha Brāhmaṇa Markdown file."""
   txt = open(md_path, encoding="utf-8").read()
@@ -4977,7 +5083,7 @@ def solve_sb_file(
   prelim = [
     solve_kandika(
       cl, lex, kandika_id=f"{rel}::{cl.key}", next_first_mark=None,
-      fast_pass1=(idx + 1 < n_cl),
+      fast_pass1=(idx + 1 < n_cl), witness_mode=witness_mode,
     )
     for idx, cl in enumerate(clusters)
   ]
@@ -5012,7 +5118,7 @@ def solve_sb_file(
       )
     )
     if need_recheck:
-      r = solve_kandika(cl, lex, kandika_id=f"{rel}::{cl.key}", next_first_mark=nxt_m, fast_pass1=False)
+      r = solve_kandika(cl, lex, kandika_id=f"{rel}::{cl.key}", next_first_mark=nxt_m, fast_pass1=False, witness_mode=witness_mode)
     results.append(r)
   return results
 
@@ -5065,6 +5171,7 @@ def export_adjudication_jsonl(
           "sayana_excerpt": cl.sayana[:1200],
           "harisvami_excerpt": cl.harisvami[:800],
           "eggeling_excerpt": cl.eggeling[:1000],
+          "swaminathan_excerpt": cl.swaminathan[:1000],
           "draft_vp": res.vp_accented,
           "draft_vp_clean": res.vp_clean,
           "draft_padapatha": [

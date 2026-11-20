@@ -224,6 +224,11 @@ def test_discover_sb_content_files_skips_index_and_filters_kandas(tmp_path):
   k1_12 = discover_sb_content_files(sb_root, kandas=[1, "12"])
   assert [p.relative_to(sb_root).as_posix() for p in k1_12] == ["01/01/1.md", "12/01/1.md"]
 
+  (sb_root / "17_bRhadAraNyakam/01").mkdir(parents=True)
+  (sb_root / "17_bRhadAraNyakam/01/1.md").write_text("title\n", encoding="utf-8")
+  assert [p.relative_to(sb_root).as_posix() for p in discover_sb_content_files(sb_root, kandas=["17"])] == ["17_bRhadAraNyakam/01/1.md"]
+  assert [p.relative_to(sb_root).as_posix() for p in discover_sb_content_files(sb_root, kandas=["17_bRhadAraNyakam"])] == ["17_bRhadAraNyakam/01/1.md"]
+
 
 def test_run_solver_corpus_pass_exports_jsonls_and_applies_auto_clean(tmp_path):
   sb_root = _make_synthetic_corpus(tmp_path)
@@ -883,8 +888,210 @@ title = "12.1.1"
   assert aud_ok.passed and aud_ok.failures == []
 
   # Bare -0 and -0/0 are still rejected
-  for bad_tag in ("*VS*-0", "*VS*-0/0"):
+  for bad_tag in ("*VS*-0", "*VS*-0/0", "*SB-M*-0", "*SB-K*-0/0"):
     md_12.write_text(base.replace("*VS*-0/3", bad_tag), encoding="utf-8")
     aud_bad = audit_full_sb_corpus(sb_root, files=[md_12])
     assert not aud_bad.passed
     assert any(f.kind == "zero_corpus_count" for f in aud_bad.failures)
+
+
+def test_kanva_single_witness_bootstrap_and_sbm_tags(tmp_path):
+  """Single-witness Kāṇva files (मूलम् + C R Swaminathan) solve, insert open VP, collapse मूलम्, and pass audit."""
+  from doc_curation.sanskrit.accent import VedicCorpusCounter, annotate_padapatha_markdown_counts, word_to_key_and_marks
+
+  sb_root = tmp_path / "kanva_sb"
+  (sb_root / "01_ekapAtkANDam/01").mkdir(parents=True)
+  kanva_md = sb_root / "01_ekapAtkANDam/01/1.md"
+  kanva_md.write_text(
+    """+++
+title = "१"
++++
+## ०१
+
+<details open><summary>मूलम्</summary>
+
+त᳘दपः सं᳘भरति॥१॥
+</details>
+
+<details><summary>C R Swaminathan</summary>
+
+He collects those waters.
+</details>
+""",
+    encoding="utf-8",
+  )
+
+  lex = UnifiedVedicLexicon()
+  lex._add_form("तत्", ("U",), "SB-M", freq=10)
+  lex._add_form("अपः", ("", "U"), "SB-M", freq=5)
+  lex._add_form("सम्", ("U",), "SB-M", freq=10)
+  lex._add_form("भरति", ("", "", ""), "SB-M", freq=10)
+  lex._get_slp_stems()
+  lex.slp_vocab = {"tat": 10, "apaH": 5, "sam": 10, "Barati": 10}
+
+  out_dir = tmp_path / "kanva_out"
+  summary = run_solver_corpus_pass(
+    sb_root, out_dir, apply_auto_clean=True, max_workers=1, lexicon=lex, witness_mode="single",
+  )
+  assert summary["apply_errors"] == []
+  assert summary["auto_clean"] == 1
+
+  written = kanva_md.read_text(encoding="utf-8")
+  assert "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nत᳓दपः᳓ सं᳓भरति॥\n</details>" in written
+  assert "<details><summary>मूलम्</summary>\n\nत᳘दपः सं᳘भरति॥१॥\n</details>" in written
+  assert "<details><summary>पद-पाठः (यान्त्रिकः)</summary>" in written
+  assert "*SB-M*-10" in written
+  assert "<details><summary>C R Swaminathan</summary>" in written
+
+  aud = audit_full_sb_corpus(sb_root, files=[kanva_md])
+  assert aud.passed and aud.failures == []
+
+  # SB-M and SB-K provenance counting work cleanly with skip_tags
+  vc = VedicCorpusCounter()
+  for corp, w, f in [
+    ("SB-M", "त᳓त्", 12), ("SB-M", "अपः᳓", 6), ("SB-M", "स᳓म्", 11), ("SB-M", "भरति", 10),
+    ("SB-K", "त᳓त्", 9),
+  ]:
+    km = word_to_key_and_marks(w)
+    assert km is not None
+    vc._add(corp, km[0], km[1], freq=f)
+  vc._finalize_secondary_tables()
+  enriched, unres = annotate_padapatha_markdown_counts(
+    written, vc, prune_unverified_standalone_tags=True, enrich_major_corpora=True,
+    major_corpora=("SB-M",), skip_tags=frozenset({"SB-K", "ŚB"}),
+  )
+  assert unres == []
+  assert "*SB-K*" not in enriched
+
+  enriched_with_k, unres_with_k = annotate_padapatha_markdown_counts(
+    written, vc, prune_unverified_standalone_tags=True, enrich_major_corpora=True,
+    major_corpora=("SB-M", "SB-K"), skip_tags=frozenset({"ŚB"}),
+  )
+  assert unres_with_k == []
+  assert "*SB-K*-9" in enriched_with_k
+
+
+def test_kanva_orthography_quirks_and_unaccented_yantra(tmp_path):
+  """Kāṇva ꣳ/:/ZWJ/line-wrap quirks normalize cleanly and unaccented blocks verify via (यन्त्र-स्वरः)."""
+  from doc_curation.sanskrit.accent import (
+    extract_sb_syllables,
+    normalize_kanva_mula_for_sb,
+    normalize_sb_orthography,
+    verify_and_apply_adjudications,
+  )
+
+  # Normalization + syllable extraction checks
+  assert normalize_kanva_mula_for_sb("श\u200dृणो᳘ति:") == "शृणो᳘तिः"
+  assert normalize_kanva_mula_for_sb("सौम्यादा᳘ज्य- भागाद्यन्ति य᳘था-यथा") == "सौम्यादा᳘ज्यभागाद्यन्ति य᳘था-यथा"
+  assert normalize_sb_orthography("पा᳘ꣳ᳘") == "पां"
+  syls = extract_sb_syllables("पा᳘ꣳ᳘ तपः᳘", source="shri")
+  assert [s.mark for s in syls] == ["H", "", "H"]
+
+  sb_root = tmp_path / "kanva_edge"
+  (sb_root / "01_ekapAtkANDam/06").mkdir(parents=True)
+  md = sb_root / "01_ekapAtkANDam/06/4.md"
+  md.write_text(
+    """+++
+title = "४"
++++
+## ०५
+
+<details open><summary>मूलम्</summary>
+
+पा᳘ꣳ श\u200dृणोति त᳘प:।
+</details>
+
+<details><summary>C R Swaminathan</summary>
+
+Kandika 5.
+</details>
+
+## ०६
+
+<details open><summary>मूलम्</summary>
+
+त᳘द- पः सं᳘भरति॥६॥
+</details>
+
+<details><summary>C R Swaminathan</summary>
+
+Kandika 6.
+</details>
+
+## ०७
+
+<details open><summary>मूलम्</summary>
+
+तदपः॥७॥
+</details>
+
+<details><summary>C R Swaminathan</summary>
+
+Unaccented Kandika 7.
+</details>
+""",
+    encoding="utf-8",
+  )
+
+  lex = UnifiedVedicLexicon()
+  for w, m, f in [
+    ("पाम्", ("U",), 8),
+    ("शृणोति", ("", "", ""), 8),
+    ("तपः", ("U", ""), 8),
+    ("तत्", ("U",), 10),
+    ("अपः", ("", "U"), 5),
+    ("सम्", ("U",), 10),
+    ("भरति", ("", "", ""), 10),
+  ]:
+    lex._add_form(w, m, "SB-M", freq=f)
+  lex._get_slp_stems()
+  lex.slp_vocab = {"pAm": 8, "SfRoti": 8, "tapaH": 8, "tat": 10, "apaH": 5, "sam": 10, "Barati": 10}
+
+  out_dir = tmp_path / "kanva_edge_out"
+  summary = run_solver_corpus_pass(
+    sb_root, out_dir, apply_auto_clean=True, max_workers=1, lexicon=lex, witness_mode="single",
+  )
+  assert summary["apply_errors"] == []
+  assert summary["auto_clean"] == 2
+  assert summary["needs_adjudication"] == 1
+
+  written1 = md.read_text(encoding="utf-8")
+  assert "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nपा᳓ꣳ" not in written1
+  assert "पां᳓ शृणोति त᳓पः।" in written1
+  assert "त᳓दपः᳓ सं᳘भरति॥" not in written1
+  assert "त᳓दपः᳓ सं᳓भरति॥" in written1
+
+  adj_in = out_dir / "yantra_fix.jsonl"
+  import json
+  adj_in.write_text(
+    json.dumps({
+      "rel_path": "01_ekapAtkANDam/06/4.md",
+      "heading": "०७",
+      "sub_idx": 0,
+      "kandika_id": "01/06/4.07",
+      "vp_clean": "तदपः॥",
+      "items": [
+        {"pada": "त᳓त्", "just": "*SB-M*-10"},
+        {"pada": "अपः᳓", "just": "*SB-M*-5"},
+      ],
+    }, ensure_ascii=False) + "\n",
+    encoding="utf-8",
+  )
+  adj_res = verify_and_apply_adjudications(sb_root, adj_in, dry_run=False, enrich_counts=False)
+  assert adj_res.rejected == 0 and adj_res.accepted == 1
+
+  written2 = md.read_text(encoding="utf-8")
+  assert "<details open><summary>विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)</summary>\n\nत᳓दपः᳓॥\n</details>" in written2
+  aud = audit_full_sb_corpus(sb_root, files=[md])
+  assert aud.passed and aud.failures == []
+
+  # Unspaced Kāṇva avagraha chunks (`वज्रोऽसीति`, `सवनेऽभिषिञ्चन्ति`) and `ॐ` split cleanly
+  from doc_curation.sanskrit.accent.shatapatha_solver import split_chunk_to_padas_dp
+  assert split_chunk_to_padas_dp("ॐ", lex) == ["ओम्"]
+  lex_av = UnifiedVedicLexicon()
+  for w, m, f in [("वज्रः", ("U", ""), 10), ("असि", ("", ""), 10), ("इति", ("U", ""), 10), ("सवने", ("", "", "U"), 5), ("अपि", ("U", ""), 10)]:
+    lex_av._add_form(w, m, "SB-M", freq=f)
+  lex_av._get_slp_stems()
+  lex_av.slp_vocab = {"vajraH": 10, "asi": 10, "iti": 10, "savane": 5, "api": 10}
+  assert split_chunk_to_padas_dp("वज्रोऽसीति", lex_av) == ["वज्रः", "असि", "इति"]
+  assert split_chunk_to_padas_dp("सवनेऽपीति", lex_av) == ["सवने", "अपि", "इति"]

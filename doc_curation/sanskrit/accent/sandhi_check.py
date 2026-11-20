@@ -98,9 +98,11 @@ def clean_deva_for_sandhi(text: str) -> str:
   s = re.sub(r"\(?~~.*?~~\)?", "", s)
   s = re.sub(r"\([\u0900-\u097f\u1cd0-\u1cff\sऽ]{1,8}\)", "", s)
   s = s.replace("ॐ", "ओम्").replace("शिश्ञ", "शिश्न")
-  # Normalize Taittirīya and Mādhyandina Śatapatha anunāsika marks to anusvāra.
+  s = s.replace("\u200c", "").replace("\u200d", "").replace("`", "")
+  s = re.sub(r"(?<=[\u0900-\u097f\u1cd0-\u1cff\ua8f3]):", "ः", s)
+  # Normalize Taittirīya and Śatapatha (Mādhyandina `ᳫ`, Kāṇva `ꣳ`) anunāsika marks to anusvāra.
   for src, dst in (
-    ("ᳫँ᳭", "ं"), ("ᳫं᳭", "ं"), ("ᳫँ", "ं"), ("ᳫं", "ं"), ("ᳫ", "ं"),
+    ("ᳫँ᳭", "ं"), ("ᳫं᳭", "ं"), ("ᳫँ", "ं"), ("ᳫं", "ं"), ("ᳫ", "ं"), ("\ua8f3", "ं"),
     ("᳭", ""), ("ᳮ", ""), ("᳟", ""),
     ("व्विं", "ंवि"), ("य्यिं", "ंयि"), ("व्वृं", "ंवृ"), ("सव्विं", "संवि"),
     ("व्व्ँ", "ंव"), ("य्य्ँ", "ंय"), ("ल्ल्ँ", "ंल"),

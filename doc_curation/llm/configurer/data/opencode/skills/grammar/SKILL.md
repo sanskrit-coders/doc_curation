@@ -116,18 +116,24 @@ Verify each generated step against `sutraani/data.txt` before quoting it in an a
 
 Look for attestation first; derive only when nothing attests the form. Order of work:
 
-### 6.1 Padasvara dictionaries — the primary tool
+### 6.1 Padasvara & prakṛti-svara dictionaries — the primary tool
 
-`~/gitland/sanskrit/raw_etexts/koshaH/indic-dict/kAvya/` (StarDict copies on the external drive: `/media/vvasuki/vData/dicts/stardict/indic-dict/stardict-sanskrit-kAvya/`)
+`~/gitland/sanskrit/raw_etexts/koshaH/indic-dict/kAvya/` (StarDict copies on the external drive: `/media/vvasuki/vData/dicts/stardict/indic-dict/stardict-sanskrit-kAvya/`; see the `dictionary` skill for updating/maintaining them). All `*svara*` dictionaries below use **US accent notation (`᳓` / `᳙`)** with attestation counts and references:
 
 | Dict | Gives |
 |---|---|
-| `rv-padasvara-dev` | Ṛgveda word forms with accents, plus occurrences (`1 72 7 d` = maṇḍala, sūkta, ṛk, pāda) |
-| `av-padasvara` | Atharvaveda word forms with accents, plus occurrences (`/20/136/12`) |
-| `kyv-ts-padasvara` | Kṛṣṇa-Yajurveda-TS word forms with dependent accents |
+| `rv-padasvara-dev` | Ṛgveda Śākala word forms with US accents, counts & occurrences (`1.72.7` = maṇḍala.sūkta.ṛk) |
+| `av-padasvara` | Atharvaveda Śaunakīya word forms with US accents, counts & occurrences (`/04/006/03`) |
+| `kyv-ts-padasvara` | Kṛṣṇa-Yajurveda Taittirīya Saṃhitā word forms with US accents, counts & occurrences (`1.1.12`) |
+| `syv-ms-padasvara` | Śukla-Yajurveda Mādhyandina Saṃhitā word forms with US accents, counts & occurrences (`34.12`) |
+| `syv-sb-m-pada-svara` | Śatapatha Brāhmaṇa (Mādhyandina) word forms with US accents, counts & occurrences (`1.9.2.23`, excluding `→` suggestions) |
+| `rv-prakRti-svara-dev` | Ṛgveda Śākala prātipadika/avyaya stems & `[धातुः]` finite-form synopses with US accents (`1.50.3`) |
+| `av-prakRti-svara` | Atharvaveda Śaunakīya stems & `[धातुः]` synopses with US accents (`2.35.1`) |
+| `kyv-ts-prakRti-svara` | Kṛṣṇa-Yajurveda-TS stems & `[धातुः]` synopses with US accents (`1.7.33`) |
+| `syv-ms-prakRti-svara` | Śukla-Yajurveda Mādhyandina Saṃhitā stems & `[धातुः]` synopses with US accents (`8.40`) |
 | `rv-padapATha-dev` | Ṛgveda pādas: unaccented saṃhitā head → accented saṃhitā + accented pada-pāṭha + reference |
 
-Heads are `|`-separated; in the padasvara dicts a trailing `+` marks the pre-sandhi pada, so search the bare word. All of these are Babylon files — blank-line separated entries, head line first:
+Heads are `|`-separated unaccented aliases (including anusvāra/candrabindu variants, joined/split compound forms, and `-ः`-stripped forms), so search the bare word or stem. All of these are Babylon files — blank-line separated entries, head line first:
 
 ```python
 import os
@@ -146,14 +152,18 @@ def lookup(babylon_path, word, limit=5):
     return hits
 
 print(lookup(f"{DICTS}/kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon", "अभवः"))
-# → ['अ॑भवः<br>1 72 7 d, 1 91 2 d, …']
+# → ['अभवः (24)<br>1.4.8, 1.31.1, …', 'अ᳓भवः (6)<br>3.3.10, 3.9.2, …']
+print(lookup(f"{DICTS}/kAvya/rv-prakRti-svara-dev/rv-prakRti-svara-dev.babylon", "अग्नि"))
+# → ['अग्नि᳓ (861)<br>1.50.3, 1.59.1, …']
+print(lookup(f"{DICTS}/kAvya/rv-prakRti-svara-dev/rv-prakRti-svara-dev.babylon", "भू"))
+# → ['भू [धातुः] (817)<br>भ᳓व (38) · भु᳓वः (25) · …']
 print(lookup(f"{DICTS}/kAvya/rv-padapATha-dev/rv-padapATha-dev.babylon", "अग्निमीळे पुरोहितं"))
 # → ['1 1 1 a<br>अ॒ग्निमी॑ळे पु॒रोहि॑तं<br>अ॒ग्निम् ईळे पु॒रोहि॑तम्']
 ```
 
 ### 6.2 Accent-marked dictionaries
 
-`~/gitland/sanskrit/raw_etexts/koshaH/indic-dict/sanskrit/sa-head/en-entries/` (StarDict: `…/stardict-sanskrit/sa-head/en-entries/`) — same `lookup()` works, but big files (MW ~60 MB) take a second:
+`~/gitland/sanskrit/raw_etexts/koshaH/indic-dict/sanskrit/sa-head/en-entries/` (StarDict: `…/stardict-sanskrit/sa-head/en-entries/`) and `~/gitland/indic-dict/dicts/stardict-sanskrit-vyAkaraNa/dhAtu/` — same `lookup()` works, but big files (MW ~60 MB) take a second:
 
 | Dict | Accent convention |
 |---|---|
@@ -174,7 +184,8 @@ Use when the word is not in the dictionaries above, or when you need to decide a
 - /home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH
 - `~/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH/`
 - `~/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/kAThakam/sarva-prastutiH/`
-- `~/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH/`
+- `~/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH/` (`*SB-M*`; legacy tag `*ŚB*`)
+- `~/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/shatapatha-brAhmaNam/sarva-prastutiH/` (`*SB-K*`)
 - `/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH`
 - `/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/saMhitA`
 - `/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH`

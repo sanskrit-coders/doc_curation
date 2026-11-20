@@ -66,7 +66,7 @@ SCHEME = sanscript.SCHEMES[sanscript.DEVANAGARI]
 SB_UDATTA_DROP = "\u1cd8"  # ᳘
 SB_END_DROP = "\u1cdf"  # ᳟
 WEBER_SVARITA_ANTE = "\u0957"  # ॗ
-_YOGAVAAHAS = frozenset("ंःँᳫ᳭ᳮ")
+_YOGAVAAHAS = frozenset("ंःँᳫ᳭ᳮ\ua8f3")
 _PAUSES = frozenset("।॥")
 
 
@@ -126,21 +126,31 @@ def strip_shri_pratika(text: str) -> str:
   return s.strip()
 
 
+def normalize_kanva_mula_for_sb(text: str) -> str:
+  """Normalize Kāṇva ``svarupa.org`` print quirks while preserving ``᳘``/``॑`` accents for ŚB audit."""
+  s = text.replace("\u200c", "").replace("\u200d", "").replace("`", "")
+  # Rejoin broken line-wrap hyphens (`सौम्यादा᳘ज्य- भागाद्यन्ति` -> `सौम्यादा᳘ज्यभागाद्यन्ति`) while keeping compound `य᳘था-यथा`.
+  s = re.sub(r"(?<=[\u0900-\u097f\u1cd0-\u1cff\ua8f3])[-–]\s+", "", s)
+  s = re.sub(r"(?<=[\u0900-\u097f\u1cd0-\u1cff\ua8f3]):", "ः", s)
+  return s
+
+
 def normalize_sb_orthography(text: str) -> str:
-  """Clean Mādhyandina print quirks from unaccented or ŚB-accented text for ``विश्वास-प्रस्तुतिः``.
+  """Clean Mādhyandina and Kāṇva print quirks from unaccented or ŚB-accented text for ``विश्वास-प्रस्तुतिः``.
 
   - Strips footnotes, ``[[!!]]`` flags, and recitation-linkage pratīkas like ``(न्न᳘)``.
   - Strips all ŚB/Vedic accent marks so US accents can be filled cleanly from ``पद-पाठः``.
   - Removes Mādhyandina hiatus avagraha before independent vowels (``ऽउ``, ``ऽआ``, ``ऽए``, ``ऽइ``, ``ऽअ``, ``ऽओ``),
     while preserving true *pūrvarūpa* elision avagraha (``सो ऽग्निम्``, ``ते ऽस्य``).
-  - Normalizes Mādhyandina consonant geminations (``व्व्र``→``व्र``, ``र्व्व``→``र्व``, ``र्द्ध``→``र्ध``,
-    ``र्म्म्``→``र्म``, ``र्न्न``→``र्न``, ``र्य्य``→``र्य``, ``स्स्फ्य``→``स्फ्य``) and *anunāsika* ``ᳫँ᳭``/``ᳫं``→``ं``.
+  - Normalizes Kāṇva ``ꣳ`` (``U+A8F3``) / Mādhyandina *anunāsika* ``ᳫँ᳭``/``ᳫं``→``ं``,
+    stray backticks, ZWJ/ZWNJ, Devanagari-adjacent ``:``→``ः``, line-wrap ``- ``, and consonant geminations.
   """
-  s = strip_shri_pratika(text)
+  s = normalize_kanva_mula_for_sb(strip_shri_pratika(text))
   s = accent.strip_accents(s)
   s = s.replace("᳟", "").replace("᳭", "").replace("ᳮ", "")
-  # Normalize Mādhyandina anunāsika ligatures.
+  # Normalize Mādhyandina and Kāṇva anunāsika ligatures.
   s = re.sub(r"ᳫ[ंँ]?", "ं", s)
+  s = s.replace("\ua8f3", "ं")
   # Drop hiatus avagraha placed immediately before an independent Devanagari vowel (e.g. `ऽउ`, `ऽआ`, `ऽए`, `ऽअ`).
   s = re.sub(r"ऽ(?=[अआइईउऊऋॠएऐओऔ])", "", s)
   # Collapse Mādhyandina orthographic geminations.
@@ -174,7 +184,7 @@ def normalize_sb_orthography(text: str) -> str:
 
 @functools.lru_cache(maxsize=2048)
 def _extract_sb_syllables_cached(text: str, source: str = "weber") -> tuple[SbSyllable, ...]:
-  clean = strip_weber_footnotes(text) if source == "weber" else strip_shri_pratika(text)
+  clean = strip_weber_footnotes(text) if source == "weber" else normalize_kanva_mula_for_sb(strip_shri_pratika(text))
   # Normalize Devanagari letters while keeping ŚB marks intact.
   lets = SCHEME.split_vyanjanas_and_svaras(clean)
   syls: list[SbSyllable] = []
@@ -678,11 +688,13 @@ class SbFileUpdateReport:
 @dataclasses.dataclass(frozen=True)
 class _VpCluster:
   subidx: int
-  vp_match: re.Match[str]
+  vp_match: re.Match[str] | None
   weber_text: str
   shri_text: str
   insert_pos: int
   existing_pp_match: re.Match[str] | None
+  mula_match: re.Match[str] | None = None
+  mula_header: str = "मूलम् - श्रीधरादि"
 
 
 def _extract_vp_clusters(part: str) -> list[_VpCluster]:
@@ -694,6 +706,7 @@ def _extract_vp_clusters(part: str) -> list[_VpCluster]:
       continue
     weber_text = ""
     shri_text = ""
+    mula_hdr = "मूलम् - श्रीधरादि"
     insert_pos = m.end()
     k = i + 1
     while k < len(dmatches) and dmatches[k].group(1).strip().startswith("विश्वास-टिप्पनी"):
@@ -706,6 +719,10 @@ def _extract_vp_clusters(part: str) -> list[_VpCluster]:
           weber_text = dmatches[k].group(2).strip()
         elif "श्रीधरादि" in sum_k and not shri_text:
           shri_text = dmatches[k].group(2).strip()
+          mula_hdr = sum_k
+        elif sum_k == "मूलम्" and not shri_text:
+          shri_text = dmatches[k].group(2).strip()
+          mula_hdr = sum_k
         insert_pos = dmatches[k].end()
         k += 1
       else:
@@ -721,9 +738,31 @@ def _extract_vp_clusters(part: str) -> list[_VpCluster]:
         shri_text=shri_text,
         insert_pos=insert_pos,
         existing_pp_match=existing_pp,
+        mula_match=None,
+        mula_header=mula_hdr,
       )
     )
     subidx += 1
+
+  if not clusters:
+    for i, m in enumerate(dmatches):
+      if m.group(1).strip() == "मूलम्":
+        existing_pp = None
+        if i + 1 < len(dmatches) and dmatches[i + 1].group(1).strip().startswith("पद-पाठः (यान्त्रिकः"):
+          existing_pp = dmatches[i + 1]
+        clusters.append(
+          _VpCluster(
+            subidx=0,
+            vp_match=None,
+            weber_text="",
+            shri_text=m.group(2).strip(),
+            insert_pos=m.end(),
+            existing_pp_match=existing_pp,
+            mula_match=m,
+            mula_header="मूलम्",
+          )
+        )
+        break
   return clusters
 
 
@@ -741,11 +780,16 @@ def _coerce_padapatha_items(
 
 
 def _extract_non_managed_blocks(text: str) -> list[tuple[str, str]]:
-  return [
-    (m.group(1).strip(), m.group(0))
-    for m in DETAILS_RE.finditer(text)
-    if not m.group(1).strip().startswith(("विश्वास-प्रस्तुतिः", "पद-पाठः (यान्त्रिकः"))
-  ]
+  out: list[tuple[str, str]] = []
+  for m in DETAILS_RE.finditer(text):
+    hdr = m.group(1).strip()
+    if hdr.startswith(("विश्वास-प्रस्तुतिः", "पद-पाठः (यान्त्रिकः")):
+      continue
+    raw = m.group(0)
+    if hdr == "मूलम्" and raw.startswith("<details open>"):
+      raw = "<details>" + raw[len("<details open>"):]
+    out.append((hdr, raw))
+  return out
 
 
 def _apply_span_edits(text: str, edits: Sequence[tuple[int, int, str]]) -> str:
@@ -852,7 +896,7 @@ def apply_sb_kandika_updates(
         map_key = lead
 
       if map_key is None:
-        if cl.existing_pp_match is not None and has_us_accents(cl.vp_match.group(2)):
+        if cl.existing_pp_match is not None and cl.vp_match is not None and has_us_accents(cl.vp_match.group(2)):
           vp_m = cl.vp_match
           open_attr = " open" if "<details open>" in vp_m.group(0)[:20] else ""
           masked_vp = f"<details{open_attr}><summary>विश्वास-प्रस्तुतिः (स्वराः पूर्याः)</summary>{vp_m.group(2)}</details>"
@@ -868,8 +912,8 @@ def apply_sb_kandika_updates(
       pp_block = format_padapatha_block(items)
 
       vp_m = cl.vp_match
-      existing_vp_has_us = has_us_accents(vp_m.group(2))
-      if (preserve_existing_us or vp_clean is None) and existing_vp_has_us:
+      existing_vp_has_us = (vp_m is not None) and has_us_accents(vp_m.group(2))
+      if vp_m is not None and (preserve_existing_us or vp_clean is None) and existing_vp_has_us:
         preserved_us_keys.append(key_label)
         preserved_vp_literals.append(vp_m.group(0))
         # In the reconciliation-check copy, mark preserved hand-edited VP so non-preserved blocks are still strictly checked.
@@ -879,7 +923,7 @@ def apply_sb_kandika_updates(
       else:
         if vp_clean is None:
           raise ValueError(f"vp_clean_hyphenated is required for non-US section {key_label!r} in {path}")
-        orig_summary = vp_m.group(1).strip()
+        orig_summary = vp_m.group(1).strip() if vp_m is not None else "विश्वास-प्रस्तुतिः"
         vp_sum, vp_acc, unmapped = build_sb_vp_from_padapatha(
           vp_clean,
           items,
@@ -889,10 +933,27 @@ def apply_sb_kandika_updates(
         )
         if unmapped:
           raise ValueError(f"Unmapped syllables in {key_label!r} ({path}): {unmapped}")
-        open_attr = " open" if "<details open>" in vp_m.group(0)[:20] else ""
-        new_vp_block = f"<details{open_attr}><summary>{vp_sum}</summary>\n\n{vp_acc}\n</details>"
-        edits.append((vp_m.start(), vp_m.end(), new_vp_block))
-        check_edits.append((vp_m.start(), vp_m.end(), new_vp_block))
+        # If the source `मूलम्` block was completely unaccented (no `᳘` or `॑`), tag `विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)`.
+        mula_has_accents = bool(
+          "\u1cd8" in (cl.weber_text + cl.shri_text)
+          or "\u0951" in (cl.weber_text + cl.shri_text)
+          or "\u0957" in cl.weber_text
+        )
+        if not mula_has_accents:
+          vp_sum = "विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)"
+        if vp_m is not None:
+          open_attr = " open" if "<details open>" in vp_m.group(0)[:20] else ""
+          new_vp_block = f"<details{open_attr}><summary>{vp_sum}</summary>\n\n{vp_acc}\n</details>"
+          edits.append((vp_m.start(), vp_m.end(), new_vp_block))
+          check_edits.append((vp_m.start(), vp_m.end(), new_vp_block))
+        else:
+          assert cl.mula_match is not None
+          mula_m = cl.mula_match
+          new_vp_prefix = f"<details open><summary>{vp_sum}</summary>\n\n{vp_acc}\n</details>\n\n"
+          collapsed_mula = f"<details><summary>{mula_m.group(1).strip()}</summary>{mula_m.group(2)}</details>"
+          rep_span = new_vp_prefix + collapsed_mula
+          edits.append((mula_m.start(), mula_m.end(), rep_span))
+          check_edits.append((mula_m.start(), mula_m.end(), rep_span))
 
       if cl.existing_pp_match is not None:
         pp_edit = (cl.existing_pp_match.start(), cl.existing_pp_match.end(), pp_block)
