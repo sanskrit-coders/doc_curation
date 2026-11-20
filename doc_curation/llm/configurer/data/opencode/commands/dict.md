@@ -1,0 +1,20 @@
+---
+description: Manages Indic and Sanskrit dictionaries — updates local StarDict dicts via stardict_sanskrit.commandInterface, locates dictionary code/repos, or maintains .babylon sources.
+---
+Load the `dictionary` skill and handle this dictionary request:
+
+$ARGUMENTS
+
+Key references:
+- Update local StarDict dictionaries under `/media/vvasuki/vData/dicts/stardict/` with:
+  ```bash
+  java -cp ~/gitland/indic-dict/dict-tools/bin/artifacts/dict-tools.jar \
+    stardict_sanskrit.commandInterface install \
+    --destinationPath /media/vvasuki/vData/dicts/stardict/ \
+    --dictRepoIndexUrl https://github.com/indic-dict/stardict-index/releases/download/current/dictionaryIndices.md \
+    --overwrite true
+  ```
+- Code & data repos: `~/gitland/indic-dict/dict-curation/`, `~/gitland/indic-dict/dict-tools/`, `~/gitland/indic-dict/dicts/`, `~/gitland/indic-dict/stardict/`, and `~/gitland/sanskrit/raw_etexts/koshaH/indic-dict/`.
+- Write only `.babylon` source files (never commit or leave generated `.babylon_final` files unless explicitly testing local builds).
+
+If no task or command is specified in `$ARGUMENTS`, ask what dictionary action is needed (e.g., updating local StarDict dicts, regenerating a `.babylon` file, or inspecting a dictionary repo).

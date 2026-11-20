@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import difflib
+import functools
 import re
 from typing import AbstractSet, Sequence
 
@@ -30,12 +31,15 @@ _SAME_ONSET_PAIRS = frozenset({
   ("सत", "सट"), ("सट", "सत"), ("त", "सट"), ("सट", "त"), ("त", "सत"), ("सत", "त"),
   ("व", "रव"), ("रव", "व"), ("व", "गव"), ("गव", "व"),
 })
+_COMPOUND_STOP_VOICE_PAIRS = frozenset({
+  ("त", "द"), ("द", "त"), ("प", "ब"), ("ब", "प"), ("ट", "ड"), ("ड", "ट"), ("क", "ग"),
+})
 
 DETAILS_RE = re.compile(r"<details(?:\s+open)?><summary>([^<]*)</summary>(.*?)</details>", re.S)
 PP_HEADER_RE = re.compile(r"^पद-पाठः \(यान्त्रिकः(?:\s*-\s*(\d+)/(\d+)\s*व्यत्यस्त-स्वराः)?\)$")
 _SUG_SPAN_RE = re.compile(r"\[\[([^|\]]+)\|([^\]]+)\]\]")
 _PIECE_PAT = re.compile(
-  r"\[\[([^|\]]+)\|([^\]]+)\]\]|[\u0900-\u0963\u0971-\u097f\u1cd0-\u1cff\u0951\u0952\-ऽ]+"
+  r"\[\[([^|\]]+)\|([^\]]+)\]\]|[\u0900-\u0963\u0969\u0971-\u097f\u1cd0-\u1cff\u0951\u0952\-ऽ]+"
 )
 
 
@@ -55,18 +59,20 @@ def has_us_accents(text: str) -> bool:
   return US_UDATTA in text or US_SVARITA in text
 
 
+@functools.lru_cache(maxsize=65536)
 def sanitize_us_accents(text: str) -> str:
   """Collapse duplicate adjacent Vedic accent marks without removing distinct ones."""
   return re.sub(r"[\u1cd0-\u1cff\u0951\u0952]+", lambda m: "".join(dict.fromkeys(m.group(0))), text)
 
 
+@functools.lru_cache(maxsize=65536)
 def bare_devanagari(text: str) -> str:
   """Strip accents and non-Devanagari characters for strict bare-form equality checks."""
   return re.sub(r"[^\u0900-\u097f]", "", accent.strip_accents(text))
 
 
-def syllables_with_marks(text: str) -> tuple[list[tuple[str, str]], list[str]]:
-  """Return normalized ``(onset, vowel_family)`` syllable keys and US accent marks (``'U'``/``'S'``/``''``)."""
+@functools.lru_cache(maxsize=65536)
+def _syllables_with_marks_cached(text: str) -> tuple[tuple[tuple[str, str], ...], tuple[str, ...]]:
   clean = sanitize_us_accents(text).replace("-", "")
   lets = SCHEME.split_vyanjanas_and_svaras(clean)
   keys: list[tuple[str, str]] = []
@@ -88,7 +94,13 @@ def syllables_with_marks(text: str) -> tuple[list[tuple[str, str]], list[str]]:
       cons = re.sub(r"[^\u0915-\u0939]", "", lt)
       if cons:
         onset += cons
-  return keys, mks
+  return tuple(keys), tuple(mks)
+
+
+def syllables_with_marks(text: str) -> tuple[list[tuple[str, str]], list[str]]:
+  """Return normalized ``(onset, vowel_family)`` syllable keys and US accent marks (``'U'``/``'S'``/``''``)."""
+  keys, mks = _syllables_with_marks_cached(text)
+  return list(keys), list(mks)
 
 
 def apply_marks_to_token(tok: str, new_marks: Sequence[str]) -> str:
@@ -120,6 +132,7 @@ def apply_marks_to_token(tok: str, new_marks: Sequence[str]) -> str:
   return res
 
 
+@functools.lru_cache(maxsize=65536)
 def is_solid_provenance(prov: str) -> bool:
   """Return True when a padapāṭha provenance note cites solid Vedic/Pāṇinian authority (not bare ``*MW*``)."""
   # Accept both canonical Devanagari abbreviation sign पा॰ (U+0970) and legacy पा\u0966 (U+0966).
@@ -150,6 +163,7 @@ def is_solid_provenance(prov: str) -> bool:
       "पा॰ ६.१.१८",
       "पा॰ ६.१.१९",
       "पा॰ ६.१.२०",
+      "पा॰ ६.१.२००",
       "पा॰ ६.१.२१",
       "पा॰ ६.१.२२",
       "पा॰ ६.२.",
@@ -422,6 +436,60 @@ def _refine_opcodes(ops: list[list], pp_keys: list, pp_meta: list, vp_keys: list
         continue
     refined.append(ops[idx])
     idx += 1
+
+  # 3. Coalesce impossible `pp < vp` ops (`insert` or `replace` with `i2 - i1 < j2 - j1`) caused by
+  #    `SequenceMatcher` jumping to a later repeated syllable/word (`लोकम्पृणाम्` #1 -> #2, lone `('व','a')`,
+  #    or `ऋतवः + वै -> ऋतवो वा`), absorbing adjacent `equal` + `delete`/`replace` spans until `pp >= vp`.
+  #    Prefer rightward merge (`short_pp + equal + delete/replace`) before leftward merge so an `insert + equal + delete`
+  #    pair does not steal a preceding already-balanced `2->1` yaṇ merge.
+  def _is_short_pp(op: list) -> bool:
+    if op[0] == "insert" and ((op[1] == 0 and op[3] == 0) or (op[2] == len(pp_keys) and op[4] == len(vp_keys))):
+      return False
+    return op[0] in ("insert", "replace") and (op[2] - op[1]) < (op[4] - op[3])
+
+  for allow_leftward in (False, True):
+    changed = True
+    while changed:
+      changed = False
+      merged: list[list] = []
+      i = 0
+      while i < len(refined):
+        if (
+          i + 2 < len(refined)
+          and _is_short_pp(refined[i])
+          and refined[i + 1][0] == "equal"
+          and refined[i + 2][0] in ("delete", "replace", "insert")
+          and (refined[i + 2][2] - refined[i][1]) <= 60
+          and (refined[i + 2][4] - refined[i][3]) <= 60
+        ):
+          merged.append(["replace", refined[i][1], refined[i + 2][2], refined[i][3], refined[i + 2][4]])
+          i += 3
+          changed = True
+        elif (
+          allow_leftward
+          and i + 2 < len(refined)
+          and refined[i][0] in ("delete", "replace")
+          and (refined[i][2] - refined[i][1]) > (refined[i][4] - refined[i][3])
+          and refined[i + 1][0] == "equal"
+          and _is_short_pp(refined[i + 2])
+          and (refined[i + 2][2] - refined[i][1]) <= 60
+          and (refined[i + 2][4] - refined[i][3]) <= 60
+        ):
+          merged.append(["replace", refined[i][1], refined[i + 2][2], refined[i][3], refined[i + 2][4]])
+          i += 3
+          changed = True
+        elif i + 1 < len(refined) and _is_short_pp(refined[i]) and refined[i + 1][0] in ("delete", "replace", "insert"):
+          merged.append(["replace", refined[i][1], refined[i + 1][2], refined[i][3], refined[i + 1][4]])
+          i += 2
+          changed = True
+        elif allow_leftward and i + 1 < len(refined) and refined[i][0] in ("delete", "replace") and _is_short_pp(refined[i + 1]):
+          merged.append(["replace", refined[i][1], refined[i + 1][2], refined[i][3], refined[i + 1][4]])
+          i += 2
+          changed = True
+        else:
+          merged.append(refined[i])
+          i += 1
+      refined = merged
   return refined
 
 
@@ -475,7 +543,8 @@ def _align_replace_span(
       if best is None or cand[0] > best[0]:
         best = cand
 
-    # 1. Leading 1->0 left-merge onto j1 - 1.
+    # 1. Leading 1->0 left-merge onto j1 - 1 (blocked when i1 - 1 ends in a coda consonant
+    #    that resyllabifies onto vowel-initial i1 + i1+1 at j1, e.g. `-म् + आ᳓ + अ-` -> `-मा᳓-`).
     if (
       p == i1
       and v == j1
@@ -483,6 +552,7 @@ def _align_replace_span(
       and j1 > 0
       and pp_keys[i1][0] == ""
       and (pp_meta[i1][1] == 0 or i1 in member_starts)
+      and not ((i2 - i1) == 2 and (j2 - j1) == 1 and pp_keys[i1 + 1][0] == "" and vp_keys[j1][0] != "")
     ):
       ok_gap = True
       if j1 < len(vp_meta):
@@ -490,6 +560,9 @@ def _align_replace_span(
         ok_gap = pi_prev == pi_cur or _no_punct_between(vp_work, vp_pieces[pi_prev], vp_pieces[pi_cur])
       if ok_gap:
         _consider(3, ("merge", (i1 - 1, i1, j1 - 1)), _solve(p + 1, v))
+        if i1 + 1 < i2 and pp_keys[i1 + 1][0] == "" and (pp_meta[i1 + 1][1] == 0 or (i1 + 1) in member_starts):
+          # Leading 2->0 left-merge onto j1 - 1 (e.g. `यज्ञस्य + आ + ऋछेत् -> यज्ञस्यार्छेत्`).
+          _consider(3, ("merge", (i1 - 1, i1, i1 + 1, j1 - 1)), _solve(p + 2, v))
 
     # 2. Trailing 1->0 right-merge of i2 - 1 with i2 onto j2.
     if p == i2 - 1 and v == j2 and j2 < len(vp_meta) and i2 < len(pp_keys):
@@ -508,12 +581,20 @@ def _align_replace_span(
     if p < i2 and v < j2:
       same_on = _same_onset(pp_keys[p][0], vp_keys[v][0])
       resyl_ok = (
-        pp_keys[p][0] == ""
-        and (pp_meta[p][1] == 0 or p in member_starts)
-        and v > 0
+        v > 0
         and vp_meta[v - 1][0] == vp_meta[v][0]
         and vp_keys[v][0] != ""
-        and (pp_keys[p][1] == vp_keys[v][1] or (pp_keys[p][1] == "a" and vp_keys[v][1] in ("o", "e")))
+        and (
+          (
+            (pp_meta[p][1] == 0 or p in member_starts)
+            and (
+              (pp_keys[p][0] == "" and (pp_keys[p][1] == vp_keys[v][1] or (pp_keys[p][1] == "a" and vp_keys[v][1] in ("o", "e"))))
+              or (pp_keys[p][0] != "" and vp_keys[v][0].endswith(pp_keys[p][0]) and (pp_keys[p][1] == vp_keys[v][1] or (pp_keys[p][1] == "a" and vp_keys[v][1] in ("o", "e"))))
+            )
+          )
+          or (p > 0 and pp_keys[p - 1][1] == "r" and vp_keys[v][0] == "र" + pp_keys[p][0] and pp_keys[p][1] == vp_keys[v][1])
+          or (p in member_starts and (pp_keys[p][0], vp_keys[v][0]) in _COMPOUND_STOP_VOICE_PAIRS and pp_keys[p][1] == vp_keys[v][1])
+        )
       )
       if same_on or resyl_ok:
         sc = 4 if pp_keys[p] == vp_keys[v] else (3 if pp_keys[p][1] == vp_keys[v][1] else 2)
@@ -618,11 +699,15 @@ def _map_pp_to_vp_syllables(
         for o in range(i2 - i1):
           p_idx, v_idx = i1 + o, j1 + o
           resyl_ok = (
-            pp_keys[p_idx][0] == ""
-            and pp_meta[p_idx][1] == 0
-            and pp_keys[p_idx][1] == vp_keys[v_idx][1]
+            pp_keys[p_idx][1] == vp_keys[v_idx][1]
             and v_idx > 0
             and vp_meta[v_idx - 1][0] == vp_meta[v_idx][0]
+            and vp_keys[v_idx][0] != ""
+            and (
+              ((pp_meta[p_idx][1] == 0 or p_idx in member_starts) and (pp_keys[p_idx][0] == "" or vp_keys[v_idx][0].endswith(pp_keys[p_idx][0])))
+              or (p_idx > 0 and pp_keys[p_idx - 1][1] == "r" and vp_keys[v_idx][0] == "र" + pp_keys[p_idx][0])
+              or (p_idx in member_starts and (pp_keys[p_idx][0], vp_keys[v_idx][0]) in _COMPOUND_STOP_VOICE_PAIRS)
+            )
           )
           if _same_onset(pp_keys[p_idx][0], vp_keys[v_idx][0]) or resyl_ok:
             pp_to_vp[p_idx] = v_idx

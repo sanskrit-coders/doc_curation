@@ -8,6 +8,7 @@ without loading external lexicons.
 
 from __future__ import annotations
 
+import functools
 import re
 from typing import Sequence
 
@@ -22,19 +23,25 @@ SLP_VOICELESS_CONS = frozenset("kKcCwWtTpPSzs")
 # so rhotacism applies before vowels and voiced consonants regardless of vowel quality.
 R_FINAL_SLP = frozenset({
   "punaH", "punar", "antaH", "antar", "svaH", "svar", "suvaH", "suvar",
-  "mahaH", "mahar", "prAtaH", "prAtar", "ahaH", "ahar", "kaH", "kar",
+  "mahaH", "mahar", "prAtaH", "prAtar", "ahaH", "ahar", "kaH", "kar", "akaH", "akar",
   "pitaH", "mAtaH", "BrAtaH", "svasaH", "duhitaH", "savitaH", "hotaH",
   "DAtaH", "tvazwaH", "netaH", "viDAtaH", "bahiH", "bahir",
-  "avaH", "AvaH", "vaH", "vivaH",
+  "avaH", "AvaH", "vaH", "vivaH", "vAH", "vAr",
 })
 
 _R_FINAL_SUFFIXES = ("punaH", "antaH", "svaH", "prAtaH", "ahaH", "taH")
 _PRONOUN_SU_LOPA = frozenset({"saH", "ezaH", "syaH"})
 _SPECIAL_LEFT_WORDS = _PRONOUN_SU_LOPA | R_FINAL_SLP | frozenset({
-  "A", "nu", "iti", "sTa", "syAma", "viSvasya", "viSvavAra", "sadanA", "ca", "Gora", "vidita", "garBaH", "rAjA", "vyAcakzva", "cakzva", "dravantA", "dravaMtA", "saMvatsara",
+  "A", "nu", "iti", "eva", "hf", "asmi", "Bava", "aDUzata", "sTa", "syAma", "viSvasya", "viSvavAra", "sadanA", "ca", "Gora", "vidita", "garBaH", "rAjA", "vyAcakzva", "cakzva", "dravantA", "dravaMtA", "saMvatsara", "AsiTa",
 })
 _VERIFIED_HIATUS_SLP_PAIRS = frozenset({
   ("A", "aham"),
+  ("A", "ayam"),
+  ("AsiTa", "upa"),
+  ("hf", "iti"),
+  ("asmi", "fk"),
+  ("Bava", "AtmA"),
+  ("aDUzata", "astozata"),
   ("sTa", "apsukzitaH"),
   ("syAma", "upayAmagfhItaH"),
   ("viSvasya", "arizwyE"),
@@ -106,6 +113,7 @@ def clean_deva_for_sandhi(text: str) -> str:
   return s
 
 
+@functools.lru_cache(maxsize=65536)
 def canonical_geminates(slp: str) -> str:
   """Collapse recensional consonant geminates, epentheses, and orthographic variants."""
   s = slp
@@ -143,6 +151,7 @@ def _to_raw_slp(deva_text: str) -> str:
   return slp.replace("L", "q").replace("|", "Q")
 
 
+@functools.lru_cache(maxsize=65536)
 def to_norm_slp(deva_text: str) -> str:
   """Convert Devanagari text to canonicalized SLP1 with ``ळ``/``ळ्ह`` normalized."""
   return canonical_geminates(_to_raw_slp(deva_text))
@@ -234,6 +243,9 @@ def _vowel_sandhi(left: str, right: str, is_compound: bool, left_word_slp: str =
       r_coal = "e" if r0 in "iI" else ("o" if r0 in "uU" else "ar")
       for mid2 in join_vowels("a", r_coal):
         outs.add(stem + mid2 + right[1:])
+    # ŚB Brāhmaṇa vṛddhi `एव + इदम्` -> `एवैदम्` (e.g. ŚB 3.4.2.15 `यथा हैवैदम्`).
+    if left_word_slp == "eva" and c_last == "a" and right.startswith("idam"):
+      outs.add(stem + "E" + right[1:])
     # Permit hiatus for pragṛhya (-ī/-ū/-e, monosyllabic nipāta u per पा॰ १.१.१४), non-compound -o (पा॰ ६.१.११५ / ओत्),
     # or clause-final finite verbs (-ti/-te/-nti/-nte) where Visvara prints a `-` dash without daṇḍa.
     lw = left_word_slp or left
@@ -302,6 +314,9 @@ def _visarga_sandhi(left: str, right: str, left_word_slp: str) -> set[str]:
         outs.update((stem[:-1] + "o" + right[1:], stem[:-1] + "o" + right, stem + right))
       else:
         outs.add(stem + right)
+        if left_word_slp == "vaH":
+          # Vedic lengthening `वः + vowel -> वा + vowel` (e.g. ŚB 3.5.1.22 `यद्वा उपावर्तेय`).
+          outs.add(stem[:-1] + "A" + right)
         for dv in join_vowels("a", r0):
           outs.add(stem[:-1] + dv + right[1:])
     elif r0 in SLP_VOICED_CONS:
@@ -310,6 +325,9 @@ def _visarga_sandhi(left: str, right: str, left_word_slp: str) -> set[str]:
         outs.add(stem[:-1] + "A" + right)
     else:
       outs.update(_visarga_voiceless(left, stem, right, allow_z=True))
+      if r0 in ("s", "z") and left.endswith("taH"):
+        # Vedic sandhi (VS 19.2 `परीतो षिञ्चता`): `-तः + सि/षि-` -> `-तो षि-` (पा॰ ८.३.१०६).
+        outs.add(stem[:-1] + "oz" + right[1:])
   elif vp == "A":
     if r0 in SLP_VOWELS or r0 in SLP_VOICED_CONS:
       outs.add(stem + right)
@@ -447,11 +465,11 @@ def sandhi_step(left: str, right_raw: str, is_compound: bool = False, left_word_
   return {canonical_geminates(o) for o in outs}
 
 
-def word_to_slp_options(pada_deva: str) -> set[str]:
-  """Convert a padapāṭha token (allowing ``-`` samāsa splits) to candidate SLP1 forms."""
+@functools.lru_cache(maxsize=65536)
+def _word_to_slp_options_cached(pada_deva: str) -> frozenset[str]:
   parts = [p for p in pada_deva.split("-") if p.strip()]
   if not parts:
-    return {""}
+    return frozenset({""})
   cur = {to_norm_slp(parts[0])}
   for pt in parts[1:]:
     r_slp = to_norm_slp(pt)
@@ -464,7 +482,12 @@ def word_to_slp_options(pada_deva: str) -> set[str]:
     res.add(c)
     if c.endswith("s"):
       res.add(c[:-1] + "H")
-  return res
+  return frozenset(res)
+
+
+def word_to_slp_options(pada_deva: str) -> set[str]:
+  """Convert a padapāṭha token (allowing ``-`` samāsa splits) to candidate SLP1 forms."""
+  return set(_word_to_slp_options_cached(pada_deva))
 
 
 def _matches_avasana_end(st: str, target: str) -> bool:

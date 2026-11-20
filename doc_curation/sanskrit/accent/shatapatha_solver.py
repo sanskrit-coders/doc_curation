@@ -97,8 +97,8 @@ from doc_curation.sanskrit.accent.validator import (
 # Paths & constants
 # ---------------------------------------------------------------------------
 
-# Increment cache version so v8 rebuilds cleanly with VS/TS/RV/AV/TB ONLY (zero TA ingestion).
-LEXICON_CACHE_VERSION = 8
+# Increment cache version so v11 rebuilds cleanly after RV/AV/MS/TS padasvara fixes.
+LEXICON_CACHE_VERSION = 11
 
 _VS_DETAILS_RE = re.compile(
   r"<details(?:\s+open)?>\s*<summary>\s*(?:<h\d>)?([^<]*?)(?:\s*\.\.\.\{Loading\}\.\.\.)?\s*(?:</h\d>)?\s*</summary>(.*?)</details>",
@@ -260,6 +260,10 @@ DUAL_ACCENT_STEMS: tuple[str, ...] = (
   "नराशंस", "तनूनपात्", "द्यावा", "मित्रावरुण", "इन्द्रावरुण", "इन्द्राग्नी",
   "इन्द्राविष्णू", "इन्द्राबृहस्पती", "इन्द्रासोमा", "अग्नीषोम", "सोमारुद्र",
   "अहोरात्र", "परिधातवै",
+  "उषासानक्ता", "नक्तोषासा", "नाभानेदिष्ठ", "शुनश्शेप", "शुनासीर",
+  "यातवै", "वोढवे", "हन्तवै", "अनुएतवै", "अन्वेतवै", "अभिचरितवै",
+  "अग्नाविष्णू", "अग्नीवरुण", "शण्डामर्क", "शुक्रामन्थिन", "बम्बाविश्ववयस",
+  "अङ्गापरूंषि", "इध्माबर्हि", "सत्यराजान्",
 )
 
 # High-frequency ŚB function words (always valid standalone padas in DP splitter)
@@ -417,7 +421,7 @@ def _normalize_lookup_key(word_deva: str) -> str:
 
 
 def _is_dual_accent_word(bare: str) -> bool:
-  return any(st in bare for st in DUAL_ACCENT_STEMS)
+  return bare == "वाव" or any(st in bare for st in DUAL_ACCENT_STEMS)
 
 
 _DEVA_IND_VOWELS = frozenset("अआइईउऊऋॠऌॡएऐओऔ")
@@ -809,6 +813,12 @@ def _fast_extract_vp_pieces(vp_work: str) -> list[dict]:
     ):
       prev_yan_onset = pending_yan[1]
     pending_yan = None
+    prev_ends_semi = bool(
+      vp_pieces
+      and vp_pieces[-1]["ends_semi"]
+      and ks[0][0] == ""
+      and _no_punct_between(vp_work, vp_pieces[-1], {"start": s})
+    )
     vp_pieces.append({
       "start": s,
       "end": e,
@@ -820,8 +830,9 @@ def _fast_extract_vp_pieces(vp_work: str) -> list[dict]:
       "old_mks": old_mks,
       "new_mks": new_mks,
       "avagraha_after": _fast_avagraha_after(o),
-      "ends_semi": o.endswith(("य्", "व्य्", "त्य्", "प्य्", "र्य्")),
+      "ends_semi": o.endswith(("य्", "व्", "र्", "ल्")),
       "prev_yan_onset": prev_yan_onset,
+      "prev_ends_semi": prev_ends_semi,
     })
   return vp_pieces
 
@@ -980,6 +991,39 @@ def classical_padapatha_to_us(raw_form: str) -> tuple[str, tuple[str, ...], str 
   if n_acc > 1 and not _is_dual_accent_word(bare_key):
     return None
   return bare_key, tuple(us_list), hyph_bare
+
+
+def us_padasvara_to_entry(raw_form: str) -> tuple[str, tuple[str, ...], str | None] | None:
+  """Parse a US-accented padasvara lexicon entry (e.g. from ``kyv-ts-padasvara``) into ``(bare_key, marks, hyph)``."""
+  s = raw_form.strip()
+  if not s or not _DEVANAGARI_RE.search(s):
+    return None
+  s = s.replace("ᳫँ", "ं").replace("ᳫं", "ं").replace("ँ", "ं").strip("।॥,. ;:+")
+  clean_for_split = _join_virama_vowels(s.replace("-", "").replace("ऽ", ""))
+  scanned = _fast_scan_deva_syllables(clean_for_split)
+  if not scanned:
+    return None
+  bare_key = _normalize_lookup_key(clean_for_split)
+  if not bare_key:
+    return None
+
+  hyph_bare: str | None = None
+  if "-" in s or "ऽ" in s:
+    sep = "-" if "-" in s else "ऽ"
+    parts = [re.sub(r"[\u0951\u0952\u1cd0-\u1cff]", "", p) for p in s.split(sep) if p]
+    if len(parts) >= 2 and all(_DEVANAGARI_RE.search(p) for p in parts):
+      cand_h = "-".join(parts)
+      if _is_valid_compound_hyphenation(cand_h, bare_key):
+        hyph_bare = cand_h
+
+  marks = tuple(
+    "S" if US_SVARITA in mks else ("U" if US_UDATTA in mks else "")
+    for mks, _ in scanned
+  )
+  n_acc = sum(1 for m in marks if m)
+  if n_acc > 1 and not _is_dual_accent_word(bare_key):
+    return None
+  return bare_key, marks, hyph_bare
 
 
 _IAST_VOWEL_RE = re.compile(
@@ -1298,6 +1342,7 @@ class UnifiedVedicLexicon:
   def _ingest_padasvara_babylon(self, path: str, tag: str) -> None:
     with open(path, encoding="utf-8", errors="ignore") as f:
       raw = f.read()
+    is_us = US_UDATTA in raw or US_SVARITA in raw
     for ent in raw.split("\n\n"):
       if not ent or ent.startswith("#"):
         continue
@@ -1309,11 +1354,25 @@ class UnifiedVedicLexicon:
       if not m:
         continue
       form_raw, freq = m.group(1), int(m.group(2))
-      conv = classical_padapatha_to_us(form_raw)
+      conv = us_padasvara_to_entry(form_raw) if is_us else classical_padapatha_to_us(form_raw)
       if conv is None:
         continue
       key, marks, hyph = conv
       self._add_form(key, marks, tag, freq=freq, hyph=hyph)
+      if is_us and "-" in form_raw:
+        seen_hw = {key}
+        for hw in head.split("|"):
+          if not _DEVANAGARI_RE.search(hw):
+            continue
+          hb = _normalize_lookup_key(hw)
+          if (
+              hb
+              and hb not in seen_hw
+              and len(_fast_scan_deva_syllables(hb)) == len(marks)
+              and (not key.endswith(("ः", "्")) or hb.endswith(("ः", "्")))
+          ):
+            seen_hw.add(hb)
+            self._add_form(hb, marks, tag, freq=freq, hyph=hyph)
 
   def _ingest_vs_corpus(self, vs_dir: str) -> None:
     tok_re = re.compile(r"[\u0900-\u0963\u0971-\u097f\u1cd0-\u1cff\-]+")

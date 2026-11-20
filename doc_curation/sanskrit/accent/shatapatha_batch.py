@@ -65,10 +65,10 @@ _PRATIKA_PAREN_RE = re.compile(r"\(\s*[\u0900-\u097f\u1cd0-\u1cff\u0951-\u0957\s
 _SUG_SPAN_RE = re.compile(r"\[\[([^|\]]+)\|([^\]]+)\]\]")
 _INLINE_NOTE_RE = re.compile(r"\+\+\+.*?\+\+\+|\[\[(?:\?+|!+)\]\]", re.S)
 SB_CORPUS_TAGS: tuple[str, ...] = ("VS", "TS", "RV", "AV", "TB")
-_ZERO_CORPUS_COUNT_RE = re.compile(r"\*(?:VS|TS|RV|AV|TB|TA|EK)\*-0(?![0-9])")
-_FORBIDDEN_TA_RE = re.compile(r"\*TA\*(?:-\d+)?")
-_FORBIDDEN_EK_RE = re.compile(r"\*EK\*(?:-\d+)?")
-_FORBIDDEN_SRC_RE = re.compile(r"\*(?:TA|EK)\*(?:-\d+)?")
+_ZERO_CORPUS_COUNT_RE = re.compile(r"\*(?:VS|TS|RV|AV|TB|TA|EK)\*-0(?:/0)?(?![0-9/])")
+_FORBIDDEN_TA_RE = re.compile(r"\*TA\*(?:-\d+(?:/\d+)?)?")
+_FORBIDDEN_EK_RE = re.compile(r"\*EK\*(?:-\d+(?:/\d+)?)?")
+_FORBIDDEN_SRC_RE = re.compile(r"\*(?:TA|EK)\*(?:-\d+(?:/\d+)?)?")
 _WEAK_PLACEHOLDER_PROV_RE = re.compile(r"अनाम्नातम्|अनुमानम्")
 
 _WORKER_LEXICON: UnifiedVedicLexicon | None = None
@@ -166,8 +166,9 @@ def _reason_bucket(reason: str) -> str:
 
 _CORPUS_RE = r"(?:VS|TS|RV|AV|TB)"
 _ALL_CORPUS_RE = r"(?:VS|TS|RV|AV|TB|TA|EK)"
-_BARE_TAGS_ONLY_RE = re.compile(rf"\*{_ALL_CORPUS_RE}\*(?:-\d+)?(?:\s*/\s*\*{_ALL_CORPUS_RE}\*(?:-\d+)?)*")
-_INLINE_FORM_TAG_RE = re.compile(rf"^\*({_ALL_CORPUS_RE})\*(?:-\d+)?(\s+(?![०-९\d\s]).+)$")
+_CNT_OPT = r"(?:-\d+(?:/\d+)?)?"
+_BARE_TAGS_ONLY_RE = re.compile(rf"\*{_ALL_CORPUS_RE}\*{_CNT_OPT}(?:\s*/\s*\*{_ALL_CORPUS_RE}\*{_CNT_OPT})*")
+_INLINE_FORM_TAG_RE = re.compile(rf"^\*({_ALL_CORPUS_RE})\*{_CNT_OPT}(\s+(?![०-९\d\s]).+)$")
 
 
 def enrich_provenance_with_corpus_counts(
@@ -1576,8 +1577,64 @@ def audit_full_sb_corpus(
   )
 
 
+# External Vedic corpora auto-surfaced for ŚB `A/B` stem counts (TA convention, excluding self-referential `ŚB`).
+SB_PROVENANCE_MAJOR_CORPORA: tuple[str, ...] = ("TS", "RV", "TB", "AV", "VS")
+
+
+def annotate_sb_padapatha_counts(
+  sb_root: str | os.PathLike[str],
+  *,
+  kandas: Sequence[str | int] | None = None,
+  files: Sequence[str | os.PathLike[str]] | None = None,
+  counter: Any | None = None,
+  dry_run: bool = False,
+) -> dict[str, Any]:
+  """Apply the TA ``*CORPUS*-M/N`` stem-count convention across ŚB ``पद-पाठः (यान्त्रिकः...)`` blocks.
+
+  Uses :func:`doc_curation.sanskrit.accent.provenance.annotate_padapatha_markdown_counts` with
+  ``major_corpora=SB_PROVENANCE_MAJOR_CORPORA``, ``skip_tags=frozenset({"ŚB"})``,
+  ``prune_unverified_standalone_tags=True``, and ``enrich_major_corpora=True``.
+  """
+  from doc_curation.sanskrit.accent.provenance import VedicCorpusCounter, annotate_padapatha_markdown_counts
+
+  root = Path(sb_root)
+  if files is not None:
+    md_files = [Path(f) for f in files]
+  else:
+    md_files = discover_sb_content_files(root, kandas=kandas)
+  vc = counter if counter is not None else VedicCorpusCounter.load_or_build()
+
+  files_changed = 0
+  total_unresolved = 0
+  changed_paths: list[str] = []
+  for p in md_files:
+    txt = p.read_text(encoding="utf-8")
+    new_txt, unres = annotate_padapatha_markdown_counts(
+      txt,
+      vc,
+      prune_unverified_standalone_tags=True,
+      enrich_major_corpora=True,
+      major_corpora=SB_PROVENANCE_MAJOR_CORPORA,
+      skip_tags=frozenset({"ŚB"}),
+    )
+    total_unresolved += len(unres)
+    if new_txt != txt:
+      files_changed += 1
+      rel = p.relative_to(root).as_posix() if p.is_relative_to(root) else str(p)
+      changed_paths.append(rel)
+      if not dry_run:
+        p.write_text(new_txt, encoding="utf-8")
+  return {
+    "files_scanned": len(md_files),
+    "files_changed": files_changed,
+    "dry_run": dry_run,
+    "unresolved_count": total_unresolved,
+    "changed_paths": changed_paths,
+  }
+
+
 def _cli(argv: Sequence[str] | None = None) -> int:
-  """CLI: ``python -m doc_curation.sanskrit.accent.shatapatha_batch {solve,apply,audit} ...`` (JSON on stdout)."""
+  """CLI: ``python -m doc_curation.sanskrit.accent.shatapatha_batch {solve,apply,audit,counts} ...`` (JSON on stdout)."""
   import argparse
   import sys
 
@@ -1606,6 +1663,12 @@ def _cli(argv: Sequence[str] | None = None) -> int:
   p_audit.add_argument("--files", nargs="*", default=None)
   p_audit.add_argument("--preserved-ids", default=None, help="corpus_summary.json (preserved_existing_us_ids) or newline list")
 
+  p_counts = sub.add_parser("counts", help="annotate_sb_padapatha_counts (TA A/B stem convention)")
+  p_counts.add_argument("sb_root")
+  p_counts.add_argument("--kandas", nargs="*", default=None)
+  p_counts.add_argument("--files", nargs="*", default=None)
+  p_counts.add_argument("--dry-run", action="store_true")
+
   a = ap.parse_args(argv)
   if a.cmd == "solve":
     out = run_solver_corpus_pass(
@@ -1624,6 +1687,10 @@ def _cli(argv: Sequence[str] | None = None) -> int:
     )
     json.dump(rep.to_dict(), sys.stdout, ensure_ascii=False, indent=2)
     rc = 0 if rep.rejected == 0 else 1
+  elif a.cmd == "counts":
+    rep = annotate_sb_padapatha_counts(a.sb_root, kandas=a.kandas, files=a.files, dry_run=a.dry_run)
+    json.dump(rep, sys.stdout, ensure_ascii=False, indent=2)
+    rc = 0
   else:
     pres: set[str] | None = None
     if a.preserved_ids:

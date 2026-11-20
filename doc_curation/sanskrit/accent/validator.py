@@ -170,7 +170,16 @@ SIMPLEX_TINANTA_ALLOWLIST: frozenset[str] = frozenset({
   "विक्थाः",
   "आजन्त",
   "विद्युः",
+  "विद्रे",
   "विजते",
+  "सुवाति",
+  "सुवासि",
+  "सुवानि",
+  "सुवति",
+  "सुवन्ति",
+  "सुवतु",
+  "सुवन्तु",
+  "सुवताम्",
   "अभवत्",
   "अभिनत्",
   "अभूत्",
@@ -617,6 +626,9 @@ DEFAULT_VERIFIED_AA_HIATUSES: frozenset[tuple[str, str]] = frozenset({
   ("राजा ३", "इति"),
   ("द्रवन्ता", "आ"),
   ("संवत्सर", "आस"),
+  ("आसिथ", "उप"),
+  ("भव", "आत्मा"),
+  ("अधूषत", "अस्तोषत"),
 })
 
 
@@ -934,8 +946,26 @@ def find_false_nighata_arrows(
   return hits
 
 
+_ENCLITIC_8118_ALLOWLIST: frozenset[str] = frozenset({
+  # Genuine Vedic enclitic particles (निपाताः) and anvādeśa/enclitic pronominals (पा॰ ८.१.१८ / ८.१.२१-२३ / २.४.३२-३४).
+  "च", "वा", "ह", "उ", "ऊ", "स्म", "इव", "चित्", "चन", "नः", "वः", "पः", "मे", "ते", "मा", "त्वा", "नौ", "वाम्",
+  "ईम्", "सीम्", "अह", "स्वित्", "कम्", "तु", "घ", "घा", "हि", "खलु", "किल", "इत्", "नु", "सु", "शम्",
+  "वै", "एव", "अङ्ग", "उत", "स्य", "स", "सा", "तत्", "तम्", "ताम्", "तस्य", "तस्मै", "तस्मात्", "तस्मिन्",
+  "तस्याः", "तस्याम्", "तस्या", "तस्यै", "तेन", "तया", "तयोः", "तेषाम्", "तासाम्", "तान्", "ताः", "तानि", "तौ",
+  "अस्य", "अस्मै", "अस्मात्", "अस्मिन्", "अस्याः", "अस्याम्", "अस्या", "अस्यै", "अस्योः",
+  "एनम्", "एनाम्", "एनत्", "एनान्", "एनेन", "एनया", "एनौ", "एने", "एनयोः", "एनाः", "एनानि",
+  "एषाम्", "आसाम्", "एभ्यः", "आभ्यः", "एषु", "आसु", "एभिः", "आभिः",
+  "एतम्", "एताम्", "एतत्", "एतस्य", "एतस्मै", "एतस्मात्", "एतस्मिन्", "एतस्याः", "एतस्याम्",
+  "एतेन", "एतया", "एतयोः", "एतेषाम्", "एतासाम्", "एते", "एतान्", "एताः", "एतानि", "एतौ",
+  "इमम्", "इमाम्", "इदम्", "इमान्", "इमाः", "इमानि", "अनेन", "अनया", "अनयोः",
+  "अमुम्", "अमूम्", "अदः", "अमुष्य", "अमुष्मै", "अमुष्मात्", "अमुष्मिन्",
+  "त्वः", "त्वम्", "त्वत्", "त्वे", "त्वाः", "बत", "वत", "समः", "समम्", "समे", "समस्य", "समान्", "समाः", "समानि", "नेमः",
+})
+_NON_8118_ANUDATTA_TAGS: tuple[str, ...] = tuple(t for t in VALID_ANUDATTA_RULE_TAGS if t != "८.१.१८")
+
+
 def find_unlicensed_unaccented_padas(pp_lines: Sequence[str]) -> list[str]:
-  """Return padapāṭha bullet lines whose target has 0 accents without a Pāṇini ``8.1.*``/``2.4.*`` nighāta license."""
+  """Return padapāṭha bullet lines whose target has 0 accents without a valid Pāṇini ``8.1.*``/``2.4.*`` nighāta license."""
   hits: list[str] = []
   for ln in pp_lines:
     it_list = parse_padapatha_items(ln)
@@ -944,10 +974,17 @@ def find_unlicensed_unaccented_padas(pp_lines: Sequence[str]) -> list[str]:
     it = it_list[0]
     if "?" in it.ref or has_us_accents(it.ref):
       continue
-    if bare_devanagari(it.ref) in ("भूः", "ओम्"):
+    bare = bare_devanagari(it.ref)
+    if bare in ("भूः", "ओम्"):
       continue
     if not any(tag in it.prov for tag in VALID_ANUDATTA_RULE_TAGS):
       hits.append(ln)
+      continue
+    # Anti-cheat guard: `पा॰ ८.१.१८` alone only licenses genuine enclitics/particles/anvādeśa pronouns,
+    # never arbitrary unaccented nouns/compounds (e.g. `पुमास्तेन (अनुदात्तम्, पा॰ ८.१.१८)`).
+    if "८.१.१८" in it.prov and not any(tag in it.prov for tag in _NON_8118_ANUDATTA_TAGS):
+      if "-" in it.ref or bare not in _ENCLITIC_8118_ALLOWLIST:
+        hits.append(ln)
   return hits
 
 
@@ -1009,11 +1046,11 @@ def find_unsplit_upasarga_tinantas(
         "विन्द", "विध्य", "विद्ध", "विवेश", "विविश", "विविच", "विविदिष", "विनक्", "विच्य", "विजत", "विजन्त", "विजे",
         "सुन्व", "सुनो", "सुनु", "सुण्व", "सुणो", "सुणु", "सुषाव", "सुषुव", "सुस्र", "सुषुप",
         "प्रथ", "प्रच्छ", "पृच्छ", "प्रीण", "प्रक्ष्य",
-        "अवृण", "अवृध", "अवृज", "अवृत", "अवृह", "अतिष्ठ", "अप्रीण", "अपद्य", "अपादय", "अवप", "अपश्य", "अपत", "अपिब",
+        "अवृण", "अवृध", "अवृज", "अवृत", "अवृह", "अववृत्र", "अववृत", "अतिष्ठ", "अप्रीण", "अपद्य", "अपादय", "अवप", "अपश्य", "अपत", "अपिब",
         "अवद", "अवह", "अभव", "अभज", "अनय", "अविन्द", "अविध्य", "अवर्त", "अवर्ध", "अवस",
-        "अप्लव", "अपाव", "अपुना", "अपुन", "अपच", "अपृच्छ", "अपृण", "अप्रथ", "अवच", "अवर्ष्", "अवात्स", "अपिपतिष",
-        "अपूपुर", "अवेदिष", "अभिषज्", "अध्याय", "अप्लाव",
-        "आप्न", "आप्य", "आदय", "आदित्य", "आश्नु", "आश्न", "आर्ध्य", "आञ्च", "आसात", "निन्य", "निन्द",
+        "अप्लव", "अपाव", "अपुना", "अपुन", "अपच", "अपृच्छ", "अपृण", "अप्रथ", "अवच", "अवोच", "अवर्ष्", "अवात्स", "अवादिष", "अवादी", "अपिपतिष",
+        "अपूपुर", "अवेदिष", "अवेपय", "अभिषज्", "अध्याय", "अधुक्ष", "अप्लाव",
+        "आप्न", "आप्य", "आदय", "आदित्य", "आश्नु", "आश्न", "आर्ध्य", "आञ्च", "आसात", "आसास", "आशिष", "निन्य", "निन्द", "शंसिष",
       ))
       or ("-" not in it.ref and bare not in coalesced_up_tinantas and _is_vidyut_simplex_tinanta(bare))
     ):
@@ -1029,7 +1066,12 @@ def find_unsplit_upasarga_tinantas(
       ):
         hits.append(ln)
         continue
-      if any(bare.startswith(up) and len(bare) > len(up) + 1 for up in UPASARGA_PREFIXES):
+      if any(
+        bare.startswith(up)
+        and len(bare) > len(up) + 1
+        and not ("\u0915" <= up[-1] <= "\u0939" and bare[len(up)] in "ृॄॢॣ")
+        for up in UPASARGA_PREFIXES
+      ):
         hits.append(ln)
     else:
       # Catch missed पा॰ ८.१.२८ svara-nighāta on Vedic 2pl imperative -तन/-थन (e.g. युयोतन → **युयो᳓तन**)
@@ -1055,7 +1097,10 @@ def find_unsplit_upasarga_tinantas(
             # unlike augmented simplex past verbs (पा॰ ६.४.७१) which carry udātta on syllable 0 (`अ᳓वदत्`).
             _, ref_marks = syllables_with_marks(it.ref)
             if ref_marks and ref_marks[0] == "" and any(
-              bare.startswith(up) and len(bare) > len(up) + 1 for up in UPASARGA_PREFIXES
+              bare.startswith(up)
+              and len(bare) > len(up) + 1
+              and not ("\u0915" <= up[-1] <= "\u0939" and bare[len(up)] in "ृॄॢॣ")
+              for up in UPASARGA_PREFIXES
             ):
               hits.append(ln)
               continue
@@ -1118,7 +1163,11 @@ def find_multi_udatta_padas(pp_lines: Sequence[str]) -> list[str]:
       hits.append(ln)
       continue
     if n_acc >= 2:
-      if any(tag in it.prov for tag in ("६.२.१४०", "६.२.१४१", "देवताद्वन्द्व", "उभे वनस्पत्यादिषु")) or any(st in bare for st in dual_accent_stems):
+      if (
+        any(tag in it.prov for tag in ("६.२.१४०", "६.२.१४१", "६.१.२००", "अन्तश्च तवै", "देवताद्वन्द्व", "उभे वनस्पत्यादिषु"))
+        or bare.endswith("तवै")
+        or any(st in bare for st in dual_accent_stems)
+      ):
         continue
       hits.append(ln)
   return hits
@@ -1344,11 +1393,31 @@ def find_uncounted_corpus_tags(pp_lines: Sequence[str]) -> list[str]:
 
 
 def find_invalid_or_rubberstamp_provenance(pp_lines: Sequence[str]) -> list[str]:
-  """Return bullets with fake/out-of-bounds sūtras, bare ``समासस्वरः``, misaccented ``ल्यप्``, or rubber-stamped ``मूल-पाठः``/``अनाम्नातम्``."""
+  """Return bullets with fake/out-of-bounds sūtras, bare ``समासस्वरः``, misaccented ``ल्यप्``/``ल्युट्``/``णिनि``, or rubber-stamped ``मूल-पाठः``/``अनाम्नातम्``."""
   fake_sutra_phrases = (
     "बहुव्रीहौ समासस्य",
     "अव्ययीभावे प्रकृत्या पूर्वपदम्",
     "द्वन्द्वे प्रकृत्या पूर्वपदम्",
+    "णिनिः नित्",
+    "णिनि नित्",
+    "इनिः नित्",
+    "इनि नित्",
+  )
+  lyut_re = re.compile(r"ल्यु(?:ट्|ः|(?![अ-ह\u093e-\u094d]))")
+  lyut_antodatta_allow = (
+    "६.२.१५०",
+    "६.२.१५१",
+    "६.२.१४८",
+    "६.२.१४९",
+    "६.२.१५३",
+    "६.२.१५४",
+    "६.२.१६०",
+    "६.२.१७२",
+    "५.४.",
+    "द्वन्द्व",
+    "स्वरव्यत्यय",
+    "स्वरान्यत्व",
+    "छान्दस",
   )
   hits: list[str] = []
   for ln in pp_lines:
@@ -1360,7 +1429,7 @@ def find_invalid_or_rubberstamp_provenance(pp_lines: Sequence[str]) -> list[str]
     if not prov:
       continue
 
-    # 1. Out-of-bounds पा॰ A.P.S reference
+    # 1. Out-of-bounds पा॰ A.P.S reference or fake grammatical claims (e.g. `णिनिः नित्`)
     bad_sutra = False
     for sm in _SUTRA_CITE_RE.finditer(prov):
       a_n = int(sm.group(1).translate(_DEVA_DIGIT_TRANS))
@@ -1378,10 +1447,12 @@ def find_invalid_or_rubberstamp_provenance(pp_lines: Sequence[str]) -> list[str]
       hits.append(ln)
       continue
 
-    # 2. Bare `समासस्वरः` without an explicit पा॰ / उणादि / फि॰ rule
-    if "समासस्वर" in prov and not any(k in prov for k in ("पा॰", "उणादि", "फि॰")):
-      hits.append(ln)
-      continue
+    # 2. Bare `समासस्वरः` without an explicit samāsa/taddhita/uṇādi/phiṭ rule (`पा॰ ६.१.१५८` eka-svara alone does not count)
+    if "समासस्वर" in prov:
+      prov_no_61158 = re.sub(r"पा॰\s*६\.१\.१५८(?![०-९0-9])", "", prov)
+      if not any(k in prov_no_61158 for k in ("पा॰", "उणादि", "फि॰")):
+        hits.append(ln)
+        continue
 
     # 3. Rubber-stamped `अनाम्नातम्` or bare `मूल-पाठः` / `आरण्यक-पाठः` without grammatical derivation
     if "अनाम्नातम्" in prov:
@@ -1403,6 +1474,21 @@ def find_invalid_or_rubberstamp_provenance(pp_lines: Sequence[str]) -> list[str]
       if "-" in it.ref:
         first_mem = it.ref.split("-", 1)[0]
         if has_us_accents(first_mem) and bare_devanagari(first_mem) in _GATI_HYPHEN_PREFIXES:
+          hits.append(ln)
+          continue
+
+    # 5. `ल्यु`/`ल्युट्` (`पा॰ ६.१.१९३ लिति` + `पा॰ ६.२.१३९ गतिकारकोपपदात् कृत्`) misanalyzed as `६.१.२२३` antodātta
+    #    (e.g. `- वाल-बन्धनः᳓ (ल्युट्/समासस्य पा॰ ६.१.२२३)` instead of `वाल-ब᳓न्धनः`):
+    #    in compounds whose uttarapada ends in `-न`/`-ण` + case ending, udātta cannot fall on that `-न`/`-ण` syllable
+    #    unless licensed by `६.२.१५०` (`अनो भावकर्मवचनः`), `६.२.१५१`, `६.२.१७२`, or `द्वन्द्व`.
+    prov_primary = prov.split(";", 1)[0]
+    if lyut_re.search(prov_primary) and "?" not in it.ref and not any(al in prov for al in lyut_antodatta_allow):
+      if "-" in it.ref or "६.१.२२३" in prov_primary or "समासस्य" in prov_primary:
+        last_mem = it.ref.split("-")[-1]
+        if re.search(
+          r"[क-हअ-औ][^-\s]*?[नण](?:(?:ा\u1cd3(?:य|त्|ः|न्|नि|भिः|भ्यः|नाम्|सु|म्)?)|(?:े\u1cd3(?:न|भ्यः|भिः|षु)?)|(?:ो\u1cd3ः)|(?:ौ\u1cd3)|(?:ी\u1cd3(?:ः|म्|भिः|भ्यः|नाम्|षु)?)|(?:[ंँः]?\u1cd3(?:म्|स्य|योः)?))$",
+          last_mem,
+        ):
           hits.append(ln)
           continue
   return hits
@@ -1472,11 +1558,18 @@ def validate_padapatha_block(
       )
 
   for ln in pp_lines:
-    if re.search(r"\*[A-Za-zŚś]+\*-0\b", ln):
+    bad_zero = bool(re.search(r"\*[A-Za-zŚś]+\*-0(?![/0-9])", ln))
+    if not bad_zero:
+      for m_slash in re.finditer(r"\*[A-Za-zŚś]+\*-(\d+)/(\d+)\b", ln):
+        m_cnt, n_cnt = int(m_slash.group(1)), int(m_slash.group(2))
+        if n_cnt <= 0 or n_cnt <= m_cnt:
+          bad_zero = True
+          break
+    if bad_zero:
       issues.append(
         AccentValidationIssue(
           "zero_corpus_count",
-          "Corpus occurrence count in padapāṭha must be strictly positive (>= 1), never *-0",
+          "Corpus occurrence count must be positive (-M with M>=1, or -M/N with N>M>=0 and N>=1), never bare *-0 or *-M/0",
           ln,
         )
       )

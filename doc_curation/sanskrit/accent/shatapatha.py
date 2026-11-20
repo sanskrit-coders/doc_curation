@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import dataclasses
 import difflib
+import functools
 import os
 import re
 from pathlib import Path
@@ -171,8 +172,8 @@ def normalize_sb_orthography(text: str) -> str:
   return s.strip()
 
 
-def extract_sb_syllables(text: str, *, source: str = "weber") -> list[SbSyllable]:
-  """Extract normalized syllables and ŚB pitch-drop marks (``'H'``/``'G'``/``''``) from Weber or Śrīdharādi."""
+@functools.lru_cache(maxsize=2048)
+def _extract_sb_syllables_cached(text: str, source: str = "weber") -> tuple[SbSyllable, ...]:
   clean = strip_weber_footnotes(text) if source == "weber" else strip_shri_pratika(text)
   # Normalize Devanagari letters while keeping ŚB marks intact.
   lets = SCHEME.split_vyanjanas_and_svaras(clean)
@@ -198,10 +199,10 @@ def extract_sb_syllables(text: str, *, source: str = "weber") -> list[SbSyllable
         if SB_UDATTA_DROP in lets[j] or SB_END_DROP in lets[j]:
           has_h = True
         j += 1
-      # Check if a danda pause follows before the next consonant/vowel.
+      # Check if a danda pause follows before the next vowel (scanning past trailing coda consonants like -म्॥).
       k = j
       before_pause = False
-      while k < n and lets[k] and not re.search(r"[\u0905-\u0939]", lets[k]):
+      while k < n and lets[k] and lets[k][0] not in DEVANAGARI_VOWELS:
         if any(p in lets[k] for p in _PAUSES):
           before_pause = True
           break
@@ -210,11 +211,16 @@ def extract_sb_syllables(text: str, *, source: str = "weber") -> list[SbSyllable
       vf = _VOWEL_FAMILY.get(v0, "a")
       c_norm = "".join(_STOP_NORM.get(c, c) for c in onset)
       c_norm = re.sub(r"(.)\1+", r"\1", c_norm)
+      raw_joined = "".join(raw_parts)
+      if SB_END_DROP * 2 in raw_joined:
+        # In Weber, double `᳟᳟` before `॥` is the pause-boundary representation of `ॗ` (`G`),
+        # signaling an immediately following पा॰ ८.२.६ independent svarita after the pratīka `॥`.
+        has_g = True
       if source == "weber":
         mk = "G" if has_g else ("H" if has_h else "")
       else:
         mk = "H" if (has_h or has_g) else ""
-      syls.append(SbSyllable(key=(c_norm, vf), mark=mk, before_pause=before_pause, raw="".join(raw_parts)))
+      syls.append(SbSyllable(key=(c_norm, vf), mark=mk, before_pause=before_pause, raw=raw_joined))
       onset = ""
       i = j
     else:
@@ -222,7 +228,12 @@ def extract_sb_syllables(text: str, *, source: str = "weber") -> list[SbSyllable
       if cons:
         onset += cons
       i += 1
-  return syls
+  return tuple(syls)
+
+
+def extract_sb_syllables(text: str, *, source: str = "weber") -> list[SbSyllable]:
+  """Extract normalized syllables and ŚB pitch-drop marks (``'H'``/``'G'``/``''``) from Weber or Śrīdharādi."""
+  return list(_extract_sb_syllables_cached(text, source))
 
 
 def us_marks_to_sb_marks(
@@ -486,6 +497,44 @@ def audit_padapatha_against_sb(
     aw = weber_syls[wi].mark if wi is not None else None
     as_ = shri_syls[si].mark if si is not None else None
 
+    # Before a `॥` pause (mid-kaṇḍikā or end-of-kaṇḍikā), or across a word boundary between two udāttas
+    # (`U` + `U` where the next word's initial `U` is also confirmed in the edition, e.g. `लोकाः᳘ प्र᳘तिष्ठिता`),
+    # ŚB marks final udātta as `᳟`/`᳘` (`H`) even when the following syllable is `U`.
+    wi_next = vp_to_weber.get(idx + 1) if idx + 1 < n else None
+    si_next = vp_to_shri.get(idx + 1) if idx + 1 < n else None
+    cross_word_uu = (
+      idx + 1 < n
+      and ref_marks[idx] == "U"
+      and ref_marks[idx + 1] == "U"
+      and pada_map[idx] != pada_map[idx + 1]
+    )
+    w_pause_u = (
+      wi is not None
+      and ref_marks[idx] == "U"
+      and (
+        weber_syls[wi].before_pause
+        or (
+          cross_word_uu
+          and wi_next is not None
+          and exp_weber[idx + 1] == "H"
+          and weber_syls[wi_next].mark == "H"
+        )
+      )
+    )
+    s_pause_u = (
+      si is not None
+      and ref_marks[idx] == "U"
+      and (
+        shri_syls[si].before_pause
+        or (
+          cross_word_uu
+          and si_next is not None
+          and exp_shri[idx + 1] == "H"
+          and shri_syls[si_next].mark == "H"
+        )
+      )
+    )
+
     # At the very last syllable of a kaṇḍikā when next_first_mark is unknown (or Weber drops cross-kaṇḍikā ॗ),
     # allow boundary flexibility.
     if idx == n - 1 and next_first_mark is None:
@@ -502,11 +551,35 @@ def audit_padapatha_against_sb(
     elif idx == n - 1 and next_first_mark == "S":
       # Weber frequently omits cross-kaṇḍikā ॗ before ॥ (or retains ᳘ on final udātta before pause).
       w_ok = None if aw is None else (aw in ("G", "") or (ref_marks[idx] == "U" and aw == "H"))
-      s_ok = None if as_ is None else (as_ == es)
+      s_ok = None if as_ is None else (as_ == es or (s_pause_u and as_ == "H"))
     else:
       # In Weber, `H` (᳘) occasionally substitutes for `G` (ॗ) before jātya/kṣaipra/8.2.6, and vice versa only if flagged.
-      w_ok = None if aw is None else (aw == ew)
-      s_ok = None if as_ is None else (as_ == es)
+      # When an independent svarita `S` immediately precedes an udātta `U` (`S + U` kampa, e.g. `अन्तर्याम्य᳙मृ᳓तः`,
+      # `श᳓रीरं यो᳙ ऽग्नि᳓म्`), ŚB frequently omits pre-svarita `ॗ`/`᳘` on `idx` and marks `᳘` or `""` on `S` itself.
+      pre_su_kampa = (
+        idx + 2 < n
+        and ref_marks[idx + 1] == "S"
+        and len(pada_map[idx + 1]) >= 2
+        and ref_marks[idx + 2] == "U"
+      )
+      at_su_kampa = (
+        ref_marks[idx] == "S"
+        and len(pada_map[idx]) >= 2
+        and idx + 1 < n
+        and ref_marks[idx + 1] == "U"
+      )
+      w_ok = None if aw is None else (
+        aw == ew
+        or (w_pause_u and aw == "H")
+        or (pre_su_kampa and aw in ("G", ""))
+        or (at_su_kampa and aw in ("", "H"))
+      )
+      s_ok = None if as_ is None else (
+        as_ == es
+        or (s_pause_u and as_ == "H")
+        or (pre_su_kampa and as_ in ("H", ""))
+        or (at_su_kampa and as_ in ("", "H"))
+      )
 
     if w_ok is None and s_ok is None:
       status = "unaligned"
