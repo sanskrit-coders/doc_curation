@@ -630,6 +630,9 @@ DEFAULT_VERIFIED_AA_HIATUSES: frozenset[tuple[str, str]] = frozenset({
   ("आसिथ", "उप"),
   ("भव", "आत्मा"),
   ("अधूषत", "अस्तोषत"),
+  ("माता", "आभ्याम्"),
+  ("होता", "एव"),
+  ("पितरा", "अश्विना"),
 })
 
 
@@ -740,6 +743,8 @@ def find_unexplained_aa_hiatuses(
   flat_mula = re.sub(r"\+\+\+\([^)]*\)\+\+\+", "", mula_clean)
   flat_mula = re.sub(r"\n\s*\n", " । ", flat_mula)
   mula_joined_bare = accent.strip_accents(re.sub(r"\s+", " ", flat_mula).strip())
+  mula_slp = sanscript.transliterate(mula_joined_bare, sanscript.DEVANAGARI, sanscript.SLP1)
+  va_coalesce_slp = {"a": "vA", "A": "vA", "i": "ve", "I": "ve", "u": "vo", "U": "vo", "e": "vE", "E": "vE", "o": "vO", "O": "vO"}
   hits: list[tuple[str, str, str]] = []
   for pi in range(len(padas) - 1):
     w1, w2 = padas[pi], padas[pi + 1]
@@ -754,8 +759,9 @@ def find_unexplained_aa_hiatuses(
       m_unm = re.search(pat, mula_joined_bare)
       if m_unm and not any(d in mula_joined_bare[m_unm.start():m_unm.end()] for d in "।॥;"):
         # Avoid false positives when a separate `वै` + vowel pair (पा॰ ८.३.१९ -> `वा V`) produces the matched
-        # substring while the queried `वा` + `आ...` pair itself appears coalesced (e.g. `स वा आरण्यम्` vs `या वारण्या`).
-        if w1_c == "वा" and w2_c.startswith("आ") and ("वा" + w2_c[1:4]) in mula_joined_bare:
+        # substring while the queried `वा` + vowel pair itself appears coalesced (e.g. `स वा आरण्यम्` vs `या वारण्या`,
+        # or `उ वा एष` vs `तमो वैष`).
+        if w1_c == "वा" and s2[0] in va_coalesce_slp and (va_coalesce_slp[s2[0]] + s2[1:4].rstrip("HmMr")) in mula_slp:
           if any(padas[k] == "वै" and k + 1 < len(padas) and padas[k + 1].replace("-", "").startswith(w2_c[:2]) for k in range(len(padas))):
             continue
         hits.append((w1, w2, mula_joined_bare[m_unm.start():m_unm.end()]))
@@ -1366,6 +1372,183 @@ def find_missing_aa_upasarga_splits(pp_lines: Sequence[str]) -> list[str]:
   return hits
 
 
+def find_fake_sandhi_svara_arrows(pp_lines: Sequence[str], mula_clean: str) -> list[str]:
+  """Return ``ar → **ref**`` bullets whose ``ref`` pada under external or compound-internal sandhi
+  (``पा॰ ६.१.७७/८७/८८/१०१/१०९`` + ``पा॰ ८.२.४–६``) already produces ``मूलम्``'s exact saṁhitā svara,
+  or where ``ar`` and ``ref`` differ only by hyphenation with identical syllable accents.
+  """
+  from doc_curation.sanskrit.accent.reconciler import (
+    _extract_vp_pieces,
+    _flatten_pp_syllables,
+    _map_pp_to_vp_syllables,
+    _merged_valid_marks,
+    _pp_member_starts,
+  )
+  from doc_curation.sanskrit.accent.sandhi_check import word_to_slp_options
+
+  parsed_per_ln = [parse_padapatha_items(ln) for ln in pp_lines]
+  if any(len(x) != 1 for x in parsed_per_ln):
+    return []
+  items = [x[0] for x in parsed_per_ln]
+  if not any(it.vyat for it in items):
+    return []
+
+  s_mula = re.sub(r"\[\[[^\]]*\]\]", " ", mula_clean or "")
+  s_mula = re.sub(r"\([^)]*/[^)]*\)", " ", s_mula)
+  s_mula = re.sub(r"\(\d+\)|\[\d+\]", " ", s_mula).strip()
+  has_mula_accents = any(ch in s_mula for ch in ("\u0951", "\u0952", "\u1cd3", "\u1cd9"))
+
+  vp_pieces = []
+  pp_keys: list[tuple[str, str]] = []
+  pp_meta: list[tuple[int, int]] = []
+  pp_refs: list[str] = []
+  member_starts: set[int] = set()
+  pp_si_to_mula: dict[int, tuple[int, int, tuple[int, ...]]] = {}
+  item_pp_sis: dict[int, list[int]] = {ii: [] for ii in range(len(items))}
+  us_mula = ""
+
+  if has_mula_accents:
+    us_mula = (
+      s_mula
+      if any(ch in s_mula for ch in ("\u1cd3", "\u1cd9"))
+      else accent.to_US_accents(s_mula, pauses=LINE_BREAK_PAUSES)
+    )
+    vp_pieces = _extract_vp_pieces(us_mula)
+    if vp_pieces:
+      pp_keys, pp_meta, pp_refs, _ = _flatten_pp_syllables(items)
+      vp_keys, vp_meta = [], []
+      for pi, pc in enumerate(vp_pieces):
+        for vsi, kv in enumerate(pc["keys"]):
+          vp_keys.append(kv)
+          vp_meta.append((pi, vsi))
+      member_starts = _pp_member_starts(items)
+      pc_syl_sources = _map_pp_to_vp_syllables(
+        us_mula, vp_pieces, pp_keys, pp_meta, vp_keys, vp_meta, member_starts
+      )
+      for pi, pc_s in enumerate(pc_syl_sources):
+        for vsi, srcs in enumerate(pc_s):
+          for src in srcs:
+            for psi in src:
+              pp_si_to_mula[psi] = (pi, vsi, src)
+      for psi, (ii, _) in enumerate(pp_meta):
+        item_pp_sis[ii].append(psi)
+
+  hits: list[str] = []
+  for ii, (ln, it) in enumerate(zip(pp_lines, items)):
+    if not it.vyat or "?" in it.ref:
+      continue
+    if any(tok in it.prov for tok in ("नश्यति", "लुप्त", "पाठभेद")):
+      continue
+    same_bare = (
+      bare_devanagari(it.ar) == bare_devanagari(it.ref)
+      or bool(word_to_slp_options(it.ar) & word_to_slp_options(it.ref))
+    )
+    if not same_bare:
+      continue
+
+    ks_ar, mks_ar = syllables_with_marks(it.ar)
+    ks_rf, mks_rf = syllables_with_marks(it.ref)
+    if ks_ar == ks_rf and mks_ar == mks_rf:
+      hits.append(ln)
+      continue
+
+    if not vp_pieces:
+      continue
+    psis = item_pp_sis[ii]
+    if not psis:
+      continue
+
+    unmapped = [psi for psi in psis if psi not in pp_si_to_mula]
+    check_psis = psis
+    if unmapped:
+      # Spaced virāma-yaṇ boundary (`दुरि॒तात्य् अ॒ग्निः` where `-ि`/`-ु` turned into `य्`/`व्` before space + vowel)
+      if (
+        len(unmapped) == 1
+        and len(psis) >= 2
+        and unmapped[0] == psis[-1]
+        and pp_refs[psis[-1]] == ""
+        and pp_keys[psis[-1]][1] in ("i", "u", "r", "l")
+        and re.search(r"[यवरल]्\s+[अ-औ]", us_mula)
+      ):
+        check_psis = psis[:-1]
+      else:
+        continue
+
+    # Enforce monotonic `(pi, vsi)` ordering relative to adjacent mapped syllables
+    prev_pos = None
+    for p_prev in range(check_psis[0] - 1, -1, -1):
+      if p_prev in pp_si_to_mula:
+        prev_pos = pp_si_to_mula[p_prev][:2]
+        break
+    next_pos = None
+    for p_next in range(psis[-1] + 1, len(pp_keys)):
+      if p_next in pp_si_to_mula:
+        next_pos = pp_si_to_mula[p_next][:2]
+        break
+    first_pos = pp_si_to_mula[check_psis[0]][:2]
+    last_pos = pp_si_to_mula[check_psis[-1]][:2]
+    if (prev_pos is not None and first_pos < prev_pos) or (next_pos is not None and last_pos > next_pos):
+      continue
+
+    all_match = True
+    for psi in check_psis:
+      pi, vsi, src = pp_si_to_mula[psi]
+      pc = vp_pieces[pi]
+      mula_mk = pc["old_mks"][vsi]
+      next_starts_av = (pi + 1 < len(vp_pieces)) and vp_pieces[pi + 1]["old"].startswith("ऽ")
+
+      if len(src) == 1:
+        ref_mk = pp_refs[psi]
+        if mula_mk == ref_mk:
+          continue
+        if ref_mk == "S" and mula_mk == "" and has_post_udatta_svarita_in_mula(s_mula, bare_devanagari(it.ref)):
+          continue
+        all_match = False
+        break
+
+      # Guard: virāma-final word (`तान्`, `तत्`, `वाक्`) + vowel-initial word resyllabifies (1+1=2 syllables), never 2->1
+      s_first = src[0]
+      i_first, si_first = pp_meta[s_first]
+      i_second, _ = pp_meta[src[1]]
+      if (
+        i_first != i_second
+        and si_first == len(item_pp_sis[i_first]) - 1
+        and accent.strip_accents(items[i_first].ref).endswith("्")
+      ):
+        all_match = False
+        break
+
+      if len(src) == 2:
+        s1, s2 = src
+        _, si2 = pp_meta[s2]
+        valid_mks, _ = _merged_valid_marks(
+          pp_refs,
+          pp_keys,
+          pc,
+          vsi,
+          s1,
+          s2,
+          next_starts_av,
+          allow_8_2_6_ekadesha_svarita=True,
+          is_pAdAdi_s2=(si2 == 0 or s2 in member_starts),
+        )
+        if pp_refs[s1] == "" and pp_refs[s2] == "U":
+          valid_mks = {"U"}
+      else:
+        r_marks = [pp_refs[sx] for sx in src]
+        valid_mks = {"U"} if "U" in r_marks else ({"S"} if "S" in r_marks else {""})
+        if r_marks[0] == "U" and all(x == "" for x in r_marks[1:]):
+          valid_mks = {"U", "S"}
+
+      if mula_mk not in valid_mks:
+        all_match = False
+        break
+
+    if all_match:
+      hits.append(ln)
+  return hits
+
+
 _ASHTADHYAYI_PADA_MAX: tuple[int, ...] = (
   75, 73, 93, 110,
   72, 38, 73, 85,
@@ -1526,6 +1709,7 @@ def validate_padapatha_block(
   check_nighata_arrows: bool = True,
   check_gati_kta: bool = True,
   check_homographs: bool = True,
+  check_fake_sandhi_arrows: bool = True,
 ) -> list[AccentValidationIssue]:
   """Run all integrity checks on a single ``(VP, मूलम्, पद-पाठः)`` mantra tuple."""
   issues: list[AccentValidationIssue] = []
@@ -1688,6 +1872,16 @@ def validate_padapatha_block(
       )
     )
 
+  if check_fake_sandhi_arrows:
+    for ln in find_fake_sandhi_svara_arrows(pp_lines, mula_clean):
+      issues.append(
+        AccentValidationIssue(
+          "fake_sandhi_svara_arrow",
+          "Fake vyatyasta arrow: ref pada under sandhi (पा॰ ६.१.७७/८७/८८/१०१/१०९ + पा॰ ८.२.४–६) already produces मूलम्'s exact svara",
+          ln,
+        )
+      )
+
   if check_hiatus:
     for w1, w2, span in find_unexplained_aa_hiatuses(pp_lines, mula_clean, verified_prakrtibhava_pairs=verified_prakrtibhava_pairs):
       issues.append(AccentValidationIssue("aa_hiatus", f"Uncoalesced -अ/-आ + vowel hiatus {w1} + {w2}", span))
@@ -1709,6 +1903,7 @@ def validate_accented_markdown(
   forbid_zero_abbreviation: bool | None = None,
   forbid_uncounted_corpus_tags: bool | None = None,
   forbid_rubberstamp_provenance: bool = True,
+  check_fake_sandhi_arrows: bool | None = None,
 ) -> list[AccentValidationIssue]:
   """Validate all ``पद-पाठः (यान्त्रिकः)`` and ``विश्वास-प्रस्तुतिः`` blocks in one Markdown document."""
   issues: list[AccentValidationIssue] = []
@@ -1749,6 +1944,7 @@ def validate_accented_markdown(
     forbid_up_tin = is_sb_cluster if forbid_compound_upasarga_tinanta is None else forbid_compound_upasarga_tinanta
     forbid_zero_ab = True if forbid_zero_abbreviation is None else forbid_zero_abbreviation
     forbid_unc_tags = (not is_sb_cluster) if forbid_uncounted_corpus_tags is None else forbid_uncounted_corpus_tags
+    chk_fake_sandhi = (not is_sb_cluster) if check_fake_sandhi_arrows is None else check_fake_sandhi_arrows
     issues.extend(
       validate_padapatha_block(
         hdr,
@@ -1761,6 +1957,7 @@ def validate_accented_markdown(
         forbid_zero_abbreviation=forbid_zero_ab,
         forbid_uncounted_corpus_tags=forbid_unc_tags,
         forbid_rubberstamp_provenance=forbid_rubberstamp_provenance,
+        check_fake_sandhi_arrows=chk_fake_sandhi,
       )
     )
   return issues
@@ -1790,6 +1987,7 @@ def validate_paired_vp_and_tk(
   forbid_zero_abbreviation: bool | None = None,
   forbid_uncounted_corpus_tags: bool = True,
   forbid_rubberstamp_provenance: bool = True,
+  check_fake_sandhi_arrows: bool | None = None,
 ) -> list[AccentValidationIssue]:
   """Validate a split ``vishvAsa-prastutiH`` (``vp``) + ``sarvASh_TIkAH`` (``tk`` = ``टीका``/``मूलम्``/``पद-पाठः``) file pair."""
   js_tk = find_js_include_spans(tk_text)
@@ -1808,6 +2006,7 @@ def validate_paired_vp_and_tk(
       forbid_zero_abbreviation=forbid_zero_abbreviation,
       forbid_uncounted_corpus_tags=forbid_uncounted_corpus_tags,
       forbid_rubberstamp_provenance=forbid_rubberstamp_provenance,
+      check_fake_sandhi_arrows=check_fake_sandhi_arrows,
     )
   )
   vp_body = vp_text.split("+++", 2)[2] if vp_text.startswith("+++") and len(vp_text.split("+++", 2)) == 3 else vp_text

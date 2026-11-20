@@ -486,6 +486,26 @@ def _refine_opcodes(ops: list[list], pp_keys: list, pp_meta: list, vp_keys: list
           merged.append(["replace", refined[i][1], refined[i + 1][2], refined[i][3], refined[i + 1][4]])
           i += 2
           changed = True
+        elif (
+          allow_leftward
+          and i + 2 < len(refined)
+          and refined[i][0] == "replace"
+          and (refined[i][2] - refined[i][1]) >= 2
+          and (refined[i][2] - refined[i][1]) == (refined[i][4] - refined[i][3])
+          and refined[i + 1][0] == "equal"
+          and (refined[i + 1][2] - refined[i + 1][1]) == 1
+          and refined[i + 2][0] in ("delete", "replace", "insert")
+          and (refined[i + 2][2] - refined[i + 2][1]) != (refined[i + 2][4] - refined[i + 2][3])
+          and (refined[i + 2][2] - refined[i][1]) <= 60
+          and (refined[i + 2][4] - refined[i][3]) <= 60
+          and any(
+            not _same_onset(pp_keys[refined[i][1] + o][0], vp_keys[refined[i][3] + o][0])
+            for o in range(refined[i][2] - refined[i][1])
+          )
+        ):
+          merged.append(["replace", refined[i][1], refined[i + 2][2], refined[i][3], refined[i + 2][4]])
+          i += 3
+          changed = True
         else:
           merged.append(refined[i])
           i += 1
@@ -653,7 +673,12 @@ def _align_replace_span(
           pp_keys[p][1] == "a"
           and _same_onset(pp_keys[p][0], vp_keys[v][0])
           and pp_keys[p + 1][1] == "a"
-          and pp_keys[p + 2][1] == "a"
+          and (
+            pp_keys[p + 2][1] == "a"
+            or (pp_keys[p + 2][1] in ("i", "e", "ai") and vp_keys[v][1] in ("e", "ai"))
+            or (pp_keys[p + 2][1] in ("u", "o", "au") and vp_keys[v][1] in ("o", "au"))
+            or (pp_keys[p + 2][1] == "r" and vp_keys[v][1] in ("a", "r"))
+          )
         )
       )
     ):

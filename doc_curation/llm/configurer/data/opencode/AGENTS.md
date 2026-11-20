@@ -33,7 +33,6 @@
 ## Existing code
 
 Use and maintain existing code where possible — it is installed in the venv at `~/gitland/python_venv`, so invoke `~/gitland/python_venv/bin/python` (**not** the default `python3`).
-- **Suggest retaining useful tooling:** When work produces a reusable utility, validator, parser, or workflow (even if prototyped as a scratch script), suggest promoting it into the appropriate shared repository (such as `doc_curation`) with tests rather than leaving it ephemeral.
 
 ### doc_curation
 Before writing text-processing code, check these in `~/gitland/sanskrit-coders/doc_curation`:
@@ -47,3 +46,7 @@ For files with Sanskrit names you output, use something like `curation_utils.fil
 ### Other libraries
 
 For meters, there is `chandas`. For archive.org work and "source to site-page" catalog updates, use the `archival-cataloging` skill.
+
+## Final report
+- Guess what the user may want to do next and next steps.
+- **Suggest retaining useful tooling:** When work produces a reusable utility, validator, parser, or workflow (even if prototyped as a scratch script), suggest promoting it into the appropriate shared repository (such as `doc_curation`) with tests rather than leaving it ephemeral.

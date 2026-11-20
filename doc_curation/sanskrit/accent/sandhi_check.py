@@ -32,7 +32,7 @@ R_FINAL_SLP = frozenset({
 _R_FINAL_SUFFIXES = ("punaH", "antaH", "svaH", "prAtaH", "ahaH", "taH")
 _PRONOUN_SU_LOPA = frozenset({"saH", "ezaH", "syaH"})
 _SPECIAL_LEFT_WORDS = _PRONOUN_SU_LOPA | R_FINAL_SLP | frozenset({
-  "A", "nu", "iti", "eva", "hf", "asmi", "Bava", "aDUzata", "sTa", "syAma", "viSvasya", "viSvavAra", "sadanA", "ca", "Gora", "vidita", "garBaH", "rAjA", "vyAcakzva", "cakzva", "dravantA", "dravaMtA", "saMvatsara", "AsiTa",
+  "A", "nu", "iti", "eva", "hf", "asmi", "Bava", "aDUzata", "sTa", "syAma", "viSvasya", "viSvavAra", "sadanA", "ca", "Gora", "vidita", "garBaH", "rAjA", "vyAcakzva", "cakzva", "dravantA", "dravaMtA", "saMvatsara", "AsiTa", "mAtA", "hotA", "pitarA",
 })
 _VERIFIED_HIATUS_SLP_PAIRS = frozenset({
   ("A", "aham"),
@@ -60,6 +60,9 @@ _VERIFIED_HIATUS_SLP_PAIRS = frozenset({
   ("dravantA", "A"),
   ("dravaMtA", "A"),
   ("saMvatsara", "Asa"),
+  ("mAtA", "AByAm"),
+  ("hotA", "eva"),
+  ("pitarA", "aSvinA"),
 })
 _LONG_VOWEL = {
   "a": "A", "A": "A",

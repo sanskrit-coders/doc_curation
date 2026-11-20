@@ -805,12 +805,35 @@ def test_final_sprint_guards_and_pluta_and_pause_udatta():
   _, vp_arka, unm_arka = build_sb_vp_from_padapatha("अर्का३निति", items_arka)
   assert unm_arka == [] and vp_arka == "अर्का᳓३नि᳓ति"
 
-  # 6. #309: `आसिथ + उप` ardharca hiatus
+  # 6. #309 & Kāṇva Swaminathan hiatuses
   assert find_unexplained_aa_hiatuses(["- आसिथ (*RV*)", "- उ᳓प (*RV*)"], "मन्द आसिथ उपमञ्घ्यति") == []
+  assert find_unexplained_aa_hiatuses(["- माता᳓ (*SB-M*)", "- आभ्या᳓म् (*SB-M*)"], "मा᳘ता आभ्या᳘मेव") == []
+  assert find_unexplained_aa_hiatuses(["- हो᳓ता (*RV*)", "- एव᳓ (*SB-M*)"], "हो᳘ता ए᳘वान्वा᳘ह") == []
+  assert find_unexplained_aa_hiatuses(["- पित᳓रा (*RV*)", "- अश्वि᳓ना (*RV*)"], "पुत्रमिव पित᳘रा अश्वि᳘ना") == []
+  assert find_unexplained_aa_hiatuses(
+    ["- त᳓मः (*SB-M*)", "- वा (अनुदात्तम्, पा॰ ८.१.१८)", "- एषः᳓ (*SB-M*)", "- उ (अनुदात्तम्, पा॰ ८.१.१८)", "- वै᳓ (*SB-M*)", "- एषः᳓ (*SB-M*)"],
+    "त᳘मो वैष प्र᳘विशति अ᳘यज्ञिया᳘नु वा᳘ एष᳘",
+  ) == []
+  assert verify_mantra_sandhi(["इय᳓म्", "माता᳓", "आभ्या᳓म्", "एव᳓"], "इयं माता आभ्यामेव")[0]
+  assert verify_mantra_sandhi(["हो᳓ता", "एव᳓"], "होता एव")[0]
+  assert verify_mantra_sandhi(["पुत्र᳓मिव", "पित᳓रा", "अश्वि᳓ना"], "पुत्रमिव पितरा अश्विना")[0]
 
   # 7. #311 & #312: `एव + इदम् -> एवैदम्` and VS 19.2 `परि + इतः + सिञ्चता -> परीतो षिञ्चता`
   assert verify_mantra_sandhi(["य᳓था", "ह", "एव᳓", "इद᳓म्"], "यथा हैवैदम्")[0]
   assert verify_mantra_sandhi(["प᳓रि", "इतः᳓", "सिञ्चता", "सुत᳓म्", "इ᳓ति"], "परीतो षिञ्चता सुतमिति")[0]
   assert verify_mantra_sandhi(["प᳓रि", "इतः᳓", "षिञ्चता", "सुत᳓म्", "इ᳓ति"], "परीतो षिञ्चता सुतमिति")[0]
+
+  # 8. 3->1 triple coalescence (`-a + ā + e -> -ai-`) and chained sandhi spans across 1-syl anchors
+  items_triple = parse_padapatha_items(
+    "- देवैः᳓ (*RV*)\n- इ᳓न्द्रेण (*RV*)\n- आ᳓ (*RV*)\n- एधते (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)"
+  )
+  _, vp_tr, unm_tr = build_sb_vp_from_padapatha("देवैरिन्द्रेणैधते", items_triple)
+  assert unm_tr == [] and vp_tr == "देवै᳓रि᳓न्द्रेणै᳓धते"
+  items_chain = parse_padapatha_items(
+    "- प्रीणा᳓ति (*SB-M*)\n- अ᳓थो (*SB-M*)\n- ता᳓वत्ता (*MW*)\n- एव᳓ (*SB-M*)\n"
+    "- एत᳓म् (*SB-M*)\n- एत᳓त् (*SB-M*)\n- अ᳓न्नेन (*SB-M*)\n- अभि᳓ (*RV*)\n- सिञ्चति (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)"
+  )
+  rep_ch = audit_padapatha_against_sb("प्रीणात्यथो तावत्तैवैतमेतदन्नेनाभिषिञ्चति", items_chain, "", "")
+  assert rep_ch.unmapped_vp_syllables == []
 
 

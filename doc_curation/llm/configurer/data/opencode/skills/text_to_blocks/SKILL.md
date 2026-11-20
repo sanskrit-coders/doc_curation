@@ -73,7 +73,7 @@ When the incoming commentary presents the core text passage by passage (each pas
 
 **Default rule:** By default, every sentence segment goes to a separate block. Do not split at a boundary if any of the tests below applies. Check the tests in this order. If a boundary passes an earlier test, keep the segments together and do not need the later tests.
 
-**1. Same Rk:** If several sentence segments together form one Rk, mantra, or verse, keep them together. The metrical unity overrides the daNDa. The Rk is one block even if it contains multiple daNDas.
+**1. Same Rk:** If several sentence segments together form one Rk, mantra, or verse, keep them together. The metrical unity overrides the daNDa. The Rk is one block even if it contains multiple daNDas. Do not do prose clause-newline rewrapping. Per pāda line breaks are allowed.
 
 **2. Same conditional-correlative unit:** This is the Sanskrit `yad` / `tad` construction, not the English word "if" alone. It covers pairs like `yaH / saH`, `yat / tat`, `yatra / tatra`, `yadA / tadA`, `yathA / tathA`, `yAni / tAni`, `yad / etad`, and similar. A boundary is inside one conditional unit when: **(a) Protasis first:** The left segment opens with a `yad`-word, and the right segment gives its correlative or consequence. **(b) Main clause first:** The left segment is a main statement, and the right segment opens with a `yad`-word that explains, qualifies, or defines it. **(c) Continuation:** The left segment is already inside an open conditional, and the right segment continues, elaborates, or concludes it, even if it has no explicit `tad`-word. In other words, a `yad`-segment attaches to its counterpart, whether that counterpart comes before it or after it.
 

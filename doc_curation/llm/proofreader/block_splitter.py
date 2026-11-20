@@ -203,10 +203,18 @@ def group_sense_unit_blocks(
   for i in range(n - 1):
     cur, nxt = feats[i], feats[i + 1]
 
-    # Test 1: Same Ṛk / verse (2-half verse: single daṇḍa followed by double daṇḍa with similar length)
-    if cur["ends_single_danda"] and nxt["ends_double_danda"]:
-      lw, rw = len("".join(cur["words"])), len("".join(nxt["words"]))
-      if 16 <= lw <= 95 and 0.55 <= (lw / max(1, rw)) <= 1.8 and ("\n" in segments[i] or not cur["has_finite_verb"] or re_is_metrical(segments[i], segments[i + 1])):
+    # Test 1: Same Ṛk / mantra / verse - metrical unity overrides daṇḍa.
+    # Keep pāda breaks (।) together with the verse-ending segment (॥), and
+    # keep multi-pāda chains (।, ।, ..., ॥) together as one block.
+    if cur["ends_single_danda"]:
+      if nxt["ends_double_danda"]:
+        va, vb = _akshara_count(segments[i]), _akshara_count(segments[i + 1])
+        total = va + vb
+        ratio = (max(va, 1) / max(vb, 1))
+        if (12 <= total <= 140 and 0.2 <= ratio <= 5.0) or re_is_metrical(segments[i], segments[i + 1]) or ("\n" in segments[i]):
+          merge_after[i] = True
+          continue
+      elif nxt["ends_single_danda"] and _is_verse_chain_to_end(segments, i):
         merge_after[i] = True
         continue
 
@@ -262,11 +270,41 @@ def group_sense_unit_blocks(
   return blocks
 
 
+def _akshara_count(text: str) -> int:
+  return len(regex.findall(r"[\u0905-\u0914\u093e-\u094c]|(?<=[\u0915-\u0939])(?![\u093e-\u094d])", accent.strip_accents(text)))
+
+
 def re_is_metrical(seg_a: str, seg_b: str) -> bool:
   """Check approximate akṣara-count parity for 2-half anuṣṭubh/gāyatrī/triṣṭubh verses."""
-  va = len(regex.findall(r"[\u0905-\u0914\u093e-\u094c]|(?<=[\u0915-\u0939])(?![\u093e-\u094d])", accent.strip_accents(seg_a)))
-  vb = len(regex.findall(r"[\u0905-\u0914\u093e-\u094c]|(?<=[\u0915-\u0939])(?![\u093e-\u094d])", accent.strip_accents(seg_b)))
+  va = _akshara_count(seg_a)
+  vb = _akshara_count(seg_b)
   return (14 <= va <= 26) and abs(va - vb) <= 3
+
+
+def _is_verse_chain_to_end(segments: list[str], start: int) -> bool:
+  """Return True if segments[start:] form a contiguous Ṛk/mantra/verse chain
+  (pāda breaks on '।', verse end on '॥') that should stay together (Test 1)."""
+  n = len(segments)
+  if start >= n - 1:
+    return False
+  # Find next segment ending with double danda
+  j = start
+  total = 0
+  while j < n:
+    seg = segments[j].strip()
+    total += _akshara_count(seg)
+    if seg.endswith("॥") or "॥" in seg[-8:]:
+      # Chain from start to j: all intermediate should end with single danda
+      if j == start:
+        return False
+      return 12 <= total <= 140
+    # Middle of chain: must end with single danda (pāda break)
+    if not seg.endswith("।"):
+      return False
+    j += 1
+    if j - start > 6:  # avoid over-merging very long chains
+      return False
+  return False
 
 
 def _refine_merges_with_llm(
@@ -303,6 +341,14 @@ def text_to_vipra_mula_blocks(
   """Convert bare Sanskrit Markdown paragraphs into sense-unit ``विश्वास-प्रस्तुतिः`` +
   ``मूलम्`` blocks per ``/text_to_blocks`` (preserving ``+++(...)+++`` & US accents in
   ``विश्वास-प्रस्तुतिः`` while keeping ``मूलम्`` clean and verbatim)."""
+  def _is_verse_like_block(unit_text: str) -> bool:
+    unit_segs = split_into_danda_segments(unit_text)
+    if len(unit_segs) >= 2 and any(s.strip().endswith("।") for s in unit_segs[:-1]) and "॥" in unit_segs[-1]:
+      total = sum(_akshara_count(s) for s in unit_segs)
+      if 16 <= total <= 140:
+        return True
+    return False
+
   out_paras: list[str] = []
   for chunk in regex.split(r"(\n\s*\n+)", content):
     if not chunk.strip() or chunk.lstrip().startswith(("#", "<details", "+++", "---")) or not regex.search(r"[\u0905-\u0939]", chunk):
@@ -314,12 +360,13 @@ def text_to_vipra_mula_blocks(
     for unit in units:
       mula_txt = regex.sub(r"[ \t]{2,}", " ", _ANNO_RE.sub("", unit)).strip()
       vp_txt = unit.strip()
+      is_verse = _is_verse_like_block(unit)
       if convert_vedic_to_us and regex.search(r"[\u0951\u0952]", vp_txt):
         vp_txt = accent.to_US_accents(vp_txt, pauses=r"[।॥,;]+")
       if backend is not None:
-        vp_txt = proofread_text(vp_txt, backend=backend, clause_newlines=clause_newlines, suggest_corrections=False)
+        vp_txt = proofread_text(vp_txt, backend=backend, clause_newlines=(clause_newlines and not is_verse), suggest_corrections=False)
       elif use_local_hyphenator:
-        vp_txt = hyphene(vp_txt, clause_newlines=clause_newlines)
+        vp_txt = hyphene(vp_txt, clause_newlines=(clause_newlines and not is_verse))
       rendered_groups.append(
         f"<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\n{vp_txt}\n</details>\n\n"
         f"<details><summary>मूलम्</summary>\n\n{mula_txt}\n</details>"

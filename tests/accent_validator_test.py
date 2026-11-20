@@ -424,3 +424,66 @@ def test_uncounted_tags_fake_sutras_and_rubberstamp_provenance_guards():
     "- लोक-धारि᳓णी᳓ → **लोक-धारि᳓णी** (अनेकोदात्त-दोषः पा॰ ६.१.१५८; णिनिः पा॰ ३.२.७८, प्रत्ययस्वरः पा॰ ३.१.३, गतिकारकोपपदात् कृत् पा॰ ६.२.१३९)",
   ]
   assert validate_padapatha_block("पद-पाठः (यान्त्रिकः - 5/10 व्यत्यस्त-स्वराः)", "\n".join(good_prov)) == []
+
+
+def test_fake_sandhi_svara_arrows_guard():
+  from doc_curation.sanskrit.accent.validator import (
+    find_fake_sandhi_svara_arrows,
+    validate_padapatha_block,
+  )
+
+  # 1. Yaṇ udātta + udātta (`पोषयित्नु᳓` + `आ᳓` -> `पोषयि॒त्न्वा`, पा॰ ६.१.७७ + ८.२.४ अनुदात्तस्य)
+  mula_posha = "गामश्व॑म्पोषयि॒त्न्वा स नः॑ ।"
+  pp_posha_fake = [
+    "- गा᳓म् (*TS*-55)",
+    "- अ᳓श्वम् (*TS*-40)",
+    "- पोषयित्नु᳓ (*TS*-2, *RV*-3)",
+    "- आ → **आ᳓** (*TS*-1107)",
+    "- सः᳓ (*TS*-766/4763)",
+    "- नः (अनुदात्तम्, पा॰ ८.१.१८, *TS*-587)",
+  ]
+  assert find_fake_sandhi_svara_arrows(pp_posha_fake, mula_posha) == ["- आ → **आ᳓** (*TS*-1107)"]
+  blk_iss = validate_padapatha_block("पद-पाठः (यान्त्रिकः - 1/6 व्यत्यस्त-स्वराः)", "\n".join(pp_posha_fake), mula_posha)
+  assert any(i.kind == "fake_sandhi_svara_arrow" for i in blk_iss)
+
+  # Clean version without the fake arrow passes completely
+  pp_posha_clean = [
+    "- गा᳓म् (*TS*-55)",
+    "- अ᳓श्वम् (*TS*-40)",
+    "- पोषयित्नु᳓ (*TS*-2, *RV*-3)",
+    "- आ᳓ (*TS*-1107)",
+    "- सः᳓ (*TS*-766/4763)",
+    "- नः (अनुदात्तम्, पा॰ ८.१.१८, *TS*-587)",
+  ]
+  assert validate_padapatha_block("पद-पाठः (यान्त्रिकः)", "\n".join(pp_posha_clean), mula_posha) == []
+
+  # 2. Compound-internal ekādeśa (`शत-अ᳓ङ्कुरा → **शत᳓-अङ्कुरा**` on `श॒ताङ्कु॑रा`) and hyphen-only arrow (`वि᳓धृते → **वि᳓-धृते**`)
+  mula_shata = "श॒तमू॑ला श॒ताङ्कु॑रा ।"
+  pp_shata_fake = [
+    "- शत᳓-मूला (बहुव्रीहौ प्रकृत्या पूर्वपदम् पा॰ ६.२.१)",
+    "- शत-अ᳓ङ्कुरा → **शत᳓-अङ्कुरा** (बहुव्रीहौ प्रकृत्या पूर्वपदम् पा॰ ६.२.१)",
+  ]
+  assert find_fake_sandhi_svara_arrows(pp_shata_fake, mula_shata) == [pp_shata_fake[1]]
+  assert find_fake_sandhi_svara_arrows(["- वि᳓धृते → **वि᳓-धृते** (*TS*-2/5, पा॰ ६.२.४९)"], "") == [
+    "- वि᳓धृते → **वि᳓-धृते** (*TS*-2/5, पा॰ ६.२.४९)"
+  ]
+
+  # 2b. Spaced virāma-yaṇ boundary (`दुरि॒तात्य् अ॒ग्निः` = `दुः-इता᳓` + `अ᳓ति` + `अग्निः᳓`)
+  mula_durita = "अति॑ दुरि॒तात्य् अ॒ग्निः॥"
+  pp_durita_fake = [
+    "- अ᳓ति (*TS*-75)",
+    "- दुः-इता᳓ (*TS*-4/7)",
+    "- अति → **अ᳓ति** (*TS*-75)",
+    "- अग्निः᳓ (*TS*-403/1195)",
+  ]
+  assert find_fake_sandhi_svara_arrows(pp_durita_fake, mula_durita) == ["- अति → **अ᳓ति** (*TS*-75)"]
+
+  # 3. Genuine vyatyasta after virāma-final word (`तान॒न्वेति॑` = `ता᳓न्` + `अनु` + `ए᳓ति` in मूलम्, vs `ता᳓न्` + `अ᳓नु` + `एति`) MUST NOT be flagged as fake!
+  mula_tan = "तान॒न्वेति॑ ।"
+  pp_tan_real_vyat = [
+    "- ता᳓न् (*TS*-94/4763)",
+    "- अनु → **अ᳓नु** (*TS*-471, *RV*-475)",
+    "- ए᳓ति → **एति** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *TS*-166)",
+  ]
+  assert find_fake_sandhi_svara_arrows(pp_tan_real_vyat, mula_tan) == []
+
