@@ -64,3 +64,29 @@ def test_validate_proofread_markdown_detects_all_issue_types():
   assert report["duplicate_fn_prefixes"] == ["1"]
   assert report["html_tags"] == ["<br>"]
   assert report["odd_asterisk_paragraphs"] == [1]
+
+
+def test_validate_proofread_markdown_check_headings_opt_in():
+  bad_headings = (
+    "## Jump\n\n"
+    "[[P10]] First paragraph.\n\n"
+    "#### Skipped H3\n\n"
+    "Valid paragraph.\n"
+  )
+  default_report = validate_proofread_markdown(bad_headings, expected_pages=[10])
+  assert default_report["ok"] is True
+  assert "heading_issues" not in default_report
+
+  strict_report = validate_proofread_markdown(bad_headings, expected_pages=[10], check_headings=True)
+  assert strict_report["ok"] is False
+  assert any("LEVEL_JUMP" in issue for issue in strict_report["heading_issues"])
+
+  clean_headings = (
+    "## Top Section\n\n"
+    "[[P10]] First paragraph.\n\n"
+    "### Subsection\n\n"
+    "Valid paragraph.\n"
+  )
+  clean_report = validate_proofread_markdown(clean_headings, expected_pages=[10], check_headings=True)
+  assert clean_report["ok"] is True
+  assert clean_report["heading_issues"] == []

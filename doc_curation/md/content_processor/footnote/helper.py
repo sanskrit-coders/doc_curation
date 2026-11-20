@@ -52,12 +52,19 @@ def transform_footnote_marks(content, transformer):
   return content
 
 
-def define_footnotes_near_use(content, *args, **kwargs):
+def define_footnotes_near_use(content, preserve_ids=False, *args, **kwargs):
+  """Move footnote definitions immediately below paragraphs referencing them.
+
+  When ``preserve_ids`` is ``True``, distinct ``[^id]`` identifiers are retained
+  instead of merging footnotes that happen to have identical definition text
+  (such as book footnotes reading ``*Op. cit.*`` or ``See *supra*.``).
+  """
   # For correct regex matching.
   content = "\n%s\n\n" % content.strip()
   content, definitions = extract_definitions(content)
   content = insert_definitions_near_use(content, definitions)
-  content = make_ids_unique_per_def(content)
+  if not preserve_ids:
+    content = make_ids_unique_per_def(content)
   # Undo initial additions
   content = regex.sub(r"^\n", "", content)
   content = regex.sub(r"\n\n+$", "", content)
@@ -70,7 +77,8 @@ def insert_definitions_near_use(content, definitions):
     ref_para_pattern = rf"({regex.escape(definition.group(1))}[\s\S]*?\n)(\n|</details|#)"
     try:
       def repl(match):
-        return f"{match.group(1)}\n{definition.group(0)}\n{match.group(2)}"  
+        after_sep = "\n\n" if match.group(2) == "#" else "\n"
+        return f"{match.group(1)}\n{definition.group(0)}{after_sep}{match.group(2)}"  
       content = regex.sub(ref_para_pattern, repl, content, count=1, timeout=1)
 
     except TimeoutError:

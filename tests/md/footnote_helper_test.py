@@ -75,3 +75,27 @@ def test_to_latex_footnotes_uses_content_not_id():
     """)
   assert helper.to_latex_footnotes(content).strip() == \
       r"A claim.\footnote{The actual note text.}".strip()
+
+
+def test_preserve_ids_keeps_identical_definitions_distinct_and_spaces_headings():
+  content = textwrap.dedent("""\
+    First paragraph claims X.[^10_1]
+
+    ## Next Section
+
+    Second paragraph also claims X.[^12_5]
+
+    [^10_1]: *Op. cit.*, p. 10.
+
+    [^12_5]: *Op. cit.*, p. 10.
+    """)
+  preserved = helper.define_footnotes_near_use(content, preserve_ids=True)
+  assert "[^10_1]: *Op. cit.*, p. 10." in preserved
+  assert "[^12_5]: *Op. cit.*, p. 10." in preserved
+  assert "[^10_1]: *Op. cit.*, p. 10.\n\n## Next Section" in preserved
+  assert preserved.index("[^10_1]:") < preserved.index("## Next Section") < preserved.index("[^12_5]:")
+
+  deduped = helper.define_footnotes_near_use(content)
+  assert "[^12_5]" not in deduped
+  assert deduped.count("[^10_1]: *Op. cit.*, p. 10.") == 1
+  assert "also claims X.[^10_1]" in deduped

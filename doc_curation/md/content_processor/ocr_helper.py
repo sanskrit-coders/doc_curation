@@ -334,13 +334,15 @@ def validate_proofread_markdown(
   *,
   expected_pages=None,
   ignore_html_tags=(),
+  check_headings: bool = False,
 ) -> dict:
   """Validate multi-page scan-proofread Markdown structure and editorial markers.
 
   Checks ``[[Pnnn]]`` page coverage, ordering, duplicates, spacing, continuity
   artifacts (``[[CONT*]]`` / ``[[FN_CONT*]]``), ``[^id]`` footnote pairing,
   raw HTML tags, unbalanced italic asterisks, and collects ``[[OLD|NEW]]`` /
-  ``[[??]]`` editorial flags for human review.
+  ``[[??]]`` editorial flags for human review. When ``check_headings`` is
+  ``True``, also includes :func:`section_helper.audit_headings` findings.
   """
   page_info = _collect_page_marker_issues(text, expected_pages=expected_pages)
   fn_info = _collect_footnote_issues(text)
@@ -366,6 +368,10 @@ def validate_proofread_markdown(
     "html_tags": html_tags,
     "odd_asterisk_paragraphs": odd_asterisk_paragraphs,
   }
+  if check_headings:
+    from doc_curation.md.content_processor.section_helper import audit_headings
+    report["heading_issues"] = audit_headings(text)
+
   report["ok"] = not (
     report["missing_pages"]
     or report["duplicate_pages"]
@@ -377,5 +383,6 @@ def validate_proofread_markdown(
     or report["duplicate_fn_prefixes"]
     or report["html_tags"]
     or report["odd_asterisk_paragraphs"]
+    or report.get("heading_issues")
   )
   return report

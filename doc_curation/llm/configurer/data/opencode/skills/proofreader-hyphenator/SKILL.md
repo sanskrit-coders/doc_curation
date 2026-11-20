@@ -29,7 +29,7 @@ process all Sanskrit text provided.
   commentary glosses fused without punctuation (never add `।` mid-clause).
 - Remove wasteful newlines, like those before `</details>` or between half-verses.
 - Preserve intentional styles like **bold** and *italic*.
-- Preserve existing headings and paragraphs; edit only what is asked.
+- Preserve existing titles, headings, and paragraphs; when adding or reorganizing navigation headings (see **Navigation headings** below), build cleanly around existing headings rather than dropping them.
 
 ## Source errors and doubtful readings
 
@@ -217,6 +217,11 @@ library.apply_function(
 
 - **Quotes & mantras**: quotes under five words in `"..."`; longer quotes and mantras as blockquotes (`>`).
 - **Structure**: end verse pāda lines, prose sentence lines within a paragraph, and separated syntactic phrase/clause lines with two trailing spaces (`  `, soft break); use a blank line (`\n\n`) only between paragraphs, blockquotes, or blocks.
+- **Navigation headings**:
+  - **Prose and long articles (outside `<details>`):** Add concise, informative topic-level Markdown headings (`##`, `###`, `####`) to make navigation and browsing easy (and `## A`–`## Z` letter headings for alphabetical indices); leave trivial single-topic notes unsplit.
+  - **Respect existing headings:** Keep existing titles and structural headings (e.g. `# Title`, `## Intro`, `## Lecture One`), normalize malformed or out-of-order heading transitions so hierarchy stays strictly monotonic (never skip levels, e.g. `##` → `####`), and nest newly inserted `##` / `###` / `####` subheadings cleanly beneath them.
+  - **Placement invariants:** Never insert a heading directly before an unrelated footnote definition (`[^id]:`), a mid-sentence continuation paragraph, a trailing attribution line (e.g. `[First published: ...]`), or joined on the same line cluster as `[[Pnnn]]` without a blank line; if a topic change occurs mid-paragraph, split at a sentence boundary first and re-pair each `[^id]:` definition with the half-paragraph referencing it.
+  - **Inside `<details>` blocks:** Never use Markdown `#` headings inside `<details>...</details>` blocks — format internal section labels inside details blocks as bold lines (`**...**  `) instead (and never edit `<details><summary>मूलम्...</summary>` blocks).
 - **Page numbers**: format page numbers (e.g. `६४`) as `[[P64]]` at the precise break point, even mid-paragraph.
 - **Footnotes**: Markdown footnote syntax `[^n]`, definitions placed next to the paragraph containing the reference, references unique and reflecting the source numbering where possible (e.g. page-12's footnote 1 → `12_1`).
 - Preserve `<details><summary>मूलम्...</summary>...</details>` blocks untouched and process only text outside them.

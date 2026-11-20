@@ -383,3 +383,232 @@ def fix_headers(content: str, h1_level: int) -> str:
     content = regex.sub(r"(?<=\n|^)#", f"{'#' * h1_level}", content)
   content = regex.sub(rf"(?<=\n|^)#######+", f"{'#' * 6}", content)
   return content
+
+
+def _split_blocks_and_footnotes(text: str) -> tuple[list[dict], list[str]]:
+  """Decompose Markdown into ordered body/heading blocks and verbatim footnote defs.
+
+  Treats blank-separated indented paragraphs (4+ spaces or tab, including indented
+  blockquotes) immediately following a ``[^id]:`` definition as continuations of that
+  Goldmark footnote so ``p_idx`` counts only non-footnote, non-heading body blocks.
+  """
+  blocks = regex.split(r"\n{2,}", text.strip()) if text.strip() else []
+  items = []
+  fn_defs = []
+  in_fn_def = False
+  p_idx = 0
+  for b_idx, blk in enumerate(blocks):
+    stripped = blk.strip()
+    if regex.match(r"^\[\^[^\]\n]+\]:", stripped):
+      in_fn_def = True
+      fn_defs.append(blk.rstrip())
+      continue
+    if in_fn_def and (blk.startswith("    ") or blk.startswith("\t")):
+      fn_defs[-1] = f"{fn_defs[-1]}\n\n{blk.rstrip()}"
+      continue
+    in_fn_def = False
+    hm = regex.match(r"^(#{1,6})\s+", stripped)
+    is_h = bool(hm and "\n" not in stripped)
+    items.append({
+      "block_idx": b_idx,
+      "p_idx": -1 if is_h else p_idx,
+      "is_heading": is_h,
+      "level": len(hm.group(1)) if is_h else 0,
+      "text": stripped,
+    })
+    if not is_h:
+      p_idx += 1
+  return items, fn_defs
+
+
+def parse_outline_blocks(text: str) -> list[dict]:
+  """Return ordered heading and body blocks, skipping footnote definitions."""
+  items, _ = _split_blocks_and_footnotes(text)
+  return items
+
+
+def prose_tokens_without_headings(text: str) -> list[str]:
+  """Return ordered whitespace-delimited tokens outside headings and footnote defs."""
+  return [
+    tok
+    for blk in parse_outline_blocks(text)
+    if not blk["is_heading"]
+    for tok in blk["text"].split()
+  ]
+
+
+def audit_headings(text: str) -> list[str]:
+  """Audit Markdown heading nesting and placement against common structural bugs.
+
+  Checks:
+  - Skipped heading levels (e.g. ``##`` directly followed by ``####``).
+  - Headings fused onto a preceding line without a blank line (outside fenced blocks).
+  - Headings placed right before an unrelated ``[^id]:`` definition, lowercase
+    mid-sentence continuation, or ``[First published: ...]`` attribution line.
+  """
+  issues = []
+  in_fence = False
+  prev_nonempty = ""
+  for line_no, raw_line in enumerate(text.splitlines(), 1):
+    s = raw_line.strip()
+    if s.startswith("```"):
+      in_fence = not in_fence
+      prev_nonempty = s
+      continue
+    if not in_fence and regex.match(r"^#{1,6}\s+", s) and prev_nonempty and not regex.match(r"^#{1,6}\s+", prev_nonempty):
+      issues.append(f"UNSPACED_HEADING at L{line_no}: {s!r} after {prev_nonempty[:40]!r}")
+    prev_nonempty = s
+
+  blocks = regex.split(r"\n{2,}", text.strip()) if text.strip() else []
+  prev_level = 0
+  for idx, blk in enumerate(blocks):
+    s = blk.strip()
+    hm = regex.match(r"^(#{1,6})\s+", s)
+    if not hm or "\n" in s:
+      continue
+    lvl = len(hm.group(1))
+    if prev_level and lvl > prev_level + 1:
+      issues.append(f"LEVEL_JUMP: H{prev_level} -> H{lvl} at {s!r}")
+    prev_level = lvl
+
+    if idx + 1 >= len(blocks):
+      continue
+    nxt = blocks[idx + 1].strip()
+    if regex.match(r"^#{1,6}\s+", nxt):
+      continue
+    if m_fn := regex.match(r"^\[\^([^\]\n]+)\]:", nxt):
+      if f"[^{m_fn.group(1)}]" not in s:
+        issues.append(f"HEADING_BEFORE_FOOTNOTE_DEF: {s!r} -> {nxt[:50]!r}")
+    elif regex.match(r"^[a-zāīūṛṝḷḹēōṁḥṅñṭḍṇśṣ]", nxt):
+      issues.append(f"HEADING_BEFORE_LOWERCASE: {s!r} -> {nxt[:50]!r}")
+    elif nxt.lower().startswith("[first published:"):
+      issues.append(f"HEADING_BEFORE_ATTRIBUTION: {s!r} -> {nxt[:50]!r}")
+  return issues
+
+
+def _emit_paragraph_with_headings(
+  blk_text: str,
+  p_idx: int,
+  p_headings: list[dict],
+  cur_level: int,
+  allowed_levels: tuple[int, ...],
+  errors: list[str],
+) -> tuple[list[str], int]:
+  """Insert validated stacked and inline split headings into one body paragraph."""
+  out = []
+  non_splits = sorted(
+    [h for h in p_headings if not h.get("split_before", "").strip()],
+    key=lambda h: h["level"],
+  )
+  splits = [h for h in p_headings if h.get("split_before", "").strip()]
+
+  for i in range(1, len(non_splits)):
+    if non_splits[i]["level"] != non_splits[i - 1]["level"] + 1:
+      errors.append(f"BAD_STACK_ORDER at p{p_idx}: {non_splits}")
+
+  for h in non_splits:
+    lvl = h["level"]
+    title = h["title"].strip()
+    if lvl not in allowed_levels:
+      errors.append(f"BAD_LEVEL at p{p_idx}: {h}")
+    if "[First published:" in blk_text:
+      errors.append(f"HEADING_ON_ATTRIBUTION at p{p_idx}: {title!r}")
+    if cur_level and lvl > cur_level + 1:
+      errors.append(f"LEVEL_JUMP at p{p_idx}: H{cur_level} -> H{lvl} ({title!r})")
+    cur_level = lvl
+    out.append(f"{'#' * lvl} {title}")
+
+  if not splits:
+    out.append(blk_text)
+    return out, cur_level
+
+  positioned = []
+  for h in splits:
+    sb = h["split_before"].strip()
+    cnt = blk_text.count(sb)
+    if cnt != 1:
+      errors.append(f"SPLIT_NOT_UNIQUE (cnt={cnt}) at p{p_idx}: {sb!r}")
+      continue
+    pos = blk_text.find(sb)
+    if pos == 0:
+      errors.append(f"SPLIT_AT_ZERO at p{p_idx}: {sb!r}")
+    positioned.append((pos, h))
+  positioned.sort(key=lambda item: item[0])
+
+  last = 0
+  for pos, h in positioned:
+    if head := blk_text[last:pos].strip():
+      out.append(head)
+    lvl = h["level"]
+    title = h["title"].strip()
+    if lvl not in allowed_levels:
+      errors.append(f"BAD_LEVEL at split p{p_idx}: {h}")
+    if cur_level and lvl > cur_level + 1:
+      errors.append(f"LEVEL_JUMP at split p{p_idx}: H{cur_level} -> H{lvl} ({title!r})")
+    cur_level = lvl
+    out.append(f"{'#' * lvl} {title}")
+    last = pos
+  if tail := blk_text[last:].strip():
+    out.append(tail)
+  return out, cur_level
+
+
+def apply_heading_outline(
+  text: str,
+  headings: list[dict],
+  *,
+  allowed_levels: tuple[int, ...] = (2, 3, 4),
+  place_footnotes: bool = True,
+  preserve_footnote_ids: bool = True,
+) -> tuple[str, list[str]]:
+  """Insert topic headings and mid-paragraph splits cleanly, auditing hierarchy and parity."""
+  from doc_curation.md.content_processor.footnote import helper as footnote_helper
+
+  items, fn_defs = _split_blocks_and_footnotes(text)
+  prose_count = sum(1 for it in items if not it["is_heading"])
+  errors = []
+
+  by_para = {}
+  for h in headings:
+    p_idx = h["para_idx"]
+    if not (0 <= p_idx < prose_count):
+      errors.append(f"BAD_PARA_IDX: {h}")
+      continue
+    by_para.setdefault(p_idx, []).append(h)
+
+  out_blocks = []
+  cur_level = 0 if any(it["is_heading"] for it in items) else 1
+  for it in items:
+    if it["is_heading"]:
+      lvl = it["level"]
+      if cur_level and lvl > cur_level + 1:
+        errors.append(f"EXISTING_LEVEL_JUMP: H{cur_level} -> H{lvl} at {it['text']!r}")
+      cur_level = lvl
+      out_blocks.append(it["text"])
+      continue
+
+    p_idx = it["p_idx"]
+    hs = by_para.get(p_idx, [])
+    if not hs:
+      out_blocks.append(it["text"])
+      continue
+    emitted, cur_level = _emit_paragraph_with_headings(
+      it["text"], p_idx, hs, cur_level if cur_level else 1, allowed_levels, errors
+    )
+    out_blocks.extend(emitted)
+
+  assembled = "\n\n".join(out_blocks)
+  if fn_defs:
+    assembled = assembled + "\n\n" + "\n\n".join(fn_defs)
+  if place_footnotes:
+    assembled = footnote_helper.define_footnotes_near_use(
+      assembled, preserve_ids=preserve_footnote_ids
+    )
+  result = assembled.strip() + "\n"
+
+  orig_tokens = prose_tokens_without_headings(text)
+  new_tokens = prose_tokens_without_headings(result)
+  if orig_tokens != new_tokens:
+    errors.append(f"PROSE_PARITY_MISMATCH (orig={len(orig_tokens)}, new={len(new_tokens)})")
+  errors.extend(audit_headings(result))
+  return result, errors
