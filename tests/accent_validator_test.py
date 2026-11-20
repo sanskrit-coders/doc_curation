@@ -308,9 +308,13 @@ def test_provenance_excludes_ta_and_ek_keeps_sb():
   assert cleaned == "- एत᳓त् (*ŚB*-7)"
   assert unres == []
 
-  only_bad, unres_bad = annotate_padapatha_line_counts("- एत᳓त् (*TA*)", counter)
-  assert only_bad == "- एत᳓त् (*TA*)"
-  assert ("TA", "एत᳓त्") in unres_bad
+  cured, unres_cured = annotate_padapatha_line_counts("- एत᳓त् (*TA*)", counter)
+  assert cured == "- एत᳓त् (*ŚB*-7)"
+  assert unres_cured == []
+
+  only_bad, unres_bad = annotate_padapatha_line_counts("- अज्ञात᳓म् (*TA*)", counter)
+  assert only_bad == "- अज्ञात᳓म् (*TA*)"
+  assert ("TA", "अज्ञात᳓म्") in unres_bad
 
 
 def test_tinanta_sutra_and_missing_aa_upasarga_guards():
@@ -390,17 +394,22 @@ def test_uncounted_tags_fake_sutras_and_rubberstamp_provenance_guards():
     "- शू᳓ल-हस्तान् (बहुव्रीहौ प्रकृत्या पूर्वपदम् पा॰ ६.२.१, शू᳓लम् *TS*-1, *RV*-1)",
   ])) == 2
 
-  # 2. Fake/oxymoronic sūtra, out-of-bounds sūtra, bare समासस्वरः, rubber-stamped मूल-पाठः/अनाम्नातम्, and misaccented ल्यप्
+  # 2. Fake/oxymoronic sūtra, out-of-bounds sūtra, bare समासस्वरः (even with पा॰ ६.१.१५८),
+  #    rubber-stamped मूल-पाठः/अनाम्नातम्, misaccented ल्यप्, ल्यु/ल्युट् + ६.१.२२३ bug, and fake `णिनिः नित्`
   bad_prov = [
     "- शूल-हस्ता᳓न् (*AV*-1, बहुव्रीहौ समासस्य — हरदत्तः)",
     "- अ᳓ग्निः (पा॰ ६.१.२९९)",
     "- व᳓ह्नि-शिखा (व᳓ह्नि (*MW*) + शि᳓खा (*TB*-1), समासस्वरः)",
+    "- स᳓प्त-इन्द्रियाणि᳓ → **सप्त-इन्द्रियाणि᳓** (अनेकोदात्त-दोषः पा॰ ६.१.१५८; सप्त᳓ (*TS*-74) + इन्द्रिया᳓णि (*TS*-3), समासस्वरः)",
     "- विधुर᳓म् (मूल-पाठः (अनाम्नातम्))",
     "- उरस्-पेशा᳓न् (मूल-पाठः — हरदत्तः)",
     "- नि᳓-विश्य (ल्यप् पा॰ ३.१.४, ६.२.१३९)",
     "- प्रति-गृह्य᳓ (ल्यप् पा॰ ६.२.१३९)",
+    "- वाल-बन्धनः᳓ (ल्युट्/समासस्य पा॰ ६.१.२२३ — हरदत्तः)",
+    "- अमृत-अपिधान᳓म् (करणे ल्युट् पा॰ ३.३.११७, समासस्य पा॰ ६.१.२२३)",
+    "- लोक-धा᳓रिणी (णिनिः नित् पा॰ ६.१.१९७, गतिकारकोपपदात् कृत् पा॰ ६.२.१३९)",
   ]
-  assert len(find_invalid_or_rubberstamp_provenance(bad_prov)) == 7
+  assert len(find_invalid_or_rubberstamp_provenance(bad_prov)) == 11
 
   good_prov = [
     "- शूल-हस्ता᳓न् → **शू᳓ल-हस्तान्** (बहुव्रीहौ प्रकृत्या पूर्वपदम् पा॰ ६.२.१, शू᳓लम् *TS*-1, *RV*-1, *MW* — हरदत्तः)",
@@ -408,5 +417,10 @@ def test_uncounted_tags_fake_sutras_and_rubberstamp_provenance_guards():
     "- नि᳓-विश्य → **नि-वि᳓श्य** (ल्यप् पा॰ ३.१.४, गतिकारकोपपदात् कृत् पा॰ ६.२.१३९)",
     "- प्रति-गृह्य᳓ → **प्रति-गृ᳓ह्य** (*TS*-1, *RV*-1, ल्यप् पा॰ ३.१.४, ६.२.१३९)",
     "- हा᳓वु (सामगाननिपात आद्युदात्तः, आरण्यक-पाठः — भास्करः)",
+    "- वाल-बन्धनः᳓ → **वाल-ब᳓न्धनः** (कर्तरि ल्युः पा॰ ३.१.१३४, लिति पा॰ ६.१.१९३, गतिकारकोपपदात् कृत् पा॰ ६.२.१३९ — हरदत्तः)",
+    "- वेद-अनुवचन᳓म् (भावे ल्युट् पा॰ ३.३.११५, अनो भावकर्मवचनः पा॰ ६.२.१५०)",
+    "- स्रग्-अलङ्करणे᳓ (ल्युट् पा॰ ३.३.११७, द्वन्द्वः समासस्य पा॰ ६.१.२२३)",
+    "- पाद-अवने᳓जनीः (करणे ल्युट् पा॰ ३.३.११७, लिति पा॰ ६.१.१९३, गतिकारकोपपदात् कृत् पा॰ ६.२.१३९ — हरदत्तः)",
+    "- लोक-धारि᳓णी᳓ → **लोक-धारि᳓णी** (अनेकोदात्त-दोषः पा॰ ६.१.१५८; णिनिः पा॰ ३.२.७८, प्रत्ययस्वरः पा॰ ३.१.३, गतिकारकोपपदात् कृत् पा॰ ६.२.१३९)",
   ]
-  assert validate_padapatha_block("पद-पाठः (यान्त्रिकः - 3/5 व्यत्यस्त-स्वराः)", "\n".join(good_prov)) == []
+  assert validate_padapatha_block("पद-पाठः (यान्त्रिकः - 5/10 व्यत्यस्त-स्वराः)", "\n".join(good_prov)) == []

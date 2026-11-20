@@ -62,6 +62,8 @@ def strip_iti(text):
   text = regex.sub('ऱ्', 'र्', text)
   text = regex.sub('ꣴ', 'ं', text)
   text = regex.sub('[॒॑]ꣳ', 'ं', text)
+  # pluta/prolongation markers in some sources, e.g. "म॒माँ(4)", "ब्रह्मा(३)न्"
+  text = regex.sub(r'\([०-९0-9]+\)', '', text)
   has_iti = ("त" in text or "त्य" in text)
   if has_iti:
     text = regex.sub(' इत.*ः', 'ः', text)
@@ -90,7 +92,6 @@ def strip_iti(text):
   text = regex.sub('्([॒॑])', '्', text)
   text = regex.sub('न्न्([॒॑]?)', 'न्', text)
   text = regex.sub('ं॒ ‌', 'ं', text)
-  text = regex.sub(r'\(३\)', '', text)
   text = regex.sub('ꣳ', 'ँ', text)
   if has_iti:
     # standalone upasarga-pada "निरिति" (= निर्, from निस्) carries no "iti X" gloss
@@ -124,6 +125,8 @@ def strip_iti(text):
     text = regex.sub('[॒॑]?डिति[॒॑] .*?([॒॑]?)ट्$', '\\1ट्', text)
     text = regex.sub('ू[॒॑]? इत.*ू([॒॑]?)$', 'ू\\1', text)
     text = regex.sub('ो[॒॑]? इ[॒॑]?त.*ो([॒॒]?)$', 'ो\\1', text)
+    # generic fallback: a still-unresolved "X इति / इत्य / इती Y" gloss keeps the pada X
+    text = regex.sub(r'^(.+)\s+इत(?:ि|ी|्य)[॒॑]?.+$', r'\1', text)
   return text
 
 

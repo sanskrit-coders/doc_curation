@@ -849,3 +849,42 @@ title = "12.1.1"
   aud_ek = audit_full_sb_corpus(sb_root, files=[md_ek])
   assert not aud_ek.passed
   assert any(f.kind == "forbidden_ek_source" for f in aud_ek.failures)
+
+
+def test_audit_accepts_ta_ab_stem_counts_and_rejects_zero_bare(tmp_path):
+  sb_root = _make_synthetic_corpus(tmp_path)
+  md_12 = sb_root / "12/01/1.md"
+  base = """+++
+title = "12.1.1"
++++
+
+## ०१
+
+<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+त᳓द् अपः᳓ ॥
+</details>
+<details><summary>मूलम् - Weber</summary>
+
+त᳘दपः᳘॥
+</details>
+<details><summary>मूलम् - श्रीधरादि</summary>
+
+त᳘दपः᳘॥
+</details>
+<details><summary>पद-पाठः (यान्त्रिकः)</summary>
+
+- त᳓त् (*TS*-10/25, *VS*-0/3)
+- अपः᳓ (*RV*-5/12)
+</details>
+"""
+  md_12.write_text(base, encoding="utf-8")
+  aud_ok = audit_full_sb_corpus(sb_root, files=[md_12])
+  assert aud_ok.passed and aud_ok.failures == []
+
+  # Bare -0 and -0/0 are still rejected
+  for bad_tag in ("*VS*-0", "*VS*-0/0"):
+    md_12.write_text(base.replace("*VS*-0/3", bad_tag), encoding="utf-8")
+    aud_bad = audit_full_sb_corpus(sb_root, files=[md_12])
+    assert not aud_bad.passed
+    assert any(f.kind == "zero_corpus_count" for f in aud_bad.failures)

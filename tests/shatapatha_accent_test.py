@@ -721,3 +721,84 @@ def test_fused_avagraha_token_preserves_later_pada_initial_accents():
   )
   assert rep2.disagree_pada_indices == []
   assert rep2.unflagged_vyatyasta_padas == []
+
+
+def test_final_sprint_guards_and_pluta_and_pause_udatta():
+  from doc_curation.sanskrit.accent.sandhi_check import verify_mantra_sandhi
+  from doc_curation.sanskrit.accent.validator import (
+    find_unexplained_aa_hiatuses,
+    find_unlicensed_unaccented_padas,
+    find_unsplit_upasarga_tinantas,
+  )
+
+  # 1. #285 item 1: `आ + अयम्` hiatus in 11/04/2.md::०१
+  assert verify_mantra_sandhi(["प्र᳓ति-प्रतिम्", "नु᳓", "आ᳓", "अय᳓म्"], "प्रतिप्रतिं न्व् आ अयम्")[0]
+
+  # 2. #285 item 2: `पा॰ ८.१.१८` anti-cheat rejects bogus nouns/compounds, keeps genuine enclitics
+  assert len(find_unlicensed_unaccented_padas(["- पुमास्तेन (अनुदात्तम्, पा॰ ८.१.१८)"])) == 1
+  assert len(find_unlicensed_unaccented_padas(["- अ-देवः (अनुदात्तम्, पा॰ ८.१.१८)"])) == 1
+  assert find_unlicensed_unaccented_padas([
+    "- च (अनुदात्तम्, पा॰ ८.१.१८)",
+    "- इव (अनुदात्तम्, पा॰ ८.१.१८)",
+    "- ह (अनुदात्तम्, पा॰ ८.१.१८)",
+    "- ते (अनुदात्तम्, पा॰ ८.१.१८)",
+    "- नः (अनुदात्तम्, पा॰ ८.१.१८)",
+    "- बत (अनुदात्तम्, पा॰ ८.१.१८)",
+    "- वत (अनुदात्तम्, पा॰ ८.१.१८)",
+    "- त्वत् (अनुदात्तम्, पा॰ ८.१.१८)",
+  ]) == []
+
+  # 3. #302, #304, #308, #360: simplex verbs exempt from unsplit_upasarga_tinanta
+  assert find_unsplit_upasarga_tinantas(
+    [
+      "- अववृत्रन् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+      "- अवृथाः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+      "- सुवाति (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+      "- आशिषुः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    ],
+    forbid_compound_upasarga_tinanta=True,
+  ) == []
+
+  # 4. #305: final-udātta before `॥` followed by udātta (`next_first_mark="U"` or mid-kaṇḍikā `॥`)
+  items_p = parse_padapatha_items("- स᳓र्वे (*RV*)\n- प्राणाः᳓ (*RV*)")
+  rep_p = audit_padapatha_against_sb(
+    "सर्वे प्राणाः ॥", items_p, "स᳘र्वे प्राणाः᳟॥", "स᳘र्व्वे प्प्राणाः᳘॥", next_first_mark="U"
+  )
+  assert rep_p.disagree_pada_indices == []
+  items_mid = parse_padapatha_items("- आत्मा᳓ (*RV*)\n- अ᳓गृह्यः (*MW*)")
+  rep_mid = audit_padapatha_against_sb(
+    "आत्मा ॥ अगृह्यः ॥", items_mid, "आत्मा᳟॥ अ᳘गृह्यः॥", "आत्मा᳘॥ अ᳘गृह्यः॥"
+  )
+  assert rep_mid.disagree_pada_indices == []
+  items_uu = parse_padapatha_items("- लोकाः᳓ (*RV*)\n- प्र᳓-तिष्ठिताः (*TS*)")
+  rep_uu = audit_padapatha_against_sb(
+    "लोकाः प्र-तिष्ठिताः ॥", items_uu, "लोकाः᳘ प्र᳘तिष्ठिताः॥", "लोकाः᳘ प्प्र᳘तिष्ठिताः॥"
+  )
+  assert rep_uu.disagree_pada_indices == []
+  items_ma = parse_padapatha_items(
+    "- उप (तिङि चोदात्तवति पा॰ ८.१.७१)\n"
+    "- सम् (तिङि चोदात्तवति पा॰ ८.१.७१)\n"
+    "- आ᳓ (*RV*)\n"
+    "- अवर्तत (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)"
+  )
+  _, vp_ma, unm_ma = build_sb_vp_from_padapatha(
+    "उपसमावर्तत ॥", items_ma, weber_text="उपसमा᳘वर्तत॥", shri_text="उपसमा᳘वर्तत॥"
+  )
+  assert unm_ma == [] and vp_ma == "उपसमा᳓वर्तत ॥"
+  rep_ma = audit_padapatha_against_sb("उपसमावर्तत ॥", items_ma, "उपसमा᳘वर्तत॥", "उपसमा᳘वर्तत॥")
+  assert rep_ma.disagree_pada_indices == []
+
+  # 5. #306 & #307: word-medial pluta `३` does not split VP tokens
+  items_arka = parse_padapatha_items("- अर्का᳓३न् (*RV*)\n- इ᳓ति (*TS*)")
+  _, vp_arka, unm_arka = build_sb_vp_from_padapatha("अर्का३निति", items_arka)
+  assert unm_arka == [] and vp_arka == "अर्का᳓३नि᳓ति"
+
+  # 6. #309: `आसिथ + उप` ardharca hiatus
+  assert find_unexplained_aa_hiatuses(["- आसिथ (*RV*)", "- उ᳓प (*RV*)"], "मन्द आसिथ उपमञ्घ्यति") == []
+
+  # 7. #311 & #312: `एव + इदम् -> एवैदम्` and VS 19.2 `परि + इतः + सिञ्चता -> परीतो षिञ्चता`
+  assert verify_mantra_sandhi(["य᳓था", "ह", "एव᳓", "इद᳓म्"], "यथा हैवैदम्")[0]
+  assert verify_mantra_sandhi(["प᳓रि", "इतः᳓", "सिञ्चता", "सुत᳓म्", "इ᳓ति"], "परीतो षिञ्चता सुतमिति")[0]
+  assert verify_mantra_sandhi(["प᳓रि", "इतः᳓", "षिञ्चता", "सुत᳓म्", "इ᳓ति"], "परीतो षिञ्चता सुतमिति")[0]
+
+

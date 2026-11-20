@@ -142,3 +142,133 @@ def test_samhita_snippet_and_spaced_yan_8_2_4():
   )
   reconciled, _ = reconcile_vprastuti_and_tiikaa_texts(vp, tk)
   assert "[[उच्चै᳓श्-श्राव्य्|उच्चैश्-श्राव्य्]] [[अ-कर्ण᳓कः|अ᳙-कर्ण᳓कः]]" in reconciled
+
+
+def test_stem_across_cases_enrichment_zero_slash_n_and_validator():
+  c = VedicCorpusCounter()
+  for corp, word, freq in [
+    ("TS", "न᳓क्षत्रैः", 2),
+    ("TS", "न᳓क्षत्रम्", 28),
+    ("TS", "न᳓क्षत्राणि", 9),
+    ("RV", "न᳓क्षत्रम्", 5),
+    ("TB", "न᳓क्षत्रेभ्यः", 7),
+    ("TS", "रो᳓हितः", 1),
+    ("TS", "रो᳓हिताय", 2),
+    ("AV", "रो᳓हितम्", 10),
+    ("TS", "इ᳓ति", 1796),
+    ("RV", "इ᳓ति", 83),
+  ]:
+    km = word_to_key_and_marks(word)
+    assert km is not None
+    c._add(corp, km[0], km[1], freq=freq)
+  c._finalize_secondary_tables()
+
+  assert c.count_with_stem("न᳓क्षत्रैः", "TS") == (2, 39)
+  assert c.count_with_stem("न᳓क्षत्रैः", "RV") == (0, 5)
+  assert c.count_with_stem("न᳓क्षत्रैः", "TB") == (0, 7)
+
+  # 1. Existing tag enriched to M/N + newly surfaced 0/N major corpora, idempotent on re-run
+  ln_nak, unres_n = annotate_padapatha_line_counts("- न᳓क्षत्रैः (*TS*)", c)
+  assert ln_nak == "- न᳓क्षत्रैः (*TS*-2/39, *RV*-0/5, *TB*-0/7)"
+  assert unres_n == []
+  assert annotate_padapatha_line_counts(ln_nak, c)[0] == ln_nak
+
+  # 2. Bullet with only *MW* note surfaces 0/N major corpora automatically
+  ln_roh, unres_r = annotate_padapatha_line_counts("- रो᳓हितान् (प्रातिपदिकम् रो᳓हित (*MW*))", c)
+  assert ln_roh == "- रो᳓हितान् (*TS*-0/3, *AV*-0/10, प्रातिपदिकम् रो᳓हित (*MW*))"
+  assert unres_r == []
+  assert annotate_padapatha_line_counts(ln_roh, c)[0] == ln_roh
+
+  # 3. Indeclinables keep single -M without stem expansion
+  ln_iti, _ = annotate_padapatha_line_counts("- इ᳓ति (*TS*)", c)
+  assert ln_iti == "- इ᳓ति (*TS*-1796)"
+
+  # 4. Validator accepts *-0/N and *-M/N (N > M >= 0, N >= 1) and rejects bare *-0, *-0/0, *-5/5, *-5/3
+  assert validate_padapatha_block("पद-पाठः (यान्त्रिकः)", f"{ln_nak}\n{ln_roh}\n") == []
+  for bad_ln in ("- रो᳓हितान् (*TS*-0)\n", "- रो᳓हितान् (*TS*-0/0)\n", "- रो᳓हितान् (*TS*-5/5)\n", "- रो᳓हितान् (*TS*-5/3)\n"):
+    errs = validate_padapatha_block("पद-पाठः (यान्त्रिकः)", bad_ln)
+    assert any(e.kind == "zero_corpus_count" for e in errs)
+
+
+def test_ingest_us_padasvara_babylon(tmp_path):
+  from doc_curation.sanskrit.accent.shatapatha_solver import us_padasvara_to_entry
+
+  assert us_padasvara_to_entry("र᳓राणः") == ("रराणः", ("U", "", ""), None)
+  assert us_padasvara_to_entry("अभवः") == ("अभवः", ("", "", ""), None)
+  assert us_padasvara_to_entry("उ") == ("उ", ("",), None)
+  assert us_padasvara_to_entry("वा᳓व᳓") == ("वाव", ("U", "U"), None)
+  assert us_padasvara_to_entry("अँहः-मु᳓चे") == ("अंहःमुचे", ("", "", "U", ""), "अंहः-मुचे")
+
+  bab = tmp_path / "kyv-ts-padasvara.babylon"
+  bab.write_text(
+    "\n#bookname=kyv-ts-padasvara (sa-sa)\n\n"
+    "रराणः\nर᳓राणः (3)<br>1.1.1\n\n"
+    "रराणः\nरराणः᳓ (1)<br>2.1.1\n\n"
+    "अँहःमुचे|अँहोमुचे|अंहःमुचे|अंहोमुचे\nअँहः-मु᳓चे (11)<br>1.6.12\n\n"
+    "अत्भिः|अद्भिः\nअत्-भिः᳓ (14)<br>1.1.1\n\n"
+    "अभवः\nअभवः (19)<br>1.1.1\n\n"
+    "ते\nते (541)<br>1.1.1\n\n"
+    "ते\nते᳓ (451)<br>1.1.1\n\n"
+    "उ\nउ (96)<br>1.1.1\n\n"
+    "वाव\nवा᳓व᳓ (80)<br>1.5.7\n\n",
+    encoding="utf-8",
+  )
+  vc = VedicCorpusCounter()
+  vc._ingest_babylon(str(bab), "TS")
+  vc._finalize_secondary_tables()
+  assert vc.exact_counts["TS"][("रराणः", ("U", "", ""))] == 3
+  assert vc.exact_counts["TS"][("रराणः", ("", "", "U"))] == 1
+  assert vc.exact_counts["TS"][("अंहोमुचे", ("", "", "U", ""))] == 11
+  assert vc.exact_counts["TS"][("अद्भिः", ("", "U"))] == 14
+  assert vc.exact_counts["TS"][("अभवः", ("", "", ""))] == 19
+  assert vc.exact_counts["TS"][("ते", ("",))] == 541
+  assert vc.exact_counts["TS"][("ते", ("U",))] == 451
+  assert vc.exact_counts["TS"][("उ", ("",))] == 96
+  assert vc.exact_counts["TS"][("वाव", ("U", "U"))] == 80
+
+
+def test_major_corpora_skip_tags_and_slash_group():
+  c = VedicCorpusCounter()
+  for corp, word, freq in [
+    ("TS", "अ᳓नृतम्", 3),
+    ("RV", "अ᳓नृतम्", 18),
+    ("TB", "अ᳓नृतात्", 1),
+    ("TB", "अ᳓नृतम्", 6),
+    ("AV", "अ᳓नृतम्", 13),
+    ("ŚB", "अ᳓नृतात्", 20),
+    ("ŚB", "मानुषः᳓", 21),
+    ("TS", "मानुष᳓म्", 3),
+    ("TS", "मानुषः᳓", 0),
+  ]:
+    if freq == 0:
+      continue
+    km = word_to_key_and_marks(word)
+    assert km is not None
+    c._add(corp, km[0], km[1], freq=freq)
+  c._finalize_secondary_tables()
+
+  # 1. Custom major_corpora omits ŚB auto-injection, and slash-joined *RV*/*TS* stays intact & idempotent
+  ln1, _ = annotate_padapatha_line_counts(
+    "- अ᳓नृतात् (*VS* १.५, *RV*/*TS* अ᳓नृतम्)",
+    c,
+    major_corpora=("TS", "RV", "TB", "AV", "VS"),
+    skip_tags=frozenset({"ŚB"}),
+  )
+  assert "*ŚB*" not in ln1
+  assert "*RV*-0/18/*TS*-3" in ln1
+  assert "*TB*-1/7" in ln1 and "*AV*-0/13" in ln1
+  assert annotate_padapatha_line_counts(
+    ln1, c, major_corpora=("TS", "RV", "TB", "AV", "VS"), skip_tags=frozenset({"ŚB"})
+  )[0] == ln1
+
+  # 2. skip_tags preserves editorial *ŚB* verbatim without self-referential counts or pruning
+  ln2, unres2 = annotate_padapatha_line_counts(
+    "- मानुषः᳓ (*MW*; *ŚB*)",
+    c,
+    prune_unverified_standalone_tags=True,
+    major_corpora=("TS", "RV", "TB", "AV", "VS"),
+    skip_tags=frozenset({"ŚB"}),
+  )
+  assert ln2.endswith("; *ŚB*)")
+  assert "*ŚB*-" not in ln2
+  assert unres2 == []

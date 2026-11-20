@@ -36,15 +36,15 @@ def test_decompose_samasa_vowel_mergers_and_nan():
 def test_retrieve_accent_candidates_ranks_by_frequency_and_splits_samasa():
   hits = retrieve_accent_candidates("रराणः प्राणापानौ अभवः तन्वः")
   joined = "\n".join(hits)
-  # रराणः shows both frequency-ranked variants with రरा॑णः first in RV and TS
+  # रराणः shows both frequency-ranked variants in US notation across RV/TS/AV
   rarana_line = next(h for h in hits if h.startswith("- रराणः:"))
-  assert "ररा॑णः (10)" in rarana_line
-  assert "ररा॑णः (3)" in rarana_line
-  assert rarana_line.index("ररा॑णः (3)") < rarana_line.index("र॒रा॒णः (1)")
-  # अभवः has zero fake svarita अ॑भवः
+  assert "र᳓राणः (10)" in rarana_line
+  assert "र᳓राणः (3)" in rarana_line
+  assert rarana_line.index("र᳓राणः (3)") < rarana_line.index("रराणः᳓ (1)")
+  # अभवः has zero fake svarita अ॑भवः / अ᳓भवः > unaccented count
   assert "अ॑भवः" not in joined
-  assert "अ॒भ॒वः॒ (24)" in joined
-  # तन्वः preserves genuine jātya svarita त॒न्वः॑
-  assert "त॒न्वः॑ (44)" in joined
+  assert "अभवः (24)" in joined
+  # तन्वः preserves genuine US jātya svarita तन्वः᳙
+  assert "तन्वः᳙ (44)" in joined
   # प्राणापानौ decomposes so प्राण / अपान member accents are retrieved
   assert any(h.startswith("- प्राण:") or h.startswith("- अपान") for h in hits)
