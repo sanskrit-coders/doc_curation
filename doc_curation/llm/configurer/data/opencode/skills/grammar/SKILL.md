@@ -131,6 +131,7 @@ Look for attestation first; derive only when nothing attests the form. Order of 
 | `av-prakRti-svara` | Atharvaveda Śaunakīya stems & `[धातुः]` synopses with US accents (`2.35.1`) |
 | `kyv-ts-prakRti-svara` | Kṛṣṇa-Yajurveda-TS stems & `[धातुः]` synopses with US accents (`1.7.33`) |
 | `syv-ms-prakRti-svara` | Śukla-Yajurveda Mādhyandina Saṃhitā stems & `[धातुः]` synopses with US accents (`8.40`) |
+| `syv-sb-m-prakRti-svara` | Śatapatha Brāhmaṇa (Mādhyandina) stems & `[धातुः]` synopses with US accents (`1.3.3.19`) |
 | `rv-padapATha-dev` | Ṛgveda pādas: unaccented saṃhitā head → accented saṃhitā + accented pada-pāṭha + reference |
 
 Heads are `|`-separated unaccented aliases (including anusvāra/candrabindu variants, joined/split compound forms, and `-ः`-stripped forms), so search the bare word or stem. All of these are Babylon files — blank-line separated entries, head line first:
