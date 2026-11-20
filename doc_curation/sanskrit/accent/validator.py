@@ -218,6 +218,7 @@ SIMPLEX_TINANTA_ALLOWLIST: frozenset[str] = frozenset({
   "अवन्तु",
   "अवतात्",
   "अवमीत्",
+  "अहोष्यः",
   "अव्यथन्",
   "आः",
   "आवाः",

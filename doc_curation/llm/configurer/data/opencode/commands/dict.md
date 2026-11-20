@@ -14,7 +14,7 @@ Key references:
     --dictRepoIndexUrl https://github.com/indic-dict/stardict-index/releases/download/current/dictionaryIndices.md \
     --overwrite true
   ```
-- Code & data repos: `~/gitland/indic-dict/dict-curation/`, `~/gitland/indic-dict/dict-tools/`, `~/gitland/indic-dict/dicts/`, `~/gitland/indic-dict/stardict/`, and `~/gitland/sanskrit/raw_etexts/koshaH/indic-dict/`.
+- Code & data repos: `~/gitland/indic-dict/dict-curation/`, `~/gitland/indic-dict/dict-tools/`, `~/gitland/indic-dict/dicts/`, and `~/gitland/indic-dict/stardict/`.
 - Write only `.babylon` source files (never commit or leave generated `.babylon_final` files unless explicitly testing local builds).
 
 If no task or command is specified in `$ARGUMENTS`, ask what dictionary action is needed (e.g., updating local StarDict dicts, regenerating a `.babylon` file, or inspecting a dictionary repo).

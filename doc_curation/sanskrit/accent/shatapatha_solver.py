@@ -114,7 +114,7 @@ DEFAULT_SB_M_CACHE_PATH = os.path.join(
   os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"),
   "doc_curation", "unified_vedic_lexicon_sbm.pkl",
 )
-DEFAULT_DICT_ROOT = os.path.expanduser("~/gitland/sanskrit/raw_etexts/koshaH/indic-dict")
+DEFAULT_DICT_ROOT = "/home/vvasuki/gitland/indic-dict/dicts"
 DEFAULT_SB_M_DIR = (
   "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/"
   "vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH"
@@ -143,9 +143,9 @@ def default_data_available(
   (a clean CI checkout has no local Sanskrit data).
   """
   padasvara = (
-    "kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon",
-    "kAvya/kyv-ts-padasvara/kyv-ts-padasvara.babylon",
-    "kAvya/av-padasvara/av-padasvara.babylon",
+    "stardict-sanskrit-kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon",
+    "stardict-sanskrit-kAvya/kyv-ts-padasvara/kyv-ts-padasvara.babylon",
+    "stardict-sanskrit-kAvya/av-padasvara/av-padasvara.babylon",
   )
   return os.path.isdir(vs_dir) and all(
     os.path.isfile(os.path.join(dict_root, rel)) for rel in padasvara
@@ -586,6 +586,22 @@ _SLP_HOMORGANIC_NASAL_RE = re.compile(r"N(?=[kKgG])|Y(?=[cCjJ])|R(?=[wWqQ])|n(?=
 def _slp_homorganic_to_anusvara(slp_w: str) -> str:
   """Mirror ``_normalize_lookup_key`` nasal normalization in SLP1 so ``slp_vocab`` matches ``न्त/न्द/ञ्च/ङ्क/म्प``."""
   return _SLP_HOMORGANIC_NASAL_RE.sub("M", slp_w)
+
+
+def _slp_anusvara_to_homorganic(slp_w: str) -> str:
+  """Restore homorganic nasals (`N/Y/R/n/m`) from `M` before stops so `vidyut.kosha` matches `किंचित्`."""
+  if "M" not in slp_w:
+    return slp_w
+  s = re.sub(r"M(?=[kKgG])", "N", slp_w)
+  s = re.sub(r"M(?=[cCjJ])", "Y", s)
+  s = re.sub(r"M(?=[wWqQ])", "R", s)
+  s = re.sub(r"M(?=[tTdD])", "n", s)
+  return re.sub(r"M(?=[pPbB])", "m", s)
+
+
+def _kanva_orth_alias(key_deva: str) -> str:
+  """Map Kāṇva ``म्व``/``ळ्ह``/``ळ`` print forms to standard Mādhyandina lookup forms (``ंव``/``ढ``/``ड``)."""
+  return key_deva.replace("म्व", "ंव").replace("ळ्ह", "ढ").replace("ळ", "ड")
 
 
 _MATRA_TO_IND_VOWEL: dict[str, str] = {
@@ -1313,9 +1329,9 @@ class UnifiedVedicLexicon:
     lex = cls()
     # 1. Padasvara babylon files (RV, TS, AV)
     for tag, rel in (
-      ("RV", "kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon"),
-      ("TS", "kAvya/kyv-ts-padasvara/kyv-ts-padasvara.babylon"),
-      ("AV", "kAvya/av-padasvara/av-padasvara.babylon"),
+      ("RV", "stardict-sanskrit-kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon"),
+      ("TS", "stardict-sanskrit-kAvya/kyv-ts-padasvara/kyv-ts-padasvara.babylon"),
+      ("AV", "stardict-sanskrit-kAvya/av-padasvara/av-padasvara.babylon"),
     ):
       p = os.path.join(dict_root, rel)
       if os.path.isfile(p):
@@ -1334,16 +1350,16 @@ class UnifiedVedicLexicon:
       lex._ingest_ta_tb_corpus(sb_m_dir, "SB-M")
 
     # 4. Dictionaries: MW, Macdonell, Lanman, Whitney-roots
-    mw_p = os.path.join(dict_root, "sanskrit/sa-head/en-entries/mw-cologne/mw-cologne.babylon")
+    mw_p = os.path.join(dict_root, "stardict-sanskrit/sa-head/en-entries/mw-cologne/mw-cologne.babylon")
     if os.path.isfile(mw_p):
       lex._ingest_mw_babylon(mw_p)
-    md_p = os.path.join(dict_root, "sanskrit/sa-head/en-entries/macdonell/macdonell.babylon")
+    md_p = os.path.join(dict_root, "stardict-sanskrit/sa-head/en-entries/macdonell/macdonell.babylon")
     if os.path.isfile(md_p):
       lex._ingest_iast_dict_babylon(md_p, "Macdonell")
-    lan_p = os.path.join(dict_root, "sanskrit/sa-head/en-entries/lanman/lanman.babylon")
+    lan_p = os.path.join(dict_root, "stardict-sanskrit/sa-head/en-entries/lanman/lanman.babylon")
     if os.path.isfile(lan_p):
       lex._ingest_iast_dict_babylon(lan_p, "Lanman")
-    wh_p = os.path.join(dict_root, "sanskrit/sa-head/en-entries/whitney-roots/whitney-roots.babylon")
+    wh_p = os.path.join(dict_root, "stardict-sanskrit/sa-head/en-entries/whitney-roots/whitney-roots.babylon")
     if os.path.isfile(wh_p):
       lex._ingest_whitney_roots(wh_p)
 
@@ -1639,17 +1655,26 @@ class UnifiedVedicLexicon:
   def lookup_form(self, word_deva: str) -> dict[tuple[str, ...], dict[str, int]]:
     """Return ``{marks_tuple: {source: freq}}`` for an inflected Devanagari word."""
     key = _normalize_lookup_key(word_deva)
-    return self.form_accents.get(key, {})
+    res = self.form_accents.get(key)
+    if res:
+      return res
+    alt = _kanva_orth_alias(key)
+    return self.form_accents.get(alt, {}) if alt != key else {}
 
   def lookup_stem(self, stem_deva: str) -> dict[tuple[str, ...], dict[str, int]]:
     key = _normalize_lookup_key(stem_deva)
-    return self.stem_accents.get(key, {})
+    res = self.stem_accents.get(key)
+    if res:
+      return res
+    alt = _kanva_orth_alias(key)
+    return self.stem_accents.get(alt, {}) if alt != key else {}
 
   def get_canonical_hyphenation(self, word_deva: str) -> str | None:
     key = _normalize_lookup_key(word_deva)
     if key in self.form_hyphens:
       return self.form_hyphens[key]
-    return None
+    alt = _kanva_orth_alias(key)
+    return self.form_hyphens.get(alt) if alt != key else None
 
   def analyze_morph(self, word_deva: str) -> dict:
     """Fast cached morphological analysis combining ``vidyut.kosha`` + lexicon heuristics."""
@@ -1664,11 +1689,7 @@ class UnifiedVedicLexicon:
     slp = _deva_to_slp(clean_d)
     ents = _kosha_get_slp(slp)
     if not ents and "M" in slp:
-      slp_ps = re.sub(r"M(?=[kKgG])", "N", slp)
-      slp_ps = re.sub(r"M(?=[cCjJ])", "Y", slp_ps)
-      slp_ps = re.sub(r"M(?=[wWqQ])", "R", slp_ps)
-      slp_ps = re.sub(r"M(?=[tTdD])", "n", slp_ps)
-      slp_ps = re.sub(r"M(?=[pPbB])", "m", slp_ps)
+      slp_ps = _slp_anusvara_to_homorganic(slp)
       if slp_ps != slp:
         ents = _kosha_get_slp(slp_ps)
         if ents:
@@ -1871,6 +1892,9 @@ class UnifiedVedicLexicon:
       slp_m = _slp_homorganic_to_anusvara(slp_w)
       if slp_m != slp_w:
         sc = self.slp_vocab.get(slp_m, 0)
+    if sc <= 0 and ("L" in slp_w or "mv" in slp_w):
+      slp_alt = slp_w.replace("mv", "Mv").replace("Lh", "D").replace("L", "q")
+      sc = self.slp_vocab.get(slp_alt, 0)
     if sc > 0:
       res = 0 if (len(slp_w) <= 2 and sc < 5) else (sc + 25)
       self._word_score_cache[slp_w] = res
@@ -1881,7 +1905,7 @@ class UnifiedVedicLexicon:
     if any(slp_w.startswith(pf) and len(slp_w) >= len(pf) + 3 for pf in _FUSED_PREFIX_BLOCK_SLP):
       self._word_score_cache[slp_w] = 0
       return 0
-    if _kosha_get_slp(slp_w):
+    if _kosha_get_slp(slp_w) or ("M" in slp_w and _kosha_get_slp(_slp_anusvara_to_homorganic(slp_w))):
       self._word_score_cache[slp_w] = 8
       return 8
     if self._matches_stem_slp_fast(slp_w):
@@ -3032,6 +3056,9 @@ def _prevocalic_cons_restorations(seg: str, *, next_ch: str = "") -> list[tuple[
     out.append((seg[:-1] + "k", 0.15))
   elif c == "q" and len(seg) >= 3:
     out.append((seg[:-1] + "w", 0.15))
+  elif c == "L" and len(seg) >= 3:
+    out.append((seg[:-1] + "w", 0.05))
+    out.append((seg[:-1] + "q", 0.05))
   elif seg.endswith("nn") and len(seg) >= 4:
     out.append((seg[:-1], 0.05))
   elif seg.endswith("NN") and len(seg) >= 4:
@@ -3375,7 +3402,7 @@ def lookup_corpus_counts(lex: UnifiedVedicLexicon, pada_us: str) -> dict[str, in
   if not scanned:
     return {}
   marks = tuple("S" if US_SVARITA in m else ("U" if US_UDATTA in m else "") for m, _ in scanned)
-  srcs = lex.form_accents.get(key, {}).get(marks, {})
+  srcs = lex.lookup_form(clean).get(marks, {})
   return _aggregate_corpus_counts(srcs)
 
 
@@ -3989,6 +4016,12 @@ def generate_pada_candidates(
       bonus -= 0.1
     prior = 0.15 - min(math.log1p(tot) * 0.04, 0.2) + bonus
     _add(mks, prov, "nominal", prior)
+
+  # Preserve attested unaccented primary-corpus forms (e.g. Vedic subjunctive/aorist verbs missed by vidyut)
+  if not is_tin and not nonzero_form_hits and zero_marks in form_hits:
+    z_srcs = form_hits[zero_marks]
+    if any(k in z_srcs for k in ("SB-M", "SB-K", "TS", "RV", "AV", "TB", "VS")):
+      _add(zero_marks, _format_corpus_prov(z_srcs), "nominal", 0.35)
 
   # 7. Stem-projected accents (MW, Macdonell, Lanman)
   # Skip stem homographs when the exact inflected form is already strongly attested in Vedic corpora (>= 50x, e.g. `एव᳓` vs MW `ए᳓व`)!

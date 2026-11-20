@@ -19,13 +19,13 @@ from indic_transliteration.sanscript.schemes.brahmic import accent
 from doc_curation.sanskrit.accent.samasa import decompose_samasa_for_padasvara
 from .prompts import PADAPATHA_ACCENT_SYSTEM_PROMPT
 
-DEFAULT_DICT_ROOT = os.path.expanduser("~/gitland/sanskrit/raw_etexts/koshaH/indic-dict")
+DEFAULT_DICT_ROOT = "/home/vvasuki/gitland/indic-dict/dicts"
 
 _PADASVARA_REL_PATHS = (
-  ("RV", "kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon"),
-  ("TS", "kAvya/kyv-ts-padasvara/kyv-ts-padasvara.babylon"),
-  ("AV", "kAvya/av-padasvara/av-padasvara.babylon"),
-  ("MW", "sanskrit/sa-head/en-entries/mw-cologne/mw-cologne.babylon"),
+  ("RV", "stardict-sanskrit-kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon"),
+  ("TS", "stardict-sanskrit-kAvya/kyv-ts-padasvara/kyv-ts-padasvara.babylon"),
+  ("AV", "stardict-sanskrit-kAvya/av-padasvara/av-padasvara.babylon"),
+  ("MW", "stardict-sanskrit/sa-head/en-entries/mw-cologne/mw-cologne.babylon"),
 )
 
 _DICT_INDEX_CACHE: dict[str, dict[str, list[str]]] = {}

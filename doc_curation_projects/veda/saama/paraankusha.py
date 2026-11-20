@@ -31,7 +31,7 @@ def get_kauthuma():
 def get_misc(browser):
   pass
   for i in [3,5,7,9]:
-    parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "expand:विद्यास्थानानि", "वेदाः", f"expand:वैदिक-पादानुक्रम-कोशः-{i}", f"{i}.1"], outdir=f"/home/vvasuki/gitland/sanskrit/raw_etexts/koshaH/indic-dict/kAvya/vaidika-padAnukrama-koshaH/mUla/0{i}")
+    parankusha.get_texts(browser=browser, start_nodes=["विद्यास्थानानि", "expand:विद्यास्थानानि", "वेदाः", f"expand:वैदिक-पादानुक्रम-कोशः-{i}", f"{i}.1"], outdir=f"/home/vvasuki/gitland/indic-dict/dicts/stardict-sanskrit-kAvya/vaidika-padAnukrama-koshaH/mUla/0{i}")
     # Reset.
     parankusha.browse_nodes(browser=browser, start_nodes=["विद्यास्थानानि"])
   

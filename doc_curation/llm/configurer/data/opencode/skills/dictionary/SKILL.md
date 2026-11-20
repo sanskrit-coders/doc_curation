@@ -49,13 +49,13 @@ Repository: `~/gitland/indic-dict/dict-tools/`:
 - `bin/artifacts/dict-tools.jar` — Fat JAR built via `sbt assembly`.
 
 ### Dictionary data repositories & local mirrors
-- `~/gitland/indic-dict/dicts/` — Local clones of `indic-dict/stardict-*` repositories (`stardict-sanskrit`, `stardict-sanskrit-kAvya`, `stardict-sanskrit-vyAkaraNa`, `stardict-index`, etc.).
+- `~/gitland/indic-dict/dicts/` — Local clones of `indic-dict/stardict-*` repositories (`stardict-sanskrit`, `stardict-sanskrit-kAvya`, `stardict-sanskrit-vyAkaraNa`, `stardict-index`, etc.). `doc_curation` reads dictionary data from these repos (e.g. `stardict-sanskrit-kAvya/`, `stardict-sanskrit/`, `stardict-sanskrit-vyAkaraNa/`; see `shatapatha_solver.py`, `provenance.py`).
 - `~/gitland/indic-dict/stardict/` — Secondary local clone mirror of `stardict-*` repositories.
-- `~/gitland/sanskrit/raw_etexts/koshaH/indic-dict/` — Submodules (`kAvya/`, `sanskrit/`, `vyAkaraNa/`) read by `doc_curation` (`shatapatha_solver.py`, `provenance.py`).
+- `~/gitland/sanskrit/raw_etexts/koshaH/indic-dict/` — **Read-only** legacy path containing submodules `kAvya/`, `sanskrit/`, `vyAkaraNa/`. Do not write here; prefer `~/gitland/indic-dict/dicts/`.
 - `~/gitland/indic-dict/dicts/stardict-index/dictionaryIndices.md` — Master list of `tars.MD` feeds across all `indic-dict` repos.
 
 ## 3. Build & maintenance rules
 
 - **Do NOT generate or commit `.babylon_final` files manually**: `.gitignore` in `stardict-*` repos ignores `*.babylon_final` (along with `*.ifo`, `*.idx`, `*.syn`, `*.dict.dz`). Generators should write only `<dict>.babylon` (and `README.md`).
 - **Automatic `.babylon_final` & release generation**: Each `stardict-*` repo's `makefile` + `.github/workflows/build.yml` runs `full_build.sh` (`makeIndicStardictTar`), which runs `babylonTools.addStandardHeadwords` to produce `.babylon_final`, compiles StarDict files, packages `.tar.gz`, and deploys to `gh-pages`.
-- **Keep mirrors in sync**: Generators in `dict_curation_projects/.../veda/` write `.babylon` outputs to all three local mirrors (`raw_etexts/koshaH/indic-dict/kAvya`, `indic-dict/dicts/stardict-sanskrit-kAvya`, `indic-dict/stardict/stardict-sanskrit-kAvya`) when their parent directories exist; commit and push from the intended `stardict-*` repo (`dicts/...`) to trigger CI builds.
+- **Write only to the main clone**: Generators in `dict_curation_projects/.../veda/` should write `.babylon` outputs only to the main `stardict-*` clone under `~/gitland/indic-dict/dicts/` (e.g. `stardict-sanskrit-kAvya/`), then commit and push from there to trigger CI builds. Keep secondary/local mirrors in sync by pulling from remote origin (e.g. `~/gitland/indic-dict/stardict/...`); the legacy mirror `~/gitland/sanskrit/raw_etexts/koshaH/indic-dict/` (`kAvya/`, `sanskrit/`, `vyAkaraNa/`) is **read-only** and must not be written to.

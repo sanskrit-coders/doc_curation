@@ -331,6 +331,12 @@ def test_audit_cross_pada_ripple_and_boundary_svarita():
   rep4 = audit_padapatha_against_sb("तद् वीर्यम् ॥", items4, "त᳘द्वी᳘र्यॗम्॥", "त᳘द्वी᳘र्यं᳘॥")
   assert rep4.disagree_pada_indices == []
 
+  # 5. Boundary `idx == n - 1` ending in anudātta with `next_first_mark="S"` allows single-witness Shri omitting cross-kaṇḍikā `᳘` before `॥`.
+  items5 = parse_padapatha_items("- अभि᳓ (*RV*, *SB-M*)\n- सिञ्चति (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)")
+  rep5 = audit_padapatha_against_sb("अभिषिञ्चति ॥", items5, None, "अभि᳘षिञ्चति ॥", next_first_mark="S")
+  assert rep5.unflagged_vyatyasta_padas == []
+  assert rep5.disagree_pada_indices == []
+
 
 def test_apply_sb_kandika_updates_preserves_layers_existing_us_and_layouts(tmp_path):
   md_file = tmp_path / "sb_sample.md"
@@ -775,6 +781,12 @@ def test_final_sprint_guards_and_pluta_and_pause_udatta():
     "लोकाः प्र-तिष्ठिताः ॥", items_uu, "लोकाः᳘ प्र᳘तिष्ठिताः॥", "लोकाः᳘ प्प्र᳘तिष्ठिताः॥"
   )
   assert rep_uu.disagree_pada_indices == []
+  items_uuu_vyat = parse_padapatha_items("- यन्तु᳓ः (*SB-M*)\n- ये → **ये᳓** (*RV*)\n- तु᳓र्यम् (*Whitney*)")
+  rep_uuu = audit_padapatha_against_sb(
+    "यन्तुर्ये तुर्यम् ॥", items_uuu_vyat, None, "यन्तु᳘र्ये तु᳘र्यम् ॥"
+  )
+  assert rep_uuu.unflagged_vyatyasta_padas == []
+  assert rep_uuu.possibly_spurious_vyatyasta_padas == []
   items_ma = parse_padapatha_items(
     "- उप (तिङि चोदात्तवति पा॰ ८.१.७१)\n"
     "- सम् (तिङि चोदात्तवति पा॰ ८.१.७१)\n"

@@ -401,9 +401,9 @@ class VedicCorpusCounter:
 
     # 1. Padasvara Babylon dictionaries (exact padapāṭha frequencies for RV, TS, AV)
     for tag, rel in (
-      ("RV", "kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon"),
-      ("TS", "kAvya/kyv-ts-padasvara/kyv-ts-padasvara.babylon"),
-      ("AV", "kAvya/av-padasvara/av-padasvara.babylon"),
+      ("RV", "stardict-sanskrit-kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon"),
+      ("TS", "stardict-sanskrit-kAvya/kyv-ts-padasvara/kyv-ts-padasvara.babylon"),
+      ("AV", "stardict-sanskrit-kAvya/av-padasvara/av-padasvara.babylon"),
     ):
       bpath = os.path.join(dict_root, rel)
       if os.path.isfile(bpath):

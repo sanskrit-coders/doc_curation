@@ -118,7 +118,7 @@ Look for attestation first; derive only when nothing attests the form. Order of 
 
 ### 6.1 Padasvara & prakṛti-svara dictionaries — the primary tool
 
-`~/gitland/sanskrit/raw_etexts/koshaH/indic-dict/kAvya/` (StarDict copies on the external drive: `/media/vvasuki/vData/dicts/stardict/indic-dict/stardict-sanskrit-kAvya/`; see the `dictionary` skill for updating/maintaining them). All `*svara*` dictionaries below use **US accent notation (`᳓` / `᳙`)** with attestation counts and references:
+`~/gitland/indic-dict/dicts/stardict-sanskrit-kAvya` (StarDict copies on the external drive: `/media/vvasuki/vData/dicts/stardict/indic-dict/stardict-sanskrit-kAvya/`; see the `dictionary` skill for updating/maintaining them). All `*svara*` dictionaries below use **US accent notation (`᳓` / `᳙`)** with attestation counts and references:
 
 | Dict | Gives |
 |---|---|
@@ -139,7 +139,7 @@ Heads are `|`-separated unaccented aliases (including anusvāra/candrabindu vari
 ```python
 import os
 
-DICTS = os.path.expanduser("~/gitland/sanskrit/raw_etexts/koshaH/indic-dict")
+DICTS = os.path.expanduser("~/gitland/indic-dict/dicts")
 
 def lookup(babylon_path, word, limit=5):
     text = open(babylon_path, encoding="utf-8", errors="ignore").read()
@@ -152,19 +152,19 @@ def lookup(babylon_path, word, limit=5):
                 break
     return hits
 
-print(lookup(f"{DICTS}/kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon", "अभवः"))
+print(lookup(f"{DICTS}/stardict-sanskrit-kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon", "अभवः"))
 # → ['अभवः (24)<br>1.4.8, 1.31.1, …', 'अ᳓भवः (6)<br>3.3.10, 3.9.2, …']
-print(lookup(f"{DICTS}/kAvya/rv-prakRti-svara-dev/rv-prakRti-svara-dev.babylon", "अग्नि"))
+print(lookup(f"{DICTS}/stardict-sanskrit-kAvya/rv-prakRti-svara-dev/rv-prakRti-svara-dev.babylon", "अग्नि"))
 # → ['अग्नि᳓ (861)<br>1.50.3, 1.59.1, …']
-print(lookup(f"{DICTS}/kAvya/rv-prakRti-svara-dev/rv-prakRti-svara-dev.babylon", "भू"))
+print(lookup(f"{DICTS}/stardict-sanskrit-kAvya/rv-prakRti-svara-dev/rv-prakRti-svara-dev.babylon", "भू"))
 # → ['भू [धातुः] (817)<br>भ᳓व (38) · भु᳓वः (25) · …']
-print(lookup(f"{DICTS}/kAvya/rv-padapATha-dev/rv-padapATha-dev.babylon", "अग्निमीळे पुरोहितं"))
+print(lookup(f"{DICTS}/stardict-sanskrit-kAvya/rv-padapATha-dev/rv-padapATha-dev.babylon", "अग्निमीळे पुरोहितं"))
 # → ['1 1 1 a<br>अ॒ग्निमी॑ळे पु॒रोहि॑तं<br>अ॒ग्निम् ईळे पु॒रोहि॑तम्']
 ```
 
 ### 6.2 Accent-marked dictionaries
 
-`~/gitland/sanskrit/raw_etexts/koshaH/indic-dict/sanskrit/sa-head/en-entries/` (StarDict: `…/stardict-sanskrit/sa-head/en-entries/`) and `~/gitland/indic-dict/dicts/stardict-sanskrit-vyAkaraNa/dhAtu/` — same `lookup()` works, but big files (MW ~60 MB) take a second:
+`~/gitland/indic-dict/dicts/stardict-sanskrit/sa-head/en-entries/` (StarDict mirror: `/media/vvasuki/vData/dicts/stardict/indic-dict/stardict-sanskrit/sa-head/en-entries/`) — same `lookup()` works, but big files (MW ~60 MB) take a second:
 
 | Dict | Accent convention |
 |---|---|
@@ -179,18 +179,18 @@ print(lookup(f"{DICTS}/kAvya/rv-padapATha-dev/rv-padapATha-dev.babylon", "अग
 
 Use when the word is not in the dictionaries above, or when you need to decide among different accents based on context:
 
-- /home/vvasuki/gitland/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/sarvASh_TIkAH (has pada-pATha too)
-- /home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH (has pada-pATha too)
-- /home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/kAThakam/sarva-prastutiH
-- /home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH
+- ~/gitland/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/sarvASh_TIkAH (has pada-pATha too)
+- ~/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH (has pada-pATha too)
+- ~/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/kAThakam/sarva-prastutiH
+- ~/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH
 - `~/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH/`
 - `~/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/kAThakam/sarva-prastutiH/`
 - `~/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH/` (`*SB-M*`; legacy tag `*ŚB*`)
 - `~/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/shatapatha-brAhmaNam/sarva-prastutiH/` (`*SB-K*`)
-- `/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH`
-- `/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/saMhitA`
-- `/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH`
-- `/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/kaTha-kapiShTalAH/saMhitA/mUlam/schroeder/`
+- `~/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH`
+- `~/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/saMhitA`
+- `~/gitland/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH`
+- `~/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/kaTha-kapiShTalAH/saMhitA/mUlam/schroeder/`
 
 `grep -rn "<word>" <dir>` gives the accented occurrence in context. These carry dependent accents in `मूलम्` blocks and US accents in `विश्वास-प्रस्तुतिः` blocks.
 

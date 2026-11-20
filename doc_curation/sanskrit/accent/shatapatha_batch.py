@@ -1288,19 +1288,21 @@ def audit_full_sb_corpus(
           )
         )
       for cl in clusters:
-        vp_body = cl.vp_match.group(2).strip()
+        vp_body = cl.vp_match.group(2).strip() if cl.vp_match is not None else ""
+        vp_sum = cl.vp_match.group(1).strip() if cl.vp_match is not None else "विश्वास-प्रस्तुतिः"
         slots.append(
           _FileClusterSlot(
             heading=norm_hdr,
             sub_idx=cl.subidx,
-            vp_summary=cl.vp_match.group(1).strip(),
+            vp_summary=vp_sum,
             vp_body=vp_body,
-            is_already_us=has_us_accents(vp_body),
+            is_already_us=(cl.vp_match is not None and has_us_accents(vp_body)),
             weber=cl.weber_text,
             shri=cl.shri_text,
             has_pp=cl.existing_pp_match is not None,
             pp_body=cl.existing_pp_match.group(2).strip() if cl.existing_pp_match is not None else "",
             pp_raw=cl.existing_pp_match.group(0) if cl.existing_pp_match is not None else "",
+            mula_header=cl.mula_header,
           )
         )
 

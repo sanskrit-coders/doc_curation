@@ -984,6 +984,7 @@ def test_kanva_orthography_quirks_and_unaccented_yantra(tmp_path):
   assert normalize_kanva_mula_for_sb("श\u200dृणो᳘ति:") == "शृणो᳘तिः"
   assert normalize_kanva_mula_for_sb("सौम्यादा᳘ज्य- भागाद्यन्ति य᳘था-यथा") == "सौम्यादा᳘ज्यभागाद्यन्ति य᳘था-यथा"
   assert normalize_sb_orthography("पा᳘ꣳ᳘") == "पां"
+  assert normalize_sb_orthography("हवींꣳषि") == "हवींषि"
   syls = extract_sb_syllables("पा᳘ꣳ᳘ तपः᳘", source="shri")
   assert [s.mark for s in syls] == ["H", "", "H"]
 
@@ -1060,6 +1061,10 @@ Unaccented Kandika 7.
   assert "पां᳓ शृणोति त᳓पः।" in written1
   assert "त᳓दपः᳓ सं᳘भरति॥" not in written1
   assert "त᳓दपः᳓ सं᳓भरति॥" in written1
+  # Mixed file (with unbootstrapped kaṇḍikā ## ०७) must report unconverted without AttributeError
+  aud_mixed = audit_full_sb_corpus(sb_root, files=[md])
+  assert not aud_mixed.passed
+  assert aud_mixed.unconverted_kandikas == 1
 
   adj_in = out_dir / "yantra_fix.jsonl"
   import json
@@ -1095,3 +1100,15 @@ Unaccented Kandika 7.
   lex_av.slp_vocab = {"vajraH": 10, "asi": 10, "iti": 10, "savane": 5, "api": 10}
   assert split_chunk_to_padas_dp("वज्रोऽसीति", lex_av) == ["वज्रः", "असि", "इति"]
   assert split_chunk_to_padas_dp("सवनेऽपीति", lex_av) == ["सवने", "अपि", "इति"]
+
+  # Kāṇva `ळ`/`म्व`/`ं` aliases resolve via lexicon and prevocalic `ळ` splits (`षळृतवः`, `वौषळिति`)
+  lex_la = UnifiedVedicLexicon()
+  lex_la._add_form("पुरोडाशम्", ("", "", "U", ""), "SB-M", freq=10)
+  lex_la._add_form("षट्", ("U",), "SB-M", freq=10)
+  lex_la._add_form("ऋतवः", ("", "U", ""), "SB-M", freq=10)
+  lex_la._add_form("संवत्सरः", ("", "", "U", ""), "SB-M", freq=10)
+  lex_la._get_slp_stems()
+  lex_la.slp_vocab = {"puroqASam": 10, "zaw": 10, "ftavaH": 10, "saMvatsaraH": 10}
+  assert "SB-M" in lex_la.lookup_form("पुरोळाशम्").get(("", "", "U", ""), {})
+  assert "SB-M" in lex_la.lookup_form("सम्वत्सरः").get(("", "", "U", ""), {})
+  assert split_chunk_to_padas_dp("षळृतवः", lex_la) == ["षट्", "ऋतवः"]

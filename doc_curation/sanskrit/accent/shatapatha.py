@@ -148,9 +148,9 @@ def normalize_sb_orthography(text: str) -> str:
   s = normalize_kanva_mula_for_sb(strip_shri_pratika(text))
   s = accent.strip_accents(s)
   s = s.replace("᳟", "").replace("᳭", "").replace("ᳮ", "")
-  # Normalize Mādhyandina and Kāṇva anunāsika ligatures.
+  # Normalize Mādhyandina and Kāṇva anunāsika ligatures (collapsing `ंꣳ` -> `ंं` -> `ं`).
   s = re.sub(r"ᳫ[ंँ]?", "ं", s)
-  s = s.replace("\ua8f3", "ं")
+  s = re.sub(r"ं{2,}", "ं", s.replace("\ua8f3", "ं"))
   # Drop hiatus avagraha placed immediately before an independent Devanagari vowel (e.g. `ऽउ`, `ऽआ`, `ऽए`, `ऽअ`).
   s = re.sub(r"ऽ(?=[अआइईउऊऋॠएऐओऔ])", "", s)
   # Collapse Mādhyandina orthographic geminations.
@@ -559,9 +559,13 @@ def audit_padapatha_against_sb(
         or (ref_marks[idx] in ("", "S") and as_ in ("", "H"))
       )
     elif idx == n - 1 and next_first_mark == "S":
-      # Weber frequently omits cross-kaṇḍikā ॗ before ॥ (or retains ᳘ on final udātta before pause).
+      # Weber frequently omits cross-kaṇḍikā ॗ before ॥ (and Śrī/Kāṇva similarly omits ᳘ before ॥ when not ending in U).
       w_ok = None if aw is None else (aw in ("G", "") or (ref_marks[idx] == "U" and aw == "H"))
-      s_ok = None if as_ is None else (as_ == es or (s_pause_u and as_ == "H"))
+      s_ok = None if as_ is None else (
+        as_ == es
+        or (ref_marks[idx] in ("", "S") and as_ == "")
+        or (s_pause_u and as_ == "H")
+      )
     else:
       # In Weber, `H` (᳘) occasionally substitutes for `G` (ॗ) before jātya/kṣaipra/8.2.6, and vice versa only if flagged.
       # When an independent svarita `S` immediately precedes an udātta `U` (`S + U` kampa, e.g. `अन्तर्याम्य᳙मृ᳓तः`,
