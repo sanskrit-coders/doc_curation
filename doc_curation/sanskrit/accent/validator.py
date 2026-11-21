@@ -633,6 +633,14 @@ DEFAULT_VERIFIED_AA_HIATUSES: frozenset[tuple[str, str]] = frozenset({
   ("माता", "आभ्याम्"),
   ("होता", "एव"),
   ("पितरा", "अश्विना"),
+  ("लोक-ंपृणा", "आत्मना"),
+  ("वि-कृत्या", "इतः"),
+  ("प्रति-ष्ठा", "अथ"),
+  ("नि-चुम्पुण", "अव"),
+  ("स्थ", "इति"),
+  ("होता", "अन्नम्"),
+  ("ऐक्षत", "इमे"),
+  ("तव", "उत्"),
 })
 
 
@@ -1030,6 +1038,7 @@ def find_unsplit_upasarga_tinantas(
     "६.२.", "६.१.२२३", "२.१.", "५.४.", "४.३.", "मयट्", "अव्ययीभाव", "बहुव्रीह", "तत्पुरुष", "कर्मधारय", "नञ्",
     "क्त्वा", "ल्यप्", "तुमुन्", "तवै", "शतृ", "शानच्", "निष्ठा", "क्त", "घञ्", "ल्युट्", "क्तिन्",
     "क्विप्", "तव्यत्", "अनीयर्", "ण्यत्", "यत्", "कप्", "प्रातिपदिकम्",
+    "नामपदम्", "स्त्रीलिङ्ग", "पुंलिङ्ग", "नपुंसक", "कृदन्त",
   )
   accented_verb_roots = frozenset({
     "चोदयात्", "चोदयाति", "मृध्यताम्", "मृद्ध्यताम्", "अगात्", "अहार्षम्", "विश", "भजासि",
@@ -1050,14 +1059,14 @@ def find_unsplit_upasarga_tinantas(
       bare in SIMPLEX_TINANTA_ALLOWLIST
       or bare in ("अवद्यात्", "उपास्य")
       or bare.startswith((
-        "विन्द", "विध्य", "विद्ध", "विवेश", "विविश", "विविच", "विविदिष", "विनक्", "विच्य", "विजत", "विजन्त", "विजे",
+        "विन्द", "विध्य", "विद्यति", "विद्यते", "विद्ध", "विवेश", "विविश", "विविच", "विविदिष", "विविदु", "विदेय", "विद्रते", "विदाम", "विनक्", "विच्य", "विजत", "विजन्त", "विजे",
         "सुन्व", "सुनो", "सुनु", "सुण्व", "सुणो", "सुणु", "सुषाव", "सुषुव", "सुस्र", "सुषुप",
         "प्रथ", "प्रच्छ", "पृच्छ", "प्रीण", "प्रक्ष्य",
         "अवृण", "अवृध", "अवृज", "अवृत", "अवृह", "अववृत्र", "अववृत", "अतिष्ठ", "अप्रीण", "अपद्य", "अपादय", "अवप", "अपश्य", "अपत", "अपिब",
         "अवद", "अवह", "अभव", "अभज", "अनय", "अविन्द", "अविध्य", "अवर्त", "अवर्ध", "अवस",
-        "अप्लव", "अपाव", "अपुना", "अपुन", "अपच", "अपृच्छ", "अपृण", "अप्रथ", "अवच", "अवोच", "अवर्ष्", "अवात्स", "अवादिष", "अवादी", "अपिपतिष",
-        "अपूपुर", "अवेदिष", "अवेपय", "अभिषज्", "अध्याय", "अधुक्ष", "अप्लाव",
-        "आप्न", "आप्य", "आदय", "आदित्य", "आश्नु", "आश्न", "आर्ध्य", "आञ्च", "आसात", "आसास", "आशिष", "निन्य", "निन्द", "शंसिष",
+        "अप्लव", "अपाव", "अपुना", "अपुन", "अपच", "अपृच्छ", "अपृण", "अप्रथ", "अवच", "अवोच", "अवर्ष्", "अवात्स", "अवादिष", "अवादी", "अपिपतिष", "अपीपिप", "अपीपद",
+        "अपूपुर", "अवेदिष", "अवेपय", "अभिषज्", "अभिष्ण", "अध्याय", "अधुक्ष", "अप्लाव", "अस्पृक्ष",
+        "आप्न", "आप्य", "आपय", "आदय", "आदित्य", "आश्नु", "आश्न", "आर्ध्य", "आञ्च", "आसात", "आसास", "आशिष", "निन्य", "निन्द", "शंसिष",
       ))
       or ("-" not in it.ref and bare not in coalesced_up_tinantas and _is_vidyut_simplex_tinanta(bare))
     ):
@@ -1295,7 +1304,10 @@ def find_tinanta_sutra_on_non_tinanta(pp_lines: Sequence[str]) -> list[str]:
     if tin_adhikara_re.search(it.prov) and not negated_sutra_re.search(it.prov):
       prev_bare = bares[i - 1] if i > 0 else ""
       bad = False
-      if bare in pronoun_non_tin or bare in particle_gati_non_tin:
+      if bare == "याः" and any(k in it.prov for k in ("√या", "याति", "यातेः", "लुङ्", "लङ्", "लेट्")):
+        if any(t in it.prov for t in nom_prov_tags):
+          bad = True
+      elif bare in pronoun_non_tin or bare in particle_gati_non_tin:
         bad = True
       elif bare == "अस्य":
         _, mks = syllables_with_marks(it.ref)
@@ -1312,7 +1324,9 @@ def find_tinanta_sutra_on_non_tinanta(pp_lines: Sequence[str]) -> list[str]:
         ("स्यति", "स्यते", "स्यसि", "स्यथ", "स्यामि", "स्यामः", "स्यन्ते", "स्यन्ति", "स्यस्व")
       ):
         bad = True
-      elif bare.endswith(nom_endings):
+      elif bare.endswith(nom_endings) and not (
+        bare == "यायाः" and any(k in it.prov for k in ("लिङ्", "√या", "याति", "यातेः"))
+      ):
         bad = True
       if bad:
         hits.append(ln)
@@ -1577,7 +1591,7 @@ def find_uncounted_corpus_tags(pp_lines: Sequence[str]) -> list[str]:
 
 
 def find_invalid_or_rubberstamp_provenance(pp_lines: Sequence[str]) -> list[str]:
-  """Return bullets with fake/out-of-bounds sūtras, bare ``समासस्वरः``, misaccented ``ल्यप्``/``ल्युट्``/``णिनि``, or rubber-stamped ``मूल-पाठः``/``अनाम्नातम्``."""
+  """Return bullets with fake/out-of-bounds sūtras, bare ``समासस्वरः``, misaccented ``ल्यप्``/``ल्युट्``/``णिनि``/``ण्वुल्``/``ण्यत्``, or rubber-stamped ``मूल-पाठः``/``अनाम्नातम्``."""
   fake_sutra_phrases = (
     "बहुव्रीहौ समासस्य",
     "अव्ययीभावे प्रकृत्या पूर्वपदम्",
@@ -1586,6 +1600,10 @@ def find_invalid_or_rubberstamp_provenance(pp_lines: Sequence[str]) -> list[str]
     "णिनि नित्",
     "इनिः नित्",
     "इनि नित्",
+    "ल्युः नित्",
+    "ल्युट् नित्",
+    "ल्यु नित्",
+    "उदात्तं शुनः",
   )
   lyut_re = re.compile(r"ल्यु(?:ट्|ः|(?![अ-ह\u093e-\u094d]))")
   lyut_antodatta_allow = (
@@ -1675,6 +1693,16 @@ def find_invalid_or_rubberstamp_provenance(pp_lines: Sequence[str]) -> list[str]
         ):
           hits.append(ln)
           continue
+
+    # 6. `ण्वुल्` (`लिति पा॰ ६.१.१९३`) misattributed to `पा॰ ३.१.३` suffix-initial udātta without `लिति`/`६.१.१९३`
+    if "ण्वुल्" in prov_primary and "३.१.३" in prov_primary and not any(k in prov_primary for k in ("६.१.१९३", "लिति")):
+      hits.append(ln)
+      continue
+
+    # 7. `ण्यत्` (`तित्स्वरितम् पा॰ ६.१.१८५`) misattributed to `यतोऽनावः पा॰ ६.१.२१३` (`यत्`-only rule)
+    if "ण्यत्" in prov_primary and ("यतोऽनावः" in prov_primary or "६.१.२१३" in prov_primary):
+      hits.append(ln)
+      continue
   return hits
 
 

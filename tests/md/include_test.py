@@ -275,3 +275,251 @@ def test_surgical_prefill_titleless_with_nested_loading_and_hash_loading(tmp_pat
   assert "### 01 मन्त्रान्तेः …{Loading}…" in updated
   assert "मन्त्रान्ते कर्मादीन् संनिपातयेत् १" in updated
   assert "stale sUtra" not in updated
+
+
+def test_surgical_prefill_transitive_multi_hop_and_directory_index(tmp_path):
+  # Leaf in static/ -> intermediate _index.md in content/mid/ (referenced via trailing-slash directory URL) -> top.md
+  static_dir = tmp_path / "vedAH_yajuH" / "static" / "ekAgnikANDam"
+  static_dir.mkdir(parents=True)
+  leaf = static_dir / "01_leaf.md"
+  leaf.write_text('+++\ntitle = "०१"\n+++\nपोषयित्नु᳓ आ᳓\n', encoding="utf-8")
+  unchanged = static_dir / "02_other.md"
+  unchanged.write_text('+++\ntitle = "०२"\n+++\nअग्निः᳓\n', encoding="utf-8")
+
+  mid_dir = tmp_path / "vedAH_yajuH" / "content" / "AraNyakam" / "12_mid"
+  mid_dir.mkdir(parents=True)
+  mid_idx = mid_dir / "_index.md"
+  mid_idx.write_text(
+    textwrap.dedent("""\
+      +++
+      title = "१२"
+      +++
+      <div class="js_include" includetitle="true" newlevelforh1="3" url="/vedAH_yajuH/ekAgnikANDam/01_leaf.md">
+      <details open><summary><h3>०१ …{Loading}…</h3></summary>
+
+      stale leaf
+      </details>
+      </div>
+    """),
+    encoding="utf-8",
+  )
+
+  top_dir = tmp_path / "vedAH_yajuH" / "content" / "prayogaH"
+  top_dir.mkdir(parents=True)
+  top = top_dir / "top.md"
+  top_orig = textwrap.dedent("""\
+    +++
+    title = "प्रयोगः"
+    +++
+    <div class="js_include" includetitle="false" newlevelforh1="2" url="/vedAH_yajuH/AraNyakam/12_mid/">
+
+    stale mid
+    </div>
+
+    <div class="js_include" includetitle="true" newlevelforh1="3" url="/vedAH_yajuH/ekAgnikANDam/02_other.md">
+    <details open><summary><h3>०२ …{Loading}…</h3></summary>
+
+    keep untouched sibling
+    </details>
+    </div>
+  """)
+  top.write_text(top_orig, encoding="utf-8")
+
+  # Excluded directory must never be touched
+  excl_dir = tmp_path / "vedAH_yajuH" / "content" / "shatapatha-brAhmaNam"
+  excl_dir.mkdir(parents=True)
+  excl = excl_dir / "sb.md"
+  excl_orig = '<div class="js_include" url="/vedAH_yajuH/ekAgnikANDam/01_leaf.md">\nstale sb\n</div>\n'
+  excl.write_text(excl_orig, encoding="utf-8")
+
+  # Dry run reports both mid_idx and top without writing
+  dry_touched = include_helper.surgical_prefill_transitive(
+    [static_dir.parent, tmp_path / "vedAH_yajuH" / "content"],
+    [leaf],
+    hugo_base_dir=str(tmp_path),
+    exclude_path_substrings=("shatapatha-brAhmaNam",),
+    dry_run=True,
+  )
+  assert dry_touched == {str(mid_idx), str(top)}
+  assert "stale mid" in top.read_text(encoding="utf-8")
+
+  # Real run updates leaf -> mid/_index.md -> top.md across 2 waves, preserving untouched sibling & excluded dir
+  touched = include_helper.surgical_prefill_transitive(
+    [static_dir.parent, tmp_path / "vedAH_yajuH" / "content"],
+    [leaf],
+    hugo_base_dir=str(tmp_path),
+    exclude_path_substrings=("shatapatha-brAhmaNam",),
+  )
+  assert touched == {str(mid_idx), str(top)}
+  assert "पोषयित्नु᳓ आ᳓" in mid_idx.read_text(encoding="utf-8")
+  top_after = top.read_text(encoding="utf-8")
+  assert "पोषयित्नु᳓ आ᳓" in top_after
+  assert "keep untouched sibling" in top_after
+  assert excl.read_text(encoding="utf-8") == excl_orig
+
+
+def test_deinclude_selective_preserves_open_collapsed_and_deletes_unreferenced(tmp_path):
+  # Set up two mantras: 01 (yajus -> de-include vp + st, keep mUlam), 02 (Rk -> keep all includes)
+  static_root = tmp_path / "vedAH_yajuH" / "static" / "saMhitA"
+  for sub in ("vishvAsa-prastutiH/01", "mUlam/01", "sarvASh_TIkAH/01"):
+    (static_root / sub).mkdir(parents=True)
+
+  vp1 = static_root / "vishvAsa-prastutiH" / "01" / "01_iShe.md"
+  vp1.write_text('+++\ntitle = "०१ इषे"\n+++\nइ॒षे त्वो॒र्जे त्वा॑ fresh ॥१॥\n', encoding="utf-8")
+  mu1 = static_root / "mUlam" / "01" / "01_iShe.md"
+  mu1.write_text('+++\ntitle = "०१ इषे"\n+++\nइ॒षे त्वो॒र्जे त्वा॑ ॥१॥\n', encoding="utf-8")
+  st1 = static_root / "sarvASh_TIkAH" / "01" / "01_iShe.md"
+  st1.write_text(
+    '+++\ntitle = "०१ इषे"\n+++\n<details><summary>महीधरः</summary>\n\nयजुः टीका।\n</details>\n',
+    encoding="utf-8",
+  )
+
+  vp2 = static_root / "vishvAsa-prastutiH" / "01" / "02_rk.md"
+  vp2.write_text('+++\ntitle = "०२ ऋक्"\n+++\nतत्सवितुर्वरेण्यम् ॥२॥\n', encoding="utf-8")
+  st2 = static_root / "sarvASh_TIkAH" / "01" / "02_rk.md"
+  st2.write_text('+++\ntitle = "०२ ऋक्"\n+++\n<details><summary>महीधरः</summary>\n\nगायत्री।\n</details>\n', encoding="utf-8")
+
+  # Also a 3rd yajus whose vp is referenced externally by another file -> must NOT be deleted!
+  vp3 = static_root / "vishvAsa-prastutiH" / "01" / "03_shared.md"
+  vp3.write_text('+++\ntitle = "०३ अभिधा"\n+++\nअभिधा असि ॥३॥\n', encoding="utf-8")
+
+  content_dir = tmp_path / "vedAH_yajuH" / "content" / "saMhitA" / "sarva-prastutiH"
+  content_dir.mkdir(parents=True)
+  host = content_dir / "01.md"
+  host.write_text(
+    textwrap.dedent("""\
+      +++
+      title = "०१"
+      +++
+      {{< figure src="keep.jpg" >}}
+
+      ## ०१ इषे
+      <div class="js_include" newlevelforh1="3" title="विश्वास-प्रस्तुतिः" unfilled url="/vedAH_yajuH/saMhitA/vishvAsa-prastutiH/01/01_iShe.md">
+      <details open><summary><h3>विश्वास-प्रस्तुतिः ...{Loading}...</h3></summary>
+
+      stale text
+      </details>
+      </div>
+      <div class="js_include collapsed" newlevelforh1="3" title="मूलम्" unfilled url="/vedAH_yajuH/saMhitA/mUlam/01/01_iShe.md">
+      <details><summary><h3>मूलम् ...{Loading}...</h3></summary>
+
+      इ॒षे त्वो॒र्जे त्वा॑ ॥१॥
+      </details>
+      </div>
+      <div class="js_include collapsed" newlevelforh1="3" title="सर्वाष् टीकाः" unfilled url="/vedAH_yajuH/saMhitA/sarvASh_TIkAH/01/01_iShe.md">
+      <details><summary><h3>सर्वाष् टीकाः ...{Loading}...</h3></summary>
+      <details><summary>महीधरः</summary>
+
+      stale tika
+      </details>
+      </details>
+      </div>
+
+      ## ०२ ऋक्
+      <div class="js_include" newlevelforh1="3" title="विश्वास-प्रस्तुतिः" unfilled url="/vedAH_yajuH/saMhitA/vishvAsa-prastutiH/01/02_rk.md">
+      <details open><summary><h3>विश्वास-प्रस्तुतिः ...{Loading}...</h3></summary>
+
+      तत्सवितुर्वरेण्यम् ॥२॥
+      </details>
+      </div>
+      <div class="js_include collapsed" newlevelforh1="3" title="सर्वाष् टीकाः" unfilled url="/vedAH_yajuH/saMhitA/sarvASh_TIkAH/01/02_rk.md">
+      <details><summary><h3>सर्वाष् टीकाः ...{Loading}...</h3></summary>
+      <details><summary>महीधरः</summary>
+
+      गायत्री।
+      </details>
+      </details>
+      </div>
+
+      ## ०३ अभिधा
+      <div class="js_include" newlevelforh1="3" title="विश्वास-प्रस्तुतिः" unfilled url="/vedAH_yajuH/saMhitA/vishvAsa-prastutiH/01/03_shared.md">
+      <details open><summary><h3>विश्वास-प्रस्तुतिः ...{Loading}...</h3></summary>
+
+      अभिधा असि ॥३॥
+      </details>
+      </div>
+    """),
+    encoding="utf-8",
+  )
+
+  # External file referencing 03_shared.md
+  other_dir = tmp_path / "vedAH_yajuH" / "content" / "prayogaH"
+  other_dir.mkdir(parents=True)
+  (other_dir / "ext.md").write_text(
+    '<div class="js_include" url="/vedAH_yajuH/saMhitA/vishvAsa-prastutiH/01/03_shared.md">\n</div>\n',
+    encoding="utf-8",
+  )
+
+  url_filter = lambda u: ("01_iShe.md" in u or "03_shared.md" in u) and "/mUlam/" not in u
+
+  # Dry run leaves disk untouched while reporting exact changes
+  dry_res = include_helper.deinclude(
+    dir_path=str(content_dir),
+    url_filter=url_filter,
+    prefill=True,
+    delete_included_files=True,
+    reference_check_roots=[tmp_path / "vedAH_yajuH"],
+    hugo_base_dir=str(tmp_path),
+    dry_run=True,
+  )
+  assert dry_res["updated_files"] == {str(host)}
+  assert dry_res["deleted_files"] == {str(vp1), str(st1)}
+  assert dry_res["retained_referenced_files"] == {str(vp3)}
+  assert vp1.exists() and st1.exists() and vp3.exists()
+  assert "stale text" in host.read_text(encoding="utf-8")
+
+  # Real run updates host, deletes vp1 & st1, retains vp3 (externally referenced) & untouched vp2/st2/mu1
+  res = include_helper.deinclude(
+    dir_path=str(content_dir),
+    url_filter=url_filter,
+    prefill=True,
+    delete_included_files=True,
+    reference_check_roots=[tmp_path / "vedAH_yajuH"],
+    hugo_base_dir=str(tmp_path),
+    dry_run=False,
+  )
+  assert res["updated_files"] == {str(host)}
+  assert res["deleted_files"] == {str(vp1), str(st1)}
+  assert res["retained_referenced_files"] == {str(vp3)}
+  assert not vp1.exists() and not st1.exists()
+  assert mu1.exists() and vp2.exists() and st2.exists() and vp3.exists()
+
+  out = host.read_text(encoding="utf-8")
+  assert '{{< figure src="keep.jpg" >}}' in out
+  assert "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nइ॒षे त्वो॒र्जे त्वा॑ fresh ॥१॥\n</details>" in out
+  assert "<details><summary>सर्वाष् टीकाः</summary>\n<details><summary>महीधरः</summary>\n\nयजुः टीका।\n</details>\n</details>" in out
+  assert "stale text" not in out and "stale tika" not in out
+  # mUlam and 02_rk remain js_include
+  assert 'url="/vedAH_yajuH/saMhitA/mUlam/01/01_iShe.md"' in out
+  assert 'url="/vedAH_yajuH/saMhitA/vishvAsa-prastutiH/01/02_rk.md"' in out
+  assert 'url="/vedAH_yajuH/saMhitA/sarvASh_TIkAH/01/02_rk.md"' in out
+  # Balanced tags
+  assert out.count("<details") == out.count("</details>")
+  assert out.count("<div") == out.count("</div>")
+  # Old broken deincludify is gone
+  assert not hasattr(include_helper, "deincludify")
+
+
+def test_deinclude_content_no_prefill_and_titleless():
+  content = textwrap.dedent("""\
+    <div class="js_include" includetitle="true" newlevelforh1="3" url="/repo/a.md">
+    <details open><summary><h3>०१ शीर्षकम् …{Loading}…</h3></summary>
+
+    अन्तर्वस्तु
+    </details>
+    </div>
+
+    <div class="js_include" includetitle="false" newlevelforh1="5" url="/repo/b.md">
+
+    अशीर्षकम्
+    </div>
+  """)
+  out, _ = include_helper.deinclude_content(content, "/tmp/host.md", prefill=False)
+  assert "js_include" not in out
+  assert "{Loading}" not in out
+  assert "<h3>" not in out
+  assert "<details open><summary>०१ शीर्षकम्</summary>\n\nअन्तर्वस्तु\n</details>" in out
+  assert "अशीर्षकम्" in out
+  assert out.count("<details") == out.count("</details>") == 1
+
+

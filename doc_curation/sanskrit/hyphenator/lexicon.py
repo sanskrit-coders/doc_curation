@@ -43,13 +43,69 @@ _MERGER_EXPS_SLP: dict[str, tuple[tuple[str, str], ...]] = {
   "E": (("a", "e"), ("a", "E"), ("A", "e"), ("A", "E")),
   "O": (("a", "o"), ("a", "O"), ("A", "o"), ("A", "O")),
 }
-_INFLECTED_TAILS_SLP = (
-  "am", "aM", "aH", "ena", "eRa", "Aya", "At", "Ad", "asya", "e", "O", "AH",
-  "An", "EH", "eByaH", "ezu", "AnAm", "ARAm", "A", "Am", "AM", "ayA", "AbhiH",
-  "ABiH", "Asu", "iH", "im", "inA", "aye", "eH", "ayaH", "In", "iBiH",
-  "InAm", "uH", "um", "unA", "ave", "oH", "avaH", "Un", "uBiH", "UnAm",
-  "tA", "tva", "tvam", "tvaM", "tvena", "tvAt", "tvAd", "yaH", "yoH",
+_INFLECTED_TAIL_FINALS: tuple[tuple[str, tuple[str, ...]], ...] = (
+  ("tvena", ("a", "A", "i", "I", "u", "U", "f", "t", "n", "s", "")),
+  ("tvam", ("a", "A", "i", "I", "u", "U", "f", "t", "n", "s", "")),
+  ("tvaM", ("a", "A", "i", "I", "u", "U", "f", "t", "n", "s", "")),
+  ("tvAt", ("a", "A", "i", "I", "u", "U", "f", "t", "n", "s", "")),
+  ("tvAd", ("a", "A", "i", "I", "u", "U", "f", "t", "n", "s", "")),
+  ("tva", ("a", "A", "i", "I", "u", "U", "f", "t", "n", "s", "")),
+  ("tA", ("a", "A", "i", "I", "u", "U", "f", "t", "n", "s", "")),
+  ("eByaH", ("a", "")),
+  ("ByaH", ("a", "A", "i", "I", "u", "U", "t", "n", "s", "")),
+  ("ByAm", ("a", "A", "i", "I", "u", "U", "n", "")),
+  ("IBiH", ("i", "I", "")),
+  ("AnAm", ("a", "A", "")),
+  ("ARAm", ("a", "A", "")),
+  ("AbhiH", ("A", "a", "")),
+  ("ABiH", ("A", "a", "")),
+  ("iBiH", ("i", "I", "")),
+  ("InAm", ("i", "I", "")),
+  ("uBiH", ("u", "U", "")),
+  ("UnAm", ("u", "U", "")),
+  ("asya", ("a", "t", "n", "s", "")),
+  ("ayaH", ("i", "I", "")),
+  ("avaH", ("u", "U", "")),
+  ("ena", ("a", "")),
+  ("eRa", ("a", "")),
+  ("Aya", ("a", "")),
+  ("ayA", ("A", "a", "")),
+  ("Asu", ("A", "a", "")),
+  ("inA", ("i", "I", "")),
+  ("aye", ("i", "I", "")),
+  ("unA", ("u", "U", "")),
+  ("ave", ("u", "U", "")),
+  ("At", ("a", "t", "n", "s", "")),
+  ("Ad", ("a", "t", "n", "s", "")),
+  ("am", ("a", "t", "n", "s", "")),
+  ("aM", ("a", "t", "n", "s", "")),
+  ("aH", ("a", "A", "t", "n", "s", "")),
+  ("An", ("a", "")),
+  ("EH", ("a", "")),
+  ("ezu", ("a", "")),
+  ("Am", ("A", "a", "")),
+  ("AM", ("A", "a", "")),
+  ("AH", ("a", "A", "as", "")),
+  ("iH", ("i", "I", "is", "")),
+  ("IH", ("i", "I", "")),
+  ("im", ("i", "I", "")),
+  ("eH", ("i", "I", "")),
+  ("In", ("i", "I", "")),
+  ("uH", ("u", "U", "us", "")),
+  ("um", ("u", "U", "")),
+  ("oH", ("u", "U", "")),
+  ("Un", ("u", "U", "")),
+  ("yaH", ("a", "A", "i", "I", "u", "U", "f", "")),
+  ("yoH", ("a", "A", "i", "I", "u", "U", "f", "")),
+  ("yAH", ("i", "I", "")),
+  ("yE", ("i", "I", "")),
+  ("yAm", ("i", "I", "")),
+  ("yA", ("i", "I", "")),
+  ("e", ("a", "A", "t", "n", "s", "")),
+  ("O", ("a", "i", "u", "t", "n", "s", "")),
+  ("A", ("a", "A", "i", "I", "u", "U", "f", "t", "n", "s", "")),
 )
+_VOWELS_SLP = frozenset("aAiIuUfFxXeEoO")
 
 
 def slp1_to_hk(slp: str) -> str:
@@ -128,10 +184,15 @@ def list_ramanujIya_source_files() -> list[str]:
 
 
 def stem_base_slp1(slp_w: str) -> str | None:
-  for tail in _INFLECTED_TAILS_SLP:
+  """Return a declension-compatible attested stem for ``slp_w``, if any."""
+  for tail, finals in _INFLECTED_TAIL_FINALS:
     if slp_w.endswith(tail) and len(slp_w) >= len(tail) + 2:
       pre = slp_w[:-len(tail)]
-      for fin in ("a", "A", "i", "I", "u", "U", "f", "t", "n", "s", ""):
+      if len(pre) < 2 or not any(v in _VOWELS_SLP for v in pre):
+        continue
+      for fin in finals:
+        if fin and fin[0] in _VOWELS_SLP and pre[-1] in _VOWELS_SLP:
+          continue
         cand = pre + fin
         if len(cand) >= 2 and word_count_slp1(cand) >= 2:
           return cand

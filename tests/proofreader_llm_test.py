@@ -346,6 +346,58 @@ def test_text_to_blocks_skill_both_local_and_14b_backend(monkeypatch):
   assert "\u1cd3" in blocks_local.split("<summary>मूलम्</summary>")[0]  # US accent ᳓ in VP
   assert "सो॑ऽब्रवीत्" in blocks_local.split("<summary>मूलम्</summary>")[1]  # original ॑ in मूलम्
 
+  # Vedic kANvam regressions: long mantra numbers, Rk + yajus separation, sticky open_cond reset,
+  # unaccented headings/colophons, orphan । ॥N॥ numbers, +++ frontmatter with internal blank line,
+  # tvA pronoun vs -tvA absolutive, -M/-It/-yatAm/-ema finite verbs, and no tiny clause-newline splits.
+  kanva_sample = (
+    "+++\ntitle = \"२१\"\n\n+++\n"
+    "## ॥ अथ तृतीयो दशकः॥३॥\n\n"
+    "एकविंशोध्यायः\n\n"
+    "उदु॑ त्वा॒ विश्वे॑ दे॒वा अग्ने॑ भरन्तु॒ चित्ति॑भिः ।\n"
+    "स नो॑ भव शि॒वस्त्वँ सु॒प्रती॑को वि॒भाव॑सुः ॥५॥ (१०) ५०\n\n"
+    "अ॒यं ते॒ योनि॑रृ॒त्वियो॒ यतो॑ जा॒तो अरो॑चथाः ।\n"
+    "तं जा॒नन्न॑ग्न॒ आसी॑दाथा नो वर्धया र॒यिम् ॥१॥ (१)\n"
+    "उ॒प॒या॒मगृ॑हीतोऽसि॒ मध॑वे त्वोपया॒मगृ॑हीतोऽसि॒ माध॑वाय त्वा ।\n"
+    "उ॒प॒या॒मगृ॑हीतोऽसि शु॒क्राय॑ त्वोपया॒मगृ॑हीतोऽसि॒ शुच॑ये त्वा ॥२॥\n\n"
+    "या ते॑ अग्ने यःश॒या त॒नूर्वर्षि॑ष्ठा गह्वरे॒ष्ठा ।\n"
+    "उ॒ग्रं वचो॒ अपा॑वधीत्त्वे॒षं वचो॒ अपा॑वधी॒त् स्वाहा॑ ।\n"
+    "या ते॑ अग्ने रजःश॒या त॒नूर्वर्षि॑ष्ठा गह्वरे॒ष्ठा ।\n"
+    "उ॒ग्रं वचो॒ अपा॑वधीत्त्वे॒षं वचो॒ अपा॑वधी॒त् स्वाहा॑ ॥३॥\n\n"
+    "विश्वो॑ रा॒य इ॑षुध्यति द्यु॒म्नं वृ॑णीत पु॒ष्यसे॒ स्वाहा॑ । ॥२॥ ६८\n"
+    "मा सु भि॑त्था॒ मा सु रि॒षोऽम्ब॑ धृ॒ष्णु वी॒रय॑स्व॒ सु ।\n"
+    "अ॒ग्निश्चे॒दं क॑रिष्यथः ॥३॥ ६९\n\n"
+    "प्र॒जाप॑तेर्भा॒गो॒स्यूर्ज॑स्वा॒न् पय॑स्वान्॥७॥ २५\n\n"
+    "इति शुक्लयजुःकाण्वसंहितायां एकोनत्रिंशोऽध्यायः॥२९॥\n"
+  )
+  rendered_kanva = text_to_vipra_mula_blocks(kanva_sample, use_local_hyphenator=True, clause_newlines=True)
+  assert rendered_kanva.startswith("+++\ntitle = \"२१\"\n\n+++\n")
+  assert "## एकविंशोध्यायः" in rendered_kanva
+  assert "इति शुक्लयजुःकाण्वसंहितायां एकोनत्रिंशोऽध्यायः॥२९॥" in rendered_kanva
+  assert rendered_kanva.count("<summary>मूलम्</summary>") == rendered_kanva.count("<summary>विश्वास-प्रस्तुतिः</summary>")
+  mula_bodies = [
+    m.group(1).strip()
+    for m in __import__("re").finditer(r"<details><summary>मूलम्</summary>\s*(.*?)\s*</details>", rendered_kanva, flags=__import__("re").S)
+  ]
+  assert len(mula_bodies) == 9
+  assert "उदु॑ त्वा" in mula_bodies[0] and "॥५॥ (१०) ५०" in mula_bodies[0]
+  assert "उ॒प॒या॒मगृ॑हीतोऽसि॒ मध॑वे" in mula_bodies[2] and "शु॒चये त्वा" not in mula_bodies[2]
+  assert "या ते॑ अग्ने यःश॒या" in mula_bodies[4] and "रजःश॒या" not in mula_bodies[4]
+  assert "पु॒ष्यसे॒ स्वाहा॑ । ॥२॥ ६८" in mula_bodies[6]
+  assert "प्रजा᳓पतेर्" in rendered_kanva and "\nइर् " not in rendered_kanva
+
+  # Self-contained `te yaM ... tam ezAm dadhmaH` (17.81) & parallel `makhAya tvA` yajus (37.25)
+  kanva_yajus = (
+    "ते यं द्वि॒ष्मो यश्च॑ नो॒ द्वेष्टि॒ तमे॑षां॒ जम्भे॑ दध्मः ।\n"
+    "नमो॑ऽस्तु रु॒द्रेभ्यो॒ ये॒ऽन्तरि॑क्षे॒ येषां॒ वात॒ इष॑वः ।\n"
+    "तेभ्यो॒ दश॒ प्राची॒र्दश॑ दक्षि॒णा दश॑ प्र॒तीची॒र्दशोदी॑ची॒र्दशो॒र्ध्वाः ॥१॥\n\n"
+    "ऋ॒जवे॑ त्वा सा॒धवे॑ त्वा सुक्षि॒त्यै त्वा॑ ।\n"
+    "म॒खाय॑ त्वा म॒खस्य॑ त्वा शी॒र्ष्णे ।\n"
+    "म॒खाय॑ त्वा म॒खस्य॑ त्वा शी॒र्ष्णे ।\n"
+    "म॒खाय॑ त्वा म॒खस्य॑ त्वा शी॒र्ष्णे ॥१०॥\n"
+  )
+  yajus_blocks = group_sense_unit_blocks(split_into_danda_segments(kanva_yajus))
+  assert len(yajus_blocks) >= 6
+
   # End-to-end vipra + mula + translation-guided merge: (B) 14B ProofreaderBackend path
   b_llm = ProofreaderBackend(base_url="http://mock.local/v1")
 
@@ -542,8 +594,70 @@ def test_translation_interleaving_c0_bug_bilingual_dp_and_custom_title(tmp_path)
   assert "<summary>Thibaut - Note</summary>" in final_md
 
 
+def test_block_splitter_kanvam_regressions():
+  from doc_curation.llm.proofreader.block_splitter import text_to_vipra_mula_blocks
+
+  # 38.397: 3 parallel ya te gharma ... svaha yajus must stay 3 separate blocks
+  s38 = (
+    "या ते॑ घर्म दि॒व्या शुग्या गा॑य॒त्र्याँ ह॑वि॒र्धाने॑ । सा त॒ आ प्या॑यतां॒ निष्ट्या॑यतां॒ तस्यै॑ ते॒ स्वाहा॑ ।\n"
+    "या ते॑ घर्मा॒न्तरि॑क्षे॒ शुग्या त्रि॒ष्टुभ्याग्नी॑ध्रे । सा त॒ आ प्या॑यतां॒ निष्ट्या॑यतां॒ तस्यै॑ ते॒ स्वाहा॑ ।\n"
+    "या ते॑ घर्म पृथि॒व्याँ शुग्या जग॑त्याँ सद॒स्या॑ ।\n"
+    "सा त॒ आ प्या॑यतां॒ निष्ट्या॑यतां॒ तस्यै॑ ते॒ स्वाहा॑ ॥१॥ १८"
+  )
+  out38 = text_to_vipra_mula_blocks(s38, use_local_hyphenator=True, clause_newlines=True)
+  assert out38.count("<summary>मूलम्</summary>") == 3
+
+  # 25.904: yadi... tesu... Tristubh stanza must stay 1 block
+  s25 = (
+    "पृ॒च्छामि॑ त्वा चि॒तये॑ देवसख॒ यदि॒ त्वमत्र॒ मन॑सा ज॒गन्थ॑ ।\n"
+    "येषु॒ विष्णु॑स्त्रि॒षु प॒देष्वेष्ट॒स्तेषु॒ विश्वं॒ भुव॑न॒मा वि॑वेशा३ ॥५॥ ५१"
+  )
+  assert text_to_vipra_mula_blocks(s25, use_local_hyphenator=True, clause_newlines=True).count("<summary>मूलम्</summary>") == 1
+
+  # 12.576: 2-line Rg stanza with danda must stay 1 block
+  s12 = (
+    "उदु॑ तिष्ठ स्वध्व॒रावा॑ नो दे॒व्या धि॒या ।\n"
+    "दृ॒शे च॑ भा॒सा बृ॑ह॒ता शु॑शु॒क्वनि॒राग्ने॑ याहि सुश॒स्तिभिः॑ ॥४॥ ४१ (५८९)"
+  )
+  assert text_to_vipra_mula_blocks(s12, use_local_hyphenator=True, clause_newlines=True).count("<summary>मूलम्</summary>") == 1
+
+  # 17.55: 16+24 Pankti stanza must stay 1 block
+  s17 = (
+    "असौ॒ यस्ता॒म्रो अ॑रु॒ण उ॒त ब॒भ्रुः सु॑म॒ङ्गलः॑ ।\n"
+    "ये चै॑नँ रु॒द्रा अ॒भितो॑ दि॒क्षु श्रि॒ताः स॑हस्र॒शोऽवै॑षाँ॒ हेळ॑ ईमहे ॥६॥ ६"
+  )
+  assert text_to_vipra_mula_blocks(s17, use_local_hyphenator=True, clause_newlines=True).count("<summary>मूलम्</summary>") == 1
+
+  # 18.17: missing danda after (2) 17 must split before next mantra
+  s18 = (
+    "स आ॒शिषा॒ द्रवि॑णमि॒च्छमा॑नः प्रथम॒च्छदव॑राँ॒३ आवि॑वेश (२) १७\n"
+    "किँस्वि॑दासीदधि॒ष्ठान॑मा॒रम्भ॑णं कत॒मत्स्वि॑त्क॒थासी॑त् ।"
+  )
+  assert text_to_vipra_mula_blocks(s18, use_local_hyphenator=True, clause_newlines=True).count("<summary>मूलम्</summary>") == 2
+
+  # 31.md heading: unaccented athai... adhyayah emitted bare outside details
+  s31 = (
+    "अथैकत्रिंशोऽध्यायः।\n"
+    "समि॑द्धो अ॒ञ्जन्कृद॑रं मती॒नां घृ॒तम॑ग्ने॒ मधु॑म॒त्पिन्व॑मानः ।"
+  )
+  out31 = text_to_vipra_mula_blocks(s31, use_local_hyphenator=True, clause_newlines=True)
+  assert "## अथैकत्रिंशोऽध्यायः।" in out31
+  assert out31.count("<summary>मूलम्</summary>") == 1
 
 
+def test_clause_newline_guards_kanvam():
+  from doc_curation.sanskrit.hyphenator.neural_slp1 import predict_slp1_probs
+  from doc_curation.sanskrit.hyphenator.slp1_codec import apply_slp1_predictions_to_paragraph
 
+  # 04.md:508: must not break line immediately after mutated halant stop (ब्रूताच्)
+  s04 = "ए॒ष ते॒ जाग॑तो भा॒ग इति॑ मे॒ सोमा॑य ब्रूताच्छन्दोमा॒नानाँ॒ साम्रा॑ज्यं ग॒च्छता॒दिति॑ मे॒ सोमा॑य ब्रूतात् ॥१॥ ३२"
+  out04 = apply_slp1_predictions_to_paragraph(s04, predict_slp1_probs, clause_newlines=True)
+  assert "ब्रूताच्  \n" not in out04 and "ब्रूताच् \n" not in out04
+  assert "ब्रूताच् छन्दोमा" in out04
+
+  # Must not emit mid-clause newline immediately after 1-letter token (e.g. च/म)
+  s_short = "सप्त॑विँशतिश्च म॒ अष्टा॑विँशतिश्च म॒ एको॑नत्रिँशच्च म एकत्रिँशच्च मे ।\n"
+  out_short = apply_slp1_predictions_to_paragraph(s_short, predict_slp1_probs, clause_newlines=True)
+  assert "म॒  \n" not in out_short and " म  \n" not in out_short
 
 

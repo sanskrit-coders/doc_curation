@@ -85,7 +85,7 @@ def prep_muula():
 
 def fix_includes():
   # include_helper.include_core_with_commentaries(dir_path=os.path.join(content_dir_base,"sarva-prastutiH"), file_pattern="**/[0-9][0-9]*.md", alt_dirs=["oldenberg", "mUlam"], source_dir="vishvAsa-prastutiH")
-  include_helper.deincludify(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/hiraNyakeshI/gRhyam/sarva-prastutiH")
+  include_helper.deinclude(dir_path="/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sUtram/hiraNyakeshI/gRhyam/sarva-prastutiH")
 
 
 if __name__ == '__main__':

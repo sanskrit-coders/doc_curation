@@ -1,5 +1,12 @@
 """Sanskrit proofreader, sandhi-hyphenator, interleaver & padapāṭha LLM toolkit."""
 from .backend import ProofreaderBackend, ProofreaderChat, proofread_text
+from .block_auditor import (
+  VipraMulaAuditReport,
+  audit_vipra_mula_blocks,
+  audit_vipra_mula_dir,
+  check_source_roundtrip,
+  extract_vipra_mula_pairs,
+)
 from .block_splitter import (
   group_sense_unit_blocks,
   has_genuine_iti,
@@ -34,11 +41,16 @@ __all__ = [
   "PADAPATHA_ACCENT_SYSTEM_PROMPT",
   "ProofreaderBackend",
   "ProofreaderChat",
+  "VipraMulaAuditReport",
   "align_commentary_segments",
   "align_cores_to_translation_dp",
+  "audit_vipra_mula_blocks",
+  "audit_vipra_mula_dir",
   "build_system_prompt",
   "canonical_sandhi_skeleton",
+  "check_source_roundtrip",
   "enforce_post_guards",
+  "extract_vipra_mula_pairs",
   "group_sense_unit_blocks",
   "has_genuine_iti",
   "interleave_source_into_markdown",

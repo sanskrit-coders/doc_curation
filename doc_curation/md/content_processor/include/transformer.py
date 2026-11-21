@@ -5,7 +5,7 @@ import regex
 from bs4 import BeautifulSoup
 from doc_curation.md import content_processor, library
 from doc_curation.md.content_processor.include.maker import make_alt_include
-from doc_curation.md.content_processor.include.seeker import file_path_from_url
+from doc_curation.md.content_processor.include.seeker import file_path_from_url, resolve_include_file_path
 from doc_curation.md.content_processor.section_helper import fix_headers
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement
@@ -272,12 +272,12 @@ def surgical_prefill_content(
       matched = url_filter(url) if callable(url_filter) else bool(regex.search(url_filter, url))
       if not matched:
         continue
-    file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
-    if file_path is None:
-      alt_url = url[:-3] if url.endswith(".md") else (url[:-1] if url.endswith(".md/") else regex.sub("/$", "", url) + ".md")
-      alt_url = alt_url.replace("/content/", "/").replace("/static/", "/").replace("//", "/")
-      file_path = file_path_from_url(url=alt_url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
-    if not file_path or str(file_path) == str(container_file_path) or not os.path.exists(file_path):
+    file_path = resolve_include_file_path(
+      url=url,
+      hugo_base_dir=hugo_base_dir,
+      current_file_path=container_file_path,
+    )
+    if not file_path or str(file_path) == str(container_file_path) or not os.path.isfile(file_path):
       continue
     target_divs.append((d, str(file_path)))
     covered.append((d[0], d[4]))
@@ -352,6 +352,132 @@ def surgical_prefill_includes(
     dry_run=dry_run,
   )
 
+
+def surgical_prefill_transitive(
+  dir_paths,
+  changed_file_paths,
+  *,
+  hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
+  exclude_path_substrings=(),
+  skip_sources_with_empty_includes=True,
+  require_balanced_tags=True,
+  max_passes=6,
+  dry_run=False,
+) -> set[str]:
+  """Propagate edits from ``changed_file_paths`` through all transitive ``js_include`` containers in topological waves.
+
+  :param dir_paths: A single directory path or sequence of root directories to scan for ``js_include`` container ``.md`` files.
+  :param changed_file_paths: Iterable of modified source Markdown file paths whose changes should propagate upward.
+  :param hugo_base_dir: Base parent directory of Hugo repositories (e.g. ``/home/vvasuki/gitland/vishvAsa``).
+  :param exclude_path_substrings: Substrings of directory/file paths to skip completely (e.g. ``("shatapatha-brAhmaNam",)``).
+  :param skip_sources_with_empty_includes: When ``True``, skip pulling from an intermediate file that still has empty ``js_include`` divs.
+  :param require_balanced_tags: When ``True``, refuse any update that unbalances a previously balanced ``<details>`` or ``<div>`` count.
+  :param max_passes: Maximum topological propagation waves.
+  :param dry_run: When ``True``, compute the set of affected container files without writing to disk.
+  :return: Set of container file paths updated across all waves.
+  """
+  if isinstance(dir_paths, (str, os.PathLike)):
+    roots = [os.fspath(dir_paths)]
+  else:
+    roots = [os.fspath(p) for p in dir_paths]
+
+  candidates: list[str] = []
+  seen_cands: set[str] = set()
+  for root in roots:
+    if not os.path.exists(root):
+      continue
+    for dirpath, _, filenames in os.walk(root):
+      if exclude_path_substrings and any(ex in dirpath for ex in exclude_path_substrings):
+        continue
+      for fn in sorted(filenames):
+        if not fn.endswith(".md"):
+          continue
+        fp = os.path.abspath(os.path.join(dirpath, fn))
+        if fp in seen_cands:
+          continue
+        if exclude_path_substrings and any(ex in fp for ex in exclude_path_substrings):
+          continue
+        with open(fp, encoding="utf-8") as f:
+          txt = f.read()
+        if "js_include" in txt:
+          candidates.append(fp)
+          seen_cands.add(fp)
+
+  unfilled_cache: dict[str, bool] = {}
+  in_memory_texts: dict[str, str] = {}
+
+  def _has_empty_nested_include(fp: str) -> bool:
+    if fp in unfilled_cache:
+      return unfilled_cache[fp]
+    txt = in_memory_texts.get(fp)
+    if txt is None:
+      with open(fp, encoding="utf-8") as f:
+        txt = f.read()
+    if "js_include" not in txt:
+      unfilled_cache[fp] = False
+      return False
+    divs = find_js_include_divs(txt)
+    res = any(not txt[bs:be].strip() for _, _, bs, be, _, _ in divs)
+    unfilled_cache[fp] = res
+    return res
+
+  frontier: set[str] = {os.path.abspath(os.fspath(p)) for p in changed_file_paths if p}
+  expanded_sources: set[str] = set()
+  touched_files: set[str] = set()
+  pass_num = 0
+
+  while frontier and pass_num < max_passes:
+    pass_num += 1
+    expanded_sources.update(frontier)
+    newly_changed: set[str] = set()
+    for fp in candidates:
+      orig = in_memory_texts.get(fp)
+      if orig is None:
+        with open(fp, encoding="utf-8") as f:
+          orig = f.read()
+
+      def _url_match(url: str, _fp: str = fp, _front: set[str] = frontier) -> bool:
+        tgt = resolve_include_file_path(url=url, hugo_base_dir=hugo_base_dir, current_file_path=_fp)
+        if not tgt:
+          return False
+        tgt_abs = os.path.abspath(tgt)
+        if tgt_abs not in _front:
+          return False
+        if skip_sources_with_empty_includes and _has_empty_nested_include(tgt_abs):
+          return False
+        return True
+
+      updated, n_divs = surgical_prefill_content(
+        orig,
+        fp,
+        url_filter=_url_match,
+        hugo_base_dir=hugo_base_dir,
+      )
+      if n_divs > 0 and updated != orig:
+        if require_balanced_tags:
+          orig_ok = (
+            orig.count("<details") == orig.count("</details>")
+            and orig.count("<div") == orig.count("</div>")
+          )
+          upd_ok = (
+            updated.count("<details") == updated.count("</details>")
+            and updated.count("<div") == updated.count("</div>")
+          )
+          if orig_ok and not upd_ok:
+            logging.warning(f"Skipping unbalanced transitive prefill in {fp}")
+            continue
+        if dry_run:
+          in_memory_texts[fp] = updated
+        else:
+          with open(fp, "w", encoding="utf-8") as f:
+            f.write(updated)
+        touched_files.add(fp)
+        unfilled_cache.pop(fp, None)
+        if fp not in expanded_sources:
+          newly_changed.add(fp)
+    frontier = newly_changed
+  return touched_files
+
 def include_to_details(inc, container_file_path, title, url_pattern=None, prefill=False, hugo_base_dir="/home/vvasuki/gitland/vishvAsa", *args, **kwargs):
   """To be used with transform_includes_with_soup: convert a prefilled include into a plain details block.
 
@@ -392,14 +518,369 @@ def includes_to_details(dir_path, title, url_pattern, prefill=False, file_name_f
 
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=content_transformer, file_name_filter=file_name_filter, *args, **kwargs)
 
-def deincludify(dir_path, *args, **kwargs):
-  # prefill_includes(dir_path=dir_path, *args, **kwargs)
-  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=["</?div.+", r" *[\.…]+\{Loading\}[\.…]+"], replacement="")
-  library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"\n\n+"], replacement="\n\n")
-  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"<summary><h\d>"], replacement="<summary>")
-  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r"</h\d></summary>"], replacement="</summary>")
+_ATTR_URL_RE = regex.compile(r"""\burl=["']([^"']+)["']""")
+_ATTR_CLASS_RE = regex.compile(r"""\bclass=["']([^"']+)["']""")
+_ATTR_TITLE_RE = regex.compile(r"""\btitle=["']([^"']+)["']""")
+_ATTR_INCLUDE_TITLE_RE = regex.compile(r"""\bincludetitle=["']([^"']+)["']""")
+_ATTR_NEW_H1_RE = regex.compile(r"""\bnewlevelforh1=["']([^"']+)["']""")
+_MD_LINK_URL_RE = regex.compile(r"""\]\(([^)\s]+)\)""")
 
-  # library.apply_function(fn=content_processor.replace_texts, dir_path=dir_path, patterns=[r" open><summary>[^<]+"], replacement=" open><summary>विश्वास-प्रस्तुतिः")
+
+def _clean_loading_title(raw_title: str) -> str:
+  cleaned = regex.sub(r"</?h\d+>", "", raw_title)
+  cleaned = regex.sub(r"\s*(?:\.\.\.|…)\{Loading\}(?:\.\.\.|…)\s*", "", cleaned)
+  return cleaned.strip()
+
+
+def _extract_existing_wrapper(cur_body: str):
+  """Return ``(inner_body, summary_title, h1_level, is_open_or_none)`` from a prefilled ``js_include`` body."""
+  m_wrap = _LOADING_WRAPPER_RE.match(cur_body)
+  if m_wrap and not _has_balanced_details(m_wrap.group(3)):
+    m_wrap = None
+  if m_wrap:
+    wrap_head, h_lvl_str, old_inner = m_wrap.group(1), m_wrap.group(2), m_wrap.group(3)
+    m_sum = regex.search(r"<summary>(.*?)</summary>", wrap_head, regex.S)
+    summary_title = _clean_loading_title(m_sum.group(1)) if m_sum else ""
+    h1_level = int(h_lvl_str) if h_lvl_str else None
+    is_open = bool(regex.search(r"<details\b[^>]*\bopen\b", wrap_head))
+    return old_inner.strip(), summary_title, h1_level, is_open
+  m_hash = _HASH_LOADING_RE.match(cur_body)
+  if m_hash:
+    wrap_head, hashes, old_inner = m_hash.group(1), m_hash.group(2), m_hash.group(3)
+    raw_title = regex.sub(r"^\s*#+\s*", "", wrap_head).strip()
+    return old_inner.strip(), _clean_loading_title(raw_title), len(hashes), True
+  return cur_body.strip(), "", None, None
+
+
+def deinclude_content(
+  content,
+  container_file_path,
+  *,
+  url_filter=None,
+  prefill=True,
+  title=None,
+  preserve_open_state=True,
+  hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
+):
+  """Inline matching ``js_include`` divs directly into ``content`` via balanced string slicing.
+
+  Preserves surrounding Markdown, Hugo shortcodes, and unmatched ``js_include`` divs byte-for-byte.
+  For each matched ``js_include`` div:
+
+  - When ``prefill=True``, reads fresh content from the resolved included file (refreshing nested
+    ``js_include`` blocks, adjusting heading levels, and fixing relative URLs). Otherwise extracts
+    the already-prefilled body while stripping any outer ``{Loading}`` ``<details>`` or heading wrapper.
+  - Strips the outer ``<div class="js_include" ...> ... </div>``, ``{Loading}`` markers, and
+    ``<hN>...</hN>`` tags inside ``<summary>``.
+  - Preserves open vs. collapsed state (``<details open>`` vs. ``<details>``) when
+    ``preserve_open_state=True``; otherwise emits ``<details open>``.
+  - ``title`` may be ``None`` (derive from ``title="..."`` attribute, cleaned summary, or included
+    file frontmatter; titleless ``includetitle="false"`` includes inline bare content), a ``str``,
+    or a callable ``title(url, open_tag, default_title) -> str | None``.
+
+  Returns ``(updated_content, deincluded_file_paths)``.
+  """
+  if "js_include" not in content:
+    return content, []
+
+  all_divs = find_js_include_divs(content)
+  target_divs = []
+  covered = []
+  for d in sorted(all_divs, key=lambda x: (x[0], -(x[4] - x[0]))):
+    if any(a <= d[0] and d[4] <= b for a, b in covered):
+      continue
+    open_tok = d[5]
+    m_url = _ATTR_URL_RE.search(open_tok)
+    if not m_url:
+      continue
+    url = m_url.group(1)
+    if url_filter is not None:
+      matched = url_filter(url) if callable(url_filter) else bool(regex.search(url_filter, url))
+      if not matched:
+        continue
+    file_path = resolve_include_file_path(
+      url=url,
+      hugo_base_dir=hugo_base_dir,
+      current_file_path=container_file_path,
+    )
+    if prefill and (not file_path or str(file_path) == str(container_file_path) or not os.path.isfile(file_path)):
+      logging.warning(f"Skipping deinclude of unresolved/self url={url} in {container_file_path}")
+      continue
+    target_divs.append((d, url, str(file_path) if file_path else None))
+    covered.append((d[0], d[4]))
+
+  if not target_divs:
+    return content, []
+
+  edits = []
+  deincluded_paths = []
+  for (s_open, _, b_start, b_end, e_close, open_tok), url, target_fp in target_divs:
+    cur_body = content[b_start:b_end]
+    existing_inner, existing_summary, existing_h1, existing_open = _extract_existing_wrapper(cur_body)
+
+    m_class = _ATTR_CLASS_RE.search(open_tok)
+    classes = m_class.group(1).split() if m_class else []
+    is_collapsed = "collapsed" in classes
+    m_title = _ATTR_TITLE_RE.search(open_tok)
+    div_title = m_title.group(1).strip() if m_title else ""
+    m_inc_title = _ATTR_INCLUDE_TITLE_RE.search(open_tok)
+    inc_title_false = bool(m_inc_title and m_inc_title.group(1).strip().lower() == "false")
+    m_nl = _ATTR_NEW_H1_RE.search(open_tok)
+    h1_level = existing_h1 if existing_h1 is not None else (int(m_nl.group(1)) if (m_nl and m_nl.group(1).isdigit()) else 2)
+
+    inc_meta = {}
+    if prefill:
+      inc_meta, inc_content = MdFile(file_path=target_fp).read()
+      if "js_include" in inc_content:
+        inc_content, _ = surgical_prefill_content(
+          inc_content,
+          target_fp,
+          hugo_base_dir=hugo_base_dir,
+        )
+      rendered = fix_headers(inc_content, h1_level)
+      rendered = fix_rel_urls(content=rendered, from_path=target_fp, to_path=str(container_file_path))
+      inner_body = rendered.strip()
+    else:
+      inner_body = existing_inner
+
+    if div_title:
+      default_title = div_title
+    elif inc_title_false:
+      default_title = ""
+    elif existing_summary:
+      default_title = existing_summary
+    elif inc_meta.get("title"):
+      default_title = str(inc_meta["title"]).strip()
+    else:
+      default_title = ""
+
+    if callable(title):
+      final_title = title(url, open_tok, default_title) or ""
+    elif title is not None:
+      final_title = title
+    else:
+      final_title = default_title
+
+    if final_title:
+      if preserve_open_state:
+        is_open = (not is_collapsed) if (m_class is not None) else (existing_open if existing_open is not None else True)
+      else:
+        is_open = True
+      open_attr = " open" if is_open else ""
+      sep = "\n" if inner_body.startswith("<details") else "\n\n"
+      replacement = f"<details{open_attr}><summary>{final_title}</summary>{sep}{inner_body}\n</details>"
+    else:
+      replacement = inner_body
+
+    edits.append((s_open, e_close, replacement))
+    if target_fp:
+      deincluded_paths.append(os.path.abspath(target_fp))
+
+  out = content
+  for s, e, rep in sorted(edits, key=lambda x: x[0], reverse=True):
+    out = out[:s] + rep + out[e:]
+  return out, deincluded_paths
+
+
+def _find_referenced_paths(
+  candidate_paths: set[str],
+  reference_check_roots,
+  in_memory_texts: dict[str, str],
+  hugo_base_dir: str,
+) -> set[str]:
+  """Return subset of ``candidate_paths`` still referenced by files under ``reference_check_roots``."""
+  if not candidate_paths or not reference_check_roots:
+    return set()
+  if isinstance(reference_check_roots, (str, os.PathLike)):
+    roots = [os.fspath(reference_check_roots)]
+  else:
+    roots = [os.fspath(p) for p in reference_check_roots]
+
+  skip_dir_names = {".git", "public", "resources", "node_modules"}
+  # Build quick token list to avoid scanning unrelated files
+  tokens = set()
+  for p in candidate_paths:
+    bn = os.path.basename(p)
+    if bn == "_index.md":
+      tokens.add(os.path.basename(os.path.dirname(p)))
+    else:
+      tokens.add(bn[:-3] if bn.endswith(".md") else bn)
+
+  all_files: list[str] = []
+  seen: set[str] = set()
+  for root in roots:
+    if os.path.isfile(root):
+      ap = os.path.abspath(root)
+      if ap not in seen:
+        seen.add(ap)
+        all_files.append(ap)
+      continue
+    if not os.path.exists(root):
+      continue
+    for dirpath, dirnames, filenames in os.walk(root):
+      dirnames[:] = [d for d in dirnames if d not in skip_dir_names and not d.startswith("build_")]
+      for fn in filenames:
+        if not fn.endswith(".md"):
+          continue
+        ap = os.path.abspath(os.path.join(dirpath, fn))
+        if ap not in seen:
+          seen.add(ap)
+          all_files.append(ap)
+
+  def _url_stem(u: str) -> str:
+    u_clean = u.split("#", 1)[0].split("?", 1)[0].rstrip("/")
+    bn = os.path.basename(u_clean)
+    return bn[:-3] if bn.endswith(".md") else bn
+
+  def _refs_in_file(fp: str) -> set[str]:
+    txt = in_memory_texts.get(fp)
+    if txt is None:
+      try:
+        with open(fp, encoding="utf-8") as f:
+          txt = f.read()
+      except OSError:
+        return set()
+    has_inc = "js_include" in txt
+    has_link = "](" in txt
+    if not has_inc and not has_link:
+      return set()
+    hits = set()
+    if has_inc:
+      for _, _, _, _, _, open_tok in find_js_include_divs(txt):
+        m_u = _ATTR_URL_RE.search(open_tok)
+        if not m_u:
+          continue
+        u = m_u.group(1)
+        if _url_stem(u) not in tokens:
+          continue
+        tgt = resolve_include_file_path(url=u, hugo_base_dir=hugo_base_dir, current_file_path=fp)
+        if tgt:
+          tgt_abs = os.path.abspath(tgt)
+          if tgt_abs in candidate_paths:
+            hits.add(tgt_abs)
+    if has_link:
+      for m_l in _MD_LINK_URL_RE.finditer(txt):
+        u = m_l.group(1)
+        if _url_stem(u) not in tokens:
+          continue
+        tgt = resolve_include_file_path(url=u, hugo_base_dir=hugo_base_dir, current_file_path=fp)
+        if tgt:
+          tgt_abs = os.path.abspath(tgt)
+          if tgt_abs in candidate_paths:
+            hits.add(tgt_abs)
+    return hits
+
+  retained: set[str] = set()
+  # Check all non-candidate files first
+  for fp in all_files:
+    if fp in candidate_paths:
+      continue
+    retained.update(_refs_in_file(fp))
+
+  # Fixed point: if a retained candidate file itself references another candidate, retain that too
+  checked_retained: set[str] = set()
+  while retained - checked_retained:
+    batch = list(retained - checked_retained)
+    for fp in batch:
+      checked_retained.add(fp)
+      retained.update(_refs_in_file(fp))
+
+  return retained
+
+
+def deinclude(
+  dir_path,
+  *,
+  url_filter=None,
+  file_name_filter=None,
+  file_pattern="**/*.md",
+  prefill=True,
+  title=None,
+  preserve_open_state=True,
+  delete_included_files=True,
+  reference_check_roots=None,
+  require_balanced_tags=True,
+  hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
+  dry_run=False,
+) -> dict[str, set[str]]:
+  """Inline matching ``js_include`` divs across ``dir_path`` and optionally delete the included source files.
+
+  When ``delete_included_files=True`` and ``reference_check_roots`` is provided (a path or sequence of root
+  directories), any included file still referenced elsewhere under ``reference_check_roots`` is kept instead
+  of deleted and reported under ``"retained_referenced_files"``.
+
+  Returns ``{"updated_files": set[str], "deleted_files": set[str], "retained_referenced_files": set[str]}``.
+  """
+  logging.info(f"De-including in {dir_path} (dry_run={dry_run}, delete_included_files={delete_included_files})")
+  md_files = library.get_md_files_from_path(
+    dir_path=dir_path,
+    file_pattern=file_pattern,
+    file_name_filter=file_name_filter,
+  )
+
+  updated_files: set[str] = set()
+  in_memory_texts: dict[str, str] = {}
+  candidate_deletes: set[str] = set()
+
+  for md_file in md_files:
+    fp = os.path.abspath(md_file.file_path)
+    with open(fp, encoding="utf-8") as f:
+      orig = f.read()
+    if "js_include" not in orig:
+      continue
+    updated, deincluded_paths = deinclude_content(
+      orig,
+      fp,
+      url_filter=url_filter,
+      prefill=prefill,
+      title=title,
+      preserve_open_state=preserve_open_state,
+      hugo_base_dir=hugo_base_dir,
+    )
+    if updated == orig:
+      continue
+    if require_balanced_tags:
+      orig_ok = (
+        orig.count("<details") == orig.count("</details>")
+        and orig.count("<div") == orig.count("</div>")
+      )
+      upd_ok = (
+        updated.count("<details") == updated.count("</details>")
+        and updated.count("<div") == updated.count("</div>")
+      )
+      if orig_ok and not upd_ok:
+        logging.warning(f"Skipping unbalanced deinclude in {fp}")
+        continue
+    in_memory_texts[fp] = updated
+    updated_files.add(fp)
+    candidate_deletes.update(deincluded_paths)
+    if not dry_run:
+      with open(fp, "w", encoding="utf-8") as f:
+        f.write(updated)
+
+  retained_referenced_files: set[str] = set()
+  deleted_files: set[str] = set()
+  if delete_included_files and candidate_deletes:
+    if reference_check_roots is not None:
+      retained_referenced_files = _find_referenced_paths(
+        candidate_paths=candidate_deletes,
+        reference_check_roots=reference_check_roots,
+        in_memory_texts=in_memory_texts,
+        hugo_base_dir=hugo_base_dir,
+      )
+    to_delete = sorted(p for p in (candidate_deletes - retained_referenced_files) if os.path.isfile(p))
+    for p in to_delete:
+      deleted_files.add(p)
+      if not dry_run:
+        os.remove(p)
+    for p in sorted(retained_referenced_files):
+      logging.warning(f"Retaining still-referenced included file: {p}")
+
+  return {
+    "updated_files": updated_files,
+    "deleted_files": deleted_files,
+    "retained_referenced_files": retained_referenced_files,
+  }
 
 def alt_include_adder(inc, current_file_path, source_dir, alt_dirs, hugo_base_dir="/home/vvasuki/gitland/vishvAsa"):
   """To be used with transform_include_lines.

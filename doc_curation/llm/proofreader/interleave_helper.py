@@ -224,8 +224,16 @@ def parse_interleave_json(raw_reply: str, num_cores: int, num_segments: int) -> 
   return {"assignments": sorted(validated, key=lambda x: x["seg"]), "unmatched_from": unmatched_from}
 
 
-def summary_for_role(author_label: str, role: str, *, is_sanskrit_commentary: bool = True) -> str:
+def summary_for_role(
+  author_label: str,
+  role: str,
+  *,
+  is_sanskrit_commentary: bool = True,
+  role_labels: dict[str, str] | None = None,
+) -> str:
   """Map ``(author_label, role)`` to canonical ``<summary>`` title per interleaver skill."""
+  if role_labels and role in role_labels:
+    return role_labels[role]
   base = regex.sub(r"-(?:टीका|भाष्यम्)$", "", author_label).strip()
   if role == "viniyoga":
     if base in ("भट्टभास्करः", "भट्टभास्कर"):
@@ -254,6 +262,7 @@ def assemble_cluster_blocks(
   author_label: str = "टीका",
   is_sanskrit_commentary: bool = True,
   is_sarvash_tikah: bool = False,
+  role_labels: dict[str, str] | None = None,
 ) -> tuple[str, list[str]]:
   """Insert verbatim source segments into clusters in canonical ``/interleaver`` order."""
   by_core: dict[int, dict[str, list[str]]] = {
@@ -288,7 +297,9 @@ def assemble_cluster_blocks(
 
     for role_top in ("viniyoga", "avatarika"):
       if bucket[role_top]:
-        lbl = summary_for_role(author_label, role_top, is_sanskrit_commentary=is_sanskrit_commentary)
+        lbl = summary_for_role(
+          author_label, role_top, is_sanskrit_commentary=is_sanskrit_commentary, role_labels=role_labels
+        )
         blk = f"<details><summary>{lbl}</summary>\n\n" + "\n\n".join(bucket[role_top]) + "\n</details>"
         if is_sarvash_tikah and role_top == "viniyoga":
           withheld_host_blocks.append(blk)
@@ -304,7 +315,7 @@ def assemble_cluster_blocks(
 
     for role_mid in ("translation", "note"):
       if bucket[role_mid]:
-        lbl = summary_for_role(author_label, role_mid, is_sanskrit_commentary=False)
+        lbl = summary_for_role(author_label, role_mid, is_sanskrit_commentary=False, role_labels=role_labels)
         parts.append(f"<details><summary>{lbl}</summary>\n\n" + "\n\n".join(bucket[role_mid]) + "\n</details>")
 
     parts.append(cl["mula"].strip())
@@ -313,7 +324,9 @@ def assemble_cluster_blocks(
 
     for role_bot in ("tika", "viniyoga_sangraha"):
       if bucket[role_bot]:
-        lbl = summary_for_role(author_label, role_bot, is_sanskrit_commentary=is_sanskrit_commentary)
+        lbl = summary_for_role(
+          author_label, role_bot, is_sanskrit_commentary=is_sanskrit_commentary, role_labels=role_labels
+        )
         parts.append(f"<details><summary>{lbl}</summary>\n\n" + "\n\n".join(bucket[role_bot]) + "\n</details>")
 
     out_clusters.append("\n\n".join(p for p in parts if p))
@@ -453,6 +466,7 @@ def interleave_source_into_markdown(
   is_sarvash_tikah: bool = False,
   backend=None,
   batch_cores: int = 4,
+  role_labels: dict[str, str] | None = None,
 ) -> dict:
   """Interleave ``source_text`` into ``host_md`` verbatim using local DP or LLM+DP."""
   preamble, clusters, postamble, mula_bodies = parse_markdown_clusters(host_md)
@@ -515,6 +529,7 @@ def interleave_source_into_markdown(
     author_label=author_label,
     is_sanskrit_commentary=is_sanskrit_commentary,
     is_sarvash_tikah=is_sarvash_tikah,
+    role_labels=role_labels,
   )
   full_md = (preamble.rstrip() + "\n\n" if preamble.strip() else preamble) + assembled_body + (
     "\n\n" + postamble.lstrip() if postamble.strip() else "\n"

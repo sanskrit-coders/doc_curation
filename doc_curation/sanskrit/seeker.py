@@ -95,7 +95,7 @@ def _is_verse_block(para):
     return False
   return True
 
-def split_to_sentences(text):
+def split_to_sentences(text, respect_verse_blocks=True):
   """Split Sanskrit prose (e.g. bhāṣya) into sentences.
 
   - Splits on ``।``, ``॥`` (with optional verse numbers like ``॥ १३ ॥``),
@@ -136,11 +136,11 @@ def split_to_sentences(text):
   if len(paragraphs) > 1:
     out = []
     for p in paragraphs:
-      out.extend(split_to_sentences(p))
+      out.extend(split_to_sentences(p, respect_verse_blocks=respect_verse_blocks))
     return out
 
   # Unquoted verse block: keep whole paragraph together.
-  if _is_verse_block(text):
+  if respect_verse_blocks and _is_verse_block(text):
     return [text.strip()]
 
   # --- protected spans: (...) [...] and '...' "..." ‘...’ “...” ---

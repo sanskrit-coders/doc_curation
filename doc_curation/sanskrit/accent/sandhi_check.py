@@ -63,6 +63,14 @@ _VERIFIED_HIATUS_SLP_PAIRS = frozenset({
   ("mAtA", "AByAm"),
   ("hotA", "eva"),
   ("pitarA", "aSvinA"),
+  ("lokaMpfRA", "AtmanA"),
+  ("vikftyA", "itaH"),
+  ("pratizWA", "aTa"),
+  ("nicuMpuRa", "ava"),
+  ("sTa", "iti"),
+  ("hotA", "annam"),
+  ("Ekzata", "ime"),
+  ("tava", "ut"),
 })
 _LONG_VOWEL = {
   "a": "A", "A": "A",

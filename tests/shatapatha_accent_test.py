@@ -676,6 +676,16 @@ def test_simplex_aa_initial_verbs_not_flagged_as_unsplit_upasarga():
     "- सुणुयात् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
     "- आदयन्ति (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
     "- आदित्या᳓त् (*TB*-1)",
+    "- आपयात् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- विद्यति (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- अभिष्णक् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *RV*-1, *AV*-1)",
+    "- अपीपिपत् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- अपीपदत् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- विविदुः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *RV*-3)",
+    "- विदेय (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *TS*-1)",
+    "- विद्रते (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, पा॰ ७.१.७)",
+    "- अस्पृक्षः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- विदाम (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
   ]
   assert find_unsplit_upasarga_tinantas(lines, forbid_compound_upasarga_tinanta=True) == []
   assert verify_mantra_sandhi(["द्या᳓वा-पृथिव्योः", "र᳓सम्"], "द्यावापृथिव्यो रसं")[0]
@@ -817,6 +827,19 @@ def test_final_sprint_guards_and_pluta_and_pause_udatta():
   assert verify_mantra_sandhi(["इय᳓म्", "माता᳓", "आभ्या᳓म्", "एव᳓"], "इयं माता आभ्यामेव")[0]
   assert verify_mantra_sandhi(["हो᳓ता", "एव᳓"], "होता एव")[0]
   assert verify_mantra_sandhi(["पुत्र᳓मिव", "पित᳓रा", "अश्वि᳓ना"], "पुत्रमिव पितरा अश्विना")[0]
+  assert find_unexplained_aa_hiatuses(["- लोक-ंपृणा᳓ (*SB-M*)", "- आत्म᳓ना (*SB-M*)"], "लोकं᳘पृणा आत्मना") == []
+  assert find_unexplained_aa_hiatuses(["- वि᳓-कृत्या (*MW*)", "- इतः᳓ (*TS*)"], "वि᳘कृत्या इत᳘ ऊर्ध्वं") == []
+  assert find_unexplained_aa_hiatuses(["- प्रति-ष्ठा᳓ (*TS*)", "- अ᳓थ (*TS*)"], "प्रतिष्ठा अ᳘थ᳘") == []
+  assert find_unexplained_aa_hiatuses(["- नि-चुम्पुण (*SB-M*)", "- अ᳓व (*TS*)"], "निचुम्पुण अ᳘व") == []
+  assert find_unexplained_aa_hiatuses(["- स्थ (*SB-M*)", "- इ᳓ति (*TS*)"], "मा स्थ इ᳘ति") == []
+  assert find_unexplained_aa_hiatuses(["- हो᳓ता (*SB-M*)", "- अ᳓न्नम् (*SB-M*)"], "इ᳘ति᳘ होता अ᳘न्नमा᳘प") == []
+  assert find_unexplained_aa_hiatuses(["- ऐक्षत (*SB-M*)", "- इमे᳓ (*SB-M*)"], "स᳘ ऐक्षत इमे वा᳘ अग्निः") == []
+  assert find_unexplained_aa_hiatuses(["- त᳓व (*SB-M*)", "- उ᳓त् (*SB-M*)"], "लोकपितुस्त᳘व उ᳘दीरते") == []
+  assert verify_mantra_sandhi(["नि-चुम्पुण", "अ᳓व"], "निचुम्पुण अव")[0]
+  assert verify_mantra_sandhi(["मा᳓", "स्थ", "इ᳓ति"], "मा स्थ इति")[0]
+  assert verify_mantra_sandhi(["इ᳓ति", "हो᳓ता", "अ᳓न्नम्", "आ᳓प"], "इति होता अन्नमाप")[0]
+  assert verify_mantra_sandhi(["सः᳓", "ऐक्षत", "इमे᳓"], "स ऐक्षत इमे")[0]
+  assert verify_mantra_sandhi(["त᳓व", "उ᳓त्", "ईरते"], "तव उदीरते")[0]
 
   # 7. #311 & #312: `एव + इदम् -> एवैदम्` and VS 19.2 `परि + इतः + सिञ्चता -> परीतो षिञ्चता`
   assert verify_mantra_sandhi(["य᳓था", "ह", "एव᳓", "इद᳓म्"], "यथा हैवैदम्")[0]
