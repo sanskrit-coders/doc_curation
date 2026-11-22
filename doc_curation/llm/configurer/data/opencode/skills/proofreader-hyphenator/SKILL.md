@@ -130,6 +130,10 @@ lines ended with two trailing spaces (`  `, Markdown soft break). Use blank
 lines (`\n\n`) only between distinct paragraphs, blockquotes (`>`), or blocks —
 never insert blank lines between every sentence inside one paragraph.
 
+- **Where to break:** Place a line break at every natural pause/virāma where a
+  reader would naturally pause — not a paragraph break. Heuristics: recognise
+  clause-boundary markers such as kvānta/lyabanta (`-त्वा`, `-य`) forms, and
+  group words sharing the same vibhakti/case role.
 - **Sentence boundaries within a paragraph:** Break with `  \n` after `।`, `॥`,
   `?`, `!`, or `;` (keeping any closing quote or immediate citation reference
   attached to the sentence). When a source omits `।` between syntactically
@@ -155,6 +159,23 @@ never insert blank lines between every sentence inside one paragraph.
   - **Long parallel modifiers or compound chains:** break before distinct
     predicates/appositives or at major `--`/`–` boundaries when a long chain
     spans multiple clauses (e.g. `जीवात्मनः स्वरूपं  \nदेव-मनुष्यादि-प्रकृति-परिणाम-विशेष-रूप--  \nनाना-विध--**भेद-रहितं**  \nज्ञानानन्दैक-गुणम्।`).
+  - **Gloss / meaning restatement (अर्थ-वचनम्):** When a commentary gives a
+    word and then its gloss/meaning as a separate utterance, treat them as
+    separate sentences/clauses — insert appropriate punctuation (`।`, `,`, `—`,
+    as warranted) and `  \n`. E.g. `हे वीर ! दुर्दान्ताः अशिक्षिताः दुरवग्रहाः
+    अपरायत्ताः।` → `हे वीर!  \nदुर्दान्ताः अशिक्षिताः।  \nदुरवग्रहाः अपरायत्ताः।`
+    (each pair is a term followed by its gloss).
+  - **Pratīka-grahaṇa (quoting a symbol/passage):** When introducing a quoted
+    pratīka or cited passage (e.g. after `आह`, `निदर्शनमाह`, `उच्यते`), place
+    a punctuation marker (`—`, `–`, `:`) and a `  \n` before the quoted text.
+    E.g. `तत्र निदर्शनमाह एतैर्गोवृषैर्भिन्नानि...` → `तत्र निदर्शनमाह —  \nएतैर्
+    गो-वृषैर् भिन्नानि...`
+- **Virāma and sandhi:** `यत्र यत्र विरामः स्वीक्रियते, तत्र तत्र सन्धिः न भवति;
+  परन्तु यत्र विरामः न स्वीक्रियते, तत्र अवश्यं सन्धिर्भवति।` — where a pause/virāma
+  is taken, do not force sandhi across it; where there is no pause, sandhi must
+  hold. A pratīka/quotation break therefore blocks sandhi
+  (`तत्र निदर्शनमाह, एतैः...` / `तत्र निदर्शनमाह —  \nएतैः...`, not
+  `*निदर्शनमाहैतैः`).
 - **Breaking sandhi at phrase / clause / quote newlines:**
   - When a separable seam already sits cleanly at the break, prefer splitting
     without reverting sandhi (`निश्चयादयं` → `निश्चयाद्  \nअयं`,

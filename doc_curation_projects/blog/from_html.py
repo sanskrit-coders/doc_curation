@@ -71,6 +71,9 @@ def dump_wordpress_monthly():
 
   wordpress.scrape_monthly_indexes(url="https://vajrin.wordpress.com/", dir_path=f"{BASE_PATH}/weblogs/vajrin", init_year_month_str=init_year_month_str, dry_run=False)
 
+  # No monthly archive widget; tracked via RSS (full backfill done from sitemap).
+  rss.scrape(profile_url="https://benjaminindology.wordpress.com/", dist_dir=f"{BASE_PATH}/weblogs/benjaminindology")
+
   wordpress.scrape_monthly_indexes(url="https://www.gnxp.com/WordPress/", dir_path=f"{BASE_PATH}/weblogs/non-hindu/gnxp_razib", init_year_month_str=init_year_month_str, dry_run=False, delay=30, reverse=False)
 
 
