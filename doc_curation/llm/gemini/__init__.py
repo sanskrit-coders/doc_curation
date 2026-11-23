@@ -48,6 +48,7 @@ from doc_curation.llm.detail_chunker import (
     process_details,
 )
 from .rotator import (
+    AllQuotaExhaustedError,
     _should_rotate_key,
     _is_retryable_gemini_error,
     _report_dead_keys,
@@ -98,6 +99,7 @@ __all__ = [
     "_flip_batch_line",
     "_write_batch_checkpoint",
     "process_details",
+    "AllQuotaExhaustedError",
     "_should_rotate_key",
     "_is_retryable_gemini_error",
     "_report_dead_keys",

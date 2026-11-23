@@ -23,6 +23,11 @@ from doc_curation.llm.pdf_chunker import process_pdf_chunks
 from doc_curation.llm.text_chunker import process_text_chunks
 
 
+class AllQuotaExhaustedError(RuntimeError):
+  """All configured keys are quota-exhausted; callers should return fast."""
+  pass
+
+
 def _should_rotate_key(exc):
   """Quota/rate-limit errors are per-key: rotating to a fresh key helps.
 
@@ -173,6 +178,15 @@ def _call_with_keys(
       logging.warning(f"Skipping dead key {api_key_path}.{name} (status set by an earlier run).")
     else:
       cooling.append((name, retry_at))
+  if not usable and cooling and len(cooling) == len(keys):
+    details = [
+      f"{name} (quota until {retry_at.strftime('%Y-%m-%dT%H:%M:%SZ')})"
+      for name, retry_at in cooling
+    ]
+    logging.warning(f"All Gemini API keys quota-exhausted under {api_key_path}: {'; '.join(details)}")
+    raise AllQuotaExhaustedError(
+      f"All Gemini API keys quota-exhausted under {api_key_path}: {'; '.join(details)}"
+    )
   if not usable and cooling:
     soonest_name, soonest_at = min(cooling, key=lambda item: item[1])
     wait = (soonest_at - datetime.now(timezone.utc)).total_seconds()
@@ -211,6 +225,7 @@ def _call_with_keys(
   # rotate back into them. Statuses are persisted to the keys file so
   # future runs decide smartly; a flag is cleared when its key succeeds.
   banned = set()
+  quota_banned = set()
   dead_found = []
   dead_marked = []
 
@@ -219,6 +234,10 @@ def _call_with_keys(
       i += 1
       if len(banned) >= len(keys):
         _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked, product)
+        if quota_banned == banned:
+          raise AllQuotaExhaustedError(
+            f"All {len(keys)} API keys quota-exhausted for rest of run: {sorted(banned)}"
+          )
         raise RuntimeError(
           f"All {len(keys)} API keys banned for rest of run: {sorted(banned)}"
         )
@@ -264,6 +283,10 @@ def _call_with_keys(
           )
           if len(banned) >= len(keys):
             _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked, product)
+            if quota_banned == banned:
+              raise AllQuotaExhaustedError(
+                f"All {len(keys)} API keys quota-exhausted for rest of run: {sorted(banned)}"
+              )
             raise RuntimeError(
               f"All {len(keys)} API keys dead/banned for rest of run: {sorted(banned)}"
             )
@@ -280,6 +303,10 @@ def _call_with_keys(
           )
           if len(banned) >= len(keys):
             _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked, product)
+            if quota_banned == banned:
+              raise AllQuotaExhaustedError(
+                f"All {len(keys)} API keys quota-exhausted for rest of run: {sorted(banned)}"
+              )
             raise RuntimeError(
               f"All {len(keys)} API keys banned for rest of run: {sorted(banned)}"
             )
@@ -293,6 +320,7 @@ def _call_with_keys(
           base_delay = min(2 ** attempt, 300)
           delay = _get_retry_delay(e, base_delay)
           banned.add(key_name)
+          quota_banned.add(key_name)
           try:
             _mark_key_status(keys_file, api_key_path, key_name, "QUOTA EXCEEDED",
                              retry_after=_quota_cooldown_seconds(e))
@@ -306,6 +334,10 @@ def _call_with_keys(
           time.sleep(delay)
           if len(banned) >= len(keys):
             _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked, product)
+            if quota_banned == banned:
+              raise AllQuotaExhaustedError(
+                f"All {len(keys)} API keys quota-exhausted for rest of run: {sorted(banned)}"
+              )
             raise RuntimeError(
               f"All {len(keys)} API keys banned for rest of run: {sorted(banned)}"
             )
@@ -341,6 +373,10 @@ def _call_with_keys(
     i += 1
 
   _report_dead_keys(keys_file, api_key_path, dead_found, dead_marked, product)
+  if quota_banned == banned and banned:
+    raise AllQuotaExhaustedError(
+      f"All {len(keys)} API keys quota-exhausted after {max_attempts} attempts: {sorted(banned)}"
+    )
   raise RuntimeError(
     f"Failed after {max_attempts} attempts across {len(keys)} API keys"
   )
@@ -355,16 +391,20 @@ def process_pdf_chunks_with_keys(
     max_transient_retries=8,
     **kwargs,
 ):
-  return _call_with_keys(
-    process_pdf_chunks,
-    file_in,
-    *args,
-    api_key_path=api_key_path,
-    cred_path=cred_path,
-    max_attempts=max_attempts,
-    max_transient_retries=max_transient_retries,
-    **kwargs,
-  )
+  try:
+    return _call_with_keys(
+      process_pdf_chunks,
+      file_in,
+      *args,
+      api_key_path=api_key_path,
+      cred_path=cred_path,
+      max_attempts=max_attempts,
+      max_transient_retries=max_transient_retries,
+      **kwargs,
+    )
+  except AllQuotaExhaustedError as e:
+    logging.warning(f"Quota exhausted; skipping {file_in} without changes: {e}")
+    return None
 
 
 def process_text_chunks_with_keys(
@@ -376,16 +416,20 @@ def process_text_chunks_with_keys(
     max_transient_retries=8,
     **kwargs,
 ):
-  result = _call_with_keys(
-    process_text_chunks,
-    file_in,
-    *args,
-    api_key_path=api_key_path,
-    cred_path=cred_path,
-    max_attempts=max_attempts,
-    max_transient_retries=max_transient_retries,
-    **kwargs,
-  )
+  try:
+    result = _call_with_keys(
+      process_text_chunks,
+      file_in,
+      *args,
+      api_key_path=api_key_path,
+      cred_path=cred_path,
+      max_attempts=max_attempts,
+      max_transient_retries=max_transient_retries,
+      **kwargs,
+    )
+  except AllQuotaExhaustedError as e:
+    logging.warning(f"Quota exhausted; skipping {file_in} without changes: {e}")
+    return None
   # Flash models make characteristic OCR-like slips; fix them after a
   # successful run when the effective model name contains "flash".
   # model_id may arrive as a keyword, a positional arg (process_text_chunks
@@ -446,13 +490,17 @@ def process_details_with_keys(
     max_transient_retries=8,
     **kwargs,
 ):
-  return _call_with_keys(
-    process_details,
-    file_in,
-    *args,
-    api_key_path=api_key_path,
-    cred_path=cred_path,
-    max_attempts=max_attempts,
-    max_transient_retries=max_transient_retries,
-    **kwargs,
-  )
+  try:
+    return _call_with_keys(
+      process_details,
+      file_in,
+      *args,
+      api_key_path=api_key_path,
+      cred_path=cred_path,
+      max_attempts=max_attempts,
+      max_transient_retries=max_transient_retries,
+      **kwargs,
+    )
+  except AllQuotaExhaustedError as e:
+    logging.warning(f"Quota exhausted; skipping {file_in} without changes: {e}")
+    return None
