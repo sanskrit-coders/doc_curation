@@ -63,6 +63,13 @@ def dump_google_groups():
   from doc_curation.mail_stream import mailman, google_groups
   # sadaswada is private ("Content unavailable") as of 2026-11; re-enable when accessible.
   # scrape_with_recovery(url="https://groups.google.com/g/sadaswada", dest_dir="/home/vvasuki/gitland/vishvAsa/kAvyam/content/AsvAdaH/sadAsvAdaH", dumper=dump_sadaasvaada, dry_run=False)
+  scrape_with_recovery(url="https://groups.google.com/g/Samvadah", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/dokaniya-Samvadah", dry_run=False)
+  scrape_with_recovery(url="https://groups.google.com/g/tantrollasah", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/tantrollasah", dry_run=False)
+  scrape_with_recovery(url="https://groups.google.com/g/sanskrit-programmers", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/sanskrit-programmers", dry_run=False)
+  
+  scrape_with_recovery(url="https://groups.google.com/g/shabda-shAstram", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/shabda-shAstram", dry_run=False)
+  scrape_with_recovery(url="https://groups.google.com/g/meta-indology", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/meta-indology", dry_run=False)
+
   scrape_with_recovery(url="https://groups.google.com/g/hindu-vidya", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/hindu-vidya", dry_run=False)
   scrape_with_recovery(url="https://groups.google.com/g/advaitin", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/advaitin", dry_run=False)
   scrape_with_recovery(url="https://groups.google.com/g/bvparishat", dest_dir="/home/vvasuki/gitland/hindu-comm/mail_stream/bvparishat", dry_run=False)
