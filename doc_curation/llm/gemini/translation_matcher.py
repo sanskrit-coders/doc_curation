@@ -14,7 +14,7 @@ def seq_match_texts_to_translation(
     cred_path=None, **matcher_kwargs):
   """Align ``texts`` to ``translation_text`` using a Gemini model.
 
-  :param model_id: default ``gemini-3.5-flash``.
+  :param model_id: default ``hydrogen``.
   :param api_key_path: key id for the shared TOML store.
   :param matcher_kwargs: passed to
     :func:`doc_curation.llm.translation_matcher.seq_match_texts_to_translation`

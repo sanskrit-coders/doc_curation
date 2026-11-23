@@ -247,9 +247,9 @@ library.apply_function(
 - **Footnotes**: Markdown footnote syntax `[^n]`, definitions placed next to the paragraph containing the reference, references unique and reflecting the source numbering where possible (e.g. page-12's footnote 1 → `12_1`).
 - Preserve `<details><summary>मूलम्...</summary>...</details>` blocks untouched and process only text outside them.
 
-## Specialist & batch LLM tools (only when specifically requested)
+## Specialist & batch LLM tools
 
-**1. Fine-tuned `Qwen3-14B` Sanskrit proofreader LoRA (`doc_curation.llm.proofreader`)** — covers the **full skill** when OCR cleanup (`[[OLD|NEW]]` source-error suggestions, `[[??]]` illegible spans, `[[P64]]` page tags, footnotes), discourse-aware syntactic clause soft-breaks (including cross-newline sandhi restoration), and sandhi-preserving hyphenation are needed together (pass `suggest_corrections=False` for hyphenation/formatting only; see `doc_curation/llm/proofreader/README.md`). Local adapter weights live at `doc_curation/data/models/qwen3-14b-sanskrit-lora/` (Kaggle: `vishvasvasuki/qwen3-14b-sanskrit-proofreader-lora`), wrapped with deterministic `मूलम्` masking, inline merger-veto snap-back, and `[[OLD|NEW]]` silent-edit guards (`guards.py`). Use via an OpenAI-compatible `vLLM` Colab/Kaggle tunnel (`proofread_text` or `ProofreaderBackend` with `text_chunker` / `detail_chunker`) or offline Kaggle batch jobs (`kaggle_runner.stage_batch_dataset` / `apply_downloaded_outputs`):
+**1. Fine-tuned `Qwen3-14B` Sanskrit proofreader LoRA (`doc_curation.llm.proofreader`) — only when specifically requested** — covers the **full skill** when OCR cleanup (`[[OLD|NEW]]` source-error suggestions, `[[??]]` illegible spans, `[[P64]]` page tags, footnotes), discourse-aware syntactic clause soft-breaks (including cross-newline sandhi restoration), and sandhi-preserving hyphenation are needed together (pass `suggest_corrections=False` for hyphenation/formatting only; see `doc_curation/llm/proofreader/README.md`). Local adapter weights live at `doc_curation/data/models/qwen3-14b-sanskrit-lora/` (Kaggle: `vishvasvasuki/qwen3-14b-sanskrit-proofreader-lora`), wrapped with deterministic `मूलम्` masking, inline merger-veto snap-back, and `[[OLD|NEW]]` silent-edit guards (`guards.py`). Use via an OpenAI-compatible `vLLM` Colab/Kaggle tunnel (`proofread_text` or `ProofreaderBackend` with `text_chunker` / `detail_chunker`) or offline Kaggle batch jobs (`kaggle_runner.stage_batch_dataset` / `apply_downloaded_outputs`):
 
 ```python
 from doc_curation.llm import text_chunker
@@ -269,7 +269,7 @@ library.apply_function(
 )
 ```
 
-**2. Gemini free Flash (`llm/gemini`)** — non-thorough job, for cursory sanskrit-only processing:
+**2. Gemini free Hydrogen (`llm/gemini`) — can be used at will (but note that its quota may run out)**:
 
 ```python
 import os
