@@ -448,7 +448,7 @@ def process_text_chunks_with_keys(
       from .backend import GeminiBackend
       model_id = GeminiBackend.DEFAULT_MODEL
     except Exception:
-      model_id = "hydrogen"
+      model_id = "gemini-4-hydrogen"
   if isinstance(model_id, str) and "flash" in model_id.lower():
     try:
       from doc_curation.md.content_processor import ocr_helper

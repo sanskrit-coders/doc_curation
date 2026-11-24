@@ -269,9 +269,9 @@ library.apply_function(
 )
 ```
 
-**2. Gemini free Hydrogen (`llm/gemini`) — can be used at will (but note that its quota may run out)**:
+**2. Gemini Hydrogen (`llm/gemini`) — free key rotator, can be used at will (quota may run out)**:
 
-> **Do not override `model_id` for Sanskrit proofreading.** Avoid weak/older flash models (e.g. `gemini-3.8-flash`, `gemini-2.0-flash`, `gemini-flash-lite*`) — they produce poor Sanskrit, sandhi, and hyphenation. Use the default Hydrogen model by omitting `model_id`.
+> **Use `gemini-4-hydrogen` or better for Sanskrit proofreading.** Do **not** use weak/older flash models (e.g. `gemini-3.8-flash`, `gemini-2.0-flash`, `gemini-flash-lite*`) — they produce poor Sanskrit, sandhi, and hyphenation.
 
 ```python
 import os
@@ -283,6 +283,7 @@ prompt_path = os.path.expanduser("~/gitland/sanskrit/sanskrit.github.io/content/
 library.apply_function(
     fn=gemini.process_text_chunks_with_keys, dir_path=...,
     prompt=llm.get_prompt(prompt_path),
+    model_id="gemini-4-hydrogen",
     dry_run=False,
 )
 ```

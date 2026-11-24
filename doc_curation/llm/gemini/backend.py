@@ -29,7 +29,7 @@ class GeminiChat(LlmChat):
 
 
 class GeminiBackend(LlmBackend):
-  DEFAULT_MODEL = "hydrogen"
+  DEFAULT_MODEL = "gemini-4-hydrogen"
   PROVIDER_TAG = "Gemini"
 
   def __init__(self, api_key_path="gemini.vv", model_id=None, cred_path=None):
