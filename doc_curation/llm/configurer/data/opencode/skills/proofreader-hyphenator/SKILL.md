@@ -271,6 +271,8 @@ library.apply_function(
 
 **2. Gemini free Hydrogen (`llm/gemini`) — can be used at will (but note that its quota may run out)**:
 
+> **Do not override `model_id` for Sanskrit proofreading.** Avoid weak/older flash models (e.g. `gemini-3.8-flash`, `gemini-2.0-flash`, `gemini-flash-lite*`) — they produce poor Sanskrit, sandhi, and hyphenation. Use the default Hydrogen model by omitting `model_id`.
+
 ```python
 import os
 from doc_curation import llm
