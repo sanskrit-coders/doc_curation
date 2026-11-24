@@ -86,6 +86,73 @@ def undo_taittirIya_forms(text):
     c = regex.sub(pattern, replacement, c)
   return c
 
+
+_MADHYANDINA_ACCENTS = r"[\u0951-\u0954\u0957\u1cd0-\u1ce8\u1cdf\u1cf4\u1cf8\u1cf9\ua8e0-\ua8f1]"
+_MADHYANDINA_VOWELS = "अआइईउऊऋॠऌॡएऐओऔ"
+
+
+def normalize_mAdhyandina(
+  text: str,
+  *,
+  normalize_pre_vowel_avagrahas: bool = True,
+  normalize_double_nasal: bool = True,
+) -> str:
+  """Normalize Vājasaneyi Mādhyandina orthographic and Vedic-accent quirks.
+
+  1. Moves misplaced Vedic accents off halant conjuncts/codas (``त्॒वा`` -> ``त्वा॒``,
+     ``द्वि॒ऽपदीम्॑`` -> ``द्वि॒ऽपदी॑म्``).
+  2. Moves Vedic accents placed before a yogavāha to canonical post-yogavāha position
+     (``बह्वी᳓ः`` -> ``बह्वीः᳓``, ``बु॒ध्न्य᳙ः`` -> ``बु॒ध्न्यः᳙``), collapsing doubled
+     nasals ``ंँ`` -> ``ँ`` and repeated identical accent marks.
+  3. Replaces Mādhyandina pre-vowel hiatus avagrahas with spaces
+     (``प्र᳓त्युष्टाऽअ᳓रातयः`` -> ``प्र᳓त्युष्टा अ᳓रातयः``; ``॥ऽअ`` -> ``॥ अ``)
+     while preserving true *pūrvarūpa* elision avagrahas before consonants.
+  4. Replaces bad pausa / prevocalic anusvāras with ``म्`` while preserving trailing accents
+     on the preceding vowel (``भागं᳓`` -> ``भाग᳓म्``, ``भा॒गं।`` -> ``भा॒गम्।``).
+  """
+  if not text:
+    return text
+
+  masks: dict[str, str] = {}
+
+  def _mask(prefix: str):
+    def _repl(m):
+      k = f"§§{prefix}{len(masks)}§§"
+      masks[k] = m.group(0)
+      return k
+
+    return _repl
+
+  s = regex.sub(r"\+\+\+.*?\+\+\+|\[\[[^\]]+\]\]|\[\^[^\]\n]+\]|https?://\S+", _mask("ANN"), text, flags=regex.DOTALL)
+  s = regex.sub(r"<[^>]+>", _mask("TAG"), s)
+
+  s = regex.sub(rf"([क-ह]्)({_MADHYANDINA_ACCENTS}+)([क-ह][ािीुूृॄॢॣेैोौ]?)", r"\1\3\2", s)
+  s = regex.sub(rf"([क-ह]्)({_MADHYANDINA_ACCENTS}+)(?![क-हअ-औा-ौ])", r"\2\1", s)
+  s = regex.sub(rf"({_MADHYANDINA_ACCENTS}+)([ःंँꣳᳫ᳭ᳮ]+)", r"\2\1", s)
+  if normalize_double_nasal:
+    s = s.replace("ंँ", "ँ")
+    s = regex.sub(rf"(?<![ेैोौ])ं({_MADHYANDINA_ACCENTS}*)म्", r"\1म्", s)
+  s = regex.sub(rf"({_MADHYANDINA_ACCENTS}+)([ःंँꣳᳫ᳭ᳮ]+)", r"\2\1", s)
+  for acc in ("॒", "॑", "᳓", "᳙"):
+    s = regex.sub(rf"{acc}{{2,}}", acc, s)
+
+  if normalize_pre_vowel_avagrahas:
+    s = regex.sub(rf"(^|\s)ऽ[ \t]*(?={_MADHYANDINA_ACCENTS}*[{_MADHYANDINA_VOWELS}])", r"\1", s, flags=regex.M)
+    s = regex.sub(rf"([।॥,;])ऽ[ \t]*(?={_MADHYANDINA_ACCENTS}*[{_MADHYANDINA_VOWELS}])", r"\1 ", s)
+    s = regex.sub(rf"ऽ[ \t]*(?={_MADHYANDINA_ACCENTS}*[{_MADHYANDINA_VOWELS}])", " ", s)
+
+  s = regex.sub(
+    rf"(?<![ेैोौ])ं({_MADHYANDINA_ACCENTS}*)(?=\s*(?:$|[।॥,;.\)\]]|§§TAG\d+§§|[{_MADHYANDINA_VOWELS}])|[{_MADHYANDINA_VOWELS}])",
+    r"\1म्",
+    s,
+    flags=regex.M,
+  )
+
+  for k, v in masks.items():
+    s = s.replace(k, v)
+  return s
+
+
 def fix_yaNs(text):
   replacements = {r"[ुू](?=\s+[अ-ईऋ-औ])": r"्व्", r"[िी](?=\s+[अआउ-औ])": r"्य्", r"[ृॄ](?=\s+[अ-ऊऌ-औ])": r"्र्",
                   r"[ॢॣ](?=\s+[अ-ॠए-औ])": r"्ल्", }

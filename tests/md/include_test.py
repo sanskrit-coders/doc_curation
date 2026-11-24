@@ -358,6 +358,35 @@ def test_surgical_prefill_transitive_multi_hop_and_directory_index(tmp_path):
   assert excl.read_text(encoding="utf-8") == excl_orig
 
 
+def test_surgical_prefill_transitive_skips_non_utf8_and_dot_git(tmp_path):
+  static_dir = tmp_path / "vedAH_Rk" / "static" / "vp"
+  static_dir.mkdir(parents=True)
+  leaf = static_dir / "01.md"
+  leaf.write_text('+++\ntitle = "०१"\n+++\nअभ्य् अ᳙साक्षि\n', encoding="utf-8")
+
+  content_dir = tmp_path / "vedAH_Rk" / "content"
+  content_dir.mkdir(parents=True)
+  host = content_dir / "host.md"
+  host.write_text(
+    '+++\ntitle = "१"\n+++\n<div class="js_include" url="/vedAH_Rk/vp/01.md">\nstale\n</div>\n',
+    encoding="utf-8",
+  )
+
+  # Binary non-UTF-8 file masquerading as .md and a .git directory with .md should be skipped cleanly.
+  (content_dir / "bad_image.md").write_bytes(b"\xff\xd8\xff\xe0not utf8")
+  git_dir = content_dir / ".git"
+  git_dir.mkdir()
+  (git_dir / "ignored.md").write_bytes(b"\xff\xfe")
+
+  touched = include_helper.surgical_prefill_transitive(
+    [static_dir.parent, content_dir],
+    [leaf],
+    hugo_base_dir=str(tmp_path),
+  )
+  assert touched == {str(host)}
+  assert "अभ्य् अ᳙साक्षि" in host.read_text(encoding="utf-8")
+
+
 def test_deinclude_selective_preserves_open_collapsed_and_deletes_unreferenced(tmp_path):
   # Set up two mantras: 01 (yajus -> de-include vp + st, keep mUlam), 02 (Rk -> keep all includes)
   static_root = tmp_path / "vedAH_yajuH" / "static" / "saMhitA"

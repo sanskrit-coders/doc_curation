@@ -98,8 +98,8 @@ from doc_curation.sanskrit.accent.validator import (
 # Paths & constants
 # ---------------------------------------------------------------------------
 
-# Increment cache version so v11 rebuilds cleanly after RV/AV/MS/TS padasvara fixes.
-LEXICON_CACHE_VERSION = 11
+# Increment cache version so v12 rebuilds cleanly with distinct VS-M / VS-K corpora.
+LEXICON_CACHE_VERSION = 12
 
 _VS_DETAILS_RE = re.compile(
   r"<details(?:\s+open)?>\s*<summary>\s*(?:<h\d>)?([^<]*?)(?:\s*\.\.\.\{Loading\}\.\.\.)?\s*(?:</h\d>)?\s*</summary>(.*?)</details>",
@@ -122,6 +122,11 @@ DEFAULT_SB_M_DIR = (
 DEFAULT_VS_DIR = (
   "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/"
   "vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH"
+)
+DEFAULT_VS_M_DIR = DEFAULT_VS_DIR
+DEFAULT_VS_K_DIR = (
+  "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/"
+  "vAjasaneyam/kANvam/saMhitA"
 )
 DEFAULT_TB_DIR = (
   "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/"
@@ -1256,6 +1261,7 @@ class UnifiedVedicLexicon:
     cache_path: str | None = None,
     dict_root: str = DEFAULT_DICT_ROOT,
     vs_dir: str = DEFAULT_VS_DIR,
+    vs_k_dir: str = DEFAULT_VS_K_DIR,
     tb_dir: str = DEFAULT_TB_DIR,
     sb_m_dir: str = DEFAULT_SB_M_DIR,
     include_sb_m: bool = False,
@@ -1284,6 +1290,7 @@ class UnifiedVedicLexicon:
     lex = cls.build(
       dict_root=dict_root,
       vs_dir=vs_dir,
+      vs_k_dir=vs_k_dir,
       tb_dir=tb_dir,
       sb_m_dir=sb_m_dir,
       include_sb_m=include_sb_m,
@@ -1322,6 +1329,7 @@ class UnifiedVedicLexicon:
     *,
     dict_root: str = DEFAULT_DICT_ROOT,
     vs_dir: str = DEFAULT_VS_DIR,
+    vs_k_dir: str = DEFAULT_VS_K_DIR,
     tb_dir: str = DEFAULT_TB_DIR,
     sb_m_dir: str = DEFAULT_SB_M_DIR,
     include_sb_m: bool = False,
@@ -1337,9 +1345,11 @@ class UnifiedVedicLexicon:
       if os.path.isfile(p):
         lex._ingest_padasvara_babylon(p, tag)
 
-    # 2. VS saṁhitā corpus
-    if os.path.isdir(vs_dir):
-      lex._ingest_vs_corpus(vs_dir)
+    # 2. VS-M (Mādhyandina) and VS-K (Kāṇva) Vājasaneya Saṁhitā corpora
+    if vs_dir and os.path.isdir(vs_dir):
+      lex._ingest_vs_corpus(vs_dir, tag="VS-M")
+    if vs_k_dir and os.path.isdir(vs_k_dir):
+      lex._ingest_vs_k_corpus(vs_k_dir, tag="VS-K")
 
     # 3. TB corpus ONLY (Taittirīya Āraṇyaka `TA` is intentionally excluded from ŚB!)
     if os.path.isdir(tb_dir):
@@ -1419,7 +1429,7 @@ class UnifiedVedicLexicon:
             seen_hw.add(hb)
             self._add_form(hb, marks, tag, freq=freq, hyph=hyph)
 
-  def _ingest_vs_corpus(self, vs_dir: str) -> None:
+  def _ingest_vs_corpus(self, vs_dir: str, tag: str = "VS-M") -> None:
     tok_re = re.compile(r"[\u0900-\u0963\u0971-\u097f\u1cd0-\u1cff\-]+")
     for fp in sorted(glob.glob(os.path.join(vs_dir, "**", "*.md"), recursive=True)):
       if fp.endswith("_index.md"):
@@ -1456,7 +1466,42 @@ class UnifiedVedicLexicon:
           mks = tuple("S" if US_SVARITA in s_m else ("U" if US_UDATTA in s_m else "") for s_m, _ in scanned)
           n_acc = sum(1 for mk in mks if mk)
           if n_acc == 1 or (n_acc == 0 and bare in ALWAYS_ANUDATTA_ENCLITICS):
-            self._add_form(bare, mks, "VS", freq=1)
+            self._add_form(bare, mks, tag, freq=1)
+
+  def _ingest_vs_k_corpus(self, vs_k_dir: str, tag: str = "VS-K") -> None:
+    """Ingest Kāṇva Vājasaneya Saṁhitā (`VS-K`) US-accented `विश्वास-प्रस्तुतिः` (fallback: `मूलम्`) blocks."""
+    tok_re = re.compile(r"[\u0900-\u0963\u0971-\u097f\u1cd0-\u1cff\-]+")
+    for fp in sorted(glob.glob(os.path.join(vs_k_dir, "**", "*.md"), recursive=True)):
+      if os.path.basename(fp) in ("_index.md", "file_list.md"):
+        continue
+      txt = open(fp, encoding="utf-8", errors="ignore").read()
+      blocks = [(m.group(1).strip(), m.group(2)) for m in DETAILS_RE.finditer(txt)]
+      vp_us = [b for h, b in blocks if h.startswith("विश्वास-प्रस्तुतिः") and has_us_accents(b)]
+      us_bodies: list[str] = []
+      if vp_us:
+        for body in vp_us:
+          clean = re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]|<[^>]+>", " ", body, flags=re.S)
+          clean = re.sub(r"\[\[([^|\]]+)\|([^\]]+)\]\]", r"\2", clean)
+          us_bodies.append(clean)
+      else:
+        for h, body in blocks:
+          if h.startswith("मूलम्") and ("\u0951" in body or "\u0952" in body):
+            clean = re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]|<[^>]+>", " ", body, flags=re.S)
+            us_bodies.append(accent.to_US_accents(clean, pauses=r"[।॥,;]+"))
+      for us_txt in us_bodies:
+        for tok in tok_re.findall(us_txt):
+          if "ऽ" in tok or not _DEVANAGARI_RE.search(tok):
+            continue
+          bare = _normalize_lookup_key(tok)
+          if not bare or len(bare) < 2:
+            continue
+          scanned = _fast_scan_deva_syllables(tok.replace("-", ""))
+          if not scanned:
+            continue
+          mks = tuple("S" if US_SVARITA in s_m else ("U" if US_UDATTA in s_m else "") for s_m, _ in scanned)
+          n_acc = sum(1 for mk in mks if mk)
+          if n_acc == 1 or (n_acc == 0 and bare in ALWAYS_ANUDATTA_ENCLITICS):
+            self._add_form(bare, mks, tag, freq=1)
 
   def _ingest_ta_tb_corpus(self, root_dir: str, tag: str) -> None:
     from doc_curation.sanskrit.accent.reconciler import parse_padapatha_items
@@ -3346,19 +3391,21 @@ def split_vp_to_padas(vp_clean: str, lex: UnifiedVedicLexicon) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-_CORPUS_TIE_ORDER: dict[str, int] = {"SB-M": 0, "VS": 1, "TS": 2, "RV": 3, "AV": 4, "TB": 5, "SB-K": 6}
+_CORPUS_TIE_ORDER: dict[str, int] = {"SB-M": 0, "VS-M": 1, "VS-K": 2, "TS": 3, "RV": 4, "AV": 5, "TB": 6, "SB-K": 7}
 _CORPUS_NAMES: frozenset[str] = frozenset(_CORPUS_TIE_ORDER.keys())
 _DICT_ORDER: tuple[str, ...] = ("Whitney", "Macdonell", "Lanman", "MW_SB", "MW")
 
 
 def _aggregate_corpus_counts(srcs: dict[str, int]) -> dict[str, int]:
-  """Merge disjoint ``TB``/``TB_VP`` counts and sort by ``(-count, VS>TS>RV>AV>TB)`` (never ``TA``)."""
+  """Merge disjoint ``TB``/``TB_VP`` (and legacy ``VS``->``VS-M``) counts and sort by ``(-count, VS-M>VS-K>TS>RV>AV>TB)`` (never ``TA``)."""
   totals: dict[str, int] = {}
   for s, f in srcs.items():
     if f <= 0:
       continue
     if s in _CORPUS_NAMES:
       totals[s] = totals.get(s, 0) + int(f)
+    elif s == "VS":
+      totals["VS-M"] = totals.get("VS-M", 0) + int(f)
     elif s == "TB_VP":
       totals["TB"] = totals.get("TB", 0) + int(f)
   ordered = sorted(totals.items(), key=lambda kv: (-kv[1], _CORPUS_TIE_ORDER[kv[0]]))
@@ -3406,9 +3453,9 @@ def lookup_corpus_counts(lex: UnifiedVedicLexicon, pada_us: str) -> dict[str, in
   return _aggregate_corpus_counts(srcs)
 
 
-# Match allowed Vedic corpora PLUS deprecated `*TA*`/`*EK*` so `enrich_padapatha_corpus_counts` strips them cleanly.
+# Match allowed Vedic corpora PLUS legacy `*VS*` and deprecated `*TA*`/`*EK*` so `enrich_padapatha_corpus_counts` normalizes/strips them cleanly.
 _CORPUS_TAG_NO_REF_RE = re.compile(
-  r"\*(SB-M|SB-K|VS|TS|RV|AV|TB|TA|EK)\*(?:-\d+)?(?![ \t]+[\d०-९])"
+  r"\*(SB-M|SB-K|VS-M|VS-K|VS|TS|RV|AV|TB|TA|EK)\*(?:-\d+)?(?![ \t]+[\d०-९])"
 )
 
 
@@ -3436,7 +3483,10 @@ def enrich_padapatha_corpus_counts(lex: UnifiedVedicLexicon, pada_us: str, just:
   inline_corpora: set[str] = set()
   for seg in (c.strip() for part in just.split(";") for c in part.split(",")):
     if seg and not _CORPUS_TAG_NO_REF_RE.fullmatch(seg):
-      inline_corpora.update(m.group(1) for m in _CORPUS_TAG_NO_REF_RE.finditer(seg) if m.group(1) in counts)
+      for m in _CORPUS_TAG_NO_REF_RE.finditer(seg):
+        cname = "VS-M" if m.group(1) == "VS" and "VS-M" in counts else m.group(1)
+        if cname in counts:
+          inline_corpora.add(cname)
   formatted_corpora = ", ".join(f"*{c}*-{n}" for c, n in counts.items() if c not in inline_corpora)
 
   # Split top-level `;` clauses so editorial suffixes (e.g. `; श्रीधरादि-पाठः`) stay cleanly separated
@@ -3463,7 +3513,7 @@ def enrich_padapatha_corpus_counts(lex: UnifiedVedicLexicon, pada_us: str, just:
       # Check if segment embeds a bare corpus tag alongside prose (e.g. `व्यत्यस्तः *TS*`)
       if _CORPUS_TAG_NO_REF_RE.search(seg):
         def _sub_inline(m: re.Match) -> str:
-          cname = m.group(1)
+          cname = "VS-M" if m.group(1) == "VS" and "VS-M" in counts else m.group(1)
           return f"*{cname}*-{counts[cname]}" if cname in counts else m.group(0)
         seg = _CORPUS_TAG_NO_REF_RE.sub(_sub_inline, seg)
       kept.append(seg)
@@ -4002,7 +4052,7 @@ def generate_pada_candidates(
       continue
     tot = sum(srcs.values())
     # Filter rare corpus OCR/variant noise (`< 2%` when `>= 25`, `< 3%` when `>= 100` unless VS/multi-primary-samhita)
-    if max_form_freq >= 100 and tot < int(max_form_freq * 0.03) and "VS" not in srcs:
+    if max_form_freq >= 100 and tot < int(max_form_freq * 0.03) and not ({"VS-M", "VS-K", "VS"} & srcs.keys()):
       continue
     if max_form_freq >= 25 and tot < max(2, int(max_form_freq * 0.02)):
       continue
@@ -4010,7 +4060,7 @@ def generate_pada_candidates(
     bonus = 0.0
     if "SB-M" in srcs:
       bonus -= 0.14
-    if "VS" in srcs:
+    if "VS-M" in srcs or "VS-K" in srcs or "VS" in srcs:
       bonus -= 0.12
     if sum(1 for k in ("SB-M", "RV", "TS", "AV", "TB") if k in srcs) >= 2:
       bonus -= 0.1
@@ -4020,7 +4070,7 @@ def generate_pada_candidates(
   # Preserve attested unaccented primary-corpus forms (e.g. Vedic subjunctive/aorist verbs missed by vidyut)
   if not is_tin and not nonzero_form_hits and zero_marks in form_hits:
     z_srcs = form_hits[zero_marks]
-    if any(k in z_srcs for k in ("SB-M", "SB-K", "TS", "RV", "AV", "TB", "VS")):
+    if any(k in z_srcs for k in ("SB-M", "SB-K", "TS", "RV", "AV", "TB", "VS-M", "VS-K", "VS")):
       _add(zero_marks, _format_corpus_prov(z_srcs), "nominal", 0.35)
 
   # 7. Stem-projected accents (MW, Macdonell, Lanman)
@@ -4919,12 +4969,13 @@ def _solve_kandika_impl(
     # Every open-class pada must carry an exact-form corpus count: sūtra/dictionary-only padas are where
     # bogus splits hide (`अंग्याः` tiṅanta, `अ᳓प-हते` as kta, `अ᳓वभारि` as vocative, `आणः`, `सवितः᳓`).
     # Only closed-class upasargas and always-anudātta enclitics are exempt.
-    _cc = {m.group(1): int(m.group(2)) for m in re.finditer(r"\*(SB-M|SB-K|VS|TS|RV|AV|TB)\*-(\d+)", it.prov)}
+    _cc = {m.group(1): int(m.group(2)) for m in re.finditer(r"\*(SB-M|SB-K|VS-M|VS-K|VS|TS|RV|AV|TB)\*-(\d+)", it.prov)}
     if not _cc:
       if bare_it not in UPASARGA_DEVA_SET and bare_it not in ALWAYS_ANUDATTA_ENCLITICS:
         reasons.append(f"no_corpus_count@{i}:{it.ref}")
-    elif set(_cc) == {"VS"} and sum(_cc.values()) <= 1 and "पा॰" not in it.prov:
-      # A lone saṃhitā token can be a tokenisation artefact (`स्वर्ण᳓` for RV `स्वः᳙ न`).
+    elif set(_cc) <= {"VS-M", "VS-K", "VS"} and "पा॰" not in it.prov:
+      # Saṃhitā-only tokens (VS-M / VS-K, without any padapāṭha corpus or Pāṇini sūtra) can be fused
+      # sandhi tokenisation artefacts (`स्वर्ण᳓` for RV `स्वः᳙ न`).
       reasons.append(f"thin_vs_attestation@{i}:{it.ref}")
     # Raw sandhi-final `स्`/`श्`/`ष्` or other non-pausal finals never appear in a padapāṭha word.
     if re.search(r"[सशषर]्$", bare_it.replace("-", "")):

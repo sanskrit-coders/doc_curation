@@ -299,17 +299,19 @@ def test_provenance_excludes_ta_and_ek_keeps_sb():
   counter = VedicCorpusCounter()
   counter._add("TA", "एतत्", ("", "U"), freq=5)
   counter._add("ŚB", "एतत्", ("", "U"), freq=7)
+  counter._add("SB-M", "एतत्", ("", "U"), freq=7)
   counter._finalize_secondary_tables()
   assert counter.count("एत᳓त्", "TA") == 0
   assert counter.count("एत᳓त्", "EK") == 0
   assert counter.count("एत᳓त्", "ŚB") == 7
+  assert counter.count("एत᳓त्", "SB-M") == 7
 
   cleaned, unres = annotate_padapatha_line_counts("- एत᳓त् (*ŚB*, *TA*-12, *EK* मूल-पाठः)", counter)
   assert cleaned == "- एत᳓त् (*ŚB*-7)"
   assert unres == []
 
   cured, unres_cured = annotate_padapatha_line_counts("- एत᳓त् (*TA*)", counter)
-  assert cured == "- एत᳓त् (*ŚB*-7)"
+  assert cured == "- एत᳓त् (*SB-M*-7)"
   assert unres_cured == []
 
   only_bad, unres_bad = annotate_padapatha_line_counts("- अज्ञात᳓म् (*TA*)", counter)
@@ -499,4 +501,84 @@ def test_fake_sandhi_svara_arrows_guard():
     "- ए᳓ति → **एति** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *TS*-166)",
   ]
   assert find_fake_sandhi_svara_arrows(pp_tan_real_vyat, mula_tan) == []
+
+
+def test_repeated_vocative_nighata_and_8173_samanadhikarana():
+  from doc_curation.sanskrit.accent.validator import find_false_nighata_arrows
+
+  # Repeated vocative (`सुश्रवः` at index 0 pādādi vs later non-pādādi occurrences) must NOT falsely match occurrence #0
+  mula_sushravas = (
+    "सु॒श्रव॑स्सु॒श्रव॑सं मा कुरु॒ यथा॒ त्वँ सु॒श्रव॑स्सु॒श्रवा॑ अ॒स्येव॑म॒हँ सु॒श्रव॑स्सु॒श्रवा॑ भूयासम् ।"
+  )
+  pp_sushravas = [
+    "- सु-श्र᳓वः → **सु᳓-श्रवः** (आमन्त्रितम् — हरदत्तः; पादादावाद्युदात्तम्, पा॰ ६.१.१९८)",
+    "- सु-श्र᳓वसम् (*TS*-1)",
+    "- मा (अनुदात्तम्, पा॰ ८.१.१८, *TS*-202)",
+    "- कुरु (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- य᳓था (*TS*-123)",
+    "- त्व᳓म् (*TS*-158/313)",
+    "- सु-श्र᳓वः → **सु-श्रवः** (अपादादौ आमन्त्रितम् अनुदात्तम्, पा॰ ८.१.१९)",
+    "- सु-श्र᳓वाः (*TS*-1)",
+    "- अ᳓सि (यद्वृत्तान्नित्यम्, पा॰ ८.१.६६)",
+    "- एव᳓म् (*TS*-250)",
+    "- अह᳓म् (*TS*-162/565)",
+    "- सु-श्र᳓वः → **सु-श्रवः** (अपादादौ आमन्त्रितम् अनुदात्तम्, पा॰ ८.१.१९)",
+    "- सु-श्र᳓वाः (*TS*-1)",
+    "- भूयासम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+  ]
+  assert find_false_nighata_arrows(pp_sushravas, mula_sushravas) == []
+
+  # Samānādhikaraṇa vocative #1 citing पा॰ ८.१.७३ is blocked from पा॰ ८.१.७२ and properly de-accented by पा॰ ८.१.१९
+  mula_devi = "देवी॑ द्यावापृथिवी॒ अनु॑ मे मँसाथाम् ।"
+  pp_devi = [
+    "- दे᳓वी (पादादावामन्त्रितम् आद्युदात्तम्, पा॰ ६.१.१९८)",
+    "- द्या᳓वा-पृथिवी → **द्यावा-पृथिवी** (अपादादौ आमन्त्रितम् अनुदात्तम्, पा॰ ८.१.१९, ८.१.७३)",
+    "- अ᳓नु (*TS*-471)",
+    "- मे (अनुदात्तम्, पा॰ ८.१.१८, *TS*-585)",
+    "- मँसाथाम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+  ]
+  assert find_false_nighata_arrows(pp_devi, mula_devi) == []
+
+
+def test_nal_shanach_ekagnikanda_and_missing_commentator_guards():
+  from doc_curation.sanskrit.accent.validator import (
+    find_invalid_or_rubberstamp_provenance,
+    find_missing_commentator_attributions,
+    validate_accented_markdown,
+  )
+
+  bad = [
+    "- ए᳓जाय → **एजा᳓य** (आङ्+इण् लिट् णल् पा॰ ३.१.३)",
+    "- धिय᳓सान᳓स्य → **धियसान᳓स्य** (*RV*-1/2, शानच् पा॰ ३.१.३)",
+    "- सेहाना᳓याः (*RV*-1/8, कानच् पा॰ ३.१.३)",
+    "- नयामसि → **नयामसि᳓** (एकाग्निकाण्ड-पाठः)",
+    "- शुन᳓न् → **शुनन्** (पारिभाषिकः स्वरव्यत्ययः)",
+  ]
+  assert len(find_invalid_or_rubberstamp_provenance(bad)) == 5
+
+  good = [
+    "- ए᳓जाय → **एजा᳓य** (आङ्+इण् लिट् णल्; लिति पूर्वम् पा॰ ६.१.१९३)",
+    "- धिय᳓सान᳓स्य → **धियसान᳓स्य** (*RV*-1/2, शानच् चितः पा॰ ६.१.१६३)",
+    "- सेहाना᳓याः (*RV*-1/8, कानच् पा॰ ३.२.१०६, चितः पा॰ ६.१.१६३)",
+    "- करिष्य᳓माणः (स्यप्रत्ययः पा॰ ३.१.३३, प्रत्ययस्वरः पा॰ ३.१.३; अदुपदेशात् पा॰ ६.१.१८६)",
+  ]
+  assert find_invalid_or_rubberstamp_provenance(good) == []
+
+  # Missing commentator attribution check at document level
+  md_bad_comm = (
+    "<details><summary>मूलम्</summary>\n\nअ॒ग्निम् ।\n</details>\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n"
+    "- अग्नि᳓म् (*TS*-293/1195 — भास्करः)\n"
+    "</details>\n"
+    "<details><summary>हरदत्तः</summary>\n\nअग्निम् इति ।\n</details>\n"
+  )
+  iss = validate_accented_markdown(md_bad_comm)
+  assert any(i.kind == "missing_commentator_attribution" for i in iss)
+
+  # Quoted external commentator or matching commentator passes cleanly
+  assert find_missing_commentator_attributions(
+    ['- दिश (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८; भास्करः "दिशो दिश प्रयच्छ")', "- अ᳓विदः (छान्दसो विसर्गलोपः — हरदत्तः)"],
+    {"हरदत्तः"},
+  ) == []
+
 

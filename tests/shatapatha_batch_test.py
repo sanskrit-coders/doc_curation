@@ -650,7 +650,7 @@ def test_enrich_provenance_with_corpus_counts_formats_dedupes_and_is_idempotent(
 
   fake = {
     "सर्व᳓तः": {"TS": 12, "RV": 2, "TB": 2},
-    "सं-स्था᳓म्": {"TS": 2, "VS": 1},
+    "सं-स्था᳓म्": {"TS": 2, "VS-M": 1},
     "अ᳓स्मि": {},
   }
   monkeypatch.setattr(sbb, "lookup_corpus_counts", lambda lex, pada: dict(fake.get(pada, {})))
@@ -662,10 +662,10 @@ def test_enrich_provenance_with_corpus_counts_formats_dedupes_and_is_idempotent(
   assert new == "अनुदात्तम्, पा॰ ८.१.१८, *TS*-12, *RV*-2, *TB*-2"
   # 2. Inline form citation keeps its form, gains its count, no duplicate tag
   new, _ = enrich(None, "सं-स्था᳓म्", "*TS* सँ॒स्थाम्")
-  assert new == "*TS*-2 सँ॒स्थाम्, *VS*-1"
+  assert new == "*TS*-2 सँ॒स्थाम्, *VS-M*-1"
   # 3. Verse refs and dictionary tags untouched
-  new, _ = enrich(None, "सर्व᳓तः", "*VS* १.५, *MW*")
-  assert new.startswith("*VS* १.५, *MW*") and "*TS*-12" in new
+  new, _ = enrich(None, "सर्व᳓तः", "*VS-M* १.५, *MW*")
+  assert new.startswith("*VS-M* १.५, *MW*") and "*TS*-12" in new
   # 4. Unattested exact form: unverifiable bare tag dropped when sūtra support remains (reported, never -0);
   #    kept verbatim (and reported) when it is the only support
   new, unv = enrich(None, "अ᳓स्मि", "यद्वृत्तान्नित्यम् पा॰ ८.१.६६, *TS*")
@@ -713,7 +713,7 @@ def test_verify_and_apply_adjudications_enriches_counts_end_to_end(tmp_path):
   bullets = [ln for ln in txt.splitlines() if ln.startswith("- त᳓त्") or ln.startswith("- अपः᳓")]
   assert len(bullets) == 2
   for ln in bullets:
-    tags = _re.findall(r"\*(?:VS|TS|RV|AV|TB|TA)\*-(\d+)", ln)
+    tags = _re.findall(r"\*(?:VS-M|VS-K|VS|TS|RV|AV|TB|TA)\*-(\d+)", ln)
     assert tags and all(int(n) > 0 for n in tags)
   assert audit_full_sb_corpus(sb_root, files=[sb_root / "12/01/1.md"]).failures == []
 
@@ -778,7 +778,7 @@ def test_ta_source_is_dropped_by_enrichment_and_rejected_by_audit(tmp_path):
   )
 
   assert "TA" not in SB_CORPUS_TAGS
-  assert SB_CORPUS_TAGS == ("VS", "TS", "RV", "AV", "TB")
+  assert SB_CORPUS_TAGS == ("VS-M", "VS-K", "TS", "RV", "AV", "TB")
 
   lex = UnifiedVedicLexicon.load_or_build(force_rebuild=False)
   new_j, _ = enrich_provenance_with_corpus_counts(lex, "यज्ञ᳓म्", "*TA*, *TS*, *RV*")
@@ -879,7 +879,7 @@ title = "12.1.1"
 </details>
 <details><summary>पद-पाठः (यान्त्रिकः)</summary>
 
-- त᳓त् (*TS*-10/25, *VS*-0/3)
+- त᳓त् (*TS*-10/25, *VS-M*-0/3)
 - अपः᳓ (*RV*-5/12)
 </details>
 """
@@ -888,8 +888,8 @@ title = "12.1.1"
   assert aud_ok.passed and aud_ok.failures == []
 
   # Bare -0 and -0/0 are still rejected
-  for bad_tag in ("*VS*-0", "*VS*-0/0", "*SB-M*-0", "*SB-K*-0/0"):
-    md_12.write_text(base.replace("*VS*-0/3", bad_tag), encoding="utf-8")
+  for bad_tag in ("*VS-M*-0", "*VS-K*-0/0", "*VS*-0", "*SB-M*-0", "*SB-K*-0/0"):
+    md_12.write_text(base.replace("*VS-M*-0/3", bad_tag), encoding="utf-8")
     aud_bad = audit_full_sb_corpus(sb_root, files=[md_12])
     assert not aud_bad.passed
     assert any(f.kind == "zero_corpus_count" for f in aud_bad.failures)

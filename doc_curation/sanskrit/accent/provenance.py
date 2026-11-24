@@ -2,7 +2,7 @@
 
 Computes exact per-corpus occurrence counts (e.g. ``सर्व᳓तः (*TS*-12, *RV*-2, *TB*-3)``)
 across all accented Vedic corpora hosted locally (`TS`, `RV`, `TB`, `TK`, `AV`,
-`ŚB` / `SB-M`, `SB-K`, `VS`, `TA`, `KS`, `MS`), and normalizes Pāṇinian abbreviation signs
+`ŚB` / `SB-M`, `SB-K`, `VS-M` / legacy `VS`, `VS-K`, `KS`, `MS`), and normalizes Pāṇinian abbreviation signs
 to canonical ``पा॰`` (``U+0970``, ``DEVANAGARI ABBREVIATION SIGN``).
 """
 
@@ -39,7 +39,7 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   us_padasvara_to_entry,
 )
 
-PROVENANCE_CACHE_VERSION = 8
+PROVENANCE_CACHE_VERSION = 9
 DEFAULT_PROVENANCE_CACHE_PATH = os.path.expanduser(
   "~/.cache/doc_curation/vedic_corpus_counts_v1.pkl"
 )
@@ -53,13 +53,21 @@ CORPUS_TAGS: tuple[str, ...] = (
   "ŚB",
   "SB-M",
   "SB-K",
+  "VS-M",
+  "VS-K",
   "VS",
   "KS",
   "MS",
 )
 CORPUS_TAG_SET: frozenset[str] = frozenset(CORPUS_TAGS)
-MAJOR_AUTO_CORPORA: tuple[str, ...] = ("TS", "RV", "TB", "AV", "ŚB", "VS")
+MAJOR_AUTO_CORPORA: tuple[str, ...] = ("TS", "RV", "TB", "AV", "SB-M", "SB-K", "VS-M", "VS-K")
 FORBIDDEN_CORPUS_TAGS: tuple[str, ...] = ("TA", "EK")
+_CORPUS_ALIASES: dict[str, str] = {
+  "ŚB": "SB-M",
+  "SB-M": "ŚB",
+  "VS": "VS-M",
+  "VS-M": "VS",
+}
 
 DEFAULT_CORPUS_DIRS: dict[str, str] = {
   "TS": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH",
@@ -69,6 +77,8 @@ DEFAULT_CORPUS_DIRS: dict[str, str] = {
   "ŚB": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH",
   "SB-M": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH",
   "SB-K": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/shatapatha-brAhmaNam/sarva-prastutiH",
+  "VS-M": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH",
+  "VS-K": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/saMhitA",
   "VS": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH",
   "AV": "/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH",
   "KS": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/kaTha-kapiShTalAH/saMhitA/mUlam/schroeder",
@@ -294,7 +304,7 @@ def _samhita_surface_keys(norm_key: str) -> list[str]:
 
 
 class VedicCorpusCounter:
-  """Cached exact occurrence counter across 9 Vedic corpora (`TS`, `RV`, `TB`, `TK`, `AV`, `ŚB`, `VS`, `KS`, `MS`; excludes dubious `TA`/`EK`)."""
+  """Cached exact occurrence counter across Vedic corpora (`TS`, `RV`, `TB`, `TK`, `AV`, `SB-M`/`ŚB`, `SB-K`, `VS-M`/`VS`, `VS-K`, `KS`, `MS`; excludes dubious `TA`/`EK`)."""
 
   def __init__(
     self,
@@ -415,10 +425,20 @@ class VedicCorpusCounter:
     if ts_dir and os.path.isdir(ts_dir):
       counter._ingest_us_vp_supplement(ts_dir, "TS")
 
-    # 3. VS: prefer `<summary>पदपाठः - दयानन्दादि</summary>` per section, fallback to US/classical tokens
+    # 3. VS-M (Mādhyandina; legacy alias `VS`): prefer `<summary>पदपाठः - दयानन्दादि</summary>` per section, fallback to US/classical tokens
+    vs_m_dir = dirs.get("VS-M") or dirs.get("VS", "")
+    if vs_m_dir and os.path.isdir(vs_m_dir):
+      counter._ingest_vs_dir(vs_m_dir, corpus="VS-M")
     vs_dir = dirs.get("VS", "")
-    if vs_dir and os.path.isdir(vs_dir):
-      counter._ingest_vs_dir(vs_dir)
+    if vs_dir and vs_dir == vs_m_dir:
+      counter.exact_counts["VS"] = dict(counter.exact_counts.get("VS-M", {}))
+    elif vs_dir and os.path.isdir(vs_dir):
+      counter._ingest_vs_dir(vs_dir, corpus="VS")
+
+    # 3b. VS-K (Kāṇva Saṁhitā): US-accented `विश्वास-प्रस्तुतिः` (fallback to classical `मूलम्`)
+    vs_k_dir = dirs.get("VS-K", "")
+    if vs_k_dir and os.path.isdir(vs_k_dir):
+      counter._ingest_us_markdown_corpus(vs_k_dir, "VS-K")
 
     # 4. TB, TK, ŚB / SB-M, SB-K: deduplicated per section (`पद-पाठः` > `पद-पाठः (यान्त्रिकः...)` > `विश्वास-प्रस्तुतिः`)
     for tag in ("TB", "TK", "ŚB", "SB-M", "SB-K"):
@@ -527,7 +547,7 @@ class VedicCorpusCounter:
     for (k, mks), freq in local.items():
       self._add(corpus, k, mks, freq=freq, mode=mode)
 
-  def _ingest_vs_dir(self, vs_dir: str) -> None:
+  def _ingest_vs_dir(self, vs_dir: str, corpus: str = "VS-M") -> None:
     for fp in sorted(glob.glob(os.path.join(vs_dir, "**", "*.md"), recursive=True)):
       if os.path.basename(fp) in ("_index.md", "file_list.md"):
         continue
@@ -540,14 +560,14 @@ class VedicCorpusCounter:
           for piece in re.split(r"[।॥\s]+", pp_bodies[0]):
             conv = classical_padapatha_to_us(piece)
             if conv is not None:
-              self._add("VS", conv[0], conv[1], freq=1, mode="sum")
+              self._add(corpus, conv[0], conv[1], freq=1, mode="sum")
           continue
         mula_body = next((b for h, b in blocks if "मूलम्" in h and ("\u0951" in b or "\u0952" in b)), "")
         if not mula_body:
           continue
         clean = re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]|<[^>]+>", " ", mula_body, flags=re.S)
         us_txt = accent.to_US_accents(clean, pauses=r"[।॥,;]+")
-        self._ingest_us_samhita_tokens(us_txt, "VS")
+        self._ingest_us_samhita_tokens(us_txt, corpus)
 
   def _ingest_us_samhita_tokens(
     self,
@@ -610,6 +630,12 @@ class VedicCorpusCounter:
             if accent.detect_fake_US_accents(clean):
               continue
             self._ingest_us_samhita_tokens(clean, corpus)
+        elif corpus == "VS-K":
+          mula_blocks = [b for h, b in blocks if h.startswith("मूलम्") and ("\u0951" in b or "\u0952" in b)]
+          for body in mula_blocks:
+            clean = re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]|<[^>]+>", " ", body, flags=re.S)
+            us_txt = accent.to_US_accents(clean, pauses=r"[।॥,;]+")
+            self._ingest_us_samhita_tokens(us_txt, corpus)
         elif corpus in ("ŚB", "SB-M"):
           weber_blocks = [b for h, b in blocks if h == "मूलम् - Weber"]
           for body in weber_blocks:
@@ -1590,7 +1616,7 @@ def _enrich_tag_list_for_word(
 
   if enrich_major and allow_stem:
     for cp in major_corpora:
-      if cp in seen or cp in skip_tags:
+      if cp in seen or _CORPUS_ALIASES.get(cp) in seen or cp in skip_tags:
         continue
       m_c, n_c = counter.count_with_stem(target_word, cp, allow_stem=True)
       fmt = format_corpus_count(cp, m_c, n_c)
@@ -1884,10 +1910,10 @@ def _annotate_clause(
         and enrich_major_corpora
         and fallback_allow_stem
       ):
-        covered = set(top_tag_names) | same_stem_covered_tags | set(skip_tags)
+        covered_seen = set(top_tag_names) | same_stem_covered_tags
         extra_fmts: list[str] = []
         for cp in major_corpora:
-          if cp in covered:
+          if cp in covered_seen or _CORPUS_ALIASES.get(cp) in covered_seen or cp in skip_tags:
             continue
           m_c, n_c = counter.count_with_stem(fallback_word, cp, allow_stem=True)
           fmt = format_corpus_count(cp, m_c, n_c)
@@ -1921,7 +1947,7 @@ def _annotate_clause(
   if not top_tms and not has_pattern_b and not is_alt_clause and enrich_major_corpora and fallback_allow_stem:
     extra_lead: list[str] = []
     for cp in major_corpora:
-      if cp in same_stem_covered_tags or cp in skip_tags:
+      if cp in same_stem_covered_tags or _CORPUS_ALIASES.get(cp) in same_stem_covered_tags or cp in skip_tags:
         continue
       m_c, n_c = counter.count_with_stem(fallback_word, cp, allow_stem=True)
       fmt = format_corpus_count(cp, m_c, n_c)

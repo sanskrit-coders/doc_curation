@@ -445,6 +445,7 @@ def _fix_shifted_hyphen_cut(slp_tok: str, cuts: list[int], pos: int, prev_cut: i
     cuts[pos], cuts[pos - 1] = 0, 3
   elif (
     slp_tok[pos - 1] == "m"
+    and slp_tok[pos - 2] in _ALL_VOWELS
     and word_count_slp1(l_seg) == 0
     and stem_base_slp1(l_seg) is None
     and (word_count_slp1(l_back[:-1]) >= 2 or any(is_valid_member_slp1(l_back[-k:-1], is_right=True) for k in (5, 6) if len(l_back) > k) or l_back.endswith("Cukram"))
@@ -497,7 +498,13 @@ def _handle_hyphen_cut(
       cuts[pos] = 0
       cuts[pos + 1] = 3 if (r_sh in prons or r_sh in parts or slp_tok[pos + 1] == "m") else 1
       return
-  if ch in ("a", "A") and pos >= prev_cut + 2 and slp_tok[pos - 1] == "m" and (word_count_slp1(r_seg) < 5 or word_count_slp1(l_seg) == 0):
+  if (
+    ch in ("a", "A")
+    and pos >= prev_cut + 2
+    and slp_tok[pos - 1] == "m"
+    and slp_tok[pos - 2] in _ALL_VOWELS
+    and (word_count_slp1(r_seg) < 5 or word_count_slp1(l_seg) == 0)
+  ):
     l_prev, r_prev = slp_tok[prev_cut:pos], slp_tok[pos:next_cut]
     l_prev_tails = (l_prev, l_prev[-8:], l_prev[-6:], l_prev[-5:])
     if any(is_valid_member_slp1(lt, is_right=True) for lt in l_prev_tails if len(lt) >= 4) and _is_valid_right_piece(r_prev):

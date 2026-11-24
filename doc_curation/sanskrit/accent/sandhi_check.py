@@ -68,7 +68,7 @@ _VERIFIED_HIATUS_SLP_PAIRS = frozenset({
   ("pratizWA", "aTa"),
   ("nicuMpuRa", "ava"),
   ("sTa", "iti"),
-  ("hotA", "annam"),
+  ("hotA", "aMnam"),
   ("Ekzata", "ime"),
   ("tava", "ut"),
 })

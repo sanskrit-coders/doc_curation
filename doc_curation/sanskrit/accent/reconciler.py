@@ -139,7 +139,7 @@ def is_solid_provenance(prov: str) -> bool:
   prov_n = prov.replace("पा\u0966", "पा॰")
   if any(
     c in prov_n
-    for c in ("*TS*", "*RV*", "*TB*", "*AV*", "*VS*", "*KS*", "*MS*", "*ŚB*", "*SB-M*", "*SB-K*", "*TK*", "*Macdonell*", "*Lanman*")
+    for c in ("*TS*", "*RV*", "*TB*", "*AV*", "*VS-M*", "*VS-K*", "*VS*", "*KS*", "*MS*", "*ŚB*", "*SB-M*", "*SB-K*", "*TK*", "*Macdonell*", "*Lanman*")
   ):
     return True
   if any(

@@ -2,10 +2,12 @@
 
 For each mantra in ``ekAgnikANDam/vishvAsa-prastutiH`` that includes an external
 ``vishvAsa-prastutiH`` (from Śākala Ṛgveda, Śaunaka Atharvaveda, Taittirīya
-Saṃhitā, etc.), moves the ekAgnikANDa-specific ``हरदत्तः`` ``<details>`` block
-into the external ``sarvASh_TIkAH`` target, links and surgically prefills that
-external ``sarvASh_TIkAH`` inside ``ekAgnikANDam/sarvASh_TIkAH``, and refreshes
-affected host ``js_include`` prefills across the repository tree.
+Saṃhitā, etc.), moves the ekAgnikANDa-specific ``हरदत्तः`` and
+``हरदत्तोक्त-विनियोगः`` ``<details>`` blocks into the external ``sarvASh_TIkAH``
+target, removes top-level ``पद-पाठः (यान्त्रिकः...)`` blocks from
+``ekAgnikANDam/sarvASh_TIkAH``, links and surgically prefills that external
+``sarvASh_TIkAH`` inside ``ekAgnikANDam/sarvASh_TIkAH``, and refreshes affected
+host ``js_include`` prefills across the repository tree.
 """
 
 import argparse
@@ -19,6 +21,7 @@ from doc_curation.md.content_processor.include.seeker import file_path_from_url
 from doc_curation.md.content_processor.include.transformer import (
   find_js_include_divs,
   surgical_prefill_content,
+  surgical_prefill_transitive,
 )
 from doc_curation.md.file import MdFile
 
@@ -42,6 +45,27 @@ _TARGET_ANCHOR_PRIORITY = (
 )
 
 HARADATTA_TITLE = "हरदत्तः"
+HARADATTA_VINIYOGA_TITLE = "हरदत्तोक्त-विनियोगः"
+YANTRIKA_PADAPATHA_PREFIX = "पद-पाठः (यान्त्रिकः"
+
+_VINIYOGA_AFTER_PRIORITY = (
+  "सायणोक्त-विनियोगः",
+  "भास्करोक्त-विनियोगः",
+)
+
+# Placement rules tried in order: ("after", titles) inserts after the last block
+# matching the highest-priority title; ("before", titles) inserts before the first.
+_MERGED_COMMENTARY_SPECS: tuple[tuple[str, tuple[tuple[str, tuple[str, ...]], ...]], ...] = (
+  (HARADATTA_TITLE, (("after", _TARGET_ANCHOR_PRIORITY),)),
+  (
+    HARADATTA_VINIYOGA_TITLE,
+    (
+      ("after", _VINIYOGA_AFTER_PRIORITY),
+      ("before", (HARADATTA_TITLE,)),
+      ("after", _TARGET_ANCHOR_PRIORITY),
+    ),
+  ),
+)
 
 
 def normalize_vp_url(url: str) -> str:
@@ -104,7 +128,33 @@ def find_top_level_details(
   return results
 
 
-def merge_details_into_target(target_content: str, summary_title: str, body: str) -> tuple[str, str]:
+def _find_insert_pos(
+  top_blocks: list[tuple[int, int, str, str]],
+  placement_rules: tuple[tuple[str, tuple[str, ...]], ...],
+) -> Optional[int]:
+  for direction, titles in placement_rules:
+    for title in titles:
+      if direction == "after":
+        match_pos = None
+        for _, end, summary, _ in top_blocks:
+          if summary == title:
+            match_pos = end
+        if match_pos is not None:
+          return match_pos
+      elif direction == "before":
+        for start, _, summary, _ in top_blocks:
+          if summary == title:
+            return start
+  return None
+
+
+def merge_details_into_target(
+  target_content: str,
+  summary_title: str,
+  body: str,
+  *,
+  placement_rules: tuple[tuple[str, tuple[str, ...]], ...] = (("after", _TARGET_ANCHOR_PRIORITY),),
+) -> tuple[str, str]:
   """Insert or merge ``<details><summary>{summary_title}</summary>`` into ``target_content``.
 
   Returns ``(updated_content, action)`` where ``action`` is one of
@@ -130,24 +180,27 @@ def merge_details_into_target(target_content: str, summary_title: str, body: str
       return target_content[:start] + new_block + target_content[end:], "appended_to_existing"
 
   new_block = f"<details><summary>{summary_title}</summary>\n\n{clean_body}\n</details>"
-  anchor_end = None
-  for anchor in _TARGET_ANCHOR_PRIORITY:
-    for _, end, summary, _ in top_blocks:
-      if summary == anchor:
-        anchor_end = end
-    if anchor_end is not None:
-      break
-
-  if anchor_end is not None:
-    before = target_content[:anchor_end].rstrip()
-    after = target_content[anchor_end:].lstrip()
-    if after:
+  insert_pos = _find_insert_pos(top_blocks, placement_rules)
+  if insert_pos is not None:
+    before = target_content[:insert_pos].rstrip()
+    after = target_content[insert_pos:].lstrip()
+    if before and after:
       return f"{before}\n\n{new_block}\n\n{after}", "inserted"
+    if after:
+      return f"{new_block}\n\n{after}", "inserted"
     return f"{before}\n\n{new_block}", "inserted"
 
   base = target_content.rstrip()
   sep = "\n\n" if base else ""
   return f"{base}{sep}{new_block}", "inserted"
+
+
+def _strip_detail_span(content: str, start: int, end: int) -> str:
+  before = content[:start].rstrip()
+  after = content[end:].lstrip()
+  if before and after:
+    return f"{before}\n\n{after}"
+  return before or after
 
 
 def remove_top_level_details(content: str, summary_title: str) -> tuple[str, Optional[str]]:
@@ -157,14 +210,26 @@ def remove_top_level_details(content: str, summary_title: str) -> tuple[str, Opt
   """
   for start, end, summary, body in find_top_level_details(content, exclude_js_includes=True):
     if summary == summary_title:
-      before = content[:start].rstrip()
-      after = content[end:].lstrip()
-      if before and after:
-        updated = f"{before}\n\n{after}"
-      else:
-        updated = before or after
-      return updated, body
+      return _strip_detail_span(content, start, end), body
   return content, None
+
+
+def remove_top_level_details_by_prefix(content: str, summary_prefix: str) -> tuple[str, list[str]]:
+  """Remove all top-level ``<details>`` outside ``js_include`` whose summary starts with ``summary_prefix``.
+
+  Returns ``(updated_content, extracted_bodies)``.
+  """
+  matches = [
+    (start, end, body)
+    for start, end, summary, body in find_top_level_details(content, exclude_js_includes=True)
+    if summary.startswith(summary_prefix)
+  ]
+  if not matches:
+    return content, []
+  updated = content
+  for start, end, _ in reversed(matches):
+    updated = _strip_detail_span(updated, start, end)
+  return updated, [body for _, _, body in matches]
 
 
 def _build_include_skeleton(target_st_url: str, target_title: str) -> str:
@@ -178,14 +243,20 @@ def _build_include_skeleton(target_st_url: str, target_title: str) -> str:
   )
 
 
+def _replace_url_in_open_tag(open_tag: str, new_url: str) -> str:
+  m_url = _URL_ATTR_RE.search(open_tag)
+  if not m_url:
+    return open_tag
+  quote = m_url.group(1)
+  return open_tag[:m_url.start()] + f"url={quote}{new_url}{quote}" + open_tag[m_url.end():]
+
+
 def _rewrite_include_url(content: str, old_url: str, new_url: str) -> tuple[str, bool]:
   """Replace an existing ``js_include`` ``url`` attribute matching ``old_url``."""
   for s_open, e_open, _, _, _, open_tag in find_js_include_divs(content):
     m_url = _URL_ATTR_RE.search(open_tag)
     if m_url and m_url.group(2) == old_url:
-      quote = m_url.group(1)
-      new_open = open_tag[:m_url.start()] + f"url={quote}{new_url}{quote}" + open_tag[m_url.end():]
-      return content[:s_open] + new_open + content[e_open:], True
+      return content[:s_open] + _replace_url_in_open_tag(open_tag, new_url) + content[e_open:], True
   return content, False
 
 
@@ -280,7 +351,8 @@ def merge_ekAgnikANDam_includes(
     ek_st_md = MdFile(str(ek_st_file))
     ek_meta, ek_st_content = ek_st_md.read()
     updated_ek_content = ek_st_content
-    extracted_haradatta: Optional[str] = None
+    extracted_commentaries: dict[str, Optional[str]] = {}
+    merged_any_target = False
 
     for ext_vp_url in ext_urls:
       target_st_url = vp_url_to_st_url(ext_vp_url)
@@ -288,20 +360,26 @@ def merge_ekAgnikANDam_includes(
       if not target_fp_str:
         errors.append(f"Missing target sarvASh_TIkAH for {rel}: {target_st_url}")
         continue
+      merged_any_target = True
       target_fp = Path(target_fp_str)
       target_md = MdFile(str(target_fp))
       target_meta, target_content = target_md.read()
       target_title = str(target_meta.get("title") or target_fp.stem)
 
-      if extracted_haradatta is None:
-        updated_ek_content, extracted_haradatta = remove_top_level_details(updated_ek_content, HARADATTA_TITLE)
+      for title, _ in _MERGED_COMMENTARY_SPECS:
+        if title not in extracted_commentaries:
+          updated_ek_content, extracted_commentaries[title] = remove_top_level_details(updated_ek_content, title)
 
       new_target_content = target_content
       action = "unchanged"
-      if extracted_haradatta:
-        new_target_content, action = merge_details_into_target(
-          target_content, HARADATTA_TITLE, extracted_haradatta
-        )
+      for title, placement_rules in _MERGED_COMMENTARY_SPECS:
+        body = extracted_commentaries.get(title)
+        if body:
+          new_target_content, spec_action = merge_details_into_target(
+            new_target_content, title, body, placement_rules=placement_rules
+          )
+          if action == "unchanged" and spec_action != "unchanged":
+            action = spec_action
       target_actions[rel] = action
       if new_target_content != target_content:
         modified_target_files.add(target_fp)
@@ -331,6 +409,9 @@ def merge_ekAgnikANDam_includes(
           url_filter=lambda u, u_t=target_st_url: u == u_t,
           hugo_base_dir=str(base),
         )
+
+    if merged_any_target:
+      updated_ek_content, _ = remove_top_level_details_by_prefix(updated_ek_content, YANTRIKA_PADAPATHA_PREFIX)
 
     if updated_ek_content != ek_st_content:
       modified_ek_st_files.add(ek_st_file)
@@ -399,19 +480,8 @@ def refresh_host_prefills(
   return updated_hosts
 
 
-def merge_and_refresh_all(
-  hugo_base_dir: str = DEFAULT_HUGO_BASE_DIR,
-  *,
-  dry_run: bool = False,
-) -> dict:
-  """Run the ``ekAgnikANDam`` merge and refresh affected host prefills in order."""
-  base = Path(hugo_base_dir)
-  res = merge_ekAgnikANDam_includes(str(base), dry_run=dry_run)
-
-  target_urls = {u for u in res["modified_urls"] if "/ekAgnikANDam/" not in u}
-  ek_urls = {u for u in res["modified_urls"] if "/ekAgnikANDam/" in u}
-
-  host_search_dirs = [
+def _host_search_dirs(base: Path) -> list[Path]:
+  return [
     base / "vedAH_Rk" / "content",
     base / "vedAH_Rk" / "static",
     base / "vedAH" / "content",
@@ -419,6 +489,250 @@ def merge_and_refresh_all(
     base / "vedAH_yajuH" / "content",
     base / "vedAH_yajuH" / "static",
   ]
+
+
+def _is_prunable_ek_st_block(summary: str, body: str, *, allow_unmerged: bool = False) -> bool:
+  if summary == "मूलम्" or summary.startswith(YANTRIKA_PADAPATHA_PREFIX):
+    return True
+  if summary == "विश्वास-टिप्पनी" and "शाकले तन् नास्ति" in body:
+    return True
+  if allow_unmerged and summary in (HARADATTA_TITLE, HARADATTA_VINIYOGA_TITLE):
+    return True
+  return False
+
+
+def _strip_js_includes_and_body(vp_content: str) -> str:
+  divs = find_js_include_divs(vp_content)
+  spans = sorted((d[0], d[4]) for d in divs)
+  stripped = vp_content
+  prev_start = len(stripped)
+  for s, e in reversed(spans):
+    if e <= prev_start:
+      stripped = stripped[:s] + stripped[e:]
+      prev_start = s
+  return stripped.strip()
+
+
+def _collect_external_ek_wrapper_specs(
+  base: Path,
+  *,
+  filter_rel: Optional[Callable[[str], bool]] = None,
+  allow_unmerged_rels: set[str] = frozenset(),
+) -> tuple[dict[str, tuple[str, str]], list[Path], list[str]]:
+  """Collect external-include ``ekAgnikANDam`` wrapper files eligible for deletion."""
+  ek_dir = base / EK_REL_BASE
+  vp_dir = ek_dir / "vishvAsa-prastutiH"
+  st_dir = ek_dir / "sarvASh_TIkAH"
+
+  url_map: dict[str, tuple[str, str]] = {}
+  files_to_delete: list[Path] = []
+  skipped_extras: list[str] = []
+
+  if not vp_dir.exists():
+    return url_map, files_to_delete, skipped_extras
+
+  for vp_file in sorted(vp_dir.rglob("*.md")):
+    if not vp_file.is_file():
+      continue
+    rel = str(vp_file.relative_to(vp_dir))
+    if filter_rel is not None and not filter_rel(rel):
+      continue
+
+    _, vp_content = MdFile(str(vp_file)).read()
+    ext_urls = [
+      normalize_vp_url(m.group(2))
+      for m in _URL_ATTR_RE.finditer(vp_content)
+      if is_external_vp_url(normalize_vp_url(m.group(2)))
+    ]
+    if not ext_urls:
+      continue
+    if len(ext_urls) != 1:
+      skipped_extras.append(f"{rel}: multiple external URLs ({len(ext_urls)})")
+      continue
+
+    ext_vp_url = ext_urls[0]
+    ek_vp_url = _static_path_to_url(vp_file, base)
+    extra_vp_tail = _strip_js_includes_and_body(vp_content)
+
+    ek_st_file = st_dir / rel
+    if ek_st_file.exists():
+      _, st_content = MdFile(str(ek_st_file)).read()
+      allow_unmerged = rel in allow_unmerged_rels
+      unexpected = [
+        summary
+        for _, _, summary, body in find_top_level_details(st_content, exclude_js_includes=True)
+        if not _is_prunable_ek_st_block(summary, body, allow_unmerged=allow_unmerged)
+      ]
+      if unexpected:
+        skipped_extras.append(f"{rel}: extra ST blocks {unexpected}")
+        continue
+      ext_st_url = vp_url_to_st_url(ext_vp_url)
+      if not file_path_from_url(ext_st_url, str(base), str(ek_st_file)):
+        skipped_extras.append(f"{rel}: missing external ST target {ext_st_url}")
+        continue
+      ek_st_url = _static_path_to_url(ek_st_file, base)
+      url_map[ek_st_url] = (ext_st_url, "")
+      files_to_delete.append(ek_st_file)
+
+    url_map[ek_vp_url] = (ext_vp_url, extra_vp_tail)
+    files_to_delete.append(vp_file)
+
+  return url_map, files_to_delete, skipped_extras
+
+
+def _rewrite_top_level_ek_includes(
+  content: str,
+  url_map: dict[str, tuple[str, str]],
+) -> tuple[str, set[str]]:
+  """Rewrite top-level ``js_include`` divs pointing into ``url_map`` and inline any tail text."""
+  sorted_divs = sorted(find_js_include_divs(content), key=lambda d: (d[0], -d[4]))
+  covered: list[tuple[int, int]] = []
+  top_matches: list[tuple[int, int, int, str, str, str]] = []
+  for s_open, e_open, _, _, e_close, open_tok in sorted_divs:
+    if any(a <= s_open and e_close <= b for a, b in covered):
+      continue
+    covered.append((s_open, e_close))
+    m_url = _URL_ATTR_RE.search(open_tok)
+    if not m_url:
+      continue
+    raw_url = m_url.group(2)
+    norm_url = normalize_vp_url(raw_url)
+    hit = url_map.get(raw_url) or url_map.get(norm_url)
+    if hit is not None:
+      new_url, extra_tail = hit
+      top_matches.append((s_open, e_open, e_close, open_tok, new_url, extra_tail))
+
+  if not top_matches:
+    return content, set()
+
+  updated = content
+  rewritten_urls: set[str] = set()
+  for s_open, e_open, e_close, open_tok, new_url, extra_tail in reversed(top_matches):
+    rewritten_urls.add(new_url)
+    if extra_tail:
+      after_raw = updated[e_close:]
+      after_stripped = after_raw.lstrip()
+      norm_tail = _normalize_ws(extra_tail)
+      if not after_stripped.startswith(extra_tail) and norm_tail not in _normalize_ws(after_stripped[: len(extra_tail) + 40]):
+        if after_stripped:
+          updated = updated[:e_close] + f"\n\n{extra_tail}\n\n" + after_stripped
+        else:
+          updated = updated[:e_close] + f"\n\n{extra_tail}"
+    new_open = _replace_url_in_open_tag(open_tok, new_url)
+    updated = updated[:s_open] + new_open + updated[e_open:]
+
+  return updated, rewritten_urls
+
+
+def prune_external_ek_wrappers(
+  hugo_base_dir: str = DEFAULT_HUGO_BASE_DIR,
+  *,
+  host_search_dirs: Optional[Iterable[Path]] = None,
+  extra_changed_files: Iterable[Path] = (),
+  dry_run: bool = False,
+  filter_rel: Optional[Callable[[str], bool]] = None,
+  allow_unmerged_rels: set[str] = frozenset(),
+) -> dict:
+  """Delete redundant external-wrapper ``ekAgnikANDam`` files and point host includes to targets."""
+  base = Path(hugo_base_dir)
+  url_map, files_to_delete, skipped_extras = _collect_external_ek_wrapper_specs(
+    base, filter_rel=filter_rel, allow_unmerged_rels=allow_unmerged_rels
+  )
+  delete_set = {p.resolve() for p in files_to_delete}
+  search_dirs = list(host_search_dirs) if host_search_dirs is not None else _host_search_dirs(base)
+
+  modified_hosts: list[Path] = []
+  if url_map:
+    for search_dir in search_dirs:
+      if not search_dir.exists():
+        continue
+      for md_path in sorted(search_dir.rglob("*.md")):
+        if not md_path.is_file() or md_path.resolve() in delete_set:
+          continue
+        raw = md_path.read_text(encoding="utf-8")
+        if "ekAgnikANDam/" not in raw or "js_include" not in raw:
+          continue
+        md_file = MdFile(str(md_path))
+        meta, content = md_file.read()
+        updated, rewritten_urls = _rewrite_top_level_ek_includes(content, url_map)
+        if not rewritten_urls:
+          continue
+        if not dry_run:
+          updated, _ = surgical_prefill_content(
+            updated,
+            str(md_path),
+            url_filter=lambda u, u_set=rewritten_urls: u in u_set,
+            hugo_base_dir=str(base),
+          )
+        if updated != content:
+          modified_hosts.append(md_path)
+          if not dry_run:
+            md_file.replace_content_metadata(new_content=updated, new_metadata=meta, dry_run=False)
+
+  if not dry_run:
+    for fp in files_to_delete:
+      if fp.exists():
+        fp.unlink()
+
+  transitive_hosts: list[Path] = []
+  changed_seeds = [p for p in modified_hosts] + [Path(p) for p in extra_changed_files]
+  if changed_seeds and not dry_run:
+    touched = surgical_prefill_transitive(
+      search_dirs,
+      changed_seeds,
+      hugo_base_dir=str(base),
+      exclude_path_substrings=("shatapatha-brAhmaNam",),
+      skip_sources_with_empty_includes=False,
+      require_balanced_tags=True,
+      dry_run=False,
+    )
+    transitive_hosts = sorted(Path(p) for p in touched)
+
+  return {
+    "deleted_wrapper_files": sorted(files_to_delete),
+    "rewritten_direct_hosts": sorted(modified_hosts),
+    "refreshed_transitive_hosts": transitive_hosts,
+    "prune_skipped_extras": skipped_extras,
+  }
+
+
+def merge_and_refresh_all(
+  hugo_base_dir: str = DEFAULT_HUGO_BASE_DIR,
+  *,
+  dry_run: bool = False,
+  prune_wrappers: bool = True,
+) -> dict:
+  """Run the ``ekAgnikANDam`` merge, prune external wrapper pairs, and refresh host prefills."""
+  base = Path(hugo_base_dir)
+  res = merge_ekAgnikANDam_includes(str(base), dry_run=dry_run)
+
+  target_urls = {u for u in res["modified_urls"] if "/ekAgnikANDam/" not in u}
+  ek_urls = {u for u in res["modified_urls"] if "/ekAgnikANDam/" in u}
+  host_search_dirs = _host_search_dirs(base)
+
+  if prune_wrappers:
+    merged_clean_rels = set(res["target_actions"].keys()) if dry_run else frozenset()
+    prune_res = prune_external_ek_wrappers(
+      str(base),
+      host_search_dirs=host_search_dirs,
+      extra_changed_files=res["modified_target_files"],
+      dry_run=dry_run,
+      allow_unmerged_rels=merged_clean_rels,
+    )
+    # Also ensure any hosts pointing directly to modified targets (outside modified_hosts) refresh.
+    already_refreshed = {p.resolve() for p in prune_res["rewritten_direct_hosts"]} | {
+      p.resolve() for p in prune_res["refreshed_transitive_hosts"]
+    }
+    remaining_target_hosts = [
+      p
+      for p in refresh_host_prefills(target_urls, host_search_dirs, hugo_base_dir=str(base), dry_run=dry_run)
+      if p.resolve() not in already_refreshed
+    ]
+    res["refreshed_hosts_targets"] = remaining_target_hosts
+    res["refreshed_hosts_ek"] = []
+    res.update(prune_res)
+    return res
+
   # Pass 1: refresh hosts pointing directly to modified targets (and any ek_vp typo hosts).
   pass1_urls = target_urls | {u for u in ek_urls if "/vishvAsa-prastutiH/" in u}
   hosts_pass1 = refresh_host_prefills(pass1_urls, host_search_dirs, hugo_base_dir=str(base), dry_run=dry_run)
@@ -436,8 +750,9 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Merge external sarvASh_TIkAH into ekAgnikANDam/sarvASh_TIkAH.")
   parser.add_argument("--hugo-base-dir", default=DEFAULT_HUGO_BASE_DIR)
   parser.add_argument("--dry-run", action="store_true")
+  parser.add_argument("--no-prune-wrappers", action="store_true")
   args = parser.parse_args()
-  summary = merge_and_refresh_all(args.hugo_base_dir, dry_run=args.dry_run)
+  summary = merge_and_refresh_all(args.hugo_base_dir, dry_run=args.dry_run, prune_wrappers=not args.no_prune_wrappers)
   for k, v in summary.items():
     if isinstance(v, list):
       print(f"{k}: {len(v)}")

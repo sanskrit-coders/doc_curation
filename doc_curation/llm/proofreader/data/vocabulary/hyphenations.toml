@@ -126,6 +126,7 @@ cases = [
   { input = "जुषस्व हव्यमाहुतं", expected = "जुषस्व हव्यम् आहुतं", note = "keep sva intact while splitting final m" },
   { input = "अन्यदाहुरविद्याया", expected = "अन्यदाहुर् अविद्याया", note = "shift false ra-vidyAyA cut left onto r" },
   { input = "पर्यगाच्छुक्रमकायमव्रणम्", expected = "पर्यगाच् छुक्रम् अकायम् अव्रणम्", note = "shift cCu-kram cut onto c and ma-kAyam onto m" },
+  { input = "ब्रह्मराजन्या᳙भ्याँ", expected = "ब्रह्म-राजन्या᳙भ्याँ", note = "never shift ma-cut left onto hm cluster (brahm)" },
 ]
 
 [avagraha]

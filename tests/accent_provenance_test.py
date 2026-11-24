@@ -272,3 +272,70 @@ def test_major_corpora_skip_tags_and_slash_group():
   assert ln2.endswith("; *ŚB*)")
   assert "*ŚB*-" not in ln2
   assert unres2 == []
+
+
+def test_vs_m_and_vs_k_tags_alias_dedup_and_ingestion(tmp_path):
+  from doc_curation.sanskrit.accent.provenance import (
+    CORPUS_TAGS,
+    DEFAULT_CORPUS_DIRS,
+    MAJOR_AUTO_CORPORA,
+  )
+
+  assert "VS-M" in CORPUS_TAGS and "VS-K" in CORPUS_TAGS and "VS" in CORPUS_TAGS
+  assert "VS-M" in MAJOR_AUTO_CORPORA and "VS-K" in MAJOR_AUTO_CORPORA
+  assert DEFAULT_CORPUS_DIRS["VS-M"].endswith("vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH")
+  assert DEFAULT_CORPUS_DIRS["VS-K"].endswith("vAjasaneyam/kANvam/saMhitA")
+
+  # 1. Synthetic VS-K directory ingestion (US विश्वास-प्रस्तुतिः + classical मूलम् fallback)
+  vs_k_dir = tmp_path / "vs_k"
+  vs_k_dir.mkdir()
+  (vs_k_dir / "01.md").write_text(
+    "+++\ntitle = \"०१\"\n+++\n## ०१\n\n"
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\n"
+    "इषे᳓ त्वोर्जे᳓ त्वा देवो᳓ वः सविता᳓ ।\n"
+    "</details>\n\n"
+    "<details><summary>मूलम्</summary>\n\n"
+    "इ॒षे त्वो॒र्जे त्वा॑ दे॒वो वः॑ सवि॒ता ।\n"
+    "</details>\n",
+    encoding="utf-8",
+  )
+  (vs_k_dir / "02.md").write_text(
+    "+++\ntitle = \"०२\"\n+++\n## ०२\n\n"
+    "<details><summary>मूलम्</summary>\n\n"
+    "य॒ज्ञं दे॒वः ।\n"
+    "</details>\n",
+    encoding="utf-8",
+  )
+
+  c = VedicCorpusCounter()
+  c._ingest_us_markdown_corpus(str(vs_k_dir), "VS-K")
+  for corp, word, freq in [
+    ("VS-M", "देवः᳓", 15),
+    ("VS", "देवः᳓", 15),
+    ("VS-M", "यज्ञ᳓म्", 22),
+    ("VS", "यज्ञ᳓म्", 22),
+  ]:
+    km = word_to_key_and_marks(word)
+    assert km is not None
+    c._add(corp, km[0], km[1], freq=freq)
+  c._finalize_secondary_tables()
+
+  assert c.count("इषे᳓", "VS-K") == 1
+  assert c.count("देवः᳓", "VS-K") == 2  # `देवो᳓` (visarga surface key) + `दे॒वः` fallback
+  assert c.count("यज्ञ᳓म्", "VS-K") == 1
+
+  # 2. Canonical VS-M + VS-K auto-surfacing, and legacy *VS* does not emit a duplicate *VS-M*
+  ln_new, unres_new = annotate_padapatha_line_counts("- यज्ञ᳓म् (*VS-M*)", c)
+  assert "*VS-M*-22" in ln_new and "*VS-K*-1" in ln_new and "*VS*-" not in ln_new
+  assert unres_new == []
+  assert annotate_padapatha_line_counts(ln_new, c)[0] == ln_new
+
+  ln_legacy, unres_leg = annotate_padapatha_line_counts("- यज्ञ᳓म् (*VS*)", c)
+  assert "*VS*-22" in ln_legacy and "*VS-M*" not in ln_legacy and "*VS-K*-1" in ln_legacy
+  assert unres_leg == []
+
+  # 3. Validator checks bare *VS-M* / *VS-K* and accepts counted forms
+  assert validate_padapatha_block("पद-पाठः (यान्त्रिकः)", "- यज्ञ᳓म् (*VS-M*-22, *VS-K*-0/4)\n") == []
+  for bare_tag in ("*VS-M*", "*VS-K*"):
+    errs = validate_padapatha_block("पद-पाठः (यान्त्रिकः)", f"- यज्ञ᳓म् ({bare_tag})\n")
+    assert any(e.kind == "uncounted_corpus_tag" for e in errs)

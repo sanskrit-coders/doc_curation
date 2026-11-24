@@ -459,8 +459,8 @@ def test_pilot_01_01_1_gold_precision_and_vyatyasta_rejection(lex: UnifiedVedicL
     for it in r.items:
       assert "पा\u0966" not in it.prov, f"Deprecated पा+digit-zero in {it.prov}"
       assert "*TA*" not in it.prov, f"Forbidden *TA* citation in {it.prov}"
-      assert not re.search(r"\*(?:VS|TS|RV|AV|TB)\*(?!-\d+|\s+[\d०-९])", it.prov), f"Uncounted corpus tag: {it.prov}"
-      assert not re.search(r"\*(?:VS|TS|RV|AV|TB)\*-0\b", it.prov), f"Zero corpus count: {it.prov}"
+      assert not re.search(r"\*(?:VS-M|VS-K|VS|TS|RV|AV|TB)\*(?!-\d+|\s+[\d०-९])", it.prov), f"Uncounted corpus tag: {it.prov}"
+      assert not re.search(r"\*(?:VS-M|VS-K|VS|TS|RV|AV|TB)\*-0\b", it.prov), f"Zero corpus count: {it.prov}"
 
   # 1a. ZERO false AUTO_CLEAN and ZERO `*TA*` across ALL 22 gold kaṇḍikās!
   n_auto = 0
@@ -568,7 +568,7 @@ def test_exact_corpus_counts_and_enrichment(lex: UnifiedVedicLexicon):
   c_vrata = lookup_corpus_counts(lex, "व्रत᳓म्")
   assert c_vrata, "Expected attested corpus counts for व्रत᳓म्"
   assert "TA" not in c_vrata
-  assert all(k in ("VS", "TS", "RV", "AV", "TB") and isinstance(v, int) and v > 0 for k, v in c_vrata.items())
+  assert all(k in ("VS-M", "VS-K", "TS", "RV", "AV", "TB") and isinstance(v, int) and v > 0 for k, v in c_vrata.items())
   vals = list(c_vrata.values())
   assert vals == sorted(vals, reverse=True)
 
@@ -581,10 +581,10 @@ def test_exact_corpus_counts_and_enrichment(lex: UnifiedVedicLexicon):
   assert "*TA*" not in enriched
   assert re.search(r"\*RV\*-\d+", enriched)
   assert re.search(r"\*TS\*-\d+", enriched)
-  assert not re.search(r"\*(?:VS|TS|RV|AV|TB)\*(?!-\d+)", enriched)
+  assert not re.search(r"\*(?:VS-M|VS-K|VS|TS|RV|AV|TB)\*(?!-\d+)", enriched)
   assert "-0" not in enriched
 
-  # Zero `TA`/`TA_VP` sources anywhere in the v8 lexicon!
+  # Zero `TA`/`TA_VP` sources anywhere in the lexicon!
   assert not any(
     src in ("TA", "TA_VP")
     for by_m in lex.form_accents.values()
@@ -592,9 +592,9 @@ def test_exact_corpus_counts_and_enrichment(lex: UnifiedVedicLexicon):
     for src in srcs
   )
 
-  # Explicit verse citations like `*VS* 1.5` and dictionary tags `*MW* ŚBr.` remain untouched/uncounted
-  enriched_ref = enrich_padapatha_corpus_counts(lex, "व्रत᳓म्", "*VS* 1.5, *TS*, *MW* ŚBr.")
-  assert "*VS* 1.5" in enriched_ref
+  # Explicit verse citations like `*VS-M* 1.5` and dictionary tags `*MW* ŚBr.` remain untouched/uncounted
+  enriched_ref = enrich_padapatha_corpus_counts(lex, "व्रत᳓म्", "*VS-M* 1.5, *TS*, *MW* ŚBr.")
+  assert "*VS-M* 1.5" in enriched_ref
   assert "*MW* ŚBr." in enriched_ref
   assert re.search(r"\*TS\*-\d+", enriched_ref)
   assert "*MW*-" not in enriched_ref
@@ -654,11 +654,13 @@ def test_export_adjudication_jsonl(lex: UnifiedVedicLexicon):
 
 
 def test_vs_corpus_ingested_from_h3_wrapped_summaries(lex: UnifiedVedicLexicon):
-  # VS sarva-prastutiH wraps summaries in `<h3>मूलम् ...{Loading}...</h3>`; these must be ingested.
+  # VS-M sarva-prastutiH wraps summaries in `<h3>मूलम् ...{Loading}...</h3>`; both VS-M and VS-K must be ingested.
   if not lookup_corpus_counts(lex, "यज्ञ᳓म्"):
     pytest.skip("Corpora not present in environment")
-  assert lookup_corpus_counts(lex, "यज्ञ᳓म्").get("VS", 0) > 0
-  assert lookup_corpus_counts(lex, "अग्नि᳓म्").get("VS", 0) > 0
+  assert lookup_corpus_counts(lex, "यज्ञ᳓म्").get("VS-M", 0) > 0
+  assert lookup_corpus_counts(lex, "अग्नि᳓म्").get("VS-M", 0) > 0
+  assert lookup_corpus_counts(lex, "यज्ञ᳓म्").get("VS-K", 0) > 0
+  assert lookup_corpus_counts(lex, "अग्नि᳓म्").get("VS-K", 0) > 0
 
 
 def test_enrich_counts_no_duplicate_with_inline_form_citation(lex: UnifiedVedicLexicon):

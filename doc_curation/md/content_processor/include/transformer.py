@@ -381,12 +381,40 @@ def surgical_prefill_transitive(
   else:
     roots = [os.fspath(p) for p in dir_paths]
 
-  candidates: list[str] = []
+  abs_url_cache: dict[str, str | None] = {}
+  rev_deps: dict[str, set[str]] = {}
+  open_div_re = regex.compile(r"<div\b[^>]*>", regex.S)
+
+  def _resolve_abs(url: str, container_fp: str) -> str | None:
+    if url.startswith("/"):
+      if url in abs_url_cache:
+        return abs_url_cache[url]
+      tgt = resolve_include_file_path(url=url, hugo_base_dir=hugo_base_dir, current_file_path=container_fp)
+      res = os.path.abspath(tgt) if tgt else None
+      abs_url_cache[url] = res
+      return res
+    tgt = resolve_include_file_path(url=url, hugo_base_dir=hugo_base_dir, current_file_path=container_fp)
+    return os.path.abspath(tgt) if tgt else None
+
+  def _index_host_urls(fp: str, txt: str) -> None:
+    for m_div in open_div_re.finditer(txt):
+      tok = m_div.group(0)
+      if 'class="js_include' in tok or "class='js_include" in tok:
+        m_u = _ATTR_URL_RE.search(tok)
+        if m_u:
+          tgt_abs = _resolve_abs(m_u.group(1), fp)
+          if tgt_abs:
+            rev_deps.setdefault(tgt_abs, set()).add(fp)
+
   seen_cands: set[str] = set()
   for root in roots:
     if not os.path.exists(root):
       continue
-    for dirpath, _, filenames in os.walk(root):
+    for dirpath, dirnames, filenames in os.walk(root):
+      dirnames[:] = [
+        d for d in dirnames
+        if d != ".git" and not (exclude_path_substrings and any(ex in d for ex in exclude_path_substrings))
+      ]
       if exclude_path_substrings and any(ex in dirpath for ex in exclude_path_substrings):
         continue
       for fn in sorted(filenames):
@@ -397,11 +425,15 @@ def surgical_prefill_transitive(
           continue
         if exclude_path_substrings and any(ex in fp for ex in exclude_path_substrings):
           continue
-        with open(fp, encoding="utf-8") as f:
-          txt = f.read()
+        try:
+          with open(fp, encoding="utf-8") as f:
+            txt = f.read()
+        except UnicodeDecodeError:
+          logging.warning(f"Skipping non-UTF-8 file in surgical_prefill_transitive: {fp}")
+          continue
         if "js_include" in txt:
-          candidates.append(fp)
           seen_cands.add(fp)
+          _index_host_urls(fp, txt)
 
   unfilled_cache: dict[str, bool] = {}
   in_memory_texts: dict[str, str] = {}
@@ -411,8 +443,13 @@ def surgical_prefill_transitive(
       return unfilled_cache[fp]
     txt = in_memory_texts.get(fp)
     if txt is None:
-      with open(fp, encoding="utf-8") as f:
-        txt = f.read()
+      try:
+        with open(fp, encoding="utf-8") as f:
+          txt = f.read()
+      except UnicodeDecodeError:
+        logging.warning(f"Skipping non-UTF-8 include target in surgical_prefill_transitive: {fp}")
+        unfilled_cache[fp] = False
+        return False
     if "js_include" not in txt:
       unfilled_cache[fp] = False
       return False
@@ -429,19 +466,17 @@ def surgical_prefill_transitive(
   while frontier and pass_num < max_passes:
     pass_num += 1
     expanded_sources.update(frontier)
+    wave_candidates = sorted({fp for src in frontier for fp in rev_deps.get(src, ())})
     newly_changed: set[str] = set()
-    for fp in candidates:
+    for fp in wave_candidates:
       orig = in_memory_texts.get(fp)
       if orig is None:
         with open(fp, encoding="utf-8") as f:
           orig = f.read()
 
       def _url_match(url: str, _fp: str = fp, _front: set[str] = frontier) -> bool:
-        tgt = resolve_include_file_path(url=url, hugo_base_dir=hugo_base_dir, current_file_path=_fp)
-        if not tgt:
-          return False
-        tgt_abs = os.path.abspath(tgt)
-        if tgt_abs not in _front:
+        tgt_abs = _resolve_abs(url, _fp)
+        if not tgt_abs or tgt_abs not in _front:
           return False
         if skip_sources_with_empty_includes and _has_empty_nested_include(tgt_abs):
           return False
@@ -473,6 +508,7 @@ def surgical_prefill_transitive(
             f.write(updated)
         touched_files.add(fp)
         unfilled_cache.pop(fp, None)
+        _index_host_urls(fp, updated)
         if fp not in expanded_sources:
           newly_changed.add(fp)
     frontier = newly_changed

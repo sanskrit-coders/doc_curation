@@ -899,9 +899,11 @@ def find_false_nighata_arrows(
     prev_bare = bare_devanagari(prev.ref)
 
     # (b) Immediately after a pāda-initial vocative (#0 -> #1): पा॰ ८.१.७२ आमन्त्रितं पूर्वमविद्यमानवत्
+    #     Blocked when #1 is itself a samānādhikaraṇa vocative (पा॰ ८.१.७३ नामन्त्रिते समानाधिकरणे सामान्यवचनम्).
     if i == 1 and ("६.१.१९८" in prev.prov or "आमन्त्रित" in prev.prov) and has_us_accents(prev.ref):
-      hits.append(ln)
-      continue
+      if not (is_8119 and "८.१.७३" in it.prov):
+        hits.append(ln)
+        continue
 
     # (c) Finite verb (८.१.२८) immediately after another finite verb: अतिङः blocks nighāta
     if is_8128 and prev_bare not in gati_bare_set and prev_bare != "ओम्":
@@ -944,20 +946,23 @@ def find_false_nighata_arrows(
       w_plain = bare_devanagari(it.ref)
       if len(w_plain) >= 2:
         probe = w_plain[:-1] if len(w_plain) >= 4 else w_plain
+        occ_idx = sum(1 for k in range(i) if probe in bare_devanagari(flat_items[k].ref))
+        all_matches: list[tuple[str, int, int]] = []
         for _, sb, seg_syls in segs:
-          m_pos = re.search(re.escape(probe), sb)
-          if m_pos:
-            prefix = sb[: m_pos.start()].strip()
-            n_pre = len(syllables_with_marks(prefix)[0]) if prefix else 0
-            if n_pre == 0 and seg_syls >= 5:
-              hits.append(ln)
-            elif n_pre == 8 and 15 <= seg_syls <= 17:
-              hits.append(ln)
-            elif n_pre == 11 and 21 <= seg_syls <= 23:
-              hits.append(ln)
-            elif n_pre == 12 and 23 <= seg_syls <= 25:
-              hits.append(ln)
-            break
+          for m_pos in re.finditer(re.escape(probe), sb):
+            all_matches.append((sb, seg_syls, m_pos.start()))
+        if occ_idx < len(all_matches):
+          sb, seg_syls, pos_start = all_matches[occ_idx]
+          prefix = sb[:pos_start].strip()
+          n_pre = len(syllables_with_marks(prefix)[0]) if prefix else 0
+          if n_pre == 0 and seg_syls >= 5:
+            hits.append(ln)
+          elif n_pre == 8 and 15 <= seg_syls <= 17:
+            hits.append(ln)
+          elif n_pre == 11 and 21 <= seg_syls <= 23:
+            hits.append(ln)
+          elif n_pre == 12 and 23 <= seg_syls <= 25:
+            hits.append(ln)
   return hits
 
 
@@ -1574,12 +1579,12 @@ _ASHTADHYAYI_PADA_MAX: tuple[int, ...] = (
   74, 108, 119, 68,
 )
 _DEVA_DIGIT_TRANS = str.maketrans("०१२३४५६७८९", "0123456789")
-_BARE_CORPUS_TAG_RE = re.compile(r"\*(?:TS|RV|TB|TK|AV|ŚB|SB-M|SB-K|VS|KS|MS)\*(?!-\d)")
+_BARE_CORPUS_TAG_RE = re.compile(r"\*(?:TS|RV|TB|TK|AV|ŚB|SB-M|SB-K|VS-M|VS-K|VS|KS|MS)\*(?!-\d)")
 _SUTRA_CITE_RE = re.compile(r"पा॰\s*([०-९0-9]+)\.([०-९0-9]+)\.([०-९0-9]+)(?:[–\-]([०-९0-9]+))?")
 
 
 def find_uncounted_corpus_tags(pp_lines: Sequence[str]) -> list[str]:
-  """Return padapāṭha bullets citing ``*TS*``, ``*RV*``, ``*TB*``, ``*TK*``, ``*AV*``, ``*ŚB*``, ``*SB-M*``, ``*SB-K*``, ``*VS*``, ``*KS*``, or ``*MS*`` without a positive ``-N`` frequency count."""
+  """Return padapāṭha bullets citing ``*TS*``, ``*RV*``, ``*TB*``, ``*TK*``, ``*AV*``, ``*ŚB*``, ``*SB-M*``, ``*SB-K*``, ``*VS-M*``, ``*VS-K*``, ``*VS*``, ``*KS*``, or ``*MS*`` without a positive ``-N`` frequency count."""
   hits: list[str] = []
   for ln in pp_lines:
     it_list = parse_padapatha_items(ln)
@@ -1656,13 +1661,16 @@ def find_invalid_or_rubberstamp_provenance(pp_lines: Sequence[str]) -> list[str]
         hits.append(ln)
         continue
 
-    # 3. Rubber-stamped `अनाम्नातम्` or bare `मूल-पाठः` / `आरण्यक-पाठः` without grammatical derivation
+    # 3. Rubber-stamped `अनाम्नातम्`, bare `मूल-पाठः`/`आरण्यक-पाठः`/`एकाग्निकाण्ड-पाठः`, or zero-accent `पारिभाषिकः स्वरव्यत्ययः` arrow
     if "अनाम्नातम्" in prov:
       hits.append(ln)
       continue
-    if ("मूल-पाठः" in prov or "आरण्यक-पाठः" in prov) and not any(
+    if any(tag in prov for tag in ("मूल-पाठः", "आरण्यक-पाठः", "एकाग्निकाण्ड-पाठः")) and not any(
       k in prov for k in ("पा॰", "उणादि", "फि॰", "सामगान", "स्तोभ", "व्याहृति")
     ):
+      hits.append(ln)
+      continue
+    if "पारिभाषिकः स्वरव्यत्ययः" in prov and it.vyat and not has_us_accents(it.ref):
       hits.append(ln)
       continue
 
@@ -1694,15 +1702,60 @@ def find_invalid_or_rubberstamp_provenance(pp_lines: Sequence[str]) -> list[str]
           hits.append(ln)
           continue
 
-    # 6. `ण्वुल्` (`लिति पा॰ ६.१.१९३`) misattributed to `पा॰ ३.१.३` suffix-initial udātta without `लिति`/`६.१.१९३`
-    if "ण्वुल्" in prov_primary and "३.१.३" in prov_primary and not any(k in prov_primary for k in ("६.१.१९३", "लिति")):
+    # 6. `ण्वुल्` / `णल्` (`लिति पा॰ ६.१.१९३`) misattributed to `पा॰ ३.१.३` suffix-initial udātta without `लिति`/`६.१.१९३`
+    if ("ण्वुल्" in prov_primary or "णल्" in prov_primary) and "३.१.३" in prov_primary and not any(
+      k in prov_primary for k in ("६.१.१९३", "लिति")
+    ):
       hits.append(ln)
       continue
 
-    # 7. `ण्यत्` (`तित्स्वरितम् पा॰ ६.१.१८५`) misattributed to `यतोऽनावः पा॰ ६.१.२१३` (`यत्`-only rule)
+    # 7. `शानच्` / `कानच्` (`चितः पा॰ ६.१.१६३` / `६.१.१८६`) misattributed to bare `पा॰ ३.१.३` without `चित्`/`६.१.१६३`/`६.१.१८६`
+    if ("शानच्" in prov_primary or "कानच्" in prov_primary) and "३.१.३" in prov_primary and not any(
+      k in prov_primary for k in ("६.१.१६३", "चित्", "चितः", "६.१.१८६", "३.१.४", "स्य", "क्यच्", "श्यन्")
+    ):
+      hits.append(ln)
+      continue
+
+    # 8. `ण्यत्` (`तित्स्वरितम् पा॰ ६.१.१८५`) misattributed to `यतोऽनावः पा॰ ६.१.२१३` (`यत्`-only rule)
     if "ण्यत्" in prov_primary and ("यतोऽनावः" in prov_primary or "६.१.२१३" in prov_primary):
       hits.append(ln)
       continue
+  return hits
+
+
+_DASH_COMM_ATTR_RE = re.compile(
+  r"[—–]\s*(हरदत्त-सायणौ|भास्कर-सायणौ|सायण-भास्करौ|भट्टभास्करः|हरदत्तः|भास्करः|सायणः)(?=\s*(?:[,;)]|$))"
+)
+
+
+def find_missing_commentator_attributions(
+  pp_lines: Sequence[str],
+  available_commentators: AbstractSet[str],
+) -> list[str]:
+  """Return padapāṭha bullets whose trailing ``— <commentator>`` cites a commentator absent from the document."""
+  if not available_commentators:
+    return []
+  hits: list[str] = []
+  for ln in pp_lines:
+    it_list = parse_padapatha_items(ln)
+    if not it_list:
+      continue
+    prov = it_list[0].prov
+    if not prov or '"' in prov or "“" in prov:
+      continue
+    for m in _DASH_COMM_ATTR_RE.finditer(prov):
+      cname = m.group(1)
+      if cname == "हरदत्त-सायणौ":
+        needed = ("हरदत्तः", "सायणः")
+      elif cname in ("भास्कर-सायणौ", "सायण-भास्करौ"):
+        needed = ("भास्करः", "सायणः")
+      elif cname == "भट्टभास्करः":
+        needed = ("भास्करः",)
+      else:
+        needed = (cname,)
+      if any(n not in available_commentators for n in needed):
+        hits.append(ln)
+        break
   return hits
 
 
@@ -1792,7 +1845,7 @@ def validate_padapatha_block(
       issues.append(
         AccentValidationIssue(
           "uncounted_corpus_tag",
-          "Corpus tag (*TS*, *RV*, *TB*, *TK*, *AV*, *ŚB*, *SB-M*, *SB-K*, *VS*, *KS*, *MS*) lacks positive -N frequency count",
+          "Corpus tag (*TS*, *RV*, *TB*, *TK*, *AV*, *ŚB*, *SB-M*, *SB-K*, *VS-M*, *VS-K*, *VS*, *KS*, *MS*) lacks positive -N frequency count",
           ln,
         )
       )
@@ -1940,6 +1993,14 @@ def validate_accented_markdown(
       issues.append(AccentValidationIssue("tag_unbalanced", "Mismatched <details> or <div> closing tags"))
 
   blocks = [(m.start(), m.end(), m.group(1).strip(), m.group(2)) for m in DETAILS_RE.finditer(text)]
+  doc_commentators: set[str] = set()
+  for _, _, bh, _ in blocks:
+    if "हरदत्त" in bh:
+      doc_commentators.add("हरदत्तः")
+    if "भास्कर" in bh and "विनियोग" not in bh and "अवतारिका" not in bh:
+      doc_commentators.add("भास्करः")
+    if "सायण" in bh and "विनियोग" not in bh:
+      doc_commentators.add("सायणः")
   has_kanva_sb_doc = (
     "<summary>C R Swaminathan</summary>" in text
     or any(bh == "मूलम्" and "\u1cd8" in bb for _, _, bh, bb in blocks)
@@ -1988,6 +2049,16 @@ def validate_accented_markdown(
         check_fake_sandhi_arrows=chk_fake_sandhi,
       )
     )
+    if doc_commentators:
+      pp_lines = [ln.strip() for ln in body.splitlines() if ln.strip().startswith("- ")]
+      for ln in find_missing_commentator_attributions(pp_lines, doc_commentators):
+        issues.append(
+          AccentValidationIssue(
+            "missing_commentator_attribution",
+            "Trailing commentator attribution (— हरदत्तः/भास्करः/सायणः) cites a commentator absent from this document",
+            ln,
+          )
+        )
   return issues
 
 
