@@ -5,7 +5,9 @@ from doc_curation.sanskrit.accent.reconciler import (
   fill_vp_accents_from_padapatha,
   format_filled_vp_summary,
   format_padapatha_summary,
+  format_suggested_vp_summary,
   parse_padapatha_items,
+  reconcile_and_sync_markdown_blocks,
   reconcile_markdown_blocks,
   reconcile_vprastuti_and_tiikaa_texts,
   reconcile_vp_suggestions,
@@ -266,10 +268,12 @@ def test_reconcile_spaced_yan_and_panini_provenance():
 
 
 def test_fill_vp_accents_and_filled_summary():
-  assert format_filled_vp_summary("विश्वास-प्रस्तुतिः (स्वराः पूर्याः)", 5, 25) == "विश्वास-प्रस्तुतिः (स्वराः व्यत्यस्ताः 5/25)"
-  assert format_filled_vp_summary("विश्वास-प्रस्तुतिः - ऋक् (स्वराः पूर्याः)", 4, 11) == "विश्वास-प्रस्तुतिः - ऋक् (स्वराः व्यत्यस्ताः 4/11)"
+  assert format_filled_vp_summary("विश्वास-प्रस्तुतिः (स्वराः पूर्याः)", 5, 25) == "विश्वास-प्रस्तुतिः (5/25 व्यत्यस्त-स्वराः)"
+  assert format_filled_vp_summary("विश्वास-प्रस्तुतिः - ऋक् (स्वराः पूर्याः)", 4, 11) == "विश्वास-प्रस्तुतिः - ऋक् (4/11 व्यत्यस्त-स्वराः)"
+  assert format_filled_vp_summary("विश्वास-प्रस्तुतिः (स्वराः व्यत्यस्ताः 3/10)", 5, 10) == "विश्वास-प्रस्तुतिः (5/10 व्यत्यस्त-स्वराः)"
   assert format_filled_vp_summary("विश्वास-प्रस्तुतिः (स्वराः पूर्याः)", 0, 8) == "विश्वास-प्रस्तुतिः"
   assert format_filled_vp_summary("विश्वास-प्रस्तुतिः (स्वराः पूर्याः)", 0, 8, mula_has_accents=False) == "विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)"
+  assert format_suggested_vp_summary("विश्वास-प्रस्तुतिः (स्वराः व्यत्यस्ताः 2/5)", 2, 5) == "विश्वास-प्रस्तुतिः (2/5 व्यत्यस्त-स्वराः)"
 
   items_30 = parse_padapatha_items(
     "- ब्राह्मणे᳙भ्यः → **ब्राह्मणे᳓भ्यः** (*AV*, *TS*)\n"
@@ -288,7 +292,7 @@ def test_fill_vp_accents_and_filled_summary():
   assert unm_pr == []
   assert filled_pr == "स्व᳓रः प्रो᳓क्तो\nऽङ्गुष्ठ᳓ञ्च"
 
-  # Direct-filled (स्वराः व्यत्यस्ताः) VP blocks and PP summary counts refresh when पद-पाठः changes
+  # Direct-filled VP blocks migrate `(स्वराः व्यत्यस्ताः N/P)` -> `(N/P व्यत्यस्त-स्वराः)` and remain directly refillable
   md_direct = (
     "<details open><summary>विश्वास-प्रस्तुतिः (स्वराः व्यत्यस्ताः 2/2)</summary>\n\n"
     "वेद᳓मनू᳓च्य ।\n</details>\n\n"
@@ -297,9 +301,96 @@ def test_fill_vp_accents_and_filled_summary():
     "- अ᳓नू᳓च्य᳓ → **अनू᳓च्य** (*TS*, *TB*, ल्यप् पा॰ ६.१.१९३, ६.२.१३९)\n</details>\n"
   )
   updated_direct, dlogs = reconcile_markdown_blocks(md_direct)
+  assert "विश्वास-प्रस्तुतिः (2/2 व्यत्यस्त-स्वराः)" in updated_direct
   assert "वे᳓दमनू᳓च्य ।" in updated_direct
   assert "पद-पाठः (यान्त्रिकः - 2/2 व्यत्यस्त-स्वराः)" in updated_direct
   assert any("REFILLED_VP" in lg for lg in dlogs)
+  assert reconcile_markdown_blocks(updated_direct, fixed_point=True) == (updated_direct, [])
+
+  # Editing padapāṭha on a canonical `(2/2 व्यत्यस्त-स्वराः)` non-ŚB direct VP refills without inserting `[[|]]`
+  edited_pp = updated_direct.replace("- वे᳓द᳓म् → **वे᳓दम्**", "- वे᳓दम् → **वेद᳓म्**")
+  refilled_canon, cl_logs = reconcile_markdown_blocks(edited_pp, fixed_point=True)
+  assert "वेद᳓मनू᳓च्य ।" in refilled_canon
+  assert "[[" not in refilled_canon
+  assert any("REFILLED_VP" in lg for lg in cl_logs)
+  assert reconcile_and_sync_markdown_blocks(refilled_canon) == (refilled_canon, [])
+
+
+def test_reconcile_and_sync_markdown_blocks_and_fixed_point(monkeypatch):
+  # 1. Default reconcile_markdown_blocks leaves drifted ŚB VP summary untouched; sync_vp_summaries=True repairs it.
+  sb_md = (
+    "## ०१\n\n"
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\n"
+    "[[तत्|त᳓त्]] स᳓विता ॥\n</details>\n\n"
+    "<details><summary>मूलम् - Weber</summary>\n\nतत् स᳘विता॥\n</details>\n\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः - 2/2 व्यत्यस्त-स्वराः)</summary>\n\n"
+    "- तत् → **त᳓त्** (*TS*-10)\n"
+    "- स᳓विता (*TS*-10)\n</details>\n\n"
+    "## ०२\n\n"
+    "<details open><summary>विश्वास-प्रस्तुतिः (0/2 व्यत्यस्त-स्वराः)</summary>\n\n"
+    "त᳓त् स᳓विता ॥\n</details>\n\n"
+    "<details><summary>मूलम् - Weber</summary>\n\nत᳘त् स᳘विता॥\n</details>\n\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः - 1/2 व्यत्यस्त-स्वराः)</summary>\n\n"
+    "- त᳓त् (*TS*-10)\n"
+    "- स᳓विता (*TS*-10)\n</details>\n"
+  )
+  default_out, _ = reconcile_markdown_blocks(sb_md)
+  assert "<summary>विश्वास-प्रस्तुतिः</summary>" in default_out
+  assert "<summary>विश्वास-प्रस्तुतिः (0/2 व्यत्यस्त-स्वराः)</summary>" in default_out
+
+  synced_out, sync_logs = reconcile_and_sync_markdown_blocks(sb_md)
+  assert "<summary>विश्वास-प्रस्तुतिः (1/2 व्यत्यस्त-स्वराः)</summary>" in synced_out
+  assert "<summary>पद-पाठः (यान्त्रिकः - 1/2 व्यत्यस्त-स्वराः)</summary>" in synced_out
+  assert synced_out.count("<summary>विश्वास-प्रस्तुतिः</summary>") == 1
+  assert "<summary>पद-पाठः (यान्त्रिकः)</summary>" in synced_out
+  assert any("VP_HDR:" in lg for lg in sync_logs)
+  assert reconcile_and_sync_markdown_blocks(synced_out) == (synced_out, [])
+
+  # 2. Preserved no-bracket ŚB cluster with पा॰ ८.२.६ svarita and `(1/2 व्यत्यस्त-स्वराः)` must NOT be overwritten
+  sb_826 = (
+    "<details open><summary>विश्वास-प्रस्तुतिः (1/2 व्यत्यस्त-स्वराः)</summary>\n\n"
+    "एवै᳙त᳓त् ॥\n</details>\n\n"
+    "<details><summary>मूलम् - Weber</summary>\n\nएॗवैत᳘त्॥\n</details>\n\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः - 1/2 व्यत्यस्त-स्वराः)</summary>\n\n"
+    "- एव → **एव᳓** (*RV*-10)\n"
+    "- एत᳓त् (*TS*-10)\n</details>\n"
+  )
+  assert reconcile_and_sync_markdown_blocks(sb_826) == (sb_826, [])
+
+  # 3. Non-ŚB plain cluster with non-solid arrow (no `[[` emitted) stays plain, avoiding false direct-fill on pass 2
+  ts_unsolid = (
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\n"
+    "अ᳓ग्निम् ॥\n</details>\n\n"
+    "<details><summary>मूलम्</summary>\n\nअ॒ग्निम् ॥\n</details>\n\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः - 1/1 व्यत्यस्त-स्वराः)</summary>\n\n"
+    "- अ᳓ग्निम् → **अग्निम्᳓** (*MW*)\n</details>\n"
+  )
+  assert reconcile_and_sync_markdown_blocks(ts_unsolid) == (ts_unsolid, [])
+
+  # 4. fixed_point=True iterates until convergence across multiple passes and validates max_passes
+  from doc_curation.sanskrit.accent import reconciler as rec_mod
+
+  orig_once = rec_mod._reconcile_markdown_blocks_once
+  calls = []
+
+  def two_step_once(text, **kwargs):
+    calls.append(text)
+    if text == "step0":
+      return "step1", ["PASS1"]
+    if text == "step1":
+      return "step2", ["PASS2"]
+    return text, []
+
+  monkeypatch.setattr(rec_mod, "_reconcile_markdown_blocks_once", two_step_once)
+  assert reconcile_markdown_blocks("step0", fixed_point=False) == ("step1", ["PASS1"])
+  assert len(calls) == 1
+  calls.clear()
+  assert reconcile_and_sync_markdown_blocks("step0") == ("step2", ["PASS1", "PASS2"])
+  assert calls == ["step0", "step1", "step2"]
+
+  monkeypatch.setattr(rec_mod, "_reconcile_markdown_blocks_once", orig_once)
+  with pytest.raises(ValueError, match="max_passes"):
+    reconcile_markdown_blocks("x", fixed_point=True, max_passes=0)
 
 
 def test_is_solid_provenance_excludes_ta_ek_allows_sb():
@@ -311,3 +402,20 @@ def test_is_solid_provenance_excludes_ta_ek_allows_sb():
   assert not is_solid_provenance("*TA*-12")
   assert not is_solid_provenance("*EK*")
   assert not is_solid_provenance("*EK* मूल-पाठः")
+
+
+def test_reconcile_mirror_coalesce_and_ayanta_merges():
+  it_mir = parse_padapatha_items("- य᳓त् (*TS*)\n- अदः → **अदः᳓** (*TS*)\n- बहिर्धा᳓ (*TS*)\n- एव → **एव᳓** (*TS*)")
+  assert fill_vp_accents_from_padapatha("यददो बहिर्धैव", it_mir) == ("य᳓ददो᳓ बहिर्धै᳓व᳓", [])
+
+  it_ay = parse_padapatha_items("- अ᳓ग्रे (*TS*)\n- आ᳓ (*RV*)\n- अनक्ति (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)")
+  assert reconcile_vp_suggestions("अग्र आनक्ति", it_ay)[0] == "[[अग्र|अ᳓ग्र]] आनक्ति"
+
+  it_au = parse_padapatha_items("- लोकौ → **लोकौ᳓** (*TS*)\n- अव → **अ᳓व** (*TS*)\n- अरुन्ध (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)")
+  assert fill_vp_accents_from_padapatha("लोकाववारुन्ध", it_au) == ("लोका᳓व᳓वारुन्ध", [])
+
+  it_ai_non_glide = parse_padapatha_items(
+    "- अ᳓जीजनत (*TS*)\n- त᳓स्यै (*TS*)\n- वै᳓ (*TS*)\n- अह᳓म् (*TS*)\n- अस्मि (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)\n- इ᳓ति (*TS*)"
+  )
+  assert fill_vp_accents_from_padapatha("अजीजनत तस्यैवाहमस्मीति", it_ai_non_glide) == ("अ᳓जीजनत त᳓स्यैवा᳓ह᳓मस्मी᳓ति", [])
+

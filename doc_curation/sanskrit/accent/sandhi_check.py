@@ -366,9 +366,12 @@ def _nasal_sandhi(left: str, right: str, is_compound: bool) -> set[str]:
   stem = left[:-1]
   if c_last in ("N", "R"):
     # पा॰ ८.३.३२ ङ्मुणो नित्यम्: word-final -ङ्/-ण् geminates before any vowel after a short vowel (`उदङ् + उत्` -> `उदङ्ङुत्`).
+    # पा॰ ८.३.२८ ङ्णोः कुक्टुक् शरि: optional `क`/`ट` augment before sibilants (`प्रत्यङ् + सोमो` -> `प्रत्यङ्क्सोमो`).
     outs = {left + right}
     if r0 in SLP_VOWELS:
       outs.update((left + c_last + right, stem + "M" + c_last + right))
+    elif r0 in ("S", "z", "s"):
+      outs.add(left + ("k" if c_last == "N" else "w") + right)
     return outs
   if c_last in ("m", "M"):
     outs = {stem + "m" + right, stem + "M" + right}

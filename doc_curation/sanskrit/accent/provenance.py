@@ -39,7 +39,7 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   us_padasvara_to_entry,
 )
 
-PROVENANCE_CACHE_VERSION = 11
+PROVENANCE_CACHE_VERSION = 12
 DEFAULT_PROVENANCE_CACHE_PATH = os.path.expanduser(
   "~/.cache/doc_curation/vedic_corpus_counts_v1.pkl"
 )
@@ -60,7 +60,7 @@ CORPUS_TAGS: tuple[str, ...] = (
   "MS",
 )
 CORPUS_TAG_SET: frozenset[str] = frozenset(CORPUS_TAGS)
-MAJOR_AUTO_CORPORA: tuple[str, ...] = ("TS", "RV", "TB", "AV", "SB-M", "SB-K", "VS-M", "VS-K")
+MAJOR_AUTO_CORPORA: tuple[str, ...] = ("TS", "RV", "TB", "TK", "AV", "SB-M", "SB-K", "VS-M", "VS-K")
 FORBIDDEN_CORPUS_TAGS: tuple[str, ...] = ("TA", "EK")
 _CORPUS_ALIASES: dict[str, str] = {
   "ŚB": "SB-M",
@@ -617,12 +617,14 @@ class VedicCorpusCounter:
       if base in ("_index.md", "file_list.md"):
         continue
       txt = open(fp, encoding="utf-8", errors="ignore").read()
-      inc = find_js_include_spans(txt)
-      if inc:
-        txt = _strip_spans(txt, inc)
+      if corpus != "VS-K":
+        inc = find_js_include_spans(txt)
+        if inc:
+          txt = _strip_spans(txt, inc)
+      details_rx = _VS_DETAILS_RE if corpus == "VS-K" else DETAILS_RE
       sections = re.split(r"(?=\n##[ \t]+)", txt)
       for sec in sections:
-        blocks = [(m.group(1).strip(), m.group(2)) for m in DETAILS_RE.finditer(sec)]
+        blocks = [(m.group(1).strip(), m.group(2)) for m in details_rx.finditer(sec)]
         if not blocks:
           continue
         pp_trad = [b for h, b in blocks if h == "पद-पाठः" and ("\u0951" in b or "\u0952" in b)]
@@ -659,7 +661,7 @@ class VedicCorpusCounter:
               continue
             self._ingest_us_samhita_tokens(clean, corpus)
         elif corpus == "VS-K":
-          mula_blocks = [b for h, b in blocks if h.startswith("मूलम्") and ("\u0951" in b or "\u0952" in b)]
+          mula_blocks = [b for h, b in blocks if h in ("मूलम्", "मूलम् - काण्वम्") and ("\u0951" in b or "\u0952" in b)]
           for body in mula_blocks:
             clean = re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]|<[^>]+>", " ", body, flags=re.S)
             us_txt = accent.to_US_accents(clean, pauses=r"[।॥,;]+")
@@ -2385,40 +2387,76 @@ def backfill_corpora_in_padapatha_line(
           new_span = ", ".join(updated_top)
           if new_span != span_txt:
             reps.append((first_s, last_e, new_span))
-        elif allow_stem_ref:
-          # Non-contiguous top-level tags (e.g. `*RV*-1 १०.८५.२५`): append after last tag (and its section ref)
-          existing_names = {tm.group(1) for tm in top_tms}
-          extras: list[str] = []
-          for cp in eff_corpora:
-            if cp in existing_names or _CORPUS_ALIASES.get(cp) in existing_names:
-              continue
-            m_c, n_c = counter.count_with_stem(it.ref, cp, allow_stem=True)
-            fmt = format_corpus_count(cp, m_c, n_c)
-            if fmt is not None:
-              extras.append(fmt)
-          if extras:
-            s_last, e_last = top_tms[-1].start(), top_tms[-1].end()
-            m_sec = re.match(r"^(\s+[०-९0-9]+(?:\.[०-९0-9]+)+)", clause[e_last:])
-            if m_sec:
-              sec_end = e_last + m_sec.end()
-              reps.append((s_last, sec_end, clause[s_last:sec_end] + ", " + ", ".join(extras)))
-            elif clause[e_last:].lstrip().startswith("/"):
-              reps.append((s_last, e_last, ", ".join(extras) + ", " + clause[s_last:e_last]))
+        else:
+          # Mixed top-level tags (e.g. `*VS-M*-91 १.५, *RV*-265, *TS*-157`): if a trailing contiguous pure tag run exists, update it; else append after last tag/ref.
+          tail_start_idx = len(top_tms) - 1
+          while tail_start_idx > 0:
+            gap = clause[top_tms[tail_start_idx - 1].end() : top_tms[tail_start_idx].start()]
+            if re.fullmatch(r"\s*,\s*", gap):
+              tail_start_idx -= 1
             else:
-              reps.append((s_last, e_last, clause[s_last:e_last] + ", " + ", ".join(extras)))
-      elif not top_tms and not has_pattern_b and allow_stem_ref and eff_corpora:
-        # Main clause had no top-level corpus tags at all: prepend positive counts for `eff_corpora`
+              break
+          tail_tms = top_tms[tail_start_idx:]
+          tail_s, tail_e = tail_tms[0].start(), tail_tms[-1].end()
+          tail_has_sec = bool(re.match(r"^\s+[०-९0-9]+\.[०-९0-9]", clause[tail_e : tail_e + 15]))
+          if not tail_has_sec and tail_start_idx > 0 and all(
+            not re.match(r"^\s+[०-९0-9]+\.[०-९0-9]", clause[tm.end() : tm.end() + 15]) for tm in tail_tms
+          ):
+            # Also include any preceding tags (like `*VS-M*-91` before `१.५`) in `seen` so we don't duplicate aliases, while preserving them verbatim.
+            pre_names = {tm.group(1) for tm in top_tms[:tail_start_idx]}
+            sub_corpora = tuple(cp for cp in eff_corpora if cp not in pre_names and _CORPUS_ALIASES.get(cp) not in pre_names)
+            if sub_corpora:
+              updated_tail = _insert_backfill_tags_in_order(
+                tail_tms, it.ref, counter, sub_corpora, allow_stem=allow_stem_ref
+              )
+              new_span = ", ".join(updated_tail)
+              if new_span != clause[tail_s:tail_e]:
+                reps.append((tail_s, tail_e, new_span))
+          else:
+            existing_names = {tm.group(1) for tm in top_tms}
+            extras: list[str] = []
+            for cp in eff_corpora:
+              if cp in existing_names or _CORPUS_ALIASES.get(cp) in existing_names:
+                continue
+              m_c, n_c = counter.count_with_stem(it.ref, cp, allow_stem=allow_stem_ref)
+              fmt = format_corpus_count(cp, m_c, n_c)
+              if fmt is not None:
+                extras.append(fmt)
+            if extras:
+              s_last, e_last = top_tms[-1].start(), top_tms[-1].end()
+              m_sec = re.match(r"^(\s+[०-९0-9]+(?:\.[०-९0-9]+)+)", clause[e_last:])
+              if m_sec:
+                sec_end = e_last + m_sec.end()
+                reps.append((s_last, sec_end, clause[s_last:sec_end] + ", " + ", ".join(extras)))
+              elif clause[e_last:].lstrip().startswith("/"):
+                reps.append((s_last, e_last, ", ".join(extras) + ", " + clause[s_last:e_last]))
+              else:
+                reps.append((s_last, e_last, clause[s_last:e_last] + ", " + ", ".join(extras)))
+      elif not top_tms and not has_pattern_b and eff_corpora:
+        # Main clause had no top-level corpus tags at all: insert positive counts (prepending before *MW*/notes for declinables, appending after Pāṇini rules for indeclinables/verbs).
         extras = []
         for cp in eff_corpora:
-          m_c, n_c = counter.count_with_stem(it.ref, cp, allow_stem=True)
+          m_c, n_c = counter.count_with_stem(it.ref, cp, allow_stem=allow_stem_ref)
           fmt = format_corpus_count(cp, m_c, n_c)
           if fmt is not None:
             extras.append(fmt)
         if extras:
-          lead_len = len(clause) - len(clause.lstrip())
-          rest = clause[lead_len:]
-          ins_txt = f"{', '.join(extras)}, " if rest else ", ".join(extras)
-          reps.append((lead_len, lead_len, ins_txt))
+          if allow_stem_ref:
+            lead_len = len(clause) - len(clause.lstrip())
+            rest = clause[lead_len:]
+            ins_txt = f"{', '.join(extras)}, " if rest else ", ".join(extras)
+            reps.append((lead_len, lead_len, ins_txt))
+          else:
+            trail_len = len(clause.rstrip())
+            # Place corpus counts after rules/prose and right before trailing *MW*/*Macdonell*/*Lanman*/*Whitney* if present
+            m_lex = re.search(r",\s*(?:\*(?:MW|Macdonell|Lanman|Whitney)\*)", clause[:trail_len])
+            if m_lex:
+              ins_pos = m_lex.start()
+              reps.append((ins_pos, ins_pos, f", {', '.join(extras)}"))
+            elif clause[:trail_len].strip():
+              reps.append((trail_len, trail_len, f", {', '.join(extras)}"))
+            else:
+              reps.append((trail_len, trail_len, ", ".join(extras)))
 
     if reps:
       out_p: list[str] = []

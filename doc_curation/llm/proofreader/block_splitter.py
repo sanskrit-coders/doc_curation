@@ -395,6 +395,7 @@ def _group_units_with_flags(
   use_local_hyphenator: bool = True,
   backend: ProofreaderBackend | None = None,
   translation_hint: str = "",
+  allow_metrical_merge: bool = True,
 ) -> list[tuple[str, bool]]:
   if len(segments) <= 1:
     return [(segments[0], False)] if segments else []
@@ -415,7 +416,7 @@ def _group_units_with_flags(
       i += 1
       continue
 
-    if cur["ends_single_danda"] and not open_cond and not open_quote:
+    if allow_metrical_merge and cur["ends_single_danda"] and not open_cond and not open_quote:
       next_i = _apply_test1_metrical(segments, feats, merge_after, verse_merge, i)
       if next_i is not None:
         if cur["opens_yad"] or nxt["opens_yad"]:
@@ -493,6 +494,7 @@ def group_sense_unit_blocks(
   use_local_hyphenator: bool = True,
   backend: ProofreaderBackend | None = None,
   translation_hint: str = "",
+  allow_metrical_merge: bool = True,
 ) -> list[str]:
   """Group consecutive daṇḍa-terminated segments into self-contained sense-unit blocks
   applying Tests 1–5 of ``/text_to_blocks`` (plus optional 14B LLM translation hint)."""
@@ -502,6 +504,7 @@ def group_sense_unit_blocks(
       use_local_hyphenator=use_local_hyphenator,
       backend=backend,
       translation_hint=translation_hint,
+      allow_metrical_merge=allow_metrical_merge,
     )
   ]
 

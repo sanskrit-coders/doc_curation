@@ -9,6 +9,7 @@ Modules:
 - :mod:`shatapatha` – Śatapatha Brāhmaṇa US conversion, two-source auditing, and file updating.
 - :mod:`shatapatha_batch` – Corpus-wide solver runner, adjudication verifier/applier, and Phase 4 certifier.
 - :mod:`shatapatha_solver` – Deterministic Vedic lexicon, sandhi-inverting splitter, and 3-state Viterbi ŚB solver.
+- :mod:`us_converter` – Frontmatter- and ``js_include``-aware Vedic accent conversion to US notation.
 """
 
 from doc_curation.sanskrit.accent.auditor import (
@@ -43,6 +44,7 @@ from doc_curation.sanskrit.accent.reconciler import (
   has_us_accents,
   is_solid_provenance,
   parse_padapatha_items,
+  reconcile_and_sync_markdown_blocks,
   reconcile_markdown_blocks,
   reconcile_vprastuti_and_tiikaa_texts,
   reconcile_vp_suggestions,
@@ -52,6 +54,7 @@ from doc_curation.sanskrit.accent.reconciler import (
 )
 from doc_curation.sanskrit.accent.samasa import decompose_samasa_for_padasvara
 from doc_curation.sanskrit.accent.samhita_splitter import (
+  CLASSICAL_VEDIC_ACCENTS,
   ParsedSamhitaSection,
   SamhitaSplitIssue,
   banded_monotonic_align,
@@ -146,6 +149,14 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   split_vp_to_padas,
   split_vp_to_padas_with_clauses,
 )
+from doc_curation.sanskrit.accent.us_converter import (
+  DEFAULT_SKIP_PATTERN,
+  DEFAULT_US_PAUSES,
+  convert_file_to_us_accents,
+  convert_tree_to_us_accents,
+  split_frontmatter_verbatim,
+  to_us_accents_markdown,
+)
 from doc_curation.sanskrit.accent.validator import (
   AccentValidationIssue,
   DEFAULT_VERIFIED_AA_HIATUSES,
@@ -180,9 +191,12 @@ __all__ = [
   "AdjudicationBatchReport",
   "AdjudicationRecordResult",
   "AuditFinding",
+  "CLASSICAL_VEDIC_ACCENTS",
   "CORPUS_TAGS",
   "CanonicalPadapathaBlock",
   "CorpusAuditReport",
+  "DEFAULT_SKIP_PATTERN",
+  "DEFAULT_US_PAUSES",
   "DEFAULT_VERIFIED_AA_HIATUSES",
   "KandikaCluster",
   "MAJOR_AUTO_CORPORA",
@@ -226,6 +240,8 @@ __all__ = [
   "check_padapatha_header",
   "classical_padapatha_to_us",
   "clean_deva_for_sandhi",
+  "convert_file_to_us_accents",
+  "convert_tree_to_us_accents",
   "count_inline_sandhi",
   "cut_text_to_slices",
   "decode_sb_accents_viterbi",
@@ -285,6 +301,7 @@ __all__ = [
   "parse_samhita_section",
   "parse_sb_markdown_clusters",
   "partition_padapatha_dp",
+  "reconcile_and_sync_markdown_blocks",
   "reconcile_markdown_blocks",
   "reconcile_vp_suggestions",
   "reconcile_vprastuti_and_tiikaa_texts",
@@ -300,6 +317,7 @@ __all__ = [
   "solve_sb_file",
   "split_aksharas",
   "split_chunk_to_padas_dp",
+  "split_frontmatter_verbatim",
   "split_vp_to_padas",
   "split_vp_to_padas_with_clauses",
   "strip_danda_number",
@@ -308,6 +326,7 @@ __all__ = [
   "strip_weber_footnotes",
   "syllables_with_marks",
   "to_norm_slp",
+  "to_us_accents_markdown",
   "unwrap_stale_suggestions",
   "us_marks_to_sb_marks",
   "us_to_dependent_word",

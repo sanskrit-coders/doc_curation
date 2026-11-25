@@ -281,8 +281,8 @@ def test_vs_m_and_vs_k_tags_alias_dedup_and_ingestion(tmp_path):
     MAJOR_AUTO_CORPORA,
   )
 
-  assert "VS-M" in CORPUS_TAGS and "VS-K" in CORPUS_TAGS and "VS" in CORPUS_TAGS
-  assert "VS-M" in MAJOR_AUTO_CORPORA and "VS-K" in MAJOR_AUTO_CORPORA
+  assert "VS-M" in CORPUS_TAGS and "VS-K" in CORPUS_TAGS and "VS" in CORPUS_TAGS and "TK" in CORPUS_TAGS
+  assert "VS-M" in MAJOR_AUTO_CORPORA and "VS-K" in MAJOR_AUTO_CORPORA and "TK" in MAJOR_AUTO_CORPORA
   assert DEFAULT_CORPUS_DIRS["VS-M"].endswith("vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH")
   assert DEFAULT_CORPUS_DIRS["VS-K"].endswith("vAjasaneyam/kANvam/saMhitA")
 
@@ -323,6 +323,26 @@ def test_vs_m_and_vs_k_tags_alias_dedup_and_ingestion(tmp_path):
   assert c.count("इषे᳓", "VS-K") == 1
   assert c.count("देवः᳓", "VS-K") == 2  # `देवो᳓` (visarga surface key) + `दे॒वः` fallback
   assert c.count("यज्ञ᳓म्", "VS-K") == 1
+
+  # 1b. Prefilled js_include sections (Rk h3-wrapped and yajuH includetitle=false) are ingested for VS-K,
+  # while Mādhyandina-only `मूलम् - माध्यन्दिनम्` inside shared Rk/sarvASh_TIkAH is never ingested as VS-K.
+  (vs_k_dir / "03_inc.md").write_text(
+    "+++\ntitle = \"०३\"\n+++\n## ०३\n\n"
+    "<div class=\"js_include\" newlevelforh1=\"3\" title=\"विश्वास-प्रस्तुतिः\" unfilled url=\"/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/Rk/vishvAsa-prastutiH/01/01.md\">\n"
+    "<details open><summary><h3>विश्वास-प्रस्तुतिः ...{Loading}...</h3></summary>\nअग्नि᳓म् ईळे ॥३॥\n</details>\n</div>\n"
+    "<div class=\"js_include collapsed\" newlevelforh1=\"3\" title=\"सर्वाष् टीकाः\" unfilled url=\"/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/Rk/sarvASh_TIkAH/01/01.md\">\n"
+    "<details><summary><h3>सर्वाष् टीकाः ...{Loading}...</h3></summary>\n"
+    "<details><summary>मूलम् - माध्यन्दिनम्</summary>\n\nअस᳓मातिर् माध्यन्दिने।\n</details>\n</details>\n</div>\n\n"
+    "## ०४\n\n"
+    "<div class=\"js_include\" includetitle=\"false\" newlevelforh1=\"3\" unfilled url=\"/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/yajuH/sarva-prastutiH/01/04.md\">\n"
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\nसविता᳓ वसु᳓ ॥४॥\n</details>\n</div>\n",
+    encoding="utf-8",
+  )
+  c2 = VedicCorpusCounter()
+  c2._ingest_us_markdown_corpus(str(vs_k_dir), "VS-K")
+  assert c2.count("अग्नि᳓म्", "VS-K") == 1
+  assert c2.count("वसु᳓", "VS-K") == 1
+  assert c2.count("अस᳓मातिः", "VS-K") == 0
 
   # 2. Canonical VS-M + VS-K auto-surfacing, and legacy *VS* does not emit a duplicate *VS-M*
   ln_new, unres_new = annotate_padapatha_line_counts("- यज्ञ᳓म् (*VS-M*)", c)
@@ -382,4 +402,20 @@ def test_backfill_corpora_only_adds_requested_corpora_verbatim(tmp_path):
   assert "- स᳓रे (स᳓रस् *RV*-0/11, *SB-M*-0/2, *SB-K*-0/2, *VS-K*-0/2, *MW* स᳓रस्; छान्दसोऽकारान्तः)" in out
   # Idempotent
   assert backfill_corpora_in_padapatha_markdown(out, c, corpora=("SB-K", "VS-K")) == out
+
+  # Non-declinables (tiṅantas/avyayas) receive TB/TK backfill both with mixed verse refs and with no prior corpus tags
+  c._add("TB", "उत्", ("",), freq=66)
+  c._add("TK", "उत्", ("",), freq=2)
+  c._add("TB", "चरिष्यामि", ("", "", "", ""), freq=2)
+  c._finalize_secondary_tables()
+  md_nondec = (
+    "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n"
+    "- उत् (तिङि चोदात्तवति पा॰ ८.१.७१)\n"
+    "- चरिष्यामि (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *VS-M*-1 १.५, *TS*-2)\n"
+    "</details>\n"
+  )
+  out_nd = backfill_corpora_in_padapatha_markdown(md_nondec, c, corpora=("TB", "TK"))
+  assert "- उत् (तिङि चोदात्तवति पा॰ ८.१.७१, *TB*-66, *TK*-2)" in out_nd
+  assert "- चरिष्यामि (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *VS-M*-1 १.५, *TS*-2, *TB*-2)" in out_nd
+  assert backfill_corpora_in_padapatha_markdown(out_nd, c, corpora=("TB", "TK")) == out_nd
 

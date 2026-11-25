@@ -59,15 +59,52 @@ def _normalize_spaces(content):
 
 
 _DETAIL_TAG_RE = regex.compile(r"</details>|<details[^>]*>")
+_DIV_TAG_RE = regex.compile(r"<div\b[^>]*>|</div>", flags=regex.IGNORECASE)
 _SUMMARY_RE = regex.compile(r"<summary>(.*?)</summary>", flags=regex.DOTALL)
 
 
-def get_top_level_detail_spans(content):
-  """Return ``(start, end)`` spans of top-level ``<details>...</details>`` blocks."""
+def get_js_include_spans(content):
+  """Return balanced ``(start, end)`` spans of top-level ``<div ...js_include...>`` blocks."""
   spans = []
   depth = 0
   start = None
+  for match in _DIV_TAG_RE.finditer(content or ""):
+    tok = match.group()
+    if tok.lower().startswith("</"):
+      if depth > 0:
+        depth -= 1
+        if depth == 0 and start is not None:
+          spans.append((start, match.end()))
+          start = None
+    else:
+      if depth == 0:
+        if "js_include" in tok:
+          start = match.start()
+          depth = 1
+      else:
+        depth += 1
+  return spans
+
+
+def get_top_level_detail_spans(content, skip_js_includes=False):
+  """Return ``(start, end)`` spans of top-level ``<details>...</details>`` blocks.
+
+  When ``skip_js_includes=True``, any ``<details>`` tags inside balanced
+  ``<div class="js_include"...>...</div>`` blocks are ignored so host-file
+  transforms never reach into prefilled include snapshots.
+  """
+  inc_spans = get_js_include_spans(content) if skip_js_includes else []
+  spans = []
+  depth = 0
+  start = None
+  inc_idx = 0
+  n_inc = len(inc_spans)
   for match in _DETAIL_TAG_RE.finditer(content or ""):
+    pos = match.start()
+    while inc_idx < n_inc and inc_spans[inc_idx][1] <= pos:
+      inc_idx += 1
+    if inc_idx < n_inc and inc_spans[inc_idx][0] <= pos < inc_spans[inc_idx][1]:
+      continue
     if match.group().startswith("</"):
       if depth > 0:
         depth -= 1
@@ -81,10 +118,10 @@ def get_top_level_detail_spans(content):
   return spans
 
 
-def parse_top_level_details(content):
+def parse_top_level_details(content, skip_js_includes=False):
   """Return ``[(start, end, title, body)]`` for top-level ``<details>`` blocks."""
   parsed = []
-  for start, end in get_top_level_detail_spans(content):
+  for start, end in get_top_level_detail_spans(content, skip_js_includes=skip_js_includes):
     summary_match = _SUMMARY_RE.search(content[start:end])
     if summary_match is None:
       continue

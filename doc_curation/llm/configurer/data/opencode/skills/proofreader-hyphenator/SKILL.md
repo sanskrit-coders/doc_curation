@@ -29,6 +29,10 @@ process all Sanskrit text provided.
   commentary glosses fused without punctuation (never add `।` mid-clause).
 - Remove wasteful newlines, like those before `</details>` or between half-verses.
 - Preserve intentional styles like **bold** and *italic*.
+- **Preserve editorial notes `+++(...)+++` and broken-sandhi `+` markers:**
+  - `+++(...)+++` marks an inline editorial gloss/note, and a standalone `+` adjacent to a word marks a deliberately broken sandhi (e.g. `+अनुमित–`, `स्वान्तस्य + आन्तर...`).
+  - When a broken-sandhi `+` sits immediately before or after an editorial note, they concatenate into **`++++(...)+++`** (4 leading `+`, 3 trailing `+` — e.g. `स्वान्तस्य ++++(सुखाद्य्-)+++आन्तरगुणाधारतावभास`, `न ++++(प्रधान-)+++अनुमानापेक्षा`, `स्वकीयेन ++++(जीव-)+++आत्मना`) or **`+++(...)++++`** (3 leading, 4 trailing). Two adjacent notes form **`+++(...)++++++(...)+++`** (6 `+` in the middle).
+  - **Never strip** an asymmetric 4-plus opener/closer at a potential sandhi joint or a 6-plus seam between adjacent notes. Only collapse clearly accidental symmetric multi-wrapping (e.g. `++++++(...)++++++`, `+++++++++(...)+++++++++`) or `++++(` where no sandhi is possible (e.g. immediately after `।`/`॥` or before `।`).
 - Preserve existing titles, headings, and paragraphs; when adding or reorganizing navigation headings (see **Navigation headings** below), build cleanly around existing headings rather than dropping them.
 
 ## Source errors and doubtful readings
@@ -279,7 +283,7 @@ from doc_curation import llm
 from doc_curation.llm import gemini
 from doc_curation.md import library
 
-prompt_path = os.path.expanduser("~/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md")
+prompt_path = os.path.expanduser("~/gitland/vishvAsa/dyumatsyAH/content/prakriyA/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md")
 library.apply_function(
     fn=gemini.process_text_chunks_with_keys, dir_path=...,
     prompt=llm.get_prompt(prompt_path),

@@ -3403,7 +3403,7 @@ def split_vp_to_padas(vp_clean: str, lex: UnifiedVedicLexicon) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-_CORPUS_TIE_ORDER: dict[str, int] = {"SB-M": 0, "VS-M": 1, "VS-K": 2, "TS": 3, "RV": 4, "AV": 5, "TB": 6, "SB-K": 7}
+_CORPUS_TIE_ORDER: dict[str, int] = {"SB-M": 0, "VS-M": 1, "VS-K": 2, "TS": 3, "RV": 4, "AV": 5, "TB": 6, "TK": 7, "SB-K": 8}
 _CORPUS_NAMES: frozenset[str] = frozenset(_CORPUS_TIE_ORDER.keys())
 _DICT_ORDER: tuple[str, ...] = ("Whitney", "Macdonell", "Lanman", "MW_SB", "MW")
 
@@ -3467,7 +3467,7 @@ def lookup_corpus_counts(lex: UnifiedVedicLexicon, pada_us: str) -> dict[str, in
 
 # Match allowed Vedic corpora PLUS legacy `*VS*` and deprecated `*TA*`/`*EK*` so `enrich_padapatha_corpus_counts` normalizes/strips them cleanly.
 _CORPUS_TAG_NO_REF_RE = re.compile(
-  r"\*(SB-M|SB-K|VS-M|VS-K|VS|TS|RV|AV|TB|TA|EK)\*(?:-\d+)?(?![ \t]+[\d०-९])"
+  r"\*(SB-M|SB-K|VS-M|VS-K|VS|TS|RV|AV|TB|TK|TA|EK)\*(?:-\d+)?(?![ \t]+[\d०-९])"
 )
 
 
@@ -4981,7 +4981,7 @@ def _solve_kandika_impl(
     # Every open-class pada must carry an exact-form corpus count: sūtra/dictionary-only padas are where
     # bogus splits hide (`अंग्याः` tiṅanta, `अ᳓प-हते` as kta, `अ᳓वभारि` as vocative, `आणः`, `सवितः᳓`).
     # Only closed-class upasargas and always-anudātta enclitics are exempt.
-    _cc = {m.group(1): int(m.group(2)) for m in re.finditer(r"\*(SB-M|SB-K|VS-M|VS-K|VS|TS|RV|AV|TB)\*-(\d+)", it.prov)}
+    _cc = {m.group(1): int(m.group(2)) for m in re.finditer(r"\*(SB-M|SB-K|VS-M|VS-K|VS|TS|RV|AV|TB|TK)\*-(\d+)", it.prov)}
     if not _cc:
       if bare_it not in UPASARGA_DEVA_SET and bare_it not in ALWAYS_ANUDATTA_ENCLITICS:
         reasons.append(f"no_corpus_count@{i}:{it.ref}")

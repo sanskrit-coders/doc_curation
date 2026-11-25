@@ -7,11 +7,36 @@ import regex
 from indic_transliteration import sanscript
 
 from doc_curation.md import content_processor
-from doc_curation.md.content_processor.details.common import get_top_level_detail_spans, parse_top_level_details
+from doc_curation.md.content_processor.details.common import (
+  get_js_include_spans,
+  get_top_level_detail_spans,
+  parse_top_level_details,
+)
 from doc_curation.md.content_processor.details.model import Detail
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement
 from doc_curation.utils import patterns
+
+DEFAULT_AVATARIKA_PATTERNS = (
+  r"अवतारिका",
+  r"विनियोग(?!सङ्ग्रह|संग्रह)",
+  r"प्रस्तावः",
+  r"भूमिका",
+  r"^विषयः$",
+  r"^त्रिभुवनः\s*-\s*Note$",
+)
+
+DEFAULT_LEADING_COMPATIBLE_PATTERNS = (
+  r"^मूलम्\s*[\(\-]\s*संयुक्तम्",
+  r"^संयुक्त-मूलम्$",
+  r"विस्तारः",
+  r"^विश्वास-टिप्पनी(?:\s*-\s*.*)?$",
+)
+
+_MULA_OR_PADA_RE = regex.compile(r"^(?:मूलम्(?:\s*$|\s*-\s*(?!संयुक्तम्))|पद-?पाठः)")
+_OPEN_DETAILS_RE = regex.compile(r"^<details\b[^>]*\bopen\b", flags=regex.IGNORECASE)
+_FRONTMATTER_RE = regex.compile(r"\A(?:\+\+\+.*?^\+\+\+|---.*?^---)\s*", flags=regex.DOTALL | regex.MULTILINE)
+_NESTED_VP_BLOCK_RE = regex.compile(r"<summary>[^<]*विश्वास-प्रस्तुति|title=[\"'][^\"']*विश्वास-प्रस्तुति")
 
 
 def separate_parts(content, exclusion_pattern, inclusion_pattern=f"[{patterns.DEVANAGARI}]", replacement=r"\1\n\n<details><summary>मूलम्</summary>\n\n\2\n</details>\n\n"):
@@ -48,17 +73,105 @@ def transliterate_init_ids(content, id_pattern=r"॥ *([०-९]+) *॥", source
   return content
 
 
-def wrap_commentaries_in_details(content, block_name="सर्वाष् टीकाः", exclude=["विश्वास-प्रस्तुतिः"]):
-  """Wrap runs of non-excluded top-level <details> blocks in a named wrapper block.
+def _compile_patterns(patterns_seq):
+  compiled = []
+  for p in (patterns_seq or ()):
+    compiled.append(p if hasattr(p, "search") else regex.compile(str(p)))
+  return compiled
+
+
+def _classify_run_for_wrappers(
+  run_items,
+  left_kind,
+  right_kind,
+  block_name,
+  avatarika_block_name,
+  avatarika_res,
+  leading_res,
+):
+  """Assign each item in a contiguous wrappable run to ``avatarika_block_name`` or ``block_name``.
+
+  ``run_items`` is a list of ``(start, end, title)`` tuples.
+  """
+  if not avatarika_block_name:
+    return [block_name] * len(run_items)
+
+  k = len(run_items)
+  raw_kinds = []
+  for _, _, title in run_items:
+    if any(p.search(title) for p in avatarika_res):
+      raw_kinds.append("AV")
+    elif any(p.search(title) for p in leading_res):
+      raw_kinds.append("LEAD")
+    else:
+      raw_kinds.append("TIKA")
+
+  # Rule A: file-top introductory bhūmikā block(s) sitting alongside an explicit
+  # avatārikā/viniyoga immediately before the first VP (provided the run doesn't
+  # contain a standalone मूलम् / पद-पाठः pratīka unit).
+  if (
+    left_kind == "START"
+    and right_kind in ("VP", "INC_VP")
+    and "AV" in raw_kinds
+    and not any(_MULA_OR_PADA_RE.search(t) for _, _, t in run_items)
+  ):
+    return [avatarika_block_name] * k
+
+  labels = [
+    avatarika_block_name if rk == "AV" else (block_name if rk == "TIKA" else None)
+    for rk in raw_kinds
+  ]
+
+  # Trailing AV/LEAD suffix directly before VP/INC_VP belongs to the upcoming VP.
+  if right_kind in ("VP", "INC_VP"):
+    idx = k - 1
+    while idx >= 0 and raw_kinds[idx] in ("AV", "LEAD"):
+      labels[idx] = avatarika_block_name
+      idx -= 1
+
+  # Leading AV/LEAD prefix at the very start of the file belongs to avatārikā.
+  if left_kind == "START":
+    idx = 0
+    while idx < k and raw_kinds[idx] in ("AV", "LEAD"):
+      labels[idx] = avatarika_block_name
+      idx += 1
+
+  # Any remaining LEAD block immediately followed by an AV block joins it (right-to-left).
+  for idx in range(k - 2, -1, -1):
+    if labels[idx] is None and labels[idx + 1] == avatarika_block_name:
+      labels[idx] = avatarika_block_name
+
+  # Default any remaining undecided LEAD block to block_name (सर्वाष् टीकाः).
+  return [lbl if lbl is not None else block_name for lbl in labels]
+
+
+def wrap_commentaries_in_details(
+  content,
+  block_name="सर्वाष् टीकाः",
+  exclude=("विश्वास-प्रस्तुतिः",),
+  avatarika_block_name=None,
+  avatarika_patterns=DEFAULT_AVATARIKA_PATTERNS,
+  leading_compatible_patterns=DEFAULT_LEADING_COMPATIBLE_PATTERNS,
+  skip_js_includes=True,
+  exclude_open_patterns=(),
+  vp_pattern=r"विश्वास-प्रस्तुति",
+):
+  """Wrap runs of non-excluded top-level <details> blocks in named wrapper block(s).
 
   Consecutive top-level <details> blocks (separated only by whitespace) whose
-  summary title matches none of the `exclude` regexes nor `block_name` itself
-  are grouped, and each maximal group is wrapped as::
+  summary title matches none of the ``exclude`` regexes nor wrapper names
+  themselves are grouped, and each maximal group is wrapped as::
 
     <details><summary>{block_name}</summary>
 
     <original blocks joined by blank lines>
     </details>
+
+  When ``avatarika_block_name`` (eg. ``"सर्वा अवतारिकाः"``) is supplied, each
+  contiguous run is further partitioned into avatārikā/viniyoga sub-runs
+  (wrapped in ``avatarika_block_name``) and commentary/mūlam/padapāṭha/translation
+  sub-runs (wrapped in ``block_name``), with context-sensitive handling of
+  leading-compatible blocks such as ``मूलम् (संयुक्तम्)`` and ``विस्तारः``.
 
   :param exclude: regexes (strings, compiled on the fly, or pre-compiled
     patterns with a ``search`` method) matched with ``search`` against the
@@ -66,49 +179,159 @@ def wrap_commentaries_in_details(content, block_name="सर्वाष् ट�
     ``exclude=[r"^विश्वास-प्रस्तुतिः"]`` skips ``विश्वास-प्रस्तुतिः`` as well
     as suffixed variants like ``विश्वास-प्रस्तुतिः - DP_१ - ०१``. Anchor with
     ``^...$`` for exact-title matching.
+  :param skip_js_includes: When True (default), balanced
+    ``<div class="js_include"...>...</div>`` blocks are treated as atomic
+    boundaries and never mutated or parsed internally.
+  :param exclude_open_patterns: optional regexes matching titles that should be
+    left unwrapped only when their opening tag has the ``open`` attribute (eg.
+    ``<details open><summary>विश्वास-टिप्पनी</summary>``).
 
-  Excluded blocks (eg. विश्वास-प्रस्तुतिः), pre-existing wrapper blocks and any
-  non-whitespace content (headings, audio embeds, bare text) break groups and
-  are left in place. Inner block text is preserved byte-for-byte. Idempotent:
-  re-running leaves already-wrapped content untouched.
+  Excluded blocks (eg. विश्वास-प्रस्तुतिः), ``js_include`` divs, pre-existing
+  wrapper blocks and any non-whitespace content (headings, audio embeds, bare
+  text) break groups and are left in place. Inner block text is preserved
+  byte-for-byte. Idempotent: re-running leaves already-wrapped content untouched.
   """
-  exclude_res = []
-  for e in (exclude or []):
-    exclude_res.append(e if hasattr(e, "search") else regex.compile(str(e)))
-  summary_re = regex.compile(r"<summary>(.*?)</summary>", flags=regex.DOTALL)
-  # Top-level spans via shared depth-tracking parser (handles pre-wrapped nested blocks).
-  spans = get_top_level_detail_spans(content)
-  if not spans:
+  if not content or "<details" not in content:
     return content
 
-  def title_of(span_text):
-    m = summary_re.search(span_text)
-    return (m.group(1) or "").strip() if m else ""
+  exclude_res = _compile_patterns(exclude)
+  exclude_open_res = _compile_patterns(exclude_open_patterns)
+  avatarika_res = _compile_patterns(avatarika_patterns) if avatarika_block_name else []
+  leading_res = _compile_patterns(leading_compatible_patterns) if avatarika_block_name else []
+  vp_re = vp_pattern if hasattr(vp_pattern, "search") else regex.compile(str(vp_pattern))
+  summary_re = regex.compile(r"<summary>(.*?)</summary>", flags=regex.DOTALL)
 
-  titles = [title_of(content[s:e]) for (s, e) in spans]
-  wrappable = [(not any(p.search(t) for p in exclude_res) and t != block_name) for t in titles]
+  inc_spans = get_js_include_spans(content) if skip_js_includes else []
+  det_spans = get_top_level_detail_spans(content, skip_js_includes=skip_js_includes)
+  if not det_spans:
+    return content
+
+  fm_match = _FRONTMATTER_RE.match(content)
+  body_start = fm_match.end() if fm_match else 0
+
+  wrapper_names = {block_name}
+  if avatarika_block_name:
+    wrapper_names.add(avatarika_block_name)
+
+  # Build a unified sorted list of strictly disjoint top-level items:
+  # (start, end, kind, title) where kind in {"DET", "VP", "EXCL", "INC_VP", "INC_OTHER"}.
+  # Ignore js_include spans nested inside a top-level <details> block (the outer
+  # <details> owns that byte range and preserves it verbatim).
+  top_inc_spans = [
+    (s, e) for s, e in inc_spans
+    if not any(ds <= s and e <= de for ds, de in det_spans)
+  ]
+
+  items = []
+  for s, e in top_inc_spans:
+    gt = content.find(">", s, e)
+    open_tag = content[s:gt + 1] if gt != -1 else content[s:e]
+    is_vp_inc = (
+      bool(vp_re.search(open_tag))
+      or "vishvAsa-prastutiH/" in open_tag
+      or "sarva-prastutiH/" in open_tag
+    )
+    items.append((s, e, "INC_VP" if is_vp_inc else "INC_OTHER", ""))
+
+  for s, e in det_spans:
+    span_text = content[s:e]
+    m = summary_re.search(span_text)
+    title = (m.group(1) or "").strip() if m else ""
+    is_open = bool(_OPEN_DETAILS_RE.match(span_text))
+    contains_vp = bool(avatarika_block_name and _NESTED_VP_BLOCK_RE.search(span_text))
+    is_excluded = (
+      title in wrapper_names
+      or any(p.search(title) for p in exclude_res)
+      or (is_open and any(p.search(title) for p in exclude_open_res))
+      or contains_vp
+    )
+    if is_excluded:
+      kind = "VP" if (vp_re.search(title) or contains_vp) else "EXCL"
+    else:
+      kind = "DET"
+    items.append((s, e, kind, title))
+
+  items.sort(key=lambda x: x[0])
 
   parts = []
   pos = 0
   i = 0
-  n = len(spans)
+  n = len(items)
   while i < n:
-    if not wrappable[i]:
-      parts.append(content[pos:spans[i][1]])
-      pos = spans[i][1]
+    if items[i][2] != "DET":
+      parts.append(content[pos:items[i][1]])
+      pos = items[i][1]
       i += 1
       continue
+
     j = i
-    while (j + 1 < n and wrappable[j + 1]
-           and not content[spans[j][1]:spans[j + 1][0]].strip()):
+    while (
+      j + 1 < n
+      and items[j + 1][2] == "DET"
+      and not content[items[j][1]:items[j + 1][0]].strip()
+    ):
       j += 1
-    inner = "\n\n".join(content[spans[k][0]:spans[k][1]] for k in range(i, j + 1))
-    parts.append(content[pos:spans[i][0]])
-    parts.append(f"<details><summary>{block_name}</summary>\n\n{inner}\n</details>")
-    pos = spans[j][1]
+
+    if i == 0:
+      left_kind = "START" if not content[body_start:items[i][0]].strip() else "SEP"
+    else:
+      left_kind = "SEP" if content[items[i - 1][1]:items[i][0]].strip() else items[i - 1][2]
+
+    if j + 1 == n:
+      right_kind = "END" if not content[items[j][1]:].strip() else "SEP"
+    else:
+      right_kind = "SEP" if content[items[j][1]:items[j + 1][0]].strip() else items[j + 1][2]
+
+    run_items = [(items[k][0], items[k][1], items[k][3]) for k in range(i, j + 1)]
+    labels = _classify_run_for_wrappers(
+      run_items=run_items,
+      left_kind=left_kind,
+      right_kind=right_kind,
+      block_name=block_name,
+      avatarika_block_name=avatarika_block_name,
+      avatarika_res=avatarika_res,
+      leading_res=leading_res,
+    )
+
+    # Emit consecutive sub-runs sharing the same wrapper label.
+    wrapped_chunks = []
+    sub_start = 0
+    while sub_start < len(run_items):
+      sub_label = labels[sub_start]
+      sub_end = sub_start
+      while sub_end + 1 < len(run_items) and labels[sub_end + 1] == sub_label:
+        sub_end += 1
+      inner = "\n\n".join(
+        content[run_items[k][0]:run_items[k][1]] for k in range(sub_start, sub_end + 1)
+      )
+      wrapped_chunks.append(f"<details><summary>{sub_label}</summary>\n\n{inner}\n</details>")
+      sub_start = sub_end + 1
+
+    parts.append(content[pos:items[i][0]])
+    parts.append("\n\n".join(wrapped_chunks))
+    pos = items[j][1]
     i = j + 1
+
   parts.append(content[pos:])
   return "".join(parts)
+
+
+def wrap_vedic_details(content, *args, **kwargs):
+  """Wrap non-``विश्वास-प्रस्तुतिः`` Vedic details into ``सर्वा अवतारिकाः`` and ``सर्वाष् टीकाः``.
+
+  Compatible with ``MdFile.transform`` (accepts extra ``metadata``/keyword args).
+  Leaves ``विश्वास-प्रस्तुतिः*``, ``विनियोगसङ्ग्रहः``, explicitly-open
+  ``विश्वास-टिप्पनी``, pre-existing wrapper blocks, and all ``js_include`` divs
+  untouched.
+  """
+  return wrap_commentaries_in_details(
+    content,
+    block_name="सर्वाष् टीकाः",
+    exclude=(r"विश्वास-प्रस्तुति", r"^विनियोगसङ्ग्रहः$"),
+    avatarika_block_name="सर्वा अवतारिकाः",
+    skip_js_includes=True,
+    exclude_open_patterns=(r"^विश्वास-टिप्पनी",),
+  )
 
 
 def collapse_details_to_end(content, title="द्राविडी", title_pattern=None, separator="\n\n"):

@@ -30,13 +30,13 @@ from doc_curation.sanskrit.fixer import normalize_mAdhyandina
 CONS_DEVA = frozenset("कखगघङचछजझञटठडढणतथदधनपफबभमयरलवशषसहळ")
 VOW_INDEP = frozenset("अआइईउऊऋॠऌॡएऐओऔ")
 MATRAS = frozenset("ािीुूृॄॢॣेैोौ")
-MODIFIER_MARKS = frozenset("ँंः᳓᳙॒᳖॑ऽ")
+MODIFIER_MARKS = frozenset("ँंः᳓᳙॒᳖॑᳚᳛᳡ऽ")
 
 ALL_VEDIC_ACCENTS_RE = re.compile(r"[\u1cd0-\u1cde\u1ce0-\u1cff\u0951\u0952\u1cf2\u1cf3]")
 STRIP_COMBINING_RE = re.compile(r"[\u1cd0-\u1cde\u1ce0-\u1cff\u0951\u0952\u1cf2\u1cf3\u0300-\u036f′’']")
 DEVA_STRIP_RE = re.compile(r"[\u1cd0-\u1cde\u1ce0-\u1cff\u0951\u0952\u1cf2\u1cf3\s।॥०-९0-9]+")
 
-BAD_SEAM_START_CHARS = frozenset("ािीुूृॄॢॣेैोौ्ंःँ᳓᳙॒᳖॑ऽ")
+BAD_SEAM_START_CHARS = frozenset("ािीुूृॄॢॣेैोौ्ंःँ᳓᳙॒᳖॑᳚᳛᳡ऽ")
 REPHA_START_RE = re.compile(r"^र्[क-ह]")
 INVALID_A_MATRA_RE = re.compile(r"अ[ािीुूृॄॢॣेैोौ]")
 INVALID_CONS_ACCENT_ORDER_RE = re.compile(r"[क-ह][᳓᳙॒॑][ािीुूृॄॢॣेैोौ्]")
@@ -256,14 +256,21 @@ def iast_word_udattas(word: str) -> list[bool]:
   return out
 
 
-def dependent_to_us_preserving(text: str, pauses: str = r"[।॥,;]+") -> str:
-  """Convert dependent Vedic accents (``॒``/``॑``) to US notation while keeping existing ``᳓``/``᳙``."""
+CLASSICAL_VEDIC_ACCENTS = ("॒", "॑", "᳖", "᳚", "᳛", "᳡")
+
+
+def dependent_to_us_preserving(
+  text: str,
+  pauses: str = r"[।॥,;]+",
+  skip_pattern: str = r"\+\+\+\((.+?)\)\+\+\+",
+) -> str:
+  """Convert dependent Vedic accents (``॒``/``॑``/``᳡``) to US notation while keeping existing ``᳓``/``᳙``."""
   if US_UDATTA in text or US_SVARITA in text:
     syl_orig = [acc for _, _, _, acc in syllable_char_spans(text)]
     tmp = text.replace(US_SVARITA, "᳖").replace(US_UDATTA, "")
-    if not any(x in tmp for x in ("॒", "॑", "᳖", "᳚", "᳛")):
+    if not any(x in tmp for x in CLASSICAL_VEDIC_ACCENTS):
       return text
-    us = accent.to_US_accents(tmp, pauses=pauses)
+    us = accent.to_US_accents(tmp, pauses=pauses, skip_pattern=skip_pattern)
     us_syls = syllable_char_spans(us)
     if len(us_syls) != len(syl_orig):
       return us
@@ -280,8 +287,8 @@ def dependent_to_us_preserving(text: str, pauses: str = r"[।॥,;]+") -> str:
       prev = e
     out.append(us[prev:])
     return "".join(out)
-  if any(x in text for x in ("॒", "॑", "᳖", "᳚", "᳛")):
-    return accent.to_US_accents(text, pauses=pauses)
+  if any(x in text for x in CLASSICAL_VEDIC_ACCENTS):
+    return accent.to_US_accents(text, pauses=pauses, skip_pattern=skip_pattern)
   return text
 
 
@@ -1696,13 +1703,19 @@ def validate_samhita_section(
   top_parsed = parse_top_level_details(body)
   i = 0
   sarva_children: list[list[tuple[str, str]]] = []
-  while i < len(top_parsed) and top_parsed[i][2] == vp_title:
-    if i + 1 >= len(top_parsed) or top_parsed[i + 1][2] != sarva_title:
-      issues.append(SamhitaSplitIssue("bad_pairing", f"{vp_title} block not followed by {sarva_title}", section_id))
-      return issues
-    sarva_children.append([(t, b.strip()) for _, _, t, b in parse_top_level_details(top_parsed[i + 1][3])])
-    i += 2
-  trailing = top_parsed[i:]
+  while i < len(top_parsed):
+    if top_parsed[i][2].endswith(("विनियोगः", "अवतारिका", "अवतारिकाः")):
+      i += 1
+      continue
+    if top_parsed[i][2] == vp_title:
+      if i + 1 >= len(top_parsed) or top_parsed[i + 1][2] != sarva_title:
+        issues.append(SamhitaSplitIssue("bad_pairing", f"{vp_title} block not followed by {sarva_title}", section_id))
+        return issues
+      sarva_children.append([(t, b.strip()) for _, _, t, b in parse_top_level_details(top_parsed[i + 1][3])])
+      i += 2
+    else:
+      break
+  trailing = [blk for blk in top_parsed[i:] if not blk[2].endswith(("विनियोगः", "अवतारिका", "अवतारिकाः"))]
   if not parsed.vps or len(sarva_children) != len(parsed.vps):
     issues.append(SamhitaSplitIssue("bad_pairing", f"Unpaired VP/sarva blocks: vp={len(parsed.vps)} sarva={len(sarva_children)}", section_id))
     return issues

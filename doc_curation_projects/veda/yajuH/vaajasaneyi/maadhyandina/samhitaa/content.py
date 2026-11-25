@@ -9,8 +9,8 @@ from indic_transliteration import sanscript
 
 from doc_curation_projects.veda.yajuH.vaajasaneyi.maadhyandina import samhitaa
 
-static_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/vAjasaneyam/mAdhyandinam/saMhitA"
-content_dir_base = static_dir_base.replace("static/", "content/")
+static_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/vAjasaneyam/mAdhyandinam/saMhitA/Rk"
+content_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/saMhitA"
 ref_dir = os.path.join(static_dir_base, "mUlam")
 
 
@@ -50,7 +50,7 @@ def get_include(include_type, chapter_id, ref_file_path, h1_level, field_names=N
   if not os.path.exists(ref_file_path):
     return ""
   return include_helper.Include(field_names=field_names, classes=classes, title=title,
-                                                                      url=os.path.join("/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/", include_type, f"{chapter_id:02d}", os.path.basename(ref_file_path).to_html_str()), h1_level=h1_level)
+                                                                      url=os.path.join("/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/Rk/", include_type, f"{chapter_id:02d}", os.path.basename(ref_file_path).to_html_str()), h1_level=h1_level)
 
 
 if __name__ == '__main__':

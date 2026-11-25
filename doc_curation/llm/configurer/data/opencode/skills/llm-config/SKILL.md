@@ -32,10 +32,10 @@ Everything under `data/antigravity/`, `data/copilot/`, `data/kilo/`, `data/muse/
 ## Updating derived AI prompts
 
 `data/opencode/skills/proofreader-hyphenator/SKILL.md` is the canonical main copy of the proofreading and hyphenation rules.
-Two standalone prompts on `sanskrit.github.io` (read by `doc_curation.llm.get_prompt(path, block_index=0)`) are derived from it and should be regenerated with an LLM coding agent whenever rules in `proofreader-hyphenator/SKILL.md` change:
+Two standalone prompts in `dyumatsyAH` (read by `doc_curation.llm.get_prompt(path, block_index=0)`) are derived from it and should be regenerated with an LLM coding agent whenever rules in `proofreader-hyphenator/SKILL.md` change:
 
-- `~/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md`
-- `~/gitland/sanskrit/sanskrit.github.io/content/groups/dyuganga/projects/text/proofreading/editing/AI-prompt/bare-hyphenator.md`
+- `~/gitland/vishvAsa/dyumatsyAH/content/prakriyA/proofreading/editing/AI-prompt/Sanskrit_devanAgarI_markdown.md`
+- `~/gitland/vishvAsa/dyumatsyAH/content/prakriyA/proofreading/editing/AI-prompt/bare-hyphenator.md`
 
 ### Rules for regenerating those two files
 

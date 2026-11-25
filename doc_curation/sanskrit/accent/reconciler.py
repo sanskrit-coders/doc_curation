@@ -37,6 +37,10 @@ _COMPOUND_STOP_VOICE_PAIRS = frozenset({
 
 DETAILS_RE = re.compile(r"<details(?:\s+open)?><summary>([^<]*)</summary>(.*?)</details>", re.S)
 PP_HEADER_RE = re.compile(r"^पद-पाठः \(यान्त्रिकः(?:\s*-\s*(\d+)/(\d+)\s*व्यत्यस्त-स्वराः)?\)$")
+_VP_SUMMARY_TAG_RE = re.compile(
+  r"\s*\((?:स्वराः पूर्याः|यन्त्र-स्वरः|स्वराः व्यत्यस्ताः[^)]*|\d+/\d+\s*व्यत्यस्त-स्वराः)\)\s*"
+)
+_VP_VYAT_SUMMARY_RE = re.compile(r"\((\d+)/(\d+)\s*व्यत्यस्त-स्वराः\)")
 _SUG_SPAN_RE = re.compile(r"\[\[([^|\]]+)\|([^\]]+)\]\]")
 _PIECE_PAT = re.compile(
   r"\[\[([^|\]]+)\|([^\]]+)\]\]|[\u0900-\u0963\u0969\u0971-\u097f\u1cd0-\u1cff\u0951\u0952\-ऽ]+"
@@ -227,16 +231,12 @@ def format_filled_vp_summary(
   mula_has_accents: bool = True,
 ) -> str:
   """Format the ``<summary>`` title of a ``विश्वास-प्रस्तुतिः`` block after filling US accents from ``पद-पाठः``."""
-  base = re.sub(
-    r"\s*\((?:स्वराः पूर्याः|यन्त्र-स्वरः|स्वराः व्यत्यस्ताः[^)]*|\d+/\d+\s*व्यत्यस्त-स्वराः)\)\s*",
-    "",
-    orig_summary,
-  ).strip()
+  base = _VP_SUMMARY_TAG_RE.sub("", orig_summary).strip()
   base = re.sub(r"\s{2,}", " ", base) or "विश्वास-प्रस्तुतिः"
   if not mula_has_accents:
     return f"{base} (यन्त्र-स्वरः)"
   if n_vyat > 0 and p_total > 0:
-    return f"{base} (स्वराः व्यत्यस्ताः {n_vyat}/{p_total})"
+    return f"{base} ({n_vyat}/{p_total} व्यत्यस्त-स्वराः)"
   return base
 
 
@@ -245,16 +245,8 @@ def format_suggested_vp_summary(
   n_vyat: int,
   p_total: int,
 ) -> str:
-  """Format ``विश्वास-प्रस्तुतिः`` summary with the same ``N/P व्यत्यस्त-स्वराः`` appendix as ``पद-पाठः``."""
-  base = re.sub(
-    r"\s*\((?:स्वराः पूर्याः|यन्त्र-स्वरः|स्वराः व्यत्यस्ताः[^)]*|\d+/\d+\s*व्यत्यस्त-स्वराः)\)\s*",
-    "",
-    orig_summary,
-  ).strip()
-  base = re.sub(r"\s{2,}", " ", base) or "विश्वास-प्रस्तुतिः"
-  if n_vyat > 0 and p_total > 0:
-    return f"{base} ({n_vyat}/{p_total} व्यत्यस्त-स्वराः)"
-  return base
+  """Format ``विश्वास-प्रस्तुतिः`` summary with the same ``(N/P व्यत्यस्त-स्वराः)`` appendix as ``पद-पाठः``."""
+  return format_filled_vp_summary(orig_summary, n_vyat, p_total, mula_has_accents=True)
 
 
 def _same_onset(c1: str, c2: str) -> bool:
@@ -459,8 +451,8 @@ def _refine_opcodes(ops: list[list], pp_keys: list, pp_meta: list, vp_keys: list
           and _is_short_pp(refined[i])
           and refined[i + 1][0] == "equal"
           and refined[i + 2][0] in ("delete", "replace", "insert")
-          and (refined[i + 2][2] - refined[i][1]) <= 60
-          and (refined[i + 2][4] - refined[i][3]) <= 60
+          and (refined[i + 2][2] - refined[i][1]) <= 160
+          and (refined[i + 2][4] - refined[i][3]) <= 160
         ):
           merged.append(["replace", refined[i][1], refined[i + 2][2], refined[i][3], refined[i + 2][4]])
           i += 3
@@ -472,8 +464,8 @@ def _refine_opcodes(ops: list[list], pp_keys: list, pp_meta: list, vp_keys: list
           and (refined[i][2] - refined[i][1]) > (refined[i][4] - refined[i][3])
           and refined[i + 1][0] == "equal"
           and _is_short_pp(refined[i + 2])
-          and (refined[i + 2][2] - refined[i][1]) <= 60
-          and (refined[i + 2][4] - refined[i][3]) <= 60
+          and (refined[i + 2][2] - refined[i][1]) <= 160
+          and (refined[i + 2][4] - refined[i][3]) <= 160
         ):
           merged.append(["replace", refined[i][1], refined[i + 2][2], refined[i][3], refined[i + 2][4]])
           i += 3
@@ -496,11 +488,46 @@ def _refine_opcodes(ops: list[list], pp_keys: list, pp_meta: list, vp_keys: list
           and (refined[i + 1][2] - refined[i + 1][1]) == 1
           and refined[i + 2][0] in ("delete", "replace", "insert")
           and (refined[i + 2][2] - refined[i + 2][1]) != (refined[i + 2][4] - refined[i + 2][3])
-          and (refined[i + 2][2] - refined[i][1]) <= 60
-          and (refined[i + 2][4] - refined[i][3]) <= 60
+          and (refined[i + 2][2] - refined[i][1]) <= 160
+          and (refined[i + 2][4] - refined[i][3]) <= 160
           and any(
             not _same_onset(pp_keys[refined[i][1] + o][0], vp_keys[refined[i][3] + o][0])
             for o in range(refined[i][2] - refined[i][1])
+          )
+        ):
+          merged.append(["replace", refined[i][1], refined[i + 2][2], refined[i][3], refined[i + 2][4]])
+          i += 3
+          changed = True
+        elif (
+          allow_leftward
+          and i + 2 < len(refined)
+          and refined[i][0] in ("delete", "replace", "insert")
+          and (refined[i][2] - refined[i][1]) != (refined[i][4] - refined[i][3])
+          and refined[i + 1][0] == "equal"
+          and (refined[i + 1][2] - refined[i + 1][1]) == 1
+          and refined[i + 2][0] == "replace"
+          and (refined[i + 2][2] - refined[i + 2][1]) == (refined[i + 2][4] - refined[i + 2][3])
+          and (refined[i + 2][2] - refined[i][1]) <= 160
+          and (refined[i + 2][4] - refined[i][3]) <= 160
+          and (
+            (
+              (refined[i + 2][2] - refined[i + 2][1]) >= 2
+              and any(
+                not _same_onset(pp_keys[refined[i + 2][1] + o][0], vp_keys[refined[i + 2][3] + o][0])
+                for o in range(refined[i + 2][2] - refined[i + 2][1])
+              )
+            )
+            or (
+              (refined[i + 2][2] - refined[i + 2][1]) == 1
+              and refined[i][0] == "replace"
+              and (refined[i][2] - refined[i][1]) == 2
+              and (refined[i][4] - refined[i][3]) == 1
+              and pp_keys[refined[i][1]][1] in ("ai", "au")
+              and pp_keys[refined[i][1] + 1][0] == ""
+              and vp_keys[refined[i + 1][3]][0] == ("य" if pp_keys[refined[i][1]][1] == "ai" else "व")
+              and pp_keys[refined[i + 2][1]][0] == ""
+              and vp_keys[refined[i + 2][3]][0] != ""
+            )
           )
         ):
           merged.append(["replace", refined[i][1], refined[i + 2][2], refined[i][3], refined[i + 2][4]])
@@ -747,7 +774,18 @@ def _map_pp_to_vp_syllables(
         and _same_onset(pp_keys[i1 + 1][0], vp_keys[j1][0])
       ):
         merged_pp_pairs.append((i1 - 1, i1, j1 - 1))
-        merged_pp_pairs.append((i1 + 1, i1 + 2, j1))
+        if (
+          pp_keys[i1 + 1][1] in ("e", "o")
+          and vp_keys[j1][1] == "a"
+          and j1 + 1 < len(vp_keys)
+          and vp_keys[j1 + 1][0] == ""
+          and i1 + 3 < len(pp_keys)
+          and pp_keys[i1 + 3][0] == ""
+        ):
+          pp_to_vp[i1 + 1] = j1
+          merged_pp_pairs.append((i1 + 2, i1 + 3, j1 + 1))
+        else:
+          merged_pp_pairs.append((i1 + 1, i1 + 2, j1))
       elif (i2 - i1) == 2 and (j2 - j1) == 1:
         next_prev_yan = (
           vp_pieces[vp_meta[j1 + 1][0]].get("prev_yan_onset")
@@ -1301,7 +1339,16 @@ def find_js_include_spans(markdown_text: str) -> list[tuple[int, int]]:
   return spans
 
 
-def reconcile_markdown_blocks(
+def _is_direct_fill_vp_block(ps_stripped: str, vp_body: str, *, is_sb_cluster: bool) -> bool:
+  """Return True when ``विश्वास-प्रस्तुतिः`` uses direct US accent fill rather than ``[[OLD|NEW]]`` suggestions."""
+  if "[[" in vp_body:
+    return False
+  if "स्वराः व्यत्यस्ताः" in ps_stripped or "यन्त्र-स्वरः" in ps_stripped:
+    return True
+  return (not is_sb_cluster) and bool(_VP_VYAT_SUMMARY_RE.search(ps_stripped))
+
+
+def _reconcile_markdown_blocks_once(
   markdown_text: str,
   *,
   extra_invalid_olds: AbstractSet[str] = frozenset(),
@@ -1309,13 +1356,15 @@ def reconcile_markdown_blocks(
   allow_8_2_6_ekadesha_svarita: bool | None = None,
   refill_direct_vp: bool = True,
   refresh_pp_summaries: bool = True,
+  sync_vp_summaries: bool = False,
 ) -> tuple[str, list[str]]:
-  """Reconcile paired ``विश्वास-प्रस्तुतिः`` and ``पद-पाठः (यान्त्रिकः)`` details blocks inside Markdown text."""
+  """Execute one pass of :func:`reconcile_markdown_blocks`."""
   js_divs = find_js_include_spans(markdown_text) if skip_js_includes else []
   dmatches = [m for m in DETAILS_RE.finditer(markdown_text) if not any(a <= m.start() < b for a, b in js_divs)]
   replacements: list[tuple[int, int, str]] = []
   all_logs: list[str] = []
 
+  has_kanva_sb_doc = "\u1cd8" in markdown_text or "<summary>C R Swaminathan</summary>" in markdown_text
   for i, m in enumerate(dmatches):
     pp_hdr = m.group(1).strip()
     if not pp_hdr.startswith("पद-पाठः (यान्त्रिकः"):
@@ -1331,7 +1380,6 @@ def reconcile_markdown_blocks(
         all_logs.append(f"PP_HDR: {pp_hdr} -> {expected_pp_hdr}")
 
     is_sb_cluster = False
-    has_kanva_sb_doc = "\u1cd8" in markdown_text or "<summary>C R Swaminathan</summary>" in markdown_text
     for j in range(i - 1, max(-1, i - 8), -1):
       ps = dmatches[j].group(1)
       if ps.startswith("पद-पाठः (यान्त्रिकः"):
@@ -1343,39 +1391,51 @@ def reconcile_markdown_blocks(
       ):
         is_sb_cluster = True
       if ps.startswith("विश्वास-प्रस्तुतिः"):
+        vp_m = dmatches[j]
+        ps_stripped = ps.strip()
+        vp_body = vp_m.group(2)
         allow_826 = is_sb_cluster if allow_8_2_6_ekadesha_svarita is None else allow_8_2_6_ekadesha_svarita
-        if (
-          "स्वराः पूर्याः" not in ps
-          and "यन्त्र-स्वरः" not in ps
-          and "स्वराः व्यत्यस्ताः" not in ps
-          and has_us_accents(dmatches[j].group(2))
-        ):
+        if "स्वराः पूर्याः" in ps_stripped:
+          break
+        open_attr = " open" if "<details open>" in vp_m.group(0)[:20] else ""
+        is_direct_vp = _is_direct_fill_vp_block(ps_stripped, vp_body, is_sb_cluster=is_sb_cluster)
+        if not is_direct_vp and has_us_accents(vp_body):
           new_vp, vlogs = reconcile_vp_suggestions(
-            dmatches[j].group(2),
+            vp_body,
             items,
             extra_invalid_olds=extra_invalid_olds,
             allow_8_2_6_ekadesha_svarita=allow_826,
           )
-          if new_vp != dmatches[j].group(2):
-            open_attr = " open" if "<details open>" in dmatches[j].group(0)[:20] else ""
-            replacements.append((dmatches[j].start(), dmatches[j].end(), f"<details{open_attr}><summary>{ps}</summary>{new_vp}</details>"))
+          new_ps = ps_stripped
+          has_vyat_suffix = bool(_VP_VYAT_SUMMARY_RE.search(ps_stripped)) or "स्वराः व्यत्यस्ताः" in ps_stripped
+          if (
+            sync_vp_summaries
+            and p_total > 0
+            and "यन्त्र-स्वरः" not in ps_stripped
+            and (is_sb_cluster or has_vyat_suffix or "[[" in new_vp)
+          ):
+            new_ps = format_suggested_vp_summary(ps_stripped, n_vyat, p_total)
+          if new_vp != vp_body or new_ps != ps_stripped:
+            hdr_out = new_ps if new_ps != ps_stripped else ps
+            replacements.append((vp_m.start(), vp_m.end(), f"<details{open_attr}><summary>{hdr_out}</summary>{new_vp}</details>"))
             all_logs.extend(vlogs)
-        elif refill_direct_vp and ("स्वराः व्यत्यस्ताः" in ps or "यन्त्र-स्वरः" in ps) and "[[" not in dmatches[j].group(2):
+            if new_ps != ps_stripped:
+              all_logs.append(f"VP_HDR: {ps_stripped} -> {new_ps}")
+        elif refill_direct_vp and is_direct_vp:
           new_vp, unmapped = fill_vp_accents_from_padapatha(
-            dmatches[j].group(2),
+            vp_body,
             items,
             allow_8_2_6_ekadesha_svarita=allow_826,
           )
           new_ps = format_filled_vp_summary(
-            ps.strip(),
+            ps_stripped,
             n_vyat,
             p_total,
-            mula_has_accents=("यन्त्र-स्वरः" not in ps),
+            mula_has_accents=("यन्त्र-स्वरः" not in ps_stripped),
           )
-          if not unmapped and (new_vp != dmatches[j].group(2) or new_ps != ps.strip()):
-            open_attr = " open" if "<details open>" in dmatches[j].group(0)[:20] else ""
-            replacements.append((dmatches[j].start(), dmatches[j].end(), f"<details{open_attr}><summary>{new_ps}</summary>{new_vp}</details>"))
-            all_logs.append(f"REFILLED_VP: {ps.strip()} -> {new_ps}")
+          if not unmapped and (new_vp != vp_body or new_ps != ps_stripped):
+            replacements.append((vp_m.start(), vp_m.end(), f"<details{open_attr}><summary>{new_ps}</summary>{new_vp}</details>"))
+            all_logs.append(f"REFILLED_VP: {ps_stripped} -> {new_ps}")
         break
 
   if not replacements:
@@ -1385,6 +1445,70 @@ def reconcile_markdown_blocks(
   for s, e, rep in sorted(replacements, key=lambda x: x[0], reverse=True):
     out = out[:s] + rep + out[e:]
   return out, all_logs
+
+
+def reconcile_markdown_blocks(
+  markdown_text: str,
+  *,
+  extra_invalid_olds: AbstractSet[str] = frozenset(),
+  skip_js_includes: bool = True,
+  allow_8_2_6_ekadesha_svarita: bool | None = None,
+  refill_direct_vp: bool = True,
+  refresh_pp_summaries: bool = True,
+  sync_vp_summaries: bool = False,
+  fixed_point: bool = False,
+  max_passes: int = 5,
+) -> tuple[str, list[str]]:
+  """Reconcile paired ``विश्वास-प्रस्तुतिः`` and ``पद-पाठः (यान्त्रिकः)`` details blocks inside Markdown text.
+
+  When ``sync_vp_summaries=True``, suggestion-mode ``विश्वास-प्रस्तुतिः`` headers in ŚB clusters,
+  clusters with inline ``[[OLD|NEW]]`` spans, or headers already bearing a *vyatyasta* count suffix
+  are also kept in sync via :func:`format_suggested_vp_summary`.
+  When ``fixed_point=True``, iterates up to ``max_passes`` passes until a pass leaves the text unchanged.
+  """
+  if max_passes < 1:
+    raise ValueError(f"max_passes must be >= 1, got {max_passes}")
+  passes = max_passes if fixed_point else 1
+  cur = markdown_text
+  combined_logs: list[str] = []
+  for _ in range(passes):
+    nxt, logs = _reconcile_markdown_blocks_once(
+      cur,
+      extra_invalid_olds=extra_invalid_olds,
+      skip_js_includes=skip_js_includes,
+      allow_8_2_6_ekadesha_svarita=allow_8_2_6_ekadesha_svarita,
+      refill_direct_vp=refill_direct_vp,
+      refresh_pp_summaries=refresh_pp_summaries,
+      sync_vp_summaries=sync_vp_summaries,
+    )
+    combined_logs.extend(logs)
+    if nxt == cur:
+      break
+    cur = nxt
+  return cur, combined_logs
+
+
+def reconcile_and_sync_markdown_blocks(
+  markdown_text: str,
+  *,
+  extra_invalid_olds: AbstractSet[str] = frozenset(),
+  skip_js_includes: bool = True,
+  allow_8_2_6_ekadesha_svarita: bool | None = None,
+  refill_direct_vp: bool = True,
+  max_passes: int = 5,
+) -> tuple[str, list[str]]:
+  """Run :func:`reconcile_markdown_blocks` to fixed point with ``पद-पाठः`` and ``विश्वास-प्रस्तुतिः`` summary sync."""
+  return reconcile_markdown_blocks(
+    markdown_text,
+    extra_invalid_olds=extra_invalid_olds,
+    skip_js_includes=skip_js_includes,
+    allow_8_2_6_ekadesha_svarita=allow_8_2_6_ekadesha_svarita,
+    refill_direct_vp=refill_direct_vp,
+    refresh_pp_summaries=True,
+    sync_vp_summaries=True,
+    fixed_point=True,
+    max_passes=max_passes,
+  )
 
 
 _NON_MULA_STAGE_RE = re.compile(

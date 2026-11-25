@@ -582,3 +582,13 @@ def test_nal_shanach_ekagnikanda_and_missing_commentator_guards():
   ) == []
 
 
+def test_sb_simplex_tinanta_allowlist_verbs():
+  assert find_unsplit_upasarga_tinantas([
+    "- अवधोत् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- अपिपत (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आशन् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आमते (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+  ]) == []
+
+
+

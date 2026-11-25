@@ -89,4 +89,4 @@ def dump_structure(dir_path, output_file):
 
 # Example usage
 if __name__ == "__main__":
-  dump_structure('/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/vAjasaneyam/mAdhyandinam/saMhitA/sarvASh_TIkAH', output_file="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/data/book_data/vedaH/vAjasaneyi/samhitA.json")
+  dump_structure('/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/vAjasaneyam/mAdhyandinam/saMhitA/Rk/sarvASh_TIkAH', output_file="/home/vvasuki/gitland/sanskrit-coders/doc_curation/doc_curation/data/book_data/vedaH/vAjasaneyi/samhitA.json")

@@ -778,7 +778,7 @@ def test_ta_source_is_dropped_by_enrichment_and_rejected_by_audit(tmp_path):
   )
 
   assert "TA" not in SB_CORPUS_TAGS
-  assert SB_CORPUS_TAGS == ("VS-M", "VS-K", "TS", "RV", "AV", "TB")
+  assert SB_CORPUS_TAGS == ("VS-M", "VS-K", "TS", "RV", "AV", "TB", "TK")
 
   lex = UnifiedVedicLexicon.load_or_build(force_rebuild=False)
   new_j, _ = enrich_provenance_with_corpus_counts(lex, "यज्ञ᳓म्", "*TA*, *TS*, *RV*")

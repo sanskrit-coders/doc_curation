@@ -2,8 +2,8 @@ import glob
 import os
 from functools import lru_cache
 
-static_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/vAjasaneyam/mAdhyandinam/saMhitA"
-content_dir_base = static_dir_base.replace("static/", "content/")
+static_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/vAjasaneyam/mAdhyandinam/saMhitA/Rk"
+content_dir_base = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/saMhitA"
 ref_dir = os.path.join(static_dir_base, "mUlam")
 
 

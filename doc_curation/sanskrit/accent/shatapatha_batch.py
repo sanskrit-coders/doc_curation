@@ -64,9 +64,9 @@ _SB_MARKS_RE = re.compile(r"[\u1cd8\u1cdf\u0957]")
 _PRATIKA_PAREN_RE = re.compile(r"\(\s*[\u0900-\u097f\u1cd0-\u1cff\u0951-\u0957\sऽ]{1,14}\)")
 _SUG_SPAN_RE = re.compile(r"\[\[([^|\]]+)\|([^\]]+)\]\]")
 _INLINE_NOTE_RE = re.compile(r"\+\+\+.*?\+\+\+|\[\[(?:\?+|!+)\]\]", re.S)
-SB_CORPUS_TAGS: tuple[str, ...] = ("VS-M", "VS-K", "TS", "RV", "AV", "TB")
-SB_K_CORPUS_TAGS: tuple[str, ...] = ("SB-M", "VS-M", "VS-K", "TS", "RV", "AV", "TB")
-_ZERO_CORPUS_COUNT_RE = re.compile(r"\*(?:SB-M|SB-K|VS-M|VS-K|VS|TS|RV|AV|TB|TA|EK)\*-0(?:/0)?(?![0-9/])")
+SB_CORPUS_TAGS: tuple[str, ...] = ("VS-M", "VS-K", "TS", "RV", "AV", "TB", "TK")
+SB_K_CORPUS_TAGS: tuple[str, ...] = ("SB-M", "VS-M", "VS-K", "TS", "RV", "AV", "TB", "TK")
+_ZERO_CORPUS_COUNT_RE = re.compile(r"\*(?:SB-M|SB-K|VS-M|VS-K|VS|TS|RV|AV|TB|TK|TA|EK)\*-0(?:/0)?(?![0-9/])")
 _FORBIDDEN_TA_RE = re.compile(r"\*TA\*(?:-\d+(?:/\d+)?)?")
 _FORBIDDEN_EK_RE = re.compile(r"\*EK\*(?:-\d+(?:/\d+)?)?")
 _FORBIDDEN_SRC_RE = re.compile(r"\*(?:TA|EK)\*(?:-\d+(?:/\d+)?)?")
@@ -146,10 +146,13 @@ def _vp_body_to_clean_for_audit(vp_body: str) -> str:
   s = _SUG_SPAN_RE.sub(r"\1", s)
   s = accent.strip_accents(s)
   s = s.replace("᳟", "").replace("᳭", "").replace("ᳮ", "").replace("\ua8f3", "ं")
-  # Preserve paragraph/blockquote breaks (\n\n) as clause pauses so quote-boundary hiatuses validate cleanly
+  # Preserve paragraph/blockquote breaks (\n\n) and clause-dash line breaks (` - \n`, `-\n+`, `- +`) as pauses
   s = re.sub(r"\n\s*\n+", " । ", s)
-  # Strip mid-word quotes/bold markers (e.g. `ऽसी᳓"ति`) and hiatus `ऽ` before independent vowels (e.g. `ऽआ᳓सीत्`)
-  s = re.sub(r'["\'“”‘’\*]+', "", s)
+  s = re.sub(r"-[ \t]*\n[ \t]*(?:>[ \t]*|\+)?", " । ", s)
+  s = re.sub(r"(?:^|\s)-[ \t]+\+", " । ", s)
+  s = re.sub(r"(?m)^[ \t]*>[ \t]*", "", s)
+  # Strip mid-word quotes/bold/`+` markers (e.g. `ऽसी᳓"ति`, `+अशनाया`) and hiatus `ऽ` before independent vowels (e.g. `ऽआ᳓सीत्`)
+  s = re.sub(r'["\'“”‘’\*\+]+', "", s)
   s = re.sub(r"ऽ(?=[अआइईउऊऋॠऌॡएऐओऔ])", "", s)
   # Rejoin yaṇ-sandhi `-य्`/`-व्` separated by whitespace/comma before an initial vowel (`प्रयच्छेतेत्य्, अन्नाद्यम्` -> `प्रयच्छेतेत्यन्नाद्यम्`, `पृथिव्य् अन्तरिक्षं` -> `पृथिव्यन्तरिक्षं`)
   _v_matra = {"अ": "", "आ": "ा", "इ": "ि", "ई": "ी", "उ": "ु", "ऊ": "ू", "ऋ": "ृ", "ॠ": "ॄ", "ऌ": "ॢ", "ए": "े", "ऐ": "ै", "ओ": "ो", "औ": "ौ"}
@@ -169,8 +172,8 @@ def _reason_bucket(reason: str) -> str:
 # Deterministic ``*CORPUS*-N`` occurrence-count enrichment of padapāṭha provenance
 # ---------------------------------------------------------------------------
 
-_CORPUS_RE = r"(?:SB-M|SB-K|VS-M|VS-K|VS|TS|RV|AV|TB)"
-_ALL_CORPUS_RE = r"(?:SB-M|SB-K|VS-M|VS-K|VS|TS|RV|AV|TB|TA|EK)"
+_CORPUS_RE = r"(?:SB-M|SB-K|VS-M|VS-K|VS|TS|RV|AV|TB|TK)"
+_ALL_CORPUS_RE = r"(?:SB-M|SB-K|VS-M|VS-K|VS|TS|RV|AV|TB|TK|TA|EK)"
 _CNT_OPT = r"(?:-\d+(?:/\d+)?)?"
 _BARE_TAGS_ONLY_RE = re.compile(rf"\*{_ALL_CORPUS_RE}\*{_CNT_OPT}(?:\s*/\s*\*{_ALL_CORPUS_RE}\*{_CNT_OPT})*")
 _INLINE_FORM_TAG_RE = re.compile(rf"^\*({_ALL_CORPUS_RE})\*{_CNT_OPT}(\s+(?![०-९\d\s]).+)$")
@@ -976,9 +979,9 @@ def verify_and_apply_adjudications(
         if not ent["preserve_vp"] and _SB_MARKS_RE.search(ent["vp_acc"]):
           errors.append("leftover_sb_marks_in_vp")
         if any(_FORBIDDEN_TA_RE.search(it.prov) for it in items):
-          errors.append("forbidden_ta_source: *TA* is forbidden in ŚB पद-पाठः (allowed: VS-M, VS-K, TS, RV, AV, TB)")
+          errors.append("forbidden_ta_source: *TA* is forbidden in ŚB पद-पाठः (allowed: VS-M, VS-K, TS, RV, AV, TB, TK)")
         if any(_FORBIDDEN_EK_RE.search(it.prov) for it in items):
-          errors.append("forbidden_ek_source: *EK* is forbidden in ŚB पद-पाठः (allowed: VS-M, VS-K, TS, RV, AV, TB)")
+          errors.append("forbidden_ek_source: *EK* is forbidden in ŚB पद-पाठः (allowed: VS-M, VS-K, TS, RV, AV, TB, TK)")
 
         # 2. Forward-sandhi round-trip verification
         padas_ref = [it.ref for it in items]
@@ -1392,7 +1395,7 @@ def audit_full_sb_corpus(
             heading=sl.heading,
             sub_idx=sl.sub_idx,
             kind="forbidden_ta_source",
-            detail="Found forbidden *TA* citation in ŚB पद-पाठः (allowed corpora: VS-M, VS-K, TS, RV, AV, TB)",
+            detail="Found forbidden *TA* citation in ŚB पद-पाठः (allowed corpora: VS-M, VS-K, TS, RV, AV, TB, TK)",
           )
         )
       if _FORBIDDEN_EK_RE.search(sl.pp_body):
@@ -1403,7 +1406,7 @@ def audit_full_sb_corpus(
             heading=sl.heading,
             sub_idx=sl.sub_idx,
             kind="forbidden_ek_source",
-            detail="Found forbidden *EK* citation in ŚB पद-पाठः (allowed corpora: VS-M, VS-K, TS, RV, AV, TB)",
+            detail="Found forbidden *EK* citation in ŚB पद-पाठः (allowed corpora: VS-M, VS-K, TS, RV, AV, TB, TK)",
           )
         )
       if _WEAK_PLACEHOLDER_PROV_RE.search(sl.pp_body):
@@ -1624,9 +1627,9 @@ def audit_full_sb_corpus(
 # External Vedic corpora auto-surfaced for ŚB `A/B` stem counts:
 # - Mādhyandina (`SB-M` / legacy `ŚB`): excludes self-referential `ŚB`/`SB-M`; can cite `SB-K` once built.
 # - Kāṇva (`SB-K`): includes `SB-M`, excludes self-referential `SB-K` / ambiguous `ŚB`.
-SB_PROVENANCE_MAJOR_CORPORA: tuple[str, ...] = ("TS", "RV", "TB", "AV", "VS-M", "VS-K")
-SB_M_WITH_K_PROVENANCE_MAJOR_CORPORA: tuple[str, ...] = ("TS", "RV", "TB", "AV", "VS-M", "VS-K", "SB-K")
-SB_K_PROVENANCE_MAJOR_CORPORA: tuple[str, ...] = ("SB-M", "TS", "RV", "TB", "AV", "VS-M", "VS-K")
+SB_PROVENANCE_MAJOR_CORPORA: tuple[str, ...] = ("TS", "RV", "TB", "TK", "AV", "VS-M", "VS-K")
+SB_M_WITH_K_PROVENANCE_MAJOR_CORPORA: tuple[str, ...] = ("TS", "RV", "TB", "TK", "AV", "VS-M", "VS-K", "SB-K")
+SB_K_PROVENANCE_MAJOR_CORPORA: tuple[str, ...] = ("SB-M", "TS", "RV", "TB", "TK", "AV", "VS-M", "VS-K")
 
 
 def annotate_sb_padapatha_counts(
