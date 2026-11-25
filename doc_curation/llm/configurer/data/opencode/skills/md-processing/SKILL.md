@@ -1,6 +1,6 @@
 ---
 name: md-processing
-description: Processes Markdown (md) files — bulk transforms, details blocks, footnotes, commentary, include directives, and file splitting — using doc_curation's md/ toolkit. Use when Markdown files need structured content edits beyond simple text replacement.
+description: Processes Markdown (md) files — bulk transforms, details blocks, footnotes, commentary, include directives, cross-śākhā shared-source reuse/deduplication, and file splitting — using doc_curation's md/ toolkit. Use when Markdown files need structured content edits beyond simple text replacement.
 ---
 Where appropriate, process Markdown with the `doc_curation.md` toolkit (venv: `~/gitland/python_venv`).
 
@@ -10,18 +10,27 @@ Where appropriate, process Markdown with the `doc_curation.md` toolkit (venv: `~
 
 ### Handling `js_include` directives (`<div class="js_include" ...>`)
 
-- **Source of truth lives in `static/` (or another `content/` repo):** A `<div class="js_include" ... url="...">...</div>` block in a host `.md` file holds a prefilled inline snapshot (typically wrapped in `<details open><summary><hN>... …{Loading}…</hN></summary>`) that is dynamically replaced at page load.
-  - Resolve the target file with `include.resolve_include_file_path(url, hugo_base_dir="/home/vvasuki/gitland/vishvAsa", current_file_path=...)` (wraps `include.file_path_from_url` with directory-URL `_index.md` fallback):
-    - Root-relative URLs ending in `.md` (e.g. `/vedAH_yajuH/taittirIyam/.../foo.md` or `/vedAH_Rk/shAkalam/.../bar.md`) map to `/home/vvasuki/gitland/vishvAsa/<repo>/static/<rest>.md`.
-    - Root-relative URLs without `.md` map to `/home/vvasuki/gitland/vishvAsa/<repo>/content/<rest>.md` (or `_index.md`).
-  - When a task edits included `static/` (or cross-repo `content/`) source files, propagate changes across all transitive host containers via `include.surgical_prefill_transitive([static_dir, content_dir], changed_file_paths, hugo_base_dir="/home/vvasuki/gitland/vishvAsa")` (which preserves `{Loading}` headers, Hugo `{{< ... >}}` shortcodes, and multi-hop nested `js_include`s without BeautifulSoup re-serialization; `include.surgical_prefill_includes` refreshes a single directory, and `include.prefill_includes` is the older BeautifulSoup prefiller).
-  - To inline matching `js_include` directives directly into host files and safely delete unreferenced included source files, use `include.deinclude(dir_path, url_filter=..., prefill=True, delete_included_files=True, reference_check_roots=..., dry_run=...)` (or `include.deinclude_content` for a single string). It uses balanced div slicing, strips `{Loading}` and `<hN>` summary tags, and preserves open vs. collapsed `<details>` state.
+For `js_include` parameters (`detailsPattern`, `newLevelForH1`, `includeTitle`, etc.), Hugo path resolution (`include.resolve_include_file_path`), refreshing prefills (`surgical_prefill_transitive` / `prefill_includes`), and `include.deinclude`, see the `website` skill. When running Markdown structure transforms on files that contain `js_include` directives:
+
 - **Treat `js_include` divs as atomic boundaries when transforming host files:**
   - Match `<div\s+[^>]*js_include[^>]*>` and track balanced `<div` / `</div>` tags (since a prefilled file-level `js_include` may itself contain nested `<div class="js_include">` blocks) **before** matching headings (`\n#+\s+`) or `<details>` blocks.
   - Never let a host-file `<details>` parser reach inside a `js_include` wrapper unless intentionally syncing an inline prose include (`includetitle="false"`), or inner `<details><summary>मूलम्</summary>` / `###` headings inside prefilled `सर्वाष् टीकाः` includes will be misparsed or split across `</div>` tags.
   - **Nested `js_include` inside `<details>`:** A top-level `<details>` (e.g. `भट्टभास्कर-टीका`, `विश्वास-प्रस्तुतिः`, or a recension-variant section like `आन्ध्रपाठे ऽधिकाः`) may itself contain inline `<div class="js_include">` quotes. Use `details.common.get_js_include_spans(content)` and `details.common.get_top_level_detail_spans(content, skip_js_includes=True)`, and discard any `js_include` span enclosed inside a top-level `<details>` span so combined top-level spans remain strictly disjoint (otherwise emitting both duplicates the include and unbalances `</details>`).
 
-For various python utilities, see `doc_curation.md.content_processor.include` and `doc_curation_projects/general_tasks/content/include_fix.py`.
+
+#### Cross-śākhā Vedic reuse & deduplication (`विश्वास-प्रस्तुतिः` vs. `सर्वाष् टीकाः`)
+
+When consolidating parallel mantras across Vedic śākhās (e.g. `Śākala`/`AV`/`VS-M`/`VS-K`/`TS`/`TB`/`TK`, see `doc_curation_projects.veda.yajuH.vaajasaneyi.dedup`):
+
+- **Normalize before comparing:** Ignore verse/kaṇḍikā numbers (`॥२४॥`), punctuation, whitespace/line wraps, `-` hyphens, `**...**`, `+++(...)+++` glosses, inter-word halant+vowel joins (`म् अ` ↔ `म`), `ऽ`/`ऽअ` hiatus orthography, and pure scribal gemination after `र्` (`र्द्ध`↔`र्ध`, `र्म्म`↔`र्म`). Preserve internal pluta digits (`२`/`३`), `ड`/`ळ` and nasal variants, and US accents (`᳓`/`᳙`) as significant. All shared `vishvAsa-prastutiH/` (and combined `yajuH/sarva-prastutiH/`) files must use **US accents only**.
+- **Two-part static layout (no separate `mUlam/` dirs):** Across Śākala/AV/Yajurveda `Rk/`, static mantra trees consist of `vishvAsa-prastutiH/` + `sarvASh_TIkAH/` (do not create or keep separate `mUlam/` directories; put each śākhā's mūlam inside `sarvASh_TIkAH/` as `<details><summary>मूलम् - <Śākhā></summary>`).
+- **No real pāṭha-bheda (exact normalized consonants + US accents):** Share and `js_include` **both** `vishvAsa-prastutiH/` **and** `sarvASh_TIkAH/` — or, for shared strict non-Ṛk blocks without a separate `sarvASh_TIkAH/` split, use a combined `yajuH/sarva-prastutiH/{ch:02d}/{k:02d}_{storage_name}.md` (`includetitle="false"`).
+- **Minor pāṭha variant:** Keep `विश्वास-प्रस्तुतिः` **separate/local** in each host śākhā (do not share combined `yajuH/sarva-prastutiH/` on variants) and merge/`js_include` **only** `sarvASh_TIkAH/`. Inside the shared `sarvASh_TIkAH/` file, disambiguate variants explicitly:
+  - Always qualify śākhā mūlams explicitly as `<summary>मूलम् - <Śākhā></summary>` (e.g. `मूलम् - शाकलम्`, `मूलम् - शौनकम्`, `मूलम् - माध्यन्दिनम्`, `मूलम् - काण्वम्`, `मूलम् - तैत्तिरीयम्`).
+  - Add `<summary>पदपाठः - <Śākhā></summary>` (e.g. `पदपाठः - काण्वः`, `पदपाठः - दयानन्दादि`, `पदपाठः - तैत्तिरीयः`).
+  - Qualify colliding commentator titles by śākhā (e.g. `<summary>सायण-टीका (काण्वी)</summary>` when Taittirīya/Śākala `<summary>सायण-टीका</summary>` can coexist).
+- **Keep `सर्वा अवतारिकाः` local & align stanza granularity:** Keep `<details><summary>सर्वा अवतारिकाः</summary>` (`*विनियोगः`, `*अवतारिका`) per śākhā in the host file above `विश्वास-प्रस्तुतिः`/`js_include`. Merge split-hemistich Ṛk halves in a host when no liturgical viniyoga divides them (relocating misattached whole-stanza/next-clause viniyogas); if genuine split viniyoga separates the halves, split the shared `static` files and update all host includes across repos.
+- **Corpus provenance:** After editing shared hosts, refresh transitive `js_include` prefills across `vishvAsa` repos (see the `website` skill) and verify `VedicCorpusCounter` excludes foreign `मूलम् - <OtherŚākhā>` blocks when ingesting shared hosts.
 
 
 ### Details blocks
@@ -36,7 +45,7 @@ For various python utilities, see `doc_curation.md.content_processor.include` an
   2. `<details>` / `</details>` and `<div` / `</div>` tag counts are balanced.
 - **Wrapping non-`विश्वास-प्रस्तुतिः` clusters (`सर्वा अवतारिकाः` / `सर्वाष् टीकाः`):**
   - Use `doc_curation.md.content_processor.commentary.helper.wrap_vedic_details` (or `wrap_commentaries_in_details(..., avatarika_block_name="सर्वा अवतारिकाः", skip_js_includes=True)`), which treats balanced `js_include` divs as atomic boundaries, splits contiguous commentary vs. avatārikā/viniyoga runs between `विश्वास-प्रस्तुतिः` blocks, routes pre-VP `मूलम् (संयुक्तम्)` / `विस्तारः` / file-top bhūmikās to `सर्वा अवतारिकाः` and post-VP ones to `सर्वाष् टीकाः`, and leaves `विश्वास-प्रस्तुतिः*`, `विनियोगसङ्ग्रहः`, explicitly-`open` `विश्वास-टिप्पनी`, and VP-containing container blocks unwrapped.
-  - **Never wrap single-layer `static/.../sarvASh_TIkAH/` or `static/.../vishvAsa-prastutiH/` files** — host pages already include them inside `title="सर्वाष् टीकाः"` / `title="विश्वास-प्रस्तुतिः"`. Wrap only VP-bearing files (`sarva-prastutiH/` and standalone mantra files), then propagate via `include.surgical_prefill_transitive`.
+  - **Never wrap single-layer `static/.../sarvASh_TIkAH/` or `static/.../vishvAsa-prastutiH/` files** — host pages already include them inside `title="सर्वाष् टीकाः"` / `title="विश्वास-प्रस्तुतिः"`. Wrap only VP-bearing files (`sarva-prastutiH/` and standalone mantra files), then refresh transitive prefills (see the `website` skill).
   - **Nested-`<details>` leaf-regex hazard:** Once commentaries/mūlam/padapāṭha live inside `<details><summary>सर्वाष् टीकाः</summary>`, naive non-nested `<details[^>]*><summary>([^<]*)</summary>(.*?)</details>` regexes swallow the first inner child `<details>` into the wrapper. Parse hierarchically with `details.common.parse_top_level_details` or forbid nested opens (`(?:(?!<details\b).)*?`) when matching leaf `<details>` blocks.
 
 ### Footnotes

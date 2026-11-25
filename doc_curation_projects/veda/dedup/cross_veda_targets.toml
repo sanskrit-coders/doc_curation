@@ -1,0 +1,96 @@
+[repos]
+vishvasa_root = "/home/vvasuki/gitland/vishvAsa"
+
+[corpora.RV]
+name = "RV"
+shAkha_label = "शाकलम्"
+pada_label = "पद-पाठः"
+sayana_variant_label = "सायण-भाष्यम्"
+has_two_part_rk = true
+vp_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/vishvAsa-prastutiH"
+sarva_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/sarvASh_TIkAH"
+vp_url_prefix = "/vedAH_Rk/shAkalam/saMhitA/vishvAsa-prastutiH"
+sarva_url_prefix = "/vedAH_Rk/shAkalam/saMhitA/sarvASh_TIkAH"
+
+[corpora.AV]
+name = "AV"
+shAkha_label = "शौनकम्"
+pada_label = "पदपाठः"
+sayana_variant_label = "सायण-टीका (शौनकीया)"
+has_two_part_rk = true
+vp_dir = "/home/vvasuki/gitland/vishvAsa/vedAH/static/atharva/shaunakam/rUDha-saMhitA/vishvAsa-prastutiH"
+sarva_dir = "/home/vvasuki/gitland/vishvAsa/vedAH/static/atharva/shaunakam/rUDha-saMhitA/sarvASh_TIkAH"
+vp_url_prefix = "/vedAH/atharva/shaunakam/rUDha-saMhitA/vishvAsa-prastutiH"
+sarva_url_prefix = "/vedAH/atharva/shaunakam/rUDha-saMhitA/sarvASh_TIkAH"
+
+[corpora.VS-M]
+name = "VS-M"
+shAkha_label = "माध्यन्दिनम्"
+pada_label = "पदपाठः - दयानन्दादि"
+sayana_variant_label = "सायण-टीका (माध्यन्दिनी)"
+dayananda_qual = "मा."
+has_two_part_rk = true
+content_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH"
+vp_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/vAjasaneyam/mAdhyandinam/saMhitA/Rk/vishvAsa-prastutiH"
+sarva_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/vAjasaneyam/mAdhyandinam/saMhitA/Rk/sarvASh_TIkAH"
+vp_url_prefix = "/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/Rk/vishvAsa-prastutiH"
+sarva_url_prefix = "/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/Rk/sarvASh_TIkAH"
+yajuh_sarva_prastuti_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/vAjasaneyam/mAdhyandinam/saMhitA/yajuH/sarva-prastutiH"
+yajuh_sarva_prastuti_url = "/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/yajuH/sarva-prastutiH"
+yajuh_vp_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/vAjasaneyam/mAdhyandinam/saMhitA/yajuH/vishvAsa-prastutiH"
+yajuh_vp_url = "/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/yajuH/vishvAsa-prastutiH"
+yajuh_sarva_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/vAjasaneyam/mAdhyandinam/saMhitA/yajuH/sarvASh_TIkAH"
+yajuh_sarva_url = "/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/yajuH/sarvASh_TIkAH"
+
+[corpora.VS-K]
+name = "VS-K"
+shAkha_label = "काण्वम्"
+pada_label = "पदपाठः - काण्वः"
+sayana_variant_label = "सायण-टीका (काण्वी)"
+content_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/saMhitA/sarva-prastutiH"
+
+[corpora.TS]
+name = "TS"
+shAkha_label = "तैत्तिरीयम्"
+pada_label = "पदपाठः - तैत्तिरीयः"
+sayana_variant_label = "सायण-टीका (तैत्तिरीया)"
+bb_variant_label = "भट्टभास्कर-टीका (तैत्तिरीया)"
+keith_variant_label = "Keith (तैत्तिरीयम्)"
+content_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH"
+vp_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/saMhitA/Rk/vishvAsa-prastutiH"
+sarva_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/saMhitA/Rk/sarvASh_TIkAH"
+vp_url_prefix = "/vedAH_yajuH/taittirIyam/sArasvata-vibhAgaH/saMhitA/Rk/vishvAsa-prastutiH"
+sarva_url_prefix = "/vedAH_yajuH/taittirIyam/sArasvata-vibhAgaH/saMhitA/Rk/sarvASh_TIkAH"
+yajuh_vp_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/saMhitA/yajuH/vishvAsa-prastutiH"
+yajuh_vp_url = "/vedAH_yajuH/taittirIyam/sArasvata-vibhAgaH/saMhitA/yajuH/vishvAsa-prastutiH"
+yajuh_sarva_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/saMhitA/yajuH/sarvASh_TIkAH"
+yajuh_sarva_url = "/vedAH_yajuH/taittirIyam/sArasvata-vibhAgaH/saMhitA/yajuH/sarvASh_TIkAH"
+yajuh_sarva_prastuti_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/saMhitA/yajuH/sarva-prastutiH"
+yajuh_sarva_prastuti_url = "/vedAH_yajuH/taittirIyam/sArasvata-vibhAgaH/saMhitA/yajuH/sarva-prastutiH"
+
+[corpora.TB]
+name = "TB"
+shAkha_label = "तैत्तिरीय-ब्राह्मणम्"
+pada_label = "पद-पाठः (यान्त्रिकः - तैत्तिरीय-ब्राह्मणम्)"
+sayana_variant_label = "सायण-टीका (ब्राह्मणी)"
+bb_variant_label = "भट्टभास्कर-टीका (ब्राह्मणम्)"
+keith_variant_label = "Keith (ब्राह्मणम्)"
+content_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/sarva-prastutiH"
+vp_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/Rk/vishvAsa-prastutiH"
+sarva_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/Rk/sarvASh_TIkAH"
+vp_url_prefix = "/vedAH_yajuH/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/Rk/vishvAsa-prastutiH"
+sarva_url_prefix = "/vedAH_yajuH/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/Rk/sarvASh_TIkAH"
+yajuh_sarva_prastuti_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/yajuH/sarva-prastutiH"
+yajuh_sarva_prastuti_url = "/vedAH_yajuH/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/yajuH/sarva-prastutiH"
+yajuh_vp_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/yajuH/vishvAsa-prastutiH"
+yajuh_vp_url = "/vedAH_yajuH/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/yajuH/vishvAsa-prastutiH"
+yajuh_sarva_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/yajuH/sarvASh_TIkAH"
+yajuh_sarva_url = "/vedAH_yajuH/taittirIyam/sArasvata-vibhAgaH/brAhmaNam/yajuH/sarvASh_TIkAH"
+
+[corpora.TK]
+name = "TK"
+shAkha_label = "तैत्तिरीय-काठकम्"
+pada_label = "पद-पाठः (यान्त्रिकः - काठकम्)"
+sayana_variant_label = "सायण-टीका (काठकी)"
+bb_variant_label = "भट्टभास्कर-टीका (काठकम्)"
+content_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/kAThakam/sarva-prastutiH"

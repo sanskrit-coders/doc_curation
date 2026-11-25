@@ -365,9 +365,9 @@ def test_backfill_corpora_only_adds_requested_corpora_verbatim(tmp_path):
   from doc_curation.sanskrit.accent.provenance import backfill_corpora_in_padapatha_markdown
 
   # Verify VS-M babylon double-udātta compound recovery (`सु᳓-प्रजाः᳓` -> `सुप्रजाः᳓`)
-  vs_bab = tmp_path / "syv-ms-padasvara.babylon"
+  vs_bab = tmp_path / "syv-vs-m-padasvara.babylon"
   vs_bab.write_text(
-    "\n#bookname=syv-ms-padasvara (sa-sa)\n\n"
+    "\n#bookname=syv-vs-m-padasvara (sa-sa)\n\n"
     "सुप्रजाः|सुप्रजा\nसु᳓-प्रजाः᳓ (4)<br>3.37\n\n",
     encoding="utf-8",
   )

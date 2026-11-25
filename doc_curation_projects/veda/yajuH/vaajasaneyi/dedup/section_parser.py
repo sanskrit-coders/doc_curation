@@ -180,14 +180,14 @@ def render_inline_vp_and_sarva(vp: str, tika_blocks: Sequence[tuple[str, str]]) 
   return "\n".join(parts)
 
 
-def render_js_include_stub(url: str, *, title: str | None = None, collapsed: bool = False, includetitle: str | None = None) -> str:
+def render_js_include_stub(url: str, *, title: str | None = None, collapsed: bool = False, includetitle: str | None = None, heading_level: int = 3) -> str:
   """Render an unfilled `<div class='js_include'>` placeholder matching VS-M/Taittirīya conventions."""
   cls = "js_include collapsed" if collapsed else "js_include"
   if includetitle is not None:
-    return f'<div class="{cls}" includetitle="{includetitle}" newlevelforh1="3" unfilled url="{url}">\n</div>'
+    return f'<div class="{cls}" includetitle="{includetitle}" newlevelforh1="{heading_level}" unfilled url="{url}">\n</div>'
   sum_tag = "<details>" if collapsed else "<details open>"
   return (
-    f'<div class="{cls}" newlevelforh1="3" title="{title}" unfilled url="{url}">\n'
+    f'<div class="{cls}" newlevelforh1="{heading_level}" title="{title}" unfilled url="{url}">\n'
     f"{sum_tag}<summary><h3>{title} ...{{Loading}}...</h3></summary>\n</details>\n</div>"
   )
 

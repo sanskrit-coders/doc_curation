@@ -27,18 +27,48 @@ interactive pages, deploys).
 - First CI runs fail until the gitlink commit lands (theme/content missing);
   this bootstrap failure is expected, not a bug.
 
-## Interactive pages: the uiLib rule
+## Interactive pages and theme JS/CSS rules
 
-`uiLib-bundle.js` rewrites `document.body.innerHTML` after load, silently
-dropping listeners attached during parsing (proven by MutationObserver probe;
-no console errors). For any in-page JS:
+- **DOM stability & event delegation**: `uiLib-bundle.js` no longer rewrites `document.body.innerHTML` on normal loads (`applyInlineComments` only updates leaf blocks containing `+++`), **but** `replaceWithQueryParam(...)` still rewrites `document.body.innerHTML` and `collapsibleSections()` wraps headings in `<details>`. Still prefer:
+  - Delegating from `document` (`click`/`input` with id checks) rather than caching element refs or binding before `sdThemeDone`.
+  - Hydrating interactive widgets on `sdThemeDone` (plus `DOMContentLoaded` if needed).
+  - Guarding inline `<script>` DOM wiring with `typeof document !== "undefined"` so Node can unit-test pure functions.
+- **Deferred vs sync `uiLib-bundle.js`**: `head_js.html` loads `uiLib-bundle.js` with `defer` unless `.RawContent` contains `<script` (in which case it loads synchronously so inline scripts calling `module_uiLib` or `module_dir_tree` still work at parse time).
+- **Code-splitting & Bootstrap-lite**: `uiLib-bundle.js` (~58 KB) excludes jQuery/Popper/Bootstrap JS (replaced by delegated `setupBootstrapLite()` supporting only `data-toggle="collapse"` and `data-toggle="dropdown"`) and lazy-loads heavy chunks on demand (`spreadsheets` for `.spreadsheet`, `mdInclude` for `.md` `js_include`s, `sanscript` when transliteration/TTS is active, `mathjaxMacros`). Do not introduce dependencies on jQuery `$`, other Bootstrap JS widgets, or eager imports of heavy parsers into the entry bundle.
+- **Fast startup & `index.json`**: Hugo emits `pageVars.pageParams` directly (`hugo-page-vars-to-js.html`), so content prep, includes, TOC, and `sdThemeDone` run immediately without awaiting `index.json`. `index.json` (slimmed to `title`, `relUrl`, `_index.md` `logicalName`, `lastmod`, `practice_weight`) prefetches in `<head>`, caches in Cache API (`sd-theme-index-v1`), and concurrently populates the lazy sidebar (`data-recdir` folders expand on `toggle`) and lazy `#pageDataList` (`#searchInput` focus). Keep `file://` (offline Android) working via XHR fallback (`utils.fetchText`/`fetchJson`).
+- **MathJax & fonts**: Site-wide `js_extras = ["mathjax"]` only loads `tex-svg.js` eagerly if `.RawContent` has `@#`, `$$`, `\(`, or `\[` (or page frontmatter sets `js_extras = ["mathjax"]`), with dynamic load fallback after `js_include`. `static/css/fonts.css` serves `.woff2` (`.ttf` fallback) with `font-display: swap` and per-script `unicode-range`.
+- **Rebuilding theme bundles**: After editing `webpack_src/`, run `npm run build` (`webpack --env production`) inside `webpack_src/` and commit updated `static/webpack_dist/` assets.
 
-- Delegate from `document` (`click`/`input` with id checks), never
-  `getElementById(...).addEventListener` at parse time.
-- Re-query elements inside every handler; never cache refs.
-- Inline `<script>` in `.md` files renders fine (`unsafe=true`); guard
-  DOM wiring with `typeof document !== "undefined"` so node can test the
-  pure logic by extracting the script block.
+## Includes (`js_include`) and prefilling
+
+Full attribute docs for `<div class="js_include">`, `<div class="spreadsheet">`, `<div class="audioEmbed">`, and `<div class="videoEmbed">` live in `themes/sanskrit-documentation-theme-hugo/README.md`.
+
+- **Source of truth lives in `static/` (or another `content/` repo):** A `<div class="js_include" ... url="...">...</div>` block in a host `.md` file holds a prefilled inline snapshot (typically wrapped in `<details open><summary><hN>... …{Loading}…</hN></summary>`) that is dynamically replaced at page load.
+  - Resolve target files via `doc_curation.md.content_processor.include.resolve_include_file_path(url, hugo_base_dir="/home/vvasuki/gitland/vishvAsa", current_file_path=...)` (wraps `file_path_from_url` with directory `_index.md` fallback and raw `static/*.md` relative-path handling):
+    - Root-relative URLs ending in `.md` map to `<hugo_base_dir>/<repo>/static/<rest>.md`.
+    - Root-relative URLs without `.md` map to `<hugo_base_dir>/<repo>/content/<rest>.md` (or `_index.md`).
+  - `js_include` behavior & prefill parity:
+    - `detailsPattern` (default `".*"`): when set to something other than `".*"`, only `<details>` blocks whose trimmed `<summary>` matches the regex are included (matching outer `<details>` keep their children; non-matching `<details>` recurse into child `<details>`).
+    - `newLevelForH1` (`"1"`–`"6"` or `"b[]"`; nested shifts use `min(6, (child - 1) + parent)`), `includeTitle` (`"true"`, `"plain"`, or `"false"`, overriding `title`), `title`, and `class="js_include collapsed"` control title/collapse output.
+    - For `.md` URLs, `fieldNames` prepends selected frontmatter keys and `metadataDetailName` (unless omitted or `"false"`) prepends a frontmatter `<details>` block.
+- **Refreshing prefilled includes:**
+  - When editing included `static/` or cross-repo `content/` sources, propagate changes across all transitive host containers via `include.surgical_prefill_transitive([static_dir, content_dir], changed_file_paths, hugo_base_dir="/home/vvasuki/gitland/vishvAsa")` (preserves `{Loading}` headers, Hugo `{{< ... >}}` shortcodes, and multi-hop nested `js_include`s without BeautifulSoup re-serialization; `include.surgical_prefill_includes` refreshes a single directory, and `include.prefill_includes` / `prefill_include` is the BeautifulSoup prefiller).
+  - To inline matching `js_include` directives directly into host files and safely delete unreferenced included source files, use `include.deinclude(dir_path, url_filter=..., prefill=True, delete_included_files=True, reference_check_roots=..., dry_run=...)` (or `include.deinclude_content`). It uses balanced div slicing, applies `detailsPattern`/`fieldNames`/`metadataDetailName`, strips `{Loading}` and `<hN>` summary tags, and preserves open vs. collapsed `<details>` state.
+  - See `doc_curation.md.content_processor.include` and `doc_curation_projects/general_tasks/content/include_fix.py`.
+
+## Updating theme submodules across all Hugo sites
+
+Whenever `sanskrit-documentation-theme-hugo` changes must roll out everywhere:
+
+1. **Discover all checkouts**: Look across `~/gitland/vishvAsa/*` (31 repos) plus the standalone org repos (`~/gitland/sanskrit-coders/sanskrit-coders.github.io`, `~/gitland/sanskrit/sanskrit.github.io`, `~/gitland/hindutva/hindutva.github.io`, `~/gitland/become-hindu/become-hindu.github.io`, `~/gitland/jyotisham/jyotisham.github.io`, `~/gitland/subhashita/subhAShita.github.io`, `~/gitland/xetram/xetram.github.io`) — verify with a directory scan for `themes/sanskrit-documentation-theme-hugo`.
+2. **Pre-flight checks before editing**:
+   - Ensure the canonical theme checkout (`notes/themes/sanskrit-documentation-theme-hugo`) is clean, tested (`verify_theme.py`), and pushed to `origin/master`.
+   - Fetch `origin` in each site repo and verify `0 0` sync, confirm `git diff --cached --name-only` is empty (do not sweep user-staged work), check each submodule checkout is clean, and inspect `.github/workflows/build*.yml` (both `master` and `content` branches when applicable, watching `hugo-version` compatibility and branch name, e.g. `jyotisham` uses `hugo-source`).
+3. **Update, verify, commit, and push**:
+   - Inside each site's `themes/sanskrit-documentation-theme-hugo`, fetch `origin master`, switch to `master` if detached, and fast-forward (`git merge --ff-only <target_sha>`).
+   - Spot-check `hugo --destination <tmpdir>` builds (especially sites with custom `layouts/` like `rahaShTippanyaH` or special `config*.toml` like `mImAMsA`, `mahAbhAratam`) without clobbering `build_github/`.
+   - Commit **only** the submodule (`git commit --only themes/sanskrit-documentation-theme-hugo -m "Update theme submodule: ..."`), never sweeping dirty `content/` or `static/` submodule pointers.
+   - Push each site's branch (`git push origin <branch>`) and verify CI with `gh run list -R <org>/<repo>`.
 
 ## Sidebars
 
@@ -73,11 +103,13 @@ no console errors). For any in-page JS:
 ## Verification
 
 - `hugo` in the master checkout must build cleanly.
+- Theme verification & 4G performance regression suite (Playwright + Hugo):
+  - Fixture suite + offline `file://` check + bundle/4G budgets:
+    `~/gitland/python_venv/bin/python themes/sanskrit-documentation-theme-hugo/tests/verify_theme.py`
+  - Benchmark any site or built directory:
+    `~/gitland/python_venv/bin/python themes/sanskrit-documentation-theme-hugo/tests/verify_theme.py --site <site_dir> --base-path /<repo>/` (or `--built-dir <dir> --no-perf-assert`).
 - `gh run list --repo <org>/<repo>` for CI; `curl` the live URL and check
   the `<title>` after Pages deploys (takes ~1 min).
-- Browser testing: Playwright lives in `~/gitland/python_venv`;
-  serve a local build under its subpath (`/tmp/serve/<repo>/`) so absolute
-  asset paths resolve.
 - Check `git status` before every commit in repos the user edits; staged
   work of theirs must never be swept into your commit message.
 

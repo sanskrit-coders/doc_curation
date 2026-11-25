@@ -39,7 +39,7 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   us_padasvara_to_entry,
 )
 
-PROVENANCE_CACHE_VERSION = 12
+PROVENANCE_CACHE_VERSION = 13
 DEFAULT_PROVENANCE_CACHE_PATH = os.path.expanduser(
   "~/.cache/doc_curation/vedic_corpus_counts_v1.pkl"
 )
@@ -409,14 +409,15 @@ class VedicCorpusCounter:
       dirs.update(corpus_dirs)
     counter = cls()
 
-    # 1. Padasvara Babylon dictionaries (exact padapāṭha frequencies for RV, TS, TB, TK, AV, VS-M)
+    # 1. Padasvara Babylon dictionaries (exact padapāṭha frequencies for RV, TS, TB, TK, AV, VS-M, VS-K)
     for tag, rel in (
       ("RV", "stardict-sanskrit-kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon"),
       ("TS", "stardict-sanskrit-kAvya/kyv-ts-padasvara/kyv-ts-padasvara.babylon"),
       ("TB", "stardict-sanskrit-kAvya/kyv-tb-pada-svara/kyv-tb-pada-svara.babylon"),
       ("TK", "stardict-sanskrit-kAvya/kyv-tk-pada-svara/kyv-tk-pada-svara.babylon"),
       ("AV", "stardict-sanskrit-kAvya/av-padasvara/av-padasvara.babylon"),
-      ("VS-M", "stardict-sanskrit-kAvya/syv-ms-padasvara/syv-ms-padasvara.babylon"),
+      ("VS-M", "stardict-sanskrit-kAvya/syv-vs-m-padasvara/syv-vs-m-padasvara.babylon"),
+      ("VS-K", "stardict-sanskrit-kAvya/syv-vs-k-padasvara/syv-vs-k-padasvara.babylon"),
     ):
       bpath = os.path.join(dict_root, rel)
       if os.path.isfile(bpath):
@@ -428,7 +429,7 @@ class VedicCorpusCounter:
     if ts_dir and os.path.isdir(ts_dir):
       counter._ingest_us_vp_supplement(ts_dir, "TS")
 
-    # 3. VS-M (Mādhyandina; legacy alias `VS`): fallback to local markdown dir if syv-ms-padasvara.babylon wasn't loaded
+    # 3. VS-M (Mādhyandina; legacy alias `VS`): fallback to local markdown dir if syv-vs-m-padasvara.babylon wasn't loaded
     vs_m_dir = dirs.get("VS-M") or dirs.get("VS", "")
     if not counter.exact_counts.get("VS-M") and vs_m_dir and os.path.isdir(vs_m_dir):
       counter._ingest_vs_dir(vs_m_dir, corpus="VS-M")
@@ -438,10 +439,13 @@ class VedicCorpusCounter:
     elif vs_dir and os.path.isdir(vs_dir):
       counter._ingest_vs_dir(vs_dir, corpus="VS")
 
-    # 3b. VS-K (Kāṇva Saṁhitā): US-accented `विश्वास-प्रस्तुतिः` (fallback to classical `मूलम्`)
+    # 3b. VS-K (Kāṇva Saṁhitā): supplement from US-accented `विश्वास-प्रस्तुतिः` if babylon loaded, else full markdown crawl
     vs_k_dir = dirs.get("VS-K", "")
     if vs_k_dir and os.path.isdir(vs_k_dir):
-      counter._ingest_us_markdown_corpus(vs_k_dir, "VS-K")
+      if counter.exact_counts.get("VS-K"):
+        counter._ingest_us_vp_supplement(vs_k_dir, "VS-K")
+      else:
+        counter._ingest_us_markdown_corpus(vs_k_dir, "VS-K")
 
     # 4. TB, TK, ŚB / SB-M, SB-K: deduplicated per section (`पद-पाठः` > `पद-पाठः (यान्त्रिकः...)` > `विश्वास-प्रस्तुतिः`)
     # Skip TB/TK markdown crawl if their padasvara Babylon dictionaries were already loaded in step 1.
@@ -480,8 +484,8 @@ class VedicCorpusCounter:
         continue
       form_raw, freq = m.group(1), int(m.group(2))
       conv = us_padasvara_to_entry(form_raw) if is_us else classical_padapatha_to_us(form_raw)
-      if conv is None and is_us and corpus == "VS-M":
-        # `syv-ms-padasvara.babylon` inherits unmarked pre-avagraha syllables before `॒` as a spurious leading `᳓`
+      if conv is None and is_us and corpus in ("VS-M", "VS-K"):
+        # `syv-vs-{m,k}-padasvara.babylon` inherits unmarked pre-avagraha syllables before `॒` as a spurious leading `᳓`
         # on compounds (`सु᳓-प्रजाः᳓`, `पु᳓ष्टि-व᳓र्धनः`); recover the true final accent on non-dual compounds.
         joined_vs = _join_virama_vowels(form_raw.replace("-", "").replace("ऽ", ""))
         scanned_vs = _fast_scan_deva_syllables(joined_vs)

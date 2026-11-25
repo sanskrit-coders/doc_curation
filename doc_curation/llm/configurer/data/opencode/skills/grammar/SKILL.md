@@ -127,7 +127,8 @@ Look for attestation first; derive only when nothing attests the form. Order of 
 | `kyv-ts-padasvara` | Kṛṣṇa-Yajurveda Taittirīya Saṃhitā word forms with US accents, counts & occurrences (`1.1.12`) |
 | `kyv-tb-pada-svara` | Kṛṣṇa-Yajurveda Taittirīya Brāhmaṇa word forms with US accents, counts & occurrences (`1.1.1`) |
 | `kyv-tk-pada-svara` | Kṛṣṇa-Yajurveda Taittirīya Kāṭhaka word forms with US accents, counts & occurrences (`1.1.1`) |
-| `syv-ms-padasvara` | Śukla-Yajurveda Mādhyandina Saṃhitā word forms with US accents, counts & occurrences (`34.12`) |
+| `syv-vs-m-padasvara` | Śukla-Yajurveda Mādhyandina Saṃhitā (VS-M) word forms with US accents, counts & occurrences (`34.12`) |
+| `syv-vs-k-padasvara` | Śukla-Yajurveda Kāṇva Saṃhitā (VS-K) word forms with US accents, counts & occurrences (`1.1`) |
 | `syv-sb-m-pada-svara` | Śatapatha Brāhmaṇa (Mādhyandina) word forms with US accents, counts & occurrences (`1.9.2.23`, excluding `→` suggestions) |
 | `syv-sb-k-pada-svara` | Śatapatha Brāhmaṇa (Kāṇva) word forms with US accents, counts & occurrences (`1.1.1.2`, excluding `→` suggestions) |
 | `rv-prakRti-svara-dev` | Ṛgveda Śākala prātipadika/avyaya stems & `[धातुः]` finite-form synopses with US accents (`1.50.3`) |
@@ -135,7 +136,8 @@ Look for attestation first; derive only when nothing attests the form. Order of 
 | `kyv-ts-prakRti-svara` | Kṛṣṇa-Yajurveda-TS stems & `[धातुः]` synopses with US accents (`1.7.33`) |
 | `kyv-tb-prakRti-svara` | Kṛṣṇa-Yajurveda-TB stems & `[धातुः]` synopses with US accents (`1.1.1`) |
 | `kyv-tk-prakRti-svara` | Kṛṣṇa-Yajurveda-TK stems & `[धातुः]` synopses with US accents (`1.1.1`) |
-| `syv-ms-prakRti-svara` | Śukla-Yajurveda Mādhyandina Saṃhitā stems & `[धातुः]` synopses with US accents (`8.40`) |
+| `syv-vs-m-prakRti-svara` | Śukla-Yajurveda Mādhyandina Saṃhitā (VS-M) stems & `[धातुः]` synopses with US accents (`8.40`) |
+| `syv-vs-k-prakRti-svara` | Śukla-Yajurveda Kāṇva Saṃhitā (VS-K) stems & `[धातुः]` synopses with US accents (`1.1`) |
 | `syv-sb-m-prakRti-svara` | Śatapatha Brāhmaṇa (Mādhyandina) stems & `[धातुः]` synopses with US accents (`1.3.3.19`) |
 | `rv-padapATha-dev` | Ṛgveda pādas: unaccented saṃhitā head → accented saṃhitā + accented pada-pāṭha + reference |
 

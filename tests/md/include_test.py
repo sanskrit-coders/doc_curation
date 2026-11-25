@@ -552,3 +552,130 @@ def test_deinclude_content_no_prefill_and_titleless():
   assert out.count("<details") == out.count("</details>") == 1
 
 
+def test_prefill_details_pattern_frontmatter_and_js_parity(tmp_path):
+  static_dir = tmp_path / "notes" / "static" / "sub"
+  static_dir.mkdir(parents=True)
+  (static_dir / "leaf.md").write_text(
+    textwrap.dedent("""\
+      +++
+      title = "Leaf"
+      author = "Test Author"
+      +++
+
+      # Top Heading
+
+      ## Sub Heading
+
+      <img src="leaf.png">
+
+      Intro bare text.
+
+      <details><summary>Alpha</summary>
+
+      Alpha body.
+      </details>
+
+      <details><summary>Beta</summary>
+
+      Beta body.
+
+      <details><summary>Nested Child</summary>
+
+      Nested body.
+      </details>
+      </details>
+    """),
+    encoding="utf-8",
+  )
+
+  content_dir = tmp_path / "notes" / "content" / "host"
+  content_dir.mkdir(parents=True)
+  host = content_dir / "page.md"
+  host.write_text(
+    textwrap.dedent("""\
+      +++
+      title = "Host"
+      +++
+
+      <div id="default_case" class="js_include" url="/notes/sub/leaf.md" newLevelForH1="3" includeTitle="false" title="ShouldBeHidden" detailsPattern=".*" fieldNames="author" metadataDetailName="false"></div>
+
+      <div id="beta_case" class="js_include" url="/notes/sub/leaf.md" newLevelForH1="3" includeTitle="false" detailsPattern="Beta"></div>
+
+      <div id="nested_case" class="js_include" url="/notes/sub/leaf.md" newLevelForH1="3" includeTitle="false" detailsPattern="Nested Child"></div>
+
+      <div id="meta_case" class="js_include" url="/notes/sub/leaf.md" newLevelForH1="3" includeTitle="plain" detailsPattern="Custom Meta" metadataDetailName="Custom Meta"></div>
+    """),
+    encoding="utf-8",
+  )
+
+  include_helper.prefill_includes(dir_path=str(host), hugo_base_dir=str(tmp_path))
+  after = host.read_text(encoding="utf-8")
+
+  # default detailsPattern=".*", fieldNames, metadataDetailName="false", includeTitle="false" over title
+  assert "ShouldBeHidden …{Loading}…" not in after
+  assert "<h3" not in after
+  assert "author : Test Author" in after
+  assert "Intro bare text." in after
+  assert "### Top Heading" in after
+  assert "#### Sub Heading" in after
+  assert "../../sub/leaf.png" in after
+  assert "<summary>Metadata</summary>" not in after
+  assert "<summary>Leaf …{Loading}…</summary>" in after
+  assert "<summary>Custom Meta</summary>" in after
+  assert "<h3>Leaf" not in after
+  assert '"author": "Test Author"' in after
+
+  # Check surgical prefill + camelCase attrs + b[] headings at EOF + detailsPattern parity
+  surg_host = content_dir / "surg.md"
+  surg_host.write_text(
+    textwrap.dedent("""\
+      +++
+      title = "Surg"
+      +++
+      <div class="js_include" url="/notes/sub/leaf.md" newLevelForH1="3" includeTitle="false" detailsPattern="Nested Child">
+      stale
+      </div>
+      <div class="js_include" url="/notes/sub/leaf.md" newLevelForH1="b[]" includeTitle="false" detailsPattern="Beta">
+      stale2
+      </div>
+    """),
+    encoding="utf-8",
+  )
+  updated, n = include_helper.surgical_prefill_content(
+    surg_host.read_text(encoding="utf-8"),
+    str(surg_host),
+    hugo_base_dir=str(tmp_path),
+  )
+  assert n == 2
+  assert "Nested body." in updated
+  assert "Alpha body." not in updated
+  assert "Beta body." in updated
+
+  # Verify nested newLevelForH1 math & h6 clamping in prefill_include: outer=5 + inner=4 -> min(6, (4-1)+5)=6 (never h7)
+  (static_dir / "deep_leaf.md").write_text('+++\ntitle = "Deep"\n+++\nDeep text.\n', encoding="utf-8")
+  (static_dir / "mid.md").write_text(
+    '+++\ntitle = "Mid"\n+++\n<div class="js_include" url="deep_leaf.md" newLevelForH1="4" includeTitle="true"></div>\n',
+    encoding="utf-8",
+  )
+  deep_host = content_dir / "deep_host.md"
+  deep_host.write_text(
+    '+++\ntitle = "Deep Host"\n+++\n<div class="js_include" url="/notes/sub/mid.md" newLevelForH1="5" includeTitle="true"></div>\n',
+    encoding="utf-8",
+  )
+  include_helper.prefill_includes(dir_path=str(deep_host), hugo_base_dir=str(tmp_path))
+  deep_out = deep_host.read_text(encoding="utf-8")
+  assert "<h5>Mid …{Loading}…</h5>" in deep_out
+  assert "<h6>Deep …{Loading}…</h6>" in deep_out
+  assert "<h7>" not in deep_out
+
+  # Verify deinclude matches includeTitle="false" precedence + detailsPattern
+  deinc_out, _ = include_helper.deinclude_content(
+    '<div class="js_include" url="/notes/sub/leaf.md" newLevelForH1="3" includeTitle="false" title="ShouldHide" detailsPattern="Nested Child"></div>\n',
+    str(host),
+    hugo_base_dir=str(tmp_path),
+  )
+  assert "ShouldHide" not in deinc_out
+  assert deinc_out.strip().startswith("<details><summary>Nested Child</summary>")
+
+
+

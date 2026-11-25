@@ -23,7 +23,7 @@ from doc_curation.md.content_processor.commentary import interleaver
 
 **Empty layer:** if the source has no commentary for a core text (e.g. only a colophon follows), omit it's commentary block for the group rather than leaving an empty block. 
 
-**Cross-recension alignment:** When interleaving a translation based on a different recension (e.g. Sāyaṇa pāṭha vs. Drāviḍa pāṭha), align by parallel mantra/clause boundaries while leaving the host file's `मूलम्` and `विश्वास-प्रस्तुतिः` text unchanged.
+**Cross-recension alignment:** When interleaving a translation or commentary into a shared `sarvASh_TIkAH/` file across recensions, label variant readings (`मूलम् - <Śākhā>`, `पदपाठः - <Śākhā>`) and colliding commentators (e.g. `सायण-टीका (काण्वी)`); keep `विश्वास-प्रस्तुतिः` separate unless readings and US accents agree (`md-processing` skill). When interleaving a different recension into a single host file (e.g. Sāyaṇa pāṭha vs. Drāviḍa pāṭha), align by parallel mantra/clause boundaries while leaving the host's `मूलम्` and `विश्वास-प्रस्तुतिः` unchanged.
 
 **Verifying alignment & digitization artifacts:** Never align solely by translation item numbers—verify lexical/semantic correspondence against the Sanskrit so shifted, misplaced, or duplicated translation passages are caught. Check section-level `> *Note:*` blocks carefully (print/OCR sources often leave the introductory note for section `N+1` at the end of section `N`, or duplicate an inline footnote) and place each note only at the section or block it actually introduces.
 

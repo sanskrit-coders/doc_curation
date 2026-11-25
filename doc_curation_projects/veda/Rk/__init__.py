@@ -10,7 +10,7 @@ from doc_curation.md.file import MdFile
 
 SAMHITA_DIR_STATIC = "/home/vvasuki/gitland/vishvAsa/vedAH_Rk/static/shAkalam/saMhitA/"
 commentary_base = os.path.join(SAMHITA_DIR_STATIC, "sarvASh_TIkAH")
-comment_dirs = ["vishvAsa-prastutiH", "mUlam", "pada-pAThaH", "anukramaNikA", "sAyaNa-bhAShyam",  "jamison_brereton", "griffith", "wilson", "hellwig_grammar"]
+comment_dirs = ["vishvAsa-prastutiH", "pada-pAThaH", "anukramaNikA", "sAyaNa-bhAShyam",  "jamison_brereton", "griffith", "wilson", "hellwig_grammar"]
 
 
 def rk_id_from_path(Rk_path):
@@ -24,7 +24,9 @@ def suukta_id_from_path(Rk_path):
 
 @lru_cache
 def get_Rk_id_to_name_map_from_muulam():
-  Rk_paths = glob.glob(os.path.join(SAMHITA_DIR_STATIC, "mUlam/*/*/*.md"), recursive=True)
+  Rk_paths = glob.glob(os.path.join(SAMHITA_DIR_STATIC, "vishvAsa-prastutiH/*/*/*.md"), recursive=True)
+  if not Rk_paths:
+    Rk_paths = glob.glob(os.path.join(SAMHITA_DIR_STATIC, "mUlam/*/*/*.md"), recursive=True)
   Rk_paths = sorted(Rk_paths)
   Rk_id_to_name_map = {}
   for Rk_path in Rk_paths:

@@ -35,8 +35,8 @@ Repository: `~/gitland/indic-dict/dict-curation/` (run with `~/gitland/python_ve
 - `dict_curation_projects/conversion/babylon/dict_specific/` — Source-specific Babylon dictionary builders (e.g., `apte_sa.py`, `kalpadruma.py`, `vAchaspatyam.py`, `hi_shabdasAgar.py`, `datuk2babylon.py`, etc.).
 - `dict_curation_projects/conversion/babylon/dict_specific/veda/` — Vedic padapāṭha svara and prakṛti-svara generators in US notation (`᳓` / `᳙`):
   - `padasvara_common.py` — shared Babylon writer, read-only mirror guard (`assert_writable_dict_dest`), & classical→US accent normalizers
-  - `taittiriya.py` (`kyv-ts-padasvara`), `taittiriya_brahmana.py` (`kyv-tb-pada-svara` for `*TB*`, `kyv-tk-pada-svara` for `*TK*`), `rgveda.py` (`rv-padasvara-dev`), `atharva.py` (`av-padasvara`), `madhyandina.py` (`syv-ms-padasvara`), `shatapatha.py` (`syv-sb-m-pada-svara` for `*SB-M*`, `syv-sb-k-pada-svara` for `*SB-K*`), `dhatupatha_svara.py` (`dhAtupAThaH_sasvaraH`)
-  - `prakrti_svara.py` (`kyv-ts-prakRti-svara`, `kyv-tb-prakRti-svara`, `kyv-tk-prakRti-svara`, `rv-prakRti-svara-dev`, `av-prakRti-svara`, `syv-ms-prakRti-svara`, `syv-sb-m-prakRti-svara`)
+  - `taittiriya.py` (`kyv-ts-padasvara`), `taittiriya_brahmana.py` (`kyv-tb-pada-svara` for `*TB*`, `kyv-tk-pada-svara` for `*TK*`), `rgveda.py` (`rv-padasvara-dev`), `atharva.py` (`av-padasvara`), `madhyandina.py` (`syv-vs-m-padasvara` for `*VS-M*`, `syv-vs-k-padasvara` for `*VS-K*`), `shatapatha.py` (`syv-sb-m-pada-svara` for `*SB-M*`, `syv-sb-k-pada-svara` for `*SB-K*`), `dhatupatha_svara.py` (`dhAtupAThaH_sasvaraH`)
+  - `prakrti_svara.py` (`kyv-ts-prakRti-svara`, `kyv-tb-prakRti-svara`, `kyv-tk-prakRti-svara`, `rv-prakRti-svara-dev`, `av-prakRti-svara`, `syv-vs-m-prakRti-svara`, `syv-vs-k-prakRti-svara`, `syv-sb-m-prakRti-svara`)
 - `dict_curation_projects/dump/` — Scrapers and Vidyut/vyākaraṇa generators (`vidyut_dicts.py`, `vidyut-calls.sh`, `bhagavad-go-maNDala.py`, `scrape_rkencp.py`, `shabda_kasustubha.py`, etc.; run heavy dumps on Kaggle/Colab, not locally).
 
 ### Packaging, headword expansion, CLI & CI tooling (Scala / Bash)

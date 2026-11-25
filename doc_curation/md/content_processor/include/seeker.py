@@ -17,8 +17,8 @@ def file_path_from_url(url, hugo_base_dir, current_file_path):
       if not os.path.isfile(file_path):
         file_path = regex.sub(r"(/.+?)(/.+)/?", f"{hugo_base_dir}\\1/content\\2/_index.md", url)
   else:
-    # relative path
-    if os.path.basename(current_file_path) == "_index.md":
+    # relative path: _index.md and raw static .md files resolve from their containing directory.
+    if os.path.basename(current_file_path) == "_index.md" or ("/static/" in str(current_file_path) and str(current_file_path).endswith(".md")):
       file_path = urljoin(current_file_path, url)
     else:
       file_path = urljoin(current_file_path + "/", url)

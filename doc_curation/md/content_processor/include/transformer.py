@@ -1,9 +1,11 @@
+import json
 import logging
 import os
 
 import regex
 from bs4 import BeautifulSoup
 from doc_curation.md import content_processor, library
+from doc_curation.md.content_processor.details import common as details_common
 from doc_curation.md.content_processor.include.maker import make_alt_include
 from doc_curation.md.content_processor.include.seeker import file_path_from_url, resolve_include_file_path
 from doc_curation.md.content_processor.section_helper import fix_headers
@@ -74,60 +76,247 @@ def old_include_remover(inc, *args, **kwargs):
   elif not "includetitle" in inc.attrs:
     return inc.decompose()
 
+def _served_dir(file_path, is_md_raw=False):
+  """Map a Hugo ``static/`` or ``content/`` file path to its served URL-equivalent folder path."""
+  norm_path = str(file_path)
+  if "/static/" in norm_path:
+    served = norm_path.replace("/static/", "/", 1)
+    return os.path.dirname(served) if (is_md_raw or served.endswith("_index.md")) else served + "/"
+  if "/content/" in norm_path:
+    served = norm_path.replace("/content/", "/", 1)
+    return os.path.dirname(served) if served.endswith("_index.md") else served + "/"
+  if norm_path.endswith("_index.md"):
+    return os.path.dirname(norm_path)
+  return norm_path + "/"
+
+
 def fix_rel_urls(content, from_path, to_path):
-  def replacer(match):
-    orig_url = match.group(2)
-    # Skip if URL has a scheme (http:, mailto:, javascript:, tel: ...) or starts with '#'
+  src_folder = _served_dir(from_path, is_md_raw=str(from_path).endswith(".md") and "/static/" in str(from_path))
+  dest_folder = _served_dir(to_path)
+
+  def _relativize(orig_url):
+    # Skip if URL has a scheme (http:, mailto:, javascript:, tel:, data: ...) or starts with '#' or '/'
     if regex.match(r'[a-zA-Z][a-zA-Z0-9+.\-]*:', orig_url) or orig_url.startswith(('#', '/')):
-      return match.group(0)
-    # Compute fixed relative path from file b to target
-    if from_path.endswith("_index.md"):
-      src_folder = os.path.dirname(from_path)
-    else:
-      src_folder = from_path + "/"
-    if to_path.endswith("_index.md"):
-      dest_folder = os.path.dirname(to_path)
-    else:
-      dest_folder = to_path + "/"
+      return orig_url
     resolved = os.path.normpath(os.path.join(src_folder, orig_url))
-    rel_new = os.path.relpath(resolved, dest_folder)
-    return f'{match.group(1)}{rel_new}{match.group(3)}'
+    return os.path.relpath(resolved, dest_folder)
+
+  def replacer(match):
+    return f'{match.group(1)}{_relativize(match.group(2))}{match.group(3)}'
 
   # Fix both image ![](url) and link [](url) references
   pattern = regex.compile(r'(!?\[.*?\]\()([^\)\s]+)(\))')
-  new_content = pattern.sub(replacer, content)
-  return new_content
+  return pattern.sub(replacer, content)
+
+
+_TAG_ATTR_RE = regex.compile(
+  r"""\b([a-zA-Z_:][a-zA-Z0-9_.:-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?"""
+)
+_SUMMARY_TAG_RE = regex.compile(r"<summary\b[^>]*>(.*?)</summary>", flags=regex.DOTALL | regex.IGNORECASE)
+_INNER_HTML_TAG_RE = regex.compile(r"<[^>]+>")
+
+
+def _extract_open_tag_attrs(open_tok: str) -> dict[str, str]:
+  """Parse HTML opening tag attributes into a lowercase-keyed dict."""
+  inner = open_tok.strip()
+  if inner.startswith("<"):
+    m_head = regex.match(r"^<\s*\w+\b", inner)
+    if m_head:
+      inner = inner[m_head.end():]
+  if inner.endswith(">"):
+    inner = inner[:-1].rstrip("/")
+  attrs: dict[str, str] = {}
+  for m in _TAG_ATTR_RE.finditer(inner):
+    key = m.group(1).lower()
+    val = m.group(2) if m.group(2) is not None else (m.group(3) if m.group(3) is not None else (m.group(4) if m.group(4) is not None else ""))
+    attrs[key] = val
+  return attrs
+
+
+def _extract_bs_attrs(tag) -> dict[str, str]:
+  """Normalize BeautifulSoup tag attributes into lowercase string values matching ``_extract_open_tag_attrs``."""
+  attrs: dict[str, str] = {}
+  for k, v in (tag.attrs or {}).items():
+    kl = str(k).lower()
+    if isinstance(v, list):
+      attrs[kl] = " ".join(str(x) for x in v)
+    elif v is None:
+      attrs[kl] = ""
+    else:
+      attrs[kl] = str(v)
+  return attrs
+
+
+def filter_details_by_pattern(content: str, details_pattern: str | None) -> str:
+  """Keep only ``<details>`` blocks whose trimmed ``<summary>`` matches ``details_pattern`` (matching JS ``handleIncludes.js``)."""
+  if not details_pattern or details_pattern.strip() == ".*":
+    return content
+  try:
+    pat = regex.compile(details_pattern, flags=regex.DOTALL)
+  except regex.error as exc:
+    logging.error(f"Invalid detailsPattern regex {details_pattern!r}: {exc}")
+    return content
+
+  def _collect(text: str, out: list[str]) -> None:
+    for start, end in details_common.get_top_level_detail_spans(text):
+      block = text[start:end]
+      m_sum = _SUMMARY_TAG_RE.search(block)
+      summary_raw = m_sum.group(1) if m_sum else ""
+      summary_text = _INNER_HTML_TAG_RE.sub("", summary_raw).strip()
+      if pat.search(summary_text):
+        out.append(block)
+      elif m_sum:
+        close_idx = block.rfind("</details>")
+        if close_idx > m_sum.end():
+          _collect(block[m_sum.end():close_idx], out)
+
+  matched: list[str] = []
+  _collect(content, matched)
+  return "\n\n".join(matched)
+
+
+def _format_metadata_detail(metadata: dict, detail_name: str) -> str:
+  """Render frontmatter metadata inside ``<details>`` matching ``mdInclude.js``."""
+  clean_meta = {k: v for k, v in (metadata or {}).items() if not str(k).startswith("_")}
+  meta_json = json.dumps(clean_meta, indent=2, ensure_ascii=False, default=str)
+  meta_md = regex.sub(r"(\s*[\{\[\]\}])", "", meta_json)
+  meta_md = regex.sub(r"(\n +)", r"\1- ", meta_md).strip()
+  return f"<details><summary>{detail_name}</summary>\n\n{meta_md}\n</details>"
+
+
+def _apply_md_frontmatter_options(inc_meta: dict, inc_content: str, attrs: dict[str, str], url: str) -> str:
+  """Apply ``mdInclude.js`` frontmatter options (``fieldNames`` and ``metadataDetailName``) for ``.md`` targets."""
+  clean_url = (url or "").split("#", 1)[0].split("?", 1)[0]
+  if not clean_url.endswith(".md"):
+    return inc_content
+  out = inc_content
+  if "metadatadetailname" in attrs:
+    raw_name = (attrs.get("metadatadetailname") or "").strip()
+    if raw_name.lower() != "false":
+      detail_name = raw_name or "Metadata"
+      out = f"{_format_metadata_detail(inc_meta, detail_name)}\n\n{out}"
+  field_names = (attrs.get("fieldnames") or "").strip()
+  if field_names:
+    clean_meta = {k: v for k, v in (inc_meta or {}).items() if not str(k).startswith("_")}
+    parts = []
+    for raw_field in field_names.split(","):
+      fn = raw_field.strip()
+      if fn in clean_meta and clean_meta[fn] is not None:
+        parts.append(f"{fn} : {clean_meta[fn]}")
+      else:
+        parts.append("")
+    out = "\n\n".join(parts) + "\n\n" + out
+  return out
+
+
+def _effective_h1_level(raw_new_level, h1_level_offset=0, default_level=2):
+  """Compute clamped effective H1 level (1..6 or ``"b[]"``), matching JS nested include math."""
+  if h1_level_offset == "b[]" or raw_new_level == "b[]":
+    return "b[]"
+  if raw_new_level is not None and str(raw_new_level).strip().isdigit():
+    own = int(str(raw_new_level).strip())
+    if own < 1 or own > 6:
+      own = 6
+  else:
+    own = default_level
+  if isinstance(h1_level_offset, int) and h1_level_offset > 0:
+    return min(6, (own - 1) + h1_level_offset)
+  return max(1, min(6, own))
+
+
+def _resolve_title_from_attrs(attrs: dict[str, str], inc_meta: dict, fallback_title: str = "") -> tuple[str, bool]:
+  """Resolve ``(title, is_plain)`` using JS ``includeTitle`` / ``title`` precedence."""
+  inc_title_attr = attrs.get("includetitle")
+  title_attr = (attrs.get("title") or "").strip()
+  add_title = inc_title_attr if inc_title_attr is not None else (title_attr or None)
+  if not add_title or str(add_title).strip().lower() == "false":
+    return "", False
+  resolved = title_attr or str((inc_meta or {}).get("title") or fallback_title).strip()
+  is_plain = str(add_title).strip().lower() == "plain"
+  return resolved, is_plain
+
+
+def _relativize_html_attrs(content: str, from_path: str, to_path: str, parent_h1_level=None) -> str:
+  """Relativize HTML ``src``, nested ``js_include`` ``url``/``newLevelForH1``, and Markdown links/images."""
+  content = fix_rel_urls(content=content, from_path=from_path, to_path=to_path)
+  src_folder = _served_dir(from_path, is_md_raw=str(from_path).endswith(".md") and "/static/" in str(from_path))
+  dest_folder = _served_dir(to_path)
+
+  def _relativize(orig_url: str) -> str:
+    if not orig_url or regex.match(r'[a-zA-Z][a-zA-Z0-9+.\-]*:', orig_url) or orig_url.startswith(('#', '/')):
+      return orig_url
+    resolved = os.path.normpath(os.path.join(src_folder, orig_url))
+    return os.path.relpath(resolved, dest_folder)
+
+  content = regex.sub(
+    r"""(<(?:img|source|div)\b[^>]*?\bsrc=["'])([^"']+)(["'])""",
+    lambda m: f"{m.group(1)}{_relativize(m.group(2))}{m.group(3)}",
+    content,
+    flags=regex.IGNORECASE,
+  )
+
+  def _fix_nested_inc(match):
+    tag = match.group(0)
+    if "js_include" not in tag:
+      return tag
+    tag = regex.sub(
+      r"""(\burl=["'])([^"']+)(["'])""",
+      lambda um: f"{um.group(1)}{_relativize(um.group(2))}{um.group(3)}",
+      tag,
+      flags=regex.IGNORECASE,
+    )
+    if isinstance(parent_h1_level, int) and parent_h1_level > 0:
+      def _shift_nl(nm):
+        val = nm.group(2).strip()
+        if val.isdigit():
+          shifted = min(6, (int(val) - 1) + parent_h1_level)
+          return f"{nm.group(1)}{shifted}{nm.group(3)}"
+        return nm.group(0)
+      tag = regex.sub(r"""(\bnewLevelForH1=["'])([^"']+)(["'])""", _shift_nl, tag, flags=regex.IGNORECASE)
+    return tag
+
+  return regex.sub(r"<div\b[^>]*>", _fix_nested_inc, content, flags=regex.IGNORECASE)
+
+
+def _prepare_included_content(inc_meta, inc_content, attrs, url, target_fp, container_fp, h1_level, strip_rel_url_shift=False):
+  """Apply JS-equivalent ``js_include`` transforms (frontmatter fields/details, ``detailsPattern``, headers, relative URLs)."""
+  rendered = _apply_md_frontmatter_options(inc_meta, inc_content, attrs, url)
+  rendered = filter_details_by_pattern(rendered, attrs.get("detailspattern"))
+  rendered = fix_headers(rendered, h1_level)
+  rendered = _relativize_html_attrs(
+    rendered,
+    from_path=target_fp,
+    to_path=str(container_fp),
+    parent_h1_level=None if strip_rel_url_shift else h1_level,
+  )
+  return rendered
 
 def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
                     dynamic_loading=True, hash_title=False):
-  """To be used with transform_include_lines.
-  
-  :param match: 
-  :param source_dir: Eg. "vishvAsa-prastutiH"
-  :param alt_dirs: Eg: ["commentary-1", "commentary-2"]
-  :return: 
-  """
+  """Prefill a ``<div class="js_include">`` BeautifulSoup element to match runtime ``js_include`` behavior."""
   inc["unfilled"] = None
   souper.empty_tag(inc)
 
-  url = inc["url"]
+  attrs = _extract_bs_attrs(inc)
+  url = attrs.get("url", "")
+  clean_url = url.split("#", 1)[0].split("?", 1)[0]
 
-  file_path = file_path_from_url(url=url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
+  file_path = file_path_from_url(url=clean_url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
   if file_path is None:
-    if url.endswith(".md"):
-      new_url = url[:-3]
-    elif url.endswith(".md/"):
-      new_url = url[:-1]
+    if clean_url.endswith(".md"):
+      new_url = clean_url[:-3]
+    elif clean_url.endswith(".md/"):
+      new_url = clean_url[:-1]
     else:
-      new_url = regex.sub("/$", "", url) + ".md"
+      new_url = regex.sub("/$", "", clean_url) + ".md"
 
     # Neither of the below should appear in a valid url.
-    url = new_url.replace("/content/", "/").replace("/static/", "/").replace("//", "/")
+    new_url = new_url.replace("/content/", "/").replace("/static/", "/").replace("//", "/")
 
     file_path = file_path_from_url(url=new_url, hugo_base_dir=hugo_base_dir, current_file_path=container_file_path)
     if file_path is None:
       logging.warning(f"Could not fix: {url} in {container_file_path}")
-      return 
+      return
     else:
       logging.info(f"Corrected url to: {new_url} in {container_file_path}")
       url = new_url
@@ -135,48 +324,45 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   md_file = MdFile(file_path=file_path)
   (metadata, content) = md_file.read()
   metadata["_file_path"] = file_path
-  if h1_level_offset == "b[]" or inc.get("newlevelforh1", 2) == "b[]":
-    h1_level = "b[]"
-  else:
-    h1_level = h1_level_offset + int(inc.get("newlevelforh1", 2))
-  if "newlevelforh1" not in inc.attrs:
+  if "newlevelforh1" not in attrs:
     logging.warning(f"No newlevelforh1 for {file_path} in {container_file_path}")
+  h1_level = _effective_h1_level(attrs.get("newlevelforh1"), h1_level_offset=h1_level_offset, default_level=2)
 
-  content = fix_headers(content, h1_level)
-  # TODO: Handle spreadsheets in includes
-  content = fix_rel_urls(content=content, from_path=file_path, to_path=container_file_path)
   if file_path == container_file_path:
     logging.fatal(f"Circular include in {container_file_path}")
-    return 
-  content = transform_includes_with_soup(content=content, metadata=metadata, h1_level_offset=h1_level, transformer=prefill_include, dynamic_loading=dynamic_loading, hugo_base_dir=hugo_base_dir)
+    return
 
-  title = inc.get("title", "")
-  if title == "" and inc.get("includetitle", "false").lower() != "false":
-    title = metadata.get("title", "UNKNOWN_TITLE")
-    if title == "UNKNOWN_TITLE":
-      logging.warning(f"Could not get title for {file_path} in {container_file_path}")
+  content = _apply_md_frontmatter_options(metadata, content, attrs, url)
+  content = filter_details_by_pattern(content, attrs.get("detailspattern"))
+  content = fix_headers(content, h1_level)
+  content = transform_includes_with_soup(content=content, metadata=metadata, h1_level_offset=h1_level, transformer=prefill_include, dynamic_loading=dynamic_loading, hugo_base_dir=hugo_base_dir)
+  # TODO: Handle spreadsheets in includes
+  content = _relativize_html_attrs(content=content, from_path=file_path, to_path=container_file_path, parent_h1_level=None)
+
+  title, is_plain = _resolve_title_from_attrs(attrs, metadata, fallback_title="UNKNOWN_TITLE")
+  if title == "UNKNOWN_TITLE":
+    logging.warning(f"Could not get title for {file_path} in {container_file_path}")
   if title != "" and dynamic_loading:
-    title +=  " …{Loading}…"
+    title += " …{Loading}…"
 
   title = title.strip()
-  # title = regex.sub(r"^\+", "", title)
-
   hash_title = hash_title or os.path.basename(container_file_path) == "full.md"
+  classes = attrs.get("class", "").split()
 
   if title != "":
-    if "collapsed" not in inc["class"] and hash_title:
-      if h1_level != "b[]":
-        title = f"{'#'*h1_level} {title}"
+    if "collapsed" not in classes and hash_title:
+      if h1_level != "b[]" and not is_plain:
+        title = f"{'#' * h1_level} {title}"
       else:
         title = f"**{title}**"
       details = BeautifulSoup(f"{title}\n\n{content}", 'html.parser')
     else:
-      if h1_level != "b[]":
-        title = f"<h{h1_level}>{title}</h{h1_level}>"
+      if is_plain or h1_level == "b[]":
+        summary_html = title
       else:
-        title = f"{title}"
-      details = BeautifulSoup(f"<body><details><summary>{title}</summary>\n\n{content}\n</details></body>", 'html.parser').select_one("details")
-      if "collapsed" not in inc["class"]:
+        summary_html = f"<h{h1_level}>{title}</h{h1_level}>"
+      details = BeautifulSoup(f"<body><details><summary>{summary_html}</summary>\n\n{content}\n</details></body>", 'html.parser').select_one("details")
+      if "collapsed" not in classes:
         details["open"] = ""
   else:
     details = BeautifulSoup(f"{content}", 'html.parser')
@@ -246,6 +432,7 @@ def surgical_prefill_content(
   *,
   url_filter=None,
   hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
+  only_if_prefilled=False,
 ):
   """Refresh ``js_include`` prefills via exact string slicing without BeautifulSoup re-serialization.
 
@@ -264,27 +451,30 @@ def surgical_prefill_content(
   for d in sorted(all_divs, key=lambda x: (x[0], -(x[4] - x[0]))):
     if any(a <= d[0] and d[4] <= b for a, b in covered):
       continue
-    m_url = regex.search(r"""url=["']([^"']+)["']""", d[5])
-    if not m_url:
+    attrs = _extract_open_tag_attrs(d[5])
+    url = attrs.get("url", "")
+    if not url:
       continue
-    url = m_url.group(1)
     if url_filter is not None:
       matched = url_filter(url) if callable(url_filter) else bool(regex.search(url_filter, url))
       if not matched:
         continue
+    clean_url = url.split("#", 1)[0].split("?", 1)[0]
     file_path = resolve_include_file_path(
-      url=url,
+      url=clean_url,
       hugo_base_dir=hugo_base_dir,
       current_file_path=container_file_path,
     )
     if not file_path or str(file_path) == str(container_file_path) or not os.path.isfile(file_path):
       continue
-    target_divs.append((d, str(file_path)))
+    if only_if_prefilled and not content[d[2] : d[3]].strip():
+      continue
+    target_divs.append((d, url, attrs, str(file_path)))
     covered.append((d[0], d[4]))
 
   edits = []
-  for (_, _, b_start, b_end, _, open_tok), target_fp in target_divs:
-    _, inc_content = MdFile(file_path=target_fp).read()
+  for (_, _, b_start, b_end, _, open_tok), url, attrs, target_fp in target_divs:
+    inc_meta, inc_content = MdFile(file_path=target_fp).read()
     cur_body = content[b_start:b_end]
     m_wrap = _LOADING_WRAPPER_RE.match(cur_body)
     if m_wrap and not _has_balanced_details(m_wrap.group(3)):
@@ -292,29 +482,22 @@ def surgical_prefill_content(
     m_hash = None if m_wrap else _HASH_LOADING_RE.match(cur_body)
     if m_wrap:
       wrap_head, h_lvl_str, old_inner, wrap_tail = m_wrap.group(1), m_wrap.group(2), m_wrap.group(3), m_wrap.group(4)
-      if h_lvl_str:
-        h1_level = int(h_lvl_str)
-      else:
-        m_nl = regex.search(r"""newlevelforh1=["']([^"']+)["']""", open_tok)
-        h1_level = int(m_nl.group(1)) if (m_nl and m_nl.group(1).isdigit()) else 2
-      rendered = fix_headers(inc_content, h1_level)
-      rendered = fix_rel_urls(content=rendered, from_path=target_fp, to_path=str(container_file_path))
+      raw_nl = h_lvl_str if h_lvl_str else attrs.get("newlevelforh1")
+      h1_level = _effective_h1_level(raw_nl, default_level=2)
+      rendered = _prepare_included_content(inc_meta, inc_content, attrs, url, target_fp, container_file_path, h1_level)
       lead_ws = old_inner[: len(old_inner) - len(old_inner.lstrip())] or "\n\n"
       trail_ws = old_inner[len(old_inner.rstrip()) :] or "\n"
       new_body = wrap_head + lead_ws + rendered.strip() + trail_ws + wrap_tail
     elif m_hash:
       wrap_head, hashes, old_inner = m_hash.group(1), m_hash.group(2), m_hash.group(3)
-      h1_level = len(hashes)
-      rendered = fix_headers(inc_content, h1_level)
-      rendered = fix_rel_urls(content=rendered, from_path=target_fp, to_path=str(container_file_path))
+      h1_level = _effective_h1_level(len(hashes), default_level=2)
+      rendered = _prepare_included_content(inc_meta, inc_content, attrs, url, target_fp, container_file_path, h1_level)
       lead_ws = old_inner[: len(old_inner) - len(old_inner.lstrip())] or "\n"
       trail_ws = old_inner[len(old_inner.rstrip()) :] or "\n\n"
       new_body = wrap_head + lead_ws + rendered.strip() + trail_ws
     else:
-      m_nl = regex.search(r"""newlevelforh1=["']([^"']+)["']""", open_tok)
-      h1_level = int(m_nl.group(1)) if (m_nl and m_nl.group(1).isdigit()) else 2
-      rendered = fix_headers(inc_content, h1_level)
-      rendered = fix_rel_urls(content=rendered, from_path=target_fp, to_path=str(container_file_path))
+      h1_level = _effective_h1_level(attrs.get("newlevelforh1"), default_level=2)
+      rendered = _prepare_included_content(inc_meta, inc_content, attrs, url, target_fp, container_file_path, h1_level)
       new_body = "\n" + rendered.strip() + "\n"
 
     if new_body != cur_body:
@@ -360,6 +543,7 @@ def surgical_prefill_transitive(
   hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
   exclude_path_substrings=(),
   skip_sources_with_empty_includes=True,
+  only_if_prefilled=False,
   require_balanced_tags=True,
   max_passes=6,
   dry_run=False,
@@ -487,6 +671,7 @@ def surgical_prefill_transitive(
         fp,
         url_filter=_url_match,
         hugo_base_dir=hugo_base_dir,
+        only_if_prefilled=only_if_prefilled,
       )
       if n_divs > 0 and updated != orig:
         if require_balanced_tags:
@@ -554,11 +739,7 @@ def includes_to_details(dir_path, title, url_pattern, prefill=False, file_name_f
 
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=content_transformer, file_name_filter=file_name_filter, *args, **kwargs)
 
-_ATTR_URL_RE = regex.compile(r"""\burl=["']([^"']+)["']""")
-_ATTR_CLASS_RE = regex.compile(r"""\bclass=["']([^"']+)["']""")
-_ATTR_TITLE_RE = regex.compile(r"""\btitle=["']([^"']+)["']""")
-_ATTR_INCLUDE_TITLE_RE = regex.compile(r"""\bincludetitle=["']([^"']+)["']""")
-_ATTR_NEW_H1_RE = regex.compile(r"""\bnewlevelforh1=["']([^"']+)["']""")
+_ATTR_URL_RE = regex.compile(r"""\burl=["']([^"']+)["']""", regex.IGNORECASE)
 _MD_LINK_URL_RE = regex.compile(r"""\]\(([^)\s]+)\)""")
 
 
@@ -626,23 +807,24 @@ def deinclude_content(
     if any(a <= d[0] and d[4] <= b for a, b in covered):
       continue
     open_tok = d[5]
-    m_url = _ATTR_URL_RE.search(open_tok)
-    if not m_url:
+    attrs = _extract_open_tag_attrs(open_tok)
+    url = attrs.get("url", "")
+    if not url:
       continue
-    url = m_url.group(1)
     if url_filter is not None:
       matched = url_filter(url) if callable(url_filter) else bool(regex.search(url_filter, url))
       if not matched:
         continue
+    clean_url = url.split("#", 1)[0].split("?", 1)[0]
     file_path = resolve_include_file_path(
-      url=url,
+      url=clean_url,
       hugo_base_dir=hugo_base_dir,
       current_file_path=container_file_path,
     )
     if prefill and (not file_path or str(file_path) == str(container_file_path) or not os.path.isfile(file_path)):
       logging.warning(f"Skipping deinclude of unresolved/self url={url} in {container_file_path}")
       continue
-    target_divs.append((d, url, str(file_path) if file_path else None))
+    target_divs.append((d, url, attrs, str(file_path) if file_path else None))
     covered.append((d[0], d[4]))
 
   if not target_divs:
@@ -650,19 +832,15 @@ def deinclude_content(
 
   edits = []
   deincluded_paths = []
-  for (s_open, _, b_start, b_end, e_close, open_tok), url, target_fp in target_divs:
+  for (s_open, _, b_start, b_end, e_close, open_tok), url, attrs, target_fp in target_divs:
     cur_body = content[b_start:b_end]
     existing_inner, existing_summary, existing_h1, existing_open = _extract_existing_wrapper(cur_body)
 
-    m_class = _ATTR_CLASS_RE.search(open_tok)
-    classes = m_class.group(1).split() if m_class else []
+    has_class_attr = "class" in attrs
+    classes = attrs.get("class", "").split()
     is_collapsed = "collapsed" in classes
-    m_title = _ATTR_TITLE_RE.search(open_tok)
-    div_title = m_title.group(1).strip() if m_title else ""
-    m_inc_title = _ATTR_INCLUDE_TITLE_RE.search(open_tok)
-    inc_title_false = bool(m_inc_title and m_inc_title.group(1).strip().lower() == "false")
-    m_nl = _ATTR_NEW_H1_RE.search(open_tok)
-    h1_level = existing_h1 if existing_h1 is not None else (int(m_nl.group(1)) if (m_nl and m_nl.group(1).isdigit()) else 2)
+    raw_nl = existing_h1 if existing_h1 is not None else attrs.get("newlevelforh1")
+    h1_level = _effective_h1_level(raw_nl, default_level=2)
 
     inc_meta = {}
     if prefill:
@@ -673,22 +851,12 @@ def deinclude_content(
           target_fp,
           hugo_base_dir=hugo_base_dir,
         )
-      rendered = fix_headers(inc_content, h1_level)
-      rendered = fix_rel_urls(content=rendered, from_path=target_fp, to_path=str(container_file_path))
+      rendered = _prepare_included_content(inc_meta, inc_content, attrs, url, target_fp, container_file_path, h1_level)
       inner_body = rendered.strip()
     else:
-      inner_body = existing_inner
+      inner_body = filter_details_by_pattern(existing_inner, attrs.get("detailspattern"))
 
-    if div_title:
-      default_title = div_title
-    elif inc_title_false:
-      default_title = ""
-    elif existing_summary:
-      default_title = existing_summary
-    elif inc_meta.get("title"):
-      default_title = str(inc_meta["title"]).strip()
-    else:
-      default_title = ""
+    default_title, _ = _resolve_title_from_attrs(attrs, inc_meta, fallback_title=existing_summary)
 
     if callable(title):
       final_title = title(url, open_tok, default_title) or ""
@@ -699,7 +867,7 @@ def deinclude_content(
 
     if final_title:
       if preserve_open_state:
-        is_open = (not is_collapsed) if (m_class is not None) else (existing_open if existing_open is not None else True)
+        is_open = (not is_collapsed) if has_class_attr else (existing_open if existing_open is not None else True)
       else:
         is_open = True
       open_attr = " open" if is_open else ""

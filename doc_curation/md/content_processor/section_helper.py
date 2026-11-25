@@ -371,17 +371,15 @@ def headings_to_bold(content,suffix="॥"):
 
 
 def fix_headers(content: str, h1_level: int) -> str:
-  # TODO: Hand jsinclude tags heregex.
-  # h1_level is taken to mean title header level.
+  # Adjust heading levels to match js_include's newLevelForH1 (1..6 or "b[]").
   if h1_level == "b[]":
-    content = regex.sub(rf"(?<=\n|^)#+ ([^\n]+) *(?=\n)", rf"**\1**", content)
+    content = regex.sub(rf"(?<=\n|^)#+ ([^\n]+?) *(?=\n|$)", rf"**\1**", content)
     return content
 
-  if regex.search("^# ", content, flags=regex.MULTILINE):
-    content = regex.sub(r"(?<=\n|^)#", f"{'#' * (h1_level+1)}", content)
-  else:
-    content = regex.sub(r"(?<=\n|^)#", f"{'#' * h1_level}", content)
-  content = regex.sub(rf"(?<=\n|^)#######+", f"{'#' * 6}", content)
+  int_level = max(1, min(6, int(h1_level)))
+  if int_level > 1:
+    content = regex.sub(r"(?<=\n|^)#", "#" * int_level, content)
+  content = regex.sub(rf"(?<=\n|^)#######+", "#" * 6, content)
   return content
 
 
