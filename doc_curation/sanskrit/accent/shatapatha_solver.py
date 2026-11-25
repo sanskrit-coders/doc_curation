@@ -2855,8 +2855,8 @@ def _generate_chunk_transitions(
         final_cands.append((seg[:-1] + "m", 0.0))
         final_cands.append((seg[:-1] + "n", 0.35))
       if seg.endswith("o") and len(seg) >= 2:
-        # `नो` before an unelided vowel without avagraha (`नो अनाप्ताः`) is `न + उ` (पा॰ १.१.१५), NOT `नः`!
-        if seg == "no" and next_tok_starts_vowel and not next_tok_is_avagraha:
+        # `नो` before an unelided vowel or voiceless consonant (`नो अनाप्ताः`, `नो कनीयान्`) is `न + उ`, NOT `नः`!
+        if seg == "no" and not (next_tok_is_avagraha or next_tok_starts_voiced):
           pass
         elif next_tok_is_avagraha or next_tok_starts_voiced:
           final_cands.append((seg[:-1] + "aH", 0.0))
@@ -2868,7 +2868,9 @@ def _generate_chunk_transitions(
         final_cands.append((seg[:-1] + "H", 0.0))
       if seg.endswith("d") and len(seg) >= 2:
         final_cands.append((seg[:-1] + "t", 0.0))
-      if seg.endswith(("c", "j", "l", "n")) and len(seg) >= 2 and not is_end_of_clause:
+      if seg.endswith(("c", "j", "l")) and len(seg) >= 2 and not is_end_of_clause:
+        final_cands.append((seg[:-1] + "t", 0.25))
+      if seg.endswith("n") and len(seg) >= 2 and next_tok_starts_nasal:
         final_cands.append((seg[:-1] + "t", 0.25))
       if seg.endswith("nn") and len(seg) >= 4 and next_tok_starts_vowel:
         final_cands.append((seg[:-1], 0.0))
@@ -2957,13 +2959,15 @@ def _generate_chunk_transitions(
           if c_m is not None:
             out.append((end, "", seg[:-1] + "m", c_m))
       # Palatal nasal `Y` (`ञ्`): before `c/C/j/J/S` -> `n` (`देवाञ्` -> `देवान्`, पा॰ ८.४.४०) OR `m` (`व्रतञ्च` -> `व्रतम्`)
-      if seg.endswith("Y") and len(seg) >= 2 and next_ch in "cCjJS":
+      if seg.endswith("Y") and len(seg) >= 2 and next_ch in "cCjJSC":
         # Periphrastic perfect (`बिभयाञ्चक्रुः` -> `बिभयाम् + चक्रुः`, `आञ्चकार` -> `आम् + चकार`)
         if seg.endswith("AY") and slp[end:].startswith(("cakr", "cakAr", "cakf")):
           out.append((end, "", seg[:-1] + "m", 1.8))
         c_n = _eval_word(seg[:-1] + "n", 0.12)
         if c_n is not None:
           out.append((end, "", seg[:-1] + "n", c_n))
+          if next_ch == "C":
+            out.append((end + 1, "S", seg[:-1] + "n", c_n + 0.05))
         c_m = _eval_word(seg[:-1] + "m", 0.15)
         if c_m is not None:
           out.append((end, "", seg[:-1] + "m", c_m))
@@ -2991,11 +2995,11 @@ def _generate_chunk_transitions(
         c_n = _eval_word(seg[:-2] + "n", 0.15)
         if c_n is not None:
           out.append((end, "", seg[:-2] + "n", c_n))
-      if seg.endswith("nt") and len(seg) >= 4 and next_ch == "s":
+      if seg.endswith(("nt", "wt")) and len(seg) >= 3 and next_ch == "s":
         c_n = _eval_word(seg[:-1], 0.1)
         if c_n is not None:
           out.append((end, "", seg[:-1], c_n))
-      if seg.endswith(("d", "c", "j", "l", "n")) and len(seg) >= 2:
+      if (seg.endswith(("d", "c", "j", "l")) or (seg.endswith("n") and next_ch in "nm")) and len(seg) >= 2:
         c_t = _eval_word(seg[:-1] + "t", 0.12)
         if c_t is not None:
           out.append((end, "", seg[:-1] + "t", c_t))
@@ -3003,6 +3007,13 @@ def _generate_chunk_transitions(
             out.append((end + 1, "S", seg[:-1] + "t", c_t + 0.05))
           if seg.endswith("d") and next_ch == "D":
             out.append((end + 1, "h", seg[:-1] + "t", c_t + 0.05))
+      # Guṇa `a/A + f -> ar` (`एतस्यर्चा` -> `एतस्य + ऋचा`, पा॰ ६.१.८७)
+      if seg.endswith("ar") and len(seg) >= 3:
+        for lv in ("a", "A"):
+          w_c = seg[:-2] + lv
+          c_r = _eval_word(w_c, 0.25)
+          if c_r is not None:
+            out.append((end, "f", w_c, c_r))
       # Degeminated `t + S -> C` (e.g. Weber `तछकेयं` = `तत् + शकेयम्`)
       if next_ch == "C" and seg in ("ta", "ya", "eta"):
         c_t = _eval_word(seg + "t", 0.2)
@@ -3096,7 +3107,8 @@ def _prevocalic_cons_restorations(seg: str, *, next_ch: str = "") -> list[tuple[
   elif c == "d" and len(seg) >= 2:
     out.append((seg[:-1] + "t", 0.05))
   elif c == "r" and len(seg) >= 3:
-    out.append((seg[:-1] + "H", 0.08))
+    if seg[-2] not in ("a", "A") or seg in ("punar", "prAtar", "antar", "svar", "ahar", "uzar", "mAtar", "pitar", "BrAtar", "Avar"):
+      out.append((seg[:-1] + "H", 0.08))
   elif c == "g" and len(seg) >= 3:
     out.append((seg[:-1] + "k", 0.15))
   elif c == "q" and len(seg) >= 3:

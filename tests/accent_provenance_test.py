@@ -339,3 +339,47 @@ def test_vs_m_and_vs_k_tags_alias_dedup_and_ingestion(tmp_path):
   for bare_tag in ("*VS-M*", "*VS-K*"):
     errs = validate_padapatha_block("पद-पाठः (यान्त्रिकः)", f"- यज्ञ᳓म् ({bare_tag})\n")
     assert any(e.kind == "uncounted_corpus_tag" for e in errs)
+
+
+def test_backfill_corpora_only_adds_requested_corpora_verbatim(tmp_path):
+  from doc_curation.sanskrit.accent.provenance import backfill_corpora_in_padapatha_markdown
+
+  # Verify VS-M babylon double-udātta compound recovery (`सु᳓-प्रजाः᳓` -> `सुप्रजाः᳓`)
+  vs_bab = tmp_path / "syv-ms-padasvara.babylon"
+  vs_bab.write_text(
+    "\n#bookname=syv-ms-padasvara (sa-sa)\n\n"
+    "सुप्रजाः|सुप्रजा\nसु᳓-प्रजाः᳓ (4)<br>3.37\n\n",
+    encoding="utf-8",
+  )
+  c = VedicCorpusCounter()
+  c._ingest_babylon(str(vs_bab), "VS-M")
+  for corp, word, freq in [
+    ("SB-K", "अग्न᳓ये", 138),
+    ("SB-K", "अग्निः᳓", 200),
+    ("VS-K", "अग्न᳓ये", 20),
+    ("VS-K", "अग्निः᳓", 173),
+    ("SB-K", "स᳓रसः", 2),
+    ("VS-K", "स᳓रसः", 2),
+  ]:
+    km = word_to_key_and_marks(word)
+    assert km is not None
+    c._add(corp, km[0], km[1], freq=freq)
+  c._finalize_secondary_tables()
+
+  assert c.count("सुप्रजाः᳓", "VS-M") == 4
+
+  md = (
+    "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n"
+    "- अग्न᳓ये (*TS*-128/1195, *RV*-47/856, *SB-M*-19/111, *VS-M*-12/36)\n"
+    "- मुञ्चा᳓ति (चादिलोपे विभाषा पा॰ ८.१.६३, *RV*-1 १०.८५.२५)\n"
+    "- स᳓रे (स᳓रस् *RV*-0/11, *SB-M*-0/2, *MW* स᳓रस्; छान्दसोऽकारान्तः)\n"
+    "</details>\n"
+  )
+  out = backfill_corpora_in_padapatha_markdown(md, c, corpora=("SB-K", "VS-K"))
+  assert "- अग्न᳓ये (*TS*-128/1195, *RV*-47/856, *SB-M*-19/111, *SB-K*-138/338, *VS-M*-12/36, *VS-K*-20/193)" in out
+  # Existing unverified tags like `*RV*-1 १०.८५.२५` and prose `स᳓रस्` stay 100% untouched!
+  assert "- मुञ्चा᳓ति (चादिलोपे विभाषा पा॰ ८.१.६३, *RV*-1 १०.८५.२५)" in out
+  assert "- स᳓रे (स᳓रस् *RV*-0/11, *SB-M*-0/2, *SB-K*-0/2, *VS-K*-0/2, *MW* स᳓रस्; छान्दसोऽकारान्तः)" in out
+  # Idempotent
+  assert backfill_corpora_in_padapatha_markdown(out, c, corpora=("SB-K", "VS-K")) == out
+

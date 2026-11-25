@@ -39,7 +39,7 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   us_padasvara_to_entry,
 )
 
-PROVENANCE_CACHE_VERSION = 9
+PROVENANCE_CACHE_VERSION = 11
 DEFAULT_PROVENANCE_CACHE_PATH = os.path.expanduser(
   "~/.cache/doc_curation/vedic_corpus_counts_v1.pkl"
 )
@@ -409,11 +409,14 @@ class VedicCorpusCounter:
       dirs.update(corpus_dirs)
     counter = cls()
 
-    # 1. Padasvara Babylon dictionaries (exact padapāṭha frequencies for RV, TS, AV)
+    # 1. Padasvara Babylon dictionaries (exact padapāṭha frequencies for RV, TS, TB, TK, AV, VS-M)
     for tag, rel in (
       ("RV", "stardict-sanskrit-kAvya/rv-padasvara-dev/rv-padasvara-dev.babylon"),
       ("TS", "stardict-sanskrit-kAvya/kyv-ts-padasvara/kyv-ts-padasvara.babylon"),
+      ("TB", "stardict-sanskrit-kAvya/kyv-tb-pada-svara/kyv-tb-pada-svara.babylon"),
+      ("TK", "stardict-sanskrit-kAvya/kyv-tk-pada-svara/kyv-tk-pada-svara.babylon"),
       ("AV", "stardict-sanskrit-kAvya/av-padasvara/av-padasvara.babylon"),
+      ("VS-M", "stardict-sanskrit-kAvya/syv-ms-padasvara/syv-ms-padasvara.babylon"),
     ):
       bpath = os.path.join(dict_root, rel)
       if os.path.isfile(bpath):
@@ -425,9 +428,9 @@ class VedicCorpusCounter:
     if ts_dir and os.path.isdir(ts_dir):
       counter._ingest_us_vp_supplement(ts_dir, "TS")
 
-    # 3. VS-M (Mādhyandina; legacy alias `VS`): prefer `<summary>पदपाठः - दयानन्दादि</summary>` per section, fallback to US/classical tokens
+    # 3. VS-M (Mādhyandina; legacy alias `VS`): fallback to local markdown dir if syv-ms-padasvara.babylon wasn't loaded
     vs_m_dir = dirs.get("VS-M") or dirs.get("VS", "")
-    if vs_m_dir and os.path.isdir(vs_m_dir):
+    if not counter.exact_counts.get("VS-M") and vs_m_dir and os.path.isdir(vs_m_dir):
       counter._ingest_vs_dir(vs_m_dir, corpus="VS-M")
     vs_dir = dirs.get("VS", "")
     if vs_dir and vs_dir == vs_m_dir:
@@ -441,7 +444,10 @@ class VedicCorpusCounter:
       counter._ingest_us_markdown_corpus(vs_k_dir, "VS-K")
 
     # 4. TB, TK, ŚB / SB-M, SB-K: deduplicated per section (`पद-पाठः` > `पद-पाठः (यान्त्रिकः...)` > `विश्वास-प्रस्तुतिः`)
+    # Skip TB/TK markdown crawl if their padasvara Babylon dictionaries were already loaded in step 1.
     for tag in ("TB", "TK", "ŚB", "SB-M", "SB-K"):
+      if tag in ("TB", "TK") and counter.exact_counts.get(tag):
+        continue
       if tag == "SB-M" and dirs.get("SB-M") and dirs.get("SB-M") == dirs.get("ŚB"):
         counter.exact_counts["SB-M"] = dict(counter.exact_counts.get("ŚB", {}))
         continue
@@ -474,6 +480,19 @@ class VedicCorpusCounter:
         continue
       form_raw, freq = m.group(1), int(m.group(2))
       conv = us_padasvara_to_entry(form_raw) if is_us else classical_padapatha_to_us(form_raw)
+      if conv is None and is_us and corpus == "VS-M":
+        # `syv-ms-padasvara.babylon` inherits unmarked pre-avagraha syllables before `॒` as a spurious leading `᳓`
+        # on compounds (`सु᳓-प्रजाः᳓`, `पु᳓ष्टि-व᳓र्धनः`); recover the true final accent on non-dual compounds.
+        joined_vs = _join_virama_vowels(form_raw.replace("-", "").replace("ऽ", ""))
+        scanned_vs = _fast_scan_deva_syllables(joined_vs)
+        nk_vs = _normalize_lookup_key(form_raw)
+        if scanned_vs and nk_vs and not _is_dual_accent_word(nk_vs):
+          mks_vs = tuple(
+            "S" if US_SVARITA in ms else ("U" if US_UDATTA in ms else "") for ms, _ in scanned_vs
+          )
+          if sum(1 for x in mks_vs if x) > 1:
+            last_i = max(i for i, x in enumerate(mks_vs) if x)
+            conv = (nk_vs, tuple(x if i == last_i else "" for i, x in enumerate(mks_vs)), None)
       if conv is None:
         continue
       bare_key, marks = conv[0], conv[1]
@@ -617,12 +636,21 @@ class VedicCorpusCounter:
                 self._add(corpus, conv[0], conv[1], freq=1, mode="sum")
         elif pp_mech:
           for body in pp_mech:
-            for it in parse_padapatha_items(body):
-              if "?" in it.ref or not _DEVANAGARI_RE.search(it.ref):
-                continue
-              km = word_to_key_and_marks(it.ref)
-              if km is not None:
-                self._add(corpus, km[0], km[1], freq=1, mode="sum")
+            items = parse_padapatha_items(body)
+            if items:
+              for it in items:
+                if "?" in it.ref or not _DEVANAGARI_RE.search(it.ref):
+                  continue
+                km = word_to_key_and_marks(it.ref)
+                if km is not None:
+                  self._add(corpus, km[0], km[1], freq=1, mode="sum")
+            else:
+              for piece in re.split(r"[।॥\s]+", body):
+                if not piece or "?" in piece or not _DEVANAGARI_RE.search(piece):
+                  continue
+                km = word_to_key_and_marks(piece)
+                if km is not None:
+                  self._add(corpus, km[0], km[1], freq=1, mode="sum")
         elif vp_blocks:
           for body in vp_blocks:
             clean = re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]", " ", body, flags=re.S)
@@ -2161,3 +2189,285 @@ def annotate_padapatha_markdown_counts(
 
   updated = DETAILS_RE.sub(_sub_block, markdown_text)
   return updated, all_unresolved
+
+
+def _insert_backfill_tags_in_order(
+  existing_tag_spans: Sequence[re.Match],
+  target_word: str,
+  counter: VedicCorpusCounter,
+  corpora: Sequence[str],
+  *,
+  allow_stem: bool,
+) -> list[str]:
+  """Preserve every existing formatted tag outside ``corpora`` verbatim, inserting/updating ``corpora`` in canonical order."""
+  order_idx = {cp: i for i, cp in enumerate(CORPUS_TAGS)}
+  target_set = set(corpora)
+  kept: list[tuple[str, str]] = []
+  seen: set[str] = set()
+  for tm in existing_tag_spans:
+    tg = tm.group(1)
+    if tg in seen:
+      continue
+    seen.add(tg)
+    if tg in target_set:
+      m_c, n_c = counter.count_with_stem(target_word, tg, allow_stem=allow_stem)
+      fmt = format_corpus_count(tg, m_c, n_c)
+      kept.append((tg, fmt if fmt is not None else tm.group(0)))
+    else:
+      kept.append((tg, tm.group(0)))
+
+  additions: list[tuple[str, str]] = []
+  for cp in corpora:
+    if cp in seen or _CORPUS_ALIASES.get(cp) in seen:
+      continue
+    m_c, n_c = counter.count_with_stem(target_word, cp, allow_stem=allow_stem)
+    fmt = format_corpus_count(cp, m_c, n_c)
+    if fmt is not None:
+      seen.add(cp)
+      additions.append((cp, fmt))
+
+  if not additions:
+    return [txt for _, txt in kept]
+
+  # Insert each new corpus tag right after the last existing tag that precedes it in CORPUS_TAGS order
+  result = list(kept)
+  for cp, fmt in sorted(additions, key=lambda kv: order_idx.get(kv[0], 999)):
+    cp_ord = order_idx.get(cp, 999)
+    ins_at = 0
+    for idx_r, (r_tg, _) in enumerate(result):
+      if order_idx.get(r_tg, 999) < cp_ord:
+        ins_at = idx_r + 1
+    result.insert(ins_at, (cp, fmt))
+  return [txt for _, txt in result]
+
+
+def backfill_corpora_in_padapatha_line(
+  line: str,
+  counter: VedicCorpusCounter,
+  corpora: Sequence[str] = ("SB-K", "VS-K"),
+) -> str:
+  """Insert or update ONLY ``corpora`` counts on one ``पद-पाठः`` bullet line without modifying any other tag or prose."""
+  stripped = line.lstrip()
+  if not stripped.startswith("- "):
+    return line
+  indent = line[: len(line) - len(stripped)]
+  items = parse_padapatha_items(stripped)
+  if not items:
+    return line
+  it = items[0]
+  if not it.prov or "?" in it.ref:
+    return line
+  p_idx = stripped.find("(")
+  if p_idx < 0 or not stripped.rstrip().endswith(")"):
+    return line
+  r_end = stripped.rfind(")")
+  head = stripped[:p_idx]
+  prov_inner = stripped[p_idx + 1 : r_end]
+  tail = stripped[r_end + 1 :]
+
+  allow_stem_ref = is_declinable_nominal(it.ref, prov_inner)
+  default_paradigm = counter.paradigm_forms(it.ref) if allow_stem_ref else frozenset()
+
+  def _is_same_paradigm(w_cand: str) -> bool:
+    if not default_paradigm:
+      return False
+    km = word_to_key_and_marks(w_cand)
+    return km is not None and (_canonical_allograph_key(km[0]), km[1]) in default_paradigm
+
+  clauses = _split_top_level_semicolons(prov_inner)
+  new_clauses: list[str] = []
+  for c_idx, clause in enumerate(clauses):
+    is_alt = c_idx > 0
+    protected: list[tuple[int, int]] = []
+    reps: list[tuple[int, int, str]] = []
+    same_stem_covered: set[str] = set()
+
+    # 1. Pattern A: Nested `WORD (*TS*-..., *SB-M*-...)`
+    for m in _NESTED_MEMBER_PAREN_RE.finditer(clause):
+      w_tok, paren_grp = m.group(1), m.group(2)
+      if not _is_sanskrit_example_word(w_tok):
+        continue
+      w_allow = is_declinable_nominal(w_tok)
+      t_matches = list(_TAG_TOKEN_RE.finditer(paren_grp))
+      if not t_matches:
+        continue
+      inner_strip = paren_grp.strip()
+      inner_body = inner_strip[1:-1].strip() if inner_strip.startswith("(") and inner_strip.endswith(")") else ""
+      pure_list = bool(inner_body) and all(
+        re.fullmatch(rf"\*(?:{_CORPUS_TAG_PAT})\*{_COUNT_OPT_PAT}|\*(?:MW|Macdonell|Lanman)\*", seg.strip())
+        for seg in inner_body.split(",")
+      )
+      if pure_list:
+        lex_tags = [
+          seg.strip()
+          for seg in inner_body.split(",")
+          if re.fullmatch(r"\*(?:MW|Macdonell|Lanman)\*", seg.strip())
+        ]
+        updated_tags = _insert_backfill_tags_in_order(
+          t_matches, w_tok, counter, corpora, allow_stem=w_allow
+        )
+        if _is_same_paradigm(w_tok):
+          same_stem_covered.update(corpora)
+        lead_ws = paren_grp[: len(paren_grp) - len(paren_grp.lstrip())]
+        new_paren = f"{lead_ws}({', '.join(updated_tags + lex_tags)})"
+        s, e = m.start(2), m.end(2)
+        protected.append((s, e))
+        if new_paren != paren_grp:
+          reps.append((s, e, new_paren))
+      else:
+        protected.append((m.start(2), m.end(2)))
+
+    # 2. Pattern A2: `WORD *TS*-..., *SB-M*-...` (preserve WORD verbatim!)
+    for m in _PRECEDING_WORD_TAG_GROUP_RE.finditer(clause):
+      s, e = m.start(3), m.end(3)
+      if any(not (e <= ps or s >= pe) for ps, pe in protected):
+        continue
+      w_tok = m.group(1)
+      has_acc = any(ch in w_tok for ch in (US_UDATTA, US_SVARITA, "\u0951", "\u0952"))
+      if not (has_acc and _is_sanskrit_example_word(w_tok)):
+        continue
+      after_tags = clause[e : e + 40]
+      m_after = re.match(
+        r"^\s+(?:[०-९\d]+(?:\.[०-९\d]+)+\s+)?([\u0900-\u0963\u0971-\u097f\u1cd0-\u1cff\u0951\u0952\-]+)",
+        after_tags,
+      )
+      if (
+        m_after
+        and any(ch in m_after.group(1) for ch in (US_UDATTA, US_SVARITA, "\u0951", "\u0952"))
+        and _is_sanskrit_example_word(m_after.group(1))
+      ):
+        continue
+      t_matches = list(_TAG_TOKEN_RE.finditer(m.group(3)))
+      if not t_matches:
+        continue
+      w_allow = is_declinable_nominal(w_tok)
+      updated_tags = _insert_backfill_tags_in_order(
+        t_matches, w_tok, counter, corpora, allow_stem=w_allow
+      )
+      if _is_same_paradigm(w_tok):
+        same_stem_covered.update(corpora)
+      protected.append((s, e))
+      new_grp = ", ".join(updated_tags)
+      if new_grp != m.group(3):
+        reps.append((s, e, new_grp))
+
+    # 3. Protect Pattern B (`*RV*-1 १०.८५.२५ WORD`) so top-level pass doesn't alter cited passages
+    has_pattern_b = False
+    for m in _TAG_GROUP_WITH_EXAMPLE_RE.finditer(clause):
+      s, e = m.start(1), m.end(1)
+      if any(not (e <= ps or s >= pe) for ps, pe in protected):
+        continue
+      w_ex = m.group(3)
+      if any(ch in w_ex for ch in (US_UDATTA, US_SVARITA, "\u0951", "\u0952")) and _is_sanskrit_example_word(w_ex):
+        has_pattern_b = True
+        protected.append((s, e))
+
+    # 4. Top-level tag block in main clause (clause 0)
+    if not is_alt:
+      top_tms = [
+        tm
+        for tm in _TAG_TOKEN_RE.finditer(clause)
+        if not any(not (tm.end() <= ps or tm.start() >= pe) for ps, pe in protected)
+      ]
+      eff_corpora = tuple(cp for cp in corpora if cp not in same_stem_covered)
+      if top_tms and eff_corpora:
+        first_s, last_e = top_tms[0].start(), top_tms[-1].end()
+        span_txt = clause[first_s:last_e]
+        after_last = clause[last_e : last_e + 15]
+        has_trailing_sec = bool(re.match(r"^\s+[०-९0-9]+\.[०-९0-9]", after_last))
+        if not has_trailing_sec and re.fullmatch(
+          rf"\*(?:{_CORPUS_TAG_PAT})\*{_COUNT_OPT_PAT}(?:\s*,\s*\*(?:{_CORPUS_TAG_PAT})\*{_COUNT_OPT_PAT})*",
+          span_txt,
+        ):
+          updated_top = _insert_backfill_tags_in_order(
+            top_tms, it.ref, counter, eff_corpora, allow_stem=allow_stem_ref
+          )
+          new_span = ", ".join(updated_top)
+          if new_span != span_txt:
+            reps.append((first_s, last_e, new_span))
+        elif allow_stem_ref:
+          # Non-contiguous top-level tags (e.g. `*RV*-1 १०.८५.२५`): append after last tag (and its section ref)
+          existing_names = {tm.group(1) for tm in top_tms}
+          extras: list[str] = []
+          for cp in eff_corpora:
+            if cp in existing_names or _CORPUS_ALIASES.get(cp) in existing_names:
+              continue
+            m_c, n_c = counter.count_with_stem(it.ref, cp, allow_stem=True)
+            fmt = format_corpus_count(cp, m_c, n_c)
+            if fmt is not None:
+              extras.append(fmt)
+          if extras:
+            s_last, e_last = top_tms[-1].start(), top_tms[-1].end()
+            m_sec = re.match(r"^(\s+[०-९0-9]+(?:\.[०-९0-9]+)+)", clause[e_last:])
+            if m_sec:
+              sec_end = e_last + m_sec.end()
+              reps.append((s_last, sec_end, clause[s_last:sec_end] + ", " + ", ".join(extras)))
+            elif clause[e_last:].lstrip().startswith("/"):
+              reps.append((s_last, e_last, ", ".join(extras) + ", " + clause[s_last:e_last]))
+            else:
+              reps.append((s_last, e_last, clause[s_last:e_last] + ", " + ", ".join(extras)))
+      elif not top_tms and not has_pattern_b and allow_stem_ref and eff_corpora:
+        # Main clause had no top-level corpus tags at all: prepend positive counts for `eff_corpora`
+        extras = []
+        for cp in eff_corpora:
+          m_c, n_c = counter.count_with_stem(it.ref, cp, allow_stem=True)
+          fmt = format_corpus_count(cp, m_c, n_c)
+          if fmt is not None:
+            extras.append(fmt)
+        if extras:
+          lead_len = len(clause) - len(clause.lstrip())
+          rest = clause[lead_len:]
+          ins_txt = f"{', '.join(extras)}, " if rest else ", ".join(extras)
+          reps.append((lead_len, lead_len, ins_txt))
+
+    if reps:
+      out_p: list[str] = []
+      last = 0
+      for s, e, rep in sorted(reps, key=lambda x: x[0]):
+        out_p.append(clause[last:s])
+        out_p.append(rep)
+        last = e
+      out_p.append(clause[last:])
+      new_clauses.append("".join(out_p))
+    else:
+      new_clauses.append(clause)
+
+  new_prov = ";".join(new_clauses)
+  if new_prov == prov_inner:
+    return line
+  return f"{indent}{head}({new_prov}){tail}"
+
+
+def backfill_corpora_in_padapatha_markdown(
+  markdown_text: str,
+  counter: VedicCorpusCounter,
+  corpora: Sequence[str] = ("SB-K", "VS-K"),
+  *,
+  skip_js_includes: bool = True,
+) -> str:
+  """Insert or update ONLY ``corpora`` counts across all ``पद-पाठः (यान्त्रिकः...)`` blocks without touching other tags."""
+  inc_spans = find_js_include_spans(markdown_text) if skip_js_includes else []
+
+  def _sub_block(m: re.Match) -> str:
+    if inc_spans and any(a <= m.start() < b for a, b in inc_spans):
+      return m.group(0)
+    full = m.group(0)
+    hdr = m.group(1).strip()
+    if not hdr.startswith("पद-पाठः (यान्त्रिकः"):
+      return full
+    open_end = full.find("</summary>") + len("</summary>")
+    close_start = full.rfind("</details>")
+    prefix = full[:open_end]
+    body = full[open_end:close_start]
+    suffix = full[close_start:]
+    out_lines: list[str] = []
+    for ln in body.splitlines(keepends=True):
+      nl = "\n" if ln.endswith("\n") else ""
+      core = ln[:-1] if nl else ln
+      if core.lstrip().startswith("- "):
+        out_lines.append(backfill_corpora_in_padapatha_line(core, counter, corpora=corpora) + nl)
+      else:
+        out_lines.append(ln)
+    return prefix + "".join(out_lines) + suffix
+
+  return DETAILS_RE.sub(_sub_block, markdown_text)
