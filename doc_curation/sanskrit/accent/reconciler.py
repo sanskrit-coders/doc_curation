@@ -41,10 +41,10 @@ LEAF_DETAILS_RE = re.compile(
   re.S | re.I,
 )
 PP_HEADER_RE = re.compile(
-  r"^पद-पाठः \(यान्त्रिकः(?:\s*-\s*(?!\d+/\d+\s*व्यत्यस्त-स्वराः)[^)]+?)?(?:\s*-\s*(\d+)/(\d+)\s*व्यत्यस्त-स्वराः)?\)$"
+  r"^पद-पाठः \(यान्त्रिकः(?:\s*-\s*(?!\s*\d+/\d+\s*व्यत्यस्त-स्वराः)[^)]+?)?(?:\s*-\s*(\d+)/(\d+)\s*व्यत्यस्त-स्वराः)?\)$"
 )
 _PP_HEADER_QUAL_RE = re.compile(
-  r"^पद-पाठः \(यान्त्रिकः(?:\s*-\s*(?!\d+/\d+\s*व्यत्यस्त-स्वराः)([^)]+?))?(?:\s*-\s*(\d+)/(\d+)\s*व्यत्यस्त-स्वराः)?\)$"
+  r"^पद-पाठः \(यान्त्रिकः(?:\s*-\s*(?!\s*\d+/\d+\s*व्यत्यस्त-स्वराः)([^)]+?))?(?:\s*-\s*(\d+)/(\d+)\s*व्यत्यस्त-स्वराः)?\)$"
 )
 
 
@@ -62,6 +62,10 @@ _VP_SUMMARY_TAG_RE = re.compile(
 )
 _VP_VYAT_SUMMARY_RE = re.compile(r"\((\d+)/(\d+)\s*व्यत्यस्त-स्वराः\)")
 _SUG_SPAN_RE = re.compile(r"\[\[([^|\]]+)\|([^\]]+)\]\]")
+_COMB_AFTER_BOLD_RE = re.compile(
+  r"\*\*([^\*\n]+)\*\*([\u0900-\u0903\u093a-\u093c\u093e-\u0957\u0962-\u0963\u1cd0-\u1cff]+)"
+)
+_TRAILING_SUG_IN_BOLD_RE = re.compile(r"^(.*)\[\[([^|\]]+)\|([^\]]+)\]\]$", re.S)
 _PIECE_PAT = re.compile(
   r"\[\[([^|\]]+)\|([^\]]+)\]\]|[\u0900-\u0963\u0969\u0971-\u097f\u1cd0-\u1cff\u0951\u0952\-ऽ]+"
 )
@@ -215,12 +219,24 @@ def is_solid_provenance(prov: str) -> bool:
   return False
 
 
+_TRAILING_PP_COMMENT_RE = re.compile(r"(?:\s*\+\+\+.*?\+\+\+)+\s*$")
+
+
+def split_padapatha_line_comment(line: str) -> tuple[str, str]:
+  """Split trailing ``+++(...)+++`` inline comments from a ``पद-पाठः`` bullet line."""
+  m = _TRAILING_PP_COMMENT_RE.search(line)
+  if not m:
+    return line, ""
+  return line[: m.start()].rstrip(), line[m.start() :]
+
+
 def parse_padapatha_items(pp_body: str) -> list[PadapathaItem]:
   """Parse bullet lines of a ``पद-पाठः (यान्त्रिकः)`` block into structured items."""
   items: list[PadapathaItem] = []
-  for line in pp_body.splitlines():
-    if not line.startswith("- "):
+  for raw_line in pp_body.splitlines():
+    if not raw_line.startswith("- "):
       continue
+    line, _ = split_padapatha_line_comment(raw_line)
     m_arr = re.match(r"^-\s+(.*?)\s+→\s+\*\*(.*?)\*\*\s+\((.*)\)$", line)
     if m_arr:
       ar, ref, prov = m_arr.group(1).strip(), m_arr.group(2).strip(), m_arr.group(3).strip()
@@ -1190,6 +1206,29 @@ def _validate_existing_sug_piece(
   return None
 
 
+def normalize_vp_bolding_splits(vp_text: str) -> tuple[str, list[str]]:
+  """Repair closing bold ``**`` split before combining/accent marks (e.g. ``**मा**᳓`` or ``**[[मा|मा᳓]]**᳓``)."""
+  logs: list[str] = []
+
+  def _repl(m: re.Match[str]) -> str:
+    inner, trailing = m.group(1), m.group(2)
+    m_sug = _TRAILING_SUG_IN_BOLD_RE.match(inner)
+    if m_sug:
+      prefix, old_tok, new_tok = m_sug.group(1), m_sug.group(2), m_sug.group(3)
+      merged_old = sanitize_us_accents(old_tok + trailing)
+      if merged_old == sanitize_us_accents(new_tok):
+        rep = f"**{prefix}{merged_old}**"
+      else:
+        rep = f"**{prefix}[[{merged_old}|{new_tok}]]**"
+      logs.append(f"FIX_BOLD_SUG_SPLIT: {m.group(0)} -> {rep}")
+      return rep
+    rep = f"**{inner}{trailing}**"
+    logs.append(f"FIX_BOLD_COMB_SPLIT: {m.group(0)} -> {rep}")
+    return rep
+
+  return _COMB_AFTER_BOLD_RE.sub(_repl, vp_text), logs
+
+
 def reconcile_vp_suggestions(
   vp_body: str,
   items: Sequence[PadapathaItem],
@@ -1200,7 +1239,9 @@ def reconcile_vp_suggestions(
 ) -> tuple[str, list[str]]:
   """Align ``विश्वास-प्रस्तुतिः`` against ``पद-पाठः (यान्त्रिकः)`` and add, unwrap, or update ``[[OLD|NEW]]`` spans."""
   logs: list[str] = []
-  vp_work, unwrap_logs = unwrap_stale_suggestions(vp_body, items, extra_invalid_olds=extra_invalid_olds)
+  vp_work, bold_logs = normalize_vp_bolding_splits(vp_body)
+  logs.extend(bold_logs)
+  vp_work, unwrap_logs = unwrap_stale_suggestions(vp_work, items, extra_invalid_olds=extra_invalid_olds)
   logs.extend(unwrap_logs)
 
   vp_pieces = _extract_vp_pieces(vp_work)
@@ -1289,6 +1330,7 @@ def fill_vp_accents_from_padapatha(
   Preserves markdown bolding, ``+++(...)+++`` notes, hyphens, spaces, and exact bare Devanagari,
   applying Pāṇini ``8.2.4–8.2.6`` cross-pada sandhi rules. Returns ``(filled_vp_body, unmapped_syllables)``.
   """
+  vp_body, _ = normalize_vp_bolding_splits(vp_body)
   vp_pieces = _extract_vp_pieces(vp_body)
   if not vp_pieces or not items:
     return vp_body, []

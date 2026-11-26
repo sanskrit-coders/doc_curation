@@ -217,3 +217,21 @@ pada_label = "पद-पाठः (यान्त्रिकः - काण्
 sayana_variant_label = "सायणः (काण्व-ब्राह्मणम्)"
 heading_level = 3
 content_dir = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/shatapatha-brAhmaNam/sarva-prastutiH"
+
+[corpora.AV-P]
+name = "AV-P"
+shAkha_label = "पैप्पलादम्"
+pada_label = "पद-पाठः (यान्त्रिकः - पैप्पलादम्)"
+sayana_variant_label = "पैप्पलाद-टीका"
+heading_level = 3
+content_dir = "/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/paippalAdam/saMhitA/sarva-prastutiH"
+vp_dir = "/home/vvasuki/gitland/vishvAsa/vedAH/static/atharva/paippalAdam/saMhitA/Rk/vishvAsa-prastutiH"
+sarva_dir = "/home/vvasuki/gitland/vishvAsa/vedAH/static/atharva/paippalAdam/saMhitA/Rk/sarvASh_TIkAH"
+vp_url_prefix = "/vedAH/atharva/paippalAdam/saMhitA/Rk/vishvAsa-prastutiH"
+sarva_url_prefix = "/vedAH/atharva/paippalAdam/saMhitA/Rk/sarvASh_TIkAH"
+yajuh_sarva_prastuti_dir = "/home/vvasuki/gitland/vishvAsa/vedAH/static/atharva/paippalAdam/saMhitA/yajuH/sarva-prastutiH"
+yajuh_sarva_prastuti_url = "/vedAH/atharva/paippalAdam/saMhitA/yajuH/sarva-prastutiH"
+yajuh_vp_dir = "/home/vvasuki/gitland/vishvAsa/vedAH/static/atharva/paippalAdam/saMhitA/yajuH/vishvAsa-prastutiH"
+yajuh_vp_url = "/vedAH/atharva/paippalAdam/saMhitA/yajuH/vishvAsa-prastutiH"
+yajuh_sarva_dir = "/home/vvasuki/gitland/vishvAsa/vedAH/static/atharva/paippalAdam/saMhitA/yajuH/sarvASh_TIkAH"
+yajuh_sarva_url = "/vedAH/atharva/paippalAdam/saMhitA/yajuH/sarvASh_TIkAH"

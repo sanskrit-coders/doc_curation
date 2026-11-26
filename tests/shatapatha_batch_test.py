@@ -1182,3 +1182,191 @@ Unaccented Kandika 7.
   assert "SB-M" in lex_la.lookup_form("पुरोळाशम्").get(("", "", "U", ""), {})
   assert "SB-M" in lex_la.lookup_form("सम्वत्सरः").get(("", "", "U", ""), {})
   assert split_chunk_to_padas_dp("षळृतवः", lex_la) == ["षट्", "ऋतवः"]
+
+
+def test_audit_and_provenance_with_sb_js_includes(tmp_path):
+  from doc_curation.sanskrit.accent.provenance import VedicCorpusCounter, _collect_include_leaf_blocks, _include_block_matches_corpus
+
+  v_root = tmp_path / "vishvAsa"
+  sbm_c = v_root / "vedAH_yajuH" / "content" / "vAjasaneyam" / "mAdhyandinam" / "shatapatha-brAhmaNam" / "sarva-prastutiH"
+  sbm_st = v_root / "vedAH_yajuH" / "static" / "vAjasaneyam" / "mAdhyandinam" / "shatapatha-brAhmaNam"
+  sbk_c = v_root / "vedAH_yajuH" / "content" / "vAjasaneyam" / "kANvam" / "shatapatha-brAhmaNam" / "sarva-prastutiH"
+  (sbm_c / "02" / "02").mkdir(parents=True)
+  (sbm_st / "brAhmaNam" / "sarva-prastutiH" / "02" / "02").mkdir(parents=True)
+  (sbm_st / "brAhmaNam" / "sarvASh_TIkAH" / "02" / "02").mkdir(parents=True)
+  (sbk_c / "01_ekapAtkANDam" / "02").mkdir(parents=True)
+
+  comb_fp = sbm_st / "brAhmaNam" / "sarva-prastutiH" / "02" / "02" / "01_comb.md"
+  comb_fp.write_text(
+    '+++\ntitle = "०१"\n+++\n\n<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nत᳓त् स᳓विता ॥\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>मूलम् - Weber</summary>\n\nत᳘त्स᳘विता\n</details>\n\n'
+    '<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- त᳓त् (*TS*-10)\n- स᳓विता (*TS*-10)\n</details>\n\n'
+    '<details><summary>पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम् - 1/2 व्यत्यस्त-स्वराः)</summary>\n\n'
+    '- तत् → **त᳓त्** (*TS*-10)\n- स᳓विता (*TS*-10)\n</details>\n</details>\n',
+    encoding="utf-8",
+  )
+  comb_vyat_fp = sbm_st / "brAhmaNam" / "sarva-prastutiH" / "02" / "02" / "03_comb_vyat.md"
+  comb_vyat_fp.write_text(
+    '+++\ntitle = "०३"\n+++\n\n<details open><summary>विश्वास-प्रस्तुतिः (1/2 व्यत्यस्त-स्वराः)</summary>\n\n[[यः|यः᳓]] शर्म᳓ ॥\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>मूलम् - Weber</summary>\n\nयः शर्म᳘\n</details>\n\n'
+    '<details><summary>पद-पाठः (यान्त्रिकः - 1/2 व्यत्यस्त-स्वराः)</summary>\n\n- यः → **यः᳓** (*TS*-10)\n- शर्म᳓ (*RV*-10)\n</details>\n\n'
+    '<details><summary>पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम्)</summary>\n\n- यः᳓ (*TS*-10)\n- शर्म᳓ (*RV*-10)\n</details>\n</details>\n',
+    encoding="utf-8",
+  )
+  tk_fp = sbm_st / "brAhmaNam" / "sarvASh_TIkAH" / "02" / "02" / "02_var.md"
+  tk_fp.write_text(
+    '+++\ntitle = "०२"\n+++\n\n<details><summary>मूलम् - Weber</summary>\n\nय᳘ः शर्म᳘\n</details>\n\n'
+    '<details><summary>मूलम् - काण्व-ब्राह्मणम्</summary>\n\nयः शर्म᳘\n</details>\n\n'
+    '<details><summary>पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम्)</summary>\n\n'
+    '- सः᳓ (*TS*-10)\n- शर्म᳓ (*RV*-10)\n</details>\n\n'
+    '<details><summary>पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम् - 1/2 व्यत्यस्त-स्वराः)</summary>\n\n'
+    '- यः → **यः᳓** (*TS*-10; Weber-पाठः य᳘ः; काण्व-पाठः यः)\n- शर्म᳓ (*RV*-10)\n</details>\n',
+    encoding="utf-8",
+  )
+
+  sbk_fp = sbk_c / "01_ekapAtkANDam" / "02" / "1.md"
+  sbk_fp.write_text(
+    '+++\ntitle = "१"\n+++\n## ०१\n\n'
+    '<div class="js_include" includetitle="false" newlevelforh1="3" unfilled url="/vedAH_yajuH/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/brAhmaNam/sarva-prastutiH/02/02/01_comb.md"></div>\n\n'
+    '## ०२\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः (1/2 व्यत्यस्त-स्वराः)</summary>\n\n[[यः|यः᳓]] शर्म᳓ ॥\n</details>\n\n'
+    '<div class="js_include" collapsed newlevelforh1="3" title="सर्वाष् टीकाः" unfilled url="/vedAH_yajuH/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/brAhmaNam/sarvASh_TIkAH/02/02/02_var.md"></div>\n',
+    encoding="utf-8",
+  )
+
+  aud = audit_full_sb_corpus(sbk_c, files=[sbk_fp], hugo_base_dir=str(v_root))
+  assert aud.passed and aud.total_kandikas == 2 and aud.converted_kandikas == 2 and aud.failures == []
+
+  from doc_curation.sanskrit.accent.shatapatha_batch import _select_best_pp_candidate, _split_mula_variant_candidates
+  cand_a = ("पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम् - 1/2 व्यत्यस्त-स्वराः)", "- गच्छात् → **ग᳓च्छात्** (*RV*-1)\n- इ᳓ति (*TS*-1)")
+  cand_b = ("पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम् - 1/2 व्यत्यस्त-स्वराः)", "- गच्छात् (*MS*-1)\n- इति → **इ᳓ति** (*TS*-1)")
+  picked = _select_best_pp_candidate([cand_a, cand_b], "विश्वास-प्रस्तुतिः (1/2 व्यत्यस्त-स्वराः)", "[[गच्छादिति|गच्छादि᳓ति]] ।")
+  assert picked == cand_b
+
+  multi_w = "दि᳘शः प्र᳘दिश आदि᳘शो [^wbr_5] विदि᳘श\n\n[^wbr_5]: x\n\nदि᳘शः प्रदि᳘श आदि᳘शो विदि᳘श"
+  assert _split_mula_variant_candidates(multi_w, "दि᳓शः प्रदि᳓श आदि᳓शो विदि᳓श") == [
+    "दि᳘शः प्र᳘दिश आदि᳘शो  विदि᳘श",
+    "दि᳘शः प्रदि᳘श आदि᳘शो विदि᳘श",
+  ]
+
+  aud_static = audit_full_sb_corpus(sbm_st / "brAhmaNam" / "sarva-prastutiH", files=[comb_fp, comb_vyat_fp], hugo_base_dir=str(v_root))
+  assert aud_static.passed and aud_static.total_kandikas == 2 and aud_static.converted_kandikas == 2 and aud_static.failures == []
+
+  # Extra stray native padapāṭha in combined static still fails misplaced_padapatha
+  comb_bad_fp = sbm_st / "brAhmaNam" / "sarva-prastutiH" / "02" / "02" / "04_comb_bad.md"
+  comb_bad_fp.write_text(
+    comb_fp.read_text(encoding="utf-8").replace(
+      "</details>\n\n<details><summary>पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम्",
+      "</details>\n\n<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- त᳓त् (*TS*-10)\n- स᳓विता (*TS*-10)\n</details>\n\n<details><summary>पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम्",
+    ),
+    encoding="utf-8",
+  )
+  aud_comb_bad = audit_full_sb_corpus(sbm_st / "brAhmaNam" / "sarva-prastutiH", files=[comb_bad_fp], hugo_base_dir=str(v_root))
+  assert not aud_comb_bad.passed and any(f.kind == "misplaced_padapatha" for f in aud_comb_bad.failures)
+
+  # Provenance filtering ignores SB-M padapāṭha for SB-K, accepts vyatyasta SB-M/SB-K native headers, and picks SB-K qualified padapāṭha cleanly
+  assert _include_block_matches_corpus("पद-पाठः (यान्त्रिकः - 1/2 व्यत्यस्त-स्वराः)", "/vedAH_yajuH/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/brAhmaNam/sarva-prastutiH/x.md", "SB-M")
+  assert not _include_block_matches_corpus("पद-पाठः (यान्त्रिकः - 1/2 व्यत्यस्त-स्वराः)", "/vedAH_yajuH/vAjasaneyam/kANvam/shatapatha-brAhmaNam/sarva-prastutiH/x.md", "SB-M")
+  assert _include_block_matches_corpus("पद-पाठः (यान्त्रिकः - 1/2 व्यत्यस्त-स्वराः)", "/vedAH_yajuH/vAjasaneyam/kANvam/shatapatha-brAhmaNam/sarva-prastutiH/x.md", "SB-K")
+  leafs_var = _collect_include_leaf_blocks(
+    "/vedAH_yajuH/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/brAhmaNam/sarvASh_TIkAH/02/02/02_var.md",
+    hugo_base_dir=str(v_root),
+  )
+  assert any(_include_block_matches_corpus(h, u, "SB-K") and "काण्व" in h for h, _, u in leafs_var)
+  assert not any(_include_block_matches_corpus(h, u, "SB-M") and "काण्व" in h for h, _, u in leafs_var)
+
+  vc = VedicCorpusCounter()
+  vc._ingest_us_markdown_corpus(str(sbk_c), "SB-K")  # no crash when real /home/vvasuki paths aren't mocked for comb_fp; verify direct counter
+  # Verify broken include URL fails audit cleanly
+  bad_fp = sbk_c / "01_ekapAtkANDam" / "02" / "bad.md"
+  bad_fp.write_text('+++\ntitle = "bad"\n+++\n## ०१\n\n<div class="js_include" includetitle="false" newlevelforh1="3" unfilled url="/vedAH_yajuH/missing/target.md"></div>\n', encoding="utf-8")
+  aud_bad = audit_full_sb_corpus(sbk_c, files=[bad_fp], hugo_base_dir=str(v_root))
+  assert not aud_bad.passed and any(f.kind == "missing_include_target" for f in aud_bad.failures)
+
+
+def test_split_mula_variant_candidates_mixed_full_and_split_weber() -> None:
+  """Split multi-variant ``मूलम्`` cleanly even when paired with short fragments or split-sentence Weber."""
+  from doc_curation.sanskrit.accent.shatapatha import audit_padapatha_against_sb, parse_padapatha_items
+  from doc_curation.sanskrit.accent.shatapatha_batch import _split_mula_variant_candidates
+
+  vp = "आत्म᳓संमितं᳓ य᳓दु वा᳓ आत्म᳓संमित᳓म᳓न्नं त᳓दवति ।"
+  items = parse_padapatha_items(
+    "\n".join(
+      [
+        "- आत्म᳓",
+        "- सम्-मित᳓म्",
+        "- य᳓त्",
+        "- उ",
+        "- वै᳓",
+        "- आत्म᳓",
+        "- सम्-मित᳓म्",
+        "- अ᳓न्नम्",
+        "- त᳓त्",
+        "- अवति",
+      ]
+    )
+  )
+
+  # (a) Short fragment + 2 full readings: full readings are returned directly and best match is clean
+  raw_2full = (
+    "आत्म᳘सम्मितम᳘न्नं तदवति\n\n"
+    "आत्म᳘संमितं य᳘दु वाऽत्म᳘संमितम᳘न्नं त᳘दवति\n\n"
+    "आत्म᳘संमितं य᳘दु वा᳘ आत्म᳘संमितम᳘न्नं त᳘दवति"
+  )
+  c2 = _split_mula_variant_candidates(raw_2full, vp)
+  assert len(c2) == 2
+  best2 = min(
+    (audit_padapatha_against_sb(vp, items, "", cand) for cand in c2),
+    key=lambda r: (
+      len(r.unmapped_vp_syllables),
+      len(r.unflagged_vyatyasta_padas) + len(r.possibly_spurious_vyatyasta_padas),
+    ),
+  )
+  assert not best2.unmapped_vp_syllables
+  assert not best2.unflagged_vyatyasta_padas
+  assert not best2.possibly_spurious_vyatyasta_padas
+
+  # (b) Short fragment + single full reading (>= 85%): returns [full_reading, raw_mula]
+  full_ok = "आत्म᳘संमितं य᳘दु वा᳘ आत्म᳘संमितम᳘न्नं त᳘दवति"
+  raw_1full = f"आत्म᳘सम्मितम᳘न्नं तदवति\n\n{full_ok}"
+  c1 = _split_mula_variant_candidates(raw_1full, vp)
+  assert c1 == [full_ok, raw_1full]
+  r1 = audit_padapatha_against_sb(vp, items, "", c1[0])
+  assert not r1.unmapped_vp_syllables
+  assert not r1.unflagged_vyatyasta_padas
+  assert not r1.possibly_spurious_vyatyasta_padas
+
+  # (c) Split-sentence Weber (~89% + tail with vyatyasta): keeps raw_mula fallback so full sentence aligns
+  vp_split = "आत्म᳓संमितं᳓ य᳓दु वा᳓ आत्म᳓संमित᳓म᳓न्नं त᳓दवति । सः᳓ ।"
+  items_split = parse_padapatha_items(
+    "\n".join(
+      [
+        "- आत्म᳓",
+        "- सम्-मित᳓म्",
+        "- य᳓त्",
+        "- उ",
+        "- वै᳓",
+        "- आत्म᳓",
+        "- सम्-मित᳓म्",
+        "- अ᳓न्नम्",
+        "- त᳓त्",
+        "- अवति",
+        "- सः → **सः᳓**",
+      ]
+    )
+  )
+  w_split = f"{full_ok}\n\nसः"
+  cw = _split_mula_variant_candidates(w_split, vp_split)
+  assert cw == [full_ok, w_split]
+  best_w = min(
+    (audit_padapatha_against_sb(vp_split, items_split, cand, "") for cand in cw),
+    key=lambda r: (
+      len(r.unmapped_vp_syllables),
+      len(r.unflagged_vyatyasta_padas) + len(r.possibly_spurious_vyatyasta_padas),
+    ),
+  )
+  assert not best_w.unmapped_vp_syllables
+  assert not best_w.unflagged_vyatyasta_padas
+  assert not best_w.possibly_spurious_vyatyasta_padas
+
+

@@ -36,6 +36,7 @@ DEFAULT_MSS_PATH = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/maitrAyaN
 DEFAULT_VSS_PATH = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/maitrAyaNIyam/varAhaH/vArAhashrautasUtram.md"
 DEFAULT_KS_VISVARA_DIR = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/visvara-saMhitA"
 DEFAULT_MS_SARVA_DIR = "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/maitrAyaNIyam/saMhitA/sarva-prastutiH"
+DEFAULT_AV_VP_DIR = "/home/vvasuki/gitland/vishvAsa/vedAH/static/atharva/shaunakam/rUDha-saMhitA/vishvAsa-prastutiH"
 
 _DEV_TO_ASCII = str.maketrans("०१२३४५६७८९", "0123456789")
 _ASCII_TO_DEV = str.maketrans("0123456789", "०१२३४५६७८९")
@@ -357,6 +358,53 @@ def _ingest_rv_dir(rv_dir: str) -> list[MantraRefUnit]:
         ref_id=f"RV:{rel}",
         vp_us=vp_us,
         is_rk=True,
+        words=words,
+        skeleton=skel,
+        n_lines=n_lines,
+      )
+    )
+  return units
+
+
+def _ingest_av_dir(av_vp_dir: str = DEFAULT_AV_VP_DIR) -> list[MantraRefUnit]:
+  """Parse Śaunaka Atharvaveda static ``vishvAsa-prastutiH`` (with classical ``मूलम्`` fallback)."""
+  units: list[MantraRefUnit] = []
+  if not os.path.isdir(av_vp_dir):
+    return units
+  sarva_root = os.path.join(os.path.dirname(av_vp_dir.rstrip("/")), "sarvASh_TIkAH")
+  mula_re = re.compile(r"<details><summary>मूलम्(?:\s*-\s*शौनकम्)?</summary>(.*?)</details>", re.S)
+  for fp in sorted(glob.glob(os.path.join(av_vp_dir, "**", "*.md"), recursive=True)):
+    base = os.path.basename(fp)
+    if base in ("_index.md", "file_list.md"):
+      continue
+    rel = os.path.relpath(fp, av_vp_dir).replace("\\", "/")
+    txt = open(fp, encoding="utf-8", errors="ignore").read()
+    if "यन्त्र-स्वरः" in txt:
+      continue
+    # Strip YAML/TOML frontmatter cleanly
+    m_fm = re.match(r"^(?:\+\+\+.*?\+\+\+|---.*?---)\s*", txt, re.S)
+    body = txt[m_fm.end() :] if m_fm else txt
+    vp_us = clean_vedic_text(body, keep_us_accents=True)
+    if not has_us_accents(vp_us):
+      sv_fp = os.path.join(sarva_root, rel)
+      if os.path.isfile(sv_fp):
+        sv_txt = open(sv_fp, encoding="utf-8", errors="ignore").read()
+        m_mu = mula_re.search(sv_txt)
+        if m_mu:
+          vp_us = _clean_vp_to_us("", m_mu.group(1))
+    if not has_us_accents(vp_us):
+      continue
+    words = norm_words(vp_us)
+    if len(words) < 3:
+      continue
+    skel = skeleton_key(vp_us)
+    n_lines = max(1, len([ln for ln in body.strip().splitlines() if ln.strip()]))
+    units.append(
+      MantraRefUnit(
+        source="AV",
+        ref_id=f"AV:{rel}",
+        vp_us=vp_us,
+        is_rk=n_lines >= 2,
         words=words,
         skeleton=skel,
         n_lines=n_lines,
@@ -802,6 +850,15 @@ class VedicReferenceIndex:
     self.mantras = [u for u in self.mantras if u.source != "MS"] + ms_units
     self._build_lookup_tables()
     return len(ms_units)
+
+  def add_av_mantras(self, av_vp_dir: str = DEFAULT_AV_VP_DIR) -> int:
+    """Ingest authentic accented Śaunaka Atharvaveda static mantras (for AV-P transfer)."""
+    av_units = _ingest_av_dir(av_vp_dir)
+    if not av_units:
+      return 0
+    self.mantras = [u for u in self.mantras if u.source != "AV"] + av_units
+    self._build_lookup_tables()
+    return len(av_units)
 
   @classmethod
   def build(

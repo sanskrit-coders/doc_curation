@@ -51,6 +51,7 @@ from doc_curation.sanskrit.accent.reconciler import (
   find_js_include_spans,
   _skip_elided_avagraha_lead,
   apply_marks_to_token,
+  format_filled_vp_summary,
   format_padapatha_summary,
   format_suggested_vp_summary,
   has_us_accents,
@@ -706,6 +707,11 @@ class _VpCluster:
 _SB_TRANSLATION_SUMMARIES = frozenset({
   "Eggeling",
   "C R Swaminathan",
+  "Gemini 3.8 Flash",
+  "Keith",
+  "Griffith",
+  "Wilson",
+  "Whitney",
   "En - सिद्धार्थः",
   "Griffith",
 })
@@ -965,7 +971,7 @@ def apply_sb_kandika_updates(
           or "\u0957" in cl.weber_text
         )
         if not mula_has_accents:
-          vp_sum = "विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)"
+          vp_sum = format_filled_vp_summary(orig_summary, 0, len(items), mula_has_accents=False)
         if vp_m is not None:
           open_attr = " open" if "<details open>" in vp_m.group(0)[:20] else ""
           new_vp_block = f"<details{open_attr}><summary>{vp_sum}</summary>\n\n{vp_acc}\n</details>"

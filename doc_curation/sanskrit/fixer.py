@@ -219,7 +219,7 @@ def fix_sacred_texts_transliteration(text):
   return text
 
 def fix_intra_word_bolds(content, *args, **kwargs):
-  content = regex.sub(r"([ऀ-ॣ]*)(\*+)([ऀ-ॣ]+)\2([ऀ-ॣ]+)", r"\2\1\3\4\2", content)
+  content = regex.sub(r"([ऀ-ॣ\u1cd0-\u1cff]*)(\*+)([ऀ-ॣ\u1cd0-\u1cff]+)\2([ऀ-ॣ\u1cd0-\u1cff]+)", r"\2\1\3\4\2", content)
   return content
 
 def _remove_spaces_and_punctuation(text):

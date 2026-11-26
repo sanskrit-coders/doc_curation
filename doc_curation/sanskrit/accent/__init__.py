@@ -149,6 +149,11 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   split_vp_to_padas,
   split_vp_to_padas_with_clauses,
 )
+from doc_curation.sanskrit.accent.svarita_repair import (
+  repair_gretil_svarita_leaks_in_vp,
+  repair_svarita_leaks_in_markdown,
+  repair_tree_svarita_leaks,
+)
 from doc_curation.sanskrit.accent.us_converter import (
   DEFAULT_SKIP_PATTERN,
   DEFAULT_US_PAUSES,
@@ -306,6 +311,9 @@ __all__ = [
   "reconcile_vp_suggestions",
   "reconcile_vprastuti_and_tiikaa_texts",
   "render_interleaved_samhita_section",
+  "repair_gretil_svarita_leaks_in_vp",
+  "repair_svarita_leaks_in_markdown",
+  "repair_tree_svarita_leaks",
   "resolve_mula_seams",
   "resolve_pausa_word_end",
   "resolve_seam_boundaries",

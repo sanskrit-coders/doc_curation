@@ -209,3 +209,156 @@ def test_auditor_recognizes_vs_m_and_vs_k_corpus_tags():
   assert CORPUS_COUNT_TAG_RE.search("*VS-M*-12")
   assert CORPUS_COUNT_TAG_RE.search("*VS-K*-0/4")
   assert CORPUS_COUNT_TAG_RE.search("*VS*-3")
+
+
+def test_auditor_flags_weak_rv_av_override_false_citations_and_antipatterns():
+  from doc_curation.sanskrit.accent.provenance import VedicCorpusCounter, word_to_key_and_marks
+
+  bad_md = """<details open><summary>विश्वास-प्रस्तुतिः (3/6 व्यत्यस्त-स्वराः)</summary>
+
+[[अ᳓यशः|अयशः᳓]] मा हिंसीः᳓ [[प᳓रा|परा᳓]] तथा᳓ दीप्य᳓मानः ।
+</details>
+
+<details><summary>सर्वाष् टीकाः</summary>
+
+<details><summary>मूलम्</summary>
+
+अयशो मा हिंसीः परा तथा दीप्यमानः ।
+</details>
+
+<details><summary>पद-पाठः (यान्त्रिकः - 3/6 व्यत्यस्त-स्वराः)</summary>
+
+- अ᳓यशः → **अयशः᳓** (*RV*-1)
+- मा (अनुदात्तम्, पा॰ ८.१.१८, *TS*-202)
+- हिंसीः᳓ (*SB-M*-15)
+- प᳓रा → **परा᳓** (*AV*, *RV*)
+- तथा᳓ (*AV*, *RV*, *TB*, *TS*)
+- दीप्य᳓मानः (यक् पा॰ ३.१.६७, पा॰ ३.१.३)
+</details>
+</details>
+"""
+  # Offline mode (counter=None): catches weak RV/AV arrow and both antipatterns
+  offline_findings, _ = audit_padapatha_markdown(bad_md, path="x.md", include_validator_issues=False)
+  offline_cats = {f.category for f in offline_findings}
+  assert "weak_rv_av_override" in offline_cats
+  assert "known_false_svara_antipattern" in offline_cats
+  assert sum(1 for f in offline_findings if f.category == "known_false_svara_antipattern") == 2
+
+  # Online mode with VedicCorpusCounter: additionally catches false bare citations & missing YV counts
+  stub = VedicCorpusCounter()
+  stub._add("TS", *word_to_key_and_marks("अ᳓यशः"), freq=4)
+  stub._add("AV", *word_to_key_and_marks("प᳓रा"), freq=86)
+  stub._add("RV", *word_to_key_and_marks("प᳓रा"), freq=78)
+  stub._add("TS", *word_to_key_and_marks("प᳓रा"), freq=90)
+  stub._add("SB-K", *word_to_key_and_marks("तथा᳓"), freq=24)
+  stub._finalize_secondary_tables()
+
+  online_findings, _ = audit_padapatha_markdown(
+    bad_md, path="x.md", include_validator_issues=False, counter=stub
+  )
+  online_cats = [f.category for f in online_findings]
+  assert online_cats.count("weak_rv_av_override") == 2
+  assert online_cats.count("false_corpus_citation") == 2  # *AV* and *RV* on प᳓रा → परा᳓
+  assert online_cats.count("missing_yv_corpus_counts") == 1  # तथा᳓ (*SB-K*-24)
+  assert online_cats.count("known_false_svara_antipattern") == 2
+
+  good_md = """<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+मा हिंसीः दी᳓प्यमानः ।
+</details>
+
+<details><summary>सर्वाष् टीकाः</summary>
+
+<details><summary>मूलम्</summary>
+
+मा हिंसीः दीप्यमानः ।
+</details>
+
+<details><summary>पद-पाठः (यान्त्रिकः)</summary>
+
+- मा (अनुदात्तम्, पा॰ ८.१.१८, *TS*-202)
+- हिंसीः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *TS*-28, *SB-M*-24)
+- दी᳓प्यमानः (*SB-M*-11, दिवादिभ्यः श्यन् पा॰ ३.१.६९)
+</details>
+</details>
+"""
+  good_findings, _ = audit_padapatha_markdown(
+    good_md, path="good.md", include_validator_issues=False, counter=stub
+  )
+  assert not good_findings
+
+
+def test_auditor_guards_kan_amredita_and_yad_clause_8128():
+  bad_md = """<details><summary>मूलम्</summary>
+
+धेनुका ते मा नमः यस्माद् वै भूतानि जायन्ते ।
+</details>
+<details><summary>पद-पाठः (यान्त्रिकः - 3/8 व्यत्यस्त-स्वराः)</summary>
+
+- धेनुका᳓ (कन् पा॰ ३.१.३)
+- ते (द्विर्वचने अनुदात्तम्, पा॰ ८.१.३)
+- मा᳓ → **मा** (द्विर्वचने परस्यानुदात्तत्वम्, पा॰ ८.१.३)
+- न᳓मः → **नमः** (द्विर्वचने परस्यानुदात्तत्वम्, पा॰ ८.१.३)
+- य᳓स्मात् (*TS*-10)
+- वै᳓ (*TS*-20)
+- भूता᳓नि (*TS*-5)
+- जा᳓यन्ते → **जायन्ते** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+</details>
+"""
+  findings, _ = audit_padapatha_markdown(bad_md, path="bad_guards.md", include_validator_issues=False)
+  antipatterns = [f for f in findings if f.category == "known_false_svara_antipattern"]
+  assert len(antipatterns) == 5
+  assert any("धेनुका᳓" in f.line and "कन्" in f.detail for f in antipatterns)
+  assert any("Enclitic 'ते'" in f.detail for f in antipatterns)
+  assert any("Enclitic 'मा'" in f.detail for f in antipatterns)
+  assert any("नमः" in f.line and "preceding repeated word" in f.detail for f in antipatterns)
+  assert any("जायन्ते" in f.line and "relative यद्" in f.detail for f in antipatterns)
+
+  good_md = """<details><summary>मूलम्</summary>
+
+धेनुका मा मा आपम् आपाम् यावत् वा यावत् नमः यद् भवति तद् एति ।
+</details>
+<details><summary>पद-पाठः (यान्त्रिकः - 3/10 व्यत्यस्त-स्वराः)</summary>
+
+- धेनुका᳓ (स्वार्थे कः पा॰ ५.३.७०, प्रत्ययस्वरः पा॰ ३.१.३)
+- मा᳓ (*TS*-10)
+- मा (आबाधे च पा॰ ८.१.१०, आम्रेडितम् अनुदात्तम् पा॰ ८.१.३)
+- आप᳓म् (*TS*-1)
+- आपाम् (आम्रेडितम् अनुदात्तम्, पा॰ ८.१.३)
+- या᳓वत् (*TS*-1)
+- वा (*TS*-1, पा॰ ८.१.१८)
+- यावत् (आम्रेडितम् अनुदात्तम्, पा॰ ८.१.३)
+- न᳓मः᳓ → **न᳓मः** (वाक्यभेदात् न पा॰ ८.१.३)
+- य᳓त् (*TS*-10)
+- भ᳓वति (यद्वृत्तान्नित्यम्, पा॰ ८.१.६६)
+- त᳓त् (*TS*-10)
+- ए᳓ति → **एति** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+</details>
+"""
+  good_findings, _ = audit_padapatha_markdown(good_md, path="good_guards.md", include_validator_issues=False)
+  assert not [f for f in good_findings if f.category == "known_false_svara_antipattern"]
+
+
+def test_auditor_vp_line_boundary_and_concat_compound_guards():
+  md = """<details open><summary>विश्वास-प्रस्तुतिः - ऋक्</summary>
+
+इदं᳓ ह᳓विः ।  
+व᳓रुत्र्य् उग्रा᳓ विराजः᳓ प्र᳓ वर्धय प्रवर्धन त्वोत्तुदः᳓ ।
+</details>
+<details><summary>पद-पाठः (यान्त्रिकः)</summary>
+
+- इद᳓म् (*TS*-10)
+- ह᳓विः (*TS*-10)
+- व᳓रुत्रि (पादादिः आमन्त्रितम् आद्युदात्तम्, पा॰ ६.१.१९८)
+- उग्रा᳓ (*RV*-1)
+- वि-राजः᳓ (*TS*-3/61)
+- प्र᳓ (*TS*-10)
+- वर्धय (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+- प्र-वर्धन (*AV*-1)
+- उत्-तुदः᳓ (*AV*-1)
+</details>
+"""
+  findings, _ = audit_padapatha_markdown(md, path="avp_boundary.md", include_validator_issues=False)
+  cats = {f.category for f in findings}
+  assert "non_initial_61198_vocative" not in cats
+  assert "false_compound_candidate" not in cats

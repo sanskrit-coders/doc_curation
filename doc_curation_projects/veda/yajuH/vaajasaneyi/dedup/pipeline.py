@@ -156,7 +156,7 @@ def validate_dedup_integrity(
         if re.search(r"[\u0951\u0952]", txt):
           issues.append(f"{fp}: dependent accents remain in Rk vishvAsa-prastutiH")
       if vsm_yajuh_dir in fp.parents and fp.name != "_index.md":
-        m_vp = re.search(r"<details open><summary>विश्वास-प्रस्तुतिः</summary>(.*?)</details>", txt, flags=re.S)
+        m_vp = re.search(r"<details open><summary>विश्वास-प्रस्तुतिः[^<]*</summary>(.*?)</details>", txt, flags=re.S)
         if not m_vp or re.search(r"[\u0951\u0952]", m_vp.group(1)):
           issues.append(f"{fp}: missing or non-US विश्वास-प्रस्तुतिः in yajuH")
 

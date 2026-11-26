@@ -359,6 +359,9 @@ yajuh_sarva_url = "/vedAH_yajuH/kAThakam/kaTha-kapiShTalAH/saMhitA/yajuH/sarvASh
   assert "/vedAH_yajuH/maitrAyaNIyam/saMhitA/yajuH/sarva-prastutiH/" in ks_txt
   assert "/vedAH_yajuH/maitrAyaNIyam/saMhitA/Rk/sarvASh_TIkAH/" in ks_txt
   assert "/vedAH_yajuH/maitrAyaNIyam/saMhitA/Rk/vishvAsa-prastutiH/" not in ks_txt
+  assert list(specs["MS"].vp_dir.rglob("*.md")) == []
+  assert "<summary>विश्वास-प्रस्तुतिः - ऋक्</summary>" in ms_host.read_text(encoding="utf-8")
+  assert "<summary>विश्वास-प्रस्तुतिः - ऋक्</summary>" in ks_txt
   assert "विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)" in ks_txt  # colophon stayed local!
   # Promoted static Yajuḥ should carry MS's authentic VP + single Gemini + Schroeder note!
   yaj_files = list(specs["MS"].yajuh_sarva_prastuti_dir.rglob("*.md"))
@@ -645,9 +648,530 @@ def test_tokenize_does_not_overlap_details_wrapping_includes():
   assert rendered == body
 
 
+def test_replace_group_tokens_keeps_blank_line_between_blocks():
+  from doc_curation_projects.veda.dedup.block_parser import (
+    group_mantra_units, render_host_include_pair, render_tokens, replace_group_tokens, tokenize_markdown_body,
+  )
+
+  body = (
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nअ᳓ग्निमीळे पु᳓रोहितम् ।\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>मूलम्</summary>\n\nअग्निम्\n</details>\n</details>\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nद्वितीयः मन्त्रः ।\n</details>\n'
+  )
+  toks = tokenize_markdown_body(body)
+  grps = group_mantra_units(toks)
+  nv, ns = render_host_include_pair(
+    exact_reading=False, local_vp_text=grps[0].vp_text, sarva_url="/vedAH/x/sarvASh_TIkAH/a.md", heading_level=3,
+  )
+  replace_group_tokens(toks, grps[0], new_vp_raw=nv, new_sarva_stub=ns, drop_inline_tika=True)
+  out = render_tokens("", toks)
+  assert "</div><details" not in out
+  assert "</div>\n\n<details open><summary>विश्वास-प्रस्तुतिः</summary>" in out
+
+
 def test_looks_prose_brahmana_blocks_ta_arthavada_cliches():
-  from doc_curation_projects.veda.dedup.matcher import looks_prose_brahmana
+  from doc_curation_projects.veda.dedup.matcher import classify_unit_kind, looks_prose_brahmana
 
   assert looks_prose_brahmana("य᳓देवा᳓द्भ्यो᳓ऽन्नञ्जा᳓यते ।  \nत᳓द᳓वरुन्धे ।", 22)
   assert looks_prose_brahmana("त᳓स्मात् त᳓र्हि ते᳓क्ष्णिष्ठन्+++(=बहुतीक्ष्णं)+++ तपति।", 22)
   assert not looks_prose_brahmana("प्रतितिष्ठामि राष्ट्रम् ॥", 20, summary="ऋक्")
+
+  # Two-line Brāhmaṇa prose ending in ॥ or containing quoted स्वाहेति must never become rk/yajuh
+  assert classify_unit_kind("एव᳓म् इव हि᳓ मिथुनं᳓ कॢप्त᳓म् —  \nउत्त᳓रतो हि᳓ स्त्री᳓ पु᳓मांसम् उपशे᳓ते ॥", default_brahmana=True) == "brahmana"
+  assert classify_unit_kind("किं᳓ छ᳓न्दः का᳓ देव᳓ता यो᳙ ऽय᳓म᳓वाङ् प्राण᳓ इ᳓ति ।  \nयज्ञायज्ञि᳓यं छ᳓न्दो वैश्वानरो᳓ देव᳓तेति ॥", default_brahmana=True) == "brahmana"
+  assert classify_unit_kind("वा᳓ग्वै᳓ स᳓रस्वती वाचै᳙वै᳙नमेत᳓दभि᳓षिञ्चति पूष्णे᳓ स्वा᳓हे᳓ति ।", default_brahmana=True) == "brahmana"
+  assert classify_unit_kind("वषट्कारा᳓ ह्ये᳙त᳓मा᳓हुतिभिरभिषिञ्च᳓न्त्या᳓हुतयो मे का᳓मान्त्स᳓मर्धयन्तु भूः᳓ स्वा᳓हे᳓ति ।", default_brahmana=True) == "brahmana"
+  assert classify_unit_kind("स᳓रस्वत्यै पूष्णे᳙ ऽग्न᳓ये स्वा᳓हे᳓ति ।", default_brahmana=True) == "yajuh"
+  assert classify_unit_kind("य᳓स्मिन् प᳓ञ्च पञ्चजना᳓ आकाश᳓श्च प्र᳓तिष्ठितः ।  \nत᳓मेव᳓ मन्य आत्मा᳓नं विद्वा᳓न् ब्र᳓ह्मामृ᳓तो ऽमृ᳓तम् ॥", default_brahmana=True) == "rk"
+  assert classify_unit_kind("मांसा᳓न्यस्य᳓ श᳓कराणि कि᳓नाटं स्ना᳓व त᳓त्स्थिर᳓म् ।  \nअ᳓स्थीन्य᳓न्तरतो दा᳓रूणि मज्जा᳓ मज्जोपमा᳓ कृता᳓ ॥", default_brahmana=True) == "rk"
+  assert classify_unit_kind("प्राणे᳓न र᳓क्षन्न᳓परं कुलायं᳓ बहि᳓ष्कुलाया᳓दमृ᳓तश्चरित्वा᳓ ।  \nस᳓ ईयते अमृ᳓तो यत्रका᳓मं हिरण्म᳓यः पौरुष᳓ एक-हंसः᳓ ॥", default_brahmana=True) == "rk"
+
+
+def test_sb_m_sb_k_and_tb_brahmana_and_self_repeat_dedup(tmp_path: Path):
+  from doc_curation_projects.veda.dedup.cascade import run_sb_dedup_cascade
+  from doc_curation_projects.veda.dedup.targets import VedaCorpusSpec
+
+  v_root = tmp_path / "vishvAsa"
+  tb_c = v_root / "vedAH_yajuH" / "content" / "taittirIyam" / "brAhmaNam" / "sarva-prastutiH"
+  tb_st = v_root / "vedAH_yajuH" / "static" / "taittirIyam" / "brAhmaNam"
+  sbm_c = v_root / "vedAH_yajuH" / "content" / "vAjasaneyam" / "mAdhyandinam" / "shatapatha-brAhmaNam" / "sarva-prastutiH"
+  sbm_st = v_root / "vedAH_yajuH" / "static" / "vAjasaneyam" / "mAdhyandinam" / "shatapatha-brAhmaNam"
+  sbk_c = v_root / "vedAH_yajuH" / "content" / "vAjasaneyam" / "kANvam" / "shatapatha-brAhmaNam" / "sarva-prastutiH"
+
+  for d in (
+    tb_c / "3" / "9",
+    tb_st / "Rk" / "vishvAsa-prastutiH",
+    tb_st / "Rk" / "sarvASh_TIkAH",
+    tb_st / "brAhmaNam" / "sarva-prastutiH",
+    tb_st / "brAhmaNam" / "vishvAsa-prastutiH",
+    tb_st / "brAhmaNam" / "sarvASh_TIkAH",
+    sbm_c / "02" / "02",
+    sbm_c / "04" / "03",
+    sbm_c / "11" / "05",
+    sbm_c / "13" / "03",
+    sbm_c / "14" / "05",
+    sbm_st / "Rk" / "vishvAsa-prastutiH",
+    sbm_st / "Rk" / "sarvASh_TIkAH",
+    sbm_st / "yajuH" / "sarva-prastutiH",
+    sbm_st / "yajuH" / "vishvAsa-prastutiH",
+    sbm_st / "yajuH" / "sarvASh_TIkAH",
+    sbm_st / "brAhmaNam" / "sarva-prastutiH",
+    sbm_st / "brAhmaNam" / "vishvAsa-prastutiH",
+    sbm_st / "brAhmaNam" / "sarvASh_TIkAH",
+    sbk_c / "01_ekapAtkANDam" / "02",
+    sbk_c / "15_ashvamedhakANDam" / "03",
+    sbk_c / "17_bRhadAraNyakam" / "02",
+  ):
+    d.mkdir(parents=True, exist_ok=True)
+
+  # 1. Exact shared Brāhmaṇa sentence: TB 3/9/12 <-> SBM 13/03/6 <-> SBK 15/03/7
+  tb_host = tb_c / "3" / "9" / "12.md"
+  tb_host.write_text(
+    '+++\ntitle = "१२"\n+++\n### ०१\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nअ᳓श्वस्य वा᳓ आ᳓लब्धस्य मे᳓ध उ᳓दक्रामत् ।\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>मूलम्</summary>\n\nअश्व॑स्य॒ वा आल॑ब्धस्य॒ मेध॒ उद॑क्रामत् ।\n</details>\n</details>\n',
+    encoding="utf-8",
+  )
+
+  sbm_13 = sbm_c / "13" / "03" / "6.md"
+  sbm_13.write_text(
+    '+++\ntitle = "६"\n+++\n## ०१\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nअ᳓श्वस्य वा᳓ आ᳓लब्धस्य ।  \nमे᳓ध उ᳓दक्रामत् ।\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>Eggeling</summary>\n\n1. From the horse.\n</details>\n\n'
+    '<details><summary>मूलम् - श्रीधरादि</summary>\n\nअ᳘श्वस्य वा ऽआ᳘लब्धस्य मे᳘ध उ᳘दक्रामत्\n</details>\n\n'
+    '<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- अ᳓श्वस्य (*TS*)\n</details>\n\n'
+    '<details><summary>सायणः</summary>\n\nSBM sayana on horse.\n</details>\n</details>\n',
+    encoding="utf-8",
+  )
+
+  # 2. Kāṇḍa-alignment tie-breaker (`SBK 01` -> `SBM 02` rather than `SBM 11`) + `[[OLD|NEW]]` variant
+  sbm_02 = sbm_c / "02" / "02" / "2.md"
+  sbm_02.write_text(
+    '+++\ntitle = "२"\n+++\n## ०१\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nअ᳓थ देवा᳓श्च ह वा᳓ अ᳓सुराश्चोभ᳓ये प्राजापत्या᳓ अस्पर्धन्त ।\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>Eggeling</summary>\n\n1. Gods and Asuras strove (Kanda 2).\n</details>\n\n'
+    '<details><summary>मूलम् - Weber</summary>\n\nअ᳘थ देवा᳘श्च\n</details>\n</details>\n',
+    encoding="utf-8",
+  )
+  sbm_11 = sbm_c / "11" / "05" / "9.md"
+  sbm_11.write_text(
+    '+++\ntitle = "९"\n+++\n## ०१\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nअ᳓थ देवा᳓श्च ह वा᳓ अ᳓सुराश्चोभ᳓ये प्राजापत्या᳓ अस्पर्धन्त ।\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>Eggeling</summary>\n\n1. Gods and Asuras strove (Kanda 11).\n</details>\n\n'
+    '<details><summary>मूलम् - Weber</summary>\n\nअ᳘थ देवा᳘श्च\n</details>\n</details>\n',
+    encoding="utf-8",
+  )
+
+  sbm_04 = sbm_c / "04" / "03" / "4.md"
+  sbm_04.write_text(
+    '+++\ntitle = "४"\n+++\n## ०१\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nघ्न᳓न्ति वा᳓ एत᳓द्यज्ञं᳓ य᳓देनं तन्व᳓ते य᳓द्रा᳓जानमभिषुण्व᳓न्ति त᳓त्तं᳓ घ्नन्ति᳓ ।\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>सायणः</summary>\n\nSoma Sāyaṇa.\n</details>\n</details>\n',
+    encoding="utf-8",
+  )
+
+  # 3. Repeated zero-commentary exact BAU refrain across SBM & SBK (`self_static` test)
+  sbm_14 = sbm_c / "14" / "05" / "5.md"
+  sbm_14.write_text(
+    '+++\ntitle = "५"\n+++\n## ०१\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nअऽय᳓मेव᳓ स᳓ यो᳙ऽय᳓मात्मे᳙द᳓ममृ᳓तमिदं᳓ ब्र᳓ह्मेदं᳓ स᳓र्वम् ॥\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>मूलम् - श्रीधरादि</summary>\n\nअय᳘मेव स᳘ अयम्\n</details>\n</details>\n\n'
+    '## ०२\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nअऽय᳓मेव᳓ स᳓ यो᳙ऽय᳓मात्मे᳙द᳓ममृ᳓तमिदं᳓ ब्र᳓ह्मेदं᳓ स᳓र्वम् ॥\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>मूलम् - श्रीधरादि</summary>\n\nअय᳘मेव स᳘ अयम्\n</details>\n</details>\n',
+    encoding="utf-8",
+  )
+
+  sbk_01 = sbk_c / "01_ekapAtkANDam" / "02" / "2.md"
+  sbk_01.write_text(
+    '+++\ntitle = "२"\n+++\n## ०१\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः (1/2 व्यत्यस्त-स्वराः)</summary>\n\n[[अथ|अ᳓थ]] देवा᳓श्च ह वा᳓ अ᳓सुराश्चोभ᳓ये प्राजापत्या᳓ अस्पर्धन्त ।\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>C R Swaminathan</summary>\n\nThe gods and demons contended.\n</details>\n\n'
+    '<details><summary>मूलम्</summary>\n\nअथ देवा᳓श्च\n</details>\n\n'
+    '<details><summary>पद-पाठः (यान्त्रिकः - 1/2 व्यत्यस्त-स्वराः)</summary>\n\n- अथ → **अ᳓थ** (*TB*-1)\n- देवाः᳓ (*RV*-1)\n</details>\n</details>\n\n'
+    '## ०२\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nघ्न᳓न्ति ह वा᳓ एत᳓द्यज्ञं᳓ य᳓देनं तन्व᳓ते य᳓द्रा᳓जानमभिषुण्व᳓न्ति त᳓त्तं᳓ घ्नन्ति᳓ ।\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>C R Swaminathan</summary>\n\nIn Agnyādheya.\n</details>\n</details>\n',
+    encoding="utf-8",
+  )
+  sbk_15 = sbk_c / "15_ashvamedhakANDam" / "03" / "7.md"
+  sbk_15.write_text(
+    '+++\ntitle = "७"\n+++\n## ०१\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nअ᳓श्वस्य वा᳓ आ᳓लब्धस्य मे᳓ध उ᳓दक्रामत् ।\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>C R Swaminathan</summary>\n\nOut of the slaughtered horse...\n</details>\n\n'
+    '<details><summary>मूलम्</summary>\n\nअ᳘श्वस्य वा आ᳘लब्धस्य मे᳘ध उ᳘दक्रामत्\n</details>\n\n'
+    '<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- अ᳓श्वस्य (*SB-M*-48)\n</details>\n</details>\n',
+    encoding="utf-8",
+  )
+  sbk_17 = sbk_c / "17_bRhadAraNyakam" / "02" / "5.md"
+  sbk_17.write_text(
+    '+++\ntitle = "५"\n+++\n## ०१\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nअऽय᳓मेव᳓ स᳓ यो᳙ऽय᳓मात्मे᳙द᳓ममृ᳓तमिदं᳓ ब्र᳓ह्मेदं᳓ स᳓र्वम् ॥\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>मूलम्</summary>\n\nअऽय᳘मेव स᳘ अयम्\n</details>\n</details>\n',
+    encoding="utf-8",
+  )
+
+  specs = {
+    "TB": VedaCorpusSpec(
+      name="TB", shAkha_label="तैत्तिरीय-ब्राह्मणम्", pada_label="पद-पाठः (यान्त्रिकः - तैत्तिरीय-ब्राह्मणम्)",
+      sayana_variant_label="सायण-टीका (ब्राह्मणी)", content_dir=tb_c,
+      vp_dir=tb_st / "Rk" / "vishvAsa-prastutiH", sarva_dir=tb_st / "Rk" / "sarvASh_TIkAH",
+      vp_url_prefix="/vedAH_yajuH/taittirIyam/brAhmaNam/Rk/vishvAsa-prastutiH",
+      sarva_url_prefix="/vedAH_yajuH/taittirIyam/brAhmaNam/Rk/sarvASh_TIkAH",
+      brahmana_sarva_prastuti_dir=tb_st / "brAhmaNam" / "sarva-prastutiH",
+      brahmana_sarva_prastuti_url="/vedAH_yajuH/taittirIyam/brAhmaNam/brAhmaNam/sarva-prastutiH",
+      brahmana_vp_dir=tb_st / "brAhmaNam" / "vishvAsa-prastutiH",
+      brahmana_vp_url="/vedAH_yajuH/taittirIyam/brAhmaNam/brAhmaNam/vishvAsa-prastutiH",
+      brahmana_sarva_dir=tb_st / "brAhmaNam" / "sarvASh_TIkAH",
+      brahmana_sarva_url="/vedAH_yajuH/taittirIyam/brAhmaNam/brAhmaNam/sarvASh_TIkAH",
+    ),
+    "SB-M": VedaCorpusSpec(
+      name="SB-M", shAkha_label="माध्यन्दिन-ब्राह्मणम्", pada_label="पद-पाठः (यान्त्रिकः - माध्यन्दिन-ब्राह्मणम्)",
+      sayana_variant_label="सायणः (माध्यन्दिन-ब्राह्मणम्)", heading_level=3, content_dir=sbm_c,
+      vp_dir=sbm_st / "Rk" / "vishvAsa-prastutiH", sarva_dir=sbm_st / "Rk" / "sarvASh_TIkAH",
+      vp_url_prefix="/vedAH_yajuH/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/Rk/vishvAsa-prastutiH",
+      sarva_url_prefix="/vedAH_yajuH/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/Rk/sarvASh_TIkAH",
+      yajuh_sarva_prastuti_dir=sbm_st / "yajuH" / "sarva-prastutiH",
+      yajuh_sarva_prastuti_url="/vedAH_yajuH/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/yajuH/sarva-prastutiH",
+      yajuh_vp_dir=sbm_st / "yajuH" / "vishvAsa-prastutiH",
+      yajuh_vp_url="/vedAH_yajuH/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/yajuH/vishvAsa-prastutiH",
+      yajuh_sarva_dir=sbm_st / "yajuH" / "sarvASh_TIkAH",
+      yajuh_sarva_url="/vedAH_yajuH/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/yajuH/sarvASh_TIkAH",
+      brahmana_sarva_prastuti_dir=sbm_st / "brAhmaNam" / "sarva-prastutiH",
+      brahmana_sarva_prastuti_url="/vedAH_yajuH/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/brAhmaNam/sarva-prastutiH",
+      brahmana_vp_dir=sbm_st / "brAhmaNam" / "vishvAsa-prastutiH",
+      brahmana_vp_url="/vedAH_yajuH/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/brAhmaNam/vishvAsa-prastutiH",
+      brahmana_sarva_dir=sbm_st / "brAhmaNam" / "sarvASh_TIkAH",
+      brahmana_sarva_url="/vedAH_yajuH/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/brAhmaNam/sarvASh_TIkAH",
+    ),
+    "SB-K": VedaCorpusSpec(
+      name="SB-K", shAkha_label="काण्व-ब्राह्मणम्", pada_label="पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम्)",
+      sayana_variant_label="सायणः (काण्व-ब्राह्मणम्)", heading_level=3, content_dir=sbk_c,
+    ),
+  }
+
+  from doc_curation_projects.veda.dedup import cascade as cas_mod
+  orig_loader = cas_mod.load_corpus_specs
+  cas_mod.load_corpus_specs = lambda: specs
+  roots = (v_root / "vedAH_yajuH" / "content", v_root / "vedAH_yajuH" / "static")
+  try:
+    res = run_sb_dedup_cascade(roots, upstreams=("TB",), hugo_base_dir=str(v_root))
+    r1, r2, r3 = res["stages"]
+  finally:
+    cas_mod.load_corpus_specs = orig_loader
+
+  # TB <-> SBM <-> SBK Aśvamedha exact Brāhmaṇa combined include (TB H4, SB H3), translations before मूलम्!
+  assert r1["content_exact"] == 1
+  tb_txt = tb_host.read_text(encoding="utf-8")
+  assert 'newlevelforh1="4"' in tb_txt
+  assert "/vedAH_yajuH/taittirIyam/brAhmaNam/brAhmaNam/sarva-prastutiH/" in tb_txt
+  assert 'newlevelforh1="3"' in sbm_13.read_text(encoding="utf-8")
+  assert 'newlevelforh1="3"' in sbk_15.read_text(encoding="utf-8")
+  tb_comb = list((tb_st / "brAhmaNam" / "sarva-prastutiH").rglob("*.md"))
+  assert len(tb_comb) == 1
+  comb_txt = tb_comb[0].read_text(encoding="utf-8")
+  assert comb_txt.index("<summary>Eggeling</summary>") < comb_txt.index("<summary>मूलम्")
+  assert comb_txt.index("<summary>C R Swaminathan</summary>") < comb_txt.index("<summary>मूलम्")
+  assert "<summary>सायणः (माध्यन्दिन-ब्राह्मणम्)</summary>" in comb_txt
+  assert "<summary>पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम्)</summary>" in comb_txt
+
+  # SBK 01 [[OLD|NEW]] stays local, aligns to SBM 02 (not SBM 11!), and keeps - 1/2 व्यत्यस्त-स्वराः!
+  assert r2["content_exact"] == 2  # Aśvamedha + BAU refrain
+  assert r2["content_variant"] == 1
+  sbk_01_txt = sbk_01.read_text(encoding="utf-8")
+  assert "[[अथ|अ᳓थ]]" in sbk_01_txt
+  assert "/vedAH_yajuH/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/brAhmaNam/sarvASh_TIkAH/02/02/2/" in sbk_01_txt
+  assert "<summary>Gods and Asuras strove (Kanda 11)" not in sbk_01_txt
+  assert "Soma Sāyaṇa." not in sbk_01_txt
+  assert "/04/03/4/" not in sbk_01_txt
+  sbm_02_tk = list((sbm_st / "brAhmaNam" / "sarvASh_TIkAH" / "02").rglob("*.md"))
+  assert len(sbm_02_tk) == 1
+  tk_txt = sbm_02_tk[0].read_text(encoding="utf-8")
+  assert "<summary>C R Swaminathan</summary>" in tk_txt
+  assert tk_txt.index("<summary>C R Swaminathan</summary>") < tk_txt.index("<summary>मूलम्")
+  assert "<summary>पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम् - 1/2 व्यत्यस्त-स्वराः)</summary>" in tk_txt
+
+  # Self-repeat stage deduplicated ## ०२ in SBM 14 against its own promoted BAU static refrain!
+  assert r3["content_exact"] == 1
+  assert sbm_14.read_text(encoding="utf-8").count("/sarva-prastutiH/") == 2
+
+
+def test_merge_tika_additions_never_concatenates_padapatha(tmp_path):
+  from doc_curation_projects.veda.dedup.commentary_merger import merge_tika_additions
+  from doc_curation_projects.veda.dedup.targets import VedaCorpusSpec
+
+  sbm_spec = VedaCorpusSpec(
+    name="SB-M", shAkha_label="माध्यन्दिन-ब्राह्मणम्", pada_label="पद-पाठः (यान्त्रिकः - माध्यन्दिन-ब्राह्मणम्)",
+    sayana_variant_label="सायणः (माध्यन्दिन-ब्राह्मणम्)", heading_level=3, content_dir=tmp_path,
+  )
+  sbk_spec = VedaCorpusSpec(
+    name="SB-K", shAkha_label="काण्व-ब्राह्मणम्", pada_label="पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम्)",
+    sayana_variant_label="सायणः (काण्व-ब्राह्मणम्)", heading_level=3, content_dir=tmp_path,
+  )
+  base = (
+    '+++\ntitle = "test"\n+++\n\n'
+    '<details><summary>मूलम् - Weber</summary>\n\nप्रजा᳘ ह्येव\n</details>\n\n'
+    '<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- प्र-जाः᳓ (*TS*-10)\n- हि᳓ (*TS*-10)\n</details>\n'
+  )
+  merged = merge_tika_additions(
+    base,
+    sbm_spec,
+    [
+      # Same-corpus self-repeat with variant pada must NOT concatenate into SB-M's existing padapāṭha
+      (sbm_spec, True, [("पद-पाठः (यान्त्रिकः)", "- प्र-जा᳓ (*TS*-5)\n- हि᳓ (*TS*-10)")], str(tmp_path / "a.md")),
+      # Two SB-K callers differing only in a single ŚB accent mark in मूलम् preserve both readings despite >92% similarity
+      (
+        sbk_spec,
+        False,
+        [
+          ("मूलम् - काण्व-ब्राह्मणम्", "नो वा᳘ एतत्क᳘स्यैचन᳘ देवतायै हवि᳘र्गृह्णन्नादिशति"),
+          ("पद-पाठः (यान्त्रिकः)", "- प्र-जाः᳓ (*SB-M*-5)\n- हि᳓ (*TS*-10)"),
+        ],
+        str(tmp_path / "b.md"),
+      ),
+      (
+        sbk_spec,
+        False,
+        [
+          ("मूलम् - काण्व-ब्राह्मणम्", "नो वा᳘ एतत्क᳘स्यैचन᳘ देव᳘तायै हविर्गृह्णन्ना᳘दिशति"),
+          ("पद-पाठः (यान्त्रिकः)", "- प्र-जा᳓ (*SB-M*-5)\n- हि᳓ (*TS*-10)"),
+        ],
+        str(tmp_path / "c.md"),
+      ),
+    ],
+  )
+  assert "- प्र-जा᳓" not in merged
+  assert merged.count("<summary>पद-पाठः (यान्त्रिकः)</summary>") == 1
+  assert merged.count("<summary>पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम्)</summary>") == 1
+  assert "देवतायै हवि᳘र्गृह्णन्नादिशति" in merged
+  assert "देव᳘तायै हविर्गृह्णन्ना᳘दिशति" in merged
+
+
+def test_format_vp_summary_with_kind():
+  from doc_curation_projects.veda.dedup.block_parser import format_vp_summary_with_kind
+
+  assert format_vp_summary_with_kind("विश्वास-प्रस्तुतिः", "rk") == "विश्वास-प्रस्तुतिः - ऋक्"
+  assert format_vp_summary_with_kind("विश्वास-प्रस्तुतिः", "yajuh") == "विश्वास-प्रस्तुतिः - यजुः"
+  assert format_vp_summary_with_kind("विश्वास-प्रस्तुतिः", "brahmana") == "विश्वास-प्रस्तुतिः - ब्राह्मणम्"
+  assert (
+    format_vp_summary_with_kind("विश्वास-प्रस्तुतिः (2/15 व्यत्यस्त-स्वराः)", "brahmana")
+    == "विश्वास-प्रस्तुतिः - ब्राह्मणम् (2/15 व्यत्यस्त-स्वराः)"
+  )
+  assert (
+    format_vp_summary_with_kind("विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)", "yajuh")
+    == "विश्वास-प्रस्तुतिः - यजुः (यन्त्र-स्वरः)"
+  )
+  assert (
+    format_vp_summary_with_kind("विश्वास-प्रस्तुतिः - ऋक् (1/11 व्यत्यस्त-स्वराः)", "rk")
+    == "विश्वास-प्रस्तुतिः - ऋक् (1/11 व्यत्यस्त-स्वराः)"
+  )
+
+
+def test_variant_promotion_keeps_vp_inline_until_second_exact_caller(tmp_path: Path):
+  from doc_curation_projects.veda.dedup.cascade import run_stage_cascade
+  from doc_curation_projects.veda.dedup.targets import VedaCorpusSpec
+
+  v_root = tmp_path
+  sbm_c = v_root / "vedAH_yajuH" / "content" / "sbm"
+  sbm_st = v_root / "vedAH_yajuH" / "static" / "sbm"
+  sbk_c = v_root / "vedAH_yajuH" / "content" / "sbk"
+  tb_c = v_root / "vedAH_yajuH" / "content" / "tb"
+  for d in (
+    sbm_c, sbk_c, tb_c,
+    sbm_st / "brAhmaNam" / "sarva-prastutiH",
+    sbm_st / "brAhmaNam" / "vishvAsa-prastutiH",
+    sbm_st / "brAhmaNam" / "sarvASh_TIkAH",
+  ):
+    d.mkdir(parents=True, exist_ok=True)
+
+  sbm_host = sbm_c / "01.md"
+  sbm_host.write_text(
+    '+++\ntitle = "01"\n+++\n\n'
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\n"
+    "त᳓स्मादु ह यज्ञो᳓ वै᳓ देवा᳓नां ह᳓विर्भवति स᳓र्वदा ।\n</details>\n"
+    "<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>मूलम्</summary>\n\nत᳘स्मादु ह\n</details>\n</details>\n",
+    encoding="utf-8",
+  )
+  sbk_host = sbk_c / "01.md"
+  sbk_host.write_text(
+    '+++\ntitle = "01"\n+++\n\n'
+    "<details open><summary>विश्वास-प्रस्तुतिः (1/7 व्यत्यस्त-स्वराः)</summary>\n\n"
+    "त᳓स्मादु वै᳓ यज्ञो᳓ देवा᳓नां ह᳓विर्भवति स᳓र्वदा ।\n</details>\n"
+    "<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>मूलम्</summary>\n\nत᳘स्मादु वै\n</details>\n</details>\n",
+    encoding="utf-8",
+  )
+  tb_host = tb_c / "01.md"
+  tb_host.write_text(
+    '+++\ntitle = "01"\n+++\n\n'
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\n"
+    "त᳓स्मादु ह यज्ञो᳓ वै᳓ देवा᳓नां ह᳓विर्भवति स᳓र्वदा ।\n</details>\n"
+    "<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>मूलम्</summary>\n\nत᳘स्मादु ह\n</details>\n</details>\n",
+    encoding="utf-8",
+  )
+
+  specs = {
+    "SB-M": VedaCorpusSpec(
+      name="SB-M", shAkha_label="माध्यन्दिन-ब्राह्मणम्", pada_label="पद-पाठः (यान्त्रिकः - माध्यन्दिन-ब्राह्मणम्)",
+      sayana_variant_label="सायणः (माध्यन्दिन-ब्राह्मणम्)", heading_level=3, content_dir=sbm_c,
+      brahmana_sarva_prastuti_dir=sbm_st / "brAhmaNam" / "sarva-prastutiH",
+      brahmana_sarva_prastuti_url="/vedAH_yajuH/sbm/brAhmaNam/sarva-prastutiH",
+      brahmana_vp_dir=sbm_st / "brAhmaNam" / "vishvAsa-prastutiH",
+      brahmana_vp_url="/vedAH_yajuH/sbm/brAhmaNam/vishvAsa-prastutiH",
+      brahmana_sarva_dir=sbm_st / "brAhmaNam" / "sarvASh_TIkAH",
+      brahmana_sarva_url="/vedAH_yajuH/sbm/brAhmaNam/sarvASh_TIkAH",
+    ),
+    "SB-K": VedaCorpusSpec(
+      name="SB-K", shAkha_label="काण्व-ब्राह्मणम्", pada_label="पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम्)",
+      sayana_variant_label="सायणः (काण्व-ब्राह्मणम्)", heading_level=3, content_dir=sbk_c,
+    ),
+    "TB": VedaCorpusSpec(
+      name="TB", shAkha_label="तैत्तिरीय-ब्राह्मणम्", pada_label="पद-पाठः (तैत्तिरीय-ब्राह्मणम्)",
+      sayana_variant_label="सायणः (तैत्तिरीय-ब्राह्मणम्)", heading_level=4, content_dir=tb_c,
+    ),
+  }
+
+  from doc_curation_projects.veda.dedup import cascade as cas_mod
+  orig_loader = cas_mod.load_corpus_specs
+  cas_mod.load_corpus_specs = lambda: specs
+  roots = (v_root / "vedAH_yajuH" / "content", v_root / "vedAH_yajuH" / "static")
+  try:
+    r1 = run_stage_cascade("SB-K", ("SB-M",), roots, hugo_base_dir=str(v_root))
+    assert r1["content_variant"] == 1
+    assert list((sbm_st / "brAhmaNam" / "vishvAsa-prastutiH").rglob("*.md")) == []
+    assert len(list((sbm_st / "brAhmaNam" / "sarvASh_TIkAH").rglob("*.md"))) == 1
+    assert "<summary>विश्वास-प्रस्तुतिः - ब्राह्मणम्</summary>" in sbm_host.read_text(encoding="utf-8")
+    assert "<summary>विश्वास-प्रस्तुतिः - ब्राह्मणम् (1/7 व्यत्यस्त-स्वराः)</summary>" in sbk_host.read_text(encoding="utf-8")
+
+    # Stage 2: TB exact match lazily promotes SB-M's inline VP into vishvAsa-prastutiH/ (>= 2 exact callers)
+    r2 = run_stage_cascade("TB", ("SB-M",), roots, hugo_base_dir=str(v_root))
+    assert r2["content_exact"] == 1
+    vp_files = list((sbm_st / "brAhmaNam" / "vishvAsa-prastutiH").rglob("*.md"))
+    assert len(vp_files) == 1
+    assert "brAhmaNam/vishvAsa-prastutiH/" in sbm_host.read_text(encoding="utf-8")
+    assert "brAhmaNam/vishvAsa-prastutiH/" in tb_host.read_text(encoding="utf-8")
+    assert "brAhmaNam/vishvAsa-prastutiH/" not in sbk_host.read_text(encoding="utf-8")
+  finally:
+    cas_mod.load_corpus_specs = orig_loader
+
+
+def test_inline_single_caller_veda_static_handles_all_edge_cases(tmp_path: Path):
+  from doc_curation_projects.veda.dedup.static_fixer import inline_single_caller_veda_static
+
+  v_root = tmp_path
+  repo = v_root / "vedAH_yajuH"
+  st = repo / "static"
+  ct = repo / "content"
+
+  # 1. Single-caller Brāhmaṇa VP + shared 2-caller sarvASh_TIkAH (must inline only VP with - ब्राह्मणम्)
+  (st / "sb" / "brAhmaNam" / "vishvAsa-prastutiH" / "01").mkdir(parents=True, exist_ok=True)
+  (st / "sb" / "brAhmaNam" / "sarvASh_TIkAH" / "01").mkdir(parents=True, exist_ok=True)
+  sb_1_vp = st / "sb" / "brAhmaNam" / "vishvAsa-prastutiH" / "01" / "01_br.md"
+  sb_1_vp.write_text('+++\ntitle = "01"\n+++\n\nत᳓स्मादु ह यज्ञः᳓ ।\n', encoding="utf-8")
+  sb_1_tk = st / "sb" / "brAhmaNam" / "sarvASh_TIkAH" / "01" / "01_br.md"
+  sb_1_tk.write_text('+++\ntitle = "01"\n+++\n\n<details><summary>मूलम्</summary>\n\nत᳘स्मादु\n</details>\n', encoding="utf-8")
+
+  # 2. Single-caller Rk VP with [[|]] + companion sarvASh_TIkAH (prefixed by translation block, missing collapsed)
+  (st / "ta" / "Rk" / "vishvAsa-prastutiH" / "06").mkdir(parents=True, exist_ok=True)
+  (st / "ta" / "Rk" / "sarvASh_TIkAH" / "06").mkdir(parents=True, exist_ok=True)
+  ta_vp = st / "ta" / "Rk" / "vishvAsa-prastutiH" / "06" / "01_rk.md"
+  ta_vp.write_text('+++\ntitle = "01"\n+++\n\nत᳓देवर्तं [[तदु᳓|त᳓दु]] ।\n', encoding="utf-8")
+  ta_tk = st / "ta" / "Rk" / "sarvASh_TIkAH" / "06" / "01_rk.md"
+  ta_tk.write_text(
+    '+++\ntitle = "01"\n+++\n\n'
+    '<details><summary>पद-पाठः (यान्त्रिकः - 1/12 व्यत्यस्त-स्वराः)</summary>\n\n- त᳓त् (*RV*-1)\n</details>\n',
+    encoding="utf-8",
+  )
+
+  # 3. Bare mūlam inside sarvASh_TIkAH (TB pattern) + no collapsed attr on caller
+  (st / "tb" / "Rk" / "sarvASh_TIkAH" / "02").mkdir(parents=True, exist_ok=True)
+  tb_tk = st / "tb" / "Rk" / "sarvASh_TIkAH" / "02" / "08_mUlam.md"
+  tb_tk.write_text('+++\ntitle = "08"\n+++\n\nअग्निः᳓ पूर्वे᳓भिः।\n', encoding="utf-8")
+
+  # 4. Forwarding Rk wrapper 17/70 -> shared 12/02 (2 callers including wrapper)
+  (st / "vs" / "Rk" / "vishvAsa-prastutiH" / "12").mkdir(parents=True, exist_ok=True)
+  (st / "vs" / "Rk" / "vishvAsa-prastutiH" / "17").mkdir(parents=True, exist_ok=True)
+  vs_12 = st / "vs" / "Rk" / "vishvAsa-prastutiH" / "12" / "02_nak.md"
+  vs_12.write_text('+++\ntitle = "02"\n+++\n\nन᳓क्तोषा᳓सा ।\n', encoding="utf-8")
+  vs_17 = st / "vs" / "Rk" / "vishvAsa-prastutiH" / "17" / "70_nak.md"
+  vs_17.write_text(
+    '+++\ntitle = "70"\n+++\n\n<div class="js_include" url="/vedAH_yajuH/vs/Rk/vishvAsa-prastutiH/12/02_nak.md"></div>\n',
+    encoding="utf-8",
+  )
+
+  # 5. Single-caller yajuH sarva-prastutiH with accidental includetitle="true"
+  (st / "ts" / "yajuH" / "sarva-prastutiH" / "01").mkdir(parents=True, exist_ok=True)
+  ts_yj = st / "ts" / "yajuH" / "sarva-prastutiH" / "01" / "05_yj.md"
+  ts_yj.write_text(
+    '+++\ntitle = "05"\n+++\n\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nस्वा᳓हा ।\n</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>Keith</summary>\n\nHail!\n</details>\n</details>\n',
+    encoding="utf-8",
+  )
+
+  # 6. Zero-caller dead file vs zero-include file still linked via Markdown link [ref](...)
+  dead_st = st / "tb" / "Rk" / "sarvASh_TIkAH" / "02" / "99_dead.md"
+  dead_st.write_text('+++\ntitle = "99"\n+++\n\n<details><summary>मूलम्</summary>\n\nx\n</details>\n', encoding="utf-8")
+  md_linked_st = st / "tb" / "Rk" / "sarvASh_TIkAH" / "02" / "98_linked.md"
+  md_linked_st.write_text('+++\ntitle = "98"\n+++\n\n<details><summary>मूलम्</summary>\n\ny\n</details>\n', encoding="utf-8")
+
+  # 7. Excluded sUtram single-caller file (must remain untouched)
+  (st / "ts" / "sUtram" / "ApastambaH" / "vishvAsa-prastutiH").mkdir(parents=True, exist_ok=True)
+  sutra_vp = st / "ts" / "sUtram" / "ApastambaH" / "vishvAsa-prastutiH" / "01.md"
+  sutra_vp.write_text('+++\ntitle = "01"\n+++\n\nसूत्रम्\n', encoding="utf-8")
+
+  # Content hosts
+  (ct / "host").mkdir(parents=True, exist_ok=True)
+  h1 = ct / "host" / "01.md"
+  h1.write_text(
+    '+++\ntitle = "01"\n+++\n\n'
+    '<div class="js_include" title="विश्वास-प्रस्तुतिः" newlevelforh1="3" unfilled url="/vedAH_yajuH/sb/brAhmaNam/vishvAsa-prastutiH/01/01_br.md"></div>\n'
+    '<div class="js_include collapsed" title="सर्वाष् टीकाः" newlevelforh1="3" unfilled url="/vedAH_yajuH/sb/brAhmaNam/sarvASh_TIkAH/01/01_br.md"></div>\n\n'
+    '<div class="js_include" title="विश्वास-प्रस्तुतिः" newlevelforh1="4" unfilled url="/vedAH_yajuH/ta/Rk/vishvAsa-prastutiH/06/01_rk.md"></div>\n\n'
+    '<details><summary>Eggeling</summary>\n\nTrans</details>\n\n'
+    '<div class="js_include" title="सर्वाष् टीकाः" newlevelforh1="4" unfilled url="/vedAH_yajuH/ta/Rk/sarvASh_TIkAH/06/01_rk.md"></div>\n\n'
+    '<div class="js_include" title="सर्वाष् टीकाः" newlevelforh1="4" unfilled url="/vedAH_yajuH/tb/Rk/sarvASh_TIkAH/02/08_mUlam.md"></div>\n\n'
+    '<div class="js_include" title="विश्वास-प्रस्तुतिः" newlevelforh1="3" unfilled url="/vedAH_yajuH/vs/Rk/vishvAsa-prastutiH/17/70_nak.md"></div>\n\n'
+    '<div class="js_include" includetitle="true" newlevelforh1="3" unfilled url="/vedAH_yajuH/ts/yajuH/sarva-prastutiH/01/05_yj.md"></div>\n\n'
+    '<div class="js_include" title="विश्वास-प्रस्तुतिः" url="/vedAH_yajuH/ts/sUtram/ApastambaH/vishvAsa-prastutiH/01.md"></div>\n'
+    'See [note](/vedAH_yajuH/tb/Rk/sarvASh_TIkAH/02/98_linked.md).\n',
+    encoding="utf-8",
+  )
+  h2 = ct / "host" / "02.md"
+  h2.write_text(
+    '+++\ntitle = "02"\n+++\n\n'
+    '<div class="js_include collapsed" title="सर्वाष् टीकाः" newlevelforh1="3" unfilled url="/vedAH_yajuH/sb/brAhmaNam/sarvASh_TIkAH/01/01_br.md"></div>\n'
+    '<div class="js_include" title="विश्वास-प्रस्तुतिः" newlevelforh1="3" unfilled url="/vedAH_yajuH/vs/Rk/vishvAsa-prastutiH/12/02_nak.md"></div>\n',
+    encoding="utf-8",
+  )
+
+  stats = inline_single_caller_veda_static(
+    static_roots=[st],
+    all_vishvasa_root=v_root,
+    hugo_base_dir=v_root,
+    dry_run=False,
+  )
+  assert stats["forwarded"] == 1
+  assert stats["inlined"] == 5  # sb_1_vp, ta_vp, ta_tk, tb_tk, ts_yj
+  assert stats["pruned_zero_caller"] == 1  # dead_st
+
+  assert not sb_1_vp.exists()
+  assert sb_1_tk.is_file()  # 2 callers
+  assert not ta_vp.exists() and not ta_tk.exists()
+  assert not tb_tk.exists()
+  assert not vs_17.exists() and vs_12.is_file()  # shared by h1 + h2
+  assert not ts_yj.exists()
+  assert not dead_st.exists()
+  assert md_linked_st.is_file()  # protected by md link!
+  assert sutra_vp.is_file()  # sUtram excluded!
+
+  h1_out = h1.read_text(encoding="utf-8")
+  assert "<details open><summary>विश्वास-प्रस्तुतिः - ब्राह्मणम्</summary>" in h1_out
+  assert "<details open><summary>विश्वास-प्रस्तुतिः - ऋक् (1/12 व्यत्यस्त-स्वराः)</summary>" in h1_out
+  assert "<details><summary>सर्वाष् टीकाः</summary>\n<details><summary>मूलम्</summary>\n\nअग्निः᳓ पूर्वे᳓भिः।" in h1_out
+  assert "<details open><summary>सर्वाष् टीकाः</summary>" not in h1_out
+  assert 'url="/vedAH_yajuH/vs/Rk/vishvAsa-prastutiH/12/02_nak.md"' in h1_out
+  assert "<details open><summary>विश्वास-प्रस्तुतिः - यजुः</summary>" in h1_out
+  assert "<summary>05</summary>" not in h1_out  # includetitle="true" did not double-wrap sarva-prastutiH!
+  assert "sUtram/ApastambaH/vishvAsa-prastutiH/01.md" in h1_out
+
+

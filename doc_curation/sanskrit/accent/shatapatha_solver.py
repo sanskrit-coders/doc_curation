@@ -227,7 +227,7 @@ ALWAYS_ANUDATTA_ENCLITICS: frozenset[str] = frozenset({
 })
 # Note: अह (particle 'indeed' in ŚB `तद् अह`, `एतद् अह` is enclitic? No, remove ह्यः; keep exact enclitics!)
 ALWAYS_ANUDATTA_ENCLITICS = frozenset({
-  "च", "मे", "त्वा", "नः", "वः", "ह", "स्म", "उ", "इव", "चन", "चित्",
+  "च", "मे", "त्वा", "नः", "णः", "वः", "ह", "स्म", "उ", "इव", "चन", "चित्", "समह",
 })
 
 # Homophones that can be EITHER enclitic anudātta (पा॰ ८.१.१८) OR accented
@@ -1507,12 +1507,12 @@ class UnifiedVedicLexicon:
   def _ingest_ta_tb_corpus(self, root_dir: str, tag: str) -> None:
     from doc_curation.sanskrit.accent.provenance import (
       _collect_include_leaf_blocks,
+      extract_js_include_url,
       find_js_include_spans,
     )
     from doc_curation.sanskrit.accent.reconciler import parse_padapatha_items
 
     tok_re = re.compile(r"[\u0900-\u0963\u0971-\u097f\u1cd0-\u1cff\-]+")
-    url_re = re.compile(r"""url=(["'])(/[^"']+)\1""")
     for fp in sorted(glob.glob(os.path.join(root_dir, "**", "*.md"), recursive=True)):
       if os.path.basename(fp) in ("_index.md", "file_list.md"):
         continue
@@ -1528,10 +1528,9 @@ class UnifiedVedicLexicon:
         ]
         if tag in ("SB-M", "TB", "TS"):
           for a, b in inc_spans:
-            m_u = url_re.search(sec[a : sec.find(">", a) + 1])
-            if not m_u:
+            u = extract_js_include_url(sec[a : sec.find(">", a) + 1])
+            if not u:
               continue
-            u = m_u.group(1)
             for ih, ib, su in _collect_include_leaf_blocks(u):
               if ih.startswith("विश्वास-प्रस्तुतिः") and "/sarvASh_TIkAH/" not in su:
                 blocks.append((ih, ib))
@@ -1616,6 +1615,11 @@ class UnifiedVedicLexicon:
       plain = re.sub(r"<[^>]+>", " ", plain).strip()
       # Remove leading homonym number e.g. `1. `
       plain_no_num = re.sub(r"^\d+\.\s*", "", plain)
+      if re.match(
+        r"^[\u0900-\u097f\u0951\u1cd9—\-\(\)\s,]+(?:(?:mf(?:\([^)]*\))?n|mfn|m|f|n|ind)\.?,?\s*)*,\s*see\b(?!\s+above\b)",
+        plain_no_num,
+      ):
+        continue
       head_keys = {_normalize_lookup_key(h) for h in head.split("|") if h.strip()}
 
       # Extract leading token(s) before first English gloss
@@ -2121,7 +2125,50 @@ _DECLENSION_TAILS_BY_LEN: tuple[tuple[int, dict[str, tuple[str, ...]]], ...] = _
 # ---------------------------------------------------------------------------
 
 
-def parse_sb_markdown_clusters(markdown_text: str) -> list[KandikaCluster]:
+def _collect_sb_part_blocks(part: str, *, hugo_base_dir: str = "/home/vvasuki/gitland/vishvAsa") -> list[tuple[str, str]]:
+  """Collect ordered ``(summary, body)`` leaf blocks in a section, expanding ``js_include`` wrappers."""
+  from doc_curation.sanskrit.accent.provenance import (
+    _collect_include_leaf_blocks,
+    extract_js_include_url,
+    find_js_include_spans,
+  )
+
+  inc_spans = find_js_include_spans(part)
+  pieces: list[tuple[int, list[tuple[str, str]]]] = [
+    (m.start(), [(m.group(1).strip(), m.group(2).strip())])
+    for m in LEAF_DETAILS_RE.finditer(part)
+    if not any(a <= m.start() < b for a, b in inc_spans)
+  ]
+  for a, b in inc_spans:
+    u = extract_js_include_url(part[a : part.find(">", a) + 1])
+    inc_blks = [
+      (ih, ib.strip())
+      for ih, ib, su in (_collect_include_leaf_blocks(u, hugo_base_dir=hugo_base_dir) if u else [])
+      if not (ih.startswith("विश्वास-प्रस्तुतिः") and "/sarvASh_TIkAH/" in su)
+    ]
+    if not inc_blks:
+      # Fallback for prefilled HTML fixtures lacking backing static files on disk.
+      sub = part[a:b]
+      m_vp = re.search(
+        r"<details(?:\s+open)?>\s*<summary>(?:<h\d[^>]*>)?(विश्वास-प्रस्तुतिः[^<]*)(?:</h\d>)?</summary>(.*?)</details>",
+        sub,
+        re.S,
+      )
+      if m_vp:
+        hdr = m_vp.group(1).replace("...{Loading}...", "").strip()
+        inc_blks.append((hdr, m_vp.group(2).strip()))
+      inc_blks.extend((m.group(1).strip(), m.group(2).strip()) for m in LEAF_DETAILS_RE.finditer(sub))
+    if inc_blks:
+      pieces.append((a, inc_blks))
+  pieces.sort(key=lambda x: x[0])
+  return [pair for _, grp in pieces for pair in grp]
+
+
+def parse_sb_markdown_clusters(
+  markdown_text: str,
+  *,
+  hugo_base_dir: str = "/home/vvasuki/gitland/vishvAsa",
+) -> list[KandikaCluster]:
   """Parse a Śatapatha Brāhmaṇa Markdown file into ordered :class:`KandikaCluster` units.
 
   Correctly handles all corpus layout nuances:
@@ -2129,6 +2176,7 @@ def parse_sb_markdown_clusters(markdown_text: str) -> list[KandikaCluster]:
   - Multiple ``विश्वास-प्रस्तुतिः`` blocks under one ``##`` heading (``02/04/1.md``).
   - Skipping unaccented intro blocks before the first ``##`` (``हरिः-ओ३म्।``, ``१०.6.३``).
   - Ignoring ``मूलम् - Makoto`` placed after ``Eggeling`` in Kāṇḍa 12.
+  - Expanding ``js_include`` wrappers when shared static files are resolved.
   """
   clusters: list[KandikaCluster] = []
   parts = re.split(r"(?=\n##[ \t]+)", markdown_text)
@@ -2137,7 +2185,7 @@ def parse_sb_markdown_clusters(markdown_text: str) -> list[KandikaCluster]:
     if not m_hdr:
       continue
     heading = re.sub(r"\s+", " ", m_hdr.group(1)).strip()
-    blocks = [(m.group(1).strip(), m.group(2).strip()) for m in LEAF_DETAILS_RE.finditer(part)]
+    blocks = _collect_sb_part_blocks(part, hugo_base_dir=hugo_base_dir)
     # Partition blocks into sub-clusters starting at each `विश्वास-प्रस्तुतिः` block,
     # OR from a single `<summary>मूलम्</summary>` witness in un-bootstrapped Kāṇva files.
     vp_indices = [i for i, (h, _) in enumerate(blocks) if h.startswith("विश्वास-प्रस्तुतिः")]
@@ -2157,9 +2205,9 @@ def parse_sb_markdown_clusters(markdown_text: str) -> list[KandikaCluster]:
           elif bh == "मूलम्" and not shri:
             shri = bb
             mula_hdr = bh
-          elif bh == "मूलम् - विस्वरम्" and not visvara:
+          elif bh.startswith("मूलम् - विस्वरम्") and "काण्व" not in bh and not visvara:
             visvara = bb
-          elif bh == "सायणः" and not sayana:
+          elif bh.startswith("सायणः") and "काण्व" not in bh and not sayana:
             sayana = bb
           elif bh == "हरिस्वामी" and not harisvami:
             harisvami = bb
@@ -2497,12 +2545,28 @@ def _strip_leading_upasargas_tinanta_uncached(slp_w: str, lex: UnifiedVedicLexic
     for t in tins
   ):
     return None
+  has_kta_or_kta_stem = any("kta" in k["krt"] for k in krts) or any(
+    st.endswith(("ta", "tA", "wa", "wA", "na", "nA")) for st in morph["sub_stems"]
+  )
   # If parsed ONLY as subanta/kṛdanta (gerund/participle/infinitive/action noun), NEVER split upasarga
   if morph["is_subanta"] and not tins:
+    if morph["has_non_krt_subanta"] or has_kta_or_kta_stem or slp_w.endswith(("tAm", "wAm", "tAt", "wAt", "tAH", "taH")):
+      return None
     if not _is_vedic_prefixed_tinanta_fallback(slp_w, lex):
       return None
 
   if tins:
+    if (
+      morph["is_subanta"]
+      and has_kta_or_kta_stem
+      and slp_w.endswith(("tAm", "wAm", "tAt", "wAt", "taH", "waH"))
+      and all(
+        (t["lakara"] == "lo~w" and (slp_w.endswith(("tAt", "wAt")) or t["vacana"] == "eka"))
+        or (t["lakara"] == "la~w" and t["purusha"] == "praTama" and t["vacana"] == "dvi")
+        for t in tins
+      )
+    ):
+      return None
     if any(not t["prefixes"] for t in tins):
       return None
     for t in sorted(tins, key=lambda x: len(x["prefixes"])):
@@ -2669,7 +2733,7 @@ def _peel_one_upasarga_slp(
     try:
       from vidyut.kosha import PadaEntry
       if expect_krt:
-        if any(isinstance(e, (PadaEntry.Subanta, PadaEntry.Avyaya)) for e in ents):
+        if any(isinstance(e, PadaEntry.Subanta) for e in ents):
           sc += 100
       else:
         if any(isinstance(e, PadaEntry.Tinanta) and not e.dhatu_entry.dhatu.prefixes for e in ents):
@@ -3084,11 +3148,11 @@ def _generate_chunk_transitions(
     last_ch = slp[end - 1]
     if last_ch in _INV_VOWEL_SANDHI and len(seg) >= 2:
       base_pre = seg[:-1]
-      for lv, rv in _INV_VOWEL_SANDHI[last_ch]:
+      for idx_vs, (lv, rv) in enumerate(_INV_VOWEL_SANDHI[last_ch]):
         w_c = base_pre + lv
         if len(w_c) == 1 and w_c not in ("A", "u"):
           continue
-        v_pen = 0.25
+        v_pen = 0.25 + idx_vs * 0.005
         # Penalize vocative-only `-a` stem (`उपहूत`) when fem. nom.sg. `-A` (`उपहूता`) is valid (`उपहूतेडा`)!
         if lv == "a" and w_c not in SB_FUNCTION_WORDS_SLP and len(w_c) >= 4:
           wm = lex.analyze_morph(_slp_to_deva(w_c))
@@ -3720,17 +3784,31 @@ def _derive_paninian_krdanta_and_compound_accents(
       if n_syl >= 2:
         t_idx = n_syl - 2 if slp.endswith(("tAram", "tAraH", "tArO", "tfBiH", "tfByaH", "tFRAm")) else n_syl - 1
         out.setdefault(tuple("U" if i == t_idx else "" for i in range(n_syl)), "तृच् प्रत्ययस्वरः पा॰ ३.१.३")
+    elif ("SAnac" in krt or "Satf" in krt) and not k["prefixes"] and not k["sanadi"] and k["gana"] in ("BvAdi", "divAdi") and k["prayoga"] == "kartari":
+      # Active present participle of bhvādi/divādi (`श्रा᳓म्यन्तः`, `दी᳓प्यमानः`): root udātta पा॰ ३.१.४ / ३.१.६९ / ६.१.१९७
+      rule = "दिवादिभ्यः श्यन् पा॰ ३.१.६९, पा॰ ६.१.१९७" if k["gana"] == "divAdi" else "शतृ पा॰ ३.१.४ / ६.१.१९७"
+      out.setdefault(tuple("U" if i == 0 else "" for i in range(n_syl)), rule)
     elif ("SAnac" in krt or "Satf" in krt) and k["prayoga"] in ("karmaRi", "BAve"):
-      # Passive participle (`चर्य᳓माणम्`): यक् पा॰ ३.१.६७, पा॰ ३.१.३
+      # Passive participle (`चर्य᳓माणम्`): यक् पा॰ ३.१.६७, पा॰ ३.१.३; skip homophonous passive when active `divAdi` `श्यन्` applies
+      has_active_divadi = any(
+        d.get("gana") == "divAdi"
+        and d.get("prayoga") == "kartari"
+        and not d.get("prefixes")
+        and not d.get("sanadi")
+        and ("SAnac" in d.get("krt", "") or "Satf" in d.get("krt", ""))
+        for d in morph["krt_entries"]
+      )
+      if has_active_divadi:
+        continue
       ks, _ = _fast_syllables_with_marks(pada_deva)
       for idx in range(n_syl - 1, -1, -1):
         if "य" in ks[idx][0]:
           mks = tuple("U" if i == idx else "" for i in range(n_syl))
           out.setdefault(mks, "यक् पा॰ ३.१.६७, पा॰ ३.१.३")
           break
-    elif "Satf" in krt and not k["prefixes"] and k["gana"] in ("BvAdi", "divAdi"):
-      # Active present participle of bhvādi/divādi (`श्रा᳓म्यन्तः`): root udātta पा॰ ३.१.४ / ६.१.१९७
-      out.setdefault(tuple("U" if i == 0 else "" for i in range(n_syl)), "शतृ पा॰ ३.१.४ / ६.१.१९७")
+    elif "Satf" in krt and not k["prefixes"] and "san" in k["sanadi"]:
+      # Desiderative (सन्) present participle: अभ्यस्तानामादिः पा॰ ६.१.१८९
+      out.setdefault(tuple("U" if i == 0 else "" for i in range(n_syl)), "अभ्यस्तानामादिः पा॰ ६.१.१८९")
 
   # 1b. Pāṇini ५.३.३५ एनप् directional adverbs (`दक्षिणे᳓न`, `उत्तरे᳓ण`, `पूर्वे᳓ण`, `अपरे᳓ण`, `अधरे᳓ण`)
   if bare in ("दक्षिणेन", "उत्तरेण", "पूर्वेण", "अपरेण", "अधरेण", "अन्तरेण") and n_syl >= 2:
@@ -3752,8 +3830,18 @@ def _derive_paninian_krdanta_and_compound_accents(
         end_idx = _stem_final_syl_idx(bare, n_syl)
         mks_end = tuple("U" if i == end_idx else "" for i in range(n_syl))
         out.setdefault(mks_end, "नञ्सुभ्याम् पा॰ ६.२.१७२")
+      # (a2) `स-` (`सहस्य सः` पा॰ ६.३.८२ -> `बहुव्रीहौ प्रकृत्या पूर्वपदम्` पा॰ ६.२.१) vs general `समासस्य पा॰ ६.१.२२३`
+      elif p0 == "स":
+        mks_init = tuple("U" if i == 0 else "" for i in range(n_syl))
+        out.setdefault(mks_init, "बहुव्रीहौ प्रकृत्या पूर्वपदम् पा॰ ६.२.१, सहस्य सः पा॰ ६.३.८२")
+        end_idx = _stem_final_syl_idx(bare, n_syl)
+        out.setdefault(tuple("U" if i == end_idx else "" for i in range(n_syl)), "समासस्य पा॰ ६.१.२२३")
       # (b) गतिकृदन्त (`उप-एष्यन्`, `अभि-ईक्षमाणः`, `उप-यन्तम्`, `प्र-जननम्`): पा॰ ६.२.१३९
       elif p0 in UPASARGA_ACCENT_MARKS:
+        if p0 == "सु":
+          end_idx = _stem_final_syl_idx(bare, n_syl)
+          out.setdefault(tuple("U" if i == end_idx else "" for i in range(n_syl)), "नञ्सुभ्याम् पा॰ ६.२.१७२")
+          out.setdefault(tuple("U" if i == 0 else "" for i in range(n_syl)), "पूर्वपदप्रकृतिस्वरः पा॰ ६.२.२")
         rest_bare = _normalize_lookup_key(p_rest)
         r_hits = lex.lookup_form(rest_bare)
         if not r_hits:
@@ -3792,11 +3880,13 @@ def _derive_paninian_krdanta_and_compound_accents(
         # - पा॰ ६.१.२२३ समासस्य (antodātta on uttarapada stem-final syllable)
         end_idx = _stem_final_syl_idx(bare, n_syl)
         out.setdefault(tuple("U" if i == end_idx else "" for i in range(n_syl)), "समासस्य पा॰ ६.१.२२३")
-        # - पा॰ ६.२.१ / ६.२.२ pūrvapada prakṛtisvara (from attested p0!)
+        # - पा॰ ६.२.१ / ६.२.२ pūrvapada prakṛtisvara (from attested p0, including `-ए` aluk-saptamī pūrvapada!)
         p0_hits = lex.lookup_stem(p0) or lex.lookup_form(p0)
+        if not p0_hits and p0.endswith("े") and len(p0) >= 2:
+          p0_hits = lex.lookup_stem(p0[:-1]) or lex.lookup_form(p0[:-1])
         if p0_hits:
           top_p0_mks = max(p0_hits.items(), key=lambda kv: sum(kv[1].values()))[0]
-          if len(top_p0_mks) <= n_syl and sum(1 for m in top_p0_mks if m) == 1:
+          if len(top_p0_mks) <= n_syl and (not p0.endswith("े") or len(top_p0_mks) == n0) and sum(1 for m in top_p0_mks if m) == 1:
             out.setdefault(
               top_p0_mks + tuple("" for _ in range(n_syl - len(top_p0_mks))),
               "पूर्वपदप्रकृतिस्वरः पा॰ ६.२.१/६.२.२",
@@ -4019,8 +4109,14 @@ def generate_pada_candidates(
   # Exclude `-तः` directional adverbs (`उत्तरतः`, `अन्तरतः`), clear nouns (`आपः`/`अपः`/`सविता`/`देव`/`प्रियाः`/`होता`),
   # periphrastic future `lu~w` on `-तृ` nouns, and 2nd-person dual `maDyama`+`dvi` (`उपवसथः`, `एतम्`) while keeping 3du verbs (`भवतः`, `स्तः`)!
   is_non_tin_nominal = (
-    bare in ("आपः", "अपः", "उलूखल-मुसले", "दृषद्-उपले", "सविता", "देव", "प्रियाः", "होता", "पोता", "नेष्टा", "प्रशास्ता", "अच्छावाक", "धर्ता", "भर्ता", "हन्ता", "कर्ता", "दाता", "भोक्ता", "वक्ता")
-    or bare.endswith(("उत्तरतः", "अन्तरतः", "दक्षिणतः", "पुरतः", "पृष्ठतः", "अभितः", "परितः", "सर्वतः", "उभयतः", "अन्यतः", "अग्रतः", "मध्यतः"))
+    "-" in pada_deva
+    or bare in (
+      "आपः", "अपः", "उलूखल-मुसले", "दृषद्-उपले", "सविता", "देव", "प्रियाः", "होता", "पोता", "नेष्टा",
+      "प्रशास्ता", "अच्छावाक", "धर्ता", "भर्ता", "हन्ता", "कर्ता", "दाता", "भोक्ता", "वक्ता",
+      "आमयतः", "आर्षयः", "आस्य", "सद्ये", "अजानाम्", "जायै", "त्रायै", "वर्तम्", "अधा",
+    )
+    or (bare.endswith(("ायै", "ायाः", "ायाम्", "ानाम्", "ीनाम्", "ूनाम्", "ेभ्यः", "ाभ्यः", "िभ्यः", "ुभ्यः", "ेषु", "ासु")) and bare != "यायाः")
+    or morph["slp"].endswith(("uttarataH", "antarataH", "antataH", "dakziRataH", "purataH", "pfzWataH", "aBitaH", "paritaH", "sarvataH", "uBayataH", "anyataH", "agrataH", "maDyataH", "parataH", "svataH", "ekataH"))
     or morph["slp"] in _PRONOMINAL_NEVER_SPLIT_SLP
     or (
       morph["is_subanta"]
@@ -4034,11 +4130,35 @@ def generate_pada_candidates(
       and bare not in _COMMON_VEDIC_VERBS_DEVA
     )
   )
-  is_tin = (not is_non_tin_nominal) and (morph["is_tinanta"] or bare in _COMMON_VEDIC_VERBS_DEVA)
+  is_tin = (not is_non_tin_nominal) and (
+    morph["is_tinanta"]
+    or bare in _COMMON_VEDIC_VERBS_DEVA
+    or bare in _MISSING_VEDIC_TINANTAS_DEVA
+    or bare in _MISSING_VEDIC_TINANTAS_HOMOGRAPHS_DEVA
+  )
   if is_tin:
     src_zero = _format_corpus_prov(form_hits.get(zero_marks, {}))
     p_main = f"तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८{', ' + src_zero if src_zero else ''}"
-    main_cost = 0.05 if (not ctx["in_subordinate"] and not ctx["is_clause_start"]) else 1.2
+    is_unattested_nominal_homograph = (
+      morph["is_subanta"]
+      and bare not in _COMMON_VEDIC_VERBS_DEVA
+      and bare not in _MISSING_VEDIC_TINANTAS_DEVA
+      and zero_marks not in form_hits
+      and (
+        morph["has_non_krt_subanta"]
+        or any(any(m) for m in form_hits)
+        or all(
+          (t["purusha"] == "praTama" and t["vacana"] == "dvi")
+          or t["lakara"] == "lo~w"
+          or (t["purusha"] == "uttama" and t["vacana"] == "eka")
+          for t in morph["tin_entries"]
+        )
+      )
+    )
+    if ctx["in_subordinate"] or ctx["is_clause_start"]:
+      main_cost = 1.4 if is_unattested_nominal_homograph else 1.2
+    else:
+      main_cost = 0.75 if is_unattested_nominal_homograph else 0.05
     _add(zero_marks, p_main, "tinanta_main", main_cost)
 
     # Accented finite verb candidates (Pāṇinian verb derivation + clean corpus attestations)
@@ -4076,10 +4196,11 @@ def generate_pada_candidates(
   # Suppress spurious `nominal` duplicates (like loc-sg `शतृ` `भवति`, `एति`, `वदति`, `स्पृशति`) for clear finite verbs!
   is_clear_finite_verb = is_tin and (
     bare in _COMMON_VEDIC_VERBS_DEVA
+    or bare in _MISSING_VEDIC_TINANTAS_DEVA
     or (not morph["is_subanta"] and not morph["is_avyaya"])
     or (
       bool(morph["tin_entries"])
-      and bare.endswith(("ति", "ते", "न्ति", "न्ते", "मि", "सि", "यात्", "येत्", "ईत्", "ध्वे", "ताम्", "न्तु", "स्यति", "स्यते"))
+      and bare.endswith(("ति", "ते", "न्ति", "न्ते", "मि", "सि", "यात्", "येत्", "ईत्", "ध्वे", "न्तु", "स्यति", "स्यते"))
     )
   )
   nonzero_form_hits = [(mks, srcs) for mks, srcs in form_hits.items() if any(mks)]
@@ -4087,6 +4208,16 @@ def generate_pada_candidates(
   for mks, srcs in nonzero_form_hits:
     if is_clear_finite_verb:
       continue
+    if "S" in mks:
+      try:
+        rendered = _fast_apply_us_marks(bare, mks)
+      except ValueError:
+        continue
+      if any(
+        not re.search(r"्[यव][ािीुूृेैोौःंँ]*$", m_sv.group(1))
+        for m_sv in re.finditer(r"(.{0,6})\u1cd9", rendered)
+      ):
+        continue
     tot = sum(srcs.values())
     # Filter rare corpus OCR/variant noise (`< 2%` when `>= 25`, `< 3%` when `>= 100` unless VS/multi-primary-samhita)
     if max_form_freq >= 100 and tot < int(max_form_freq * 0.03) and not ({"VS-M", "VS-K", "VS"} & srcs.keys()):
@@ -4104,11 +4235,18 @@ def generate_pada_candidates(
     prior = 0.15 - min(math.log1p(tot) * 0.04, 0.2) + bonus
     _add(mks, prov, "nominal", prior)
 
-  # Preserve attested unaccented primary-corpus forms (e.g. Vedic subjunctive/aorist verbs missed by vidyut)
+  # Preserve attested unaccented primary-corpus forms ONLY when licensed as non-initial vocative (पा॰ ८.१.१९);
+  # never emit unlicensed 0-accent nominals violating पा॰ ६.१.१५८.
   if not is_tin and not nonzero_form_hits and zero_marks in form_hits:
     z_srcs = form_hits[zero_marks]
     if any(k in z_srcs for k in ("SB-M", "SB-K", "TS", "RV", "AV", "TB", "VS-M", "VS-K", "VS")):
-      _add(zero_marks, _format_corpus_prov(z_srcs), "nominal", 0.35)
+      if morph["voc_possible"] and not morph["has_non_voc_subanta"] and not ctx["is_clause_start"]:
+        _add(
+          zero_marks,
+          f"अपादादिः आमन्त्रितम् अनुदात्तम्, पा॰ ८.१.१९, {_format_corpus_prov(z_srcs)}",
+          "voc_noninit",
+          0.35,
+        )
 
   # 7. Stem-projected accents (MW, Macdonell, Lanman)
   # Skip stem homographs when the exact inflected form is already strongly attested in Vedic corpora (>= 50x, e.g. `एव᳓` vs MW `ए᳓व`)!
@@ -4120,10 +4258,11 @@ def generate_pada_candidates(
   # 8. Pāṇinian kṛdanta & compound rules (`पा॰ ६.१.१९३`, `६.२.१/२/१८/४९/१३९/१७२`, `६.१.२२३`)
   if not is_clear_finite_verb:
     for mks, prov in _derive_paninian_krdanta_and_compound_accents(pada_deva, lex):
-      _add(mks, prov, "compound", 0.45)
+      prior = 0.48 if (prov == "समासस्य पा॰ ६.१.२२३" and pada_deva.startswith(("स-", "स᳓-"))) else 0.45
+      _add(mks, prov, "compound", prior)
 
   # 9. Vocative candidates (`आमन्त्रित`: पा॰ ६.१.१९८ initial vs पा॰ ८.१.१९ non-initial)
-  if _can_be_vocative(bare, morph) and not is_tin:
+  if _can_be_vocative(bare, morph) and (not is_tin or morph["voc_possible"]):
     voc_init_mks = tuple("U" if i == 0 else "" for i in range(n_syl))
     src_vi = _format_corpus_prov(form_hits.get(voc_init_mks, {}))
     prov_vi = f"पादादिः आमन्त्रितम् आद्युदात्तम्, पा॰ ६.१.१९८{', ' + src_vi if src_vi else ''}"
@@ -4160,9 +4299,20 @@ _COMMON_VEDIC_VERBS_DEVA: frozenset[str] = frozenset({
   "पद्यते", "नयति", "णयति", "नीयन्ते", "णीयन्ते", "तनोति", "तनुते", "अतन्वत",
   "युनक्ति", "आप्नोति", "आपयति", "आपयेत्", "ररक्षुः", "अरक्षन्", "ददृशुः",
   "तिष्ठति", "तिष्ठन्ते", "दहन्ति", "यच्छति", "अयच्छन्", "सादयति", "सादयेत्",
-  "शृणाति", "हिनस्ति", "स्तृणाति", "हरति", "पादयति", "रभेते", "चरेयुः", "चरान्",
+  "शृणाति", "हिनस्ति", "हिंसीः", "हिंसीत्", "लेखीः", "स्तृणाति", "हरति", "पादयति", "रभेते", "चरेयुः", "चरान्",
   "वर्धयेत्", "कल्पते", "दधाति", "धत्ते", "जुहोति", "हूयते", "उच्यते",
 })
+
+# Additional Vedic subjunctive/aorist/injunctive verbs missed by vidyut.kosha (including -अत् / -आत् / -अन् / -सम् forms).
+_MISSING_VEDIC_TINANTAS_DEVA: frozenset[str] = frozenset({
+  "रिषम्", "रिषः", "रिषत्", "शयाम्", "जीवात्", "जीवीः", "अगन्म", "अक्रन्", "रक्षीः",
+  "वृश्चत्", "वृश्चते", "वध्यताम्", "जयन्ताम्", "अणुदन्त", "णुद", "क्षापय", "द्विक्षत",
+  "मुञ्चात्", "वावृधे", "सृजात्", "चरण्यात्", "शुन्धते", "नशम्", "पतान्", "अतान्", "विन्दत्",
+  "सुवामः", "त्रायेते", "अयाव", "यासम्", "अगुः", "वपात्", "अधावयः", "अरोपयः", "अभरः",
+  "विदत", "व्यथिष्ठाः", "विदेम", "अरोहः", "अदिद्विषः", "आनिषुः", "अनुदः", "अपद्रन्",
+  "अवीवरथाः", "अरूरुहः", "अरुक्षः", "अवारीः", "दीपयः", "एयम्", "विदेयम्", "सुषूदिम",
+})
+_MISSING_VEDIC_TINANTAS_HOMOGRAPHS_DEVA: frozenset[str] = frozenset({"भवात्", "भुवम्", "गमम्"})
 
 
 def _sb_step_cost(

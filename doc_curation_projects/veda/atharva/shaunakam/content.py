@@ -32,7 +32,7 @@ def set_book_content(dry_run=False):
     file_path = os.path.join(dest_dir_static, "sarvASh_TIkAH", book_id + "/_index.md")
     if os.path.exists(file_path):
       url = regex.sub(".+?/vedAH/", "/vedAH/", file_path).replace("/static/", "/")
-      content += "%s\n" % include_helper.Include(field_names=None, classes=None, url=url, h1_level=2).to_html_str()
+      content += "%s\n" % include_helper.Include(field_names=None, classes=None, title="सर्वाष् टीकाः", url=url, h1_level=2).to_html_str()
 
     md_file.replace_content_metadata(new_content=content, dry_run=dry_run)
   arrangement.fix_index_files(dir_path=dest_dir_suuktas)
@@ -63,7 +63,7 @@ def get_suukta_meta_content(suukta_id):
   file_path = os.path.join(dest_dir_static, "sarvASh_TIkAH", suukta_id + "/_index.md")
   if os.path.exists(file_path):
     url = regex.sub(".+?/vedAH/", "/vedAH/", file_path).replace("/static/", "/")
-    content += "%s\n" % include_helper.Include(classes=None, url=url,
+    content += "%s\n" % include_helper.Include(classes=None, title="सर्वाष् टीकाः", url=url,
                                                                                      h1_level=2).to_html_str()
 
   return content
@@ -84,7 +84,7 @@ def get_rk_content(rk_file_name, suukta_id):
   file_path = os.path.join(dest_dir_static, "sarvASh_TIkAH", suukta_id, rk_file_name)
   if os.path.exists(file_path):
     url = regex.sub(".+?/vedAH/", "/vedAH/", file_path).replace("/static/", "/")
-    content += "%s\n" % include_helper.Include(field_names=None, classes=None, url=url, h1_level=3).to_html_str()
+    content += "%s\n" % include_helper.Include(field_names=None, classes=["collapsed"], title="सर्वाष् टीकाः", url=url, h1_level=3).to_html_str()
   return content
 
 

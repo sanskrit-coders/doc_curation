@@ -19,6 +19,16 @@ Vedic corpora (*EK*, *TA*, *TB*, *TS*, *ŚB*, etc.) for adjudication:
   shows independent svarita ``᳙`` on that word.
 - ``false_compound_candidate``: hyphenated padas split by whitespace in ``विश्वास-प्रस्तुतिः`` or with
   inflected/enclitic first members on arrows.
+- ``false_corpus_citation``: bare corpus tags ``*CORPUS*`` on ``OLD → **NEW**`` where ``VedicCorpusCounter``
+  shows ``NEW`` has 0 attestations while ``OLD`` is attested (optional ``counter`` check).
+- ``weak_rv_av_override``: ``*RV*``/``*AV*``-only non-Pāṇinian arrow overrides against YV-attested ``OLD``
+  (or weak ≤2/bare ``*RV*``/``*AV*`` arrows offline).
+- ``missing_yv_corpus_counts``: entries citing only unattested corpus tags (0 hits) while Yajurveda corpora
+  attest that accented form (optional ``counter`` check).
+- ``known_false_svara_antipattern``: ``मा ... हिंसीः᳓`` (``पा॰ ८.१.२८`` finite verb mis-marked),
+  ``दीप्य᳓मान`` (``यक् पा॰ ३.१.६७`` instead of ``श्यन् पा॰ ३.१.६९``), ``कन्`` cited with
+  ``पा॰ ३.१.३`` (omitting ``पा॰ ६.१.१९७``), false ``पा॰ ८.१.३`` on enclitics or unmatched
+  words, and relative ``यद्``-clause verbs stripped via ``पा॰ ८.१.२८``.
 - ``vp_includes_tiikaa``: ``vishvAsa-prastutiH/`` files including ``sarvASh_TIkAH/`` or embedding
   ``पद-पाठः (यान्त्रिकः)`` blocks.
 - ``redundant_ek_external_padapatha``: ``ekAgnikANDam/sarvASh_TIkAH`` files retaining canonical
@@ -28,7 +38,7 @@ Vedic corpora (*EK*, *TA*, *TB*, *TS*, *ŚB*, etc.) for adjudication:
 
 CLI usage::
 
-  ~/gitland/python_venv/bin/python -m doc_curation.sanskrit.accent.auditor <dir1> [dir2 ...] [--with-reconciler] [--json out.json]
+  ~/gitland/python_venv/bin/python -m doc_curation.sanskrit.accent.auditor <dir1> [dir2 ...] [--with-reconciler] [--with-corpus-counter] [--json out.json]
 """
 
 from __future__ import annotations
@@ -44,7 +54,12 @@ from typing import Sequence
 from indic_transliteration.sanscript.schemes.brahmic import accent
 
 from doc_curation.sanskrit.accent import reconciler, validator
-from doc_curation.sanskrit.accent.provenance import DETAILS_RE, find_js_include_spans
+from doc_curation.sanskrit.accent.provenance import (
+  DETAILS_RE,
+  VedicCorpusCounter,
+  _TAG_TOKEN_RE,
+  find_js_include_spans,
+)
 from doc_curation.sanskrit.accent.reconciler import US_SVARITA, US_UDATTA, parse_padapatha_items
 
 PP_SUMMARY_RE = re.compile(r"^पद-पाठः\s*\(यान्त्रिकः")
@@ -52,6 +67,8 @@ _JS_INCLUDE_URL_RE = re.compile(r'<div\s+class="js_include"[^>]*url=["\']([^"\']
 CORPUS_COUNT_TAG_RE = re.compile(r"\*(?:TS|RV|TB|TK|AV|SB-M|SB-K|ŚB|VS-M|VS-K|VS|KS|MS)\*-\d+(?:/\d+)?")
 SUTRA_REF_RE = re.compile(r"(?:पा[॰०]|फि[॰०]|उणादि[॰०]|वा[॰०])")
 SVARA_MARK_RE = re.compile(rf"[{US_UDATTA}{US_SVARITA}]")
+_YV_CORPORA: tuple[str, ...] = ("TS", "TB", "TK", "SB-M", "SB-K", "VS-M", "VS-K", "KS", "MS")
+_RV_AV_ONLY_SET: frozenset[str] = frozenset({"RV", "AV"})
 DASH_COMM_RE = re.compile(
   r"[—–]\s*(हरदत्त-सायणौ|भास्कर-सायणौ|सायण-भास्करौ|भास्कर-रामानुजौ|भट्टभास्करः|हरदत्तः|भास्करः|सायणः|रङ्गरामानुजः|शङ्करः)(?=\s*(?:[,;)]|$))"
 )
@@ -65,6 +82,30 @@ _INFLECTED_P0_ENDINGS_RE = re.compile(r"(?:सु|ए|आत्|स्य|भि
 _PARTICLE_P0_SET = frozenset({
   "अपि", "उत", "इह", "अत्र", "न", "मा", "च", "वा", "हि", "तु", "वै", "उ", "अध", "अथ", "एव", "इति",
 })
+_AMREDITA_ENCLITIC_SET = frozenset({"ते", "मे", "नः", "वः", "त्वा"})
+_YAD_RELATIVE_SET = frozenset({
+  "यः", "या", "यत्", "यद्", "यम्", "येन", "यस्मै", "यस्मात्", "यस्य", "यस्मिन्",
+  "यत्र", "यदा", "यदि", "यथा", "यतः", "ये", "याः", "यानि", "येषाम्", "यासाम्", "येभ्यः",
+})
+_CLAUSE_BOUNDARY_SET = frozenset({
+  "तत्", "तद्", "सः", "सा", "तत्र", "तदा", "तस्मात्", "ततः", "तथा", "अथ", "तेन", "एवम्", "इति",
+})
+_FINITE_VERB_PROV_RE = re.compile(r"(?:तिङन्त|८\.१\.२८|८\.१\.६४|८\.१\.६६|लट्|लिट्|लङ्|लोट्|लुङ्|लृट्|विधिलिङ्)")
+_AMREDITA_PROV_RE = re.compile(r"८\.१\.३(?!\d)|द्विर्वचने|आम्रेडित")
+_KAN_PROV_RE = re.compile(r"(?<![अ-औक-ह])कन्(?![अ-औक-ह])")
+_VOWEL_CASE_TAIL_RE = re.compile(r"(?:ाम्|म्|ः|ा|ि|ी|ु|ू|े|ो)$")
+
+
+def _same_clause_preceding_words(flat: Sequence[tuple[str, object]], idx_it: int, window: int = 8) -> list[str]:
+  """Collect bare forms preceding ``idx_it`` back to the nearest finite verb or correlative boundary."""
+  words: list[str] = []
+  for k in range(idx_it - 1, max(-1, idx_it - window), -1):
+    prev_it = flat[k][1]
+    prev_bare = _strip_marks_for_probe(prev_it.ref)
+    if _FINITE_VERB_PROV_RE.search(prev_it.prov) or prev_bare in _CLAUSE_BOUNDARY_SET:
+      break
+    words.append(prev_bare)
+  return words
 
 
 @dataclasses.dataclass(frozen=True)
@@ -268,6 +309,184 @@ def _has_external_ek_vp_include(vp_text: str) -> bool:
   return False
 
 
+def _check_provenance_guards(
+  it,
+  ln: str,
+  recent_bare_words: Sequence[str],
+  path: str,
+  counter: VedicCorpusCounter | None,
+  *,
+  same_clause_bare_words: Sequence[str] | None = None,
+) -> list[AuditFinding]:
+  """Run known-antipattern, weak RV/AV override, and optional corpus-counter provenance checks."""
+  findings: list[AuditFinding] = []
+  prov = it.prov or ""
+  old_w = it.ar.strip("* ")
+  new_w = it.ref.strip("* ")
+  new_bare = _strip_marks_for_probe(new_w)
+
+  # Known false-svara antipatterns (work both offline and with counter).
+  if new_bare == "हिंसीः" and SVARA_MARK_RE.search(new_w):
+    if (
+      "*SB-M*-15" in prov
+      or "*SB-K*-32" in prov
+      or ("मा" in recent_bare_words and ("८.१.६६" in prov or not SUTRA_REF_RE.search(prov)))
+    ):
+      findings.append(
+        AuditFinding(
+          "known_false_svara_antipattern",
+          path,
+          ln,
+          "prohibitive मा ... हिंसीः takes पा॰ ८.१.२८ अनुदात्तम् (not *SB-M*-15/*SB-K*-32 or पा॰ ८.१.६६)",
+        )
+      )
+  if new_bare.startswith("दीप्यमान") and (
+    re.search(rf"दीप्य{US_UDATTA}मान", new_w) or "३.१.६७" in prov or "यक्" in prov
+  ):
+    findings.append(
+      AuditFinding(
+        "known_false_svara_antipattern",
+        path,
+        ln,
+        "दीप् takes दिवादि श्यन् पा॰ ३.१.६९ (दी᳓प्यमान), not passive यक् पा॰ ३.१.६७",
+      )
+    )
+
+  if (
+    _KAN_PROV_RE.search(prov)
+    and "३.१.३" in prov
+    and "६.१.१९७" not in prov
+    and "न पा॰ ३.१.३" not in prov
+    and "आद्युदात्त" not in prov
+  ):
+    findings.append(
+      AuditFinding(
+        "known_false_svara_antipattern",
+        path,
+        ln,
+        "नित् कन् suffix is ādyudātta by पा॰ ६.१.१९७ (or svārthe कः पा॰ ५.३.७० + ३.१.३), not bare कन् + पा॰ ३.१.३",
+      )
+    )
+
+  if not SVARA_MARK_RE.search(new_w) and "न पा॰ ८.१.३" not in prov and _AMREDITA_PROV_RE.search(prov):
+    if new_bare in _AMREDITA_ENCLITIC_SET or (new_bare == "मा" and "८.१.१०" not in prov):
+      findings.append(
+        AuditFinding(
+          "known_false_svara_antipattern",
+          path,
+          ln,
+          f"Enclitic '{new_bare}' uses पा॰ ८.१.१८–२३ (or पा॰ ८.१.१० for मा मा), not plain पा॰ ८.१.३ āmreḍita",
+        )
+      )
+    elif (
+      "-" not in new_w
+      and recent_bare_words
+      and recent_bare_words[-1] != new_bare
+      and "पूर्वकण्डिकान्त" not in prov
+      and "पूर्ववाक्य" not in prov
+      and not (len(recent_bare_words) >= 2 and recent_bare_words[-1] == "वा" and recent_bare_words[-2] == new_bare)
+      and _VOWEL_CASE_TAIL_RE.sub("", recent_bare_words[-1]) != _VOWEL_CASE_TAIL_RE.sub("", new_bare)
+    ):
+      findings.append(
+        AuditFinding(
+          "known_false_svara_antipattern",
+          path,
+          ln,
+          f"पा॰ ८.१.३ āmreḍita requires preceding repeated word, found '{recent_bare_words[-1]}' before '{new_bare}'",
+        )
+      )
+
+  clause_words = same_clause_bare_words if same_clause_bare_words is not None else recent_bare_words
+  if (
+    it.vyat
+    and "८.१.२८" in prov
+    and not SVARA_MARK_RE.search(new_w)
+    and "यद्" not in prov
+    and "८.१.६६" not in prov
+    and "८.१.६४" not in prov
+    and any(w in _YAD_RELATIVE_SET for w in clause_words)
+  ):
+    findings.append(
+      AuditFinding(
+        "known_false_svara_antipattern",
+        path,
+        ln,
+        "Same-clause relative यद् blocks पा॰ ८.१.२८ nighāta (keep accent via पा॰ ८.१.६६ or वै/वाव पा॰ ८.१.६४)",
+      )
+    )
+
+  corpus_mentions = [(m.group(1), m.group(2)) for m in _TAG_TOKEN_RE.finditer(prov)]
+  if not corpus_mentions:
+    return findings
+  mentioned_corpora = {c for c, _ in corpus_mentions}
+
+  if (
+    it.vyat
+    and mentioned_corpora <= _RV_AV_ONLY_SET
+    and not SUTRA_REF_RE.search(prov)
+    and not DASH_COMM_RE.search(prov)
+    and not any(tok in prov for tok in ("Weber", "श्रीधरादि", "मते"))
+  ):
+    is_weak = False
+    detail = ""
+    if counter is not None:
+      yv_old = {c: counter.count_with_stem(old_w, c, allow_stem=True)[1] for c in _YV_CORPORA}
+      yv_pos = {c: v for c, v in yv_old.items() if v > 0}
+      if yv_pos:
+        is_weak = True
+        detail = f"RV/AV-only non-Paninian override against YV-attested {old_w} ({yv_pos})"
+    elif all(cnt is None or int(cnt) <= 2 for _, cnt in corpus_mentions):
+      is_weak = True
+      detail = f"RV/AV-only weak non-Paninian override on {old_w}"
+    if is_weak:
+      findings.append(AuditFinding("weak_rv_av_override", path, ln, detail))
+
+  if counter is None:
+    return findings
+
+  if it.vyat:
+    seen_bare: set[str] = set()
+    for corp, cnt in corpus_mentions:
+      if cnt is not None or corp in seen_bare:
+        continue
+      seen_bare.add(corp)
+      _, new_stem = counter.count_with_stem(new_w, corp, allow_stem=True)
+      old_exact, old_stem = counter.count_with_stem(old_w, corp, allow_stem=True)
+      if new_stem == 0 and old_stem > 0:
+        findings.append(
+          AuditFinding(
+            "false_corpus_citation",
+            path,
+            ln,
+            f"*{corp}*: NEW={new_w} unattested (0) while OLD={old_w} attested ({old_exact}/{old_stem})",
+          )
+        )
+  elif (
+    not SUTRA_REF_RE.search(prov)
+    and "अनाम्नातम्" not in prov
+    and "Weber" not in prov
+    and "श्रीधरादि" not in prov
+    and not re.search(r"-[1-9]|/[1-9]", prov)
+    and all(
+      counter.count(new_w, corp) == 0 and counter.count_with_stem(new_w, corp, allow_stem=True)[1] == 0
+      for corp in mentioned_corpora
+    )
+  ):
+    yv_hits = {c: counter.count(new_w, c) for c in _YV_CORPORA}
+    yv_pos = {c: v for c, v in yv_hits.items() if v > 0}
+    if yv_pos:
+      findings.append(
+        AuditFinding(
+          "missing_yv_corpus_counts",
+          path,
+          ln,
+          f"cited={sorted(mentioned_corpora)} all 0 for {new_w}, attested in YV={yv_pos}",
+        )
+      )
+
+  return findings
+
+
 def audit_padapatha_markdown(
   markdown_text: str,
   *,
@@ -276,6 +495,7 @@ def audit_padapatha_markdown(
   include_validator_issues: bool = True,
   include_reconciler_diffs: bool = False,
   is_ekAgnikANDam: bool | None = None,
+  counter: VedicCorpusCounter | None = None,
 ) -> tuple[list[AuditFinding], int]:
   """Audit all canonical ``पद-पाठः (यान्त्रिकः)`` blocks in ``markdown_text``.
 
@@ -372,12 +592,13 @@ def audit_padapatha_markdown(
 
       # 4a. Non-initial पा॰ ६.१.१९८ vocative candidate
       if idx_it > 0 and ("६.१.१९८" in prov or re.search(r"(?<!अ)पादादावामन्त्रित", prov) is not None):
-        # Quick check: does bare word start a line or follow a danda in mula?
+        # Quick check: does bare word start a line or follow a danda in mula or vp?
         bare_w = _strip_marks_for_probe(ref)
         stem = bare_w[:-1] if len(bare_w) >= 4 else bare_w
-        mula_bare = accent.strip_accents(blk.mula)
+        src_bare = accent.strip_accents((blk.mula + "\n" + blk.vp).strip())
+        stem_probe = stem[: min(len(stem), 4)]
         at_boundary = bool(
-          stem and re.search(rf"(?:^|[।॥\n]\s*){re.escape(stem[: min(len(stem), 4)])}", mula_bare)
+          stem_probe and re.search(rf"(?:^|[।॥\n]\s*){re.escape(stem_probe)}", src_bare)
         )
         if not at_boundary:
           findings.append(AuditFinding("non_initial_61198_vocative", path, ln, f"idx={idx_it}"))
@@ -404,18 +625,50 @@ def audit_padapatha_markdown(
         parts = ref.split("-")
         p0_bare = _strip_marks_for_probe(parts[0])
         p1_bare = _strip_marks_for_probe(parts[1]) if len(parts) > 1 else ""
+        p1_probe = p1_bare[:-1] if len(p1_bare) >= 4 else p1_bare
+        p0_root = re.sub(r"[ःम्न्]$", "", p0_bare)
+        p0_tail = p0_root[1:] if len(p0_root) >= 2 and p0_root[0] in "अआइईउऊऋएऐओऔ" else ""
+        vp_tokens = vp_plain.split()
+        has_concat_tok = bool(
+          len(p0_root) >= 2
+          and len(p1_probe) >= 2
+          and any(
+            (
+              p0_root in tok
+              and p1_probe[: min(len(p1_probe), 4)] in tok[max(0, tok.find(p0_root) + len(p0_root) - 1) :]
+            )
+            or (
+              p0_tail
+              and re.search(
+                rf"[ािीुूृेैोौ]{re.escape(p0_tail)}.{{0,2}}{re.escape(p1_probe[:3])}",
+                tok,
+              )
+            )
+            for tok in vp_tokens
+          )
+        )
         vp_spaced = bool(
-          p0_bare
-          and p1_bare
+          not has_concat_tok
+          and p0_bare
+          and p1_probe
           and len(p0_bare) >= 2
-          and len(p1_bare) >= 2
-          and re.search(rf"(?:^|\s){re.escape(p0_bare)}\s+{re.escape(p1_bare[:3])}", vp_plain)
+          and len(p1_probe) >= 2
+          and re.search(rf"(?:^|\s){re.escape(p0_bare)}\s+{re.escape(p1_probe)}", vp_plain)
         )
         suspicious_p0 = bool(is_arrow and (_INFLECTED_P0_ENDINGS_RE.search(p0_bare) or p0_bare in _PARTICLE_P0_SET))
         if vp_spaced or suspicious_p0:
           findings.append(
             AuditFinding("false_compound_candidate", path, ln, f"vp_spaced={vp_spaced}, p0={p0_bare}")
           )
+
+      # 8. Provenance guard checks (known antipatterns, weak RV/AV overrides, bare/missing YV citations)
+      recent_bare = [_strip_marks_for_probe(flat[k][1].ref) for k in range(max(0, idx_it - 3), idx_it)]
+      clause_bare = _same_clause_preceding_words(flat, idx_it)
+      findings.extend(
+        _check_provenance_guards(
+          it, ln, recent_bare, path, counter, same_clause_bare_words=clause_bare
+        )
+      )
 
   return findings, len(blocks)
 
@@ -435,6 +688,7 @@ def audit_directory_trees(
   include_reconciler_diffs: bool = False,
   check_vp_tiikaa_includes: bool = True,
   base_dir: str | None = None,
+  counter: VedicCorpusCounter | None = None,
 ) -> CorpusAuditReport:
   """Walk ``roots`` and audit all Markdown files containing canonical ``पद-पाठः (यान्त्रिकः)`` blocks."""
   report = CorpusAuditReport()
@@ -487,6 +741,7 @@ def audit_directory_trees(
         include_validator_issues=include_validator_issues,
         include_reconciler_diffs=include_reconciler_diffs,
         is_ekAgnikANDam=("/ekAgnikANDam/" in ap.replace(os.sep, "/")),
+        counter=counter,
       )
       report.blocks_scanned += n_blocks
       report.findings.extend(file_findings)
@@ -501,16 +756,23 @@ def main(argv: Sequence[str] | None = None) -> int:
   parser.add_argument("--base-dir", default=None, help="Base directory for relative paths in report output")
   parser.add_argument("--no-validator", action="store_true", help="Skip validator.py checks")
   parser.add_argument("--with-reconciler", action="store_true", help="Check for pending reconciler VP diffs")
+  parser.add_argument(
+    "--with-corpus-counter",
+    action="store_true",
+    help="Load VedicCorpusCounter to check bare corpus tags and YV attestations",
+  )
   parser.add_argument("--categories", nargs="*", default=None, help="Filter reported findings to these categories")
   parser.add_argument("--max-per-category", type=int, default=15, help="Max sample findings printed per category")
   parser.add_argument("--json", dest="json_out", default=None, help="Write full JSON audit report to this file")
   args = parser.parse_args(argv)
 
+  counter = VedicCorpusCounter.load_or_build() if args.with_corpus_counter else None
   report = audit_directory_trees(
     args.roots,
     include_validator_issues=not args.no_validator,
     include_reconciler_diffs=args.with_reconciler,
     base_dir=args.base_dir,
+    counter=counter,
   )
   if args.categories:
     allowed = set(args.categories)

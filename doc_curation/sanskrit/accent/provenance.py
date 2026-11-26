@@ -27,6 +27,7 @@ from doc_curation.sanskrit.accent.reconciler import (
   has_us_accents,
   is_solid_provenance,
   parse_padapatha_items,
+  split_padapatha_line_comment,
 )
 from doc_curation.sanskrit.accent.shatapatha_solver import (
   DEFAULT_DICT_ROOT,
@@ -41,7 +42,13 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
 )
 
 _JS_INCLUDE_OPEN_RE = re.compile(r"<div\b[^>]*\bclass=[\"'][^\"']*\bjs_include\b[^\"']*[\"'][^>]*>", re.I)
-_JS_INCLUDE_URL_RE = re.compile(r"""url=(["'])(/[^"']+)\1""")
+_JS_INCLUDE_URL_RE = re.compile(r"""url=(["'])(?P<url>/[^"']+)\1""")
+
+
+def extract_js_include_url(tag_html: str) -> str | None:
+  """Extract the leading ``/...`` URL from a ``<div class="js_include" ...>`` opening tag."""
+  m = _JS_INCLUDE_URL_RE.search(tag_html)
+  return m.group("url") if m else None
 
 
 def resolve_veda_static_path(url: str, hugo_base_dir: str = "/home/vvasuki/gitland/vishvAsa") -> str | None:
@@ -97,10 +104,18 @@ def _collect_include_leaf_blocks(url: str, *, hugo_base_dir: str = "/home/vvasuk
     if clean:
       out.append(("विश्वास-प्रस्तुतिः", clean, url))
   for a, b in inc_spans:
-    m_u = _JS_INCLUDE_URL_RE.search(body[a : body.find(">", a) + 1])
-    if m_u:
-      out.extend(_collect_include_leaf_blocks(m_u.group(1), hugo_base_dir=hugo_base_dir, _depth=_depth + 1))
+    u = extract_js_include_url(body[a : body.find(">", a) + 1])
+    if u:
+      out.extend(_collect_include_leaf_blocks(u, hugo_base_dir=hugo_base_dir, _depth=_depth + 1))
   return out
+
+
+def is_unqualified_sb_pp_header(pp_hdr: str) -> bool:
+  """Return True for ``पद-पाठः (यान्त्रिकः...)`` headers without a śākhā/corpus qualifier."""
+  if not pp_hdr.startswith("पद-पाठः (यान्त्रिकः"):
+    return False
+  suffix = pp_hdr[len("पद-पाठः (यान्त्रिकः") :].rstrip(")").strip()
+  return bool(re.fullmatch(r"(?:\s*-\s*(?:\d+/\d+\s*व्यत्यस्त-स्वराः|यन्त्र-स्वरः))*", suffix))
 
 
 def _include_block_matches_corpus(hdr: str, src_url: str, corpus: str) -> bool:
@@ -109,9 +124,17 @@ def _include_block_matches_corpus(hdr: str, src_url: str, corpus: str) -> bool:
     return "/sarvASh_TIkAH/" not in src_url
   if hdr.startswith("पद-पाठः (यान्त्रिकः"):
     if corpus in ("ŚB", "SB-M"):
-      return "माध्यन्दिन" in hdr or (("/shatapatha-brAhmaNam/" in src_url) and "-" not in hdr.replace("यान्त्रिकः", "").split("व्यत्यस्त")[0])
+      return "माध्यन्दिन" in hdr or (
+        "/shatapatha-brAhmaNam/" in src_url
+        and "/kANvam/" not in src_url
+        and is_unqualified_sb_pp_header(hdr)
+      )
     if corpus == "SB-K":
-      return "काण्व" in hdr or ("/kANvam/" in src_url and "-" not in hdr.replace("यान्त्रिकः", "").split("व्यत्यस्त")[0])
+      return "काण्व" in hdr or (
+        "/kANvam/" in src_url
+        and "माध्यन्दिन" not in hdr
+        and is_unqualified_sb_pp_header(hdr)
+      )
     return corpus in hdr
   if hdr.startswith("मूलम्"):
     if corpus in ("ŚB", "SB-M"):
@@ -722,10 +745,10 @@ class VedicCorpusCounter:
         ]
         if corpus in ("ŚB", "SB-M", "SB-K"):
           for a, b in inc_sec:
-            m_u = _JS_INCLUDE_URL_RE.search(sec[a : sec.find(">", a) + 1])
-            if not m_u:
+            u = extract_js_include_url(sec[a : sec.find(">", a) + 1])
+            if not u:
               continue
-            for ih, ib, su in _collect_include_leaf_blocks(m_u.group(1)):
+            for ih, ib, su in _collect_include_leaf_blocks(u):
               if _include_block_matches_corpus(ih, su, corpus):
                 blocks.append((ih, ib))
         if not blocks:
@@ -999,6 +1022,8 @@ class VedicCorpusCounter:
       for cp in CORPUS_TAGS:
         tbl = self.allograph_counts.get(cp, {})
         for pf in p_forms:
+          if pf[0] in _INDECLINABLE_BARE and pf[0] != ak:
+            continue
           c_val = tbl.get(pf, 0)
           if c_val > 0:
             total_freq += c_val
@@ -1008,6 +1033,7 @@ class VedicCorpusCounter:
       if score > best_score:
         best_score = score
         best_forms = p_forms
+    best_forms = {pf for pf in best_forms if pf[0] == ak or pf[0] not in _INDECLINABLE_BARE}
     best_forms.add((ak, marks))
     res = frozenset(best_forms)
     self._paradigm_cache[word] = res
@@ -1029,12 +1055,16 @@ class VedicCorpusCounter:
     p_forms = self.paradigm_forms(word)
     if not p_forms:
       return m, m
+    word_km = word_to_key_and_marks(word)
+    word_ak = _canonical_allograph_key(word_km[0]) if word_km is not None else None
     allo_tbl = self.allograph_counts.get(corpus, {})
     has_hyphen = "-" in word
     n_sum = 0
     counted_keys: set[tuple[str, tuple[str, ...]]] = set()
     for pf_ak, pf_mks in p_forms:
       if (pf_ak, pf_mks) in counted_keys:
+        continue
+      if pf_ak in _INDECLINABLE_BARE and pf_ak != word_ak:
         continue
       val = allo_tbl.get((pf_ak, pf_mks), 0)
       if val > 0:
@@ -2207,14 +2237,15 @@ def annotate_padapatha_line_counts(
   if not it.prov or "?" in it.ref:
     return normalize_panini_abbreviations(line), []
 
-  p_idx = stripped.find("(")
-  if p_idx < 0 or not stripped.rstrip().endswith(")"):
+  stripped_core, comment_tail = split_padapatha_line_comment(stripped)
+  p_idx = stripped_core.find("(")
+  if p_idx < 0 or not stripped_core.rstrip().endswith(")"):
     return normalize_panini_abbreviations(line), []
-  r_end = stripped.rfind(")")
-  head = stripped[:p_idx]
-  prov_inner = normalize_panini_abbreviations(stripped[p_idx + 1 : r_end])
+  r_end = stripped_core.rfind(")")
+  head = stripped_core[:p_idx]
+  prov_inner = normalize_panini_abbreviations(stripped_core[p_idx + 1 : r_end])
   prov_inner = _strip_forbidden_sources_if_nonempty(prov_inner)
-  tail = stripped[r_end + 1 :]
+  tail = stripped_core[r_end + 1 :] + comment_tail
 
   allow_stem_ref = is_declinable_nominal(it.ref, prov_inner)
   unresolved: list[tuple[str, str]] = []
@@ -2366,13 +2397,14 @@ def backfill_corpora_in_padapatha_line(
   it = items[0]
   if not it.prov or "?" in it.ref:
     return line
-  p_idx = stripped.find("(")
-  if p_idx < 0 or not stripped.rstrip().endswith(")"):
+  stripped_core, comment_tail = split_padapatha_line_comment(stripped)
+  p_idx = stripped_core.find("(")
+  if p_idx < 0 or not stripped_core.rstrip().endswith(")"):
     return line
-  r_end = stripped.rfind(")")
-  head = stripped[:p_idx]
-  prov_inner = stripped[p_idx + 1 : r_end]
-  tail = stripped[r_end + 1 :]
+  r_end = stripped_core.rfind(")")
+  head = stripped_core[:p_idx]
+  prov_inner = stripped_core[p_idx + 1 : r_end]
+  tail = stripped_core[r_end + 1 :] + comment_tail
 
   allow_stem_ref = is_declinable_nominal(it.ref, prov_inner)
   default_paradigm = counter.paradigm_forms(it.ref) if allow_stem_ref else frozenset()

@@ -782,3 +782,60 @@ def test_coordinator_64_deterministic_upgrades(lex: UnifiedVedicLexicon):
   )
   r_oov = solve_kandika(cl_oov, lex, kandika_id="test::oov")
   assert r_oov.items and r_oov.items[0].ref == "आ᳓रुणिः"
+
+
+def test_mw_crossref_stubs_and_kta_nominal_homograph_regressions(lex: UnifiedVedicLexicon, tmp_path: Path):
+  from doc_curation.sanskrit.accent import shatapatha_solver as ss
+
+  # 1. MW `, see ...` cross-reference stub (`नारी॑ ... see नारी`) must NOT pollute `stem_accents`.
+  mw_stub = tmp_path / "mw_stub.babylon"
+  mw_stub.write_text(
+    "नारी\nनारी॑ (ई), f., see नारी<BR><a href=\"x\">PDF</a>\n\n"
+    "नारी\nना॑री f. a woman, RV.\n",
+    encoding="utf-8",
+  )
+  stub_lex = UnifiedVedicLexicon()
+  stub_lex._ingest_mw_babylon(str(mw_stub))
+  assert list(stub_lex.stem_accents.get("नारी", {}).keys()) == [("U", "")]
+
+  # 2. DP + upasarga splitter must NOT split prefixed `kta`/nominal compounds and preserves `a + a` (`चाधीतिश्च`).
+  assert ss.split_chunk_to_padas_dp("प्रवृक्ताम्", lex) == ["प्र-वृक्ताम्"]
+  assert ss.split_chunk_to_padas_dp("परिवृक्ताम्", lex) == ["परि-वृक्ताम्"]
+  assert ss.split_chunk_to_padas_dp("उद्धतात्", lex) == ["उत्-हतात्"]
+  assert ss.split_chunk_to_padas_dp("उच्छिष्टात्", lex) == ["उत्-शिष्टात्"]
+  assert ss.split_chunk_to_padas_dp("उच्छिष्टः", lex) == ["उत्-शिष्टः"]
+  assert ss.split_chunk_to_padas_dp("प्रतिख्यातः", lex) == ["प्रति-ख्यातः"]
+  assert ss.split_chunk_to_padas_dp("आवित्तः", lex) == ["आवित्तः"]
+  assert ss.split_chunk_to_padas_dp("चाधीतिश्च", lex) == ["च", "अधीतिः", "च"]
+
+  # 3. `generate_pada_candidates` avoids spurious `tinanta_main` override on nominal/participle/adverb homographs.
+  ctx = {"in_subordinate": False, "is_clause_start": False, "is_amredita": False, "sub_rule": "तिङतिङः पा॰ ८.१.२८"}
+  top = lambda w: sorted(ss.generate_pada_candidates(w, ctx, "", lex), key=lambda c: c.prior_cost)[0]
+  assert top("जीवताम्").ref == "जी᳓वताम्"
+  assert top("महताम्").ref == "महता᳓म्"
+  assert top("देवताम्").ref == "देव᳓ताम्"
+  assert top("ईषतः").ref == "ई᳓षतः"
+  assert top("सर्पतः").ref == "स᳓र्पतः"
+  assert top("बुभूषतः").ref == "बु᳓भूषतः"
+  assert top("अन्ततः").ref == "अन्ततः᳓"
+  assert top("अन्त्ये").ref == "अ᳓न्त्ये"
+  assert top("स्याताम्").role == "tinanta_main"
+  assert any("८.१.१९" in c.prov for c in ss.generate_pada_candidates("हर्यत", ctx, "", lex))
+  # 4. `स-` (`सहस्य सः` पा॰ ६.३.८२) & `सु-` (`नञ्सुभ्याम्` पा॰ ६.२.१७२) compounds
+  c_vaish = ss.generate_pada_candidates("स-वैश्वानरायै", ctx, "", lex)
+  assert any(c.ref == "स᳓-वैश्वानरायै" and "६.२.१" in c.prov and "६.३.८२" in c.prov for c in c_vaish)
+  assert top("स-प्रजापतिकस्य").ref == "स᳓-प्रजापतिकस्य"
+  assert top("स-गन्धर्व-अप्सरस्कस्य").ref == "स᳓-गन्धर्व-अप्सरस्कस्य"
+  assert top("स-अधिपतिकेभ्यः").ref == "स᳓-अधिपतिकेभ्यः"
+  c_kukr = ss.generate_pada_candidates("सु-कूर्कुरः", ctx, "", lex)
+  assert any(c.ref == "सु-कूर्कुरः᳓" and "६.२.१७२" in c.prov for c in c_kukr)
+  c_shande = ss.generate_pada_candidates("शण्डे-रथः", ctx, "", lex)
+  assert any(c.ref == "श᳓ण्डे-रथः" and "६.२.१" in c.prov for c in c_shande)
+
+  # 5. `divAdi` `SAnac` (`दी᳓प्यमानः`) uses `श्यन् पा॰ ३.१.६९`, NOT passive `यक् पा॰ ३.१.६७`; `हिंसीः` is recognized as `तिङन्तम्` `पा॰ ८.१.२८`.
+  assert top("दीप्यमानः").ref == "दी᳓प्यमानः"
+  c_dipy = ss._derive_paninian_krdanta_and_compound_accents("दीप्यमानान्", lex)
+  assert any("श्यन्" in prov and mks == ("U", "", "", "") for mks, prov in c_dipy)
+  assert not any("३.१.६७" in prov for _, prov in c_dipy)
+  assert top("हिंसीः").ref == "हिंसीः"
+  assert "८.१.२८" in top("हिंसीः").prov

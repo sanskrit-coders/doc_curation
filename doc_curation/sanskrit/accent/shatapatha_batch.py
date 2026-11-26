@@ -34,6 +34,7 @@ from doc_curation.sanskrit.accent.reconciler import (
   DETAILS_RE,
   LEAF_DETAILS_RE,
   PadapathaItem,
+  format_filled_vp_summary,
   has_us_accents,
   is_solid_provenance,
   parse_padapatha_items,
@@ -681,6 +682,7 @@ class _FileClusterSlot:
   pp_body: str
   pp_raw: str = ""
   mula_header: str = "मूलम् - श्रीधरादि"
+  included_full: bool = False
 
 
 def _parse_file_slots(md_text: str) -> list[_FileClusterSlot]:
@@ -933,7 +935,7 @@ def verify_and_apply_adjudications(
             orig_summary=slot.vp_summary,
           )
           if not mula_has_acc:
-            vp_sum = "विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)"
+            vp_sum = format_filled_vp_summary(slot.vp_summary, 0, len(items), mula_has_accents=False)
           if not preserve_vp:
             fm = _first_us_mark(vp_acc)
             if fm is not None:
@@ -1199,12 +1201,74 @@ class SbCorpusAuditReport:
     }
 
 
+def _pp_header_matches_sb_side(pp_hdr: str, src_url: str, *, is_sbk_root: bool) -> bool:
+  if not pp_hdr.startswith("पद-पाठः (यान्त्रिकः"):
+    return False
+  from doc_curation.sanskrit.accent.provenance import _include_block_matches_corpus
+
+  return _include_block_matches_corpus(pp_hdr, src_url, "SB-K" if is_sbk_root else "SB-M")
+
+
+def _select_best_pp_candidate(
+  candidates: Sequence[tuple[str, str]],
+  vp_summary: str,
+  vp_body: str,
+) -> tuple[str, str] | None:
+  """Select the ``पद-पाठः`` candidate matching ``vp_body`` sandhi, vyatyasta count, and suggestions."""
+  if not candidates:
+    return None
+  if len(candidates) == 1:
+    return candidates[0]
+  from doc_curation.sanskrit.accent.reconciler import reconcile_vp_suggestions
+
+  m_vyat = re.search(r"\((\d+)/(\d+)\s*व्यत्यस्त-स्वराः\)", vp_summary)
+  exp_vyat = (int(m_vyat.group(1)), int(m_vyat.group(2))) if m_vyat else (0, None)
+  vp_clean = _vp_body_to_clean_for_audit(vp_body)
+
+  def _score(cand: tuple[str, str]) -> tuple[int, int, int]:
+    items = parse_padapatha_items(cand[1].strip())
+    ok = int(bool(items) and verify_mantra_sandhi([it.ref for it in items], vp_clean)[0])
+    n_vyat = sum(1 for it in items if it.vyat)
+    vyat_match = int(n_vyat == exp_vyat[0] and (exp_vyat[1] is None or len(items) == exp_vyat[1]))
+    sug_ok = 0
+    if items:
+      new_vp, vlogs = reconcile_vp_suggestions(vp_body, items, allow_8_2_6_ekadesha_svarita=True)
+      sug_ok = int(not vlogs and new_vp == vp_body)
+    return (ok, vyat_match, sug_ok)
+
+  return max(candidates, key=_score)
+
+
+_MD_FOOTNOTE_DEF_RE = re.compile(r"(?m)^\[\^[^\]]+\]:.*$")
+_MD_FOOTNOTE_REF_RE = re.compile(r"\[\^[^\]]+\]")
+
+
+def _split_mula_variant_candidates(raw_mula: str, vp_clean: str) -> list[str]:
+  """Split a multi-reading ``मूलम्`` string into per-reading candidates when each covers the full mantra."""
+  if not raw_mula or "\n" not in raw_mula:
+    return [raw_mula] if raw_mula else []
+  from doc_curation.sanskrit.accent.reconciler import bare_devanagari
+
+  vp_len = len(bare_devanagari(vp_clean))
+  cleaned = _MD_FOOTNOTE_REF_RE.sub("", _MD_FOOTNOTE_DEF_RE.sub("", raw_mula))
+  paras = [p.strip() for p in re.split(r"\n\s*\n+", cleaned) if p.strip()]
+  if len(paras) <= 1 or vp_len == 0:
+    return [raw_mula]
+  full_cands = [p for p in paras if len(bare_devanagari(p)) >= 0.65 * vp_len]
+  if len(full_cands) >= 2:
+    return full_cands
+  if len(full_cands) == 1 and len(bare_devanagari(full_cands[0])) >= 0.85 * vp_len:
+    return [full_cands[0], raw_mula]
+  return [raw_mula]
+
+
 def audit_full_sb_corpus(
   sb_root: str | os.PathLike[str],
   *,
   kandas: Sequence[str | int] | None = None,
   files: Sequence[str | os.PathLike[str]] | None = None,
   preserved_kandika_ids: AbstractSet[str] | None = None,
+  hugo_base_dir: str = "/home/vvasuki/gitland/vishvAsa",
 ) -> SbCorpusAuditReport:
   """Verify ŚB content files end-to-end against all Phase 4 certification criteria.
 
@@ -1267,21 +1331,38 @@ def audit_full_sb_corpus(
         )
       )
 
+    from doc_curation.sanskrit.accent.provenance import (
+      _collect_include_leaf_blocks,
+      extract_js_include_url,
+      find_js_include_spans,
+      resolve_veda_static_path,
+    )
+
     # Collect all section clusters in file order and check misplaced padapāṭha blocks per section.
     slots: list[_FileClusterSlot] = []
-    for part in re.split(r"(?m)(?=^##\s+)", txt):
+    raw_parts = re.split(r"(?m)(?=^##\s+)", txt)
+    if not any(re.match(r"^##\s+", p) for p in raw_parts) and "विश्वास-प्रस्तुतिः" in txt and "पद-पाठः (यान्त्रिकः" in txt:
+      body_no_fm = re.sub(r"^(?:\+\+\+.*?\+\+\+|---.*?---)\s*", "", txt, count=1, flags=re.S)
+      raw_parts = [f"## ०१\n\n{body_no_fm}"]
+    for part in raw_parts:
       m_hdr = re.match(r"^##\s+([^\n]+)", part)
       if not m_hdr:
         continue
       norm_hdr = re.sub(r"\s+", " ", m_hdr.group(1).strip())
+      sec_js_spans = find_js_include_spans(part)
       clusters = _extract_vp_clusters(part)
+      inline_scope_url = "/vAjasaneyam/kANvam/shatapatha-brAhmaNam/" if is_sbk_root else "/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/"
       all_pp_in_sec = [
-        m for m in LEAF_DETAILS_RE.finditer(part) if m.group(1).strip().startswith("पद-पाठः (यान्त्रिकः")
+        m
+        for m in LEAF_DETAILS_RE.finditer(part)
+        if not any(a <= m.start() < b for a, b in sec_js_spans)
+        and _pp_header_matches_sb_side(m.group(1).strip(), inline_scope_url, is_sbk_root=is_sbk_root)
       ]
       matched_pp_spans = {
         (cl.existing_pp_match.start(), cl.existing_pp_match.end())
         for cl in clusters
         if cl.existing_pp_match is not None
+        and _pp_header_matches_sb_side(cl.existing_pp_match.group(1).strip(), inline_scope_url, is_sbk_root=is_sbk_root)
       }
       if len(all_pp_in_sec) != len(matched_pp_spans):
         failures.append(
@@ -1297,9 +1378,122 @@ def audit_full_sb_corpus(
             ),
           )
         )
-      for cl in clusters:
+
+      inc_entries: list[tuple[int, int, str]] = []
+      for a, b in sec_js_spans:
+        u = extract_js_include_url(part[a : part.find(">", a) + 1])
+        if not u:
+          continue
+        if not resolve_veda_static_path(u, hugo_base_dir=hugo_base_dir):
+          failures.append(
+            SbKandikaAuditFailure(
+              kandika_id=f"{rel_posix}::{norm_hdr}",
+              rel_path=rel_posix,
+              heading=norm_hdr,
+              sub_idx=0,
+              kind="missing_include_target",
+              detail=f"Unresolved js_include target URL: {u}",
+            )
+          )
+        inc_entries.append((a, b, u))
+
+      ordered_events: list[tuple[int, str, object]] = []
+      for ci, cl in enumerate(clusters):
+        cpos = cl.vp_match.start() if cl.vp_match is not None else (cl.mula_match.start() if cl.mula_match is not None else 0)
+        ordered_events.append((cpos, "inline", (ci, cl)))
+      for a, b, u in inc_entries:
+        if "/vishvAsa-prastutiH/" in u or "/sarva-prastutiH/" in u:
+          ordered_events.append((a, "full_inc", u))
+      ordered_events.sort(key=lambda x: x[0])
+
+      next_vp_pos = [
+        (cl.vp_match.start() if cl.vp_match is not None else len(part))
+        for cl in clusters
+      ]
+
+      sub_counter = 0
+      for pos, ev_kind, payload in ordered_events:
+        if ev_kind == "full_inc":
+          u = str(payload)
+          leafs = _collect_include_leaf_blocks(u, hugo_base_dir=hugo_base_dir)
+          vp_body = next((ib.strip() for ih, ib, _ in leafs if ih.startswith("विश्वास-प्रस्तुतिः")), "")
+          slots.append(
+            _FileClusterSlot(
+              heading=norm_hdr,
+              sub_idx=sub_counter,
+              vp_summary="विश्वास-प्रस्तुतिः",
+              vp_body=vp_body,
+              is_already_us=has_us_accents(vp_body) if vp_body else True,
+              weber="",
+              shri="",
+              has_pp=True,
+              pp_body="",
+              pp_raw="",
+              included_full=True,
+            )
+          )
+          sub_counter += 1
+          continue
+
+        ci, cl = payload  # type: ignore[misc]
         vp_body = cl.vp_match.group(2).strip() if cl.vp_match is not None else ""
         vp_sum = cl.vp_match.group(1).strip() if cl.vp_match is not None else "विश्वास-प्रस्तुतिः"
+        weber_txt = cl.weber_text
+        shri_txt = cl.shri_text
+        mula_hdr = cl.mula_header
+        has_pp = cl.existing_pp_match is not None
+        pp_body = cl.existing_pp_match.group(2).strip() if cl.existing_pp_match is not None else ""
+        pp_raw = cl.existing_pp_match.group(0) if cl.existing_pp_match is not None else ""
+
+        if not has_pp and cl.vp_match is not None:
+          end_bound = next_vp_pos[ci + 1] if ci + 1 < len(next_vp_pos) else len(part)
+          for a, b, u in inc_entries:
+            if cl.vp_match.end() <= a < end_bound and ("/sarvASh_TIkAH/" in u or "/sarva-prastutiH/" in u):
+              leafs = _collect_include_leaf_blocks(u, hugo_base_dir=hugo_base_dir)
+              if is_sbk_root:
+                if not shri_txt:
+                  kb_cands = [ib.strip() for ih, ib, _ in leafs if ih == "मूलम् - काण्व-ब्राह्मणम्"]
+                  if kb_cands:
+                    shri_txt = "\n\n".join(kb_cands)
+                    mula_hdr = "मूलम् - काण्व-ब्राह्मणम्"
+                if not shri_txt:
+                  for ih, ib, su in leafs:
+                    if ih in ("मूलम् - काण्वम्", "मूलम्") and (
+                      "/shatapatha-brAhmaNam/" in su or "\u1cd8" in ib or "\u1cdf" in ib
+                    ):
+                      shri_txt = ib.strip()
+                      mula_hdr = ih
+                      break
+                if not shri_txt and not weber_txt:
+                  w_cands = [ib.strip() for ih, ib, _ in leafs if ih == "मूलम् - Weber"]
+                  if w_cands:
+                    weber_txt = "\n\n".join(w_cands)
+              else:
+                if not weber_txt:
+                  w_cands = [ib.strip() for ih, ib, _ in leafs if ih == "मूलम् - Weber"]
+                  if w_cands:
+                    weber_txt = "\n\n".join(w_cands)
+                if not shri_txt:
+                  s_cands = [
+                    (ih, ib.strip())
+                    for ih, ib, _ in leafs
+                    if ih in ("मूलम् - श्रीधरादि", "मूलम् - माध्यन्दिन-ब्राह्मणम्")
+                  ]
+                  if s_cands:
+                    shri_txt = "\n\n".join(txt for _, txt in s_cands)
+                    mula_hdr = s_cands[0][0]
+              pp_cands = [
+                (ih, ib.strip())
+                for ih, ib, su in leafs
+                if _pp_header_matches_sb_side(ih, su, is_sbk_root=is_sbk_root)
+              ]
+              picked_pp = _select_best_pp_candidate(pp_cands, vp_sum, vp_body)
+              if picked_pp is not None:
+                ih, pp_body = picked_pp
+                has_pp = True
+                pp_raw = f"<details><summary>{ih}</summary>\n\n{pp_body}\n</details>"
+                break
+
         slots.append(
           _FileClusterSlot(
             heading=norm_hdr,
@@ -1307,17 +1501,18 @@ def audit_full_sb_corpus(
             vp_summary=vp_sum,
             vp_body=vp_body,
             is_already_us=(cl.vp_match is not None and has_us_accents(vp_body)),
-            weber=cl.weber_text,
-            shri=cl.shri_text,
-            has_pp=cl.existing_pp_match is not None,
-            pp_body=cl.existing_pp_match.group(2).strip() if cl.existing_pp_match is not None else "",
-            pp_raw=cl.existing_pp_match.group(0) if cl.existing_pp_match is not None else "",
-            mula_header=cl.mula_header,
+            weber=weber_txt,
+            shri=shri_txt,
+            has_pp=has_pp,
+            pp_body=pp_body,
+            pp_raw=pp_raw,
+            mula_header=mula_hdr,
           )
         )
+        sub_counter += 1
 
     first_marks: list[str | None] = [
-      (_first_us_mark(sl.vp_body) if sl.is_already_us else None) for sl in slots
+      (_first_us_mark(sl.vp_body) if sl.is_already_us and sl.vp_body else None) for sl in slots
     ]
 
     for idx, sl in enumerate(slots):
@@ -1333,6 +1528,8 @@ def audit_full_sb_corpus(
 
       conv_k += 1
       ks["converted"] += 1
+      if sl.included_full:
+        continue
 
       # (a) Check for leftover ŚB marks in converted विश्वास-प्रस्तुतिः
       if _SB_MARKS_RE.search(sl.vp_body):
@@ -1558,13 +1755,35 @@ def audit_full_sb_corpus(
       )
       if mula_has_acc or "यन्त्र-स्वरः" not in sl.vp_summary:
         nxt_first = first_marks[idx + 1] if idx + 1 < len(slots) else None
-        rep = audit_padapatha_against_sb(
-          vp_for_audit,
-          items,
-          sl.weber,
-          sl.shri,
-          next_first_mark=nxt_first,
-        )
+        w_cands = _split_mula_variant_candidates(sl.weber, vp_for_audit) or [""]
+        s_cands = _split_mula_variant_candidates(sl.shri, vp_for_audit) or [""]
+        if len(w_cands) == 1 and len(s_cands) == 1:
+          rep = audit_padapatha_against_sb(
+            vp_for_audit,
+            items,
+            w_cands[0],
+            s_cands[0],
+            next_first_mark=nxt_first,
+          )
+        else:
+          rep = min(
+            (
+              audit_padapatha_against_sb(
+                vp_for_audit,
+                items,
+                wc,
+                sc,
+                next_first_mark=nxt_first,
+              )
+              for wc in w_cands
+              for sc in s_cands
+            ),
+            key=lambda r: (
+              len(r.unmapped_vp_syllables),
+              len(r.unflagged_vyatyasta_padas) + len(r.possibly_spurious_vyatyasta_padas),
+              len(r.disagree_pada_indices),
+            ),
+          )
         if is_preserved and rep.unmapped_vp_syllables and (sl.weber or sl.shri):
           fallback_vp = normalize_sb_orthography(sl.weber or sl.shri)
           rep = audit_padapatha_against_sb(

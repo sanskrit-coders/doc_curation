@@ -26,7 +26,12 @@ def format_details_block(summary: str, body: str, *, is_open: bool = False) -> s
   return f"<details{open_attr}><summary>{summary}</summary>\n\n{body.strip()}\n</details>"
 
 
-def merge_author_bodies(bodies: Sequence[str], *, strip_trivial_crossref: bool = True) -> str:
+def merge_author_bodies(
+  bodies: Sequence[str],
+  *,
+  strip_trivial_crossref: bool = True,
+  include_accents: bool = False,
+) -> str:
   """Merge commentary strings cleanly, deduplicating repeats and suppressing trivial cross-refs when richer glosses exist."""
   cleaned = [b.strip() for b in bodies if b and b.strip()]
   if not cleaned:
@@ -41,11 +46,11 @@ def merge_author_bodies(bodies: Sequence[str], *, strip_trivial_crossref: bool =
   deduped: list[str] = []
   seen_norm: set[str] = set()
   for b in cleaned:
-    key = normalize_phonetic(b, include_accents=False, fold_orthography=True) or b
+    key = normalize_phonetic(b, include_accents=include_accents, fold_orthography=True) or b
     if key not in seen_norm:
       seen_norm.add(key)
       deduped.append(b)
-  return "\n\n".join(deduped)
+  return "  \n".join(deduped)
 
 
 def collect_kanva_tika_additions(vsk_entries: Sequence[dict]) -> tuple[bool, str, str, dict[str, str]]:

@@ -48,6 +48,8 @@ from doc_curation.sanskrit.accent.reconciler import (
   _no_punct_between,
   _pp_member_starts,
   bare_devanagari,
+  find_js_include_spans,
+  format_filled_vp_summary,
   format_padapatha_summary,
   format_suggested_vp_summary,
   has_us_accents,
@@ -318,7 +320,11 @@ def _render_details(summary: str, body: str, *, is_open: bool = False) -> str:
 
 def parse_section_clusters(part: str) -> list[ClusterRecord]:
   """Parse a ``## <heading>`` section into ordered ``ClusterRecord`` objects owning their layers."""
-  dmatches = list(_DETAILS_BLOCK_RE.finditer(part))
+  inc_spans = find_js_include_spans(part)
+  dmatches = [
+    m for m in _DETAILS_BLOCK_RE.finditer(part)
+    if not any(s <= m.start() < e for s, e in inc_spans)
+  ]
   if not dmatches:
     return []
 
@@ -2174,6 +2180,7 @@ def _verify_split_subclusters(
   sub_bullet_chunks: Sequence[Sequence[str]] = (),
   next_kandika_first_mark: str | None = None,
   is_yantra: bool = False,
+  vp_summary_template: str = "विश्वास-प्रस्तुतिः",
 ) -> int | None:
   """Verify EVERY sub-cluster passes ŚB audit and reconciler fixed point; returns ``None`` or first failing index."""
   weber_list = sub_mulams.get("मूलम् - Weber", [""] * len(sub_vps))
@@ -2212,7 +2219,11 @@ def _verify_split_subclusters(
     if sub_bullet_chunks:
       n_vyat = sum(1 for it in items if it.vyat)
       p_tot = len(items)
-      vp_sum = "विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)" if is_yantra else format_suggested_vp_summary("विश्वास-प्रस्तुतिः", n_vyat, p_tot)
+      vp_sum = (
+        format_filled_vp_summary(vp_summary_template, 0, p_tot, mula_has_accents=False)
+        if is_yantra
+        else format_suggested_vp_summary(vp_summary_template, n_vyat, p_tot)
+      )
       pp_sum = format_padapatha_summary(n_vyat, p_tot)
       snippet = (
         f"<details open><summary>{vp_sum}</summary>\n\n{vp.strip()}\n</details>\n\n"
@@ -2279,6 +2290,7 @@ def split_single_cluster(
         sub_bullet_chunks,
         next_kandika_first_mark,
         is_yantra=is_yantra,
+        vp_summary_template=cluster.vp_summary,
       )
       if mulam_ok
       else 0
@@ -2305,9 +2317,9 @@ def split_single_cluster(
         n_vyat = sum(1 for it in s_items if it.vyat)
         p_tot = len(s_items)
         if is_yantra:
-          vp_sum_i = "विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)"
+          vp_sum_i = format_filled_vp_summary(cluster.vp_summary, 0, p_tot, mula_has_accents=False)
         else:
-          vp_sum_i = format_suggested_vp_summary("विश्वास-प्रस्तुतिः", n_vyat, p_tot)
+          vp_sum_i = format_suggested_vp_summary(cluster.vp_summary, n_vyat, p_tot)
         pp_sum_i = format_padapatha_summary(n_vyat, p_tot)
         blocks_i.append(_render_details(vp_sum_i, sub_vps[i], is_open=cluster.vp_open))
         # Place pure translation blocks directly below विश्वास-प्रस्तुतिः

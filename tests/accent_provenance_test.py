@@ -463,3 +463,50 @@ def test_backfill_and_annotate_inside_nested_sarvash_tikah_details():
   assert "*KS*-19/139" in out_ann and "*MS*-55/455" in out_ann
 
 
+def test_trailing_feedback_comment_preserved_across_parsers():
+  from doc_curation.sanskrit.accent.provenance import backfill_corpora_in_padapatha_line
+  from doc_curation.sanskrit.accent.reconciler import parse_padapatha_items
+
+  c = VedicCorpusCounter()
+  for corp, word, freq in [
+    ("TS", "अग्न᳓ये", 128),
+    ("TS", "अग्निः᳓", 1067),
+    ("MS", "अग्न᳓ये", 55),
+    ("MS", "अग्निः᳓", 400),
+  ]:
+    km = word_to_key_and_marks(word)
+    assert km is not None
+    c._add(corp, km[0], km[1], freq=freq)
+  c._finalize_secondary_tables()
+
+  line = "- अग्निः → **अग्न᳓ये** (*TS*-128/1195) +++(Are you sure?!!)+++"
+  items = parse_padapatha_items(line)
+  assert len(items) == 1
+  assert items[0].ar == "अग्निः"
+  assert items[0].ref == "अग्न᳓ये"
+  assert items[0].vyat is True and items[0].solid is True
+  assert items[0].prov == "*TS*-128/1195"
+  assert validate_padapatha_block("पद-पाठः (यान्त्रिकः - 1/1 व्यत्यस्त-स्वराः)", line) == []
+
+  bf = backfill_corpora_in_padapatha_line(line, c, corpora=("MS",))
+  assert bf == "- अग्निः → **अग्न᳓ये** (*TS*-128/1195, *MS*-55/455) +++(Are you sure?!!)+++"
+  ann, unres = annotate_padapatha_line_counts("- अग्निः → **अग्न᳓ये** (*TS*, *MS*) +++(Are you sure?!!)+++", c)
+  assert unres == []
+  assert ann.endswith("+++(Are you sure?!!)+++")
+
+
+def test_count_with_stem_excludes_indeclinable_iti():
+  c = VedicCorpusCounter()
+  for word, freq in [("इ᳓तिः", 1), ("इ᳓ति", 1797)]:
+    km = word_to_key_and_marks(word)
+    assert km is not None
+    c._add("TS", km[0], km[1], freq=freq)
+  c._finalize_secondary_tables()
+
+  assert c.count_with_stem("इ᳓तिः", "TS") == (1, 1)
+  ann, unres = annotate_padapatha_line_counts("- इ᳓तिः (*TS*-1)", c, enrich_major_corpora=False)
+  assert unres == []
+  assert ann == "- इ᳓तिः (*TS*-1)"
+
+
+

@@ -128,7 +128,7 @@ def short_opening_words(vp: str, *, max_words: int = 3, max_chars: int = 36) -> 
   cleaned = re.sub(r"\[\[([^|\]]*)\|[^\]]*\]\]", r"\1", cleaned)
   cleaned = _EXTRA_ACCENTS_RE.sub("", strip_vedic_accents(cleaned))
   cleaned = re.sub(r"[*_~]+", "", cleaned)
-  cleaned = re.sub(r"[०-९0-9।॥\.,\!\?\|\-—–\(\)\[\]]+", " ", cleaned)
+  cleaned = re.sub(r'[०-९0-9।॥\.,\!\?\|\-—–\(\)\[\]"\'\\“”‘’]+', " ", cleaned)
   out: list[str] = []
   total = 0
   for w in [x for x in cleaned.split() if any("\u0900" <= c <= "\u097f" for c in x)][:max_words]:

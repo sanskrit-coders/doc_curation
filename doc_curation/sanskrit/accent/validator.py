@@ -11,14 +11,13 @@ from indic_transliteration import sanscript
 from indic_transliteration.sanscript.schemes.brahmic import accent
 
 from doc_curation.sanskrit.accent.reconciler import (
-  DETAILS_RE,
   LEAF_DETAILS_RE,
   PP_HEADER_RE,
-  find_js_include_spans,
   bare_devanagari,
   find_js_include_spans,
   has_us_accents,
   parse_padapatha_items,
+  split_padapatha_line_comment,
   syllables_with_marks,
 )
 
@@ -570,6 +569,25 @@ SIMPLEX_TINANTA_ALLOWLIST: frozenset[str] = frozenset({
   "अदिदीक्षः",
   "अवसाम",
   "सुवात्",
+  "रिषः",
+  "अरोपयः",
+  "अभरः",
+  "विदत",
+  "व्यथिष्ठाः",
+  "विदेम",
+  "अरोहः",
+  "अदिद्विषः",
+  "आनिषुः",
+  "अनुदः",
+  "अधावयः",
+  "अपद्रन्",
+  "अवीवरथाः",
+  "अरूरुहः",
+  "अरुक्षः",
+  "अवारीः",
+  "दीपयः",
+  "सुवामः",
+  "त्रायेते",
 })
 
 
@@ -647,6 +665,9 @@ DEFAULT_VERIFIED_AA_HIATUSES: frozenset[tuple[str, str]] = frozenset({
   ("होता", "अन्नम्"),
   ("ऐक्षत", "इमे"),
   ("तव", "उत्"),
+  ("यथा", "अश्वत्थस्य"),
+  ("भूत्वा", "अस्य"),
+  ("उत", "आ-हितः"),
 })
 
 
@@ -707,8 +728,9 @@ def find_virama_matra_glitches(pp_lines: Sequence[str]) -> list[str]:
   """Return padapāṭha bullet lines containing stray ``्`` + vowel-sign/anusvāra or stray ``+``/``,`` artifacts."""
   hits: list[str] = []
   for ln in pp_lines:
-    head = ln.split("(", 1)[0]
-    if re.search(r"्[ा-ौःंँ]", ln.replace("्ँ", "")) or "+" in head or "," in head:
+    ln_no_comment, _ = split_padapatha_line_comment(ln)
+    head = ln_no_comment.split("(", 1)[0]
+    if re.search(r"्[ा-ौःंँ]", ln_no_comment.replace("्ँ", "")) or "+" in head or "," in head:
       hits.append(ln)
   return hits
 
@@ -769,7 +791,8 @@ def find_unexplained_aa_hiatuses(
     if s1 and s2 and s1[-1] in ("a", "A") and s2[0] in ("a", "A", "i", "I", "u", "U", "e", "E", "o", "O"):
       w1_c = w1.replace("-", "")
       w2_c = w2.replace("-", "")
-      pat = rf"(?:^|[\s।॥,\-]){re.escape(w1_c)}\s+{re.escape(w2_c[:2])}"
+      w2_pat = f"{re.escape(w2_c)}(?=$|[\\s।॥,\\-])" if len(w2_c) < 2 else re.escape(w2_c[:2])
+      pat = rf"(?:^|[\s।॥,\-]){re.escape(w1_c)}\s+{w2_pat}"
       m_unm = re.search(pat, mula_joined_bare)
       if m_unm and not any(d in mula_joined_bare[m_unm.start():m_unm.end()] for d in "।॥;"):
         # Avoid false positives when a separate `वै` + vowel pair (पा॰ ८.३.१९ -> `वा V`) produces the matched
@@ -974,8 +997,8 @@ def find_false_nighata_arrows(
 
 _ENCLITIC_8118_ALLOWLIST: frozenset[str] = frozenset({
   # Genuine Vedic enclitic particles (निपाताः) and anvādeśa/enclitic pronominals (पा॰ ८.१.१८ / ८.१.२१-२३ / २.४.३२-३४).
-  "च", "वा", "ह", "उ", "ऊ", "स्म", "इव", "चित्", "चन", "नः", "वः", "पः", "मे", "ते", "मा", "त्वा", "नौ", "वाम्",
-  "ईम्", "सीम्", "अह", "स्वित्", "कम्", "तु", "घ", "घा", "हि", "खलु", "किल", "इत्", "नु", "सु", "शम्",
+  "च", "वा", "ह", "उ", "ऊ", "स्म", "इव", "चित्", "चन", "नः", "णः", "वः", "पः", "मे", "ते", "मा", "त्वा", "नौ", "वाम्",
+  "ईम्", "सीम्", "अह", "समह", "स्वित्", "कम्", "तु", "घ", "घा", "हि", "खलु", "किल", "इत्", "नु", "सु", "शम्",
   "वै", "एव", "अङ्ग", "उत", "स्य", "स", "सा", "तत्", "तम्", "ताम्", "तस्य", "तस्मै", "तस्मात्", "तस्मिन्",
   "तस्याः", "तस्याम्", "तस्या", "तस्यै", "तेन", "तया", "तयोः", "तेषाम्", "तासाम्", "तान्", "ताः", "तानि", "तौ",
   "अस्य", "अस्मै", "अस्मात्", "अस्मिन्", "अस्याः", "अस्याम्", "अस्या", "अस्यै", "अस्योः",
@@ -1036,6 +1059,7 @@ def find_unsplit_upasarga_tinantas(
     "आः", "अकः", "अभूः", "अधाः", "अदाः", "अस्थाः", "अपाः", "अगाः", "अजाः", "आवाः", "अप्राः",
     "अहः", "वेत्थ", "आत्थ", "तारिषः", "मोषीः", "भैषीः", "शारीः", "अस्य", "सुवः", "कः", "वृहः",
     "रीरिषः", "अबिभः", "मांस्ताः", "जीह्वरः", "दहः", "उरुष्यः", "अवीः", "पूरिष्ठाः", "अहाः",
+    "रिषः", "अरोपयः", "अभरः", "अरोहः", "अदिद्विषः", "अनुदः", "अधावयः", "अरूरुहः", "अरुक्षः", "अवारीः", "दीपयः",
   })
   coalesced_up_tinantas = frozenset({
     "ऐतु", "ऐति", "अवैत्", "अवैति", "अवेति", "प्रैत्", "प्रैति", "प्रैतु", "प्रेति",
@@ -1133,7 +1157,9 @@ def find_unsplit_upasarga_tinantas(
               continue
       if any(t in it.prov for t in subordinate_verb_tags) or is_nominal_prov:
         continue
-      if bare in UPASARGA_PREFIXES or bare in ("सम्", "निस्", "निर्", "दुस्", "दुर्", "उद्"):
+      if bare in UPASARGA_PREFIXES or bare in ("सम्", "निस्", "निर्", "दुस्", "दुर्", "उद्") or (
+        bare in ("आस्य", "विवस्व") and not is_verb_prov and not it.vyat
+      ):
         continue
       if "-" in it.ref and not is_verb_prov:
         continue
@@ -1192,6 +1218,7 @@ def find_multi_udatta_padas(pp_lines: Sequence[str]) -> list[str]:
     if n_acc >= 2:
       if (
         any(tag in it.prov for tag in ("६.२.१४०", "६.२.१४१", "६.१.२००", "अन्तश्च तवै", "देवताद्वन्द्व", "उभे वनस्पत्यादिषु"))
+        or bare == "वाव"
         or bare.endswith("तवै")
         or any(st in bare for st in dual_accent_stems)
       ):
@@ -1287,9 +1314,56 @@ def find_tinanta_sutra_on_non_tinanta(pp_lines: Sequence[str]) -> list[str]:
     "इह", "चेह", "नेह", "अत्र", "तत्र", "यत्र", "कुत्र", "सर्वत्र", "यदा", "तदा", "कदा", "सदा",
     "यथा", "तथा", "कथम्", "एवम्", "इति", "अथ", "अथो", "उत", "उतो", "अद्य", "श्वः", "ह्यः", "पुरा", "पुनः",
     "प्रातः", "सायम्", "उच्चैः", "नीचैः", "शनैः", "अतः", "ततः", "यतः", "पुरस्तात्", "अभितः", "परितः", "सर्वतः", "विश्वतः",
+    "अन्ततः", "उत्तरतः", "दक्षिणतः", "पुरतः", "पृष्ठतः", "उभयतः", "अन्यतः", "अग्रतः", "मध्यतः", "परतः", "स्वतः", "एकतः",
     "प्र", "परा", "अप", "सम्", "सं", "सँ", "अनु", "अभि", "निस्", "निर्", "निः", "दुस्", "दुर्",
     "वि", "आ", "नि", "अधि", "अपि", "अति", "उत्", "उद्", "प्रति", "परि", "उप",
   })
+  verb_explicit_re = re.compile(r"(?:√|लट्|लोट्|लिङ्|लङ्|लुङ्|लिट्|लेट्|लृट्|लृङ्|आशीर्लिङ्)")
+  pos_corpus_re = re.compile(
+    r"\*(?:RV|TS|TB|TK|AV|SB-M|SB-K|VS-M|VS-K|VS|KS|MS|Whitney|Lanman)\*-(?!0(?:/|,|\)))[1-9]"
+  )
+  zero_slash_pos_re = re.compile(r"\*[A-Z-]+\*-0/[1-9]")
+
+  def _is_nominal_tin_homograph(bare_w: str, ref_w: str, prov: str, prev_bare: str = "") -> bool:
+    """Return True when unaccented ``पा॰ ८.१.२८`` tags a non-finite nominal/participle homograph."""
+    if has_us_accents(ref_w) or "-" in ref_w or not bare_w.endswith(("ताम्", "तः", "ये")):
+      return False
+    if verb_explicit_re.search(prov) or pos_corpus_re.search(prov):
+      return False
+    try:
+      from vidyut.kosha import PadaEntry, PratipadikaEntry
+      from doc_curation.sanskrit.accent.shatapatha_solver import _kosha_get_slp
+    except Exception:
+      return False
+    slp = sanscript.transliterate(bare_w, sanscript.DEVANAGARI, sanscript.SLP1)
+    ents = list(_kosha_get_slp(slp))
+    subs = [e for e in ents if isinstance(e, PadaEntry.Subanta)]
+    tins = [e for e in ents if isinstance(e, PadaEntry.Tinanta)]
+    if not subs or not tins:
+      return False
+    if (
+      prev_bare in UPASARGA_PREFIXES
+      and bare_w.startswith("अ")
+      and any(str(t.lakara) in ("la~N", "lu~N") for t in tins)
+    ):
+      return False
+    has_non_krt = any(not isinstance(e.pratipadika_entry, PratipadikaEntry.Krdanta) for e in subs)
+    if not (has_non_krt or zero_slash_pos_re.search(prov)):
+      return False
+    for t in tins:
+      if getattr(t.dhatu_entry.dhatu, "prefixes", None):
+        return False
+      lak = str(t.lakara)
+      pur = str(t.purusha)
+      vac = str(t.vacana)
+      if not (
+        (pur in ("praTama", "maDyama") and vac == "dvi")
+        or lak == "lu~w"
+        or (bare_w.endswith("ताम्") and lak == "lo~w" and pur == "praTama" and vac in ("eka", "dvi"))
+        or (bare_w.endswith("ये") and pur == "uttama" and vac == "eka")
+      ):
+        return False
+    return True
   asya_upasargas = frozenset({"वि", "अप", "नि", "परा", "प्र", "उत्", "उद्", "अभि", "सम्", "सं", "परि", "अति"})
   nom_prov_tags = (
     "प्रातिपदिकम्", "तत्पुरुष", "बहुव्रीह", "कर्मधारय", "अव्ययीभाव", "द्वन्द्व", "समास", "नञ्",
@@ -1338,6 +1412,8 @@ def find_tinanta_sutra_on_non_tinanta(pp_lines: Sequence[str]) -> list[str]:
       elif bare.endswith(nom_endings) and not (
         bare == "यायाः" and any(k in it.prov for k in ("लिङ्", "√या", "याति", "यातेः"))
       ):
+        bad = True
+      elif _is_nominal_tin_homograph(bare, it.ref, it.prov, prev_bare=prev_bare):
         bad = True
       if bad:
         hits.append(ln)
@@ -1774,6 +1850,14 @@ def find_vp_integrity_issues(vp_body: str) -> list[str]:
   cleaned = re.sub(r"\[\[(?:\d+|P\d+|\?+|!+|[^\[\]\n|]+\|[^\[\]\n|]+)\]\]", "", vp_body)
   if "[[" in cleaned or "]]" in cleaned:
     issues.append(f"unbalanced_brackets: {cleaned.strip()[:120]!r}")
+  no_comments = re.sub(r"\+\+\+.*?\+\+\+", " ", vp_body, flags=re.S)
+  for m in re.finditer(
+    r"(\*\*[^*\n]+\*\*|\[\[[^\]\n]+\]\])[\u0900-\u0903\u093a-\u093c\u093e-\u0957\u0962-\u0963\u1cd0-\u1cff]+|(?:^|[\s(\[\{\"'\-])\*\*[\u0900-\u0903\u093a-\u093c\u093e-\u0957\u0962-\u0963\u1cd0-\u1cff]",
+    no_comments,
+  ):
+    issues.append(f"split_combining_after_markup: {m.group(0)!r}")
+  if "***" in no_comments or no_comments.count("**") % 2 != 0:
+    issues.append(f"malformed_bold_stars: {no_comments.strip()[:120]!r}")
   return issues
 
 

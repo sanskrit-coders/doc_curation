@@ -65,7 +65,7 @@ def test_hemistich_merge_relocates_h2_avatarika():
   assert "ब्र᳓ह्म क्षत्रं᳓ पवते।  \nशुक्रे᳓ण देव।" == merged.vp
   assert len(merged.av_blocks) == 1
   assert b3_upd is not None and any("कुविद्" in b for _, b in b3_upd.av_blocks)
-  assert dict(merged.tika_blocks)["सायण-टीका"] == "प्रथमो भागः।\n\nद्वितीयो भागः।"
+  assert dict(merged.tika_blocks)["सायण-टीका"] == "प्रथमो भागः।  \nद्वितीयो भागः।"
 
 
 def test_full_dedup_rk_and_yajuh_synthetic(tmp_path: pathlib.Path):
@@ -204,3 +204,13 @@ def test_full_dedup_rk_and_yajuh_synthetic(tmp_path: pathlib.Path):
     vsm_yajuh_dir=yj_dir, hugo_base_dir=tmp_path,
   )
   assert integrity["issue_count"] == 0, integrity["issues"]
+
+
+def test_format_static_title_and_stem_strips_quotes():
+  from doc_curation_projects.veda.yajuH.vaajasaneyi.dedup.norm import format_static_title_and_stem
+
+  title, stem = format_static_title_and_stem('तदा᳓हुः । "द्वाद᳓शारत्नी रशना᳓"', num_prefix="14")
+  assert '"' not in title
+  assert "'" not in title
+  assert title == "१४ तदाहुः द्वादशारत्नी रशना"
+  assert stem == "tadAhuH_dvAdashAratnI_rashanA"

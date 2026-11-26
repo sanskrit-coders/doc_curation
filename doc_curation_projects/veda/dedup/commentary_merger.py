@@ -94,11 +94,15 @@ def _disambiguate_incoming_entry(
     return f"मूलम् - {src_spec.shAkha_label}", b
 
   if t.startswith("मूलम् - ") or t.startswith("मूलम् ("):
-    out_t = (
-      f"मूलम् - विस्वरम् ({src_spec.shAkha_label})"
-      if t == "मूलम् - विस्वरम्" and src_spec.name in ("SB-M", "SB-K") and not target_spec.name.startswith("SB-")
-      else t
-    )
+    m_rec = re.fullmatch(r"मूलम्\s*\(([A-Za-z0-9_-]+)\)", t)
+    if m_rec and src_spec.name != target_spec.name:
+      if is_exact_reading and src_spec.name == "AV-P" and any(k.startswith("मूलम्") for k in existing_by_title):
+        return None
+      out_t = f"मूलम् - {src_spec.shAkha_label} ({m_rec.group(1)})"
+    elif t == "मूलम् - विस्वरम्" and src_spec.name in ("SB-M", "SB-K") and not target_spec.name.startswith("SB-"):
+      out_t = f"मूलम् - विस्वरम् ({src_spec.shAkha_label})"
+    else:
+      out_t = t
     cand_norm = normalize_phonetic(b, include_accents=True, fold_orthography=True)
     if any(normalize_phonetic(v, include_accents=True, fold_orthography=True) == cand_norm for v in existing_by_title.get(out_t, ())):
       return None
@@ -109,6 +113,9 @@ def _disambiguate_incoming_entry(
 
   if t.startswith("पद-पाठः (यान्त्रिकः"):
     if src_spec.name == target_spec.name:
+      # Same recension already has its own native padapāṭha block in target; never duplicate/concatenate.
+      if any(k.startswith("पद-पाठः (यान्त्रिकः") for k in existing_by_title):
+        return None
       return t, b
     if is_exact_reading and "व्यत्यस्त" not in t and src_spec.name not in ("SB-M", "SB-K") and any(
       k.startswith(("पदपाठः", "पद-पाठः")) for k in existing_by_title
@@ -274,7 +281,11 @@ def merge_tika_additions(
       if resolved is None:
         continue
       dst_ttl, clean_b = resolved
-      if dst_ttl in existing_by_title and any(_similar_text(clean_b, ex, threshold=0.92) for ex in existing_by_title[dst_ttl]):
+      is_pada = dst_ttl.startswith(("पदपाठः", "पद-पाठः"))
+      is_mula = dst_ttl.startswith("मूलम्")
+      if dst_ttl in existing_by_title and (
+        is_pada or (not is_mula and any(_similar_text(clean_b, ex, threshold=0.92) for ex in existing_by_title[dst_ttl]))
+      ):
         continue
       existing_by_title.setdefault(dst_ttl, []).append(clean_b)
       new_by_title.setdefault(dst_ttl, []).append(clean_b)
@@ -295,13 +306,17 @@ def merge_tika_additions(
       rendered.append(("__inc__", inner))
       continue
     if ttl in new_by_title:
-      merged = merge_author_bodies([inner] + new_by_title[ttl], strip_trivial_crossref=False)
+      merged = merge_author_bodies(
+        [inner] + new_by_title[ttl],
+        strip_trivial_crossref=False,
+        include_accents=ttl.startswith("मूलम्"),
+      )
       rendered.append((ttl, format_details_block(ttl, merged)))
       inserted_keys.add(ttl)
     else:
       rendered.append((ttl, format_details_block(ttl, inner)))
 
-  mula_new = [(t, format_details_block(t, merge_author_bodies(new_by_title[t], strip_trivial_crossref=False)))
+  mula_new = [(t, format_details_block(t, merge_author_bodies(new_by_title[t], strip_trivial_crossref=False, include_accents=True)))
               for t in new_by_title if t not in inserted_keys and t.startswith("मूलम्")]
   pada_new = [(t, format_details_block(t, merge_author_bodies(new_by_title[t], strip_trivial_crossref=False)))
               for t in new_by_title if t not in inserted_keys and (t.startswith("पदपाठः") or t.startswith("पद-पाठः"))]
@@ -352,3 +367,141 @@ def merge_tika_additions(
 
   new_body = "\n\n".join(blk for _, blk in rendered).strip()
   return f"{fm.rstrip()}\n\n{new_body}\n" if fm else f"{new_body}\n"
+
+
+def _resolve_corpus_spec_for_ref(
+  url_or_path: object,
+  specs: dict[str, VedaCorpusSpec],
+) -> VedaCorpusSpec | None:
+  """Resolve a Hugo static URL or filesystem path to its matching ``VedaCorpusSpec``."""
+  raw = str(url_or_path).replace("\\", "/")
+  best_score = 0
+  best_spec: VedaCorpusSpec | None = None
+
+  def _consider(needle: str, spec: VedaCorpusSpec) -> None:
+    nonlocal best_score, best_spec
+    if not needle:
+      return
+    norm = needle.rstrip("/") + "/"
+    pos = raw.find(norm)
+    if pos == -1:
+      return
+    score = len(norm) + (10000 if raw.startswith(norm) else 0)
+    if score > best_score:
+      best_score = score
+      best_spec = spec
+
+  url_attrs = (
+    "vp_url_prefix", "sarva_url_prefix",
+    "yajuh_vp_url", "yajuh_sarva_url", "yajuh_sarva_prastuti_url",
+    "brahmana_vp_url", "brahmana_sarva_url", "brahmana_sarva_prastuti_url",
+  )
+  path_attrs = (
+    "content_dir", "vp_dir", "sarva_dir",
+    "yajuh_vp_dir", "yajuh_sarva_dir", "yajuh_sarva_prastuti_dir",
+    "brahmana_vp_dir", "brahmana_sarva_dir", "brahmana_sarva_prastuti_dir",
+  )
+  for spec in specs.values():
+    for attr in url_attrs:
+      _consider(getattr(spec, attr, "") or "", spec)
+    for attr in path_attrs:
+      p_val = getattr(spec, attr, None)
+      if p_val is None:
+        continue
+      p_str = str(p_val).replace("\\", "/")
+      _consider(p_str, spec)
+      m_rel = re.search(r"/(vedAH(?:_[^/]+)?/.+)$", p_str)
+      if m_rel:
+        rel_sub = "/" + m_rel.group(1)
+        _consider(rel_sub, spec)
+        if attr in ("content_dir", "vp_dir", "sarva_dir"):
+          url_base = re.sub(r"/(?:content|static)/", "/", rel_sub)
+          url_base = re.sub(r"/(?:sarva-prastutiH|vishvAsa-prastutiH|sarvASh_TIkAH)/?$", "/", url_base)
+          _consider(url_base, spec)
+          content_base = re.sub(r"/(?:sarva-prastutiH|vishvAsa-prastutiH|sarvASh_TIkAH)/?$", "/", rel_sub)
+          content_base = re.sub(r"/static/", "/content/", content_base)
+          _consider(content_base, spec)
+          static_base = re.sub(r"/content/", "/static/", content_base)
+          _consider(static_base, spec)
+  return best_spec
+
+
+def _qualify_cross_corpus_title(title: str, src_spec: VedaCorpusSpec) -> str:
+  from doc_curation.sanskrit.accent.provenance import is_unqualified_sb_pp_header
+
+  t = title.strip()
+  if t == "मूलम्":
+    return f"मूलम् - {src_spec.shAkha_label}"
+  m_rec = re.fullmatch(r"मूलम्\s*\(([A-Za-z0-9_-]+)\)", t)
+  if m_rec:
+    return f"मूलम् - {src_spec.shAkha_label} ({m_rec.group(1)})"
+  if t == "मूलम् - विस्वरम्":
+    return f"मूलम् - विस्वरम् ({src_spec.shAkha_label})"
+  if t in ("पदपाठः", "पद-पाठः"):
+    if "यान्त्रिकः" not in src_spec.pada_label and (" - " in src_spec.pada_label or "(" in src_spec.pada_label):
+      return src_spec.pada_label
+    return f"पद-पाठः - {src_spec.shAkha_label}"
+  if is_unqualified_sb_pp_header(t):
+    return t.replace("पद-पाठः (यान्त्रिकः", f"पद-पाठः (यान्त्रिकः - {src_spec.shAkha_label}", 1)
+  return t
+
+
+def qualify_cross_corpus_sarva_tika(
+  rendered_block: str,
+  *,
+  src_url: str,
+  caller_fp: object,
+) -> str:
+  """Qualify unqualified source headers and preserve ŚB PP adjacency after cross-corpus ``sarvASh_TIkAH`` inlining."""
+  from doc_curation_projects.veda.dedup.targets import load_corpus_specs
+
+  specs = load_corpus_specs()
+  src_spec = _resolve_corpus_spec_for_ref(src_url, specs)
+  caller_spec = _resolve_corpus_spec_for_ref(caller_fp, specs)
+  if src_spec is None or caller_spec is None or src_spec.name == caller_spec.name:
+    return rendered_block
+
+  m_wrap = re.match(
+    r"^\s*(<details(?:\s+open)?>\s*<summary>\s*सर्वाष् टीकाः\s*</summary>)\s*(.*?)\s*</details>\s*$",
+    rendered_block,
+    re.DOTALL,
+  )
+  open_tag = m_wrap.group(1) if m_wrap else ""
+  body = m_wrap.group(2) if m_wrap else rendered_block
+
+  norm_chunks: list[tuple[str, str, str]] = []
+  for kind, data in _split_top_level_chunks(body):
+    if kind != "details":
+      _, raw_inc = data  # type: ignore[misc]
+      norm_chunks.append(("include", "", raw_inc.strip()))
+      continue
+    ttl, inner = data  # type: ignore[misc]
+    new_ttl = _qualify_cross_corpus_title(ttl, src_spec)
+    norm_chunks.append(("details", new_ttl, format_details_block(new_ttl, inner)))
+
+  if caller_spec.name in ("SB-M", "SB-K"):
+    sb_side_tok = "माध्यन्दिन" if caller_spec.name == "SB-M" else "काण्व"
+    def _is_caller_sb_pp(ttl: str) -> bool:
+      return ttl.startswith("पद-पाठः (यान्त्रिकः") and sb_side_tok in ttl
+
+    if any(_is_caller_sb_pp(t) for k, t, _ in norm_chunks if k == "details"):
+      trad_pada = src_spec.pada_label if ("यान्त्रिकः" not in src_spec.pada_label and (" - " in src_spec.pada_label or "(" in src_spec.pada_label)) else f"पद-पाठः - {src_spec.shAkha_label}"
+      foreign_mp: list[tuple[str, str, str]] = []
+      kept: list[tuple[str, str, str]] = []
+      for item in norm_chunks:
+        k, t, blk = item
+        if k == "details" and t.startswith(("मूलम्", "पदपाठः", "पद-पाठः")) and (
+          src_spec.shAkha_label in t or t == trad_pada
+        ) and not _is_caller_sb_pp(t):
+          foreign_mp.append(item)
+        else:
+          kept.append(item)
+      if foreign_mp:
+        last_sb_pp = max(idx for idx, (k, t, _) in enumerate(kept) if k == "details" and _is_caller_sb_pp(t))
+        norm_chunks = kept[: last_sb_pp + 1] + foreign_mp + kept[last_sb_pp + 1 :]
+
+  rebuilt_body = "\n\n".join(blk for _, _, blk in norm_chunks).strip()
+  if m_wrap:
+    return f"{open_tag}\n\n{rebuilt_body}\n</details>"
+  return rebuilt_body
+

@@ -84,14 +84,18 @@ def _extract_body(text, title):
 
 def _include_block(kind, rel_path, body, title):
     if kind == "vishvAsa-prastutiH":
-        attrs = 'includetitle="plain" newlevelforh1="5" title="विश्वास-प्रस्तुतिः"'
+        cls = "js_include"
+        attrs = 'newlevelforh1="5" title="विश्वास-प्रस्तुतिः"'
+        summary_open = "<details open>"
         summary = "विश्वास-प्रस्तुतिः ...{Loading}..."
     else:
-        attrs = 'includetitle="false" newlevelforh1="5"'
-        summary = (title or rel_path.split("/")[-1][:3]) + " ...{Loading}..."
+        cls = "js_include collapsed"
+        attrs = 'newlevelforh1="5" title="सर्वाष् टीकाः"'
+        summary_open = "<details>"
+        summary = "सर्वाष् टीकाः ...{Loading}..."
     return (
-        f'<div class="js_include" {attrs} unfilled url="{URL_PREFIX}/{kind}/{rel_path}">\n'
-        f'<details open><summary><h5>{summary}</h5></summary>\n\n'
+        f'<div class="{cls}" {attrs} unfilled url="{URL_PREFIX}/{kind}/{rel_path}">\n'
+        f'{summary_open}<summary><h5>{summary}</h5></summary>\n\n'
         f"{body.strip()}\n\n</details>\n</div>"
     )
 

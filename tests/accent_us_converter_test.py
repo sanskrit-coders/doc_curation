@@ -128,3 +128,70 @@ def test_convert_tree_to_us_accents_and_transitive_host_refresh(tmp_path):
   host_updated = host_file.read_text(encoding="utf-8")
   assert "अग्नि᳓मीळे ॥" in host_updated
   assert "अ॒ग्निमी॑ळे" not in host_updated
+
+
+def test_repair_gretil_svarita_leaks_and_preserves_genuine(tmp_path):
+  from doc_curation.sanskrit.accent import (
+    repair_gretil_svarita_leaks_in_vp,
+    repair_tree_svarita_leaks,
+  )
+
+  # Spurious line-initial ᳙ on third pāda + single-accent spurious ᳙ resolved via PP,
+  # while genuine kampa/kṣaipra/abhinihita/jātya svaritas are preserved verbatim.
+  vp = (
+    "अम्ब᳓यो यन्त्य᳓ध्वभिर्जाम᳓यो अध्वरीयता᳓म्।\n"
+    "पृ᳙ञ्चती᳓र्म᳓धुना प᳓यः ॥\n"
+    "व्य᳙हं᳓ स᳓र्वेण । कन्या᳙नां तन्वं᳙ सो᳙ ऽयं ।\n"
+    "ध्रु᳙वायां ।\nशं᳙ ते ।\nकृ᳙णोमि ।\nजा᳙नीहि ॥\n"
+    "ते᳓षा᳓ं च᳙ ते ।\nनै᳙नम् ॥"
+  )
+  pp = (
+    "अ॒म्बयः॑। य॒न्ति॒। अ॒ध्वऽभिः॑। जा॒मयः॑। अ॒ध्व॒री॒य॒ताम्। पृ॒ञ्च॒तीः। मधु॑ना। पयः॑। "
+    "वि। अ॒हम्। सर्वे॑ण। क॒न्या॑नाम्। त॒न्वम्। सः। अ॒यम्। "
+    "ध्रु॒वाया॑म्। शम्। ते॒। कृ॒णोमि॑। जा॒नी॒हि॒। तेषा॑म्। च॒। ते॒। न। ए॒न॒म्।"
+  )
+  fixed, n_fx = repair_gretil_svarita_leaks_in_vp(vp, pp_text=pp)
+  assert n_fx == 7
+  assert "पृञ्चती᳓र्म᳓धुना प᳓यः ॥" in fixed
+  assert "व्य᳙हं᳓" in fixed and "कन्या᳙नां" in fixed and "तन्वं᳙" in fixed and "सो᳙ ऽयं" in fixed
+  assert "ध्रुवा᳓यां ।\nशं᳓ ते ।\nकृणो᳓मि ।\nजानीहि ॥" in fixed
+  assert "ते᳓षा᳓ं च ते ।\nनै᳓नम् ॥" in fixed
+
+  # Genuine mid-line yaṇ / praśliṣṭa / kampa preserved
+  vp_vsk = "त᳓व श᳓रीरं पतयिष्ण्व् अ᳙र्वन्त᳓व । ते᳓न ग᳙मेम । द्यौ᳙र् आसीत् ।\nअँ᳙होमु᳓चः ॥"
+  pp_vsk = "तव॑। श॒रीर॑म्। प॒त॒यि॒ष्णु। अ॒र्वन्त॑वत्। तेन॑। व॒यम्। ग॒मे॒म॒। द्यौः। आ॒सी॒त्। अँ॒हो॒मुचः॑।"
+  fixed_vsk, _ = repair_gretil_svarita_leaks_in_vp(vp_vsk, pp_text=pp_vsk)
+  assert "पतयिष्ण्व् अ᳙र्वन्त᳓व" in fixed_vsk
+  assert "ते᳓न गमेम" in fixed_vsk
+  assert "द्यौ᳓र् आसीत्" in fixed_vsk
+  assert "अँहोमु᳓चः ॥" in fixed_vsk
+
+  # Tree repair preserves js_include blocks & frontmatter and propagates transitively
+  hugo = tmp_path / "hugo"
+  repo = hugo / "vedAH"
+  vp_dir = repo / "static" / "atharva" / "shaunakam" / "vishvAsa-prastutiH" / "01"
+  tk_dir = repo / "static" / "atharva" / "shaunakam" / "sarvASh_TIkAH" / "01"
+  host_dir = repo / "content" / "atharva" / "paippalAdam"
+  vp_dir.mkdir(parents=True)
+  tk_dir.mkdir(parents=True)
+  host_dir.mkdir(parents=True)
+
+  src = vp_dir / "01.md"
+  src.write_text('+++\ntitle = "०१"\n+++\nअम्ब᳓यो ।\nपृ᳙ञ्चती᳓ः ॥\n', encoding="utf-8")
+  (tk_dir / "01.md").write_text(
+    '<details><summary>पदपाठः</summary>\n\nअ॒म्बयः॑। पृ॒ञ्च॒तीः।\n</details>\n',
+    encoding="utf-8",
+  )
+  host = host_dir / "01.md"
+  host.write_text(
+    '<div class="js_include" unfilled url="/vedAH/atharva/shaunakam/vishvAsa-prastutiH/01/01.md">\n'
+    'अम्ब᳓यो ।\nपृ᳙ञ्चती᳓ः ॥\n</div>\n',
+    encoding="utf-8",
+  )
+  res = repair_tree_svarita_leaks(
+    [vp_dir], refresh_host_dirs=[host_dir], hugo_base_dir=str(hugo), dry_run=False
+  )
+  assert str(src) in res["changed_files"]
+  assert "पृञ्चती᳓ः" in src.read_text(encoding="utf-8")
+  assert "पृञ्चती᳓ः" in host.read_text(encoding="utf-8")
+

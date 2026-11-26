@@ -81,6 +81,31 @@ def _is_vp_details(tok: HostToken) -> bool:
   return tok.kind == "details" and tok.title.startswith("विश्वास-प्रस्तुतिः")
 
 
+UNIT_KIND_SUFFIX: dict[str, str] = {
+  "rk": "ऋक्",
+  "yajuh": "यजुः",
+  "brahmana": "ब्राह्मणम्",
+}
+_VP_KIND_SUFFIX_RE = re.compile(r"\s*-\s*(?:ऋक्|यजुः|ब्राह्मणम्)(?=\s|$)")
+
+
+def format_vp_summary_with_kind(summary: str, unit_kind: str) -> str:
+  """Qualify ``विश्वास-प्रस्तुतिः`` with ``- ऋक्`` / ``- यजुः`` / ``- ब्राह्मणम्`` before any trailing ``(...)`` tag."""
+  suffix = UNIT_KIND_SUFFIX.get(unit_kind)
+  raw = re.sub(r"\s{2,}", " ", (summary or "").strip()) or "विश्वास-प्रस्तुतिः"
+  if not suffix:
+    return raw
+  m_paren = re.search(r"\s*\(", raw)
+  if m_paren:
+    head = raw[: m_paren.start()].rstrip()
+    tail = " " + raw[m_paren.start() :].lstrip()
+  else:
+    head = raw
+    tail = ""
+  head = _VP_KIND_SUFFIX_RE.sub("", head).strip() or "विश्वास-प्रस्तुतिः"
+  return f"{head} - {suffix}{tail}"
+
+
 def _is_tika_details(tok: HostToken) -> bool:
   return tok.kind == "details" and tok.title == "सर्वाष् टीकाः"
 
@@ -191,10 +216,13 @@ def replace_group_tokens(
   if new_vp_raw is not None and grp.vp_token_idx is not None:
     tokens[grp.vp_token_idx] = HostToken(kind="include", raw=new_vp_raw)
   t_idxs = grp.inline_tika_indices or ([grp.inline_tika_idx] if grp.inline_tika_idx is not None else [])
+  will_reuse_first_tika = new_sarva_stub is not None and grp.sarva_include_idx is None and grp.inline_tika_idx is not None
   if drop_inline_tika and t_idxs:
-    for ti in t_idxs:
+    for pos, ti in enumerate(t_idxs):
       tokens[ti] = HostToken(kind="text", raw="")
-      if ti + 1 < len(tokens) and tokens[ti + 1].kind == "text" and not tokens[ti + 1].raw.strip():
+      # Keep the final separator after a replaced tika block so adjacent blocks never glue onto `</div>`.
+      is_reused_tail = will_reuse_first_tika and pos == len(t_idxs) - 1
+      if not is_reused_tail and ti + 1 < len(tokens) and tokens[ti + 1].kind == "text" and not tokens[ti + 1].raw.strip():
         tokens[ti + 1] = HostToken(kind="text", raw="")
   if drop_sarva_include and grp.sarva_include_idx is not None:
     tokens[grp.sarva_include_idx] = HostToken(kind="text", raw="")
@@ -204,13 +232,14 @@ def replace_group_tokens(
     elif grp.inline_tika_idx is not None and not drop_inline_tika:
       tokens[grp.inline_tika_idx] = HostToken(kind="include", raw=new_sarva_stub)
     elif grp.inline_tika_idx is not None and drop_inline_tika:
-      tokens[grp.inline_tika_idx] = HostToken(kind="include", raw="\n\n" + new_sarva_stub)
+      tokens[grp.inline_tika_idx] = HostToken(kind="include", raw="\n\n" + new_sarva_stub + "\n\n")
     elif grp.vp_token_idx is not None:
-      tokens[grp.vp_token_idx].raw = tokens[grp.vp_token_idx].raw.rstrip() + "\n\n" + new_sarva_stub
+      tokens[grp.vp_token_idx].raw = tokens[grp.vp_token_idx].raw.rstrip() + "\n\n" + new_sarva_stub + "\n\n"
 
 
 def render_tokens(fm: str, tokens: Sequence[HostToken]) -> str:
   body = "".join(t.raw for t in tokens)
+  body = re.sub(r"(</div>)(<(?:details|div)\b|##)", r"\1\n\n\2", body)
   body = re.sub(r"\n{3,}", "\n\n", body).strip()
   return f"{fm.rstrip()}\n\n{body}\n" if fm else f"{body}\n"
 

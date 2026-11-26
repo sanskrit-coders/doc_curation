@@ -756,5 +756,300 @@ def test_resolve_hugo_include_and_audit_includes(tmp_path):
   assert filtered.unbalanced_files == ()
 
 
+def test_fix_include_titles_sarva_rules_and_preservation():
+  content = textwrap.dedent("""\
+    +++
+    title = "01"
+    +++
+    <div class="js_include" newlevelforh1="3" url="/site/text/sarvASh_TIkAH/01/_index.md">
+    <details open><summary><h3>01 ...{Loading}...</h3></summary>
+    <details><summary>भूमिका</summary>
+
+    सूक्त-टीका
+    </details>
+    </details>
+    </div>
+
+    <div class="js_include" newlevelforh1="4" url="/site/text/sarvASh_TIkAH/01/01_mantra.md">
+    <details open><summary><h4>01 मन्त्रः ...{Loading}...</h4></summary>
+    <details><summary>सायणः</summary>
+
+    अर्थः
+    </details>
+    </details>
+    </div>
+
+    <div class="js_include" title="सर्वाः टीकाः" url="/site/text/sarvASh_TIkAH/01/02_alias.md"> </div>
+
+    <div class="js_include" title="विश्वास-प्रस्तुतिः" newlevelforh1="4" url="/site/text/sarvASh_TIkAH/01/03_swapped.md">
+    <details open><summary><h4>विश्वास-प्रस्तुतिः …{Loading}…</h4></summary>
+    <details><summary>मूलम्</summary>
+
+    ॐ
+    </details>
+    </details>
+    </div>
+
+    <div class="js_include" includetitle="true" url="/site/text/sarvASh_TIkAH/01/04_it_true.md">
+    <details open><summary><h4>04 ...{Loading}...</h4></summary>
+
+    टीका
+    </details>
+    </div>
+
+    <div class="js_include collapsed" title="मेधातिथिः" url="/kalpAntaram/smRtiH/manuH/sarvASh_TIkAH/medhAtithiH/01.md">
+    <details><summary><h4>मेधातिथिः …{Loading}…</h4></summary>
+
+    भाष्यम्
+    </details>
+    </div>
+
+    <div class="js_include" detailsPattern=".*मूलम्.*" title="मूलम्" url="/site/text/sarvASh_TIkAH/01/05_filtered.md">
+    <details open><summary><h4>मूलम् …{Loading}…</h4></summary>
+
+    मूलम्
+    </details>
+    </div>
+
+    <div class="js_include" includetitle="false" url="/site/text/sarvASh_TIkAH/01/06_intentional_false.md">
+    अन्तःस्थ-टीका
+    </div>
+  """)
+
+  updated, changes = include_helper.fix_include_titles_in_content(
+    content, file_path="/repo/content/text/sarva-prastutiH/01.md"
+  )
+  assert [c.reason for c in changes] == [
+    "SARVA_MISSING_TITLE",
+    "SARVA_MISSING_TITLE",
+    "SARVA_ALIAS_TITLE",
+    "SARVA_WRONG_TITLE",
+    "SARVA_BAD_IT",
+  ]
+  # _index.md stays non-collapsed & open; leaf gets collapsed & closed details.
+  assert '<div class="js_include" newlevelforh1="3" title="सर्वाष् टीकाः" url="/site/text/sarvASh_TIkAH/01/_index.md">' in updated
+  assert '<details open><summary><h3>सर्वाष् टीकाः …{Loading}…</h3></summary>' in updated
+  assert '<div class="js_include collapsed" newlevelforh1="4" title="सर्वाष् टीकाः" url="/site/text/sarvASh_TIkAH/01/01_mantra.md">' in updated
+  assert '<details><summary><h4>सर्वाष् टीकाः …{Loading}…</h4></summary>' in updated
+  # Empty body gets attributes normalized without synthesizing an empty <details> wrapper.
+  assert '<div class="js_include collapsed" title="सर्वाष् टीकाः" url="/site/text/sarvASh_TIkAH/01/02_alias.md"> </div>' in updated
+  assert '<div class="js_include collapsed" title="सर्वाष् टीकाः" newlevelforh1="4" url="/site/text/sarvASh_TIkAH/01/03_swapped.md">' in updated
+  assert '<div class="js_include collapsed" title="सर्वाष् टीकाः" url="/site/text/sarvASh_TIkAH/01/04_it_true.md">' in updated
+  # Custom sub-commentator, detailsPattern-filtered, and intentional includetitle="false" stay preserved.
+  assert 'title="मेधातिथिः"' in updated
+  assert 'detailsPattern=".*मूलम्.*" title="मूलम्"' in updated
+  assert '<div class="js_include" includetitle="false" url="/site/text/sarvASh_TIkAH/01/06_intentional_false.md">' in updated
+
+  # Running a second pass is a no-op.
+  updated2, changes2 = include_helper.fix_include_titles_in_content(
+    updated, file_path="/repo/content/text/sarva-prastutiH/01.md"
+  )
+  assert updated2 == updated
+  assert changes2 == []
+
+  # Nested sarvASh_TIkAH inside sarvASh_TIkAH keeps includetitle="false".
+  st_host = '<div class="js_include" includetitle="false" url="/site/text/sarvASh_TIkAH/other.md">\nमूलम्\n</div>\n'
+  st_out, st_changes = include_helper.fix_include_titles_in_content(
+    st_host, file_path="/repo/static/text/sarvASh_TIkAH/01.md"
+  )
+  assert st_out == st_host and st_changes == []
+
+  # Opt-in flags: fix_sarva_includetitle_false and ensure_sarva_collapsed sync both leaf and _index.md.
+  idx_and_leaf = (
+    '<div class="js_include collapsed" title="सर्वाष् टीकाः" url="/site/text/sarvASh_TIkAH/01/_index.md"> </div>\n'
+    '<div class="js_include" title="सर्वाष् टीकाः" url="/site/text/sarvASh_TIkAH/01/01.md"> </div>\n'
+    '<div class="js_include" includetitle="false" url="/site/text/sarvASh_TIkAH/01/02.md"> </div>\n'
+  )
+  synced, sync_changes = include_helper.fix_include_titles_in_content(
+    idx_and_leaf,
+    file_path="/repo/content/text/01.md",
+    ensure_sarva_collapsed=True,
+    fix_sarva_includetitle_false=True,
+  )
+  assert [c.reason for c in sync_changes] == ["SARVA_COLLAPSED_SYNC", "SARVA_COLLAPSED_SYNC", "SARVA_IT_FALSE"]
+  assert '<div class="js_include" title="सर्वाष् टीकाः" url="/site/text/sarvASh_TIkAH/01/_index.md"> </div>' in synced
+  assert '<div class="js_include collapsed" title="सर्वाष् टीकाः" url="/site/text/sarvASh_TIkAH/01/01.md"> </div>' in synced
+  assert '<div class="js_include collapsed" title="सर्वाष् टीकाः" url="/site/text/sarvASh_TIkAH/01/02.md"> </div>' in synced
+
+
+def test_fix_include_titles_vp_host_and_nested_vp():
+  # Inside a vishvAsa-prastutiH/ file: strip title="विश्वास-प्रस्तुतिः" and missing attrs -> includetitle="false",
+  # unwrap outer {Loading} wrapper, preserve distinct label & includetitle="true".
+  nested_vp_doc = textwrap.dedent("""\
+    +++
+    title = "outer"
+    +++
+    <div class="js_include collapsed" newlevelforh1="4" title="विश्वास-प्रस्तुतिः" url="/site/vishvAsa-prastutiH/a.md">
+    <details open><summary><h4>विश्वास-प्रस्तुतिः …{Loading}…</h4></summary>
+
+    मन्त्रः ॥१॥
+    </details>
+    </div>
+
+    <div class="js_include" url="/site/vishvAsa-prastutiH/b.md">
+    <details open><summary><h4>b …{Loading}…</h4></summary>
+
+    मन्त्रः ॥२॥
+    </details>
+    </div>
+
+    <div class="js_include" title="विश्वास-शाकल-प्रस्तुतिः" url="/vedAH_Rk/shAkalam/vishvAsa-prastutiH/c.md">
+    <details open><summary><h4>विश्वास-शाकल-प्रस्तुतिः …{Loading}…</h4></summary>
+
+    शाकलम् ॥३॥
+    </details>
+    </div>
+
+    <div class="js_include" includetitle="true" url="/site/vishvAsa-prastutiH/d.md">
+    <details open><summary><h4>d …{Loading}…</h4></summary>
+
+    चतुर्थः ॥४॥
+    </details>
+    </div>
+
+    <div class="js_include" includetitle="false" url="/site/vishvAsa-prastutiH/e_keep_verse_head.md">
+    <details open><summary><h4>०५ मन्त्रः ...{Loading}...</h4></summary>
+
+    पञ्चमः ॥५॥
+    </details>
+    </div>
+
+    <div class="js_include" includetitle="false" url="/site/vishvAsa-prastutiH/f_stale_vp_wrap.md">
+    <details open><summary><h4>विश्वास-प्रस्तुतिः …{Loading}…</h4></summary>
+
+    षष्ठः ॥६॥
+    </details>
+    </div>
+  """)
+  vp_out, vp_changes = include_helper.fix_include_titles_in_content(
+    nested_vp_doc, file_path="/repo/static/text/vishvAsa-prastutiH/outer.md"
+  )
+  assert [c.reason for c in vp_changes] == ["NESTED_VP_STRIP_TITLE", "NESTED_VP_SET_FALSE", "NESTED_VP_CLEANUP"]
+  assert '<div class="js_include" newlevelforh1="4" includetitle="false" url="/site/vishvAsa-prastutiH/a.md">\nमन्त्रः ॥१॥\n</div>' in vp_out
+  assert '<div class="js_include" includetitle="false" url="/site/vishvAsa-prastutiH/b.md">\nमन्त्रः ॥२॥\n</div>' in vp_out
+  assert 'title="विश्वास-शाकल-प्रस्तुतिः"' in vp_out
+  assert 'includetitle="true"' in vp_out
+  assert "<summary><h4>०५ मन्त्रः ...{Loading}...</h4></summary>" in vp_out
+  assert '<div class="js_include" includetitle="false" url="/site/vishvAsa-prastutiH/f_stale_vp_wrap.md">\nषष्ठः ॥६॥\n</div>' in vp_out
+
+  # Non-VP host: fix swapped title, empty title, uppercase includetitle, but ignore nested inner prefilled divs.
+  host_doc = textwrap.dedent("""\
+    <div class="js_include collapsed" title="सर्वाष् टीकाः" newlevelforh1="4" url="/site/vishvAsa-prastutiH/01.md">
+    <details><summary><h4>सर्वाष् टीकाः …{Loading}…</h4></summary>
+
+    वाक्यम्
+    <div class="js_include" title="विश्वास-प्रस्तुतिः" url="/site/vishvAsa-prastutiH/nested_ignored.md">
+    nested prefill should not be directly rewritten by host pass
+    </div>
+    </details>
+    </div>
+
+    <div class="js_include" title="" url="/site/vishvAsa-prastutiH/02.md"> </div>
+    <div class="js_include" includetitle="False" url="/site/vishvAsa-prastutiH/03.md"> </div>
+    <div class="js_include" includetitle="plain" url="/site/vishvAsa-prastutiH/04.md"> </div>
+    <div class="js_include" title="योनि-प्रस्तुतिः" url="/site/vishvAsa-prastutiH/05.md"> </div>
+  """)
+  host_out, host_changes = include_helper.fix_include_titles_in_content(
+    host_doc, file_path="/repo/content/text/sarva-prastutiH/01.md"
+  )
+  assert [c.reason for c in host_changes] == [
+    "HOST_VP_FIX_TITLE",
+    "HOST_VP_EMPTY_TITLE",
+    "HOST_VP_LOWER_IT",
+  ]
+  assert '<div class="js_include" title="विश्वास-प्रस्तुतिः" newlevelforh1="4" url="/site/vishvAsa-prastutiH/01.md">' in host_out
+  assert '<details open><summary><h4>विश्वास-प्रस्तुतिः …{Loading}…</h4></summary>' in host_out
+  # Nested inner prefilled div inside 01.md must NOT be touched directly during host pass.
+  assert 'url="/site/vishvAsa-prastutiH/nested_ignored.md"' in host_out
+  assert host_out.count('includetitle="false"') == 2
+  assert 'includetitle="plain"' in host_out
+  assert 'title="योनि-प्रस्तुतिः"' in host_out
+
+
+def test_fix_include_titles_tree_dry_run_and_propagate_transitive(tmp_path):
+  static_vp = tmp_path / "site" / "static" / "mantra" / "vishvAsa-prastutiH"
+  static_st = tmp_path / "site" / "static" / "mantra" / "sarvASh_TIkAH"
+  content_dir = tmp_path / "site" / "content" / "mantra" / "sarva-prastutiH"
+  for d in (static_vp, static_st, content_dir):
+    d.mkdir(parents=True)
+
+  leaf = static_vp / "leaf.md"
+  leaf.write_text('+++\ntitle = "leaf"\n+++\nअग्निमीळे पुरोहितम् ॥१॥\n', encoding="utf-8")
+
+  st_leaf = static_st / "01.md"
+  st_leaf.write_text('+++\ntitle = "01"\n+++\n<details><summary>सायणः</summary>\n\nभाष्यम्\n</details>\n', encoding="utf-8")
+
+  outer_vp = static_vp / "outer.md"
+  outer_orig = textwrap.dedent("""\
+    +++
+    title = "outer"
+    +++
+    <div class="js_include" newlevelforh1="4" title="विश्वास-प्रस्तुतिः" url="/site/mantra/vishvAsa-prastutiH/leaf.md">
+    <details open><summary><h4>विश्वास-प्रस्तुतिः …{Loading}…</h4></summary>
+
+    अग्निमीळे पुरोहितम् ॥१॥
+    </details>
+    </div>
+  """)
+  outer_vp.write_text(outer_orig, encoding="utf-8")
+
+  host = content_dir / "01.md"
+  host_orig = textwrap.dedent("""\
+    +++
+    title = "01"
+    +++
+    <div class="js_include" newlevelforh1="3" title="विश्वास-प्रस्तुतिः" url="/site/mantra/vishvAsa-prastutiH/outer.md">
+    <details open><summary><h3>विश्वास-प्रस्तुतिः …{Loading}…</h3></summary>
+
+    <div class="js_include" newlevelforh1="4" title="विश्वास-प्रस्तुतिः" url="/site/mantra/vishvAsa-prastutiH/leaf.md">
+    <details open><summary><h4>विश्वास-प्रस्तुतिः …{Loading}…</h4></summary>
+
+    stale
+    </details>
+    </div>
+    </details>
+    </div>
+
+    <div class="js_include" title="सर्वाः टीकाः" newlevelforh1="4" url="/site/mantra/sarvASh_TIkAH/01.md">
+    <details open><summary><h4>सर्वाः टीकाः …{Loading}…</h4></summary>
+    <details><summary>सायणः</summary>
+
+    भाष्यम्
+    </details>
+    </details>
+    </div>
+  """)
+  host.write_text(host_orig, encoding="utf-8")
+
+  roots = [tmp_path / "site" / "static", tmp_path / "site" / "content"]
+  dry_report = include_helper.fix_include_titles(roots, dry_run=True, propagate_transitive=True, hugo_base_dir=str(tmp_path))
+  assert set(dry_report.changed_files) == {str(outer_vp), str(host)}
+  assert dry_report.propagated_files == ()
+  assert outer_vp.read_text(encoding="utf-8") == outer_orig
+  assert host.read_text(encoding="utf-8") == host_orig
+
+  applied_report = include_helper.fix_include_titles(
+    roots, dry_run=False, propagate_transitive=True, hugo_base_dir=str(tmp_path)
+  )
+  assert set(applied_report.changed_files) == {str(outer_vp), str(host)}
+  assert str(host) in applied_report.propagated_files
+
+  outer_new = outer_vp.read_text(encoding="utf-8")
+  assert 'includetitle="false"' in outer_new
+  assert 'title="विश्वास-प्रस्तुतिः"' not in outer_new
+  assert "{Loading}" not in outer_new
+
+  host_new = host.read_text(encoding="utf-8")
+  assert '<div class="js_include collapsed" title="सर्वाष् टीकाः" newlevelforh1="4" url="/site/mantra/sarvASh_TIkAH/01.md">' in host_new
+  assert '<details><summary><h4>सर्वाष् टीकाः …{Loading}…</h4></summary>' in host_new
+  # Transitive prefill pulled updated outer_vp (no double-nested विश्वास-प्रस्तुतिः wrapper inside outer_vp prefill).
+  assert host_new.count("विश्वास-प्रस्तुतिः …{Loading}…") == 1
+  assert 'includetitle="false" url="/site/mantra/vishvAsa-prastutiH/leaf.md"' in host_new
+  assert "stale" not in host_new
+  assert include_helper.check_tag_balance(outer_new) is None
+  assert include_helper.check_tag_balance(host_new) is None
+
+
+
 
 

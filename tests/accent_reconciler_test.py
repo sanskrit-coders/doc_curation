@@ -419,3 +419,59 @@ def test_reconcile_mirror_coalesce_and_ayanta_merges():
   )
   assert fill_vp_accents_from_padapatha("अजीजनत तस्यैवाहमस्मीति", it_ai_non_glide) == ("अ᳓जीजनत त᳓स्यैवा᳓ह᳓मस्मी᳓ति", [])
 
+
+def test_qualified_padapatha_headers_and_shared_cluster_reconcile():
+  from doc_curation.sanskrit.accent.reconciler import (
+    PP_HEADER_RE,
+    format_padapatha_summary,
+    parse_padapatha_header,
+  )
+  from doc_curation.sanskrit.accent.validator import check_padapatha_header, validate_accented_markdown
+
+  assert parse_padapatha_header("पद-पाठः (यान्त्रिकः)") == (None, 0, None)
+  assert parse_padapatha_header("पद-पाठः (यान्त्रिकः - 1/21 व्यत्यस्त-स्वराः)") == (None, 1, 21)
+  assert parse_padapatha_header("पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम्)") == ("काण्व-ब्राह्मणम्", 0, None)
+  assert parse_padapatha_header("पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम् - 2/15 व्यत्यस्त-स्वराः)") == ("काण्व-ब्राह्मणम्", 2, 15)
+  assert format_padapatha_summary(2, 15, shAkha_label="काण्व-ब्राह्मणम्") == "पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम् - 2/15 व्यत्यस्त-स्वराः)"
+  assert PP_HEADER_RE.match("पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम् - 1/2 व्यत्यस्त-स्वराः)").groups() == ("1", "2")
+  assert check_padapatha_header("पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम् - 1/2 व्यत्यस्त-स्वराः)", "- अ → **अ᳓** (*TS*)\n- ब᳓ (*RV*)") is None
+
+  shared_static = (
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nत᳓त् स᳓विता ॥\n</details>\n\n"
+    "<details><summary>सर्वाष् टीकाः</summary>\n\n"
+    "<details><summary>मूलम् - श्रीधरादि</summary>\n\nत᳘त्स᳘विता॥\n</details>\n\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- त᳓त् (*TS*-1)\n- स᳓विता (*TS*-1)\n</details>\n\n"
+    "<details><summary>पद-पाठः (यान्त्रिकः - काण्व-ब्राह्मणम् - 1/2 व्यत्यस्त-स्वराः)</summary>\n\n- तत् → **त᳓त्** (*TB*-1)\n- स᳓विता (*TS*-1)\n</details>\n"
+    "</details>\n"
+  )
+  out, logs = reconcile_markdown_blocks(shared_static, sync_vp_summaries=True)
+  assert logs == []
+  assert out == shared_static
+  assert validate_accented_markdown(shared_static) == []
+
+
+def test_bolding_combining_mark_splits_normalized_and_healed():
+  from doc_curation.sanskrit.accent.reconciler import normalize_vp_bolding_splits
+  from doc_curation.sanskrit.fixer import fix_intra_word_bolds
+
+  assert fix_intra_word_bolds("**मा**᳓ ते गृहे᳓") == "**मा᳓** ते गृहे᳓"
+
+  fixed_plain, logs_plain = normalize_vp_bolding_splits("**मा**᳓ ते")
+  assert fixed_plain == "**मा᳓** ते"
+  assert any(lg.startswith("FIX_BOLD_COMB_SPLIT:") for lg in logs_plain)
+
+  fixed_sug, logs_sug = normalize_vp_bolding_splits("**[[मा|मा᳓]]**᳓ ते")
+  assert fixed_sug == "**मा᳓** ते"
+  assert any(lg.startswith("FIX_BOLD_SUG_SPLIT:") for lg in logs_sug)
+
+  fixed_diff, _ = normalize_vp_bolding_splits("**[[मा|मा᳙]]**᳓ ते")
+  assert fixed_diff == "**[[मा᳓|मा᳙]]** ते"
+
+  items = parse_padapatha_items("- मा᳓ (*TS*-205)\n- ते (पा॰ ८.१.१८)\n")
+  out1, _ = reconcile_vp_suggestions("**मा**᳓ ते", items)
+  assert out1 == "**मा᳓** ते"
+  out2, _ = reconcile_vp_suggestions("**[[मा|मा᳓]]**᳓ ते", items)
+  assert out2 == "**मा᳓** ते"
+
+
+

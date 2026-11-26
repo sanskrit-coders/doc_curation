@@ -591,4 +591,68 @@ def test_sb_simplex_tinanta_allowlist_verbs():
   ]) == []
 
 
+def test_vp_integrity_catches_bolding_splits_and_quadruple_stars():
+  from doc_curation.sanskrit.accent.validator import find_vp_integrity_issues
+
+  assert find_vp_integrity_issues("**मा᳓** ते गृहे᳓ +++(note)+++") == []
+  assert any("split_combining_after_markup" in i for i in find_vp_integrity_issues("**[[मा|मा᳓]]**᳓ ते"))
+  assert any("split_combining_after_markup" in i for i in find_vp_integrity_issues("**मा**᳓ ते"))
+  assert any("malformed_bold_stars" in i for i in find_vp_integrity_issues("त᳓तो नो ****अ᳓भयं कृधि** ।"))
+
+
+def test_tinanta_homograph_and_tas_adverbs_guards():
+  from doc_curation.sanskrit.accent.validator import find_tinanta_sutra_on_non_tinanta
+
+  bad = [
+    "- अन्ततः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- देवताम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *TS*-0/15)",
+    "- महताम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- बृहतः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- अन्त्ये (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- जीवताम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *AV*-0/2)",
+    "- ईषतः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *TS*-0/1)",
+  ]
+  hits = find_tinanta_sutra_on_non_tinanta(bad)
+  assert hits == bad
+
+  good = [
+    "- स्याताम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- भवतः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *TS*-51)",
+    "- क्रामतः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *TS*-4)",
+    "- हथः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- वहन्ताम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- विध्यतः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- विशताम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *AV*-1)",
+  ]
+  assert find_tinanta_sutra_on_non_tinanta(good) == []
+
+
+def test_avp_enclitic_simplex_hiatus_and_augmented_dual_guards():
+  from doc_curation.sanskrit.accent.validator import (
+    find_tinanta_sutra_on_non_tinanta,
+    find_unexplained_aa_hiatuses,
+    find_unlicensed_unaccented_padas,
+    find_unsplit_upasarga_tinantas,
+  )
+
+  assert find_unlicensed_unaccented_padas([
+    "- णः (अनुदात्तम्, पा॰ ८.१.१८, *TS*-1)",
+    "- समह (अनुदात्तम्, पा॰ ८.१.१८, *RV*-4)",
+  ]) == []
+  assert find_unsplit_upasarga_tinantas([
+    "- रिषः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *RV*-1)",
+    "- अभरः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आनिषुः (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *AV*-1)",
+    "- अपद्रन् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+    "- आ᳓स्य (*Lanman*, *TS*-2, *AV*-3)",
+    "- विव᳓स्व (*RV*-1/2, *KS*-1)",
+  ]) == []
+  assert find_tinanta_sutra_on_non_tinanta([
+    "- अभि (उपसर्गः, पा॰ १.४.५९)",
+    "- अरक्षताम् (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)",
+  ]) == []
+  assert find_unexplained_aa_hiatuses(["- न᳓ (*RV*-1)", "- उ (अनुदात्तम्, पा॰ ८.१.१८)"], "न उत्तरात्") == []
+
+
+
 

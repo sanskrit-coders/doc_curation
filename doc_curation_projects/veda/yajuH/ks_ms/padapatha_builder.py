@@ -44,6 +44,8 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   ALWAYS_ANUDATTA_ENCLITICS,
   ANVADESHA_2432,
   ANVADESHA_2434,
+  _MISSING_VEDIC_TINANTAS_DEVA,
+  _MISSING_VEDIC_TINANTAS_HOMOGRAPHS_DEVA,
   UPASARGA_DEVA_SET,
   PadaCandidate,
   UnifiedVedicLexicon,
@@ -104,6 +106,7 @@ _VEDIC_VOCATIVE_WORDS = frozenset({
   "मित्र", "बृहस्पते", "ब्रह्मणस्पते", "प्रजापते", "पशुपते", "पत्नि", "राज्ञि",
   "पृथिवि", "द्यावापृथिवी", "आपः", "देवीः", "कवे", "यविष्ठ", "विश्वचर्षणे",
   "असुर", "वाजिन्", "वाजिनि", "सपत्न", "अदब्धायो", "अशीर्ततनो", "मनसस्पते",
+  "अरुन्धति", "जनासः", "हरिवः", "इन्द्राणि",
 })
 
 # Maitrāyaṇīya prevocalic `-भ्या V-` sandhi for `-भ्यः V-` (e.g. `देवे᳓भ्या इ᳓न्द्राय` -> `देवे᳓भ्यः इ᳓न्द्राय`)
@@ -202,9 +205,16 @@ def _build_provenance_for_pada(
   if extra_note:
     rule_parts.append(extra_note)
   cleaned_hint = _strip_corpus_tags_from_rule(rule_hint)
+  is_anvadesha_pron = key in ("अस्य", "अस्याः", "अस्मै", "अस्मात्", "अस्मिन", "एनाः", "एनान्", "एनम्", "एनाम्", "एनयोः", "एषाम्")
   if cleaned_hint and cleaned_hint != "अनाम्नातम् (अनुमानम्)":
-    rule_parts.append(cleaned_hint)
-  elif n_acc == 0:
+    if is_anvadesha_pron and "तिङन्तम्" in cleaned_hint:
+      rule_parts.append("अन्वादेशे अनुदात्तम्, पा॰ २.४.३२")
+    else:
+      rule_parts.append(cleaned_hint)
+  has_nighata_rule = any(
+    t in " ".join(rule_parts) for t in ("पा॰ ८.१.", "पा॰ २.४.", "द्विर्वचने")
+  )
+  if n_acc == 0 and not has_nighata_rule:
     # Unaccented word: identify the exact Pāṇinian nighāta rule!
     if key in ALWAYS_ANUDATTA_ENCLITICS or key in ("वा", "ते", "मा", "वाम्", "नौ"):
       rule_parts.append("अनुदात्तम्, पा॰ ८.१.१८")
@@ -212,7 +222,7 @@ def _build_provenance_for_pada(
       rule_parts.append("द्विर्वचने परस्यानुदात्तत्वम्, पा॰ ८.१.३")
     elif key in ANVADESHA_2434:
       rule_parts.append("अन्वादेशे अनुदात्तम्, पा॰ २.४.३४")
-    elif key in ANVADESHA_2432:
+    elif key in ANVADESHA_2432 or is_anvadesha_pron:
       rule_parts.append("अन्वादेशे अनुदात्तम्, पा॰ २.४.३२")
     elif key in UPASARGA_DEVA_SET:
       nxt_k = _normalize_lookup_key(next_pada_bare) if next_pada_bare else ""
@@ -224,10 +234,26 @@ def _build_provenance_for_pada(
       rule_parts.append("अपादादिः आमन्त्रितम् अनुदात्तम्, पा॰ ८.१.१९")
     else:
       morph = lex.analyze_morph(key)
-      if morph["is_tinanta"]:
+      form_hits_0 = lex.lookup_form(key)
+      zero_cnt = sum(sum(s.values()) for mk2, s in form_hits_0.items() if not any(mk2))
+      acc_cnt = sum(sum(s.values()) for mk2, s in form_hits_0.items() if any(mk2))
+      is_false_nom_tin = (
+        key in ("आमयतः", "आर्षयः", "आस्य", "सद्ये", "अजानाम्", "जायै", "त्रायै", "वर्तम्", "अधा")
+        or (key.endswith(("ायै", "ायाः", "ायाम्", "ानाम्", "ीनाम्", "ूनाम्", "ेभ्यः", "ाभ्यः", "िभ्यः", "ुभ्यः", "ेषु", "ासु")) and key != "यायाः")
+      )
+      if key in _MISSING_VEDIC_TINANTAS_DEVA or (key in _MISSING_VEDIC_TINANTAS_HOMOGRAPHS_DEVA and not ctx.get("is_clause_start")):
+        rule_parts.append("तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८")
+      elif morph["is_tinanta"] and not is_false_nom_tin:
         rule_parts.append("तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८")
       elif morph["voc_possible"] and not ctx.get("is_clause_start"):
         rule_parts.append("अपादादिः आमन्त्रितम् अनुदात्तम्, पा॰ ८.१.१९")
+      elif re.search(
+        r"(?:मसि|ध्वम्|ताम्|न्ताम्|महे|वहे|धि|हि|आत्|इष्टाम्|अन्|ईः|एः|इषि|मि|सि|ति|न्ति|थ|तु|न्तु|थः|वः|मः|वे|हे|ते|न्ते)$",
+        key,
+      ) and not morph["has_non_voc_subanta"] and not is_false_nom_tin:
+        rule_parts.append("तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८")
+      elif zero_cnt > 0 and acc_cnt == 0 and not is_anvadesha_pron and not morph["has_non_voc_subanta"] and not is_false_nom_tin:
+        rule_parts.append("तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८")
 
   # 2. Exact external corpus counts (`*CORPUS*-M/N`)
   # For unaccented enclitics/verbs (`n_acc == 0`), disable stem expansion so `मे`/`त्वा`/`असि` show exact `-M`!
@@ -281,12 +307,15 @@ def _solve_unaccented_padas_viterbi(
   counter: VedicCorpusCounter,
   corpora: Sequence[str],
   parallel_pada_map: dict[int, tuple[tuple[str, ...], str]] | None = None,
+  *,
+  sister_corpus: str | None = None,
 ) -> list[tuple[tuple[str, ...], str]]:
-  """Clause-aware 1D Viterbi accent decoder for unaccented KS blocks (Mode B, TA-style)."""
+  """Clause-aware 1D Viterbi accent decoder for unaccented KS/AV-P blocks (Mode B, TA-style)."""
   P = len(padas_bare)
   if P == 0:
     return []
   par_map = parallel_pada_map or {}
+  eff_sister = sister_corpus if sister_corpus is not None else ("MS" if "MS" in corpora else None)
 
   cand_lists: list[list[PadaCandidate]] = []
   for i, pd in enumerate(padas_bare):
@@ -307,7 +336,7 @@ def _solve_unaccented_padas_viterbi(
           )
         else:
           adjusted.append(c)
-      if not found_par and len(par_mks) == len(_marks_of_us_word(pd)):
+      if not found_par and any(par_mks) and len(par_mks) == len(_marks_of_us_word(pd)):
         try:
           ref_w = _fast_apply_us_marks(pd, par_mks)
           adjusted.append(
@@ -318,15 +347,15 @@ def _solve_unaccented_padas_viterbi(
         except ValueError:
           pass
       cands = adjusted
-    elif "MS" in corpora:
-      # Sister-śākhā MS corpus boost for KS words not matched by a full parallel mantra!
+    elif eff_sister and eff_sister in corpora:
+      # Sister-śākhā corpus boost (`MS` for `KS`, `AV` for `AV-P`) for words not matched by a full parallel mantra.
       adjusted = []
       for c in cands:
-        ms_exact = counter.count(c.ref, "MS")
-        bonus = -0.35 if ms_exact >= 3 else (-0.18 if ms_exact >= 1 else 0.0)
+        sis_exact = counter.count(c.ref, eff_sister)
+        bonus = -0.35 if sis_exact >= 3 else (-0.18 if sis_exact >= 1 else 0.0)
         adjusted.append(
           PadaCandidate(
-            ref=c.ref, marks=c.marks, prov=c.prov, role=c.role, solid=c.solid or ms_exact > 0, prior_cost=c.prior_cost + bonus
+            ref=c.ref, marks=c.marks, prov=c.prov, role=c.role, solid=c.solid or sis_exact > 0, prior_cost=c.prior_cost + bonus
           )
         )
       cands = adjusted

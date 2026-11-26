@@ -54,6 +54,17 @@ AV_MULAM_SPEC = CorpusMulamSpec(
   pada_summary="पदपाठः",
 )
 
+AVP_MULAM_SPEC = CorpusMulamSpec(
+  name="AV-P",
+  shAkha_label="पैप्पलादम्",
+  mula_dir=pathlib.Path("/home/vvasuki/gitland/vishvAsa/vedAH/static/atharva/paippalAdam/saMhitA/mUlam"),
+  sarva_dir=pathlib.Path("/home/vvasuki/gitland/vishvAsa/vedAH/static/atharva/paippalAdam/saMhitA/sarvASh_TIkAH"),
+  mula_url_prefix="/vedAH/atharva/paippalAdam/saMhitA/mUlam/",
+  vp_url_prefix="/vedAH/atharva/paippalAdam/saMhitA/vishvAsa-prastutiH/",
+  sarva_url_prefix="/vedAH/atharva/paippalAdam/saMhitA/sarvASh_TIkAH/",
+  pada_summary="पद-पाठः (यान्त्रिकः)",
+)
+
 DEFAULT_CALLER_ROOTS: tuple[pathlib.Path, ...] = (
   pathlib.Path("/home/vvasuki/gitland/vishvAsa/vedAH_Rk/content"),
   pathlib.Path("/home/vvasuki/gitland/vishvAsa/vedAH_Rk/static"),
