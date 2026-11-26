@@ -7,7 +7,7 @@ Text-only QLoRA adapter on **`Qwen/Qwen3-14B`** (also compatible with **`Qwen/Qw
    - Inline source-error suggestions `[[OLD|NEW]]` & illegible markers `[[??]]`, page markers `[[P64]]`, footnotes `[^12_1]`, and `<details><summary>मूलम्</summary>` preservation.
    - **Instruction-conditioned formatting:** Toggle `clause_newlines=True` (separating intra-sentence syntactic phrases/clauses onto soft-broken lines `  \n`) or pass custom rules via `extra_instructions="..."`.
    - **Deterministic Python post-guards (`guards.py`):** Pre-masks `मूलम्` blocks, snaps back any accidental merger-veto violations, and wraps any silent lexical edit into `[[OLD|NEW]]`.
-2. **`interleaver` skill ("no retyping, ever"):**
+2. **`commentary_translation` skill ("no retyping, ever"):**
    - Native cursor-index alignment for `doc_curation.llm.translation_matcher` (`{"starts": ..., "skip": ..., "next_en": ...}`).
    - Multi-role commentary & translation segment-to-core JSON alignment (`interleave_helper.py`: `viniyoga`, `avatarika`, `translation`, `tika`, `note`, `viniyoga_sangraha`, `heading`), enforcing `sarvASh_TIkAH` vs `sarva-prastutiH` placement rules.
 3. **`accenting` skill (lexicon-grounded `पद-पाठः (यान्त्रिकः)`):**

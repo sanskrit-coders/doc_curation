@@ -40,7 +40,88 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   us_padasvara_to_entry,
 )
 
-PROVENANCE_CACHE_VERSION = 14
+_JS_INCLUDE_OPEN_RE = re.compile(r"<div\b[^>]*\bclass=[\"'][^\"']*\bjs_include\b[^\"']*[\"'][^>]*>", re.I)
+_JS_INCLUDE_URL_RE = re.compile(r"""url=(["'])(/[^"']+)\1""")
+
+
+def resolve_veda_static_path(url: str, hugo_base_dir: str = "/home/vvasuki/gitland/vishvAsa") -> str | None:
+  """Resolve a ``/vedAH*/...`` include URL to its static or content file path on disk."""
+  clean = url.strip().split("#", 1)[0].split("?", 1)[0]
+  if not clean.startswith("/"):
+    return None
+  parts = clean.lstrip("/").split("/", 1)
+  if len(parts) != 2:
+    return None
+  repo, rel = parts
+  for sub in ("static", "content"):
+    cand = os.path.join(hugo_base_dir, repo, sub, rel)
+    if os.path.isfile(cand):
+      return cand
+    if os.path.isfile(cand + ".md"):
+      return cand + ".md"
+  return None
+
+
+def _strip_frontmatter_for_include(text: str) -> str:
+  if text.startswith("+++"):
+    idx = text.find("\n+++", 3)
+    if idx != -1:
+      return text[idx + 4 :]
+  elif text.startswith("---"):
+    idx = text.find("\n---", 3)
+    if idx != -1:
+      return text[idx + 4 :]
+  return text
+
+
+def _collect_include_leaf_blocks(url: str, *, hugo_base_dir: str = "/home/vvasuki/gitland/vishvAsa", _depth: int = 0) -> list[tuple[str, str, str]]:
+  """Return ``(summary_header, body, source_url)`` pairs for leaf blocks inside a referenced static file."""
+  if _depth > 2:
+    return []
+  fp = resolve_veda_static_path(url, hugo_base_dir=hugo_base_dir)
+  if not fp:
+    return []
+  try:
+    raw = open(fp, encoding="utf-8", errors="ignore").read()
+  except OSError:
+    return []
+  body = _strip_frontmatter_for_include(raw)
+  inc_spans = find_js_include_spans(body)
+  out: list[tuple[str, str, str]] = []
+  leafs = [m for m in LEAF_DETAILS_RE.finditer(body) if not any(a <= m.start() < b for a, b in inc_spans)]
+  if leafs:
+    for m in leafs:
+      out.append((m.group(1).strip(), m.group(2), url))
+  elif not inc_spans and "/vishvAsa-prastutiH/" in url:
+    clean = re.sub(r"</?(?:div|details|summary)[^>]*>", "", body).strip()
+    if clean:
+      out.append(("विश्वास-प्रस्तुतिः", clean, url))
+  for a, b in inc_spans:
+    m_u = _JS_INCLUDE_URL_RE.search(body[a : body.find(">", a) + 1])
+    if m_u:
+      out.extend(_collect_include_leaf_blocks(m_u.group(1), hugo_base_dir=hugo_base_dir, _depth=_depth + 1))
+  return out
+
+
+def _include_block_matches_corpus(hdr: str, src_url: str, corpus: str) -> bool:
+  """Filter shared static blocks so only ``corpus``-native layers are ingested into its frequency counts."""
+  if hdr.startswith("विश्वास-प्रस्तुतिः"):
+    return "/sarvASh_TIkAH/" not in src_url
+  if hdr.startswith("पद-पाठः (यान्त्रिकः"):
+    if corpus in ("ŚB", "SB-M"):
+      return "माध्यन्दिन" in hdr or (("/shatapatha-brAhmaNam/" in src_url) and "-" not in hdr.replace("यान्त्रिकः", "").split("व्यत्यस्त")[0])
+    if corpus == "SB-K":
+      return "काण्व" in hdr or ("/kANvam/" in src_url and "-" not in hdr.replace("यान्त्रिकः", "").split("व्यत्यस्त")[0])
+    return corpus in hdr
+  if hdr.startswith("मूलम्"):
+    if corpus in ("ŚB", "SB-M"):
+      return hdr in ("मूलम् - Weber", "मूलम् - श्रीधरादि", "मूलम् - माध्यन्दिन-ब्राह्मणम्", "मूलम् - माध्यन्दिनम्")
+    if corpus == "SB-K":
+      return hdr in ("मूलम् - काण्व-ब्राह्मणम्", "मूलम् - काण्वम्") or ("/shatapatha-brAhmaNam/" in src_url and hdr in ("मूलम्", "मूलम् - Weber"))
+  return False
+
+
+PROVENANCE_CACHE_VERSION = 15
 DEFAULT_PROVENANCE_CACHE_PATH = os.path.expanduser(
   "~/.cache/doc_curation/vedic_corpus_counts_v1.pkl"
 )
@@ -626,14 +707,27 @@ class VedicCorpusCounter:
       if base in ("_index.md", "file_list.md"):
         continue
       txt = open(fp, encoding="utf-8", errors="ignore").read()
-      if corpus != "VS-K":
+      if corpus not in ("VS-K", "ŚB", "SB-M", "SB-K"):
         inc = find_js_include_spans(txt)
         if inc:
           txt = _strip_spans(txt, inc)
       details_rx = _VS_DETAILS_RE if corpus == "VS-K" else LEAF_DETAILS_RE
       sections = re.split(r"(?=\n##[ \t]+)", txt)
       for sec in sections:
-        blocks = [(m.group(1).strip(), m.group(2)) for m in details_rx.finditer(sec)]
+        inc_sec = find_js_include_spans(sec) if corpus in ("ŚB", "SB-M", "SB-K") else []
+        blocks = [
+          (m.group(1).strip(), m.group(2))
+          for m in details_rx.finditer(sec)
+          if not any(a <= m.start() < b for a, b in inc_sec)
+        ]
+        if corpus in ("ŚB", "SB-M", "SB-K"):
+          for a, b in inc_sec:
+            m_u = _JS_INCLUDE_URL_RE.search(sec[a : sec.find(">", a) + 1])
+            if not m_u:
+              continue
+            for ih, ib, su in _collect_include_leaf_blocks(m_u.group(1)):
+              if _include_block_matches_corpus(ih, su, corpus):
+                blocks.append((ih, ib))
         if not blocks:
           continue
         pp_trad = [b for h, b in blocks if h == "पद-पाठः" and ("\u0951" in b or "\u0952" in b)]
@@ -670,8 +764,12 @@ class VedicCorpusCounter:
               continue
             self._ingest_us_samhita_tokens(clean, corpus)
         elif corpus == "VS-K":
-          mula_blocks = [b for h, b in blocks if h in ("मूलम्", "मूलम् - काण्वम्") and ("\u0951" in b or "\u0952" in b)]
-          for body in mula_blocks:
+          mula_blocks = [
+            b for h, b in blocks
+            if h in ("मूलम्", "मूलम् - काण्वम्", "मूलम् - काण्व-ब्राह्मणम्") and ("\u0951" in b or "\u0952" in b)
+          ]
+          weber_k_blocks = [b for h, b in blocks if h == "मूलम् - Weber" and "\u1cd8" in b]
+          for body in (mula_blocks or weber_k_blocks):
             clean = re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]|<[^>]+>", " ", body, flags=re.S)
             us_txt = accent.to_US_accents(clean, pauses=r"[।॥,;]+")
             self._ingest_us_samhita_tokens(us_txt, corpus)

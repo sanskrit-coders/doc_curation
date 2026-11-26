@@ -1,6 +1,6 @@
 """Deterministic + SLP1-stem-aware monotonic DP commentary & translation aligner.
 
-Implements the ``/interleaver`` skill's alignment and multi-role separation rules:
+Implements the ``/commentary_translation`` skill's alignment and multi-role separation rules:
 1. Sandhi-aware pratīka extraction (``**bold**``, unquoted ``... इति`` with yaṇ,
    guṇa, savarṇadīrgha, and śākalya-lopa restoration, dash lead-ins, and opening
    headwords), while masking single-quoted ``'...' इति`` sūtra/kalpa citations.
@@ -240,7 +240,7 @@ def classify_segment_role(
   prev_role: str | None = None,
   seen_tika_on_core: bool = False,
 ) -> str:
-  """Classify a segment's ``/interleaver`` role deterministically."""
+  """Classify a segment's ``/commentary_translation`` role deterministically."""
   raw = (segment or "").strip()
   cues = cues or extract_segment_cues(raw)
   if cues["is_heading_only"]:

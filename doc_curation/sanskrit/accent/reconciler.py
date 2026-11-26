@@ -40,7 +40,23 @@ LEAF_DETAILS_RE = re.compile(
   r"<details(?:\s+open)?><summary>([^<]*)</summary>([^<]*(?:<(?!/?details\b)[^<]*)*)</details>",
   re.S | re.I,
 )
-PP_HEADER_RE = re.compile(r"^पद-पाठः \(यान्त्रिकः(?:\s*-\s*(\d+)/(\d+)\s*व्यत्यस्त-स्वराः)?\)$")
+PP_HEADER_RE = re.compile(
+  r"^पद-पाठः \(यान्त्रिकः(?:\s*-\s*(?!\d+/\d+\s*व्यत्यस्त-स्वराः)[^)]+?)?(?:\s*-\s*(\d+)/(\d+)\s*व्यत्यस्त-स्वराः)?\)$"
+)
+_PP_HEADER_QUAL_RE = re.compile(
+  r"^पद-पाठः \(यान्त्रिकः(?:\s*-\s*(?!\d+/\d+\s*व्यत्यस्त-स्वराः)([^)]+?))?(?:\s*-\s*(\d+)/(\d+)\s*व्यत्यस्त-स्वराः)?\)$"
+)
+
+
+def parse_padapatha_header(header: str) -> tuple[str | None, int, int | None]:
+  """Return ``(shAkha_label_or_None, n_vyat, p_total_or_None)`` for a ``पद-पाठः (यान्त्रिकः...)`` header."""
+  m = _PP_HEADER_QUAL_RE.match(header.strip())
+  if not m:
+    return None, 0, None
+  qual = m.group(1).strip() if m.group(1) else None
+  n_v = int(m.group(2)) if m.group(2) else 0
+  p_t = int(m.group(3)) if m.group(3) else None
+  return qual, n_v, p_t
 _VP_SUMMARY_TAG_RE = re.compile(
   r"\s*\((?:स्वराः पूर्याः|यन्त्र-स्वरः|स्वराः व्यत्यस्ताः[^)]*|\d+/\d+\s*व्यत्यस्त-स्वराः)\)\s*"
 )
@@ -220,11 +236,17 @@ def parse_padapatha_items(pp_body: str) -> list[PadapathaItem]:
   return items
 
 
-def format_padapatha_summary(n_vyat: int, p_total: int) -> str:
-  """Format the canonical ``<summary>`` title for ``पद-पाठः (यान्त्रिकः)``."""
+def format_padapatha_summary(
+  n_vyat: int,
+  p_total: int,
+  *,
+  shAkha_label: str | None = None,
+) -> str:
+  """Format the canonical ``<summary>`` title for ``पद-पाठः (यान्त्रिकः...)``."""
+  prefix = f"पद-पाठः (यान्त्रिकः - {shAkha_label}" if shAkha_label else "पद-पाठः (यान्त्रिकः"
   if n_vyat > 0:
-    return f"पद-पाठः (यान्त्रिकः - {n_vyat}/{p_total} व्यत्यस्त-स्वराः)"
-  return "पद-पाठः (यान्त्रिकः)"
+    return f"{prefix} - {n_vyat}/{p_total} व्यत्यस्त-स्वराः)"
+  return f"{prefix})"
 
 
 def format_filled_vp_summary(
@@ -1368,29 +1390,58 @@ def _reconcile_markdown_blocks_once(
   replacements: list[tuple[int, int, str]] = []
   all_logs: list[str] = []
 
-  has_kanva_sb_doc = "\u1cd8" in markdown_text or "<summary>C R Swaminathan</summary>" in markdown_text
+  has_kanva_sb_doc = (
+    "\u1cd8" in markdown_text
+    or "<summary>C R Swaminathan</summary>" in markdown_text
+    or "<summary>मूलम् - काण्व-ब्राह्मणम्</summary>" in markdown_text
+  )
+  _SB_MULA_TITLES = frozenset({
+    "मूलम् - Weber",
+    "मूलम् - श्रीधरादि",
+    "मूलम् - माध्यन्दिन-ब्राह्मणम्",
+    "मूलम् - काण्व-ब्राह्मणम्",
+    "मूलम् - माध्यन्दिनम्",
+    "मूलम् - काण्वम्",
+  })
   for i, m in enumerate(dmatches):
     pp_hdr = m.group(1).strip()
     if not pp_hdr.startswith("पद-पाठः (यान्त्रिकः"):
       continue
+    pp_shAkha, _, _ = parse_padapatha_header(pp_hdr)
     items = parse_padapatha_items(m.group(2).strip())
     n_vyat = sum(1 for it in items if it.vyat)
     p_total = len(items)
     if refresh_pp_summaries and p_total > 0:
-      expected_pp_hdr = format_padapatha_summary(n_vyat, p_total)
+      expected_pp_hdr = format_padapatha_summary(n_vyat, p_total, shAkha_label=pp_shAkha)
       if expected_pp_hdr != pp_hdr:
         pp_open = " open" if "<details open>" in m.group(0)[:20] else ""
         replacements.append((m.start(), m.end(), f"<details{pp_open}><summary>{expected_pp_hdr}</summary>{m.group(2)}</details>"))
         all_logs.append(f"PP_HDR: {pp_hdr} -> {expected_pp_hdr}")
 
+    # When a shared static file contains both an unqualified padapāṭha (for the primary VP)
+    # and qualified padapāṭhas from secondary śākhās, skip VP reconciliation for the secondary ones.
+    if pp_shAkha is not None:
+      has_primary_pp = False
+      for k in range(max(0, i - 6), min(len(dmatches), i + 6)):
+        if k == i:
+          continue
+        kh = dmatches[k].group(1).strip()
+        if kh.startswith("पद-पाठः (यान्त्रिकः") and parse_padapatha_header(kh)[0] is None:
+          has_primary_pp = True
+          break
+      if has_primary_pp:
+        continue
+
     is_sb_cluster = False
     for j in range(i - 1, max(-1, i - 12), -1):
       ps = dmatches[j].group(1)
       if ps.startswith("पद-पाठः (यान्त्रिकः"):
+        if parse_padapatha_header(ps)[0] is not None:
+          continue
         break
       if "\n##" in markdown_text[dmatches[j].end() : m.start()]:
         break
-      if ps in ("मूलम् - Weber", "मूलम् - श्रीधरादि") or (
+      if ps.strip() in _SB_MULA_TITLES or (
         ps == "मूलम्" and ("\u1cd8" in dmatches[j].group(2) or has_kanva_sb_doc)
       ):
         is_sb_cluster = True

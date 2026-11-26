@@ -1224,6 +1224,7 @@ def audit_full_sb_corpus(
       VP summary matching and zero ``पा\\u0966`` / ``*CORPUS*-0`` occurrences.
   """
   root = Path(sb_root)
+  is_sbk_root = "kANvam" in root.as_posix()
   if files is not None:
     target_files = [Path(f) for f in files]
   else:

@@ -238,7 +238,7 @@ updated_files = apply_downloaded_outputs(
 
 - `backend.py` / `prompts.py` / `guards.py`: OpenAI-compatible `ProofreaderBackend`, dynamic prompt composer (`data/prompts.toml`), `मूलम्` masking, merger-veto snap-back, and `[[OLD|NEW]]` mutation wrapper.
 - `block_splitter.py`: Quote-safe daṇḍa segmentation and sense-unit `विश्वास-प्रस्तुतिः` + `मूलम्` block builder.
-- `interleave_aligner.py` / `interleave_helper.py`: Sandhi-aware pratīka & stem-IDF Monotonic Viterbi DP, `/interleaver` role classifier (`data/interleave_rules.toml`), LLM prompt enricher, `refine_interleave_plan` post-guard, and 6-point Markdown verifier.
+- `interleave_aligner.py` / `interleave_helper.py`: Sandhi-aware pratīka & stem-IDF Monotonic Viterbi DP, `/commentary_translation` role classifier (`data/interleave_rules.toml`), LLM prompt enricher, `refine_interleave_plan` post-guard, and 6-point Markdown verifier.
 - `translation_aligner.py`: Bilingual discourse-pivot, sūtra-number, technical-lexicon, and IAST→SLP1 stem Monotonic DP solver (`data/translation_rules.toml`) + `refine_translation_mapping` post-guard.
 - `accent_helper.py`: Babylon *padasvara* RAG lookup + US-accent projection builder.
 - `dataset/`: SFT JSONL extractor (`python -m doc_curation.llm.proofreader.dataset --out-dir /tmp/sft_data`) across proofreading, clause toggles, commentary interleaving, translation matching, and *padapāṭha* tasks.

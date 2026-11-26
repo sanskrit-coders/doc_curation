@@ -231,7 +231,7 @@ def summary_for_role(
   is_sanskrit_commentary: bool = True,
   role_labels: dict[str, str] | None = None,
 ) -> str:
-  """Map ``(author_label, role)`` to canonical ``<summary>`` title per interleaver skill."""
+  """Map ``(author_label, role)`` to canonical ``<summary>`` title per commentary_translation skill."""
   if role_labels and role in role_labels:
     return role_labels[role]
   base = regex.sub(r"-(?:टीका|भाष्यम्)$", "", author_label).strip()
@@ -264,7 +264,7 @@ def assemble_cluster_blocks(
   is_sarvash_tikah: bool = False,
   role_labels: dict[str, str] | None = None,
 ) -> tuple[str, list[str]]:
-  """Insert verbatim source segments into clusters in canonical ``/interleaver`` order."""
+  """Insert verbatim source segments into clusters in canonical ``/commentary_translation`` order."""
   by_core: dict[int, dict[str, list[str]]] = {
     i: {r: [] for r in VALID_ROLES} for i in range(len(clusters))
   }
@@ -413,7 +413,7 @@ def verify_interleaved_markdown(
   withheld_blocks: list[str] | None = None,
   is_sarvash_tikah: bool = False,
 ) -> dict:
-  """Run the ``/interleaver`` 6-point verification checklist programmatically."""
+  """Run the ``/commentary_translation`` 6-point verification checklist programmatically."""
   norm = lambda s: regex.sub(r"[\s>*#]+", "", sanitize_details_footnotes(s))
   norm_page = norm(assembled_md + "\n" + "\n".join(withheld_blocks or ()))
   missing = []

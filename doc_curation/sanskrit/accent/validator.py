@@ -14,6 +14,7 @@ from doc_curation.sanskrit.accent.reconciler import (
   DETAILS_RE,
   LEAF_DETAILS_RE,
   PP_HEADER_RE,
+  find_js_include_spans,
   bare_devanagari,
   find_js_include_spans,
   has_us_accents,
@@ -1997,7 +1998,12 @@ def validate_accented_markdown(
     if text.count("<details") != text.count("</details>") or text.count("<div") != text.count("</div>"):
       issues.append(AccentValidationIssue("tag_unbalanced", "Mismatched <details> or <div> closing tags"))
 
-  blocks = [(m.start(), m.end(), m.group(1).strip(), m.group(2)) for m in LEAF_DETAILS_RE.finditer(text)]
+  js_divs = find_js_include_spans(text)
+  blocks = [
+    (m.start(), m.end(), m.group(1).strip(), m.group(2))
+    for m in LEAF_DETAILS_RE.finditer(text)
+    if not any(a <= m.start() < b for a, b in js_divs)
+  ]
   doc_commentators: set[str] = set()
   for _, _, bh, _ in blocks:
     if "हरदत्त" in bh:
@@ -2008,7 +2014,8 @@ def validate_accented_markdown(
       doc_commentators.add("सायणः")
   has_kanva_sb_doc = (
     "<summary>C R Swaminathan</summary>" in text
-    or any(bh == "मूलम्" and "\u1cd8" in bb for _, _, bh, bb in blocks)
+    or "<summary>मूलम् - काण्व-ब्राह्मणम्</summary>" in text
+    or any(bh in ("मूलम्", "मूलम् - काण्व-ब्राह्मणम्", "मूलम् - काण्वम्") and "\u1cd8" in bb for _, _, bh, bb in blocks)
   )
   for i, (s, _, hdr, body) in enumerate(blocks):
     if not hdr.startswith("पद-पाठः (यान्त्रिकः"):
@@ -2025,7 +2032,14 @@ def validate_accented_markdown(
         break
       if s - je > 40000:
         break
-      if jh in ("मूलम् - Weber", "मूलम् - श्रीधरादि") or (jh == "मूलम्" and ("\u1cd8" in jb or has_kanva_sb_doc)):
+      if jh in (
+        "मूलम् - Weber",
+        "मूलम् - श्रीधरादि",
+        "मूलम् - माध्यन्दिन-ब्राह्मणम्",
+        "मूलम् - काण्व-ब्राह्मणम्",
+        "मूलम् - माध्यन्दिनम्",
+        "मूलम् - काण्वम्",
+      ) or (jh == "मूलम्" and ("\u1cd8" in jb or has_kanva_sb_doc)):
         is_sb_cluster = True
       if jh.startswith("मूलम्"):
         # Prefer accented मूलम् (Weber > श्रीधरादि > plain मूलम्) over unaccented विस्वरम् / Makoto.

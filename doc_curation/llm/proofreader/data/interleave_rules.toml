@@ -1,5 +1,5 @@
 # Rule tables for deterministic Sanskrit/English commentary & translation alignment
-# and structural role classification (/interleaver skill).
+# and structural role classification (/commentary_translation skill).
 
 # Quotative continuation suffixes valid immediately after `इति` / `इत्य`
 iti_continuations = [

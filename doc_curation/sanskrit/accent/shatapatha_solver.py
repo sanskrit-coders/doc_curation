@@ -1505,9 +1505,14 @@ class UnifiedVedicLexicon:
             self._add_form(bare, mks, tag, freq=1)
 
   def _ingest_ta_tb_corpus(self, root_dir: str, tag: str) -> None:
+    from doc_curation.sanskrit.accent.provenance import (
+      _collect_include_leaf_blocks,
+      find_js_include_spans,
+    )
     from doc_curation.sanskrit.accent.reconciler import parse_padapatha_items
 
     tok_re = re.compile(r"[\u0900-\u0963\u0971-\u097f\u1cd0-\u1cff\-]+")
+    url_re = re.compile(r"""url=(["'])(/[^"']+)\1""")
     for fp in sorted(glob.glob(os.path.join(root_dir, "**", "*.md"), recursive=True)):
       if os.path.basename(fp) in ("_index.md", "file_list.md"):
         continue
@@ -1515,12 +1520,31 @@ class UnifiedVedicLexicon:
       # Deduplicate per section (`## ...`): pick AT MOST ONE layer (`पद-पाठः` > `पद-पाठः (यान्त्रिकः...)` > `विश्वास-प्रस्तुतिः`), always `freq=1`!
       sections = re.split(r"(?=\n##[ \t]+)", txt)
       for sec in sections:
-        blocks = [(m.group(1).strip(), m.group(2)) for m in LEAF_DETAILS_RE.finditer(sec)]
+        inc_spans = find_js_include_spans(sec)
+        blocks = [
+          (m.group(1).strip(), m.group(2))
+          for m in LEAF_DETAILS_RE.finditer(sec)
+          if not any(a <= m.start() < b for a, b in inc_spans)
+        ]
+        if tag in ("SB-M", "TB", "TS"):
+          for a, b in inc_spans:
+            m_u = url_re.search(sec[a : sec.find(">", a) + 1])
+            if not m_u:
+              continue
+            u = m_u.group(1)
+            for ih, ib, su in _collect_include_leaf_blocks(u):
+              if ih.startswith("विश्वास-प्रस्तुतिः") and "/sarvASh_TIkAH/" not in su:
+                blocks.append((ih, ib))
+              elif ih.startswith("पद-पाठः (यान्त्रिकः"):
+                if tag == "SB-M" and ("माध्यन्दिन" in ih or ("/shatapatha-brAhmaNam/" in su and "काण्व" not in ih)):
+                  blocks.append((ih, ib))
+                elif tag == "TB" and ("तैत्तिरीय-ब्राह्मणम्" in ih or ("/brAhmaNam/" in su and "/shatapatha-brAhmaNam/" not in su and "माध्यन्दिन" not in ih and "काण्व" not in ih)):
+                  blocks.append((ih, ib))
         if not blocks:
           continue
         pp_trad = [b for h, b in blocks if h == "पद-पाठः"]
         pp_mech = [b for h, b in blocks if h.startswith("पद-पाठः (यान्त्रिकः")]
-        vp_us = [b for h, b in blocks if h == "विश्वास-प्रस्तुतिः" and has_us_accents(b)]
+        vp_us = [b for h, b in blocks if h.startswith("विश्वास-प्रस्तुतिः") and has_us_accents(b)]
         if pp_trad:
           for body in pp_trad:
             for piece in re.split(r"[।॥\s]+", body):

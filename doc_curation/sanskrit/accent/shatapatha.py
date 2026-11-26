@@ -48,6 +48,7 @@ from doc_curation.sanskrit.accent.reconciler import (
   _merged_valid_marks,
   _no_punct_between,
   _pp_member_starts,
+  find_js_include_spans,
   _skip_elided_avagraha_lead,
   apply_marks_to_token,
   format_padapatha_summary,
@@ -711,7 +712,8 @@ _SB_TRANSLATION_SUMMARIES = frozenset({
 
 
 def _extract_vp_clusters(part: str) -> list[_VpCluster]:
-  dmatches = list(LEAF_DETAILS_RE.finditer(part))
+  js_divs = find_js_include_spans(part)
+  dmatches = [m for m in LEAF_DETAILS_RE.finditer(part) if not any(a <= m.start() < b for a, b in js_divs)]
   clusters: list[_VpCluster] = []
   subidx = 0
   for i, m in enumerate(dmatches):
@@ -736,7 +738,13 @@ def _extract_vp_clusters(part: str) -> list[_VpCluster]:
         elif "श्रीधरादि" in sum_k and not shri_text:
           shri_text = dmatches[k].group(2).strip()
           mula_hdr = sum_k
-        elif sum_k == "मूलम्" and not shri_text:
+        elif sum_k in (
+          "मूलम्",
+          "मूलम् - काण्वम्",
+          "मूलम् - काण्व-ब्राह्मणम्",
+          "मूलम् - माध्यन्दिनम्",
+          "मूलम् - माध्यन्दिन-ब्राह्मणम्",
+        ) and not shri_text:
           shri_text = dmatches[k].group(2).strip()
           mula_hdr = sum_k
         insert_pos = dmatches[k].end()
@@ -762,7 +770,8 @@ def _extract_vp_clusters(part: str) -> list[_VpCluster]:
 
   if not clusters:
     for i, m in enumerate(dmatches):
-      if m.group(1).strip() == "मूलम्":
+      m_sum = m.group(1).strip()
+      if m_sum in ("मूलम्", "मूलम् - काण्वम्", "मूलम् - काण्व-ब्राह्मणम्"):
         existing_pp = None
         if i + 1 < len(dmatches) and dmatches[i + 1].group(1).strip().startswith("पद-पाठः (यान्त्रिकः"):
           existing_pp = dmatches[i + 1]
@@ -775,7 +784,7 @@ def _extract_vp_clusters(part: str) -> list[_VpCluster]:
             insert_pos=m.end(),
             existing_pp_match=existing_pp,
             mula_match=m,
-            mula_header="मूलम्",
+            mula_header=m_sum,
           )
         )
         break

@@ -32,6 +32,13 @@ class VedaCorpusSpec:
   yajuh_sarva_url: str = ""
   yajuh_sarva_prastuti_dir: pathlib.Path | None = None
   yajuh_sarva_prastuti_url: str = ""
+  brahmana_vp_dir: pathlib.Path | None = None
+  brahmana_vp_url: str = ""
+  brahmana_sarva_dir: pathlib.Path | None = None
+  brahmana_sarva_url: str = ""
+  brahmana_sarva_prastuti_dir: pathlib.Path | None = None
+  brahmana_sarva_prastuti_url: str = ""
+  heading_level: int = 0
 
 
 def _opt_path(raw: dict, key: str) -> pathlib.Path | None:
@@ -65,5 +72,12 @@ def load_corpus_specs(config_path: pathlib.Path = CONFIG_PATH) -> dict[str, Veda
       yajuh_sarva_url=entry.get("yajuh_sarva_url", ""),
       yajuh_sarva_prastuti_dir=_opt_path(entry, "yajuh_sarva_prastuti_dir"),
       yajuh_sarva_prastuti_url=entry.get("yajuh_sarva_prastuti_url", ""),
+      brahmana_vp_dir=_opt_path(entry, "brahmana_vp_dir"),
+      brahmana_vp_url=entry.get("brahmana_vp_url", ""),
+      brahmana_sarva_dir=_opt_path(entry, "brahmana_sarva_dir"),
+      brahmana_sarva_url=entry.get("brahmana_sarva_url", ""),
+      brahmana_sarva_prastuti_dir=_opt_path(entry, "brahmana_sarva_prastuti_dir"),
+      brahmana_sarva_prastuti_url=entry.get("brahmana_sarva_prastuti_url", ""),
+      heading_level=int(entry.get("heading_level", 0) or 0),
     )
   return specs

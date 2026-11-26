@@ -75,7 +75,7 @@ def _disambiguate_incoming_entry(
   """Return disambiguated ``(target_summary, clean_body)`` or ``None`` if redundant."""
   t = ttl.strip()
   b = body.strip()
-  if not b or t == "मूलम् (संयुक्तम्)":
+  if not b or t in ("मूलम् (संयुक्तम्)", "परिचयः") or t.startswith("विस्तारः"):
     return None
 
   if t == "मूलम्":
@@ -94,17 +94,32 @@ def _disambiguate_incoming_entry(
     return f"मूलम् - {src_spec.shAkha_label}", b
 
   if t.startswith("मूलम् - ") or t.startswith("मूलम् ("):
+    out_t = (
+      f"मूलम् - विस्वरम् ({src_spec.shAkha_label})"
+      if t == "मूलम् - विस्वरम्" and src_spec.name in ("SB-M", "SB-K") and not target_spec.name.startswith("SB-")
+      else t
+    )
     cand_norm = normalize_phonetic(b, include_accents=True, fold_orthography=True)
-    if any(normalize_phonetic(v, include_accents=True, fold_orthography=True) == cand_norm for v in existing_by_title.get(t, ())):
+    if any(normalize_phonetic(v, include_accents=True, fold_orthography=True) == cand_norm for v in existing_by_title.get(out_t, ())):
       return None
-    return t, b
+    return out_t, b
 
   if t in ("पदपाठः", "पद-पाठः"):
     return src_spec.pada_label, b
 
   if t.startswith("पद-पाठः (यान्त्रिकः"):
-    if is_exact_reading and any(k.startswith(("पदपाठः", "पद-पाठः")) for k in existing_by_title):
+    if src_spec.name == target_spec.name:
+      return t, b
+    if is_exact_reading and "व्यत्यस्त" not in t and src_spec.name not in ("SB-M", "SB-K") and any(
+      k.startswith(("पदपाठः", "पद-पाठः")) for k in existing_by_title
+    ):
       return None
+    if src_spec.shAkha_label in t:
+      return t, b
+    if src_spec.name in ("SB-M", "SB-K"):
+      if src_spec.pada_label.startswith("पद-पाठः (यान्त्रिकः"):
+        return _qualify_pada_label(src_spec.pada_label, t), b
+      return _qualify_pada_label(f"पद-पाठः (यान्त्रिकः - {src_spec.shAkha_label})", t), b
     if "व्यत्यस्त" not in t and re.search(r"यान्त्रिकः\s*-\s*\S", t):
       return t, b
     return f"पद-पाठः (यान्त्रिकः - {src_spec.shAkha_label})", b
@@ -112,7 +127,13 @@ def _disambiguate_incoming_entry(
   if t.startswith("पदपाठः - ") or t.startswith("पद-पाठः - "):
     return t, b
 
-  if t in ("सायण-टीका", "सायणटीका"):
+  if t in ("सायणः", "सायण-टीका", "सायणटीका"):
+    if src_spec.name in ("SB-M", "SB-K"):
+      if target_spec.name == src_spec.name:
+        if any(_similar_text(b, ex, threshold=0.88) for ex in existing_by_title.get("सायणः", ())):
+          return None
+        return "सायणः", b
+      return src_spec.sayana_variant_label, b
     if src_spec.name == "VS-K":
       return src_spec.sayana_variant_label, b
     if "सायण-टीका" in existing_by_title:
@@ -186,6 +207,45 @@ def _normalize_target_blocks(
   return out
 
 
+def _extract_vyat_suffix(summary: str) -> str:
+  m = re.search(r"(\d+/\d+\s*व्यत्यस्त-स्वराः)", summary)
+  return m.group(1) if m else ""
+
+
+def _qualify_pada_label(pada_label: str, inc_summary: str) -> str:
+  vyat = _extract_vyat_suffix(inc_summary)
+  if not vyat or vyat in pada_label:
+    return pada_label
+  if pada_label.endswith(")"):
+    return f"{pada_label[:-1]} - {vyat})"
+  return f"{pada_label} ({vyat})"
+
+
+_TRANSLATION_SUMMARY_PREFIXES = (
+  "Eggeling",
+  "C R Swaminathan",
+  "En - सिद्धार्थः",
+  "सिद्धार्थः - En",
+  "Griffith",
+  "Ralph T H Griffith",
+  "Keith",
+  "Whitney",
+  "Wilson",
+  "Jamison Brereton",
+  "Thomson & Solcum",
+  "Thomson",
+  "Gemini",
+  "Geldner",
+  "Hume",
+  "Radhakrishnan",
+)
+
+
+def _is_translation_summary(summary: str) -> bool:
+  s = summary.strip()
+  return any(s == p or s.startswith(f"{p} ") or s.startswith(f"{p}(") or s.startswith(f"{p} (") or s.startswith(f"{p} -") for p in _TRANSLATION_SUMMARY_PREFIXES)
+
+
 def merge_tika_additions(
   target_sarva_text: str,
   target_spec: VedaCorpusSpec,
@@ -246,11 +306,11 @@ def merge_tika_additions(
   pada_new = [(t, format_details_block(t, merge_author_bodies(new_by_title[t], strip_trivial_crossref=False)))
               for t in new_by_title if t not in inserted_keys and (t.startswith("पदपाठः") or t.startswith("पद-पाठः"))]
   trans_new = [(t, format_details_block(t, merge_author_bodies(new_by_title[t], strip_trivial_crossref=False)))
-               for t in new_by_title if t not in inserted_keys and t.startswith(("Gemini", "Griffith", "Keith", "Whitney", "Wilson"))]
+               for t in new_by_title if t not in inserted_keys and _is_translation_summary(t)]
   comm_new = [(t, format_details_block(t, merge_author_bodies(new_by_title[t], strip_trivial_crossref=False)))
               for t in new_by_title if t not in inserted_keys
               and not t.startswith("मूलम्") and not t.startswith("पदपाठः") and not t.startswith("पद-पाठः")
-              and not t.startswith(("Gemini", "Griffith", "Keith", "Whitney", "Wilson"))]
+              and not _is_translation_summary(t)]
 
   def _insert_after(seq: list[tuple[str, str]], add: list[tuple[str, str]], pred) -> list[tuple[str, str]]:
     if not add:
@@ -263,7 +323,19 @@ def merge_tika_additions(
       return seq + add
     return seq[:pos] + add + seq[pos:]
 
-  rendered = _insert_after(rendered, trans_new, lambda t: t.startswith(("Gemini", "Griffith", "Keith", "Whitney", "Wilson")))
+  def _insert_before(seq: list[tuple[str, str]], add: list[tuple[str, str]], pred) -> list[tuple[str, str]]:
+    if not add:
+      return seq
+    for idx, (t, _) in enumerate(seq):
+      if pred(t):
+        return seq[:idx] + add + seq[idx:]
+    return add + seq
+
+  if trans_new:
+    if any(_is_translation_summary(t) for t, _ in rendered):
+      rendered = _insert_after(rendered, trans_new, _is_translation_summary)
+    else:
+      rendered = _insert_before(rendered, trans_new, lambda t: t.startswith(("मूलम्", "पदपाठः", "पद-पाठः")))
   rendered = _insert_after(rendered, mula_new, lambda t: t.startswith("मूलम्"))
   rendered = _insert_after(rendered, pada_new, lambda t: t.startswith(("पदपाठः", "पद-पाठः", "मूलम्")))
   rendered = _insert_after(
@@ -271,7 +343,8 @@ def merge_tika_additions(
     comm_new,
     lambda t: any(
       x in t for x in (
-        "उवट", "महीधर", "सायण", "भट्टभास्कर", "आनन्दबोध", "अनन्ताचार्य", "Schroeder",
+        "उवट", "महीधर", "सायण", "हरिस्वामी", "शङ्कर", "श्रीमद्वासुदेव", "श्रीनारायण",
+        "मानसतरङ्गिणी", "भट्टभास्कर", "आनन्दबोध", "अनन्ताचार्य", "Schroeder",
         "हरदत्त", "त्रिभुवन", "रङ्ग", "विश्वास-टिप्पनी",
       )
     ),

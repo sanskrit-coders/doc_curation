@@ -1,7 +1,7 @@
 """Split coarse Śatapatha Brāhmaṇa (Mādhyandina & Kāṇva) kaṇḍikā clusters into fine sense-unit blocks.
 
 Follows ``/text_to_blocks`` (Tests 1–5: correlatives, embedded ``इति`` quotes, mantra/verse
-integrity, parallel lists, minimal/maximal unit sizing) and ŚB ``/interleaver`` conventions:
+integrity, parallel lists, minimal/maximal unit sizing) and ŚB ``/commentary_translation`` conventions:
 each resulting sub-cluster preserves the canonical ŚB order::
 
   विश्वास-प्रस्तुतिः -> [विश्वास-टिप्पनी] -> मूलम्* -> पद-पाठः (यान्त्रिकः...) -> [commentaries] -> [translation] -> [मूलम् - Makoto]
