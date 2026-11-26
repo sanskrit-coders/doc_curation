@@ -661,3 +661,31 @@ def test_clause_newline_guards_kanvam():
   assert "म॒  \n" not in out_short and " म  \n" not in out_short
 
 
+def test_normalize_bhashya_prose_joins_fake_breaks_and_preserves_quotes():
+  from doc_curation.llm.proofreader.interleave_helper import normalize_bhashya_prose
+
+  raw = (
+    "अत्रायम् अर्थः\n\n"
+    "स्पष्टः कथितः ।  \n"
+    "॥\n"
+    "१ ॥\n\n"
+    "ततः परं मन्त्रः —\n\n"
+    "> अग्नये स्वाहा\n\n"
+    "इति ।"
+  )
+  cleaned = normalize_bhashya_prose(raw)
+  assert "अत्रायम् अर्थः  \nस्पष्टः कथितः ।  \n॥ १ ॥" in cleaned
+  assert "> अग्नये स्वाहा\n\nइति ।" in cleaned
+
+
+def test_align_cores_to_formatted_translation_preserves_newlines():
+  from doc_curation.llm.proofreader.translation_aligner import align_cores_to_formatted_translation
+
+  cores = ["अग्निम् ईळे पुरोहितम्", "स देवाँ एह वक्षति"]
+  formatted_en = "I praise Agni,\nthe household priest.\n\nMay he bring the gods hither."
+  chunks = align_cores_to_formatted_translation(cores, formatted_en)
+  assert len(chunks) == 2
+  assert "Agni,\nthe household priest." in chunks[0]
+  assert "bring the gods" in chunks[1]
+
+

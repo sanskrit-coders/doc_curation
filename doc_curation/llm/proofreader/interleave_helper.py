@@ -106,6 +106,78 @@ def join_prose_segments(segments: list[str] | tuple[str, ...]) -> str:
   return "".join(out)
 
 
+def normalize_bhashya_prose(
+  text: str,
+  *,
+  resolve_editorial_suggestions: bool = True,
+  drop_line_pattern: regex.Pattern | str | None = None,
+) -> str:
+  """Remove fake blank-line paragraph breaks in commentary prose while preserving blockquotes.
+
+  Reattaches trailing verse numbers (`॥  \\n१ ॥` -> `॥ १ ॥`), sanitizes inline
+  footnotes inside details blocks, joins broken prose paragraphs via Markdown soft
+  breaks (`  \\n`), and leaves ``>`` blockquotes and explicit topic openings separated.
+  """
+  if not text or not text.strip():
+    return ""
+  from doc_curation.sanskrit import fixer
+
+  s = regex.sub(r"॥\s*\n+\s*([०-९0-9]+\s*॥)", r"॥ \1", text)
+  if resolve_editorial_suggestions:
+    s = fixer.resolve_suggestions(s)
+  s = sanitize_details_footnotes(s)
+  drop_re = regex.compile(drop_line_pattern) if isinstance(drop_line_pattern, str) else drop_line_pattern
+
+  out_paras: list[str] = []
+  for raw_p in regex.split(r"\n\s*\n+", s.strip()):
+    p = raw_p.strip()
+    if not p:
+      continue
+    lines = [ln.rstrip() for ln in p.splitlines() if ln.strip()]
+    if drop_re is not None:
+      lines = [ln for ln in lines if not drop_re.match(ln.lstrip("> "))]
+    if not lines:
+      continue
+    first = lines[0]
+    is_bq = all(ln.lstrip().startswith(">") for ln in lines)
+    if out_paras:
+      prev = out_paras[-1]
+      prev_is_bq = all(ln.lstrip().startswith(">") for ln in prev.splitlines())
+      if regex.match(r"^इति\s*[।॥]?\s*$", " ".join(lines)):
+        if prev_is_bq:
+          out_paras.append("  \n".join(lines))
+        else:
+          out_paras[-1] = prev.rstrip() + "  \n" + "  \n".join(lines)
+        continue
+      prev_last = prev.splitlines()[-1].rstrip()
+      if (
+        not is_bq
+        and not prev_is_bq
+        and not prev_last.endswith(("—", "–", ":"))
+        and (
+          not prev_last.endswith(("।", "॥", "?", "!", '"', "”", "’"))
+          or regex.match(
+            r"^(?:इति|ततः|तत्र|तथा|अथ|एवं|यथा|किञ्च|अतश्|यस्मात्|तस्मात्|अपि|च)(?=\s|$)",
+            first,
+          )
+        )
+        and not first.startswith(("कल्पः", "पाठ", "अथ ", ">"))
+      ):
+        sep = "\n" if prev_last.endswith("  ") else "  \n"
+        out_paras[-1] = prev + sep + "  \n".join(lines)
+        continue
+    out_paras.append("  \n".join(lines))
+
+  final_paras: list[str] = []
+  for p in out_paras:
+    lines = [ln.rstrip() for ln in p.splitlines() if ln.strip()]
+    if len(lines) > 1:
+      final_paras.append("\n".join([*(ln + "  " for ln in lines[:-1]), lines[-1]]))
+    elif lines:
+      final_paras.append(lines[0])
+  return "\n\n".join(final_paras).strip()
+
+
 _TM_WORDS_SECTION_RE = regex.compile(
   r"(TRANSLATION WORDS:\n)(.*?)(\n\n(?:UPCOMING CORES|Reply with ONLY this JSON))",
   flags=regex.DOTALL,

@@ -202,6 +202,143 @@ def _score_span_for_core(
   return score - ratio_pen
 
 
+def _solve_monotone_span_dp(
+  infos: list[dict],
+  cand_bonuses: dict[int, float],
+  en_words: list[str],
+  *,
+  n_primary: int | None = None,
+  require_full_end: bool = False,
+  upcoming_start_idx: int | None = None,
+) -> list[int]:
+  """Run monotonic Viterbi DP over ``pos_list`` split points, returning ``word_bounds``."""
+  wlen = len(en_words)
+  pos_list = sorted(cand_bonuses.keys())
+  n_pos = len(pos_list)
+  prefix_chars = [0] * (wlen + 1)
+  quote_pref = [0] * (wlen + 1)
+  etc_at = frozenset(k + 1 for k, w in enumerate(en_words) if w.lower().startswith(("&c", "etc")))
+  for k, w in enumerate(en_words):
+    prefix_chars[k + 1] = prefix_chars[k] + len(w) + 1
+    quote_pref[k + 1] = quote_pref[k] + int(w.startswith(("'", '"', "‘", "“")))
+
+  total_k = len(infos)
+  up_from = total_k if upcoming_start_idx is None else upcoming_start_idx
+  out_k = total_k if n_primary is None else n_primary
+  neg_inf = -1e9
+  dp = [[neg_inf] * n_pos for _ in range(total_k + 1)]
+  back = [[0] * n_pos for _ in range(total_k + 1)]
+  dp[0][0] = 0.0
+
+  for k, inf in enumerate(infos):
+    is_up = k >= up_from
+    max_span_chars = max(900, 12 * inf["skt_chars"]) if require_full_end else None
+    hit_pref = [0.0] * (wlen + 1)
+    h_map = {pos: wt for pos, _, wt in inf["word_hits"]}
+    for idx_w in range(wlen):
+      hit_pref[idx_w + 1] = hit_pref[idx_w] + h_map.get(idx_w, 0.0)
+    for j_idx in range(n_pos):
+      e = pos_list[j_idx]
+      best_v, best_i = neg_inf, 0
+      i_iter = range(j_idx, -1, -1) if max_span_chars is not None else range(j_idx + 1)
+      for i_idx in i_iter:
+        s = pos_list[i_idx]
+        if max_span_chars is not None and prefix_chars[e] - prefix_chars[s] > max_span_chars and best_v > neg_inf / 2:
+          break
+        prev_v = dp[k][i_idx]
+        if prev_v <= neg_inf / 2:
+          continue
+        if is_up and e == s:
+          sp_score = 1.5 if s == wlen else -0.5
+        else:
+          sp_score = _score_span_for_core(inf, s, e, cand_bonuses, prefix_chars, hit_pref, quote_pref, etc_at)
+        cand_v = prev_v + sp_score
+        if cand_v > best_v:
+          best_v, best_i = cand_v, i_idx
+      dp[k + 1][j_idx] = best_v
+      back[k + 1][j_idx] = best_i
+
+  if require_full_end:
+    best_end_j = n_pos - 1
+  else:
+    best_end_j = max(
+      range(n_pos),
+      key=lambda j: dp[total_k][j] - (0.04 * (wlen - pos_list[j]) if up_from == total_k else 0.0),
+    )
+  bounds_idx = [0] * (total_k + 1)
+  bounds_idx[total_k] = best_end_j
+  for k in range(total_k, 0, -1):
+    bounds_idx[k - 1] = back[k][bounds_idx[k]]
+  bounds = [pos_list[idx] for idx in bounds_idx[: out_k + 1]]
+  bounds[0] = 0
+  if require_full_end:
+    bounds[out_k] = wlen
+  return bounds
+
+
+def tokenize_with_offsets(en_text: str) -> tuple[list[str], list[tuple[int, int]], set[int]]:
+  """Return ``(words, char_spans, newline_start_indices)`` preserving source formatting."""
+  words: list[str] = []
+  spans: list[tuple[int, int]] = []
+  nl_starts: set[int] = set()
+  prev_end = 0
+  for m in regex.finditer(r"\S+", en_text or ""):
+    gap = en_text[prev_end:m.start()]
+    idx = len(words)
+    if idx > 0 and "\n" in gap:
+      nl_starts.add(idx)
+    words.append(m.group(0))
+    spans.append((m.start(), m.end()))
+    prev_end = m.end()
+  return words, spans, nl_starts
+
+
+def align_cores_to_formatted_translation(cores: list[str], en_text: str) -> list[str]:
+  """Align ordered Sanskrit ``cores`` onto formatted English ``en_text``, preserving source newlines."""
+  if not cores:
+    return []
+  if len(cores) == 1:
+    return [(en_text or "").strip()]
+  words, spans, nl_starts = tokenize_with_offsets(en_text)
+  if not words:
+    return ["" for _ in cores]
+
+  cand_bonuses = candidate_word_starts(words)
+  for ni in nl_starts:
+    cand_bonuses[ni] = max(cand_bonuses.get(ni, 0.0), 4.0)
+  if len(cand_bonuses) < len(cores) + 4:
+    for wi, w in enumerate(words[:-1]):
+      if w.endswith((";", ":")):
+        cand_bonuses.setdefault(wi + 1, 1.5)
+  if len(cand_bonuses) < len(cores) + 2:
+    for wi, w in enumerate(words[:-1]):
+      if w.endswith((",", "—", "–", '"', "”", "’")):
+        cand_bonuses.setdefault(wi + 1, -0.3)
+  if len(cand_bonuses) < len(cores) + 1:
+    step = max(1, len(words) // max(1, len(cores) * 2))
+    for wi in range(1, len(words), step):
+      cand_bonuses.setdefault(wi, -1.8)
+
+  iast_stems = _iast_slp1_tokens(words)
+  infos = [find_core_anchor_hits(c, words, iast_stems) for c in cores]
+  for inf in infos:
+    for oh in inf["opening_hits"]:
+      if 0 <= oh <= len(words):
+        cand_bonuses.setdefault(oh, 1.5)
+
+  word_bounds = _solve_monotone_span_dp(
+    infos, cand_bonuses, words, n_primary=len(cores), require_full_end=True
+  )
+  results: list[str] = []
+  for k in range(len(cores)):
+    ws, we = word_bounds[k], word_bounds[k + 1]
+    if we <= ws:
+      results.append("")
+    else:
+      results.append(en_text[spans[ws][0] : spans[we - 1][1]].strip())
+  return results
+
+
 def align_cores_to_translation_dp(
   cores: list[str],
   en_words: list[str],
@@ -232,58 +369,14 @@ def align_cores_to_translation_dp(
       if 0 <= oh <= wlen:
         cand_bonuses.setdefault(oh, 1.5)
 
-  pos_list = sorted(cand_bonuses.keys())
-  n_pos = len(pos_list)
-  prefix_chars = [0] * (wlen + 1)
-  quote_pref = [0] * (wlen + 1)
-  etc_at = frozenset(k + 1 for k, w in enumerate(en_words) if w.lower().startswith(("&c", "etc")))
-  for k, w in enumerate(en_words):
-    prefix_chars[k + 1] = prefix_chars[k] + len(w) + 1
-    quote_pref[k + 1] = quote_pref[k] + int(w.startswith(("'", '"', "‘", "“")))
-
-  total_k = len(all_cores)
-  neg_inf = -1e9
-  dp = [[neg_inf] * n_pos for _ in range(total_k + 1)]
-  back = [[0] * n_pos for _ in range(total_k + 1)]
-  dp[0][0] = 0.0
-
-  for k in range(total_k):
-    inf = infos[k]
-    is_up = k >= n_cores
-    hit_pref = [0.0] * (wlen + 1)
-    h_map = {pos: wt for pos, _, wt in inf["word_hits"]}
-    for idx_w in range(wlen):
-      hit_pref[idx_w + 1] = hit_pref[idx_w] + h_map.get(idx_w, 0.0)
-    for j_idx in range(n_pos):
-      e = pos_list[j_idx]
-      best_v, best_i = neg_inf, 0
-      for i_idx in range(j_idx + 1):
-        prev_v = dp[k][i_idx]
-        if prev_v <= neg_inf / 2:
-          continue
-        s = pos_list[i_idx]
-        if is_up and e == s:
-          sp_score = 1.5 if s == wlen else -0.5
-        else:
-          sp_score = _score_span_for_core(inf, s, e, cand_bonuses, prefix_chars, hit_pref, quote_pref, etc_at)
-        cand_v = prev_v + sp_score
-        if cand_v > best_v:
-          best_v, best_i = cand_v, i_idx
-      dp[k + 1][j_idx] = best_v
-      back[k + 1][j_idx] = best_i
-
-  # If no upcoming_cores were given, prefer consuming most/all of the window unless tail is foreign
-  best_end_j = max(
-    range(n_pos),
-    key=lambda j: dp[total_k][j] - (0.04 * (wlen - pos_list[j]) if not upcoming else 0.0),
+  word_bounds = _solve_monotone_span_dp(
+    infos,
+    cand_bonuses,
+    en_words,
+    n_primary=n_cores,
+    require_full_end=False,
+    upcoming_start_idx=n_cores,
   )
-  bounds_idx = [0] * (total_k + 1)
-  bounds_idx[total_k] = best_end_j
-  for k in range(total_k, 0, -1):
-    bounds_idx[k - 1] = back[k][bounds_idx[k]]
-
-  word_bounds = [pos_list[idx] for idx in bounds_idx[:n_cores + 1]]
-  word_bounds[0] = 0
   starts = {str(c_start + i): word_bounds[i] for i in range(n_cores)}
   next_en = word_bounds[n_cores]
   skips = [c_start + i for i in range(n_cores) if word_bounds[i + 1] == word_bounds[i]]

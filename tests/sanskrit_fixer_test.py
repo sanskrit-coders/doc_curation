@@ -71,3 +71,19 @@ def test_normalize_mAdhyandina():
     # Preserve +++(...)+++ annotations and Hindi-style -ें/-ों endings
     assert fixer.normalize_mAdhyandina("स॒रम्+++(=सरणं)+++ में॒। पूर्वें॑।") == "स॒रम्+++(=सरणं)+++ में॒। पूर्वें॑।"
     assert fixer.normalize_mAdhyandina("स्वयं-भूः") == "स्वयं-भूः"
+
+
+def test_fix_stray_indic_scripts():
+    assert fixer.fix_stray_indic_scripts("अप्र" + "వి" + "श्याग्नीन्") == "अप्रविश्याग्नीन्"
+    assert fixer.fix_stray_indic_scripts("तథोद्यन्तमादित्यम्") == "तथोद्यन्तमादित्यम्"
+    # Leading dependent Bengali mātrā attached cleanly after Devanāgarī consonant
+    assert fixer.fix_stray_indic_scripts("अग्ने\u09c7 हव्यम्") == "अग्नेे हव्यम्"
+    # Monolingual non-Devanāgarī text is left untouched
+    assert fixer.fix_stray_indic_scripts("అగ్నిమీళే పురోహితమ్") == "అగ్నిమీళే పురోహితమ్"
+
+
+def test_resolve_suggestions():
+    raw = "[[P12]] अत्र [[अग्नये|अग्नये / अग्नौ]] देवम् [[old|]] [[bad|[[??]]]] कथ्यते।"
+    assert fixer.resolve_suggestions(raw) == "अत्र अग्नये देवम् [[??]] कथ्यते।"
+    assert fixer.resolve_suggestions("अत्र [[P12]] देवम् ।") == "अत्र देवम् ।"
+    assert fixer.resolve_suggestions("[[P45]]\nपाठः [[k|ख]]।", strip_page_markers=False) == "[[P45]]\nपाठः ख।"

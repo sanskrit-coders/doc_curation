@@ -294,3 +294,79 @@ def accept_minor_changes(text, suggestion_pattern=SUGGESTION_PATTERN, *args, **k
 
   return regex.sub(suggestion_pattern, replacer, text or "")
 
+
+_STRAY_INDIC_RANGES: tuple[tuple[int, int, str], ...] = (
+  (0x0980, 0x09FF, sanscript.BENGALI),
+  (0x0A00, 0x0A7F, sanscript.GURMUKHI),
+  (0x0A80, 0x0AFF, sanscript.GUJARATI),
+  (0x0B00, 0x0B7F, sanscript.ORIYA),
+  (0x0B80, 0x0BFF, sanscript.TAMIL),
+  (0x0C00, 0x0C7F, sanscript.TELUGU),
+  (0x0C80, 0x0CFF, sanscript.KANNADA),
+  (0x0D00, 0x0D7F, sanscript.MALAYALAM),
+)
+_NON_DEVA_VIRAMAS = frozenset({
+  "\u09cd", "\u0a4d", "\u0acd", "\u0b4d", "\u0bcd", "\u0c4d", "\u0ccd", "\u0d4d",
+})
+
+
+def fix_stray_indic_scripts(text: str) -> str:
+  """Transliterate accidental non-Devanāgarī Indic-script OCR runs back into Devanāgarī.
+
+  Acts only when ``text`` contains Devanāgarī characters so pure non-Devanāgarī
+  texts (Telugu, Bengali, Tamil, etc.) are left untouched. Preserves attached
+  dependent vowel signs (mātrās) cleanly across runs.
+  """
+  if not text or not any("\u0900" <= ch <= "\u097f" for ch in text):
+    return text or ""
+  out: list[str] = []
+  i = 0
+  n = len(text)
+  while i < n:
+    cp = ord(text[i])
+    hit = next(((lo, hi, sc) for lo, hi, sc in _STRAY_INDIC_RANGES if lo <= cp <= hi), None)
+    if hit is None:
+      out.append(text[i])
+      i += 1
+      continue
+    lo, hi, sc = hit
+    j = i
+    while j < n and lo <= ord(text[j]) <= hi:
+      j += 1
+    chunk = text[i:j]
+    if unicodedata.category(chunk[0]).startswith("M"):
+      pref = sanscript.transliterate("k", sanscript.HK, sc)
+      res = sanscript.transliterate(pref + chunk, sc, sanscript.DEVANAGARI)[1:]
+      if res.startswith("्") and chunk[0] not in _NON_DEVA_VIRAMAS:
+        res = res[1:]
+    else:
+      res = sanscript.transliterate(chunk, sc, sanscript.DEVANAGARI)
+    out.append(regex.sub(r"्{2,}", "्", res))
+    i = j
+  return "".join(out)
+
+
+def resolve_suggestions(text: str, *, strip_page_markers: bool = True) -> str:
+  """Resolve ``[[OLD|NEW]]`` proofreading suggestions to clean publishable text.
+
+  Unwraps nested ``[[OLD|[[??]]]]`` markers, picks the primary reading when an
+  editorial ``A / B`` slash note leaked into ``NEW``, removes empty deletion
+  markers ``[[OLD|]]``, and optionally strips page markers ``[[P123]]``.
+  """
+  if not text:
+    return ""
+  s = regex.sub(r"\[\[[^|\n\]]+\|\[\[\?\?\]\]\]\]", "[[??]]", text)
+  s = regex.sub(r"(?m)^\s*\[\[\?\?\]\]\s*\n?", "", s)
+  if strip_page_markers:
+    s = regex.sub(r"(?m)^[ \t]*\[\[P[^|\n\]]*\]\][ \t]*", "", s)
+    s = regex.sub(r"[ \t]*\[\[P[^|\n\]]*\]\]", "", s)
+  s = regex.sub(r"\[\[[^\n|]+\|\s*\]\][ \t]*", "", s)
+
+  def _pick(m: regex.Match) -> str:
+    rep = m.group(2).strip()
+    if " / " in rep:
+      rep = rep.split(" / ", 1)[0].strip()
+    return rep if rep and rep != "??" else m.group(1)
+
+  return regex.sub(SUGGESTION_PATTERN, _pick, s)
+
