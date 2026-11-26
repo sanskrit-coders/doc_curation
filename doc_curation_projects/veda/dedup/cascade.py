@@ -76,7 +76,8 @@ def _spec_by_url(url: str, all_specs: dict[str, VedaCorpusSpec]) -> VedaCorpusSp
 def _short_stem_name(vp_text: str, rel_fallback: str) -> str:
   cleaned = re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]", "", vp_text, flags=re.S)
   cleaned = re.sub(r"\[\[([^|\]]*)\|[^\]]*\]\]", r"\1", cleaned)
-  cleaned = re.sub(r"[᳓᳙\u0951\u0952\*\.,\!\?\|\-—–\(\)।॥०-९0-9]+", " ", cleaned)
+  cleaned = re.sub(r"[᳓᳙\u0951\u0952]+", "", cleaned)
+  cleaned = re.sub(r"[\*\.,\!\?\|\-—–\(\)।॥०-९0-9]+", " ", cleaned)
   words = [w for w in cleaned.split() if any("\u0900" <= c <= "\u097f" for c in w)][:3]
   slug = file_helper.get_storage_name(" ".join(words), source_script=sanscript.DEVANAGARI, max_length=40)
   return slug or rel_fallback.replace("/", "_").replace(".md", "")
