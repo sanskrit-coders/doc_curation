@@ -218,3 +218,48 @@ def test_wikisource_parser_and_combined_reposition(tmp_path):
   assert (12, 41) in prose_notes and "४०-कण्डिकया" in prose_notes[(12, 41)]
   assert (14, 10) in prose_notes and "९-कण्डिकया" in prose_notes[(14, 10)]
   assert (14, 25) in prose_notes and "२४-कण्डिकया" in prose_notes[(14, 25)]
+
+
+def test_aligner_uses_soft_breaks_and_cleans_uvata_and_um():
+  from doc_curation_projects.veda.yajuH.vaajasaneyi.kaanva.samhitaa import prose_clean
+  from doc_curation_projects.veda.yajuH.vaajasaneyi.dedup import tika_merger
+
+  plan = ba.plan_kandika_alignment(
+    "इषे त्वा। अन्नार्थं वचनम्। तृतीयं वाक्यम्॥ १॥",
+    "",
+    ["इषे त्वा"],
+  )
+  u_tika = plan[0]["uvata"]["tika"]
+  assert "\n\n" not in u_tika
+  assert "  \n" in u_tika
+
+  uv_dirty = "आज्यम्ाज्यशब्देन यज्ञो लक्ष्यते ।\n\nधयतेर्णिजन्त(३)स्यासुनि रूपम् ।\n\nकर्मा (१)कर्त्री:"
+  uv_clean = prose_clean.clean_prose_block(uv_dirty, mode="uvata")
+  assert "आज्यम् । आज्यशब्देन" in uv_clean
+  assert "(३)" not in uv_clean and "(१)" not in uv_clean
+  assert "\n\n" not in uv_clean and "  \n" in uv_clean
+  assert "कर्त्रीः" in uv_clean
+
+  merged = tika_merger.merge_author_bodies(["प्रथमः भागः।", "द्वितीयः भागः।"])
+  assert merged == "प्रथमः भागः।  \nद्वितीयः भागः।"
+
+  um_dirty = (
+    '+++\ntitle = "०१"\n+++\n\n'
+    "उ० दृष्टमित्यर्थः। तथा 'दध्यङ्\n\n"
+    "१ ऋषीन्वच्मीह. २ ब्रह्मपङ्क्तिः\n\n"
+    "ह वा आथर्वण' इति।\n\n"
+    ".\n\n"
+    "म० अन्\n\n"
+    "* * *\n\n"
+    "१ पादटिप्पणी।\n\n"
+    "* * *\n\n"
+    "तरात्मा भवति।\n\n"
+    "मन्त्राणामकारादिवर्णक्रमकोशः । १ ९ ४०"
+  )
+  um_cleaned = ba.clean_uvatamahidharau_text(um_dirty)
+  assert "तथा 'दध्यङ् ह वा आथर्वण' इति।" in um_cleaned
+  assert "> [टिप्पणी] १ ऋषीन्वच्मीह. २ ब्रह्मपङ्क्तिः" in um_cleaned
+  assert "\n\n.\n\n" not in um_cleaned
+  assert "मन्त्राणामकारादिवर्णक्रमकोशः" not in um_cleaned
+  assert "म० अन् तरात्मा भवति।" in um_cleaned
+  assert "> [टिप्पणी] १ पादटिप्पणी।" in um_cleaned

@@ -36,7 +36,11 @@ _COLOPHON_RE = re.compile(
   r"(?:^|\n)\s*इति\s+[^।॥]{0,80}(?:अध्याय|ऽध्याय|अनुवाक|ऽनुवाक|काण्ड)[^।॥]*(?:।|॥\s*(?:[०-९]+\s*॥)?)\s*$"
 )
 _TERM_END_RE = re.compile(r"(?:[।॥?!]|(?:[।॥][\"'”’)\s०-९]*))$")
-_ITEM_OUT_RE = re.compile(r"<<<ITEM (\d+)>>>\s*(.*?)\s*<<<END \1>>>", flags=re.S)
+_ITEM_OUT_RE = re.compile(r"<<<ITEM (-?\d+)>>>\s*(.*?)\s*<<<END \1>>>", flags=re.S)
+_STAR_SEP_RE = re.compile(r"^(?:\*\s*\*\s*\*|\*\*\*)$")
+_UVATA_PAREN_FN_RE = re.compile(
+  r"(?<=[\u0900-\u097f])\([०-९]\)(?=[\u0900-\u097f\s।॥,])|(?<=[\u0900-\u097f]\s)\([०-९]\)(?=[\u0900-\u097f])"
+)
 
 _KANVI_PROOFREAD_EXTRA = (
   "The input provides `[REF_MANTRA]` ONLY as read-only reference context to clarify garbled OCR words "
@@ -71,10 +75,11 @@ def strip_pune_margin_numbers(text: str) -> str:
     r"(?m)^\s*(?:<<|>>|°|\*\"\*|\"\*|\(\s*\(\)|"
     r"[-–—.]*\s*[०-९]{1,4}[-–—.,;:•]*|[-–—.]*\s*[0-9]{1,4}\s*[-–—.,;:•)]*|"
     r"[०-९0-9]+\s*[-–]\s*[०-९0-9]+\.?|"
-    r"['‘\"“\*]?\s*का[णण्]्?[व्य]?\s*[-–\s]*संहिता(?:\s*[।॥०-९\[\]\-])*|"
+    r"['‘\"“\*]?\s*का[णण्]्?[व्य]?\s*[-–\s]*संहिता(?:\s*(?:भा[ष्यप]संग्रहः?|[।॥०-९\[\]\-]))*|"
+    r"का[णण्]्?व[-–\s]*संहिता[-–\s]*भा[ष्यप]संग्रहः?.*|"
     r"कासं[\s.…]*[०-९]+|"
-    r"['‘\"\*]?\s*सायणाचार्य[^\n]*[भम]ाष्य[\s\-]*[सन]मेता.*|"
-    r"[^\n\[]*अध्यायः\s*\]|"
+    r"[>\s]*['‘\"\*]?\s*(?:सायणाचार्य|आनन्द-?बोध)[^\n]*(?:[भम]ा[ष्यपध्यन्यव्य]+|[सन]मेता|प्रणीतः).*|"
+    r"(?:\[\s*[०-९/]+\s*\]\s*[।॥\s०-९]*)?[^\n\[]*अध्याय[ः:]?\s*\]\s*\.?|"
     r"for\s+['‘\"][^'\n]+;\s*[A-Z]\d.*|"
     r"[क-ह]|"
     r"[^अ-ह॥०-९\n]+)\s*$\n?",
@@ -175,7 +180,7 @@ def _collapse_fake_paragraphs(text: str) -> str:
     return ""
   chunks = [_normalize_inner_lines(c) for c in chunks]
 
-  is_header = lambda c: bool(re.match(r"^\[[^\n\]]+\]$", c))
+  is_header = lambda c: bool(re.match(r"^\[[^\n\]]+\]$", c) or _STAR_SEP_RE.match(c))
   is_quote = lambda c: c.lstrip().startswith(">")
   is_colophon = lambda c: bool(_COLOPHON_RE.search(c))
   is_short_pada = lambda c: len(c) <= 28 and "\n" not in c and c.endswith("।")
@@ -209,19 +214,31 @@ def _collapse_fake_paragraphs(text: str) -> str:
   return "".join(out)
 
 
-def clean_kanva_sayana_block(body: str) -> str:
-  """Normalize OCR artifacts, visarga colons, and fake paragraph separations inside Kāṇva Sāyaṇa blocks."""
-  t = body.replace("\r\n", "\n").strip()
+def clean_prose_block(body: str, *, mode: str = "vsk") -> str:
+  """Normalize OCR artifacts, visarga colons, and fake paragraph separations across commentary modes."""
+  t = body.replace("\r\n", "\n").replace("\u200d", "").strip()
   if not t:
     return ""
-  t = strip_pune_margin_numbers(t)
-  t = _SA_PREFIX_RE.sub("", t.lstrip())
   t = re.sub(r"(?<=ः)\s*:(?:\s*:)*", "", t)
   t = re.sub(r"(?<=[\u0900-\u097f])\s*:(?:\s*:)*", "ः", t)
-  t = _ORDINALS_DASH_RE.sub(lambda m: m.group(0).replace("-\n", " —\n").replace("- \n", " —\n"), t)
-  t = re.sub(r"(?<=[\u0900-\u097f])-[ \t]*\n[ \t]*(?=[\u0900-\u097f])", "-", t)
-  t = re.sub(r"(?m)^(?:[<\"'‘\s]*(?:सा|आ|अ)\s*[-–—:]+\s*)+", "", t)
+  if mode == "uvata":
+    # Fix OCR virama+ā-mātrā ligature loss (e.g. `आज्यम्ाज्यशब्देन` -> `आज्यम् । आज्यशब्देन`)
+    t = re.sub(r"(?<=[\u0900-\u097f]्)ा", " । आ", t)
+    t = _UVATA_PAREN_FN_RE.sub("", t)
+    t = re.sub(r"^(?:उ[०।.]+\s*)+", "", t.lstrip())
+  else:
+    t = strip_pune_margin_numbers(t)
+    t = _SA_PREFIX_RE.sub("", t.lstrip())
+    t = _ORDINALS_DASH_RE.sub(lambda m: m.group(0).replace("-\n", " —\n").replace("- \n", " —\n"), t)
+    t = re.sub(r"(?<=[\u0900-\u097f])-[ \t]*\n[ \t]*(?=[\u0900-\u097f])", "-", t)
+    t = re.sub(r"(?m)^(?:[<\"'‘\s]*(?:सा|आ|अ)\s*[-–—:]+\s*)+", "", t)
+    t = re.sub(r"(?m)^\[(?=\s*इति\s+[^\]\n]+(?:अध्याय|ऽध्याय|अनुवाक))", "", t)
   return _collapse_fake_paragraphs(t).strip()
+
+
+def clean_kanva_sayana_block(body: str) -> str:
+  """Normalize OCR artifacts, visarga colons, and fake paragraph separations inside Kāṇva Sāyaṇa blocks."""
+  return clean_prose_block(body, mode="vsk")
 
 
 def extract_reference_mantra(content: str, *, max_chars: int = 800) -> str:
@@ -266,7 +283,7 @@ def transform_canonical_kanva_sayana_in_text(
     pieces: list[str] = []
     cursor = 0
     prev_mantra_blk = ""
-    for start, end, title, body in spans:
+    for idx, (start, end, title, body) in enumerate(spans):
       pieces.append(segment[cursor:start])
       blk = segment[start:end]
       m_sum = _SUMMARY_RE.search(blk)
@@ -280,7 +297,15 @@ def transform_canonical_kanva_sayana_in_text(
         head = blk[: m_sum.end()]
         pieces.append(f"{head}\n\n{new_body}\n</details>")
       elif summary_title in body:
-        local_ctx = f"{prev_mantra_blk}\n{blk}" if prev_mantra_blk else blk
+        # Prefixed `सर्वा अवतारिकाः` blocks precede their mantra; commentary `सर्वाष् टीकाः` follow it.
+        next_mantra_blk = ""
+        if title == "सर्वा अवतारिकाः" or title.endswith(("विनियोगः", "अवतारिका")):
+          for nxt_s, nxt_e, nxt_title, _ in spans[idx + 1 :]:
+            if nxt_title.startswith("विश्वास-प्रस्तुतिः") or nxt_title.startswith("मूलम्"):
+              next_mantra_blk = segment[nxt_s:nxt_e]
+              break
+        anchor_blk = next_mantra_blk or prev_mantra_blk
+        local_ctx = f"{anchor_blk}\n{blk}" if anchor_blk else blk
         local_ref = extract_reference_mantra(local_ctx) or active_ref
         inner_raw = blk[m_sum.end() : close_idx]
         lead_ws = inner_raw[: len(inner_raw) - len(inner_raw.lstrip())]
@@ -304,16 +329,22 @@ def clean_canonical_kanva_sayana_in_roots(
   roots: Sequence[pathlib.Path],
   *,
   summary_title: str = CANONICAL_KANVA_SAYANA_SUMMARY,
+  mode: str = "vsk",
 ) -> dict[str, int]:
   """Deterministically clean fake paragraphs & noise across all non-included ``summary_title`` blocks."""
   counters = {"files_scanned": 0, "files_changed": 0, "blocks_changed": 0, "blocks_seen": 0}
 
   def _clean(body: str, _ref: str) -> str:
     counters["blocks_seen"] += 1
-    return clean_kanva_sayana_block(body)
+    return clean_prose_block(body, mode=mode)
 
   for root in roots:
-    for p in sorted(pathlib.Path(root).rglob("*.md")):
+    root_p = pathlib.Path(root)
+    if not root_p.exists():
+      continue
+    for p in sorted(root_p.rglob("*.md")):
+      if not p.is_file():
+        continue
       txt = p.read_text(encoding="utf-8")
       if summary_title not in txt:
         continue
@@ -432,12 +463,24 @@ def _postprocess_proofread_output(raw: str, raw_llm: str) -> str:
   """Apply deterministic Sanskrit post-guards and anti-blank-line normalization to LLM output."""
   from doc_curation.llm.proofreader import guards
 
-  cleaned_llm = re.sub(r"^\s*\[COMMENTARY\]\s*", "", raw_llm).replace("\u200d", "")
+  cleaned_llm = re.sub(r"^\s*\[(?:COMMENTARY|REF_MANTRA)\]\s*", "", raw_llm).replace("\u200d", "")
   guarded = guards.enforce_post_guards(raw, cleaned_llm, allow_suggestions=True).replace("\u200d", "")
   guarded = re.sub(r"\[\[([^\[\]|]+)\|\[\[([^|\[\]]+)\]\]\]\]", r"[[\1|\2]]", guarded)
   guarded = re.sub(r"\[\[([^\[\]|]+)\|\[\[([^\[\]|]+\|[^\[\]]+)\]\]\]\]", r"[[\2]]", guarded)
-  guarded = re.sub(r"\[\[\s*[०-९0-9.\-]+\s*\|\]\]", "", guarded)
-  guarded = re.sub(r"\[\[([^|\[\]]*[\u0900-\u097f][^|\[\]]*)\|\]\]", r"\1", guarded)
+  guarded = re.sub(r"\[\[\|([^\[\]]+)\]\]", r"\1", guarded)
+  guarded = re.sub(r"\[\[[\'\"‘“\*]+([^|\[\]]+)\|\1\]\]", r"\1", guarded)
+  guarded = re.sub(
+    r"\[\[[^\n|\]]*(?:आनन्द[- ]?बोध[- ]?भट्टोपाध्याय|का[णण्]्व[- ]?संहिता|कोण्यसंहिता|दनवसंहिता|भा[ष्यप]संग्रह|मा[ष्यध्य]समेता|त्रयस्त्रिशः|ब्रह्मसंबन्धिप्रयोगे)[^\n|\]]*\|\s*\]\]",
+    "",
+    guarded,
+  )
+  guarded = re.sub(r"\[\[\s*[०-९A-Za-z0-9\s'\"*.,:;\-]+\s*\|\s*\]\]", "", guarded)
+  guarded = re.sub(r"\[\[([^|\[\]]*[\u0900-\u097f][^|\[\]]*)\|\s*\]\]", r"\1", guarded)
+  guarded = re.sub(
+    r"\[\[([^|\[\]]+)\|([^|\[\]]+)\]\]",
+    lambda m: m.group(2) if re.sub(r"[\s\-–—]+", "", m.group(1)) == re.sub(r"[\s\-–—]+", "", m.group(2)) else m.group(0),
+    guarded,
+  )
   guarded = _collapse_relapsed_single_sentence_breaks(guarded)
   return guarded.strip() or raw
 
@@ -700,6 +743,168 @@ def ingest_kanvi_shards_and_apply(
     "targets": len(targets),
     "done_total": len(done),
     "missing": missing,
+    "newly_ingested": newly_ingested,
+    "rejected_short": rejected_short,
+    "files_changed": files_changed,
+    "blocks_changed": blocks_changed,
+  }
+
+
+def split_text_for_llm(text: str, max_chars: int = 5200) -> list[str]:
+  """Split an oversize commentary block cleanly along paragraph/line breaks without mid-sentence tearing."""
+  t = text.strip()
+  if len(t) <= max_chars:
+    return [t] if t else []
+  parts: list[str] = []
+  cur: list[str] = []
+  cur_len = 0
+  # Prefer splitting on blank lines first; if a single paragraph exceeds max_chars, split on newlines.
+  units: list[str] = []
+  for para in re.split(r"\n\s*\n+", t):
+    p = para.strip()
+    if len(p) <= max_chars:
+      units.append(p)
+    else:
+      units.extend(ln for ln in p.splitlines() if ln.strip())
+  for u in units:
+    if cur and cur_len + len(u) + 2 > max_chars:
+      parts.append("\n\n".join(cur))
+      cur = []
+      cur_len = 0
+    cur.append(u)
+    cur_len += len(u) + 2
+  if cur:
+    parts.append("\n\n".join(cur))
+  return parts
+
+
+def export_workflow_batches(
+  roots: Sequence[pathlib.Path],
+  checkpoint_path: pathlib.Path | None,
+  batches_path: pathlib.Path,
+  *,
+  summary_title: str = CANONICAL_KANVA_SAYANA_SUMMARY,
+  max_batch_chars: int = 5000,
+  max_item_chars: int = 5200,
+  split_map_path: pathlib.Path | None = None,
+) -> dict[str, int]:
+  """Pack pending canonical blocks into size-bounded `wf_proofread_sem.py` JSON batches (auto-splitting long items)."""
+  targets = _collect_kanva_sayana_targets(roots, summary_title=summary_title)
+  done = _load_checkpoint_records(checkpoint_path)
+  pending = [t for t in targets if t["id"] not in done]
+
+  work_units: list[dict] = []
+  split_map: dict[str, list[dict]] = {}
+  next_neg_id = -1
+  for t in pending:
+    tid = t["id"]
+    chunks = split_text_for_llm(t["raw"], max_chars=max_item_chars)
+    if len(chunks) <= 1:
+      work_units.append({"id": tid, "ref": t["ref_mantra"], "raw": t["raw"]})
+      continue
+    parts_meta = []
+    for ch_txt in chunks:
+      sid = next_neg_id
+      next_neg_id -= 1
+      work_units.append({"id": sid, "ref": t["ref_mantra"], "raw": ch_txt})
+      parts_meta.append({"sid": sid, "raw": ch_txt})
+    split_map[str(tid)] = parts_meta
+
+  batches: list[list[dict]] = []
+  cur: list[dict] = []
+  cur_len = 0
+  for u in work_units:
+    u_len = len(u["raw"]) + len(u["ref"]) + 80
+    if cur and cur_len + u_len > max_batch_chars:
+      batches.append(cur)
+      cur = []
+      cur_len = 0
+    cur.append(u)
+    cur_len += u_len
+  if cur:
+    batches.append(cur)
+
+  batches_path.parent.mkdir(parents=True, exist_ok=True)
+  batches_path.write_text(json.dumps(batches, ensure_ascii=False), encoding="utf-8")
+  if split_map_path is not None:
+    split_map_path.parent.mkdir(parents=True, exist_ok=True)
+    split_map_path.write_text(json.dumps(split_map, ensure_ascii=False, indent=2), encoding="utf-8")
+
+  return {
+    "targets": len(targets),
+    "already_done": len(done),
+    "pending": len(pending),
+    "split_items": len(split_map),
+    "work_units": len(work_units),
+    "batches": len(batches),
+  }
+
+
+def ingest_workflow_outputs(
+  roots: Sequence[pathlib.Path],
+  wf_out_dir: pathlib.Path,
+  checkpoint_path: pathlib.Path | None,
+  *,
+  summary_title: str = CANONICAL_KANVA_SAYANA_SUMMARY,
+  split_map_path: pathlib.Path | None = None,
+  apply_to_files: bool = True,
+) -> dict[str, int]:
+  """Ingest workflow `shard_*.out.txt` outputs, reassemble split items without ID collision, and apply cleanly."""
+  targets = _collect_kanva_sayana_targets(roots, summary_title=summary_title)
+  by_id = {t["id"]: t for t in targets}
+  done = _load_checkpoint_records(checkpoint_path)
+
+  parsed_units: dict[int, str] = {}
+  for out_p in sorted(wf_out_dir.glob("shard_*.out.txt")):
+    txt = out_p.read_text(encoding="utf-8")
+    for tid_s, body in _ITEM_OUT_RE.findall(txt):
+      parsed_units[int(tid_s)] = body.strip()
+
+  split_map: dict[str, list[dict]] = (
+    json.loads(split_map_path.read_text(encoding="utf-8"))
+    if split_map_path and split_map_path.exists()
+    else {}
+  )
+
+  newly_ingested = 0
+  rejected_short = 0
+
+  def _accept(tid: int, candidate: str) -> None:
+    nonlocal newly_ingested, rejected_short
+    raw = by_id[tid]["raw"]
+    if (len(raw) >= 30 and len(candidate) < max(12, int(len(raw) * 0.40))) or (raw.strip() and not candidate.strip()):
+      rejected_short += 1
+      return
+    guarded = _postprocess_proofread_output(raw, candidate)
+    if tid not in done or done[tid] != guarded:
+      done[tid] = guarded
+      newly_ingested += 1
+      if checkpoint_path:
+        checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        with checkpoint_path.open("a", encoding="utf-8") as fh:
+          fh.write(json.dumps({"id": tid, "proofread": guarded}, ensure_ascii=False) + "\n")
+
+  for tid_s, parts_meta in split_map.items():
+    tid = int(tid_s)
+    if tid not in by_id or tid in done:
+      continue
+    if all(p["sid"] in parsed_units for p in parts_meta):
+      joined = "  \n".join(parsed_units[p["sid"]] for p in parts_meta)
+      _accept(tid, joined)
+
+  for uid, body in parsed_units.items():
+    if uid < 0 or uid not in by_id or str(uid) in split_map or uid in done:
+      continue
+    _accept(uid, body)
+
+  files_changed, blocks_changed = (0, 0)
+  if apply_to_files:
+    files_changed, blocks_changed = _apply_checkpoint_to_roots(targets, done, summary_title=summary_title)
+
+  return {
+    "targets": len(targets),
+    "done_total": len(done),
+    "missing": len(targets) - len(done),
     "newly_ingested": newly_ingested,
     "rejected_short": rejected_short,
     "files_changed": files_changed,

@@ -186,6 +186,22 @@ def pratika_overlap_score(comm: str, mula: str) -> float:
   return hits / len(targets)
 
 
+def join_prose_segments(segments: list[str] | tuple[str, ...]) -> str:
+  """Join prose segments using Markdown soft breaks (`  \\n`) after punctuation or spaces mid-sentence."""
+  out: list[str] = []
+  for seg in segments:
+    s = seg.strip()
+    if not s:
+      continue
+    if not out:
+      out.append(s)
+    elif regex.search(r"[।॥?!'’”\)]$", out[-1]):
+      out.append(f"  \n{s}")
+    else:
+      out.append(f" {s}")
+  return "".join(out)
+
+
 def clean_commentary_boilerplate(text: str, *, keep_vedadipa_colophon: bool = True) -> str:
   """Clean Wikisource artifacts, author tags, and bare ordinal labels from commentary."""
   if not text:
@@ -818,7 +834,7 @@ def build_reconciled_corpus(
     res = {}
     for base in order:
       ch, v = map(int, base.split("."))
-      res[(ch, v)] = "\n\n".join(groups[base])
+      res[(ch, v)] = join_prose_segments(groups[base])
     return res
 
   u_segs = json.loads(indike_uvata_path.read_text())["segments"]
@@ -1142,7 +1158,7 @@ def plan_kandika_alignment(
         by_role[item["role"]].append(item["text"])
       for role in ("avatarika", "viniyoga", "tika"):
         if by_role[role]:
-          c[auth][role] = "\n\n".join(by_role[role])
+          c[auth][role] = join_prose_segments(by_role[role])
     clusters.append(c)
   return clusters
 
@@ -1409,4 +1425,96 @@ def apply_all_bhashyas(
         ch_path.write_text(new_txt)
       stats["chapters_updated"] += 1
   return stats
+
+
+_UM_NEW_SPEAKER_OR_SEC_RE = regex.compile(
+  r"^(?:#+\s|---|(?:\*\s*\*\s*\*|\*\*\*)$|(?:उ|म)[०।.]\s*|(?:महीधर|उवट)भाष्यम्|"
+  r"(?:प्रथमा|द्वितीया|तृतीया|चतुर्थी|पञ्चमी|षष्ठी|सप्तमी|अष्टमी|नवमी|दशमी|"
+  r"एकादशी|द्वादशी|त्रयोदशी|चतुर्दशी|पञ्चदशी|षोडशी|सप्तदशी|अष्टादशी|एकोनविंशी|विंशी|"
+  r"एकविंशी|द्वाविंशी|त्रयोविंशी|चतुर्विंशी|पञ्चविंशी|षड्विंशी|सप्तविंशी|अष्टाविंशी|एकोनत्रिंशी|त्रिंशी|"
+  r"एकत्रिंशी|द्वात्रिंशी|त्रयस्त्रिंशी|चतुस्त्रिंशी|पञ्चत्रिंशी|षट्त्रिंशी|सप्तत्रिंशी|अष्टात्रिंशी|"
+  r"एकोनचत्वारिंशी|चत्वारिंशी|अथ\s|इति\s))"
+)
+_UM_SENT_END_RE = regex.compile(r"[।॥?!'’”\)\]\*:]$")
+_UM_FOOTNOTE_PARA_RE = regex.compile(r"^[०-९]+\s+[^\n]+$")
+_UM_DEP_SIGN_START_RE = regex.compile(r"^[\u0901-\u0903\u093a-\u094f\u0951-\u0957]")
+
+
+def clean_uvatamahidharau_text(text: str, *, trim_ch27_index: bool = True) -> str:
+  """Repair mid-sentence OCR page/footnote interruptions and trailing index dumps in `uvaTa-mahIdharau/` chapters."""
+  fm = ""
+  body = text.replace("\r\n", "\n")
+  m_fm = regex.match(r"^(\+\+\+\n.*?\n\+\+\+\s*\n+)", body, flags=regex.S)
+  if m_fm:
+    fm = m_fm.group(1)
+    body = body[m_fm.end() :]
+
+  if trim_ch27_index:
+    m_idx = regex.search(r"(?m)^(?:मन्त्रप्र०\s+अ\.|मन्त्राणामकारादिवर्णक्रमकोशः)", body)
+    if m_idx:
+      body = body[: m_idx.start()].rstrip()
+
+  raw_paras = [p.strip() for p in regex.split(r"\n\s*\n+", body.strip()) if p.strip()]
+  out_paras: list[str] = []
+  pending_footnotes: list[str] = []
+  saw_star = False
+
+  for raw_p in raw_paras:
+    p = raw_p.replace("\u200d", "").strip()
+    if p in (".", "*"):
+      continue
+    if regex.match(r"^(?:\*\s*\*\s*\*|\*\*\*)$", p):
+      saw_star = True
+      continue
+
+    in_unfinished_para = bool(out_paras) and not _UM_SENT_END_RE.search(out_paras[-1]) and not out_paras[-1].startswith("#")
+    is_fn = bool(
+      _UM_FOOTNOTE_PARA_RE.match(p)
+      and "॥" not in p
+      and (saw_star or in_unfinished_para)
+    )
+    if is_fn:
+      pending_footnotes.append(p)
+      saw_star = False
+      continue
+
+    saw_star = False
+    if out_paras and in_unfinished_para and not _UM_NEW_SPEAKER_OR_SEC_RE.match(p):
+      joiner = "" if _UM_DEP_SIGN_START_RE.match(p) else " "
+      out_paras[-1] = f"{out_paras[-1]}{joiner}{p}"
+    else:
+      if out_paras and pending_footnotes and _UM_SENT_END_RE.search(out_paras[-1]):
+        for fn in pending_footnotes:
+          out_paras.append(f"> [टिप्पणी] {fn}")
+        pending_footnotes.clear()
+      out_paras.append(p)
+
+    if pending_footnotes and _UM_SENT_END_RE.search(out_paras[-1]):
+      for fn in pending_footnotes:
+        out_paras.append(f"> [टिप्पणी] {fn}")
+      pending_footnotes.clear()
+
+  for fn in pending_footnotes:
+    out_paras.append(f"> [टिप्पणी] {fn}")
+
+  cleaned_body = "\n\n".join(out_paras).strip()
+  return f"{fm}{cleaned_body}\n" if cleaned_body else fm
+
+
+def clean_uvatamahidharau_dir(um_dir: pathlib.Path, *, dry_run: bool = False) -> dict[str, int]:
+  """Clean mid-sentence breaks, interrupting footnotes, and Ch-27 OCR index across `uvaTa-mahIdharau/` files."""
+  files_scanned = 0
+  files_changed = 0
+  for p in sorted(um_dir.glob("[0-9][0-9].md")):
+    if not p.is_file():
+      continue
+    files_scanned += 1
+    orig = p.read_text(encoding="utf-8")
+    cleaned = clean_uvatamahidharau_text(orig)
+    if cleaned != orig:
+      files_changed += 1
+      if not dry_run:
+        p.write_text(cleaned, encoding="utf-8")
+  return {"files_scanned": files_scanned, "files_changed": files_changed}
+
 

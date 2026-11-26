@@ -158,7 +158,7 @@ def merge_vsk_hemistich_pair(
       tika_out.append((ttl, merged_val))
 
   if not any(t == "आनन्दबोध-टीका" for t, _ in tika_out) and (moved_mid or moved_tail):
-    tika_out.append(("आनन्दबोध-टीका", "\n\n".join(p for p in (moved_mid, moved_tail) if p)))
+    tika_out.append(("आनन्दबोध-टीका", "  \n".join(p for p in (moved_mid, moved_tail) if p)))
   return VskSubBlock(h1_av, vp_merged, tika_out, kandika_ref=b1.kandika_ref), next_out
 
 

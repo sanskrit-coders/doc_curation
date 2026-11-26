@@ -352,7 +352,7 @@ def test_export_and_ingest_kanvi_shards(tmp_path):
   content = shards[0].read_text(encoding="utf-8")
   assert "<<<ITEM 0>>>" in content and "दे᳓वः सविता᳓।" in content
   (shard_dir / "shard_00.out.txt").write_text(
-    "<<<ITEM 0>>>\nहे देवः सविता [[पच|षच]] [[नरदष्टिः|[[नरदष्टिः|जरदष्टिः]]]] [[१० |]]सेवने ।\n<<<END 0>>>\n"
+    "<<<ITEM 0>>>\nहे देवः सविता [[पच|षच]] [[नरदष्टिः|[[नरदष्टिः|जरदष्टिः]]]] [[१० |]][[ ' | ]]सेवने ।\n<<<END 0>>>\n"
     "<<<ITEM 1>>>\nस्पष्टम् ॥\n<<<END 1>>>\n"
     "<<<ITEM 2>>>\n\n<<<END 2>>>\n",
     encoding="utf-8",
@@ -360,7 +360,7 @@ def test_export_and_ingest_kanvi_shards(tmp_path):
   res = vsk.ingest_kanvi_shards_and_apply([tmp_path], shard_dir, ckpt, apply_to_files=True)
   assert res["done_total"] == 3 and res["missing"] == 0 and res["rejected_short"] == 0 and res["files_changed"] == 1
   out_txt = md.read_text(encoding="utf-8")
-  assert "[[पच|षच]]" in out_txt and "[[नरदष्टिः|जरदष्टिः]]" in out_txt and "[[१०" not in out_txt
+  assert "[[पच|षच]]" in out_txt and "[[नरदष्टिः|जरदष्टिः]]" in out_txt and "[[१०" not in out_txt and "[[ '" not in out_txt
   # Re-running ingestion after applying [[OLD|NEW]] suggestions is a clean no-op
   res2 = vsk.ingest_kanvi_shards_and_apply([tmp_path], shard_dir, ckpt, apply_to_files=True)
   assert res2["newly_ingested"] == 0 and res2["files_changed"] == 0
@@ -402,6 +402,66 @@ def test_clean_and_collect_inline_sayana_per_mantra_context(tmp_path):
   assert "तृतीयः ।  \nचतुर्थः ।" in out
   assert "मा स्पृक्षः ।\n\nनानम् ।" in out
   assert "अन्तः:\n\nमिरर् ।" in out
+
+
+def test_forward_avatarika_context_anandabodha_clean_and_split_wf(tmp_path):
+  from doc_curation_projects.veda.yajuH.vaajasaneyi.kaanva.samhitaa import prose_clean
+
+  md = tmp_path / "host.md"
+  md.write_text(
+    "## 01\n"
+    "<details><summary>सर्वा अवतारिकाः</summary>\n"
+    "<details><summary>सायणः - विनियोगः</summary>\n\n"
+    "सायणाचार्य- आनन्दबोध- माष्य-समेता\n\n"
+    "इषे त्वा प्रथम: ।\n\nद्वितीयः ।\n\nमध्य\n\nअपूर्णम्।\n</details>\n</details>\n"
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nइषे᳓ त्वा।\n</details>\n"
+    "<details><summary>सर्वाष् टीकाः</summary>\n"
+    "<details><summary>मूलम् - काण्वम्</summary>\n\nइषे᳓ त्वा।\n</details>\n"
+    "<details><summary>आनन्दबोध-टीका</summary>\n\n"
+    "आनन्दबोध-अनन्ताचार्य - माष्य-समेता\n\n"
+    "अन्तः:\n\n" + ("इदं व्याख्यानं दीर्घम् अस्ति।\n\n" * 15) +
+    "</details>\n</details>\n"
+    "## 02\n"
+    "<details><summary>सर्वा अवतारिकाः</summary>\n"
+    "<details><summary>सायणः - विनियोगः</summary>\n\nवायवः स्थ विनियोगः ।\n</details>\n</details>\n"
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nवाय᳓वः स्थ।\n</details>\n",
+    encoding="utf-8",
+  )
+
+  st_v = prose_clean.clean_canonical_kanva_sayana_in_roots([tmp_path], summary_title="सायणः - विनियोगः")
+  st_a = prose_clean.clean_canonical_kanva_sayana_in_roots([tmp_path], summary_title="आनन्दबोध-टीका")
+  assert st_v["blocks_changed"] == 1
+  assert st_a["blocks_changed"] == 1
+  cleaned_txt = md.read_text(encoding="utf-8")
+  assert "सायणाचार्य-" not in cleaned_txt
+  assert "आनन्दबोध-अनन्ताचार्य" not in cleaned_txt
+  assert "प्रथमः ।  \nद्वितीयः ।  \nमध्य अपूर्णम्।" in cleaned_txt
+
+  # Check forward-looking context in सर्वा अवतारिकाः for both sections
+  t_vin = prose_clean._collect_kanva_sayana_targets([tmp_path], summary_title="सायणः - विनियोगः")
+  assert len(t_vin) == 2
+  assert "इषे᳓ त्वा।" in t_vin[0]["ref_mantra"] and "वाय᳓वः स्थ।" not in t_vin[0]["ref_mantra"]
+  assert "वाय᳓वः स्थ।" in t_vin[1]["ref_mantra"]
+
+  # Check workflow export + split + ingest roundtrip on oversized Ānandabodha item
+  batches_p = tmp_path / "batches.json"
+  split_p = tmp_path / "split.json"
+  ckpt_p = tmp_path / "ckpt.jsonl"
+  out_dir = tmp_path / "out"
+  out_dir.mkdir()
+  exp_st = prose_clean.export_workflow_batches(
+    [tmp_path], ckpt_p, batches_p, summary_title="आनन्दबोध-टीका", max_batch_chars=250, max_item_chars=200, split_map_path=split_p
+  )
+  assert exp_st["split_items"] == 1 and exp_st["work_units"] >= 2
+  import json
+  batches = json.loads(batches_p.read_text(encoding="utf-8"))
+  for b_i, batch in enumerate(batches):
+    lines = [f"<<<ITEM {u['id']}>>>\n{u['raw']}\n<<<END {u['id']}>>>" for u in batch]
+    (out_dir / f"shard_wf_{b_i:03d}.out.txt").write_text("\n\n".join(lines), encoding="utf-8")
+  ing_st = prose_clean.ingest_workflow_outputs(
+    [tmp_path], out_dir, ckpt_p, summary_title="आनन्दबोध-टीका", split_map_path=split_p, apply_to_files=True
+  )
+  assert ing_st["done_total"] == 1 and ing_st["missing"] == 0
 
 
 
