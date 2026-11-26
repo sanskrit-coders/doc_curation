@@ -1,6 +1,6 @@
 ---
 name: md-processing
-description: Processes Markdown (md) files — bulk transforms, details blocks, footnotes, commentary, include directives, cross-śākhā shared-source reuse/deduplication, and file splitting — using doc_curation's md/ toolkit. Use when Markdown files need structured content edits beyond simple text replacement.
+description: Processes Markdown (md) files — bulk transforms, details blocks, footnotes, commentary, include directives, and file splitting — using doc_curation's md/ toolkit. Use when Markdown files need structured content edits beyond simple text replacement.
 ---
 Where appropriate, process Markdown with the `doc_curation.md` toolkit (venv: `~/gitland/python_venv`).
 
@@ -17,20 +17,7 @@ For `js_include` parameters (`detailsPattern`, `newLevelForH1`, `includeTitle`, 
   - Never let a host-file `<details>` parser reach inside a `js_include` wrapper unless intentionally syncing an inline prose include (`includetitle="false"`), or inner `<details><summary>मूलम्</summary>` / `###` headings inside prefilled `सर्वाष् टीकाः` includes will be misparsed or split across `</div>` tags.
   - **Nested `js_include` inside `<details>`:** A top-level `<details>` (e.g. `भट्टभास्कर-टीका`, `विश्वास-प्रस्तुतिः`, or a recension-variant section like `आन्ध्रपाठे ऽधिकाः`) may itself contain inline `<div class="js_include">` quotes. Use `details.common.get_js_include_spans(content)` and `details.common.get_top_level_detail_spans(content, skip_js_includes=True)`, and discard any `js_include` span enclosed inside a top-level `<details>` span so combined top-level spans remain strictly disjoint (otherwise emitting both duplicates the include and unbalances `</details>`).
 
-
-#### Cross-śākhā Vedic reuse & deduplication (`विश्वास-प्रस्तुतिः` vs. `सर्वाष् टीकाः`)
-
-When consolidating parallel mantras across Vedic śākhās (e.g. `Śākala`/`AV`/`VS-M`/`VS-K`/`TS`/`TB`/`TK`, see `doc_curation_projects.veda.yajuH.vaajasaneyi.dedup`):
-
-- **Normalize before comparing:** Ignore verse/kaṇḍikā numbers (`॥२४॥`), punctuation, whitespace/line wraps, `-` hyphens, `**...**`, `+++(...)+++` glosses, inter-word halant+vowel joins (`म् अ` ↔ `म`), `ऽ`/`ऽअ` hiatus orthography, and pure scribal gemination after `र्` (`र्द्ध`↔`र्ध`, `र्म्म`↔`र्म`). Preserve internal pluta digits (`२`/`३`), `ड`/`ळ` and nasal variants, and US accents (`᳓`/`᳙`) as significant. All shared `vishvAsa-prastutiH/` (and combined `yajuH/sarva-prastutiH/`) files must use **US accents only**.
-- **Two-part static layout (no separate `mUlam/` dirs):** Across Śākala/AV/Yajurveda `Rk/`, static mantra trees consist of `vishvAsa-prastutiH/` + `sarvASh_TIkAH/` (do not create or keep separate `mUlam/` directories; put each śākhā's mūlam inside `sarvASh_TIkAH/` as `<details><summary>मूलम् - <Śākhā></summary>`).
-- **No real pāṭha-bheda (exact normalized consonants + US accents):** Share and `js_include` **both** `vishvAsa-prastutiH/` **and** `sarvASh_TIkAH/` — or, for shared strict non-Ṛk blocks without a separate `sarvASh_TIkAH/` split, use a combined `yajuH/sarva-prastutiH/{ch:02d}/{k:02d}_{storage_name}.md` (`includetitle="false"`).
-- **Minor pāṭha variant:** Keep `विश्वास-प्रस्तुतिः` **separate/local** in each host śākhā (do not share combined `yajuH/sarva-prastutiH/` on variants) and merge/`js_include` **only** `sarvASh_TIkAH/`. Inside the shared `sarvASh_TIkAH/` file, disambiguate variants explicitly:
-  - Always qualify śākhā mūlams explicitly as `<summary>मूलम् - <Śākhā></summary>` (e.g. `मूलम् - शाकलम्`, `मूलम् - शौनकम्`, `मूलम् - माध्यन्दिनम्`, `मूलम् - काण्वम्`, `मूलम् - तैत्तिरीयम्`).
-  - Add `<summary>पदपाठः - <Śākhā></summary>` (e.g. `पदपाठः - काण्वः`, `पदपाठः - दयानन्दादि`, `पदपाठः - तैत्तिरीयः`).
-  - Qualify colliding commentator titles by śākhā (e.g. `<summary>सायण-टीका (काण्वी)</summary>` when Taittirīya/Śākala `<summary>सायण-टीका</summary>` can coexist).
-- **Keep `सर्वा अवतारिकाः` local & align stanza granularity:** Keep `<details><summary>सर्वा अवतारिकाः</summary>` (`*विनियोगः`, `*अवतारिका`) per śākhā in the host file above `विश्वास-प्रस्तुतिः`/`js_include`. Merge split-hemistich Ṛk halves in a host when no liturgical viniyoga divides them (relocating misattached whole-stanza/next-clause viniyogas); if genuine split viniyoga separates the halves, split the shared `static` files and update all host includes across repos.
-- **Corpus provenance:** After editing shared hosts, refresh transitive `js_include` prefills across `vishvAsa` repos (see the `website` skill) and verify `VedicCorpusCounter` excludes foreign `मूलम् - <OtherŚākhā>` blocks when ingesting shared hosts.
+For cross-śākhā Vedic reuse, two-part static layout (`vishvAsa-prastutiH/` + `sarvASh_TIkAH/`), and mantra deduplication rules, see the `vedic` skill.
 
 
 ### Details blocks

@@ -1,17 +1,18 @@
 ---
 name: archival-cataloging
-description: Archives to and looks up archive.org items (ia CLI, curation_utils.archive_utility), records source-to-site-page catalog mappings for the vishvAsa Hugo site (md_to_site_path + appscript client), and archives blogs and mail streams. Use when archiving scans, blogs, or mail streams, looking up an archive.org item, or updating the spreadsheet catalog of a PDF/book conversion.
+description: Archives to and looks up archive.org items (ia CLI, curation_utils.archive_utility), records source-to-site-page catalog mappings for the vishvAsa Hugo site (doc_curation.hugo_site + doc_curation.hugo_site.catalog), and archives blogs and mail streams. Use when archiving scans, blogs, or mail streams, looking up an archive.org item, or updating the spreadsheet catalog of a PDF/book conversion.
 ---
 
 Archive.org work and the source-to-site-page catalog (venv: `~/gitland/python_venv`).
 
 ## Source-to-site-page catalog
 
-Use `hugo_site`: compute the destination page with `md_to_site_path()` and post it with the appscript client.
+Use `doc_curation.hugo_site` for site URL mapping (`md_to_site_path()`) and `doc_curation.hugo_site.catalog` for catalog keys, sheet reads/writes, and bulk PDF matching:
 
 ```python
-from doc_curation.hugo_site import md_to_site_path, get_catalog_source_path
-from doc_curation.hugo_site.appscript_client import post_append_rows
+from doc_curation.hugo_site import md_to_site_path
+from doc_curation.hugo_site.catalog import get_catalog_source_path
+from doc_curation.hugo_site.catalog.appscript_client import post_append_rows
 
 site_path = md_to_site_path("vedAH/content/yajuH/taittirIyam/brAhmaNam/file.md")
 rows = [{
@@ -20,10 +21,10 @@ rows = [{
     "site_path": site_path,
     "map_source": "LLM-crouton",
 }]
-post_append_rows(sheet_url, rows)
+post_append_rows(None, rows)  # None uses default_script_url() (PDF_LIB_SCRIPT_URL > browse.html)
 ```
 
-- `hugo_site` lives at `doc_curation/hugo_site/` — import it as `doc_curation.hugo_site`, not as a top-level `hugo_site`.
+- `hugo_site` lives at `doc_curation/hugo_site/` (site-level helpers like `md_to_site_path`, `VISHVASA_DIR`, `SITE_BASE`) and catalog tooling lives at `doc_curation/hugo_site/catalog/` (`get_catalog_source_path`, `appscript_client`, `check_sheet`, `vv_pdf_library`) — always import via `doc_curation.hugo_site` / `doc_curation.hugo_site.catalog`, not top-level `hugo_site`.
 - `md_to_site_path` takes a path relative to `~/gitland/vishvAsa` (or any path containing `/content/`);
   `_index.md`/`index.md` map to the directory URL.
 - Post exactly ONE row per source book, with `site_path` pointing at the book's ROOT page
@@ -35,7 +36,9 @@ post_append_rows(sheet_url, rows)
 - Row keys: `source_path`, `archive_urls`, `site_path`, `map_source` (posted as the sheet's `userId`).
   The server sets `Pending="add"` for a new `source_path` and `"replace"` for an existing one.
 - Deletes and approvals bypass the endpoint (it has no delete/update): use `delete_rows_by_source_path()`
-  and `clear_pending()` from the same client — they use the Sheets API directly with the proofing OAuth tokens.
+  and `clear_pending()` from `doc_curation.hugo_site.catalog.appscript_client` — they use the Sheets API directly with the proofing OAuth tokens.
+- Inspect the sheet via CLI: `~/gitland/python_venv/bin/python -m doc_curation.hugo_site.catalog.check_sheet --tail 5` (or `--q <regex>`).
+- Bulk scan/sync local `granthasangrahaH` PDFs missing from the sheet via `doc_curation.hugo_site.catalog.vv_pdf_library` (`get_sheet_entries()`, `find_new_pdf_mappings()`, `sync_new_pdfs_to_sheet(dry_run=True)`).
 
 ## archive.org
 

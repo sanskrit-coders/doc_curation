@@ -1,4 +1,4 @@
-"""Parameterized 4-stage cross-Veda deduplication cascade (`VS -> RV/AV -> TS -> TB -> TK`)."""
+"""Parameterized multi-stage cross-Veda deduplication cascade (`VS -> RV/AV -> TS -> TB -> TK -> MS -> KS`)."""
 from __future__ import annotations
 
 import logging
@@ -75,6 +75,7 @@ def _spec_by_url(url: str, all_specs: dict[str, VedaCorpusSpec]) -> VedaCorpusSp
 
 def _short_stem_name(vp_text: str, rel_fallback: str) -> str:
   cleaned = re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]", "", vp_text, flags=re.S)
+  cleaned = re.sub(r"\[\[([^|\]]*)\|[^\]]*\]\]", r"\1", cleaned)
   cleaned = re.sub(r"[᳓᳙\u0951\u0952\*\.,\!\?\|\-—–\(\)।॥०-९0-9]+", " ", cleaned)
   words = [w for w in cleaned.split() if any("\u0900" <= c <= "\u097f" for c in w)][:3]
   slug = file_helper.get_storage_name(" ".join(words), source_script=sanscript.DEVANAGARI, max_length=40)
@@ -247,11 +248,11 @@ def build_target_index(
       raw = y_fp.read_text(encoding="utf-8")
       _, body = split_frontmatter_verbatim(raw)
       chunks = _split_top_level_chunks(body)
-      vps = [d[1] for k, d in chunks if k == "details" and d[0].startswith("विश्वास-प्रस्तुतिः")]  # type: ignore[index]
+      vps = [d for k, d in chunks if k == "details" and d[0].startswith("विश्वास-प्रस्तुतिः")]  # type: ignore[index]
       has_av = any(k == "details" and "अवतारिका" in d[0] for k, d in chunks)  # type: ignore[index]
-      if len(vps) != 1 or has_av or "____" in body:
+      if len(vps) != 1 or has_av or "____" in body or "यन्त्र-स्वरः" in vps[0][0]:
         continue
-      vp_clean = vps[0].strip()  # type: ignore[union-attr]
+      vp_clean = vps[0][1].strip()  # type: ignore[union-attr]
       pb = normalize_phonetic(vp_clean, include_accents=False, fold_orthography=True)
       if len(pb) < 20:
         continue
@@ -267,7 +268,7 @@ def build_target_index(
         _, body = split_frontmatter_verbatim(c_fp.read_text(encoding="utf-8"))
         tokens = tokenize_markdown_body(body)
         for g_idx, grp in enumerate(group_mantra_units(tokens)):
-          if grp.is_vp_include or grp.sarva_include_url or not grp.vp_text.strip():
+          if grp.is_vp_include or grp.sarva_include_url or not grp.vp_text.strip() or "यन्त्र-स्वरः" in grp.vp_summary:
             continue
           pb = normalize_phonetic(grp.vp_text, include_accents=False, fold_orthography=True)
           if len(pb) < 24 or looks_prose_brahmana(grp.vp_text, len(pb), summary=grp.vp_summary):

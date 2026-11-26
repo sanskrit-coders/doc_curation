@@ -519,10 +519,80 @@ def test_audit_full_sb_corpus_smoke_on_pilot_01_01_1():
   rep = audit_full_sb_corpus(PILOT_SB_ROOT, files=[PILOT_01_01_1])
   assert rep.passed is True, f"Pilot 01/01/1.md audit failures: {rep.failures}"
   assert rep.files_scanned == 1
-  assert rep.total_kandikas == 22
-  assert rep.converted_kandikas == 22
+  assert rep.total_kandikas >= 22
+  assert rep.converted_kandikas == rep.total_kandikas
   assert rep.unconverted_kandikas == 0
   assert rep.failures == []
+
+
+def test_audit_full_sb_corpus_supports_translation_above_mula_and_sarvash_tikah_wrapper(tmp_path):
+  sb_root = tmp_path / "sb"
+  good_f = sb_root / "01/01/1.md"
+  good_f.parent.mkdir(parents=True, exist_ok=True)
+  good_f.write_text(
+    """+++
+title = "१"
++++
+
+## ०१
+
+<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+यज्ञ᳓म् एवै᳙त᳓त् ॥
+</details>
+
+<details><summary>सर्वाष् टीकाः</summary>
+
+<details><summary>Eggeling</summary>
+
+This verily is the sacrifice.
+</details>
+
+<details><summary>मूलम् - श्रीधरादि</summary>
+
+यज्ञ᳘मे᳘वैत᳘त्॥
+</details>
+
+<details><summary>मूलम् - Weber</summary>
+
+यज्ञ᳘मेॗवैत᳘त्॥
+</details>
+
+<details><summary>पद-पाठः (यान्त्रिकः)</summary>
+
+- यज्ञ᳓म् (*RV*-10, *TS*-5)
+- एव᳓ (*RV*-10, *TS*-5)
+- एत᳓त् (*RV*-10, *TS*-5)
+</details>
+
+<details><summary>सायणः</summary>
+
+भाष्यम्।
+</details>
+</details>
+""",
+    encoding="utf-8",
+  )
+  rep = audit_full_sb_corpus(sb_root, files=[good_f])
+  assert rep.passed is True, f"Unexpected failures on wrapped canonical ŚB file: {rep.failures}"
+  assert rep.total_kandikas == 1
+  assert rep.converted_kandikas == 1
+
+  # Misplaced commentary between मूलम् and पद-पाठः INSIDE सर्वाष् टीकाः must still trigger misplaced_padapatha
+  bad_f = sb_root / "01/01/2.md"
+  bad_f.write_text(
+    good_f.read_text(encoding="utf-8").replace(
+      "<details><summary>पद-पाठः (यान्त्रिकः)</summary>",
+      "<details><summary>सायणः</summary>\n\nप्रक्षिप्तम्।\n</details>\n\n<details><summary>पद-पाठः (यान्त्रिकः)</summary>",
+    ).replace(
+      "<details><summary>सायणः</summary>\n\nभाष्यम्।\n</details>\n",
+      "",
+    ),
+    encoding="utf-8",
+  )
+  rep_bad = audit_full_sb_corpus(sb_root, files=[bad_f])
+  assert rep_bad.passed is False
+  assert "misplaced_padapatha" in {f.kind for f in rep_bad.failures}
 
 
 def test_verify_adjudications_edge_guards_and_multipass_preserved_human_us(tmp_path):

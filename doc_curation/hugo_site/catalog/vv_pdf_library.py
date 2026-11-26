@@ -7,8 +7,9 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 
-from doc_curation.hugo_site import md_to_site_path, VISHVASA_DIR, get_catalog_source_path
-from doc_curation.hugo_site import appscript_client
+from doc_curation.hugo_site import md_to_site_path, VISHVASA_DIR
+from doc_curation.hugo_site.catalog import get_catalog_source_path
+from doc_curation.hugo_site.catalog import appscript_client
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 GS_DIR        = "/media/vvasuki/vData/text/granthasangrahaH"

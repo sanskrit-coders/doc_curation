@@ -7,7 +7,15 @@ from bs4 import BeautifulSoup
 from doc_curation.md import content_processor, library
 from doc_curation.md.content_processor.details import common as details_common
 from doc_curation.md.content_processor.include.maker import make_alt_include
-from doc_curation.md.content_processor.include.seeker import file_path_from_url, resolve_include_file_path
+from doc_curation.md.content_processor.include.seeker import (
+  _ATTR_URL_RE,
+  _DETAILS_TAG_RE,
+  _DIV_TAG_RE,
+  _OPEN_DIV_RE,
+  check_tag_balance,
+  file_path_from_url,
+  resolve_include_file_path,
+)
 from doc_curation.md.content_processor.section_helper import fix_headers
 from doc_curation.md.file import MdFile
 from doc_curation.md.library import arrangement
@@ -385,8 +393,6 @@ def prefill_includes(dir_path, file_name_filter=None, dry_run=False, *args, **kw
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=lambda x, metadata: transform_includes_with_soup(x, metadata, transformer=prefill_include, *args, **kwargs), file_name_filter=file_name_filter, dry_run=dry_run)
 
 
-_DIV_TAG_RE = regex.compile(r"<div\b[^>]*>|</div>", regex.S)
-_DETAILS_TAG_RE = regex.compile(r"<details\b[^>]*>|</details>", regex.S)
 _LOADING_WRAPPER_RE = regex.compile(
   r"^(\s*<details[^>]*><summary>(?:<h(\d+)>)?(?:(?!</summary>).)*?(?:\.\.\.|…)\{Loading\}(?:\.\.\.|…)(?:(?!</summary>).)*?(?:</h\d+>)?\s*</summary>)(.*)(</details>\s*)$",
   regex.S,
@@ -567,7 +573,6 @@ def surgical_prefill_transitive(
 
   abs_url_cache: dict[str, str | None] = {}
   rev_deps: dict[str, set[str]] = {}
-  open_div_re = regex.compile(r"<div\b[^>]*>", regex.S)
 
   def _resolve_abs(url: str, container_fp: str) -> str | None:
     if url.startswith("/"):
@@ -581,7 +586,7 @@ def surgical_prefill_transitive(
     return os.path.abspath(tgt) if tgt else None
 
   def _index_host_urls(fp: str, txt: str) -> None:
-    for m_div in open_div_re.finditer(txt):
+    for m_div in _OPEN_DIV_RE.finditer(txt):
       tok = m_div.group(0)
       if 'class="js_include' in tok or "class='js_include" in tok:
         m_u = _ATTR_URL_RE.search(tok)
@@ -739,7 +744,6 @@ def includes_to_details(dir_path, title, url_pattern, prefill=False, file_name_f
 
   library.apply_function(fn=MdFile.transform, dir_path=dir_path, content_transformer=content_transformer, file_name_filter=file_name_filter, *args, **kwargs)
 
-_ATTR_URL_RE = regex.compile(r"""\burl=["']([^"']+)["']""", regex.IGNORECASE)
 _MD_LINK_URL_RE = regex.compile(r"""\]\(([^)\s]+)\)""")
 
 

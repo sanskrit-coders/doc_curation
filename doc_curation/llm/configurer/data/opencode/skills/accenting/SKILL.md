@@ -12,7 +12,7 @@ from indic_transliteration.sanscript.schemes.brahmic import accent
 
 ## Changing accent notation
 
-Match the notation to the block: `विश्वास-प्रस्तुतिः` always uses **US accents** (`᳓` / `᳙`, using uniform `᳙` on independent svaritas such as *abhinihita* `सो᳙ऽकामयत`; use `to_us_accents_markdown(..., preserve_existing_us=True)` when files mix dependent and US marks so conversion is not skipped), especially in shared `static/.../vishvAsa-prastutiH/` and `yajuH/sarva-prastutiH/` files (`md-processing` skill); `मूलम्` keeps the source's own notation (classically dependent `॒`/`॑`).
+Match the notation to the block: `विश्वास-प्रस्तुतिः` always uses **US accents** (`᳓` / `᳙`, using uniform `᳙` on independent svaritas such as *abhinihita* `सो᳙ऽकामयत`; use `to_us_accents_markdown(..., preserve_existing_us=True)` when files mix dependent and US marks so conversion is not skipped), especially in shared `static/.../vishvAsa-prastutiH/` and `yajuH/sarva-prastutiH/` files (`vedic` skill); `मूलम्` keeps the source's own notation (classically dependent `॒`/`॑`).
 
 ### US accents (᳓ / ᳙)
 

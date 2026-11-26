@@ -70,7 +70,20 @@ def normalize_phonetic(
 ) -> str:
   """Normalize Vedic text for pāṭha comparison ignoring numbers, spacing, hyphens, and avagraha spelling."""
   cleaned = re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]", "", text, flags=re.S)
+  # Compare reconciler `[[OLD|NEW]]` blocks using the corpus's actual OLD reading.
+  cleaned = re.sub(r"\[\[([^|\]]*)\|[^\]]*\]\]", r"\1", cleaned)
+  cleaned = re.sub(r"[\u200c\u200d\u00b2\u00b3\u00b9\u2070-\u2079]", "", cleaned)
   cleaned = strip_trailing_refs(cleaned)
+  if fold_orthography:
+    cleaned = re.sub(r"ृ([᳓᳙\u0951\u0952]*)\u0304", r"ॄ\1", cleaned)
+    cleaned = re.sub(r"र्?्?\u0140\u0325", "्लृ", cleaned)
+    cleaned = cleaned.replace("\ua8f3", "ं")
+    cleaned = re.sub(r"([वयल])्[ँं]", "ं", cleaned)
+    cleaned = cleaned.replace("ँ", "ं").replace("ᳵ", "ः").replace("ᳶ", "ः")
+    cleaned = re.sub(r"ङ्(?=[क-घ])|ञ्(?=[च-झ])|ण्(?=[ट-ढ])", "ं", cleaned)
+    cleaned = re.sub(r"म्(?=\s+[क-ह])", "ं", cleaned)
+    cleaned = re.sub(r"([सर])्(?=[᳓᳙\u0951\u0952]*\s*(?:[।॥]|$))", "ः", cleaned)
+    cleaned = re.sub(r"([सशष])्(?=[᳓᳙\u0951\u0952]*\s*[सशष])", "ः", cleaned)
   if not include_accents:
     cleaned = strip_vedic_accents(cleaned)
   # Remove markup, punctuation, whitespace, hyphens (preserve ऽ temporarily and internal pluta २/३).
@@ -82,9 +95,12 @@ def normalize_phonetic(
   if fold_orthography:
     for src, dst in _REPHA_DOUBLING_FOLDS:
       cleaned = cleaned.replace(src, dst)
+    cleaned = cleaned.replace("च्छ", "छ")
   if include_accents:
     cleaned = re.sub(r"[᳓\u0951]", "U", cleaned)
     cleaned = re.sub(r"[᳙\u0952]", "S", cleaned)
+    if fold_orthography:
+      cleaned = re.sub(r"([US])([ंः])", r"\2\1", cleaned)
   return cleaned
 
 

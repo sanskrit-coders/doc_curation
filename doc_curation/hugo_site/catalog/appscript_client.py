@@ -32,7 +32,7 @@ import json
 import os
 import urllib.request
 
-from doc_curation.hugo_site import get_catalog_source_path
+from doc_curation.hugo_site.catalog import get_catalog_source_path
 
 PDF_LIB_DIR = os.path.expanduser(
     "~/gitland/vishvAsa/vishvAsa.github.io/content/interests/private/pdf-lib")

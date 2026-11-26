@@ -306,10 +306,12 @@ def _is_legitimate_orth_diff(a_bare: str, b_bare: str) -> bool:
 
 
 # High-confidence 1–3 char Schroeder Devanagari OCR confusion pairs `(schroeder_ocr, visvara_clean)`
+# Note: `("ब","व")`, `("व","ब")`, and naked `("ृ","")` are deliberately excluded to avoid corrupting
+# real Sanskrit words (`पिबत`, `बिसखा`, `देवमृत्विजम्`, `गृहीतो`, `ग्रहमृध्यासम्`) when `visvara` has a typo.
+# Kaṭha under-hook svarita OCR (`ृ` after `्य`/`्व` or before another vowel matra) is handled explicitly as `᳙`!
 _SCHROEDER_OCR_PAIRS: frozenset[tuple[str, str]] = frozenset({
   ("", "र्"),          # `त्वोजे` -> `त्वोर्जे`
   ("ग", "घ"),          # `अग्न्या` -> `अघ्न्या`
-  ("ृ", ""),           # `पृथिव्यृसि` -> `पृथिव्यसि`, `व्यृोमा` -> `व्योमा`
   ("स्य", "स्प"),      # `वाचस्यतये` -> `वाचस्पतये`
   ("य", "प"),          # `वाचस्यतये` -> `वाचस्पतये` (if aligned as `य`->`प`)
   ("", "्र"),          # `दप्सो` -> `द्रप्सो`, `सुग्भवति` -> `स्रुग्भवति`
@@ -327,8 +329,6 @@ _SCHROEDER_OCR_PAIRS: frozenset[tuple[str, str]] = frozenset({
   ("त्र", "ष"),        # `तस्मादेत्रैवम्` -> `तस्मादेषैवम्`
   ("त्रै", "षै"),      # `देत्रैवम्` -> `देषैवम्`
   ("सु", "स्रु"),      # `सुग्भवति` -> `स्रुग्भवति`
-  ("व", "ब"),          # common Devanagari OCR swap `व`/`ब` (only when unattested!)
-  ("ब", "व"),
   ("ख", "रव"),
   ("भ", "म"),
   ("म", "भ"),
@@ -356,8 +356,10 @@ def repair_ks_text_with_visvara(
   schroeder_text: str,
   visvara_text: str,
   lex: UnifiedVedicLexicon | None = None,
+  *,
+  titus_text: str = "",
 ) -> tuple[str, list[tuple[str, str]]]:
-  """Repair clear Schroeder OCR typos using ``visvara_text`` while preserving US accents.
+  """Repair clear Schroeder OCR typos using ``visvara_text`` (+ optional ``titus_text``) while preserving US accents.
 
   Uses space-agnostic character alignment so fused Schroeder strings (like
   ``प्रजापतिर्वा इदमासीत्तस्मादग्नि᳓र᳓ध्सृज्यत``) align cleanly against spaced
@@ -386,6 +388,17 @@ def repair_ks_text_with_visvara(
 
   s_flat, s_map = _flat_bare_with_char_map(work)
   v_flat, _ = _flat_bare_with_char_map(visvara_text)
+  if titus_text:
+    # Join spaced `C् + V` (`ध्वम् अघ्न्या` -> `ध्वमघ्न्या`) in TITUS IAST->Deva text before flattening!
+    _vm = {"आ":"ा","इ":"ि","ई":"ी","उ":"ु","ऊ":"ू","ऋ":"ृ","ॠ":"ॄ","ऌ":"ॢ","ए":"े","ऐ":"ै","ओ":"ो","औ":"ौ"}
+    t_joined = re.sub(
+      r"([\u0915-\u0939])्\s+([अआइईउऊऋॠऌएऐओऔ])",
+      lambda m: m.group(1) + _vm.get(m.group(2), ""),
+      titus_text,
+    )
+    t_flat, _ = _flat_bare_with_char_map(t_joined)
+  else:
+    t_flat = ""
   if len(s_flat) < 8 or len(v_flat) < 8:
     return work, pre_repairs
 
@@ -447,10 +460,36 @@ def repair_ks_text_with_visvara(
     if _IMPOSSIBLE_DEVA_RE.search(ctx_v):
       continue
 
+    # Special Kaṭha under-hook independent svarita OCR on `्यृ` / `्वृ` before inherent `अ`
+    # (`पृथिव्यृसि` -> `पृथिव्य᳙सि`, `स्वृर्ज्योतिः` -> `स्व᳙र्ज्योतिः`, `मनुष्यृम्` -> `मनुष्य᳙म्`, `वाज्यृग्ने` -> `वाज्य᳙ग्ने`)
+    is_katha_yv_hook = (
+      a_seg == "ृ"
+      and b_seg == ""
+      and i1 >= 2
+      and s_flat[i1 - 2 : i1] in ("्य", "्व")
+    )
     is_impossible = bool(_IMPOSSIBLE_DEVA_RE.search(ctx_s))
     is_ocr_pair = (a_seg, b_seg) in _SCHROEDER_OCR_PAIRS
-    if not is_impossible and not is_ocr_pair:
+    if not is_katha_yv_hook and not is_impossible and not is_ocr_pair:
       continue
+
+    # Second-witness cross-check against TITUS (`indike.org`) when available!
+    # Prevents a typo in `visvara-saMhitA` (e.g. `बृहतीर्विश्वशम्भुर्वो`, `अशवँ`, `गहीतो`) from overwriting valid Schroeder!
+    if t_flat and not is_impossible:
+      pre_ctx = s_flat[max(0, i1 - 3) : i1]
+      post_ctx = s_flat[i2 : min(len(s_flat), i2 + 3)]
+      old_pat = (pre_ctx + a_seg + post_ctx).replace("ँ", "ं")
+      new_pat = (pre_ctx + b_seg + post_ctx).replace("ँ", "ं")
+      t_norm = t_flat.replace("ँ", "ं")
+      old_in_t = old_pat in t_norm
+      new_in_t = new_pat in t_norm
+      # Handle Schroeder sandhi fusion (`त्वोजे` vs TITUS un-fused `त्वा ऊर्जे`) for pure consonant insertions (`"" -> "र्"/"्र"/"्य"`)
+      if not new_in_t and not a_seg and b_seg in ("र्", "्र", "्य") and len(post_ctx) >= 3:
+        new_in_t = (b_seg + post_ctx) in t_norm and not old_in_t
+      if not new_in_t:
+        continue
+      if old_in_t and not is_katha_yv_hook:
+        continue
 
     # Map flat indices `[i1, i2)` back to indices in `work`
     if i1 < i2:
@@ -468,8 +507,8 @@ def repair_ks_text_with_visvara(
         orig_hi = orig_lo
 
     # Do NOT touch `work` if the Schroeder word is ALREADY a valid known Sanskrit word in `lex`
-    # (unless impossible Devanagari combo like `पृथिव्यृसि` or `व्यृोमा`!)
-    if not is_impossible and lex is not None:
+    # (unless impossible Devanagari combo or Kaṭha `्यृ`/`्वृ` hook!)
+    if not is_impossible and not is_katha_yv_hook and lex is not None:
       s_word = _extract_word_around(work, orig_lo, orig_hi)
       s_word_bare = _ALL_ACC_RE.sub("", s_word).replace("ऽ", "")
       slp_s = _deva_to_slp(s_word_bare)
@@ -479,10 +518,17 @@ def repair_ks_text_with_visvara(
     # Ensure we don't drop US accent marks sitting between `orig_lo` and `orig_hi`!
     deleted_slice = work[orig_lo:orig_hi]
     preserved_acc = "".join(ch for ch in deleted_slice if ch in (US_UDATTA, US_SVARITA))
-    rep_str = b_seg + preserved_acc if (preserved_acc and b_seg) else (b_seg if b_seg else preserved_acc)
+    if is_katha_yv_hook:
+      # Replace `ृ` after `्य`/`्व` with Kaṭha independent svarita `᳙` (if no accent already directly follows!)
+      has_acc_after = orig_hi < len(work) and work[orig_hi] in (US_UDATTA, US_SVARITA)
+      rep_str = preserved_acc or ("" if has_acc_after else US_SVARITA)
+      tag_label = "्य/्वृ→᳙"
+    else:
+      rep_str = b_seg + preserved_acc if (preserved_acc and b_seg) else (b_seg if b_seg else preserved_acc)
+      tag_label = f"{a_seg}→{b_seg}"
 
     old_w = _extract_word_around(work, orig_lo, orig_hi)
-    edits.append((orig_lo, orig_hi, rep_str, old_w, f"{a_seg}→{b_seg}"))
+    edits.append((orig_lo, orig_hi, rep_str, old_w, tag_label))
 
   if not edits:
     return work, pre_repairs
@@ -654,3 +700,158 @@ def parse_ks_anuvaka(
     accent_coverage=cov,
     visvara_matched=visvara_matched,
   )
+
+
+def _load_titus_text_for_ks_file(rel_path: str, titus_passages: dict[str, list[str]]) -> str:
+  """Return concatenated Devanagari TITUS text matching a KS Schroeder ``rel_path``."""
+  if not titus_passages:
+    return ""
+  parts = rel_path.replace("\\", "/").split("/")
+  if len(parts) < 3:
+    return ""
+  part_dir, sthanaka_dir, fname = parts[0], parts[1], parts[2]
+  sth_m = re.match(r"^(\d+)", sthanaka_dir)
+  if not sth_m:
+    return ""
+  s_num = int(sth_m.group(1))
+  stem = os.path.splitext(fname)[0]
+  # Handle ranges like `02-04` or single `01`
+  m_rng = re.match(r"^(\d+)-(\d+)$", stem)
+  if m_rng:
+    a_nums = list(range(int(m_rng.group(1)), int(m_rng.group(2)) + 1))
+  else:
+    m_one = re.match(r"^(\d+)", stem)
+    a_nums = [int(m_one.group(1))] if m_one else []
+  chunks: list[str] = []
+  for a in a_nums:
+    pid = f"asv.{s_num}.{a}" if part_dir == "5_ashvamedhaH" else f"{s_num}.{a}"
+    if pid in titus_passages:
+      chunks.extend(titus_passages[pid])
+  return "\n".join(chunks)
+
+
+def repair_ks_schroeder_file_in_place(
+  file_path: str,
+  schroeder_root: str,
+  *,
+  lex: UnifiedVedicLexicon | None = None,
+  titus_passages: dict[str, list[str]] | None = None,
+  visvara_dir: str = DEFAULT_KS_VISVARA_DIR,
+  ashvamedha_dir: str = DEFAULT_KS_ASHVAMEDHA_DIR,
+  dry_run: bool = True,
+) -> list[tuple[str, str]]:
+  """Repair clear Schroeder OCR glitches in a ``mUlam/schroeder`` file while preserving all markup/footnotes.
+
+  Protects TOML frontmatter, ``[^id]`` footnote refs, footnote definitions, ``<details>`` टिप्पणी
+  blocks, ``cf. ...`` cross-references, and ``**bold**`` delimiters verbatim. Uses dual witnesses
+  (``visvara-saMhitA`` + cached ``indike.org`` TITUS Kāṭhaka) for near-zero false positives.
+  """
+  rel_path = os.path.relpath(file_path, schroeder_root).replace("\\", "/")
+  parts = rel_path.split("/")
+  part_dir = parts[0] if len(parts) >= 3 else ""
+  sthanaka_dir = parts[1] if len(parts) >= 3 else ""
+  sth_m = re.match(r"^(\d+)", sthanaka_dir)
+  sthanaka_num = int(sth_m.group(1)) if sth_m else 0
+  anu_m = re.match(r"^(\d+)", os.path.splitext(parts[-1])[0])
+  anuvaka_num = int(anu_m.group(1)) if anu_m else 0
+
+  orig_txt = open(file_path, encoding="utf-8").read()
+  # Split frontmatter cleanly
+  if orig_txt.startswith("+++") and orig_txt.count("+++") >= 2:
+    idx_fm = orig_txt.find("+++", 3) + 3
+    fm_prefix = orig_txt[:idx_fm]
+    body = orig_txt[idx_fm:]
+  else:
+    fm_prefix = ""
+    body = orig_txt
+
+  # Load matching visvara & TITUS witnesses
+  vis_map = load_ks_visvara_anuvakas(
+    part_dir, sthanaka_num, visvara_dir=visvara_dir, ashvamedha_dir=ashvamedha_dir
+  )
+  full_bare = re.sub(r"[^\u0900-\u0963\u0971-\u097f]", "", _ALL_ACC_RE.sub("", body))
+  vis_text = ""
+  if full_bare and vis_map:
+    best_v, best_r = "", 0.0
+    for pn in [anuvaka_num] + [anuvaka_num + d for d in (-1, 1, -2, 2) if (anuvaka_num + d) in vis_map]:
+      vt = vis_map.get(pn, "")
+      if not vt:
+        continue
+      vb = re.sub(r"[^\u0900-\u0963\u0971-\u097f]", "", vt)
+      r = difflib.SequenceMatcher(None, full_bare[:400], vb[:400]).ratio()
+      if r > best_r:
+        best_r, best_v = r, vt
+    if best_r >= 0.55:
+      vis_text = best_v
+
+  titus_text = _load_titus_text_for_ks_file(rel_path, titus_passages or {})
+  # If visvara didn't match (e.g. merged anuvāka), TITUS alone can serve as the repair witness too!
+  witness_primary = vis_text or titus_text
+  witness_secondary = titus_text if vis_text else ""
+
+  # Mask protected regions (footnote definitions, `<details>...</details>`, `cf. ...` lines)
+  # and inline markup (`[^id]`, `**`) with non-Devanagari ASCII sentinels so `repair_ks_text_with_visvara`
+  # operates on continuous Devanagari spans without ever moving a footnote ref or bold delimiter!
+  protected_lines: list[str] = []
+  all_repairs: list[tuple[str, str]] = []
+  in_details = False
+
+  # Process line-by-line for body paragraphs (Schroeder paragraphs are single or multi-line blocks outside footnotes/details)
+  out_lines: list[str] = []
+  for raw_ln in body.splitlines(keepends=True):
+    stripped = raw_ln.strip()
+    if stripped.startswith("<details"):
+      in_details = True
+    if in_details:
+      out_lines.append(raw_ln)
+      if "</details>" in stripped:
+        in_details = False
+      continue
+    if (
+      not stripped
+      or stripped.startswith("[^")
+      or re.match(r"^(?:cfr?\.|cf\b)\s+", stripped)
+      or not re.search(r"[\u0905-\u0939]", stripped)
+    ):
+      out_lines.append(raw_ln)
+      continue
+
+    # Separate any trailing `cf. ...` on the same line
+    m_cf = _CF_TAIL_RE.search(raw_ln)
+    if m_cf:
+      work_part = raw_ln[: m_cf.start()]
+      tail_part = raw_ln[m_cf.start() :]
+    else:
+      work_part = raw_ln
+      tail_part = ""
+
+    # Replace inline `[^id]` and `**` with indexed ASCII placeholders `⟪0⟫`, `⟪1⟫`, ...
+    # Note: `_flat_bare_with_char_map` skips non-Devanagari chars completely, so `⟪0⟫` is 100% invisible
+    # to character alignment while keeping exact original byte positions intact!
+    tokens: list[str] = []
+
+    def _mask_tok(m: re.Match) -> str:
+      idx_t = len(tokens)
+      tokens.append(m.group(0))
+      return f"\u27ea{idx_t}\u27eb"
+
+    masked = re.sub(r"\[\^[^\]]+\]|\*\*", _mask_tok, work_part)
+    repaired_masked, reps = repair_ks_text_with_visvara(
+      masked, witness_primary, lex=lex, titus_text=witness_secondary
+    )
+    if reps:
+      # Restore placeholders
+      restored = re.sub(r"\u27ea(\d+)\u27eb", lambda m: tokens[int(m.group(1))], repaired_masked)
+      # Sanity assertion: EVERY masked token (`[^id]`, `**`) must survive intact!
+      if all(tok in restored for tok in tokens) and restored.count("[^") == work_part.count("[^") and restored.count("**") == work_part.count("**"):
+        out_lines.append(restored + tail_part)
+        all_repairs.extend(reps)
+        continue
+    out_lines.append(raw_ln)
+
+  new_txt = fm_prefix + "".join(out_lines)
+  if not dry_run and new_txt != orig_txt and all_repairs:
+    with open(file_path, "w", encoding="utf-8") as fh:
+      fh.write(new_txt)
+  return all_repairs
+

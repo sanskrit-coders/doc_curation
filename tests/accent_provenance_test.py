@@ -419,3 +419,47 @@ def test_backfill_corpora_only_adds_requested_corpora_verbatim(tmp_path):
   assert "- चरिष्यामि (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८, *VS-M*-1 १.५, *TS*-2, *TB*-2)" in out_nd
   assert backfill_corpora_in_padapatha_markdown(out_nd, c, corpora=("TB", "TK")) == out_nd
 
+
+def test_backfill_and_annotate_inside_nested_sarvash_tikah_details():
+  from doc_curation.sanskrit.accent.provenance import (
+    annotate_padapatha_markdown_counts,
+    backfill_corpora_in_padapatha_markdown,
+  )
+
+  c = VedicCorpusCounter()
+  for corp, word, freq in [
+    ("TS", "अग्न᳓ये", 128),
+    ("TS", "अग्निः᳓", 1067),
+    ("MS", "अग्न᳓ये", 55),
+    ("MS", "अग्निः᳓", 400),
+    ("KS", "अग्न᳓ये", 19),
+    ("KS", "अग्निः᳓", 120),
+  ]:
+    km = word_to_key_and_marks(word)
+    assert km is not None
+    c._add(corp, km[0], km[1], freq=freq)
+  c._finalize_secondary_tables()
+
+  # Nested inside `<details><summary>सर्वाष् टीकाः</summary>` (including long prose before nested `<details>`)
+  wrapped = (
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nअग्न᳓ये ।\n</details>\n\n"
+    "<details><summary>सर्वाष् टीकाः</summary>\n\n"
+    + ("दीर्घ-गद्यम् " * 80)
+    + "\n\n<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n"
+    "- अग्न᳓ये (*TS*-128/1195)\n"
+    "</details>\n\n"
+    "<details><summary>मूलम्</summary>\n\nअ॒ग्नये॑ ।\n</details>\n"
+    "</details>\n"
+  )
+  out_bf = backfill_corpora_in_padapatha_markdown(wrapped, c, corpora=("MS", "KS"))
+  assert "- अग्न᳓ये (*TS*-128/1195, *KS*-19/139, *MS*-55/455)" in out_bf
+  assert out_bf.count("<details") == wrapped.count("<details")
+  assert out_bf.count("</details>") == wrapped.count("</details>")
+  assert backfill_corpora_in_padapatha_markdown(out_bf, c, corpora=("MS", "KS")) == out_bf
+
+  out_ann, unres = annotate_padapatha_markdown_counts(wrapped, c)
+  assert unres == []
+  assert "- अग्न᳓ये (*TS*-128/1195" in out_ann
+  assert "*KS*-19/139" in out_ann and "*MS*-55/455" in out_ann
+
+

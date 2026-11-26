@@ -36,6 +36,10 @@ _COMPOUND_STOP_VOICE_PAIRS = frozenset({
 })
 
 DETAILS_RE = re.compile(r"<details(?:\s+open)?><summary>([^<]*)</summary>(.*?)</details>", re.S)
+LEAF_DETAILS_RE = re.compile(
+  r"<details(?:\s+open)?><summary>([^<]*)</summary>([^<]*(?:<(?!/?details\b)[^<]*)*)</details>",
+  re.S | re.I,
+)
 PP_HEADER_RE = re.compile(r"^पद-पाठः \(यान्त्रिकः(?:\s*-\s*(\d+)/(\d+)\s*व्यत्यस्त-स्वराः)?\)$")
 _VP_SUMMARY_TAG_RE = re.compile(
   r"\s*\((?:स्वराः पूर्याः|यन्त्र-स्वरः|स्वराः व्यत्यस्ताः[^)]*|\d+/\d+\s*व्यत्यस्त-स्वराः)\)\s*"
@@ -1360,7 +1364,7 @@ def _reconcile_markdown_blocks_once(
 ) -> tuple[str, list[str]]:
   """Execute one pass of :func:`reconcile_markdown_blocks`."""
   js_divs = find_js_include_spans(markdown_text) if skip_js_includes else []
-  dmatches = [m for m in DETAILS_RE.finditer(markdown_text) if not any(a <= m.start() < b for a, b in js_divs)]
+  dmatches = [m for m in LEAF_DETAILS_RE.finditer(markdown_text) if not any(a <= m.start() < b for a, b in js_divs)]
   replacements: list[tuple[int, int, str]] = []
   all_logs: list[str] = []
 
@@ -1380,7 +1384,7 @@ def _reconcile_markdown_blocks_once(
         all_logs.append(f"PP_HDR: {pp_hdr} -> {expected_pp_hdr}")
 
     is_sb_cluster = False
-    for j in range(i - 1, max(-1, i - 8), -1):
+    for j in range(i - 1, max(-1, i - 12), -1):
       ps = dmatches[j].group(1)
       if ps.startswith("पद-पाठः (यान्त्रिकः"):
         break
@@ -1604,7 +1608,7 @@ def reconcile_vprastuti_and_tiikaa_texts(
   and abbreviated ``vprastuti_text`` prefixes are aligned against the matching prefix of ``पद-पाठः`` items.
   """
   js_tk = find_js_include_spans(tiikaa_text)
-  tk_blocks = [m for m in DETAILS_RE.finditer(tiikaa_text) if not any(a <= m.start() < b for a, b in js_tk)]
+  tk_blocks = [m for m in LEAF_DETAILS_RE.finditer(tiikaa_text) if not any(a <= m.start() < b for a, b in js_tk)]
   m_pp = next((m for m in tk_blocks if m.group(1).strip().startswith("पद-पाठः (यान्त्रिकः")), None)
   if m_pp is None:
     return vprastuti_text, []

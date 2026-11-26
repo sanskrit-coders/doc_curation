@@ -137,19 +137,18 @@ def test_ks_schroeder_ocr_repair_fused_splits_and_apparatus(shared_resources):
   p1 = os.path.join(DEFAULT_KS_SCHROEDER_ROOT, "1_iThimikA", "01_puroDAshasthAnakam", "01.md")
   ks1 = parse_ks_anuvaka(p1, DEFAULT_KS_SCHROEDER_ROOT, lex=lex)
   assert ks1.visvara_matched
-  # Schroeder OCR typos repaired in VP while raw Schroeder preserved in `raw_mula`!
+  # Schroeder OCR typos repaired in BOTH `mUlam/schroeder` and VP!
   assert "त्वोर्जे᳓" in ks1.pieces[0].repaired_vp
-  assert "त्वोजे᳓" in ks1.pieces[0].raw_mula
+  assert "त्वोर्जे᳓" in ks1.pieces[0].raw_mula
   assert "मघ्न्या" in ks1.pieces[0].repaired_vp
-  assert "मग्न्या" in ks1.pieces[0].raw_mula
+  assert "मघ्न्या" in ks1.pieces[0].raw_mula
 
   blks1 = split_ks_anuvaka(ks1, idx, lex=lex)
   vps1 = [b.vp_text for b in blks1]
   assert any(v == "इषे᳓ त्वा" for v in vps1)
   assert any(v == "ऊर्जे᳓ त्वा" for v in vps1)
-  # Verify ZERO char-drift in `mula_text` after OCR length-changing repair (`त्वोजे᳓` -> `त्वोर्जे᳓`)!
   urje_blk = next(b for b in blks1 if b.vp_text == "ऊर्जे᳓ त्वा")
-  assert urje_blk.mula_text == "ऊजे᳓ त्वा"
+  assert urje_blk.mula_text == "ऊर्जे᳓ त्वा"
   vayu_blk = next(b for b in blks1 if b.vp_text.startswith("वाय᳓व"))
   assert vayu_blk.mula_text.startswith("वाय᳓व")
   # Verify ZERO char-drift on KS 6.1 Brāhmaṇa after OCR length-changing repair (`अध्सृज्यत` -> `अध्यसृज्यत`)!
@@ -233,11 +232,11 @@ def test_ms_2_07_savitra_yv_rks_and_2_01_duplicate_heading_lossless(shared_resou
 def test_ks_katha_svarita_litanies_brahmana_and_ms_whole_rk_rescue(shared_resources):
   idx, lex, counter = shared_resources
 
-  # 1. KS 17.15 Śatarudrīya: Kaṭha under-hook svarita OCR (`सरस्यृाय` -> `सरस्या᳙य`) + namas litany split (no false Ṛk!)
+  # 1. KS 17.15 Śatarudrīya: Kaṭha under-hook svarita OCR (`सरस्यृाय` -> `सरस्या᳙य`) repaired in BOTH mUla & VP + namas litany split (no false Ṛk!)
   p17 = os.path.join(DEFAULT_KS_SCHROEDER_ROOT, "1_iThimikA", "17_dhruvaxitiH", "15.md")
   ks17 = parse_ks_anuvaka(p17, DEFAULT_KS_SCHROEDER_ROOT, lex=lex)
   assert "सरस्या᳙य" in ks17.pieces[0].repaired_vp
-  assert "सरस्यृाय" in ks17.pieces[0].raw_mula
+  assert "सरस्या᳙य" in ks17.pieces[0].raw_mula
   blks17 = split_ks_anuvaka(ks17, idx, lex=lex)
   assert len(blks17) >= 30
   assert all(not b.is_rk for b in blks17)
@@ -285,6 +284,72 @@ def test_ks_katha_svarita_litanies_brahmana_and_ms_whole_rk_rescue(shared_resour
   assert len(b_4_9) == 1 and b_4_9[0].is_rk
   built_4_9 = build_block_padapatha_full(b_4_9[0], lex, counter, corpus="MS")
   assert not any("- सु (तिङि चोदात्तवति" in ln for ln in built_4_9.pp_lines)
+
+
+def test_dual_witness_ocr_repair_and_indike_interleaver(shared_resources):
+  _, lex, _ = shared_resources
+  from doc_curation_projects.veda.yajuH.ks_ms.source_parser import repair_ks_text_with_visvara
+  from doc_curation_projects.veda.yajuH.ks_ms.indike_interleaver import (
+    IndikePassage,
+    _iast_to_deva_clean,
+    align_indike_to_vp_blocks,
+    insert_gemini_into_sarva_markdown,
+  )
+
+  # 1. Kaṭha svarita hooks (`सरस्यृाय` -> `सरस्या᳙य`, `पृथिव्यृसि` -> `पृथिव्य᳙सि`), `ञ्व` -> `ञ्च`,
+  #    and zero false positives when `visvara` has typos (`गहीतो`, `पिवत`, `मत्विजम्`)!
+  schr = "इषे᳓ त्वोजे᳓ त्वा पृथिव्यृसि सरस्यृाय प्रत्यञ्व देव᳓मृत्वि᳓जम् उपयाम᳓गृहीतो पिबतान्तरिक्षस्य"
+  visv = "इषे त्वोर्जे त्वा पृथिव्यसि सरस्याय प्रत्यञ्च देवमत्विजम् उपयामगहीतो पिवतान्तरिक्षस्य"
+  titus = "इषे त्वा ऊर्जे त्वा पृथिव्यसि सरस्याय प्रत्यञ्च देवमृत्विजम् उपयामगृहीतो पिबतान्तरिक्षस्य"
+  repaired, reps = repair_ks_text_with_visvara(schr, visv, lex=lex, titus_text=titus)
+  assert "त्वोर्जे᳓" in repaired
+  assert "पृथिव्य᳙सि" in repaired
+  assert "सरस्या᳙य" in repaired
+  assert "प्रत्यञ्च" in repaired
+  # Must NOT corrupt valid words despite visvara typos!
+  assert "देव᳓मृत्वि᳓जम्" in repaired
+  assert "उपयाम᳓गृहीतो" in repaired
+  assert "पिबतान्तरिक्षस्य" in repaired
+
+  # 2. `_iast_to_deva_clean` MUST preserve `ś` -> `श` while stripping vowel acute/grave accents!
+  assert "श्रेष्ठतमाय" in _iast_to_deva_clean("devó vas savitā́ prā́rpayatu śréṣṭhatamāya kármaṇe")
+
+  # 3. `align_indike_to_vp_blocks` splits 1 indike line across 2 viniyoga-split blocks and inserts idempotently!
+  psg = IndikePassage(
+    passage_id="1.1.1",
+    sa_lines_iast=["iṣé tvā subhūtā́ya", "vāyávaḥ stha"],
+    sa_lines_deva=["इषे त्वा सुभूताय", "वायवः स्थ"],
+    en_lines=["For nourishment [I cut] you, for well-being!", "You are winds."],
+  )
+  vps = ["इषे᳓ त्वा ।", "सुभूता᳓य ।", "वाय᳓वः स्थ ।"]
+  en_list, diag = align_indike_to_vp_blocks(vps, [psg])
+  assert diag["mode"] == "sa_anchored"
+  assert "nourishment" in en_list[0] and "well-being" in en_list[1] and en_list[2] == "You are winds."
+
+  sample_md = """+++
+title = "०१"
++++
+
+<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+इषे᳓ त्वा ।
+</details>
+
+<details><summary>सर्वाष् टीकाः</summary>
+
+<details><summary>मूलम्</summary>
+
+इषे᳓ त्वा
+</details>
+</details>
+"""
+  once = insert_gemini_into_sarva_markdown(sample_md, ["For nourishment [I cut] you,"])
+  twice = insert_gemini_into_sarva_markdown(once, ["For nourishment [I cut] you,"])
+  assert once == twice  # Strictly idempotent!
+  assert once.count("<details><summary>Gemini 3.8 Flash</summary>") == 1
+  assert once.index("Gemini 3.8 Flash") < once.index("<details><summary>मूलम्</summary>")
+  assert once.count("<details") == once.count("</details>")
+
 
 
 

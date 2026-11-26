@@ -105,7 +105,7 @@ def _disambiguate_incoming_entry(
   if t.startswith("पद-पाठः (यान्त्रिकः"):
     if is_exact_reading and any(k.startswith(("पदपाठः", "पद-पाठः")) for k in existing_by_title):
       return None
-    if "यान्त्रिकः" in t and "-" in t and t != "पद-पाठः (यान्त्रिकः)":
+    if "व्यत्यस्त" not in t and re.search(r"यान्त्रिकः\s*-\s*\S", t):
       return t, b
     return f"पद-पाठः (यान्त्रिकः - {src_spec.shAkha_label})", b
 
@@ -119,7 +119,7 @@ def _disambiguate_incoming_entry(
       if any(_similar_text(b, ex, threshold=0.88) for ex in existing_by_title["सायण-टीका"]):
         return None
       return src_spec.sayana_variant_label, b
-    return (src_spec.sayana_variant_label if target_spec.name in ("VS-M", "TS", "TB") else "सायण-टीका"), b
+    return (src_spec.sayana_variant_label if target_spec.name in ("VS-M", "TS", "TB", "TK", "MS") else "सायण-टीका"), b
 
   if t == "भट्टभास्कर-टीका":
     if "भट्टभास्कर-टीका" in existing_by_title:
@@ -140,6 +140,13 @@ def _disambiguate_incoming_entry(
       if any(_similar_text(b, ex, threshold=0.80) for ex in existing_by_title["Keith"]):
         return None
       return (src_spec.keith_variant_label or f"Keith ({src_spec.shAkha_label})"), b
+    return t, b
+
+  if t == "Gemini 3.8 Flash":
+    if "Gemini 3.8 Flash" in existing_by_title:
+      if any(_similar_text(b, ex, threshold=0.80) for ex in existing_by_title["Gemini 3.8 Flash"]):
+        return None
+      return f"Gemini 3.8 Flash ({src_spec.shAkha_label})", b
     return t, b
 
   if t.startswith("दयानन्द-सरस्वती"):
@@ -239,11 +246,11 @@ def merge_tika_additions(
   pada_new = [(t, format_details_block(t, merge_author_bodies(new_by_title[t], strip_trivial_crossref=False)))
               for t in new_by_title if t not in inserted_keys and (t.startswith("पदपाठः") or t.startswith("पद-पाठः"))]
   trans_new = [(t, format_details_block(t, merge_author_bodies(new_by_title[t], strip_trivial_crossref=False)))
-               for t in new_by_title if t not in inserted_keys and (t.startswith("Griffith") or t.startswith("Keith"))]
+               for t in new_by_title if t not in inserted_keys and t.startswith(("Gemini", "Griffith", "Keith", "Whitney", "Wilson"))]
   comm_new = [(t, format_details_block(t, merge_author_bodies(new_by_title[t], strip_trivial_crossref=False)))
               for t in new_by_title if t not in inserted_keys
               and not t.startswith("मूलम्") and not t.startswith("पदपाठः") and not t.startswith("पद-पाठः")
-              and not t.startswith("Griffith") and not t.startswith("Keith")]
+              and not t.startswith(("Gemini", "Griffith", "Keith", "Whitney", "Wilson"))]
 
   def _insert_after(seq: list[tuple[str, str]], add: list[tuple[str, str]], pred) -> list[tuple[str, str]]:
     if not add:
@@ -256,13 +263,13 @@ def merge_tika_additions(
       return seq + add
     return seq[:pos] + add + seq[pos:]
 
-  rendered = _insert_after(rendered, trans_new, lambda t: t in ("Griffith", "Keith", "Whitney", "Wilson"))
+  rendered = _insert_after(rendered, trans_new, lambda t: t.startswith(("Gemini", "Griffith", "Keith", "Whitney", "Wilson")))
   rendered = _insert_after(rendered, mula_new, lambda t: t.startswith("मूलम्"))
   rendered = _insert_after(rendered, pada_new, lambda t: t.startswith(("पदपाठः", "पद-पाठः", "मूलम्")))
   rendered = _insert_after(
     rendered,
     comm_new,
-    lambda t: any(x in t for x in ("उवट", "महीधर", "सायण", "भट्टभास्कर", "आनन्दबोध", "अनन्ताचार्य")),
+    lambda t: any(x in t for x in ("उवट", "महीधर", "सायण", "भट्टभास्कर", "आनन्दबोध", "अनन्ताचार्य", "Schroeder")),
   )
 
   new_body = "\n\n".join(blk for _, blk in rendered).strip()

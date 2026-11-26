@@ -72,8 +72,8 @@ from doc_curation.sanskrit.accent.taittiriya_padapatha import (
 from doc_curation_projects.veda.yajuH.ks_ms.reference_index import VedicReferenceIndex
 from doc_curation_projects.veda.yajuH.ks_ms.splitter import SplitBlock
 
-MS_PROVENANCE_CORPORA: tuple[str, ...] = MAJOR_AUTO_CORPORA
-KS_PROVENANCE_CORPORA: tuple[str, ...] = ("MS",) + MAJOR_AUTO_CORPORA
+MS_PROVENANCE_CORPORA: tuple[str, ...] = tuple(c for c in MAJOR_AUTO_CORPORA if c != "MS")
+KS_PROVENANCE_CORPORA: tuple[str, ...] = tuple(c for c in MAJOR_AUTO_CORPORA if c != "KS")
 
 _ALL_ACC_RE = re.compile(r"[\u0951-\u0957\u1cd0-\u1cff]")
 

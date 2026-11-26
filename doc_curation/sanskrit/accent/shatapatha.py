@@ -36,6 +36,7 @@ from indic_transliteration.sanscript.schemes.brahmic import accent
 from doc_curation.sanskrit.accent.reconciler import (
   DETAILS_RE,
   DEVANAGARI_VOWELS,
+  LEAF_DETAILS_RE,
   PadapathaItem,
   US_SVARITA,
   US_UDATTA,
@@ -701,8 +702,16 @@ class _VpCluster:
   mula_header: str = "मूलम् - श्रीधरादि"
 
 
+_SB_TRANSLATION_SUMMARIES = frozenset({
+  "Eggeling",
+  "C R Swaminathan",
+  "En - सिद्धार्थः",
+  "Griffith",
+})
+
+
 def _extract_vp_clusters(part: str) -> list[_VpCluster]:
-  dmatches = list(DETAILS_RE.finditer(part))
+  dmatches = list(LEAF_DETAILS_RE.finditer(part))
   clusters: list[_VpCluster] = []
   subidx = 0
   for i, m in enumerate(dmatches):
@@ -713,7 +722,10 @@ def _extract_vp_clusters(part: str) -> list[_VpCluster]:
     mula_hdr = "मूलम् - श्रीधरादि"
     insert_pos = m.end()
     k = i + 1
-    while k < len(dmatches) and dmatches[k].group(1).strip().startswith("विश्वास-टिप्पनी"):
+    while k < len(dmatches) and (
+      dmatches[k].group(1).strip().startswith("विश्वास-टिप्पनी")
+      or dmatches[k].group(1).strip() in _SB_TRANSLATION_SUMMARIES
+    ):
       insert_pos = dmatches[k].end()
       k += 1
     while k < len(dmatches):
@@ -785,9 +797,9 @@ def _coerce_padapatha_items(
 
 def _extract_non_managed_blocks(text: str) -> list[tuple[str, str]]:
   out: list[tuple[str, str]] = []
-  for m in DETAILS_RE.finditer(text):
+  for m in LEAF_DETAILS_RE.finditer(text):
     hdr = m.group(1).strip()
-    if hdr.startswith(("विश्वास-प्रस्तुतिः", "पद-पाठः (यान्त्रिकः")):
+    if hdr.startswith(("विश्वास-प्रस्तुतिः", "पद-पाठः (यान्त्रिकः", "सर्वाष् टीकाः", "सर्वा अवतारिकाः")):
       continue
     raw = m.group(0)
     if hdr == "मूलम्" and raw.startswith("<details open>"):

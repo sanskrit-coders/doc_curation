@@ -678,4 +678,83 @@ def test_prefill_details_pattern_frontmatter_and_js_parity(tmp_path):
   assert deinc_out.strip().startswith("<details><summary>Nested Child</summary>")
 
 
+def test_resolve_hugo_include_and_audit_includes(tmp_path):
+  static_file = tmp_path / "site_a" / "static" / "part" / "01.md"
+  static_file.parent.mkdir(parents=True)
+  static_file.write_text("+++\ntitle = 'S'\n+++\nStatic body.\n", encoding="utf-8")
+
+  content_file = tmp_path / "site_b" / "content" / "ch" / "02.md"
+  content_file.parent.mkdir(parents=True)
+  content_file.write_text("+++\ntitle = 'C'\n+++\nContent body.\n", encoding="utf-8")
+
+  section_idx = tmp_path / "site_b" / "content" / "sec" / "_index.md"
+  section_idx.parent.mkdir(parents=True)
+  section_idx.write_text("+++\ntitle = 'Sec'\n+++\nSection index.\n", encoding="utf-8")
+
+  # Directory named *.md must never be treated as a Markdown file or crash audit_includes.
+  (tmp_path / "site_b" / "content" / "dir_named.md").mkdir(parents=True)
+
+  # Ignored build output / theme directories should not pollute scan results.
+  ignored_build = tmp_path / "site_b" / "build_github" / "bad.md"
+  ignored_build.parent.mkdir(parents=True)
+  ignored_build.write_text('<div class="js_include" url="/site_a/nonexistent.md"></div>\n', encoding="utf-8")
+
+  host = tmp_path / "site_b" / "content" / "host.md"
+  host.write_text(
+    textwrap.dedent("""\
+      +++
+      title = "Host"
+      +++
+      <div class="js_include" url="/site_a/./part/01.md#frag"></div>
+      <div class="js_include" url="/site_b/ch/02?lang=sa"></div>
+      <div class="js_include" url="/site_b/sec/"></div>
+      <div class="js_include" url="https://example.com/ignored.md"></div>
+      <div class="js_include" url="/site_b/ch/02.md"></div>
+      <div class="collapsed js_include" url="/site_a/part/01"></div>
+      <div class="js_include" url="/site_missing/part/01.md"></div>
+      <div class="js_include" url="/site_b/content/ch/02"></div>
+      <div class="js_include" url="/site_a/part/99.md">
+      <details open><summary>Unclosed</summary>
+    """),
+    encoding="utf-8",
+  )
+
+  # Strict Hugo resolution vs permissive fallback
+  assert include_helper.resolve_hugo_include_file_path("/site_a/./part/01.md#frag", str(tmp_path), str(host)) == str(static_file)
+  assert include_helper.resolve_hugo_include_file_path("/site_b/ch/02?lang=sa", str(tmp_path), str(host)) == str(content_file)
+  assert include_helper.resolve_hugo_include_file_path("/site_b/sec/", str(tmp_path), str(host)) == str(section_idx)
+  assert include_helper.resolve_hugo_include_file_path("/site_b/ch/02.md", str(tmp_path), str(host)) is None
+  assert include_helper.resolve_hugo_include_file_path("/site_a/part/01", str(tmp_path), str(host)) is None
+  assert include_helper.resolve_include_file_path("/site_b/ch/02.md", str(tmp_path), str(host)) == str(content_file)
+  assert include_helper.resolve_include_file_path("/site_a/part/01", str(tmp_path), str(host)) == str(static_file)
+
+  report = include_helper.audit_includes(
+    [str(tmp_path / "site_a"), str(tmp_path / "site_b")],
+    hugo_base_dir=str(tmp_path),
+  )
+  assert report.scanned_files == 4  # static/part/01, content/ch/02, content/sec/_index, content/host
+  assert [(b.line_number, b.url, b.reason) for b in report.broken_includes] == [
+    (8, "/site_b/ch/02.md", "dot_md_points_to_content"),
+    (9, "/site_a/part/01", "non_md_points_to_static"),
+    (10, "/site_missing/part/01.md", "missing_target"),
+    (11, "/site_b/content/ch/02", "redundant_content_or_static_prefix"),
+    (12, "/site_a/part/99.md", "missing_target"),
+  ]
+  assert len(report.unbalanced_files) == 1
+  assert report.unbalanced_files[0].file_path == str(host)
+  assert report.unbalanced_files[0].details_delta == 1
+  assert report.unbalanced_files[0].div_delta == 1
+
+  # Prefix filter restricts strictly by URL prefix.
+  filtered = include_helper.audit_includes(
+    [str(tmp_path / "site_b")],
+    hugo_base_dir=str(tmp_path),
+    url_prefix="/site_b",
+    check_tags=False,
+  )
+  assert [b.url for b in filtered.broken_includes] == ["/site_b/ch/02.md", "/site_b/content/ch/02"]
+  assert filtered.unbalanced_files == ()
+
+
+
 

@@ -44,9 +44,10 @@ interactive pages, deploys).
 Full attribute docs for `<div class="js_include">`, `<div class="spreadsheet">`, `<div class="audioEmbed">`, and `<div class="videoEmbed">` live in `themes/sanskrit-documentation-theme-hugo/README.md`.
 
 - **Source of truth lives in `static/` (or another `content/` repo):** A `<div class="js_include" ... url="...">...</div>` block in a host `.md` file holds a prefilled inline snapshot (typically wrapped in `<details open><summary><hN>... …{Loading}…</hN></summary>`) that is dynamically replaced at page load.
-  - Resolve target files via `doc_curation.md.content_processor.include.resolve_include_file_path(url, hugo_base_dir="/home/vvasuki/gitland/vishvAsa", current_file_path=...)` (wraps `file_path_from_url` with directory `_index.md` fallback and raw `static/*.md` relative-path handling):
-    - Root-relative URLs ending in `.md` map to `<hugo_base_dir>/<repo>/static/<rest>.md`.
-    - Root-relative URLs without `.md` map to `<hugo_base_dir>/<repo>/content/<rest>.md` (or `_index.md`).
+  - Resolve target files via `doc_curation.md.content_processor.include.resolve_hugo_include_file_path(url, hugo_base_dir="/home/vvasuki/gitland/vishvAsa", current_file_path=...)` for strict Hugo runtime resolution (`resolve_include_file_path` adds a permissive `.md`/non-`.md` cross-tree fallback for `surgical_prefill`):
+    - Root-relative URLs ending in `.md` map **only** to `<hugo_base_dir>/<repo>/static/<rest>.md`.
+    - Root-relative URLs without `.md` map **only** to `<hugo_base_dir>/<repo>/content/<rest>.md` (or `_index.md`).
+  - Audit broken `js_include` URLs and `<details>`/`<div>` tag balance across repos via `include.audit_includes(dir_paths, hugo_base_dir=..., url_prefix=..., strict=True, check_tags=True)` or CLI `~/gitland/python_venv/bin/python -m doc_curation.md.content_processor.include <dirs...> --url-prefix /vedAH` (classifies `dot_md_points_to_content`, `non_md_points_to_static`, `redundant_content_or_static_prefix`, and `missing_target`, excluding `.git`, `public`, `themes`, `resources`, `node_modules`, and `build_*`).
   - `js_include` behavior & prefill parity:
     - `detailsPattern` (default `".*"`): when set to something other than `".*"`, only `<details>` blocks whose trimmed `<summary>` matches the regex are included (matching outer `<details>` keep their children; non-matching `<details>` recurse into child `<details>`).
     - `newLevelForH1` (`"1"`–`"6"` or `"b[]"`; nested shifts use `min(6, (child - 1) + parent)`), `includeTitle` (`"true"`, `"plain"`, or `"false"`, overriding `title`), `title`, and `class="js_include collapsed"` control title/collapse output.

@@ -1,13 +1,14 @@
-# hugo_site tooling
+# hugo_site.catalog tooling
 
 This directory holds the maintenance tooling for the Hugo sites'
-PDF-library mappings stored in Google Sheets.
+PDF-library catalog mappings stored in Google Sheets.
 
 - **Data / Client (in the Hugo site):**
   `~/gitland/vishvAsa/vishvAsa.github.io/content/interests/private/pdf-lib/`
   — `appScript.gs` (Apps Script server code), `browse.html`/`browse.js`.
 - **Tooling (here):** `vv_pdf_library.py` scans local PDFs/sites and identifies/syncs
-  mappings to the Sheet; `appscript_client.py` and `check_sheet.py` interact with the Sheet.
+  mappings to the Sheet; `appscript_client.py` and `check_sheet.py` interact with the Sheet;
+  `__init__.py` provides `get_catalog_source_path()`.
 
 See `~/gitland/vishvAsa/vishvAsa.github.io/content/interests/private/pdf-lib/README.md`
 for details on the library and conventions.

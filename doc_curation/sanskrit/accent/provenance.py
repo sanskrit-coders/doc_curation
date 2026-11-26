@@ -20,6 +20,7 @@ from indic_transliteration.sanscript.schemes.brahmic import accent
 
 from doc_curation.sanskrit.accent.reconciler import (
   DETAILS_RE,
+  LEAF_DETAILS_RE,
   US_SVARITA,
   US_UDATTA,
   find_js_include_spans,
@@ -39,7 +40,7 @@ from doc_curation.sanskrit.accent.shatapatha_solver import (
   us_padasvara_to_entry,
 )
 
-PROVENANCE_CACHE_VERSION = 13
+PROVENANCE_CACHE_VERSION = 14
 DEFAULT_PROVENANCE_CACHE_PATH = os.path.expanduser(
   "~/.cache/doc_curation/vedic_corpus_counts_v1.pkl"
 )
@@ -60,7 +61,7 @@ CORPUS_TAGS: tuple[str, ...] = (
   "MS",
 )
 CORPUS_TAG_SET: frozenset[str] = frozenset(CORPUS_TAGS)
-MAJOR_AUTO_CORPORA: tuple[str, ...] = ("TS", "RV", "TB", "TK", "AV", "SB-M", "SB-K", "VS-M", "VS-K")
+MAJOR_AUTO_CORPORA: tuple[str, ...] = ("TS", "RV", "TB", "TK", "AV", "SB-M", "SB-K", "VS-M", "VS-K", "KS", "MS")
 FORBIDDEN_CORPUS_TAGS: tuple[str, ...] = ("TA", "EK")
 _CORPUS_ALIASES: dict[str, str] = {
   "ŚB": "SB-M",
@@ -81,8 +82,8 @@ DEFAULT_CORPUS_DIRS: dict[str, str] = {
   "VS-K": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/kANvam/saMhitA",
   "VS": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/saMhitA/sarva-prastutiH",
   "AV": "/home/vvasuki/gitland/vishvAsa/vedAH/content/atharva/shaunakam/rUDha-saMhitA/sarva-prastutiH",
-  "KS": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/kaTha-kapiShTalAH/saMhitA/mUlam/schroeder",
-  "MS": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/maitrAyaNIyam",
+  "KS": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/kAThakam/kaTha-kapiShTalAH/saMhitA/sarva-prastutiH",
+  "MS": "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/maitrAyaNIyam/saMhitA/sarva-prastutiH",
 }
 
 _PRAGRHYA_O_WORDS: frozenset[str] = frozenset({
@@ -418,6 +419,8 @@ class VedicCorpusCounter:
       ("AV", "stardict-sanskrit-kAvya/av-padasvara/av-padasvara.babylon"),
       ("VS-M", "stardict-sanskrit-kAvya/syv-vs-m-padasvara/syv-vs-m-padasvara.babylon"),
       ("VS-K", "stardict-sanskrit-kAvya/syv-vs-k-padasvara/syv-vs-k-padasvara.babylon"),
+      ("MS", "stardict-sanskrit-kAvya/kyv-ms-pada-svara/kyv-ms-pada-svara.babylon"),
+      ("KS", "stardict-sanskrit-kAvya/kyv-ks-pada-svara/kyv-ks-pada-svara.babylon"),
     ):
       bpath = os.path.join(dict_root, rel)
       if os.path.isfile(bpath):
@@ -459,8 +462,10 @@ class VedicCorpusCounter:
       if cdir and os.path.isdir(cdir):
         counter._ingest_us_markdown_corpus(cdir, tag)
 
-    # 5. KS & MS
+    # 5. KS & MS: prefer exact padasvara Babylon dicts loaded in step 1 (which exclude machine-accented `यन्त्र-स्वरः` blocks)
     for tag in ("KS", "MS"):
+      if counter.exact_counts.get(tag):
+        continue
       cdir = dirs.get(tag, "")
       if cdir and os.path.isdir(cdir):
         counter._ingest_samhita_or_pp_dir(cdir, tag, mode="sum")
@@ -536,7 +541,7 @@ class VedicCorpusCounter:
       inc = find_js_include_spans(txt)
       if inc:
         txt = _strip_spans(txt, inc)
-      for m in DETAILS_RE.finditer(txt):
+      for m in LEAF_DETAILS_RE.finditer(txt):
         if m.group(1).strip().startswith("विश्वास-प्रस्तुतिः") and has_us_accents(m.group(2)):
           clean = re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]", " ", m.group(2), flags=re.S)
           clean = re.sub(r"\[\[([^|\]]+)\|([^\]]+)\]\]", r"\2", clean)
@@ -555,7 +560,7 @@ class VedicCorpusCounter:
       if "पद-पाठः</summary>" not in txt:
         continue
       inc = find_js_include_spans(txt)
-      for m in DETAILS_RE.finditer(txt):
+      for m in LEAF_DETAILS_RE.finditer(txt):
         if any(a <= m.start() < b for a, b in inc):
           continue
         if m.group(1).strip() != "पद-पाठः":
@@ -625,7 +630,7 @@ class VedicCorpusCounter:
         inc = find_js_include_spans(txt)
         if inc:
           txt = _strip_spans(txt, inc)
-      details_rx = _VS_DETAILS_RE if corpus == "VS-K" else DETAILS_RE
+      details_rx = _VS_DETAILS_RE if corpus == "VS-K" else LEAF_DETAILS_RE
       sections = re.split(r"(?=\n##[ \t]+)", txt)
       for sec in sections:
         blocks = [(m.group(1).strip(), m.group(2)) for m in details_rx.finditer(sec)]
@@ -688,7 +693,7 @@ class VedicCorpusCounter:
       inc = find_js_include_spans(txt)
       if inc:
         txt = _strip_spans(txt, inc)
-      blocks = [(m.group(1).strip(), m.group(2)) for m in DETAILS_RE.finditer(txt)]
+      blocks = [(m.group(1).strip(), m.group(2)) for m in LEAF_DETAILS_RE.finditer(txt)]
       if blocks:
         chosen = [b for h, b in blocks if h.startswith("विश्वास-प्रस्तुतिः") and has_us_accents(b)]
         if not chosen:
@@ -2193,7 +2198,7 @@ def annotate_padapatha_markdown_counts(
         out_lines.append(ln)
     return prefix + "".join(out_lines) + suffix
 
-  updated = DETAILS_RE.sub(_sub_block, markdown_text)
+  updated = LEAF_DETAILS_RE.sub(_sub_block, markdown_text)
   return updated, all_unresolved
 
 
@@ -2512,4 +2517,4 @@ def backfill_corpora_in_padapatha_markdown(
         out_lines.append(ln)
     return prefix + "".join(out_lines) + suffix
 
-  return DETAILS_RE.sub(_sub_block, markdown_text)
+  return LEAF_DETAILS_RE.sub(_sub_block, markdown_text)

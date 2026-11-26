@@ -12,6 +12,7 @@ from indic_transliteration.sanscript.schemes.brahmic import accent
 
 from doc_curation.sanskrit.accent.reconciler import (
   DETAILS_RE,
+  LEAF_DETAILS_RE,
   PP_HEADER_RE,
   bare_devanagari,
   find_js_include_spans,
@@ -1996,7 +1997,7 @@ def validate_accented_markdown(
     if text.count("<details") != text.count("</details>") or text.count("<div") != text.count("</div>"):
       issues.append(AccentValidationIssue("tag_unbalanced", "Mismatched <details> or <div> closing tags"))
 
-  blocks = [(m.start(), m.end(), m.group(1).strip(), m.group(2)) for m in DETAILS_RE.finditer(text)]
+  blocks = [(m.start(), m.end(), m.group(1).strip(), m.group(2)) for m in LEAF_DETAILS_RE.finditer(text)]
   doc_commentators: set[str] = set()
   for _, _, bh, _ in blocks:
     if "हरदत्त" in bh:
@@ -2022,7 +2023,7 @@ def validate_accented_markdown(
         break
       if "\n##" in text[je:s]:
         break
-      if s - je > 12000:
+      if s - je > 40000:
         break
       if jh in ("मूलम् - Weber", "मूलम् - श्रीधरादि") or (jh == "मूलम्" and ("\u1cd8" in jb or has_kanva_sb_doc)):
         is_sb_cluster = True

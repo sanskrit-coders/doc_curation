@@ -31,6 +31,17 @@ def test_phonetic_normalization_and_no_patha_bheda():
   assert normalize_phonetic("उपप्रयन्तो ऽअध्वरम्") == normalize_phonetic("उपप्रयन्तो ऽध्वरम्")
 
 
+def test_phonetic_normalization_ms_ks_orthography():
+  # MS/KS orthographic differences: ँ/ं, ꣳ/ं, [वयल]्ँ, pause स्/र्->ः, ayogavāha accent order, छ/च्छ, TITUS ृ̄.
+  assert is_no_patha_bheda("अपाँ᳓ रे᳓ताँसि पितृ᳓̄न् बह्वी᳓स् ।", "अपां᳓ रे᳓तांसि पितॄ᳓न् बह्वीः᳓ ॥")
+  assert is_no_patha_bheda("देवो᳓ वः सवितो᳓त्पुनात्व् अ᳓छिद्रेण", "देवो᳓ वस् सवितो᳓त्पुनात्व् अ᳓च्छिद्रेण")
+  # Reconciler [[OLD|NEW]] compares on actual OLD reading (so differing OLD accents stay variants, not overwritten).
+  assert not is_no_patha_bheda("[[चि᳓द्|चिद्]] असि", "चिद् असि")
+  assert is_no_patha_bheda("[[चिद्|चि᳓द्]] असि", "चिद् असि")
+  # Superscript footnotes stripped without disturbing Vedic pluta digits २/३.
+  assert is_no_patha_bheda("हवि᳓ष्माँ२¹³", "हवि᳓ष्माँ२")
+
+
 def test_hemistich_merge_relocates_h2_avatarika():
   b1 = VskSubBlock(
     av_blocks=[("अनन्ताचार्यः - विनियोगः", "ब्रह्म क्षत्रम् इति पयः पुनाति।")],

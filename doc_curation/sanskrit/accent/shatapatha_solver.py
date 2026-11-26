@@ -42,6 +42,7 @@ from indic_transliteration.sanscript.schemes.brahmic import accent
 
 from doc_curation.sanskrit.accent.reconciler import (
   DETAILS_RE,
+  LEAF_DETAILS_RE,
   PadapathaItem,
   US_SVARITA,
   US_UDATTA,
@@ -1475,7 +1476,7 @@ class UnifiedVedicLexicon:
       if os.path.basename(fp) in ("_index.md", "file_list.md"):
         continue
       txt = open(fp, encoding="utf-8", errors="ignore").read()
-      blocks = [(m.group(1).strip(), m.group(2)) for m in DETAILS_RE.finditer(txt)]
+      blocks = [(m.group(1).strip(), m.group(2)) for m in LEAF_DETAILS_RE.finditer(txt)]
       vp_us = [b for h, b in blocks if h.startswith("विश्वास-प्रस्तुतिः") and has_us_accents(b)]
       us_bodies: list[str] = []
       if vp_us:
@@ -1514,7 +1515,7 @@ class UnifiedVedicLexicon:
       # Deduplicate per section (`## ...`): pick AT MOST ONE layer (`पद-पाठः` > `पद-पाठः (यान्त्रिकः...)` > `विश्वास-प्रस्तुतिः`), always `freq=1`!
       sections = re.split(r"(?=\n##[ \t]+)", txt)
       for sec in sections:
-        blocks = [(m.group(1).strip(), m.group(2)) for m in DETAILS_RE.finditer(sec)]
+        blocks = [(m.group(1).strip(), m.group(2)) for m in LEAF_DETAILS_RE.finditer(sec)]
         if not blocks:
           continue
         pp_trad = [b for h, b in blocks if h == "पद-पाठः"]
@@ -2112,7 +2113,7 @@ def parse_sb_markdown_clusters(markdown_text: str) -> list[KandikaCluster]:
     if not m_hdr:
       continue
     heading = re.sub(r"\s+", " ", m_hdr.group(1)).strip()
-    blocks = [(m.group(1).strip(), m.group(2).strip()) for m in DETAILS_RE.finditer(part)]
+    blocks = [(m.group(1).strip(), m.group(2).strip()) for m in LEAF_DETAILS_RE.finditer(part)]
     # Partition blocks into sub-clusters starting at each `विश्वास-प्रस्तुतिः` block,
     # OR from a single `<summary>मूलम्</summary>` witness in un-bootstrapped Kāṇva files.
     vp_indices = [i for i, (h, _) in enumerate(blocks) if h.startswith("विश्वास-प्रस्तुतिः")]

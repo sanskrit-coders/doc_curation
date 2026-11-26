@@ -13,7 +13,7 @@ import argparse
 import re
 import sys
 
-from doc_curation.hugo_site.appscript_client import get_sheet
+from doc_curation.hugo_site.catalog.appscript_client import get_sheet
 
 
 def main():

@@ -225,3 +225,152 @@ def test_render_host_include_pair_two_part_exact_and_variant():
   )
   assert vp_var and "<details open><summary>विश्वास-प्रस्तुतिः</summary>" in vp_var
   assert tk_var and 'newlevelforh1="4"' in tk_var and 'url="/a/tk.md"' in tk_var
+
+
+def test_ms_and_ks_stage_cascade_with_yantra_svara_and_schroeder(tmp_path: Path):
+  from doc_curation_projects.veda.dedup.matcher import looks_prose_brahmana
+
+  assert looks_prose_brahmana("अमावास्या᳙ वै᳓ स᳓रस्वती पूर्ण᳓मासः स᳓रस्वान्॥", 35)
+
+  v_root = tmp_path / "vishvAsa"
+  toml_p = tmp_path / "targets.toml"
+  toml_p.write_text(
+    f"""
+[repos]
+vishvasa_root = "{v_root}"
+
+[corpora.TS]
+name = "TS"
+shAkha_label = "तैत्तिरीयम्"
+pada_label = "पदपाठः - तैत्तिरीयः"
+sayana_variant_label = "सायण-टीका (तैत्तिरीया)"
+content_dir = "{v_root}/vedAH_yajuH/content/taittirIyam/sArasvata-vibhAgaH/saMhitA/sarva-prastutiH"
+yajuh_sarva_prastuti_dir = "{v_root}/vedAH_yajuH/static/taittirIyam/sArasvata-vibhAgaH/saMhitA/yajuH/sarva-prastutiH"
+yajuh_sarva_prastuti_url = "/vedAH_yajuH/taittirIyam/sArasvata-vibhAgaH/saMhitA/yajuH/sarva-prastutiH"
+
+[corpora.MS]
+name = "MS"
+shAkha_label = "मैत्रायणीयम्"
+pada_label = "पद-पाठः (यान्त्रिकः - मैत्रायणीयम्)"
+sayana_variant_label = "सायण-टीका (मैत्रायणीया)"
+content_dir = "{v_root}/vedAH_yajuH/content/maitrAyaNIyam/saMhitA/sarva-prastutiH"
+vp_dir = "{v_root}/vedAH_yajuH/static/maitrAyaNIyam/saMhitA/Rk/vishvAsa-prastutiH"
+sarva_dir = "{v_root}/vedAH_yajuH/static/maitrAyaNIyam/saMhitA/Rk/sarvASh_TIkAH"
+vp_url_prefix = "/vedAH_yajuH/maitrAyaNIyam/saMhitA/Rk/vishvAsa-prastutiH"
+sarva_url_prefix = "/vedAH_yajuH/maitrAyaNIyam/saMhitA/Rk/sarvASh_TIkAH"
+yajuh_sarva_prastuti_dir = "{v_root}/vedAH_yajuH/static/maitrAyaNIyam/saMhitA/yajuH/sarva-prastutiH"
+yajuh_sarva_prastuti_url = "/vedAH_yajuH/maitrAyaNIyam/saMhitA/yajuH/sarva-prastutiH"
+yajuh_vp_dir = "{v_root}/vedAH_yajuH/static/maitrAyaNIyam/saMhitA/yajuH/vishvAsa-prastutiH"
+yajuh_vp_url = "/vedAH_yajuH/maitrAyaNIyam/saMhitA/yajuH/vishvAsa-prastutiH"
+yajuh_sarva_dir = "{v_root}/vedAH_yajuH/static/maitrAyaNIyam/saMhitA/yajuH/sarvASh_TIkAH"
+yajuh_sarva_url = "/vedAH_yajuH/maitrAyaNIyam/saMhitA/yajuH/sarvASh_TIkAH"
+
+[corpora.KS]
+name = "KS"
+shAkha_label = "काठकम्"
+pada_label = "पद-पाठः (यान्त्रिकः - काठकम्)"
+sayana_variant_label = "सायण-टीका (काठकी)"
+content_dir = "{v_root}/vedAH_yajuH/content/kAThakam/kaTha-kapiShTalAH/saMhitA/sarva-prastutiH"
+vp_dir = "{v_root}/vedAH_yajuH/static/kAThakam/kaTha-kapiShTalAH/saMhitA/Rk/vishvAsa-prastutiH"
+sarva_dir = "{v_root}/vedAH_yajuH/static/kAThakam/kaTha-kapiShTalAH/saMhitA/Rk/sarvASh_TIkAH"
+vp_url_prefix = "/vedAH_yajuH/kAThakam/kaTha-kapiShTalAH/saMhitA/Rk/vishvAsa-prastutiH"
+sarva_url_prefix = "/vedAH_yajuH/kAThakam/kaTha-kapiShTalAH/saMhitA/Rk/sarvASh_TIkAH"
+yajuh_sarva_prastuti_dir = "{v_root}/vedAH_yajuH/static/kAThakam/kaTha-kapiShTalAH/saMhitA/yajuH/sarva-prastutiH"
+yajuh_sarva_prastuti_url = "/vedAH_yajuH/kAThakam/kaTha-kapiShTalAH/saMhitA/yajuH/sarva-prastutiH"
+yajuh_vp_dir = "{v_root}/vedAH_yajuH/static/kAThakam/kaTha-kapiShTalAH/saMhitA/yajuH/vishvAsa-prastutiH"
+yajuh_vp_url = "/vedAH_yajuH/kAThakam/kaTha-kapiShTalAH/saMhitA/yajuH/vishvAsa-prastutiH"
+yajuh_sarva_dir = "{v_root}/vedAH_yajuH/static/kAThakam/kaTha-kapiShTalAH/saMhitA/yajuH/sarvASh_TIkAH"
+yajuh_sarva_url = "/vedAH_yajuH/kAThakam/kaTha-kapiShTalAH/saMhitA/yajuH/sarvASh_TIkAH"
+""",
+    encoding="utf-8",
+  )
+  specs = load_corpus_specs(toml_p)
+  ts_host = specs["TS"].content_dir / "1" / "01.md"
+  ts_host.parent.mkdir(parents=True)
+  ts_host.write_text(
+    '+++\ntitle = "01"\n+++\n'
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nअमावास्या᳙ वै᳓ स᳓रस्वती पूर्ण᳓मासः स᳓रस्वान्॥\n</details>\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n<details><summary>मूलम्</summary>\n\nअमावास्या।</details>\n</details>\n',
+    encoding="utf-8",
+  )
+
+  ms_host = specs["MS"].content_dir / "1" / "01.md"
+  ms_host.parent.mkdir(parents=True)
+  ms_host.write_text(
+    '+++\ntitle = "01"\n+++\n'
+    # 1. Brāhmaṇa prose matching TS -> must NOT match
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nअमावास्या᳙ वै᳓ स᳓रस्वती पूर्ण᳓मासः स᳓रस्वान्॥\n</details>\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n<details><summary>मूलम्</summary>\n\nअमावास्या MS</details>\n</details>\n\n'
+    # 2. Yajuḥ mantra shared with KS (यन्त्र-स्वरः)
+    '<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nदेव᳓स्य त्वा सवितुः᳓ प्रसवे᳙ ऽश्वि᳓नोर् बाहु᳓भ्याम् पूष्णो᳓ ह᳓स्ताभ्याम् ॥\n</details>\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n<details><summary>Gemini 3.8 Flash</summary>\n\nAt the impulse of god Savitr, with the arms of the Asvins.\n</details>\n'
+    '<details><summary>मूलम्</summary>\n\nदेव᳓स्य त्वा सवितुः᳓\n</details>\n</details>\n\n'
+    # 3. Real-accent MS Ṛk matching KS real-accent variant
+    '<details open><summary>विश्वास-प्रस्तुतिः - ऋक्</summary>\n\nव्रजं᳓ कृणुध्वँ स᳓ हि᳓ वो नृपा᳓णः।\nपृथू᳓नि पु᳓रः कृणुध्वम् ॥\n</details>\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n<details><summary>मूलम्</summary>\n\nव्रजं᳓ MS।\n</details>\n'
+    '<details><summary>पद-पाठः (यान्त्रिकः)</summary>\n\n- व्रज᳓म् (*RV*-1)\n</details>\n</details>\n\n'
+    # 4. MS synthetic yantra-svara -> never promoted
+    '<details open><summary>विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)</summary>\n\nइ᳓त्य् उ᳓परिकाण्डे जु᳓हूमग्रीयः प्र᳓पाठकः ॥\n</details>\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n<details><summary>मूलम्</summary>\n\nइत्यु।</details>\n</details>\n',
+    encoding="utf-8",
+  )
+
+  ks_host = specs["KS"].content_dir / "1" / "01.md"
+  ks_host.parent.mkdir(parents=True)
+  ks_host.write_text(
+    '+++\ntitle = "01"\n+++\n'
+    # Matches MS #1 with synthetic yantra-svara accent diff on same consonants -> upgrade to exact!
+    '<details open><summary>विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)</summary>\n\nदेव᳓स्य त्वा᳓ सवितुः प्रसवे᳙ऽश्वि᳓नोर्बाहु᳓भ्यां पूष्णो᳓ ह᳓स्ताभ्याम् ॥\n</details>\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n<details><summary>Gemini 3.8 Flash</summary>\n\nAt the impulse of god Savitr, with the arms of the Asvins.\n</details>\n'
+    '<details><summary>मूलम्</summary>\n\nदेवस्य त्वा\n</details>\n'
+    '<details><summary>Schroeder - टिप्पणी</summary>\n\n- **[1_1]** Ms note\n</details>\n</details>\n\n'
+    # Matches MS #2 with real accent diff -> variant!
+    '<details open><summary>विश्वास-प्रस्तुतिः - ऋक्</summary>\n\nव्रजं᳓ कृणुध्वँ स᳓ हि वो᳓ नृपा᳓णः।\nपृथू᳓नि पु᳓रः कृणुध्वम् ॥\n</details>\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n<details><summary>मूलम्</summary>\n\nव्रजं᳓ KS।\n</details>\n'
+    '<details><summary>पद-पाठः (यान्त्रिकः - 1/3 व्यत्यस्त-स्वराः)</summary>\n\n- व्रज᳓म् (*KS_note*)\n</details>\n</details>\n\n'
+    # Matches MS #3 yantra-svara colophon -> must NOT promote MS yantra-svara!
+    '<details open><summary>विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)</summary>\n\nइ᳓त्य् उ᳓परिकाण्डे जु᳓हूमग्रीयः प्र᳓पाठकः ॥\n</details>\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n<details><summary>मूलम्</summary>\n\nइत्यु।</details>\n</details>\n',
+    encoding="utf-8",
+  )
+
+  load_corpus_specs.cache_clear()
+  from doc_curation_projects.veda.dedup import cascade as cas_mod
+  orig_loader = cas_mod.load_corpus_specs
+  cas_mod.load_corpus_specs = lambda: specs
+  try:
+    res_ms = run_stage_cascade(
+      "MS", ("TS",), (v_root / "vedAH_yajuH" / "content", v_root / "vedAH_yajuH" / "static"),
+      hugo_base_dir=str(v_root),
+    )
+    assert res_ms["content_exact"] == 0 and res_ms["content_variant"] == 0
+
+    res_ks = run_stage_cascade(
+      "KS", ("TS", "MS"), (v_root / "vedAH_yajuH" / "content", v_root / "vedAH_yajuH" / "static"),
+      hugo_base_dir=str(v_root),
+    )
+  finally:
+    cas_mod.load_corpus_specs = orig_loader
+
+  assert res_ks["content_exact"] == 1
+  assert res_ks["content_variant"] == 1
+  assert res_ks["promoted_targets"] == 2
+  ks_txt = ks_host.read_text(encoding="utf-8")
+  assert "/vedAH_yajuH/maitrAyaNIyam/saMhitA/yajuH/sarva-prastutiH/" in ks_txt
+  assert "/vedAH_yajuH/maitrAyaNIyam/saMhitA/Rk/sarvASh_TIkAH/" in ks_txt
+  assert "/vedAH_yajuH/maitrAyaNIyam/saMhitA/Rk/vishvAsa-prastutiH/" not in ks_txt
+  assert "विश्वास-प्रस्तुतिः (यन्त्र-स्वरः)" in ks_txt  # colophon stayed local!
+  # Promoted static Yajuḥ should carry MS's authentic VP + single Gemini + Schroeder note!
+  yaj_files = list(specs["MS"].yajuh_sarva_prastuti_dir.rglob("*.md"))
+  assert len(yaj_files) == 1
+  yaj_txt = yaj_files[0].read_text(encoding="utf-8")
+  assert "सवितुः᳓ प्रसवे᳙" in yaj_txt
+  assert yaj_txt.count("<summary>Gemini 3.8 Flash") == 1
+  assert "<summary>Schroeder - टिप्पणी</summary>" in yaj_txt
+  # Promoted variant Ṛk should separate MS & KS mūlam & padapāṭha labels cleanly!
+  rk_tk_files = list(specs["MS"].sarva_dir.rglob("*.md"))
+  assert len(rk_tk_files) == 1
+  rk_tk = rk_tk_files[0].read_text(encoding="utf-8")
+  assert "<summary>मूलम् - मैत्रायणीयम्</summary>" in rk_tk
+  assert "<summary>मूलम् - काठकम्</summary>" in rk_tk
+  assert "<summary>पद-पाठः (यान्त्रिकः - काठकम्)</summary>" in rk_tk

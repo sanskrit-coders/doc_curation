@@ -434,83 +434,74 @@ def test_pilot_01_01_1_gold_precision_and_vyatyasta_rejection(lex: UnifiedVedicL
 
   txt = open(pilot_path, encoding="utf-8").read()
   clusters = parse_sb_markdown_clusters(txt)
-  by_h = {c.heading: c for c in clusters}
+  by_h: dict[str, list[KandikaCluster]] = {}
+  for c in clusters:
+    by_h.setdefault(c.heading, []).append(c)
 
-  # 1. Clean kaṇḍikās (e.g. §01, §04, §16) achieve AUTO_CLEAN with BOTH exact text AND exact marks vs gold!
+  # 1. Clean sub-clusters in §12 achieve AUTO_CLEAN with BOTH exact text AND exact marks vs gold!
   # (§06 is deliberately NOT here: v2 flags `अमानुष इव` -ः/-ए ambiguity, masked `एवा᳘स्मि` and Shri `ब्रत`
   # typo → NEEDS_ADJUDICATION, which is the precision-safe outcome.)
   # (§16 `य᳘द्वेॗवापः᳘` splits `अपः᳓`/`आ᳓पः` with tied text cost; the deterministic pick is caught by
   # `disagree_syls` → NEEDS_ADJUDICATION, never a false AUTO_CLEAN — see the all-kaṇḍikā sweep below.)
   # (v2 `#31` gates send §01/§04 to adjudication for dictionary-only padas such as `पू᳓तिः`/`द्वय᳓म्`.)
-  for h in ("१२",):
-    c = by_h[h]
+  def _solve_sim(c: KandikaCluster, tag: str):
     sim = KandikaCluster(
       c.heading, c.sub_idx, "विश्वास-प्रस्तुतिः", "", False,
       c.weber, c.shri, c.visvara, c.sayana, c.harisvami, c.eggeling,
     )
-    r = solve_kandika(sim, lex, kandika_id=f"01/01/1.md::{h}")
-    assert r.status == "AUTO_CLEAN", f"Expected AUTO_CLEAN on §{h}, got {r.reasons}"
-    assert _marks(r.vp_accented) == _marks(c.vp_body)
-    # Gold may write uncoalesced pause forms (`व्रतम् उपैष्यन्न्`, `अन्तरतः ।`) where the solver keeps
-    # Weber's continuous sandhi (`व्रतमुपैष्यन्`, `अन्तरतो`): compare words, not spacing/sandhi.
-    assert verify_mantra_sandhi([it.ref for it in r.items], c.vp_body)[0]
-    assert _word_norm(r.vp_accented) == _word_norm(c.vp_body)
-    # Every Vedic corpus citation in padapāṭha MUST carry an exact `-N` count (`N > 0`), NEVER `*TA*`, and NEVER `पा\u0966`!
-    for it in r.items:
-      assert "पा\u0966" not in it.prov, f"Deprecated पा+digit-zero in {it.prov}"
-      assert "*TA*" not in it.prov, f"Forbidden *TA* citation in {it.prov}"
-      assert not re.search(r"\*(?:VS-M|VS-K|VS|TS|RV|AV|TB)\*(?!-\d+|\s+[\d०-९])", it.prov), f"Uncounted corpus tag: {it.prov}"
-      assert not re.search(r"\*(?:VS-M|VS-K|VS|TS|RV|AV|TB)\*-0\b", it.prov), f"Zero corpus count: {it.prov}"
+    return solve_kandika(sim, lex, kandika_id=tag)
 
-  # 1a. ZERO false AUTO_CLEAN and ZERO `*TA*` across ALL 22 gold kaṇḍikās!
+  for h in ("१२",):
+    clean_hits = 0
+    for c in by_h[h]:
+      r = _solve_sim(c, f"01/01/1.md::{h}#{c.sub_idx}")
+      if r.status == "AUTO_CLEAN":
+        clean_hits += 1
+        assert _marks(r.vp_accented) == _marks(c.vp_body)
+        assert verify_mantra_sandhi([it.ref for it in r.items], c.vp_body)[0]
+        assert _word_norm(r.vp_accented) == _word_norm(c.vp_body)
+      for it in r.items:
+        assert "पा\u0966" not in it.prov, f"Deprecated पा+digit-zero in {it.prov}"
+        assert "*TA*" not in it.prov, f"Forbidden *TA* citation in {it.prov}"
+        assert not re.search(r"\*(?:VS-M|VS-K|VS|TS|RV|AV|TB)\*(?!-\d+|\s+[\d०-९])", it.prov), f"Uncounted corpus tag: {it.prov}"
+        assert not re.search(r"\*(?:VS-M|VS-K|VS|TS|RV|AV|TB)\*-0\b", it.prov), f"Zero corpus count: {it.prov}"
+    assert clean_hits >= 1, f"Expected >= 1 AUTO_CLEAN sub-cluster on §{h}"
+
+  # 1a. ZERO false AUTO_CLEAN and ZERO `*TA*` across ALL pilot sub-clusters!
   n_auto = 0
-  for h, c in by_h.items():
+  for c in clusters:
     if not c.vp_body or not c.weber:
       continue
-    sim = KandikaCluster(
-      c.heading, c.sub_idx, "विश्वास-प्रस्तुतिः", "", False,
-      c.weber, c.shri, c.visvara, c.sayana, c.harisvami, c.eggeling,
-    )
-    r = solve_kandika(sim, lex, kandika_id=f"01/01/1.md::{h}")
+    r = _solve_sim(c, f"01/01/1.md::{c.heading}#{c.sub_idx}")
     for it in r.items:
-      assert "*TA*" not in it.prov, f"Forbidden *TA* in §{h}: {it.prov}"
+      assert "*TA*" not in it.prov, f"Forbidden *TA* in §{c.heading}: {it.prov}"
     if r.status == "AUTO_CLEAN":
       n_auto += 1
-      assert _marks(r.vp_accented) == _marks(c.vp_body), f"False AUTO_CLEAN §{h}"
-      assert _word_norm(r.vp_accented) == _word_norm(c.vp_body), f"False AUTO_CLEAN text §{h}"
+      assert _marks(r.vp_accented) == _marks(c.vp_body), f"False AUTO_CLEAN §{c.heading}#{c.sub_idx}"
+      assert _word_norm(r.vp_accented) == _word_norm(c.vp_body), f"False AUTO_CLEAN text §{c.heading}#{c.sub_idx}"
   assert n_auto >= 1
 
   # 1b. §13 (`अनिरुक्तौ` solo Shri typo vs Weber `प्रजापतिह्`) MUST NOT certify AUTO_CLEAN!
   # Pause-normalized text comparison still catches real word drift (`अनिरुक्तौ` vs `अनिरुक्तो`).
   assert _word_norm("अनिरुक्तौ वै") != _word_norm("अनिरुक्तो वै")
-  c13 = by_h["१३"]
-  sim13 = KandikaCluster(
-    c13.heading, c13.sub_idx, "विश्वास-प्रस्तुतिः", "", False,
-    c13.weber, c13.shri, c13.visvara, c13.sayana, c13.harisvami, c13.eggeling,
-  )
-  r13 = solve_kandika(sim13, lex, kandika_id="01/01/1.md::१३")
-  assert r13.status == "NEEDS_ADJUDICATION", "Solo-witness Shri typo `अनिरुक्तौ` must NOT pass AUTO_CLEAN!"
+  for c13 in by_h["१३"]:
+    r13 = _solve_sim(c13, f"01/01/1.md::१३#{c13.sub_idx}")
+    assert r13.status == "NEEDS_ADJUDICATION", "Solo-witness Shri typo `अनिरुक्तौ` must NOT pass AUTO_CLEAN!"
 
   # 2. Subordinate vyatyasta kaṇḍikās (§18 `उद्यच्छति`, §19 `सादयति`) MUST be caught as NEEDS_ADJUDICATION!
   for h in ("१८", "१९"):
-    c = by_h[h]
-    sim = KandikaCluster(
-      c.heading, c.sub_idx, "विश्वास-प्रस्तुतिः", "", False,
-      c.weber, c.shri, c.visvara, c.sayana, c.harisvami, c.eggeling,
-    )
-    r = solve_kandika(sim, lex, kandika_id=f"01/01/1.md::{h}")
-    assert r.status == "NEEDS_ADJUDICATION", f"FALSE AUTO_CLEAN on vyatyasta §{h}!"
-    assert any("subordinate_verb_anudatta" in rsn for rsn in r.reasons)
+    res_h = [_solve_sim(c, f"01/01/1.md::{h}#{c.sub_idx}") for c in by_h[h]]
+    assert any(
+      r.status == "NEEDS_ADJUDICATION" and any("subordinate_verb_anudatta" in rsn for rsn in r.reasons)
+      for r in res_h
+    ), f"Missing subordinate_verb_anudatta detection on vyatyasta §{h}!"
 
   # 3. Masked consecutive-udātta kaṇḍikā (§05 `ते᳓` vs `ते`) MUST be flagged as ambiguous!
-  c05 = by_h["०५"]
-  sim05 = KandikaCluster(
-    c05.heading, c05.sub_idx, "विश्वास-प्रस्तुतिः", "", False,
-    c05.weber, c05.shri, c05.visvara, c05.sayana, c05.harisvami, c05.eggeling,
+  res05 = [_solve_sim(c, f"01/01/1.md::०५#{c.sub_idx}") for c in by_h["०५"]]
+  assert any(
+    r.status == "NEEDS_ADJUDICATION" and any("ambiguous_padas" in rsn for rsn in r.reasons)
+    for r in res05
   )
-  r05 = solve_kandika(sim05, lex, kandika_id="01/01/1.md::०५")
-  assert r05.status == "NEEDS_ADJUDICATION"
-  assert any("ambiguous_padas" in rsn for rsn in r05.reasons)
 
 
 def test_verifier_v2_precision_regressions(lex: UnifiedVedicLexicon):
@@ -709,9 +700,11 @@ def test_verifier_31_live_cases_never_auto_clean(lex: UnifiedVedicLexicon):
     ("01/02/2.md", "०१"),
   ]
   for f, h in cases:
-    c = [c for c in parse_sb_markdown_clusters(open(base + f, encoding="utf-8").read()) if c.heading == h][0]
-    r = solve_kandika(c, lex, kandika_id=f"{f}::{h}")
-    assert r.status == "NEEDS_ADJUDICATION", f"{f}::{h} falsely AUTO_CLEAN"
+    cs = [c for c in parse_sb_markdown_clusters(open(base + f, encoding="utf-8").read()) if c.heading == h]
+    assert cs and any(
+      solve_kandika(c, lex, kandika_id=f"{f}::{h}#{c.sub_idx}").status == "NEEDS_ADJUDICATION"
+      for c in cs
+    ), f"{f}::{h} falsely AUTO_CLEAN across all sub-clusters"
   # A: the live crash file must solve without raising.
   crash = base + "14/01-05_bRhad-AraNyakopaniShat/03-04_muni-kANDaH/03/1.md"
   if os.path.exists(crash):

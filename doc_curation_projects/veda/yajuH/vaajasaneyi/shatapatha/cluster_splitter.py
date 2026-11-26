@@ -31,9 +31,12 @@ from doc_curation.llm.proofreader.interleave_aligner import (
   score_segment_against_cores,
 )
 from doc_curation.llm.proofreader.translation_aligner import find_core_anchor_hits
+from doc_curation.md.content_processor.commentary.helper import wrap_vedic_details
+from doc_curation.md.content_processor.details.common import get_top_level_detail_spans
 from doc_curation.sanskrit.accent.reconciler import (
   DETAILS_RE,
   DEVANAGARI_VOWELS,
+  LEAF_DETAILS_RE,
   PadapathaItem,
   US_SVARITA,
   US_UDATTA,
@@ -61,12 +64,16 @@ from doc_curation.sanskrit.accent.shatapatha import (
   normalize_sb_orthography,
   us_marks_to_sb_marks,
 )
+from doc_curation.sanskrit.accent.validator import validate_accented_markdown
 
 # ---------------------------------------------------------------------------
 # Constants & grammatical sets
 # ---------------------------------------------------------------------------
 
-_DETAILS_BLOCK_RE = re.compile(r"<details(?:\s+(open))?><summary>([^<]+)</summary>(.*?)</details>", re.S)
+_DETAILS_BLOCK_RE = re.compile(
+  r"<details(?:\s+(open))?><summary>([^<]+)</summary>((?:[^<]+|<(?!/?details\b))*)</details>",
+  re.S | re.I,
+)
 _H2_SPLIT_RE = re.compile(r"(?m)(?=^##\s+)")
 _FN_DEF_BLOCK_RE = re.compile(r"(?m)^\[\^([^\]]+)\]:[^\n]*(?:\n(?:[ \t]+[^\n]+|\s*(?=\n[ \t]+\S)))*")
 _FN_REF_RE = re.compile(r"\[\^([^\]]+)\](?!:)")
@@ -84,6 +91,7 @@ _MATRA_TO_INDEP = {
 _CONSONANTS = frozenset("कखगघङचछजझञटठडढणतथदधनपफबभमयरलवशषसहळ")
 _HALANT = "्"
 
+_PURE_TRANSLATION_SUMMARIES = frozenset({"Eggeling", "C R Swaminathan", "En - सिद्धार्थः", "Griffith"})
 _TRANSLATION_SUMMARIES = frozenset({"Eggeling", "C R Swaminathan", "सिद्धार्थः - En", "En - सिद्धार्थः"})
 
 # Relative/correlative & starter sets on bare (unaccented, unhyphenated) padapāṭha forms
@@ -103,7 +111,7 @@ _STRONG_SENT_STARTERS = frozenset({
   "यथा", "यस्मात्", "प्राक्", "उदीची", "प्राची", "दक्षिणा",
 })
 _POSTPOS_ENCLITICS = frozenset({
-  "वै", "हि", "च", "वा", "उ", "तु", "एव", "ह", "इव", "किल", "खलु", "नु", "स्म", "इति", "अपि", "आ",
+  "वै", "हि", "च", "वा", "उ", "तु", "एव", "ह", "इव", "किल", "खलु", "नु", "स्म", "इति", "अपि",
 })
 _SPEECH_VERBS = frozenset({
   "आह", "आहुः", "उवाच", "ऊचुः", "अब्रवीत्", "अब्रुवन्", "ब्रवीति", "ब्रुवन्ति", "ब्रूयात्",
@@ -342,10 +350,17 @@ def parse_section_clusters(part: str) -> list[ClusterRecord]:
 
     k = start_dm + 1
     tippanis: list[tuple[str, str, bool]] = []
-    while k < next_start_dm and dmatches[k].group(2).strip().startswith("विश्वास-टिप्पनी"):
-      dm = dmatches[k]
-      tippanis.append((dm.group(2).strip(), dm.group(3).strip(), bool(dm.group(1))))
-      k += 1
+    early_trs: list[tuple[str, str, bool]] = []
+    while k < next_start_dm:
+      sk = dmatches[k].group(2).strip()
+      if sk.startswith("विश्वास-टिप्पनी"):
+        tippanis.append((sk, dmatches[k].group(3).strip(), bool(dmatches[k].group(1))))
+        k += 1
+      elif sk in _PURE_TRANSLATION_SUMMARIES:
+        early_trs.append((sk, dmatches[k].group(3).strip(), bool(dmatches[k].group(1))))
+        k += 1
+      else:
+        break
 
     mulams: list[tuple[str, str, bool]] = []
     while k < next_start_dm:
@@ -368,7 +383,7 @@ def parse_section_clusters(part: str) -> list[ClusterRecord]:
       stale_plain_pp = (dmatches[k].group(2).strip(), dmatches[k].group(3).strip(), bool(dmatches[k].group(1)))
       k += 1
 
-    trailing: list[tuple[str, str, bool]] = []
+    trailing: list[tuple[str, str, bool]] = list(early_trs)
     while k < next_start_dm:
       dm = dmatches[k]
       trailing.append((dm.group(2).strip(), dm.group(3).strip(), bool(dm.group(1))))
@@ -379,6 +394,9 @@ def parse_section_clusters(part: str) -> list[ClusterRecord]:
 
     raw_s = dmatches[0].start() if ci == 0 else dmatches[start_dm].start()
     raw_e = dmatches[next_start_dm - 1].end()
+    m_close = re.match(r"\s*</details>", part[raw_e:])
+    if m_close and ("<summary>सर्वाष् टीकाः</summary>" in part[dmatches[start_dm].end() : raw_e] or "<summary>सर्वा अवतारिकाः</summary>" in part[dmatches[start_dm].end() : raw_e]):
+      raw_e += m_close.end()
     records.append(
       ClusterRecord(
         raw_start=raw_s,
@@ -482,7 +500,7 @@ def scan_deva_syl_spans(text: str, *, mask_pratika_prefix: bool = True) -> list[
           continue
       elif j < n and (text[j] in _MATRAS or text[j] in _ALL_ACCENTS or text[j] in _YOGAVAAHAS):
         onset_chars.append(ch)
-        v_start = j
+        v_start = j if text[j] in _MATRAS else i
         if text[j] in _MATRAS:
           v0 = _MATRA_TO_INDEP[text[j]]
           j += 1
@@ -564,29 +582,34 @@ def _pada_bare_forms(items: Sequence[PadapathaItem]) -> list[str]:
   return out
 
 
-def _align_layer_syls_to_pp(
-  layer_syls: Sequence[CharSyllable],
-  pp_items: Sequence[PadapathaItem],
-) -> tuple[list[int], list[tuple[int, ...]]]:
-  """Map every syllable of ``layer_syls`` to owning ``pp_items`` index(es) monotonically via banded DP."""
-  pp_keys, pp_meta, _, _ = _flatten_pp_syllables(pp_items)
-  ls_keys = [s.key for s in layer_syls]
+def _dp_align_span(
+  pp_keys: Sequence[tuple[str, str]],
+  pp_meta_sub: Sequence[tuple[int, int]],
+  ls_keys: Sequence[tuple[str, str]],
+  *,
+  allow_free_leading_insert: bool = False,
+) -> list[set[int]]:
+  """Run banded global Needleman-Wunsch DP on one syllable slice."""
   np = len(pp_keys)
   nl = len(ls_keys)
+  syl_owners: list[set[int]] = [set() for _ in range(nl)]
   if nl == 0 or np == 0:
-    return [-1] * nl, [() for _ in range(nl)]
+    if nl > 0 and pp_meta_sub:
+      owner = pp_meta_sub[0][0] if allow_free_leading_insert else pp_meta_sub[-1][0]
+      if not allow_free_leading_insert:
+        for li in range(nl):
+          syl_owners[li].add(owner)
+    return syl_owners
 
-  # Fast banded global Needleman-Wunsch DP: handles resyllabification (`यत् अपः -> यदपो`),
-  # 2-to-1 sandhi fusion, and repeated refrain words (`वज्रो वा आपो...`) without forward-jumps.
   band = max(24, abs(np - nl) + 18)
   NEG_INF = -1e9
   dp = [[NEG_INF] * (nl + 1) for _ in range(np + 1)]
   bt = [[(0, 0)] * (nl + 1) for _ in range(np + 1)]
   dp[0][0] = 0.0
-  # Allow free leading inserts in layer (e.g. विस्वरम् bold title / ॐ॥ before pp_items[0])
-  for b in range(1, min(nl + 1, band + 1)):
-    dp[0][b] = -0.3 * b
-    bt[0][b] = (0, b - 1)
+  if allow_free_leading_insert:
+    for b in range(1, min(nl + 1, band + 1)):
+      dp[0][b] = -0.3 * b
+      bt[0][b] = (0, b - 1)
 
   for a in range(np + 1):
     b_lo = max(0, a - band)
@@ -595,7 +618,7 @@ def _align_layer_syls_to_pp(
       cur = dp[a][b]
       if cur <= NEG_INF * 0.5:
         continue
-      diag_pen = 0.015 * abs((a - b))
+      diag_pen = 0.015 * abs(a - b)
       # 1 -> 1 match / replace
       if a < np and b < nl:
         pk, lk = pp_keys[a], ls_keys[b]
@@ -612,10 +635,22 @@ def _align_layer_syls_to_pp(
         val = cur + sc - diag_pen
         if val > dp[a + 1][b + 1]:
           dp[a + 1][b + 1], bt[a + 1][b + 1] = val, (a, b)
-      # 2 -> 1 sandhi vowel coalescence or yan merger (`इति + अ -> त्य`, `त + इ -> ते`)
+      # 2 -> 1 sandhi vowel coalescence or yan merger (`इति + अ -> त्य`, `त + इ -> ते`, `न्तु + इ -> न्त्वि`)
       if a + 2 <= np and b + 1 <= nl and (a + 2 - (b + 1)) <= band:
         p1, p2, lk = pp_keys[a], pp_keys[a + 1], ls_keys[b]
-        sc = 2.6 if (p1[0] == lk[0] or lk[0].endswith(p1[0])) else 0.4
+        yan_c = "य" if p1[1] == "i" else ("व" if p1[1] == "u" else ("र" if p1[1] == "r" else ""))
+        is_yan = bool(
+          yan_c
+          and p2[0] == ""
+          and p2[1] == lk[1]
+          and (lk[0] == p1[0] + yan_c or lk[0].endswith(p1[0] + yan_c))
+        )
+        if is_yan:
+          sc = 3.2
+        elif p1[0] == lk[0] or lk[0].endswith(p1[0]):
+          sc = 2.6
+        else:
+          sc = 0.4
         val = cur + sc - diag_pen
         if val > dp[a + 2][b + 1]:
           dp[a + 2][b + 1], bt[a + 2][b + 1] = val, (a, b)
@@ -632,12 +667,11 @@ def _align_layer_syls_to_pp(
         if val > dp[a + 1][b]:
           dp[a + 1][b], bt[a + 1][b] = val, (a, b)
       if b + 1 <= nl and abs(a - (b + 1)) <= band:
-        pen = 1.6 if a > 0 else 0.4
+        pen = 1.6 if (a > 0 or not allow_free_leading_insert) else 0.4
         val = cur - pen
         if val > dp[a][b + 1]:
           dp[a][b + 1], bt[a][b + 1] = val, (a, b)
 
-  syl_owners: list[set[int]] = [set() for _ in range(nl)]
   ca, cb = np, nl
   while ca > 0 or cb > 0:
     pa, pb = bt[ca][cb]
@@ -645,14 +679,76 @@ def _align_layer_syls_to_pp(
       break
     if cb > pb and ca > pa:
       for pi in range(pa, ca):
-        p_idx = pp_meta[pi][0]
+        p_idx = pp_meta_sub[pi][0]
         for li in range(pb, cb):
           syl_owners[li].add(p_idx)
     elif cb > pb and ca == pa:
-      owner = pp_meta[pa - 1][0] if pa > 0 else -1
+      owner = pp_meta_sub[pa - 1][0] if pa > 0 else -1
       for li in range(pb, cb):
         syl_owners[li].add(owner)
     ca, cb = pa, pb
+  return syl_owners
+
+
+def _align_layer_syls_to_pp(
+  layer_syls: Sequence[CharSyllable],
+  pp_items: Sequence[PadapathaItem],
+  *,
+  pp_flat: tuple[Sequence[tuple[str, str]], Sequence[tuple[int, int]]] | None = None,
+) -> tuple[list[int], list[tuple[int, ...]]]:
+  """Map every syllable of ``layer_syls`` to owning ``pp_items`` index(es) monotonically via anchor-partitioned DP."""
+  if pp_flat is not None:
+    pp_keys, pp_meta = pp_flat
+  else:
+    pp_keys, pp_meta, _, _ = _flatten_pp_syllables(pp_items)
+  ls_keys = [s.key for s in layer_syls]
+  np = len(pp_keys)
+  nl = len(ls_keys)
+  if nl == 0 or np == 0:
+    return [-1] * nl, [() for _ in range(nl)]
+
+  syl_owners: list[set[int]] | None = None
+  if pp_keys == ls_keys:
+    syl_owners = [{pp_meta[i][0]} for i in range(nl)]
+  elif max(np, nl) > 40:
+    opcodes = difflib.SequenceMatcher(None, pp_keys, ls_keys, autojunk=False).get_opcodes()
+    anchors = [
+      (i1, i2, j1, j2)
+      for tag, i1, i2, j1, j2 in opcodes
+      if tag == "equal" and (i2 - i1) >= 4 and ((i2 - i1) >= 7 or abs(i1 - j1) <= max(20, int(0.18 * np)))
+    ]
+    if anchors:
+      pa, pb = 0, 0
+      gaps_ok = True
+      for i1, i2, j1, j2 in anchors:
+        if i1 < pa or j1 < pb or max(i1 - pa, j1 - pb) > 28:
+          gaps_ok = False
+          break
+        pa, pb = i2, j2
+      if gaps_ok and max(np - pa, nl - pb) <= 28:
+        syl_owners = [set() for _ in range(nl)]
+        pa, pb = 0, 0
+        for i1, i2, j1, j2 in anchors:
+          if i1 > pa or j1 > pb:
+            gap_owners = _dp_align_span(
+              pp_keys[pa:i1], pp_meta[pa:i1], ls_keys[pb:j1],
+              allow_free_leading_insert=(pa == 0),
+            )
+            for li, o in enumerate(gap_owners):
+              syl_owners[pb + li].update(o)
+          for k in range(i2 - i1):
+            syl_owners[j1 + k].add(pp_meta[i1 + k][0])
+          pa, pb = i2, j2
+        if np > pa or nl > pb:
+          tail_owners = _dp_align_span(
+            pp_keys[pa:np], pp_meta[pa:np], ls_keys[pb:nl],
+            allow_free_leading_insert=False,
+          )
+          for li, o in enumerate(tail_owners):
+            syl_owners[pb + li].update(o)
+
+  if syl_owners is None:
+    syl_owners = _dp_align_span(pp_keys, pp_meta, ls_keys, allow_free_leading_insert=True)
 
   primary: list[int] = []
   last_p = 0
@@ -820,12 +916,40 @@ def _detect_must_keep_locks(
       if "वै" not in bares[: k + 1]:
         locks[k] = True
 
+  # 6. Pāṇinian syntactic/accent integrity:
+  #    (a) Never separate a `हि च (पा॰ ८.१.३४)` or `यद्वृत्तान्नित्यम् (पा॰ ८.१.६६)` verb from its governing `हि`/`य*`.
+  #    (b) Never split directly before a finite verb (`तिङन्तम्`, especially `पा॰ ८.१.२८`) leaving it at पादादि.
+  for j in range(n):
+    prov = pp_items[j].prov
+    if "८.१.३४" in prov or "हि च" in prov:
+      for b in range(j - 1, max(-1, j - 25), -1):
+        if bares[b] == "हि":
+          for m_idx in range(b, j):
+            locks[m_idx] = True
+          break
+    if "८.१.६६" in prov or "यद्वृत्तान्नित्यम्" in prov:
+      for b in range(j - 1, max(-1, j - 25), -1):
+        if bares[b] in _REL_FORMS:
+          for m_idx in range(b, j):
+            locks[m_idx] = True
+          break
+  for k in range(n - 1):
+    nxt_prov = pp_items[k + 1].prov
+    if "८.१.२८" in nxt_prov or "तिङन्तम् अनुदात्तम्" in nxt_prov:
+      locks[k] = True
+    elif _is_finite_verb_pada(pp_items[k + 1], bares[k + 1]) and (
+      not _is_finite_verb_pada(pp_items[k], bares[k]) and bares[k] != "इति"
+    ):
+      locks[k] = True
+
   return locks
 
 
 def _project_visvaram_dandas(
   visv_text: str,
   pp_items: Sequence[PadapathaItem],
+  *,
+  pp_flat: tuple[Sequence[tuple[str, str]], Sequence[tuple[int, int]]] | None = None,
 ) -> set[int]:
   """Map every internal ``।`` / ``॥`` in ``मूलम् - विस्वरम्`` onto its exact ``pp_items`` cut index ``k``."""
   if not visv_text:
@@ -838,7 +962,7 @@ def _project_visvaram_dandas(
   syls = scan_deva_syl_spans(clean, mask_pratika_prefix=False)
   if not syls:
     return set()
-  primary, _ = _align_layer_syls_to_pp(syls, pp_items)
+  primary, _ = _align_layer_syls_to_pp(syls, pp_items, pp_flat=pp_flat)
   danda_padas: set[int] = set()
   n_pp = len(pp_items)
   for idx in range(len(syls) - 1):
@@ -961,6 +1085,20 @@ def split_english_clauses(text: str) -> list[str]:
       sq_open = False
 
     if paren_d == 0 and bracket_d == 0 and not dq_open:
+      # Eggeling `--for ...` / `--because ...` clause boundary right after `,` / `;`
+      if (
+        ch == "-"
+        and i + 1 < n
+        and clean[i + 1] == "-"
+        and i >= 15
+        and clean[i - 1] in (",", " ")
+        and len("".join(buf[:-1]).strip()) >= 12
+        and re.match(r"^(?:for|because|since|thus|therefore|hence|and|but|wherefore)\b", clean[i + 2 :].lstrip(), re.I)
+      ):
+        clauses.append("".join(buf[:-1]).strip())
+        buf = [ch]
+        i += 1
+        continue
       if ch in (";", "?", "!") or (ch == "." and not (i + 1 < n and clean[i + 1].isdigit())):
         so_far = "".join(buf).strip()
         # Do not break after initials / abbreviations / leading section numbers like `1.` or `II.`
@@ -971,21 +1109,27 @@ def split_english_clauses(text: str) -> list[str]:
         j = i + 1
         while j < n and clean[j] in " \t\n":
           j += 1
-        # Keep trailing `]`/`'`/`"`/`[^fn]` attached to the sentence before splitting
+        # Keep trailing `]`/`'`/`"`/`[^fn]` attached to the sentence ONLY when committing a split
         if not is_num_prefix and not is_abbr and not is_roman and j < n:
-          # Absorb closing quote or footnote ref directly touching this punct (`.' [^egg_84]`)
           k = i + 1
+          extra: list[str] = []
           while k < n and clean[k] in "'’\"”)":
-            buf.append(clean[k])
+            extra.append(clean[k])
             k += 1
-          m_fn = re.match(r"[ \t]*\[\^[^\]]+\](?=[ \t]|$)", clean[k:])
+          m_fn = re.match(r"[ \t]*\[\^[^\]]+\](?=[ \t—]|$)", clean[k:])
           if m_fn:
-            buf.append(m_fn.group(0))
+            extra.append(m_fn.group(0))
             k += len(m_fn.group(0))
           if k < n and clean[k:].strip():
-            # Require uppercase start or quote/bracket/number after `.`, whereas `;` always separates clauses
             rem = clean[k:].lstrip()
-            if ch == ";" or (rem and (rem[0].isupper() or rem[0] in "'\"“[(")):
+            allow_split = (
+              ch == ";"
+              or (ch in ("!", "?") and (extra or (rem and (rem[0].isupper() or rem[0] in "'\"“[—"))))
+              or (rem and (rem[0].isupper() or rem[0] in "'\"“[("))
+              or (rem.startswith("—") and ch in (".", "!", "?"))
+            )
+            if allow_split:
+              buf.extend(extra)
               clauses.append("".join(buf).strip())
               buf = []
               i = k
@@ -1115,10 +1259,26 @@ def _translation_guided_breaks(
 # Sense-unit boundary selector (`0 = b_0 < b_1 < ... < b_K = P`)
 # ---------------------------------------------------------------------------
 
+def _compute_vp_alignment(
+  vp_body: str,
+  pp_items: Sequence[PadapathaItem],
+) -> tuple[list[dict], list[tuple[str, str]], list[tuple[int, int]], list[list[list[tuple[int, ...]]]]]:
+  """Precompute VP pieces, flattened padapāṭha keys/meta, and VP syllable-to-padapāṭha sources."""
+  vp_pieces = _extract_vp_pieces(vp_body)
+  pp_keys, pp_meta, _, _ = _flatten_pp_syllables(pp_items)
+  vp_keys = [kv for pc in vp_pieces for kv in pc["keys"]]
+  vp_meta = [(pi, si) for pi, pc in enumerate(vp_pieces) for si in range(len(pc["keys"]))]
+  pc_syl_sources = _map_pp_to_vp_syllables(
+    vp_body, vp_pieces, pp_keys, pp_meta, vp_keys, vp_meta, _pp_member_starts(pp_items)
+  )
+  return vp_pieces, pp_keys, pp_meta, pc_syl_sources
+
+
 def select_cluster_split_points(
   cluster: ClusterRecord,
   *,
   parallel_hint: tuple[str, str] | None = None,
+  vp_alignment: tuple[list[dict], list[tuple[str, str]], list[tuple[int, int]], list[list[list[tuple[int, ...]]]]] | None = None,
 ) -> list[int]:
   """Select pada split indices ``[b_1, ..., b_{K-1}]`` partitioning one kaṇḍikā into fine sense units."""
   items = cluster.pp_items
@@ -1128,13 +1288,11 @@ def select_cluster_split_points(
     return []
 
   bares = _pada_bare_forms(items)
-  vp_pieces = _extract_vp_pieces(cluster.vp_body)
-  pp_keys, pp_meta, _, _ = _flatten_pp_syllables(items)
-  vp_keys = [kv for pc in vp_pieces for kv in pc["keys"]]
-  vp_meta = [(pi, si) for pi, pc in enumerate(vp_pieces) for si in range(len(pc["keys"]))]
-  pc_syl_sources = _map_pp_to_vp_syllables(
-    cluster.vp_body, vp_pieces, pp_keys, pp_meta, vp_keys, vp_meta, _pp_member_starts(items)
-  )
+  if vp_alignment is not None:
+    vp_pieces, pp_keys, pp_meta, pc_syl_sources = vp_alignment
+  else:
+    vp_pieces, pp_keys, pp_meta, pc_syl_sources = _compute_vp_alignment(cluster.vp_body, items)
+  pp_flat = (pp_keys, pp_meta)
 
   locked = _detect_must_keep_locks(cluster.vp_body, items, vp_pieces, pc_syl_sources, pp_meta)
 
@@ -1143,11 +1301,11 @@ def select_cluster_split_points(
 
   # Signal 2: विस्वरम् (or SBM parallel hint for SBK 17)
   visv_body = next((b for s, b, _ in cluster.mulam_blocks if s == "मूलम् - विस्वरम्"), "")
-  visv_dandas = _project_visvaram_dandas(visv_body, items)
+  visv_dandas = _project_visvaram_dandas(visv_body, items, pp_flat=pp_flat)
   makoto_body = next((b for s, b, _ in cluster.trailing_blocks if s == "मूलम् - Makoto"), "")
-  makoto_dandas = _project_visvaram_dandas(makoto_body, items)
+  makoto_dandas = _project_visvaram_dandas(makoto_body, items, pp_flat=pp_flat)
   if not visv_dandas and parallel_hint and parallel_hint[0]:
-    visv_dandas = _project_visvaram_dandas(parallel_hint[0], items)
+    visv_dandas = _project_visvaram_dandas(parallel_hint[0], items, pp_flat=pp_flat)
 
   # Signal 3: Sanskrit commentary pratīkas (सायणः / हरिस्वामी / वासुदेव / रङ्गरामानुजः)
   comm_blocks = [(s, b) for s, b, _ in cluster.trailing_blocks if s not in _TRANSLATION_SUMMARIES and not s.startswith("मूलम्")]
@@ -1265,7 +1423,7 @@ def select_cluster_split_points(
 # ---------------------------------------------------------------------------
 
 def _restore_word_pausa(stem: str, pada: PadapathaItem) -> str:
-  """Restore grammatical pausa ending (``ः`` / ``म्`` / ``न्`` / hiatal ``-ए/-ऐ``) matching ``pada``."""
+  """Restore grammatical pausa ending (``ः`` / ``म्`` / ``त्`` / ``न्`` / hiatal ``-ए/-ऐ/-औ``) matching ``pada``."""
   ref_bare = bare_devanagari(pada.ref if pada.ref != "?" else pada.ar).replace("-", "")
   st = stem.rstrip()
   if not st or st[-1] in "।॥,;—-)]\"'”*":
@@ -1279,13 +1437,18 @@ def _restore_word_pausa(stem: str, pada: PadapathaItem) -> str:
 
   st_bare = bare_devanagari(st).replace("-", "")
   ref_tail = ref_bare[1:] if len(ref_bare) >= 2 and ref_bare[0] in _VOW_INDEP else ref_bare
-  # Pragrhya / vowel-hiatus `-e/-ai` before vowel (`समिन्धत एताभिः` -> `समिन्धते`, `तस्मा एतत्` -> `तस्मै`)
-  if ref_bare.endswith("ए") and not st.endswith(("ए", "े")) and st[-1] in _CONSONANTS:
+  # Pragrhya / vowel-hiatus `-e/-ai/-au` before vowel (`समिन्धत एताभिः` -> `समिन्धते`, `तस्मा एतत्` -> `तस्मै`)
+  if ref_bare.endswith(("ए", "े")) and not st.endswith(("ए", "े")) and st[-1] in _CONSONANTS:
     if (st_bare + "े").endswith(ref_bare) or (len(ref_tail) >= 2 and (st_bare + "े").endswith(ref_tail)):
       return st + "े" + tail_marks
-  if ref_bare.endswith("ऐ") and st.endswith("ा"):
+  if ref_bare.endswith(("ऐ", "ै")) and st.endswith("ा"):
     if (st_bare[:-1] + "ै").endswith(ref_bare) or (len(ref_tail) >= 2 and (st_bare[:-1] + "ै").endswith(ref_tail)):
       return st[:-1] + "ै" + tail_marks
+  if ref_bare.endswith(("औ", "ौ")):
+    if st.endswith("ाव्") and ((st_bare[:-2] + "ौ").endswith(ref_bare) or (len(ref_tail) >= 2 and (st_bare[:-2] + "ौ").endswith(ref_tail))):
+      return st[:-2] + "ौ" + tail_marks
+    if st.endswith("ा") and ((st_bare[:-1] + "ौ").endswith(ref_bare) or (len(ref_tail) >= 2 and (st_bare[:-1] + "ौ").endswith(ref_tail))):
+      return st[:-1] + "ौ" + tail_marks
   if ref_bare.endswith("ः"):
     if st.endswith(("ः", "ो")):
       if st.endswith("ो") and ((st_bare[:-1] + "ः").endswith(ref_bare) or (len(ref_tail) >= 2 and (st_bare[:-1] + "ः").endswith(ref_tail))):
@@ -1299,23 +1462,27 @@ def _restore_word_pausa(stem: str, pada: PadapathaItem) -> str:
     if st.endswith("म्"):
       return st + tail_marks
     if st.endswith(("ं", "ँ", "\ua8f3", "ᳫ")):
-      return st[:-1] + "म्" + tail_marks
+      return st[:-1] + tail_marks + "म्"
     if st.endswith(("न्", "ञ्", "ङ्", "ण्")):
-      return st[:-2] + "म्" + tail_marks
+      return st[:-2] + tail_marks + "म्"
+    if st[-1] != _HALANT and ((st_bare + "म्").endswith(ref_bare) or (len(ref_tail) >= 2 and (st_bare + "म्").endswith(ref_tail))):
+      return st + tail_marks + "म्"
   if ref_bare.endswith("त्") or ref_bare.endswith("द्"):
     for end in ("द्", "न्", "ल्", "च्", "ज्"):
       if st.endswith(end):
-        return st[:-2] + "त्" + tail_marks
+        return st[:-2] + tail_marks + "त्"
     if not st.endswith("त्"):
-      return st + "त्" + tail_marks
+      return st + tail_marks + "त्"
   if ref_bare.endswith("क्") or ref_bare.endswith("ग्"):
     if st.endswith(("ग्", "ङ्")):
-      return st[:-2] + "क्" + tail_marks
+      return st[:-2] + tail_marks + "क्"
   if ref_bare.endswith("न्"):
     if st.endswith("न्त्"):
       return st[:-2] + tail_marks
     if st.endswith(("ं", "ञ्")):
-      return (st[:-1] if st.endswith("ं") else st[:-2]) + "न्" + tail_marks
+      return (st[:-1] if st.endswith("ं") else st[:-2]) + tail_marks + "न्"
+    if st[-1] != _HALANT and ((st_bare + "न्").endswith(ref_bare) or (len(ref_tail) >= 2 and (st_bare + "न्").endswith(ref_tail))):
+      return st + tail_marks + "न्"
   return st + tail_marks
 
 
@@ -1399,11 +1566,43 @@ def _slice_at_global_syl_seam(
       r_a = "अ"
     return left_fixed, s_right.start, r_a
 
+  # Consonant cluster / geminate C् + V seam (`अकुर्वन्नेवम्` -> `अकुर्वन्` + `एवम्`,
+  # `तस्मादेतत्` -> `तस्मात्` + `एतत्`, `पुनराह` -> `पुनः` + `आह`, `ताविमौ` -> `तौ` + `इमौ`)
+  lp_bare = bare_devanagari(lp_txt)
+  r_ons_bare = bare_devanagari(_first_syl_onset(rp_txt))
+  if (
+    not r_ons_bare
+    and not re.search(r"[\s।॥,;—]", mid)
+    and text[s_right.start] in _CONSONANTS
+    and (
+      lp_bare.endswith(_HALANT)
+      or (lp_bare.endswith("ः") and text[s_right.start] == "र")
+      or (lp_bare.endswith(("ओ", "ो", "औ", "ौ")) and text[s_right.start] == "व")
+    )
+  ):
+    left_raw = text[cur_char_pos : s_left.end]
+    left_fixed = _restore_word_pausa(left_raw, left_pada)
+    v_pos = s_right.vowel_start
+    v_indep = _MATRA_TO_INDEP[text[v_pos]] if (v_pos < len(text) and text[v_pos] in _MATRAS) else "अ"
+    m_end = v_pos + 1
+    while m_end < len(text) and text[m_end] in (_ALL_ACCENTS | _US_MARKS):
+      m_end += 1
+    yog = ""
+    if m_end < len(text) and text[m_end] in _YOGAVAAHAS:
+      yog = text[m_end]
+      m_end += 1
+      while m_end < len(text) and text[m_end] in (_ALL_ACCENTS | _US_MARKS):
+        m_end += 1
+    if is_vp and use_ref_marks:
+      r_prefix = v_indep + yog + "".join(c for c in rp_syls[0].mark if c in _US_MARKS)
+    else:
+      r_prefix = v_indep + text[v_pos + 1 : m_end]
+    return left_fixed, m_end, r_prefix
+
   # Consonant cluster / repha boundary inside `s_right.start .. scan_limit`
   scan_limit = s_right.vowel_start + (
     1 if s_right.vowel_start < len(text) and text[s_right.vowel_start] in _CONSONANTS else 0
   )
-  r_ons_bare = bare_devanagari(_first_syl_onset(rp_txt))
   r_span = text[s_left.end : scan_limit]
   split_off = s_right.start
   if r_ons_bare and len(r_ons_bare) == 1:
@@ -1446,18 +1645,17 @@ def _cut_vp_at_padas(
   vp_body: str,
   pp_items: Sequence[PadapathaItem],
   split_padas: Sequence[int],
+  *,
+  vp_alignment: tuple[list[dict], list[tuple[str, str]], list[tuple[int, int]], list[list[list[tuple[int, ...]]]]] | None = None,
 ) -> list[str] | None:
   """Cut ``विश्वास-प्रस्तुतिः`` into ``len(split_padas) + 1`` clean US blocks preserving ``+++(...)+++`` and ``[[OLD|NEW]]``."""
   if not split_padas:
     return [vp_body]
   cuts = sorted(split_padas)
-  vp_pieces = _extract_vp_pieces(vp_body)
-  pp_keys, pp_meta, _, _ = _flatten_pp_syllables(items=pp_items)
-  vp_keys = [kv for pc in vp_pieces for kv in pc["keys"]]
-  vp_meta = [(pi, si) for pi, pc in enumerate(vp_pieces) for si in range(len(pc["keys"]))]
-  pc_syl_sources = _map_pp_to_vp_syllables(
-    vp_body, vp_pieces, pp_keys, pp_meta, vp_keys, vp_meta, _pp_member_starts(pp_items)
-  )
+  if vp_alignment is not None:
+    vp_pieces, _, pp_meta, pc_syl_sources = vp_alignment
+  else:
+    vp_pieces, _, pp_meta, pc_syl_sources = _compute_vp_alignment(vp_body, pp_items)
 
   piece_pada_sets: list[list[set[int]]] = []
   for pi, pc in enumerate(vp_pieces):
@@ -1627,6 +1825,8 @@ def _cut_mula_at_padas(
   raw_body: str,
   pp_items: Sequence[PadapathaItem],
   split_padas: Sequence[int],
+  *,
+  pp_flat: tuple[Sequence[tuple[str, str]], Sequence[tuple[int, int]]] | None = None,
 ) -> list[str] | None:
   """Cut one ``मूलम्*`` witness cleanly at ``split_padas`` preserving footnotes, titles & trailing numbers."""
   if not split_padas:
@@ -1640,7 +1840,7 @@ def _cut_mula_at_padas(
   syls = scan_deva_syl_spans(body_core, mask_pratika_prefix=("श्रीधरादि" in summary or "Weber" in summary))
   if not syls:
     return None
-  primary, owners = _align_layer_syls_to_pp(syls, pp_items)
+  primary, owners = _align_layer_syls_to_pp(syls, pp_items, pp_flat=pp_flat)
 
   chunks: list[str] = []
   cur_char_pos = 0
@@ -2019,6 +2219,8 @@ def _verify_split_subclusters(
         f"<details><summary>{primary_mula_hdr}</summary>\n\n{primary_mula_list[idx].strip()}\n</details>\n\n"
         f"<details><summary>{pp_sum}</summary>\n\n" + "\n".join(sub_bullet_chunks[idx]) + "\n</details>"
       )
+      if validate_accented_markdown(snippet):
+        return idx
       rec_out, rec_logs = reconcile_markdown_blocks(snippet)
       if rec_logs or rec_out != snippet:
         return idx
@@ -2033,17 +2235,21 @@ def split_single_cluster(
 ) -> tuple[list[str], bool, bool]:
   """Split one ``ClusterRecord`` into canonical ``<details>`` markdown blocks."""
   items = cluster.pp_items
-  if not items or not cluster.vp_body:
+  if not items or not cluster.vp_body or len(items) < 15:
     return [], False, False
 
-  split_pts = select_cluster_split_points(cluster, parallel_hint=parallel_hint)
+  vp_alignment = _compute_vp_alignment(cluster.vp_body, items)
+  pp_flat = (vp_alignment[1], vp_alignment[2])
+  split_pts = select_cluster_split_points(
+    cluster, parallel_hint=parallel_hint, vp_alignment=vp_alignment
+  )
   if not split_pts:
     return [], False, False
 
   candidate_pts = list(split_pts)
   while candidate_pts:
     bounds = [0] + candidate_pts + [len(items)]
-    sub_vps = _cut_vp_at_padas(cluster.vp_body, items, candidate_pts)
+    sub_vps = _cut_vp_at_padas(cluster.vp_body, items, candidate_pts, vp_alignment=vp_alignment)
     sub_items = [items[bounds[i] : bounds[i + 1]] for i in range(len(bounds) - 1)]
     sub_bullet_chunks = [cluster.pp_bullet_lines[bounds[i] : bounds[i + 1]] for i in range(len(bounds) - 1)]
 
@@ -2051,14 +2257,14 @@ def split_single_cluster(
     mulam_ok = sub_vps is not None and all(sub_vps)
     if mulam_ok:
       for m_sum, m_body, _ in cluster.mulam_blocks:
-        res_m = _cut_mula_at_padas(m_sum, m_body, items, candidate_pts)
+        res_m = _cut_mula_at_padas(m_sum, m_body, items, candidate_pts, pp_flat=pp_flat)
         if res_m is None or any(not x.strip() for x in res_m):
           mulam_ok = False
           break
         sub_mulams[m_sum] = res_m
       for t_sum, t_body, _ in cluster.trailing_blocks:
         if t_sum.startswith("मूलम्"):
-          res_t = _cut_mula_at_padas(t_sum, t_body, items, candidate_pts)
+          res_t = _cut_mula_at_padas(t_sum, t_body, items, candidate_pts, pp_flat=pp_flat)
           if res_t is None or any(not x.strip() for x in res_t):
             mulam_ok = False
             break
@@ -2079,15 +2285,15 @@ def split_single_cluster(
     )
     if mulam_ok and fail_idx is None:
       k_n = len(sub_vps)
-      sub_tr: dict[str, list[str]] = {}
-      sub_comm: dict[str, list[str]] = {}
-      for t_sum, t_body, _ in cluster.trailing_blocks:
+      sub_tr: dict[int, list[str]] = {}
+      sub_comm: dict[int, list[str]] = {}
+      for t_idx, (t_sum, t_body, _) in enumerate(cluster.trailing_blocks):
         if t_sum.startswith("मूलम्"):
           continue
         if t_sum in _TRANSLATION_SUMMARIES:
-          sub_tr[t_sum] = split_translation_across_clusters(t_sum, t_body, sub_items)
+          sub_tr[t_idx] = split_translation_across_clusters(t_sum, t_body, sub_items)
         else:
-          sub_comm[t_sum] = split_commentary_across_clusters(t_sum, t_body, sub_vps)
+          sub_comm[t_idx] = split_commentary_across_clusters(t_sum, t_body, sub_vps)
 
       rendered: list[str] = []
       for i in range(k_n):
@@ -2104,19 +2310,27 @@ def split_single_cluster(
           vp_sum_i = format_suggested_vp_summary("विश्वास-प्रस्तुतिः", n_vyat, p_tot)
         pp_sum_i = format_padapatha_summary(n_vyat, p_tot)
         blocks_i.append(_render_details(vp_sum_i, sub_vps[i], is_open=cluster.vp_open))
+        # Place pure translation blocks directly below विश्वास-प्रस्तुतिः
+        for t_idx, (t_sum, _, t_open) in enumerate(cluster.trailing_blocks):
+          if t_sum in _PURE_TRANSLATION_SUMMARIES:
+            part_txt = sub_tr[t_idx][i]
+            if part_txt.strip():
+              blocks_i.append(_render_details(t_sum, part_txt, is_open=t_open))
         if i == 0:
           for tsum, tbody, topen in cluster.tippani_blocks:
             blocks_i.append(_render_details(tsum, tbody, is_open=topen))
         for m_sum, _, m_open in cluster.mulam_blocks:
           blocks_i.append(_render_details(m_sum, sub_mulams[m_sum][i], is_open=m_open))
         blocks_i.append(_render_details(pp_sum_i, "\n".join(sub_bullet_chunks[i]), is_open=False))
-        for t_sum, _, t_open in cluster.trailing_blocks:
+        for t_idx, (t_sum, _, t_open) in enumerate(cluster.trailing_blocks):
+          if t_sum in _PURE_TRANSLATION_SUMMARIES:
+            continue
           if t_sum.startswith("मूलम्"):
             part_txt = sub_mulams[t_sum][i]
           elif t_sum in _TRANSLATION_SUMMARIES:
-            part_txt = sub_tr[t_sum][i]
+            part_txt = sub_tr[t_idx][i]
           else:
-            part_txt = sub_comm[t_sum][i]
+            part_txt = sub_comm[t_idx][i]
           if part_txt.strip():
             blocks_i.append(_render_details(t_sum, part_txt, is_open=t_open))
         rendered.append("\n\n".join(b for b in blocks_i if b))
@@ -2178,6 +2392,81 @@ def find_parallel_hint(
   return best[1] if best else None
 
 
+def _reorder_inner_slice(blocks: list[tuple[int, int, str, str]]) -> str | None:
+  """Move pure translation blocks to index 0 of ``blocks``; return ``None`` if already canonical."""
+  tr_b = [b for b in blocks if b[2] in _PURE_TRANSLATION_SUMMARIES]
+  if not tr_b:
+    return None
+  non_tr_b = [b for b in blocks if b[2] not in _PURE_TRANSLATION_SUMMARIES]
+  desired = tr_b + non_tr_b
+  if blocks == desired:
+    return None
+  return "\n\n".join(b[3] for b in desired)
+
+
+def reorder_sb_translations_below_vp(text: str) -> str:
+  """Place pure translation blocks (``Eggeling``, ``C R Swaminathan``, etc.) directly below ``विश्वास-प्रस्तुतिः``."""
+  if not text or "<details" not in text:
+    return text
+  parts = _H2_SPLIT_RE.split(text)
+  out_parts: list[str] = []
+  for part in parts:
+    if "<summary>सर्वाष् टीकाः</summary>" in part:
+      spans = get_top_level_detail_spans(part, skip_js_includes=True)
+      edits: list[tuple[int, int, str]] = []
+      prev_is_vp = False
+      for s, e in spans:
+        blk = part[s:e]
+        m_sum = re.match(r"^<details(?:\s+open)?><summary>([^<]*)</summary>", blk)
+        hdr = m_sum.group(1).strip() if m_sum else ""
+        if hdr == "सर्वाष् टीकाः" and prev_is_vp:
+          inner = [
+            (m.start(), m.end(), m.group(2).strip(), m.group(0))
+            for m in _DETAILS_BLOCK_RE.finditer(blk)
+          ]
+          rep_inner = _reorder_inner_slice(inner)
+          if rep_inner is not None and inner:
+            edits.append((s + inner[0][0], s + inner[-1][1], rep_inner))
+        prev_is_vp = hdr.startswith("विश्वास-प्रस्तुतिः")
+      if edits:
+        buf = part
+        for rs, re_pos, rtxt in sorted(edits, key=lambda x: x[0], reverse=True):
+          buf = buf[:rs] + rtxt + buf[re_pos:]
+        out_parts.append(buf)
+      else:
+        out_parts.append(part)
+      continue
+
+    blocks = [
+      (m.start(), m.end(), m.group(2).strip(), m.group(0))
+      for m in _DETAILS_BLOCK_RE.finditer(part)
+    ]
+    vp_idxs = [i for i, (_, _, s, _) in enumerate(blocks) if s.startswith("विश्वास-प्रस्तुतिः")]
+    if not vp_idxs:
+      out_parts.append(part)
+      continue
+    edits = []
+    for vi, start_i in enumerate(vp_idxs):
+      end_i = vp_idxs[vi + 1] if vi + 1 < len(vp_idxs) else len(blocks)
+      tail = blocks[start_i + 1 : end_i]
+      rep_tail = _reorder_inner_slice(tail)
+      if rep_tail is not None and tail:
+        edits.append((tail[0][0], tail[-1][1], rep_tail))
+    if edits:
+      buf = part
+      for rs, re_pos, rtxt in sorted(edits, key=lambda x: x[0], reverse=True):
+        buf = buf[:rs] + rtxt + buf[re_pos:]
+      out_parts.append(buf)
+    else:
+      out_parts.append(part)
+  return "".join(out_parts)
+
+
+def format_sb_canonical_blocks(text: str) -> str:
+  """Place translations directly below ``विश्वास-प्रस्तुतिः`` and wrap non-prastuti blocks via :func:`wrap_vedic_details`."""
+  return wrap_vedic_details(reorder_sb_translations_below_vp(text))
+
+
 # ---------------------------------------------------------------------------
 # Whole-file processor
 # ---------------------------------------------------------------------------
@@ -2186,11 +2475,14 @@ def split_sb_markdown_text(
   text: str,
   *,
   sbm_hints: Sequence[tuple[str, str, str]] = (),
+  wrap_sarva: bool = False,
 ) -> SplitResult:
   """Split all multi-unit kaṇḍikā clusters inside one SBM or SBK Markdown document."""
+  was_wrapped = "<summary>सर्वाष् टीकाः</summary>" in text
   sections = _H2_SPLIT_RE.split(text)
   if len(sections) <= 1:
-    return SplitResult(text, False, 0, 0, 0, [])
+    out = format_sb_canonical_blocks(text) if wrap_sarva else text
+    return SplitResult(out, out != text, 0, 0, 0, [])
 
   # Precompute each section's parsed clusters and next section's leading US mark for exact audit
   sec_clusters = [parse_section_clusters(sec) if sec.startswith("## ") else [] for sec in sections]
@@ -2220,6 +2512,16 @@ def split_sb_markdown_text(
       continue
     hdr = sec.splitlines()[0].strip()
     orig_c += len(clist)
+
+    # Idempotency guard: if section already contains >= 2 sequential sub-clusters
+    # (as opposed to duplicate-stem variant stubs like SBM 02/04/1), leave intact.
+    if len(clist) >= 2:
+      b0 = _pada_bare_forms(clist[0].pp_items)
+      b1 = _pada_bare_forms(clist[1].pp_items)
+      if b0 and b1 and b0 != b1:
+        new_c += len(clist)
+        out_secs.append(sec)
+        continue
 
     # Next US mark across whole section boundary
     sec_next_mark: str | None = None
@@ -2265,9 +2567,11 @@ def split_sb_markdown_text(
     out_secs.append("".join(rebuilt_parts))
 
   new_text = "".join(out_secs)
+  if wrap_sarva or (was_wrapped and changed):
+    new_text = format_sb_canonical_blocks(new_text)
   return SplitResult(
     new_text=new_text,
-    changed=(changed and new_text != text),
+    changed=(new_text != text),
     orig_clusters=orig_c,
     new_clusters=new_c,
     kandikas_split=k_split,
@@ -2280,11 +2584,12 @@ def process_sb_file(
   *,
   dry_run: bool = False,
   sbm_hints: Sequence[tuple[str, str, str]] = (),
+  wrap_sarva: bool = False,
 ) -> SplitResult:
   """Read, split, and optionally write one ŚB content Markdown file."""
   p = Path(md_path)
   orig = p.read_text(encoding="utf-8")
-  res = split_sb_markdown_text(orig, sbm_hints=sbm_hints)
+  res = split_sb_markdown_text(orig, sbm_hints=sbm_hints, wrap_sarva=wrap_sarva)
   if res.changed and not dry_run:
     p.write_text(res.new_text, encoding="utf-8")
   return res

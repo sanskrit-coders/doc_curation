@@ -32,6 +32,7 @@ from indic_transliteration.sanscript.schemes.brahmic import accent
 
 from doc_curation.sanskrit.accent.reconciler import (
   DETAILS_RE,
+  LEAF_DETAILS_RE,
   PadapathaItem,
   has_us_accents,
   is_solid_provenance,
@@ -1274,7 +1275,7 @@ def audit_full_sb_corpus(
       norm_hdr = re.sub(r"\s+", " ", m_hdr.group(1).strip())
       clusters = _extract_vp_clusters(part)
       all_pp_in_sec = [
-        m for m in DETAILS_RE.finditer(part) if m.group(1).strip().startswith("पद-पाठः (यान्त्रिकः")
+        m for m in LEAF_DETAILS_RE.finditer(part) if m.group(1).strip().startswith("पद-पाठः (यान्त्रिकः")
       ]
       matched_pp_spans = {
         (cl.existing_pp_match.start(), cl.existing_pp_match.end())

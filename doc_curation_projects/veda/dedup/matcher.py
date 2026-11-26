@@ -14,10 +14,11 @@ from doc_curation_projects.veda.yajuH.vaajasaneyi.dedup.norm import (
 
 # Short Brāhmaṇa prose clichés/arthavāda verbs that recur across unrelated ritual contexts.
 _PROSE_ARTHAVADA_CLICHE_RE = re.compile(
-  r"(?:प्रति\s*तिष्ठति|प्रति\s*तिष्ठन्ति|प्रत्यतिष्ठत्|अव\s*रुन्धे|अवरुन्धते|एव\s*वेद|असृजत|भवति|भवन्ति|"
-  r"यजति|यजन्ति|यजते|दधाति|दधति|पधावति|उपधावति|परिगृह्णाति|खनति|गृह्णाति|समर्धयति|वदन्ति|अन्तरेति|प्रसूत्यै|"
-  r"समष्ट्यै|अभिजित्यै|अनवच्छित्त्यै|शान्त्यै|विजिती|इत्याह|कुर्वीत|लोकम्\s*एति|व्यार्ध्यत|अपतत्|ऽपतत्|अगच्छत्|"
-  r"वीर्यावत्तर|मन्यमानः|^(?:तस्माद्?|अथो)\s)"
+  r"(?:प्रति\s*तिष्ठति|प्रति\s*तिष्ठन्ति|प्रति\s*तिष्ठापयति|प्रत्यतिष्ठत्|अव\s*रुन्धे|अवरुन्धते|एव\s*वेद|असृजत|भवति|भवतः|भवन्ति|"
+  r"करोति|कुर्वन्ति|भविष्यति|भविष्यन्ति|साद्यन्ते|प्रतिगृह्णाति|अपक्रामति|अजायेताम्|अजायन्त|अवद्यति|असिञ्चत्|आसीत्|"
+  r"निर्वपेत्|आलभेत|जुहोति|जुह्वति|जुहुयात्|यजति|यजन्ति|यजते|दधाति|दधति|पधावति|उपधावति|परिगृह्णाति|खनति|गृह्णाति|समर्धयति|वदन्ति|अन्तरेति|"
+  r"प्रसूत्यै|समष्ट्यै|अभिजित्यै|अनवच्छित्त्यै|शान्त्यै|विजिती|इत्याह|कुर्वीत|लोकम्\s*एति|व्यार्ध्यत|अपतत्|ऽपतत्|अगच्छत्|"
+  r"वीर्यावत्तर|मन्यमानः|(?:^|\s)वै(?=\s|$)|(?:^|\s)वा\s+(?:एत|अय|इय|अधि|इद)|^(?:तस्माद्?|अथो?|अथ\s+यो)\s)"
 )
 _ACCENT_STRIP_RE = re.compile(r"\+\+\+.*?\+\+\+|[᳓᳙\u0951\u0952\*]|(?<=[\u0900-\u097f])-(?=[\u0900-\u097f])")
 
@@ -37,6 +38,7 @@ class TargetEntry:
   sarva_url: str = ""
   combined_url: str = ""
   av_inline: bool = False  # True if the source/static file contains सर्वा अवतारिकाः
+  is_yantra_svara: bool = False  # True when accents are synthetic Viterbi rather than manuscript-attested
   host_path: str = ""
   slot_key: str = ""
 
@@ -64,12 +66,13 @@ def classify_match(
   min_len_exact: int = 20,
   min_len_var: int = 30,
   min_ratio: float = 0.88,
+  trust_consonants_as_exact: bool = False,
 ) -> tuple[bool, float, bool]:
   """Return ``(matched, similarity_ratio, is_exact_reading)`` using strict edge-anchored guards."""
   min_len = min(len(pb_a), len(pb_b))
   if min_len < min_len_exact:
     return False, 0.0, False
-  if is_no_patha_bheda(vp_a, vp_b):
+  if is_no_patha_bheda(vp_a, vp_b) or (trust_consonants_as_exact and pb_a == pb_b):
     return True, 1.0, True
   if not allow_variant or min_len < min_len_var:
     return False, 0.0, False
@@ -147,13 +150,17 @@ class InvertedVedaIndex:
         src_prose
         or (ent.kind in ("inline", "yajuh_combined") and not allow_target_variants_from_inline and not is_rk_like)
       )
-      min_exact = 35 if (src_prose or (ent.kind == "inline" and src_corpus in ("TB", "TK"))) else 20
+      min_exact = 35 if (
+        src_prose or (ent.kind == "inline" and src_corpus in ("TB", "TK", "MS", "KS") and ent.corpus != "VS-M" and not is_rk_like)
+      ) else 20
+      trust_cons = src_corpus == "KS" and "यन्त्र-स्वरः" in src_summary and not ent.is_yantra_svara
       matched, rat, eq = classify_match(
         vp, pb, ent.vp, ent.pb,
         allow_variant=ent_allow_var,
         min_len_exact=min_exact,
         min_len_var=30,
         min_ratio=0.88,
+        trust_consonants_as_exact=trust_cons,
       )
       if not matched:
         continue
