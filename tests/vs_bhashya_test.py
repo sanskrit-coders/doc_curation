@@ -42,7 +42,7 @@ def test_role_classification_and_two_pass_split_alignment():
   assert len(plan) == 1
   assert plan[0]["uvata"]["viniyoga"] == "अपः प्रणयति।"
   assert "कस्त्वा युनक्ति" in plan[0]["uvata"]["tika"]
-  assert "का० १।३।१" in plan[0]["mahidhara"]["viniyoga"]
+  assert "का॰ १।३।१" in plan[0]["mahidhara"]["viniyoga"]
   assert "देवो युनक्ति" in plan[0]["mahidhara"]["tika"]
 
   # Negative guard: `विनियोगो नास्ति` stays out of viniyoga, `इदानीं ... निरूप्यते` stays in avatarika
@@ -233,9 +233,10 @@ def test_aligner_uses_soft_breaks_and_cleans_uvata_and_um():
   assert "\n\n" not in u_tika
   assert "  \n" in u_tika
 
-  uv_dirty = "आज्यम्ाज्यशब्देन यज्ञो लक्ष्यते ।\n\nधयतेर्णिजन्त(३)स्यासुनि रूपम् ।\n\nकर्मा (१)कर्त्री:"
+  uv_dirty = "आज्यम्ाज्यशब्देन यज्ञो लक्ष्यते (पा० ६.१। १०) ।\n\nधयतेर्णिजन्त(३)स्यासुनि रूपम् ।\n\nकर्मा (१)कर्त्री:"
   uv_clean = prose_clean.clean_prose_block(uv_dirty, mode="uvata")
   assert "आज्यम् । आज्यशब्देन" in uv_clean
+  assert "(पा॰ ६.१। १०)" in uv_clean
   assert "(३)" not in uv_clean and "(१)" not in uv_clean
   assert "\n\n" not in uv_clean and "  \n" in uv_clean
   assert "कर्त्रीः" in uv_clean
@@ -245,7 +246,7 @@ def test_aligner_uses_soft_breaks_and_cleans_uvata_and_um():
 
   um_dirty = (
     '+++\ntitle = "०१"\n+++\n\n'
-    "उ० दृष्टमित्यर्थः। तथा 'दध्यङ्\n\n"
+    "उ० दृष्टमित्यर्थः (का० १।२।३)। तथा 'दध्यङ्\n\n"
     "१ ऋषीन्वच्मीह. २ ब्रह्मपङ्क्तिः\n\n"
     "ह वा आथर्वण' इति।\n\n"
     ".\n\n"
@@ -257,9 +258,10 @@ def test_aligner_uses_soft_breaks_and_cleans_uvata_and_um():
     "मन्त्राणामकारादिवर्णक्रमकोशः । १ ९ ४०"
   )
   um_cleaned = ba.clean_uvatamahidharau_text(um_dirty)
+  assert "उ॰ दृष्टमित्यर्थः (का॰ १।२।३)।" in um_cleaned
   assert "तथा 'दध्यङ् ह वा आथर्वण' इति।" in um_cleaned
   assert "> [टिप्पणी] १ ऋषीन्वच्मीह. २ ब्रह्मपङ्क्तिः" in um_cleaned
   assert "\n\n.\n\n" not in um_cleaned
   assert "मन्त्राणामकारादिवर्णक्रमकोशः" not in um_cleaned
-  assert "म० अन् तरात्मा भवति।" in um_cleaned
+  assert "म॰ अन् तरात्मा भवति।" in um_cleaned
   assert "> [टिप्पणी] १ पादटिप्पणी।" in um_cleaned

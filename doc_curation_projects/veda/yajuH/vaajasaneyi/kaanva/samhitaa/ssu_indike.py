@@ -18,7 +18,7 @@ from doc_curation_projects.veda.yajuH.vaajasaneyi.kaanva.samhitaa.vsm_ocr import
 from doc_curation_projects.veda.yajuH.vaajasaneyi.maadhyandina.samhitaa import bhashya_aligner
 
 _TAG_1978_RE = re.compile(
-  r"\[\s*[-–—]?\s*अ०\s*([०-९]+)\s*[।|.]\s*([०-९]+)\s*[।|.]\s*([०-९]+)(?:\s*[-–]\s*([०-९]+))?\s*\]"
+  r"\[\s*[-–—]?\s*अ[०॰]\s*([०-९]+)\s*[।|.]\s*([०-९]+)\s*[।|.]\s*([०-९]+)(?:\s*[-–]\s*([०-९]+))?\s*\]"
 )
 
 
@@ -259,7 +259,7 @@ def parse_ssu_1978_sayana(
   lines = [
     s for ln in raw.splitlines()
     if (s := ln.strip())
-    and not (re.match(r"^(?:Digitized by|CC-0\.|ACC-0\.|शुक्लयजुर्वेद\s*काण्व\s*संहिता|सायणभाष्योपेता|[०-९]{1,4}|\[?\s*[०-९]{1,2}[।|][०-९].*\]?|तुलना\s*[-–—]|पा\.?\s*भे)", s) and "अ०" not in s)
+    and not (re.match(r"^(?:Digitized by|CC-0\.|ACC-0\.|शुक्लयजुर्वेद\s*काण्व\s*संहिता|सायणभाष्योपेता|[०-९]{1,4}|\[?\s*[०-९]{1,2}[।|][०-९].*\]?|तुलना\s*[-–—]|पा\.?\s*भे)", s) and "अ०" not in s and "अ॰" not in s)
     and not re.search(r"[A-Za-z]{3,}", s)
   ]
   start_21 = next(i for i, l in enumerate(lines) if "द्वादशाध्यायमारभ्य" in l)

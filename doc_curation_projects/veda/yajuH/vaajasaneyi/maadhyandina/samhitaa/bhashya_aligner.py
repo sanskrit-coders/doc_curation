@@ -12,6 +12,7 @@ import regex
 from indic_transliteration import sanscript
 
 from doc_curation.llm.proofreader import cross_recension, interleave_aligner, interleave_helper
+from doc_curation.sanskrit.accent.provenance import normalize_panini_abbreviations
 
 STATIC_SAMHITA_DIR = pathlib.Path(
   "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/vAjasaneyam/mAdhyandinam/saMhitA/Rk"
@@ -80,7 +81,7 @@ _NOT_VINIYOGA_RE = regex.compile(
   r"|कर्मसु\s+विनियोगो\s+नास्ति"
   r"|इति\s+(?:श्रुतेः|कात्यायनोक्तेः|यास्कः|निघ|निरु|स्मृतेः|ब्राह्मणम्|तित्तिरिवचनात्)"
   r"|तदुक्तं\s+तित्तिरिणा|तित्तिरिणा\s*['‘ऽ]"
-  r"|\(\s*(?:पा|उ|निघ|निरु|अनु|श०\s*ब्रा०)[०.\s]"
+  r"|\(\s*(?:पा|उ|निघ|निरु|अनु|श[०॰]\s*ब्रा[०॰])[०॰.\s]"
   r"|अध्याहर्तव्य"
   r"|इति\s+क्रियापदम"
   r"|प्रत्यय|लट्|लिट्|लुङ्|लोट्|लङ्|विधिलिङ्"
@@ -88,7 +89,7 @@ _NOT_VINIYOGA_RE = regex.compile(
   r"|बहुव्रीहि|तत्पुरुष|कर्मधारय|समास"
 )
 _KAT_REF_RE = regex.compile(
-  r"\(\s*का(?:त्या|श्रौ|०\s*श्रौ)?[०.]\s*[०-९0-9]"
+  r"\(\s*का(?:त्या|श्रौ|[०॰]\s*श्रौ)?[०॰.]\s*[०-९0-9]"
   r"|\(\s*[०-९0-9]+[।.]\s*[०-९0-9]+[।.]\s*[०-९0-9]+\s*\)"
   r"|कात्यायनः(?:\s*[-–—:]+\s*|\s+)['‘“\"]"
   r"|तत्र\s+कात्यायनः"
@@ -208,8 +209,8 @@ def clean_commentary_boilerplate(text: str, *, keep_vedadipa_colophon: bool = Tr
     return ""
   t = text.strip()
   # Strip repeated author prefix at paragraph starts
-  t = regex.sub(r"(?m)^(?:उ|मा?)[०।.]+\s*", "", t)
-  t = regex.sub(r"^(?:उ|मा?)[०।.]*\s+(?=[‘'अ-ह])", "", t)
+  t = regex.sub(r"(?m)^(?:उ|मा?)[०॰।.]+\s*", "", t)
+  t = regex.sub(r"^(?:उ|मा?)[०॰।.]*\s+(?=[‘'अ-ह])", "", t)
   # Strip Wikisource chapter colophons (always before optional Mahīdhara signature verse)
   if keep_vedadipa_colophon:
     t = _WIKISOURCE_COLOPHON_RE.sub("", t)
@@ -224,7 +225,7 @@ def clean_commentary_boilerplate(text: str, *, keep_vedadipa_colophon: bool = Tr
   # Reject empty / number-and-danda-only shells (e.g. `॥ ३२॥ ३३॥ ३४॥`)
   if not regex.search(r"[अ-ह]", t):
     return ""
-  return t
+  return normalize_panini_abbreviations(t)
 
 
 def _strip_end_number_for_split(text: str) -> str:
@@ -258,9 +259,9 @@ def _split_cross_author_leaks(
   u_out = dict(u_raw)
   m_out = dict(m_raw)
 
-  # 1) U -> M leaks: `\nम[।.०]` OR inline `॥ N॥ म[०।] ` OR `मा०` (`19.48`) OR `24.24` (`\nम त्रयाणां...`)
+  # 1) U -> M leaks: `\nम[।.०॰]` OR inline `॥ N॥ म[०॰।] ` OR `मा०` (`19.48`) OR `24.24` (`\nम त्रयाणां...`)
   u_leak_re = regex.compile(
-    r"(?:(?:\n|^)\s*|(?<=॥\s*[०-९]{1,3}\s*॥\s*))(?=म(?:[।.०]\s*|\s+त्रयाणां)|मा[।.०]\s+)"
+    r"(?:(?:\n|^)\s*|(?<=॥\s*[०-९]{1,3}\s*॥\s*))(?=म(?:[।.०॰]\s*|\s+त्रयाणां)|मा[।.०॰]\s+)"
   )
   for key, text in list(u_out.items()):
     parts = u_leak_re.split(text, maxsplit=1)
@@ -290,8 +291,8 @@ def _split_cross_author_leaks(
     elif not cur:
       m_out[(ch, v)] = staged_m
 
-  # 2) M -> U leaks: `M[v-1] ...॥ v-1॥ \n<ord>\n[। ]*उ[।.०] U[v]`
-  m_leak_re = regex.compile(r"(?:\n|^)[।\s]*उ[।.०]\s+")
+  # 2) M -> U leaks: `M[v-1] ...॥ v-1॥ \n<ord>\n[। ]*उ[।.०॰] U[v]`
+  m_leak_re = regex.compile(r"(?:\n|^)[।\s]*उ[।.०॰]\s+")
   for key, text in list(m_out.items()):
     ch, v = key
     if v <= 0:
@@ -448,10 +449,10 @@ def _reposition_combined_entries(
   """Move combined entries (`॥ 1॥2॥ 3॥` stored under last key) to opening verse + note siblings."""
   out = dict(data)
   notes: dict[tuple[int, int], str] = {}
-  # Handle explicit M(12, 41) `द्वे व्याख्याते (क० ९)॥४०॥ (क० १०)॥४१॥`
+  # Handle explicit M(12, 41) `द्वे व्याख्याते (क॰ ९)॥४०॥ (क॰ १०)॥४१॥`
   if (12, 41) in out and "॥४०॥" in out[(12, 41)] and (12, 40) not in out:
-    out[(12, 40)] = "द्वे व्याख्याते (क० ९)॥ ४०॥"
-    out[(12, 41)] = "द्वे व्याख्याते (क० १०)॥ ४१॥"
+    out[(12, 40)] = "द्वे व्याख्याते (क॰ ९)॥ ४०॥"
+    out[(12, 41)] = "द्वे व्याख्याते (क॰ १०)॥ ४१॥"
 
   for (ch, v), txt in sorted(list(out.items())):
     nums = _extract_multi_verse_nums(txt)
@@ -527,18 +528,18 @@ def parse_wikisource_bhashya_dir(
         r"॥\s*([०-९]+(?:\s+[०-९]+)?)\s*॥(?:\s*(?:[०-९]+\s*॥)+)?\s*(?:\([^)]*\)\s*)?$",
         s,
       )
-      if m_hdr and regex.search(r"[॒॑]", s) and not regex.match(r"^(?:उ|म)[०।.]", s):
+      if m_hdr and regex.search(r"[॒॑]", s) and not regex.match(r"^(?:उ|म)[०॰।.]", s):
         v_num = dev_to_int(regex.sub(r"\s+", "", m_hdr.group(1)))
         if v_num and 1 <= v_num <= sec_counts[ch]:
           _flush()
           cur_v = v_num
           cur_auth = None
           continue
-      if regex.match(r"^(?:उ|म)[०।.]\s*", s):
+      if regex.match(r"^(?:उ|म)[०॰।.]\s*", s):
         _flush()
         cur_auth = s[0]
         m_other = regex.search(
-          r"^(.+?॥(?:\s*[०-९]+\s*॥)+(?:\s*इति\s+उवटकृतौ[^।\n]*॥)?)\s*((?:उ|म)[०।.].*)$",
+          r"^(.+?॥(?:\s*[०-९]+\s*॥)+(?:\s*इति\s+उवटकृतौ[^।\n]*॥)?)\s*((?:उ|म)[०॰।.].*)$",
           s,
         )
         if m_other and m_other.group(2)[0] != cur_auth:
@@ -554,7 +555,7 @@ def parse_wikisource_bhashya_dir(
         cur_auth = None
         continue
       m_mid = regex.search(
-        r"^(.+?॥(?:\s*[०-९]+\s*॥)+(?:\s*इति\s+उवटकृतौ[^।\n]*॥)?)\s*((?:उ|म)[०।.].*)$",
+        r"^(.+?॥(?:\s*[०-९]+\s*॥)+(?:\s*इति\s+उवटकृतौ[^।\n]*॥)?)\s*((?:उ|म)[०॰।.].*)$",
         s,
       )
       if m_mid and cur_auth is not None:
@@ -661,7 +662,7 @@ def parse_uvatamahidharau_dir(
       s = line.strip()
       if not s or s == "+++" or s.startswith("title ="):
         continue
-      if regex.match(r"^(?:उ|म)[०।]", s):
+      if regex.match(r"^(?:उ|म)[०॰।]", s):
         _flush()
         cur_auth = s[0]
         buf = [s]
@@ -899,16 +900,16 @@ def build_reconciled_corpus(
 def _fix_malformed_citations(text: str) -> str:
   """Repair unbalanced parens and verse-quote breaks so sentence splitting stays intact."""
   # Fix double-open `(का० (१८। १२.१०)` -> `(का० १८। १२.१०)`
-  t = regex.sub(r"\(\s*(का(?:त्या)?[०.]\s*)\(\s*([०-९0-9])", r"(\1\2", text)
+  t = regex.sub(r"\(\s*(का(?:त्या)?[०॰.]\s*)\(\s*([०-९0-9])", r"(\1\2", text)
   # Close unclosed `(का० १९। ७.१॥` right before space + commentary Devanagari word
   t = regex.sub(
-    r"\(\s*(का(?:त्या)?[०.]\s*[०-९0-9।.\-\s]{2,25})॥\s+(?=[अ-ह‘'])",
+    r"\(\s*(का(?:त्या)?[०॰.]\s*[०-९0-9।.\-\s]{2,25})॥\s+(?=[अ-ह‘'])",
     r"(\1)। ",
     t,
   )
   # Ensure a quote like `‘ऋतस्य द्वाराविति द्वार्ये (का. ९.८.२३)` closes `’` before `(का...`
   t = regex.sub(
-    r"(‘[^'‘’\n]{6,}?)\s+(?=\(\s*(?:का(?:त्या)?[०.]\s*))",
+    r"(‘[^'‘’\n]{6,}?)\s+(?=\(\s*(?:का(?:त्या)?[०॰.]\s*))",
     r"\1’ ",
     t,
   )
@@ -938,7 +939,7 @@ def _split_ka_sentences(text: str) -> list[str]:
       continue
     # Check if an inline Kātyāyana sūtra quote (or `(का० ...)` / `(४। २। ७)`) precedes commentary
     m = regex.search(
-      r"((?:कात्यायनः\s*)?['‘][^'‘’\n]{6,}?['’][।.]?\s*\(\s*(?:का(?:त्या)?[०.]\s*)?[०-९0-9।.\-\s]+\)\s*(?:इति\s*)?[।.]?\s*)",
+      r"((?:कात्यायनः\s*)?['‘][^'‘’\n]{6,}?['’][।.]?\s*\(\s*(?:का(?:त्या)?[०॰.]\s*)?[०-९0-9।.\-\s]+\)\s*(?:इति\s*)?[।.]?\s*)",
       seg,
     )
     if m and (m.start() > 0 or len(seg) - m.end() > 15):
@@ -984,7 +985,7 @@ def _classify_bhashya_segment(
     _KAT_REF_RE.search(s)
     and "विनियोगो नास्ति" not in s
     and "इति कात्यायनोक्तेः" not in s
-    and not regex.search(r"तित्तिरि|श०\s*ब्रा०|इति\s+श्रुतेः", s)
+    and not regex.search(r"तित्तिरि|श[०॰]\s*ब्रा[०॰]|इति\s+श्रुतेः", s)
   ):
     return "viniyoga"
   if _EXPLICIT_VINIYOGA_RE.search(s) and not has_gram_or_neg:
@@ -1428,7 +1429,7 @@ def apply_all_bhashyas(
 
 
 _UM_NEW_SPEAKER_OR_SEC_RE = regex.compile(
-  r"^(?:#+\s|---|(?:\*\s*\*\s*\*|\*\*\*)$|(?:उ|म)[०।.]\s*|(?:महीधर|उवट)भाष्यम्|"
+  r"^(?:#+\s|---|(?:\*\s*\*\s*\*|\*\*\*)$|(?:उ|म)[०॰।.]\s*|(?:महीधर|उवट)भाष्यम्|"
   r"(?:प्रथमा|द्वितीया|तृतीया|चतुर्थी|पञ्चमी|षष्ठी|सप्तमी|अष्टमी|नवमी|दशमी|"
   r"एकादशी|द्वादशी|त्रयोदशी|चतुर्दशी|पञ्चदशी|षोडशी|सप्तदशी|अष्टादशी|एकोनविंशी|विंशी|"
   r"एकविंशी|द्वाविंशी|त्रयोविंशी|चतुर्विंशी|पञ्चविंशी|षड्विंशी|सप्तविंशी|अष्टाविंशी|एकोनत्रिंशी|त्रिंशी|"
@@ -1450,7 +1451,7 @@ def clean_uvatamahidharau_text(text: str, *, trim_ch27_index: bool = True) -> st
     body = body[m_fm.end() :]
 
   if trim_ch27_index:
-    m_idx = regex.search(r"(?m)^(?:मन्त्रप्र०\s+अ\.|मन्त्राणामकारादिवर्णक्रमकोशः)", body)
+    m_idx = regex.search(r"(?m)^(?:मन्त्रप्र[०॰]\s+अ\.|मन्त्राणामकारादिवर्णक्रमकोशः)", body)
     if m_idx:
       body = body[: m_idx.start()].rstrip()
 
@@ -1497,7 +1498,7 @@ def clean_uvatamahidharau_text(text: str, *, trim_ch27_index: bool = True) -> st
   for fn in pending_footnotes:
     out_paras.append(f"> [टिप्पणी] {fn}")
 
-  cleaned_body = "\n\n".join(out_paras).strip()
+  cleaned_body = normalize_panini_abbreviations("\n\n".join(out_paras).strip())
   return f"{fm}{cleaned_body}\n" if cleaned_body else fm
 
 

@@ -15,6 +15,7 @@ from doc_curation.md.content_processor.details.common import (
   parse_top_level_details,
 )
 from doc_curation.sanskrit import hyphenator
+from doc_curation.sanskrit.accent.provenance import normalize_panini_abbreviations
 from doc_curation_projects.veda.yajuH.vaajasaneyi.kaanva.samhitaa.config import (
   VSK_SARVA_PRASTUTI_DIR,
 )
@@ -109,7 +110,7 @@ def clean_raw_bhashya_text(text: str, *, hyphenate: bool = True) -> str:
   if not t:
     return ""
   t = re.sub(r"^(?:[<\"'‘\s]*(?:सा|आ|अ)\s*[-–—:]+\s*)+", "", t)
-  t = re.sub(r"\[?\s*[-–—]?\s*अ०\s*[०-९।|.\-\s]+\]?", " ", t)
+  t = re.sub(r"\[?\s*[-–—]?\s*अ[०॰]\s*[०-९।|.\-\s]+\]?", " ", t)
   t = re.sub(r"\|\|", "॥", t)
   t = re.sub(r"(?<!\|)\|(?!\|)", "।", t)
   t = re.sub(r"(?<=[\u0900-\u097f])-\s*\n\s*(?=[\u0900-\u097f])", "", t)
@@ -120,7 +121,7 @@ def clean_raw_bhashya_text(text: str, *, hyphenate: bool = True) -> str:
   t = re.sub(r"[ \t]+", " ", t)
   if hyphenate:
     t = hyphenator.hyphene(t, clause_newlines=False)
-  return t
+  return normalize_panini_abbreviations(t)
 
 
 def _clean_commentary_block(m: re.Match, counters: dict[str, int]) -> str:
@@ -225,7 +226,7 @@ def clean_prose_block(body: str, *, mode: str = "vsk") -> str:
     # Fix OCR virama+ā-mātrā ligature loss (e.g. `आज्यम्ाज्यशब्देन` -> `आज्यम् । आज्यशब्देन`)
     t = re.sub(r"(?<=[\u0900-\u097f]्)ा", " । आ", t)
     t = _UVATA_PAREN_FN_RE.sub("", t)
-    t = re.sub(r"^(?:उ[०।.]+\s*)+", "", t.lstrip())
+    t = re.sub(r"^(?:उ[०॰।.]+\s*)+", "", t.lstrip())
   else:
     t = strip_pune_margin_numbers(t)
     t = _SA_PREFIX_RE.sub("", t.lstrip())
@@ -233,7 +234,7 @@ def clean_prose_block(body: str, *, mode: str = "vsk") -> str:
     t = re.sub(r"(?<=[\u0900-\u097f])-[ \t]*\n[ \t]*(?=[\u0900-\u097f])", "-", t)
     t = re.sub(r"(?m)^(?:[<\"'‘\s]*(?:सा|आ|अ)\s*[-–—:]+\s*)+", "", t)
     t = re.sub(r"(?m)^\[(?=\s*इति\s+[^\]\n]+(?:अध्याय|ऽध्याय|अनुवाक))", "", t)
-  return _collapse_fake_paragraphs(t).strip()
+  return normalize_panini_abbreviations(_collapse_fake_paragraphs(t).strip())
 
 
 def clean_kanva_sayana_block(body: str) -> str:
@@ -355,6 +356,124 @@ def clean_canonical_kanva_sayana_in_roots(
         p.write_text(updated, encoding="utf-8")
         counters["files_changed"] += 1
   return counters
+
+
+SCOPE_BHASHYA_SUMMARIES = frozenset({
+  "सायण-टीका (काण्वी)",
+  "सायणः - विनियोगः",
+  "सायणः - अवतारिका",
+  "आनन्दबोध-टीका",
+  "आनन्दबोधः - विनियोगः",
+  "आनन्दबोधः - अवतारिका",
+  "उवट-टीका",
+  "उवटः - विनियोगः",
+  "उवटः - अवतारिका",
+  "महीधर-टीका",
+  "महीधरः - विनियोगः",
+  "महीधरः - अवतारिका",
+})
+
+
+def normalize_abbreviations_in_canonical_blocks(
+  content: str,
+  summary_titles: frozenset[str] | set[str] | Sequence[str] = SCOPE_BHASHYA_SUMMARIES,
+) -> tuple[str, int]:
+  """Convert Devanagari ``०`` (U+0966) abbreviation signs to ``॰`` (U+0970) inside canonical blocks."""
+  target_set = set(summary_titles)
+  blocks_changed = 0
+
+  def _walk(segment: str) -> str:
+    nonlocal blocks_changed
+    spans = parse_top_level_details(segment, skip_js_includes=True)
+    if not spans:
+      return segment
+    pieces: list[str] = []
+    cursor = 0
+    for start, end, title, body in spans:
+      pieces.append(segment[cursor:start])
+      blk = segment[start:end]
+      m_sum = _SUMMARY_RE.search(blk)
+      close_idx = blk.rfind("</details>")
+      if m_sum is None or close_idx == -1:
+        pieces.append(blk)
+      elif title in target_set:
+        inner_raw = blk[m_sum.end() : close_idx]
+        new_inner = normalize_panini_abbreviations(inner_raw)
+        if new_inner != inner_raw:
+          blocks_changed += 1
+        pieces.append(f"{blk[: m_sum.end()]}{new_inner}</details>")
+      elif any(t in body for t in target_set):
+        inner_raw = blk[m_sum.end() : close_idx]
+        lead_ws = inner_raw[: len(inner_raw) - len(inner_raw.lstrip())]
+        trail_ws = inner_raw[len(inner_raw.rstrip()) :]
+        updated_sub = _walk(body)
+        pieces.append(f"{blk[: m_sum.end()]}{lead_ws}{updated_sub}{trail_ws}</details>")
+      else:
+        pieces.append(blk)
+      cursor = end
+    pieces.append(segment[cursor:])
+    return "".join(pieces)
+
+  updated = _walk(content)
+  assert updated.count("<details") == updated.count("</details>"), "Unbalanced <details> tags after update"
+  return updated, blocks_changed
+
+
+def normalize_abbreviations_in_roots(
+  roots: Sequence[pathlib.Path],
+  *,
+  summary_titles: frozenset[str] | set[str] | Sequence[str] = SCOPE_BHASHYA_SUMMARIES,
+  um_dirs: Sequence[pathlib.Path] = (),
+  dry_run: bool = False,
+) -> dict[str, object]:
+  """Normalize ``०`` -> ``॰`` across non-included ``summary_titles`` blocks and ``uvaTa-mahIdharau`` dirs."""
+  target_set = set(summary_titles)
+  changed_paths: list[str] = []
+  blocks_changed = 0
+  files_scanned = 0
+
+  for root in roots:
+    root_p = pathlib.Path(root)
+    if not root_p.exists():
+      continue
+    for p in sorted(root_p.rglob("*.md")):
+      if not p.is_file():
+        continue
+      txt = p.read_text(encoding="utf-8")
+      if "\u0966" not in txt or not any(t in txt for t in target_set):
+        continue
+      files_scanned += 1
+      updated, n_blk = normalize_abbreviations_in_canonical_blocks(txt, target_set)
+      blocks_changed += n_blk
+      if updated != txt:
+        changed_paths.append(str(p))
+        if not dry_run:
+          p.write_text(updated, encoding="utf-8")
+
+  for um_dir in um_dirs:
+    um_p = pathlib.Path(um_dir)
+    if not um_p.exists():
+      continue
+    for p in sorted(um_p.glob("[0-9][0-9].md")):
+      if not p.is_file():
+        continue
+      txt = p.read_text(encoding="utf-8")
+      if "\u0966" not in txt:
+        continue
+      files_scanned += 1
+      m_fm = re.match(r"^(\+\+\+\n.*?\n\+\+\+\s*\n+)(.*)$", txt, flags=re.S)
+      updated = f"{m_fm.group(1)}{normalize_panini_abbreviations(m_fm.group(2))}" if m_fm else normalize_panini_abbreviations(txt)
+      if updated != txt:
+        changed_paths.append(str(p))
+        if not dry_run:
+          p.write_text(updated, encoding="utf-8")
+
+  return {
+    "files_scanned": files_scanned,
+    "files_changed": len(changed_paths),
+    "blocks_changed": blocks_changed,
+    "changed_paths": changed_paths,
+  }
 
 
 def _load_working_gemini_clients(
@@ -481,7 +600,7 @@ def _postprocess_proofread_output(raw: str, raw_llm: str) -> str:
     lambda m: m.group(2) if re.sub(r"[\s\-–—]+", "", m.group(1)) == re.sub(r"[\s\-–—]+", "", m.group(2)) else m.group(0),
     guarded,
   )
-  guarded = _collapse_relapsed_single_sentence_breaks(guarded)
+  guarded = normalize_panini_abbreviations(_collapse_relapsed_single_sentence_breaks(guarded))
   return guarded.strip() or raw
 
 

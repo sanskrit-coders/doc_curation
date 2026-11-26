@@ -463,6 +463,24 @@ def test_forward_avatarika_context_anandabodha_clean_and_split_wf(tmp_path):
   )
   assert ing_st["done_total"] == 1 and ing_st["missing"] == 0
 
+  abbrev_cleaned = prose_clean.clean_kanva_sayana_block("तत्र श० ब्रा० १०.१.२ (का० ४।२।९) पा० ६.१।")
+  assert abbrev_cleaned == "तत्र श॰ ब्रा॰ १०.१.२ (का॰ ४।२।९) पा॰ ६.१।"
+  assert prose_clean._postprocess_proofread_output("पा० १", "पा० १") == "पा॰ १"
+
+  pref_wrap = tmp_path / "caller_incl.md"
+  pref_wrap.write_text(
+    "+++\ntitle = \"०१\"\n+++\n\n"
+    "<div class=\"js_include\" url=\"/static/a.md\">\n\n"
+    "<details><summary>महीधर-टीका</summary>\n\nपा० १.१।\n</details>\n</div>\n"
+    "<details><summary>महीधर-टीका</summary>\n\nनिघ० ३.४। १०।\n</details>\n",
+    encoding="utf-8",
+  )
+  ab_res = prose_clean.normalize_abbreviations_in_roots([tmp_path], dry_run=False)
+  assert ab_res["files_changed"] >= 1
+  pw_txt = pref_wrap.read_text(encoding="utf-8")
+  assert "निघ॰ ३.४। १०।" in pw_txt
+  assert "पा० १.१।" in pw_txt  # skipped prefilled js_include div!
+
 
 
 

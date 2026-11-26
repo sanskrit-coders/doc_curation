@@ -90,7 +90,7 @@ def _clean_m_norm(text: str) -> str:
 
 def clean_mahidhara_raw(body: str) -> str:
   """Strip ``म०`` prefixes and orphan next-mantra ordinal line from raw Mahīdhara block."""
-  txt = regex.sub(r"(?m)^\s*म०\.?\s*", "", (body or "").strip())
+  txt = regex.sub(r"(?m)^\s*म[०॰]\.?\s*", "", (body or "").strip())
   lines = txt.splitlines()
   while lines and not lines[-1].strip():
     lines.pop()
