@@ -374,3 +374,280 @@ yajuh_sarva_url = "/vedAH_yajuH/kAThakam/kaTha-kapiShTalAH/saMhitA/yajuH/sarvASh
   assert "<summary>मूलम् - मैत्रायणीयम्</summary>" in rk_tk
   assert "<summary>मूलम् - काठकम्</summary>" in rk_tk
   assert "<summary>पद-पाठः (यान्त्रिकः - काठकम्)</summary>" in rk_tk
+
+
+def test_format_static_title_and_stem_ignores_accents():
+  from doc_curation_projects.veda.yajuH.vaajasaneyi.dedup.norm import format_static_title_and_stem
+
+  title, stem = format_static_title_and_stem("प्र᳓ति त्वा वर्ष᳓-वृद्धं वेत्तु", num_prefix="81")
+  assert title == "८१ प्रति त्वा वर्ष"
+  assert stem == "prati_tvA_varSha"
+
+  title2, stem2 = format_static_title_and_stem("रोहि᳓त्कुण्डृणा᳓ची गोल᳓त्तिका ता᳓ अप्सर᳓साम् ।", num_prefix="05")
+  assert title2 == "०५ रोहित्कुण्डृणाची गोलत्तिका ता"
+  assert stem2 == "rohitkuNDRNAchI_golattikA_tA"
+
+
+def test_fix_static_titles_and_accent_filenames(tmp_path: Path):
+  from doc_curation_projects.veda.dedup.static_fixer import fix_static_titles_and_accent_filenames
+
+  repo = tmp_path / "vedAH_yajuH"
+  comb = repo / "static" / "vAjasaneyam" / "mAdhyandinam" / "saMhitA" / "yajuH" / "sarva-prastutiH" / "01" / "81_pra_ti_tvA.md"
+  comb.parent.mkdir(parents=True, exist_ok=True)
+  comb.write_text(
+    '+++\ntitle = "pra_ti_tvA"\nunicode_script = "devanagari"\n+++\n\n'
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nप्र᳓ति त्वा वर्ष᳓-वृद्धं वेत्तु\n</details>\n",
+    encoding="utf-8",
+  )
+
+  rk_vp = repo / "static" / "taittirIyam" / "Rk" / "vishvAsa-prastutiH" / "01" / "02_prajA_pataye_tvA.md"
+  rk_tk = repo / "static" / "taittirIyam" / "Rk" / "sarvASh_TIkAH" / "01" / "02_prajA_pataye_tvA.md"
+  rk_vp.parent.mkdir(parents=True, exist_ok=True)
+  rk_tk.parent.mkdir(parents=True, exist_ok=True)
+  rk_vp.write_text('+++\ntitle = "prajA_pataye_tvA"\nunicode_script = "devanagari"\n+++\n\nप्रजा᳓पतये त्वा ज्यो᳓तिष्मते।\n', encoding="utf-8")
+  rk_tk.write_text('+++\ntitle = "prajA_pataye_tvA"\nunicode_script = "devanagari"\n+++\n\n<details><summary>मूलम्</summary>\n\nप्रजापतये</details>\n', encoding="utf-8")
+
+  # Legacy hand-named file: convert Latin title to Devanāgarī, keep original slug filename.
+  legacy = repo / "static" / "taittirIyam" / "ek" / "vishvAsa-prastutiH" / "2_17" / "tebhyo_vo_namaH.md"
+  legacy.parent.mkdir(parents=True, exist_ok=True)
+  legacy.write_text(
+    '+++\ntitle = "Tebhyo vo nama H"\n+++\n\nते᳓भ्यो वो न᳓मस्।\n'
+    '<div class="js_include" includetitle="false" newlevelforh1="4" unfilled url="/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/yajuH/sarva-prastutiH/01/81_pra_ti_tvA.md"></div>\n',
+    encoding="utf-8",
+  )
+
+  caller = repo / "content" / "test" / "01.md"
+  caller.parent.mkdir(parents=True, exist_ok=True)
+  caller.write_text(
+    '+++\ntitle = "01"\n+++\n\n'
+    '<div class="js_include" includetitle="false" newlevelforh1="4" unfilled url="/vedAH_yajuH/vAjasaneyam/mAdhyandinam/saMhitA/yajuH/sarva-prastutiH/01/81_pra_ti_tvA.md"></div>\n'
+    '<div class="js_include" includetitle="true" newlevelforh1="4" unfilled url="/vedAH_yajuH/taittirIyam/Rk/vishvAsa-prastutiH/01/02_prajA_pataye_tvA.md"></div>\n'
+    '<div class="js_include" includetitle="false" newlevelforh1="4" unfilled url="/vedAH_yajuH/taittirIyam/Rk/sarvASh_TIkAH/01/02_prajA_pataye_tvA.md"></div>\n',
+    encoding="utf-8",
+  )
+
+  res = fix_static_titles_and_accent_filenames(
+    [repo / "static"],
+    caller_roots=(repo / "content", repo / "static"),
+    hugo_base_dir=str(tmp_path),
+    dry_run=False,
+  )
+  assert res["titles_fixed"] == 4
+  assert res["files_renamed"] == 3
+  new_comb = comb.with_name("81_prati_tvA_varSha.md")
+  assert not comb.exists() and new_comb.is_file()
+  assert 'title = "८१ प्रति त्वा वर्ष"' in new_comb.read_text(encoding="utf-8")
+  assert rk_vp.with_name("02_prajApataye_tvA_jyotiShmate.md").is_file()
+  assert rk_tk.with_name("02_prajApataye_tvA_jyotiShmate.md").is_file()
+  assert legacy.is_file()
+  leg_txt = legacy.read_text(encoding="utf-8")
+  assert 'title = "तेभ्यो वो नमस्"' in leg_txt
+  assert "81_prati_tvA_varSha.md" in leg_txt
+  c_txt = caller.read_text(encoding="utf-8")
+  assert "81_prati_tvA_varSha.md" in c_txt
+  assert "02_prajApataye_tvA_jyotiShmate.md" in c_txt
+  assert "81_pra_ti_tvA.md" not in c_txt and "02_prajA_pataye_tvA.md" not in c_txt
+
+
+def test_ek_stage_preserves_vp_only_callers_and_merges_haradatta(tmp_path: Path):
+  from doc_curation_projects.veda.dedup.targets import VedaCorpusSpec
+
+  v_root = tmp_path
+  ts_c = v_root / "vedAH_yajuH" / "content" / "ts"
+  ts_rk_vp = v_root / "vedAH_yajuH" / "static" / "ts" / "Rk" / "vishvAsa-prastutiH"
+  ts_rk_tk = v_root / "vedAH_yajuH" / "static" / "ts" / "Rk" / "sarvASh_TIkAH"
+  ts_y_comb = v_root / "vedAH_yajuH" / "static" / "ts" / "yajuH" / "sarva-prastutiH"
+  ts_y_vp = v_root / "vedAH_yajuH" / "static" / "ts" / "yajuH" / "vishvAsa-prastutiH"
+  ts_y_tk = v_root / "vedAH_yajuH" / "static" / "ts" / "yajuH" / "sarvASh_TIkAH"
+
+  ek_vp = v_root / "vedAH_yajuH" / "static" / "ek" / "vishvAsa-prastutiH"
+  ek_tk = v_root / "vedAH_yajuH" / "static" / "ek" / "sarvASh_TIkAH"
+  ek_c = v_root / "vedAH_yajuH" / "content" / "ek"
+
+  for d in (ts_c, ts_rk_vp, ts_rk_tk, ts_y_comb / "01", ts_y_vp, ts_y_tk, ek_vp / "1_01", ek_tk / "1_01", ek_c):
+    d.mkdir(parents=True, exist_ok=True)
+
+  # 1. Existing TS combined yajuH target with combined caller.
+  ts_comb_file = ts_y_comb / "01" / "01_deva_savitH.md"
+  ts_comb_file.write_text(
+    '+++\ntitle = "०१ देव सवितः"\n+++\n\n'
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nदेव᳓ सवितः प्र᳓ सुव यज्ञं प्र᳓ सुव यज्ञ᳓पतिं भ᳓गाय ॥\n</details>\n\n"
+    "<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>मूलम्</summary>\n\nदेव सवितः\n</details>\n</details>\n",
+    encoding="utf-8",
+  )
+  ts_comb_caller = ts_c / "01.md"
+  ts_comb_caller.write_text(
+    '+++\ntitle = "01"\n+++\n\n'
+    '<div class="js_include" includetitle="false" newlevelforh1="4" unfilled url="/vedAH_yajuH/ts/yajuH/sarva-prastutiH/01/01_deva_savitH.md"></div>\n\n'
+    # 2. Inline TS yajuH target to be promoted on EK match with VP-only caller -> must force 2-part!
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nप्र᳓जापते न᳓ त्व᳓देतान्यन्यो विश्वा जा᳓तानि परि ता᳓ बभूव ॥\n</details>\n"
+    "<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>मूलम्</summary>\n\nप्रजापते\n</details>\n</details>\n",
+    encoding="utf-8",
+  )
+
+  # EK #1: matches ts_comb_file and has a VP-only caller (`madhuparkaH.md`) + 2-part caller (`sarva.md`).
+  (ek_vp / "1_01" / "01_deva_savitH.md").write_text(
+    '+++\ntitle = "०१ देव सवितः"\n+++\n\nदेव᳓ सवितः प्र᳓ सुव यज्ञं प्र᳓ सुव यज्ञ᳓पतिं भ᳓गाय ॥\n',
+    encoding="utf-8",
+  )
+  (ek_tk / "1_01" / "01_deva_savitH.md").write_text(
+    '+++\ntitle = "०१ देव सवितः"\n+++\n\n<details><summary>हरदत्तः</summary>\n\nहे सवितः प्रसुव अनुजानीहि।\n</details>\n',
+    encoding="utf-8",
+  )
+  # EK #2: matches inline TS target and has a VP-only caller (`madhuparkaH.md`).
+  (ek_vp / "1_01" / "02_prajApate.md").write_text(
+    '+++\ntitle = "०२ प्रजापते"\n+++\n\nप्र᳓जापते न᳓ त्व᳓देतान्यन्यो विश्वा जा᳓तानि परि ता᳓ बभूव ॥\n',
+    encoding="utf-8",
+  )
+  (ek_tk / "1_01" / "02_prajApate.md").write_text(
+    '+++\ntitle = "०२ प्रजापते"\n+++\n\n<details><summary>हरदत्तः</summary>\n\nहरदत्तभाष्यम्।</details>\n',
+    encoding="utf-8",
+  )
+  # EK #3: wrapper VP with js_include must be skipped completely.
+  (ek_vp / "1_01" / "03_wrapper.md").write_text(
+    '+++\ntitle = "०३ आवरणम्"\n+++\n\n<div class="js_include" url="/vedAH_yajuH/ek/vishvAsa-prastutiH/1_01/01_deva_savitH.md"></div>\n',
+    encoding="utf-8",
+  )
+  (ek_tk / "1_01" / "03_wrapper.md").write_text('+++\ntitle = "०३ आवरणम्"\n+++\n\n<details><summary>मूलम्</summary>\n\nदेव\n</details>\n', encoding="utf-8")
+
+  vp_only_caller = ek_c / "madhuparkaH.md"
+  vp_only_caller.write_text(
+    '+++\ntitle = "मधुपर्कः"\n+++\n\n'
+    '<div class="js_include" newlevelforh1="4" title="विश्वास-प्रस्तुतिः" unfilled url="/vedAH_yajuH/ek/vishvAsa-prastutiH/1_01/01_deva_savitH.md"></div>\n'
+    '<div class="js_include" newlevelforh1="4" title="विश्वास-प्रस्तुतिः" unfilled url="/vedAH_yajuH/ek/vishvAsa-prastutiH/1_01/02_prajApate.md"></div>\n',
+    encoding="utf-8",
+  )
+  both_caller = ek_c / "1_01.md"
+  both_caller.write_text(
+    '+++\ntitle = "१.१"\n+++\n\n'
+    '<div class="js_include" newlevelforh1="4" title="विश्वास-प्रस्तुतिः" unfilled url="/vedAH_yajuH/ek/vishvAsa-prastutiH/1_01/01_deva_savitH.md"></div>\n'
+    '<div class="js_include" collapsed newlevelforh1="4" title="सर्वाष् टीकाः" unfilled url="/vedAH_yajuH/ek/sarvASh_TIkAH/1_01/01_deva_savitH.md"></div>\n'
+    '<div class="js_include" newlevelforh1="4" title="विश्वास-प्रस्तुतिः" unfilled url="/vedAH_yajuH/ek/vishvAsa-prastutiH/1_01/02_prajApate.md"></div>\n'
+    '<div class="js_include" collapsed newlevelforh1="4" title="सर्वाष् टीकाः" unfilled url="/vedAH_yajuH/ek/sarvASh_TIkAH/1_01/02_prajApate.md"></div>\n',
+    encoding="utf-8",
+  )
+
+  specs = {
+    "TS": VedaCorpusSpec(
+      name="TS", shAkha_label="तैत्तिरीयम्", pada_label="पदपाठः - तैत्तिरीयः", sayana_variant_label="सायण-टीका (तैत्तिरीया)",
+      content_dir=ts_c, vp_dir=ts_rk_vp, sarva_dir=ts_rk_tk,
+      vp_url_prefix="/vedAH_yajuH/ts/Rk/vishvAsa-prastutiH", sarva_url_prefix="/vedAH_yajuH/ts/Rk/sarvASh_TIkAH",
+      yajuh_vp_dir=ts_y_vp, yajuh_vp_url="/vedAH_yajuH/ts/yajuH/vishvAsa-prastutiH",
+      yajuh_sarva_dir=ts_y_tk, yajuh_sarva_url="/vedAH_yajuH/ts/yajuH/sarvASh_TIkAH",
+      yajuh_sarva_prastuti_dir=ts_y_comb, yajuh_sarva_prastuti_url="/vedAH_yajuH/ts/yajuH/sarva-prastutiH",
+    ),
+    "EK": VedaCorpusSpec(
+      name="EK", shAkha_label="एकाग्निकाण्डम्", pada_label="पद-पाठः (एकाग्निकाण्डम्)", sayana_variant_label="सायण-टीका (एकाग्निकाण्डम्)",
+      vp_dir=ek_vp, sarva_dir=ek_tk,
+      vp_url_prefix="/vedAH_yajuH/ek/vishvAsa-prastutiH", sarva_url_prefix="/vedAH_yajuH/ek/sarvASh_TIkAH",
+    ),
+  }
+
+  from doc_curation_projects.veda.dedup import cascade as cas_mod
+  orig_loader = cas_mod.load_corpus_specs
+  cas_mod.load_corpus_specs = lambda: specs
+  try:
+    res = run_stage_cascade("EK", ("TS",), (v_root / "vedAH_yajuH" / "content", v_root / "vedAH_yajuH" / "static"), hugo_base_dir=str(v_root))
+  finally:
+    cas_mod.load_corpus_specs = orig_loader
+
+  assert res["static_exact"] == 2
+  # VP-only caller MUST receive TS 2-part VP URLs, NEVER combined yajuH/sarva-prastutiH!
+  vp_txt = vp_only_caller.read_text(encoding="utf-8")
+  assert "/vedAH_yajuH/ts/yajuH/vishvAsa-prastutiH/" in vp_txt
+  assert "/yajuH/sarva-prastutiH/" not in vp_txt
+  assert "/sarvASh_TIkAH/" not in vp_txt
+  # Original TS combined caller should have been cleanly split to 2-part.
+  assert "/vedAH_yajuH/ts/yajuH/vishvAsa-prastutiH/" in ts_comb_caller.read_text(encoding="utf-8")
+  assert "/yajuH/sarva-prastutiH/" not in ts_comb_caller.read_text(encoding="utf-8")
+  # Haradatta should have been merged into both split TS sarvASh_TIkAH files.
+  ts_tk1 = (ts_y_tk / "01" / "01_deva_savitH.md").read_text(encoding="utf-8")
+  assert "<summary>हरदत्तः</summary>" in ts_tk1
+  # Notice EK wrapper stayed untouched (not falsely matched/deleted).
+  assert (ek_vp / "1_01" / "03_wrapper.md").is_file()
+
+
+def test_ta_sweeps_multiple_inline_tikas_and_merges_tribhuvana(tmp_path: Path):
+  from doc_curation_projects.veda.dedup.targets import VedaCorpusSpec
+
+  v_root = tmp_path
+  rv_vp = v_root / "vedAH_Rk" / "static" / "shAkalam" / "vishvAsa-prastutiH" / "01" / "089"
+  rv_tk = v_root / "vedAH_Rk" / "static" / "shAkalam" / "sarvASh_TIkAH" / "01" / "089"
+  ta_c = v_root / "vedAH_yajuH" / "content" / "ta"
+  rv_vp.mkdir(parents=True, exist_ok=True)
+  rv_tk.mkdir(parents=True, exist_ok=True)
+  ta_c.mkdir(parents=True, exist_ok=True)
+
+  (rv_vp / "06_svasti_na.md").write_text('+++\ntitle = "006"\n+++\n\nस्वस्ति᳓ न इ᳓न्द्रो वृद्ध᳓श्रवाः।\n', encoding="utf-8")
+  (rv_tk / "06_svasti_na.md").write_text(
+    '+++\ntitle = "006"\n+++\n\n<details><summary>सायण-भाष्यम्</summary>\n\nRV Sāyaṇa.\n</details>\n\n'
+    "<details><summary>सायण-टीका</summary>\n\nतैत्तिरीयसंहितायां सायणभाष्यम् अतिविस्तरेण।</details>\n",
+    encoding="utf-8",
+  )
+
+  ta_host = ta_c / "00_bhadraM.md"
+  ta_host.write_text(
+    '+++\ntitle = "00"\n+++\n\n'
+    '<div class="js_include" newlevelforh1="4" title="विश्वास-प्रस्तुतिः" unfilled url="/vedAH_Rk/shAkalam/vishvAsa-prastutiH/01/089/06_svasti_na.md"></div>\n\n'
+    "<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>त्रिभुवनः</summary>\n\nTribhuvana note.\n</details>\n</details>\n\n"
+    "<details><summary>सर्वाष् टीकाः</summary>\n\n<details><summary>सायण-टीका</summary>\n\nअथ शान्त्यर्थं द्वितीयमृचमाह वृद्धश्रवा इन्द्रो नः स्वस्ति दधातु।\n</details>\n</details>\n\n"
+    '<div class="js_include" includetitle="true" newlevelforh1="4" unfilled url="/vedAH_Rk/shAkalam/sarvASh_TIkAH/01/089/06_svasti_na.md"></div>\n',
+    encoding="utf-8",
+  )
+
+  specs = {
+    "RV": VedaCorpusSpec(
+      name="RV", shAkha_label="शाकलम्", pada_label="पदपाठः", sayana_variant_label="सायण-भाष्यम्",
+      vp_dir=v_root / "vedAH_Rk" / "static" / "shAkalam" / "vishvAsa-prastutiH",
+      sarva_dir=v_root / "vedAH_Rk" / "static" / "shAkalam" / "sarvASh_TIkAH",
+      vp_url_prefix="/vedAH_Rk/shAkalam/vishvAsa-prastutiH",
+      sarva_url_prefix="/vedAH_Rk/shAkalam/sarvASh_TIkAH",
+    ),
+    "TA": VedaCorpusSpec(
+      name="TA", shAkha_label="तैत्तिरीयारण्यकम्", pada_label="पद-पाठः (तैत्तिरीयारण्यकम्)", sayana_variant_label="सायण-टीका (आरण्यकी)",
+      content_dir=ta_c,
+    ),
+  }
+
+  from doc_curation_projects.veda.dedup import cascade as cas_mod
+  orig_loader = cas_mod.load_corpus_specs
+  cas_mod.load_corpus_specs = lambda: specs
+  try:
+    res = run_stage_cascade("TA", ("RV",), (ta_c,), hugo_base_dir=str(v_root))
+  finally:
+    cas_mod.load_corpus_specs = orig_loader
+
+  assert res["partial_swept"] == 1
+  rv_txt = (rv_tk / "06_svasti_na.md").read_text(encoding="utf-8")
+  assert "<summary>त्रिभुवनः</summary>" in rv_txt
+  assert "<summary>सायण-टीका (आरण्यकी)</summary>" in rv_txt
+  ta_txt = ta_host.read_text(encoding="utf-8")
+  assert "सर्वाष् टीकाः</summary>" not in ta_txt  # both inline tika blocks swept!
+  assert "/vedAH_Rk/shAkalam/sarvASh_TIkAH/01/089/06_svasti_na.md" in ta_txt
+
+
+def test_tokenize_does_not_overlap_details_wrapping_includes():
+  from doc_curation_projects.veda.dedup.block_parser import render_tokens, tokenize_markdown_body
+  from doc_curation_projects.veda.dedup.cascade import _balanced_tags
+
+  body = (
+    '<details open><summary>आन्ध्रपाठे ऽधिकाः</summary>\n'
+    '<details><summary>विनियोगः</summary>\nnote\n</details>\n\n'
+    '<div class="js_include" url="/vedAH_yajuH/x/vishvAsa-prastutiH/a.md"></div>\n'
+    '<div class="js_include" url="/vedAH_yajuH/x/sarvASh_TIkAH/a.md"></div>\n'
+    '</details>\n\n'
+    '<details><summary>सर्वाष् टीकाः</summary>\n<details><summary>द्राविडपाठः</summary>\nfull\n</details>\n</details>\n'
+  )
+  toks = tokenize_markdown_body(body)
+  rendered = render_tokens("", toks)
+  assert _balanced_tags(rendered)
+  assert rendered.count("a.md") == 2
+  assert rendered == body
+
+
+def test_looks_prose_brahmana_blocks_ta_arthavada_cliches():
+  from doc_curation_projects.veda.dedup.matcher import looks_prose_brahmana
+
+  assert looks_prose_brahmana("य᳓देवा᳓द्भ्यो᳓ऽन्नञ्जा᳓यते ।  \nत᳓द᳓वरुन्धे ।", 22)
+  assert looks_prose_brahmana("त᳓स्मात् त᳓र्हि ते᳓क्ष्णिष्ठन्+++(=बहुतीक्ष्णं)+++ तपति।", 22)
+  assert not looks_prose_brahmana("प्रतितिष्ठामि राष्ट्रम् ॥", 20, summary="ऋक्")

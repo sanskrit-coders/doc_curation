@@ -39,6 +39,7 @@ class MantraGroup:
   vp_include_url: str = ""
   inline_tika_items: list[tuple[str, str]] = dataclasses.field(default_factory=list)
   inline_tika_idx: int | None = None
+  inline_tika_indices: list[int] = dataclasses.field(default_factory=list)
   sarva_include_url: str = ""
   sarva_include_idx: int | None = None
   is_combined_include: bool = False
@@ -53,7 +54,7 @@ def tokenize_markdown_body(body: str) -> list[HostToken]:
     m_url = _URL_RE.search(raw)
     spans.append((a, b, "include", (m_url.group(1) if m_url else "", raw)))
   for a, b, ttl, inner in parse_top_level_details(body):
-    if any(ia <= a and b <= ib for ia, ib in inc_spans):
+    if any((ia <= a and b <= ib) or (a <= ia and ib <= b) for ia, ib in inc_spans):
       continue
     open_tag = body[a : body.find(">", a) + 1]
     spans.append((a, b, "details", (ttl.strip(), inner.strip(), " open" in open_tag)))
@@ -155,8 +156,10 @@ def group_mantra_units(tokens: Sequence[HostToken]) -> list[MantraGroup]:
           continue
         if _is_tika_details(nt):
           grp.tika_token_indices.append(j)
-          grp.inline_tika_idx = j
-          grp.inline_tika_items = [(k.strip(), v.strip()) for _, _, k, v in parse_top_level_details(nt.body)]
+          if grp.inline_tika_idx is None:
+            grp.inline_tika_idx = j
+          grp.inline_tika_indices.append(j)
+          grp.inline_tika_items.extend((k.strip(), v.strip()) for _, _, k, v in parse_top_level_details(nt.body))
           j += 1
           continue
         if _is_sarva_include(nt):
@@ -187,10 +190,12 @@ def replace_group_tokens(
   """Update tokens for a single `MantraGroup` in-place while preserving intervening whitespace."""
   if new_vp_raw is not None and grp.vp_token_idx is not None:
     tokens[grp.vp_token_idx] = HostToken(kind="include", raw=new_vp_raw)
-  if drop_inline_tika and grp.inline_tika_idx is not None:
-    tokens[grp.inline_tika_idx] = HostToken(kind="text", raw="")
-    if grp.inline_tika_idx + 1 < len(tokens) and tokens[grp.inline_tika_idx + 1].kind == "text" and not tokens[grp.inline_tika_idx + 1].raw.strip():
-      tokens[grp.inline_tika_idx + 1] = HostToken(kind="text", raw="")
+  t_idxs = grp.inline_tika_indices or ([grp.inline_tika_idx] if grp.inline_tika_idx is not None else [])
+  if drop_inline_tika and t_idxs:
+    for ti in t_idxs:
+      tokens[ti] = HostToken(kind="text", raw="")
+      if ti + 1 < len(tokens) and tokens[ti + 1].kind == "text" and not tokens[ti + 1].raw.strip():
+        tokens[ti + 1] = HostToken(kind="text", raw="")
   if drop_sarva_include and grp.sarva_include_idx is not None:
     tokens[grp.sarva_include_idx] = HostToken(kind="text", raw="")
   if new_sarva_stub is not None:

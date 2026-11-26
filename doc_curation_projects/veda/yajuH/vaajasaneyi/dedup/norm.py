@@ -4,7 +4,12 @@ from __future__ import annotations
 import pathlib
 import re
 
+from curation_utils import file_helper
 from doc_curation.sanskrit.accent.samhita_splitter import strip_vedic_accents
+from indic_transliteration import sanscript
+
+_DEVA_DIGITS = str.maketrans("0123456789", "०१२३४५६७८९")
+_EXTRA_ACCENTS_RE = re.compile(r"[\u1cdf\u0953\u0954\ua8e0-\ua8f1]")
 
 VSM_RK_DIR = pathlib.Path(
   "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/static/vAjasaneyam/mAdhyandinam/saMhitA/Rk"
@@ -115,3 +120,36 @@ def chapter_distance(vsk_ch: int, vsm_ch: int) -> int:
   """Return minimum adhyāya distance from a VS-K chapter using calibrated recension alignment."""
   targets = VSK_TO_VSM_CHAPTER.get(vsk_ch, (vsk_ch,))
   return min(abs(t - vsm_ch) for t in targets)
+
+
+def short_opening_words(vp: str, *, max_words: int = 3, max_chars: int = 36) -> str:
+  """Extract clean accent-free opening Devanāgarī words for static titles and filenames."""
+  cleaned = re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]", "", vp, flags=re.S)
+  cleaned = re.sub(r"\[\[([^|\]]*)\|[^\]]*\]\]", r"\1", cleaned)
+  cleaned = _EXTRA_ACCENTS_RE.sub("", strip_vedic_accents(cleaned))
+  cleaned = re.sub(r"[*_~]+", "", cleaned)
+  cleaned = re.sub(r"[०-९0-9।॥\.,\!\?\|\-—–\(\)\[\]]+", " ", cleaned)
+  out: list[str] = []
+  total = 0
+  for w in [x for x in cleaned.split() if any("\u0900" <= c <= "\u097f" for c in x)][:max_words]:
+    if out and total + len(w) + 1 > max_chars:
+      break
+    out.append(w)
+    total += len(w) + (1 if len(out) > 1 else 0)
+  return " ".join(out) or "मन्त्रः"
+
+
+def format_static_title_and_stem(
+  vp: str,
+  *,
+  num_prefix: str = "",
+  max_words: int = 3,
+  max_chars: int = 36,
+  max_slug_len: int = 40,
+) -> tuple[str, str]:
+  """Return `(devanagari_title, ascii_slug_stem)` from a mantra VP body with accents ignored."""
+  opening = short_opening_words(vp, max_words=max_words, max_chars=max_chars)
+  stem = file_helper.get_storage_name(opening, source_script=sanscript.DEVANAGARI, max_length=max_slug_len) or "mantraH"
+  dev_num = num_prefix.translate(_DEVA_DIGITS) if num_prefix else ""
+  title = f"{dev_num} {opening}" if dev_num else opening
+  return title, stem

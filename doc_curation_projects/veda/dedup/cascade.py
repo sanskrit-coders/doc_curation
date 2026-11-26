@@ -8,7 +8,6 @@ import shutil
 import subprocess
 from typing import Sequence
 
-from curation_utils import file_helper
 from doc_curation.md.content_processor.include import transformer
 from doc_curation.md.content_processor.include.seeker import resolve_include_file_path
 from doc_curation.sanskrit.accent import us_converter
@@ -31,6 +30,7 @@ from doc_curation_projects.veda.dedup.matcher import (
 )
 from doc_curation_projects.veda.dedup.targets import VedaCorpusSpec, load_corpus_specs
 from doc_curation_projects.veda.yajuH.vaajasaneyi.dedup.norm import (
+  format_static_title_and_stem,
   is_no_patha_bheda,
   normalize_phonetic,
 )
@@ -40,9 +40,6 @@ from doc_curation_projects.veda.yajuH.vaajasaneyi.dedup.section_parser import (
   merge_vsk_hemistich_pair,
 )
 from doc_curation_projects.veda.yajuH.vaajasaneyi.dedup.tika_merger import format_details_block
-from indic_transliteration import sanscript
-
-_DEVA_DIGITS = str.maketrans("0123456789", "०१२३४५६७८९")
 
 
 def _balanced_tags(text: str) -> bool:
@@ -71,16 +68,6 @@ def _spec_by_url(url: str, all_specs: dict[str, VedaCorpusSpec]) -> VedaCorpusSp
       if pref and url.startswith(pref + "/"):
         return sp
   return None
-
-
-def _short_stem_name(vp_text: str, rel_fallback: str) -> str:
-  cleaned = re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]", "", vp_text, flags=re.S)
-  cleaned = re.sub(r"\[\[([^|\]]*)\|[^\]]*\]\]", r"\1", cleaned)
-  cleaned = re.sub(r"[᳓᳙\u0951\u0952]+", "", cleaned)
-  cleaned = re.sub(r"[\*\.,\!\?\|\-—–\(\)।॥०-९0-9]+", " ", cleaned)
-  words = [w for w in cleaned.split() if any("\u0900" <= c <= "\u097f" for c in w)][:3]
-  slug = file_helper.get_storage_name(" ".join(words), source_script=sanscript.DEVANAGARI, max_length=40)
-  return slug or rel_fallback.replace("/", "_").replace(".md", "")
 
 
 def normalize_corpus_vp_us_accents(spec: VedaCorpusSpec, *, dry_run: bool = False) -> int:
@@ -234,6 +221,8 @@ def build_target_index(
         if not sarva_fp.is_file():
           continue
         _, body = split_frontmatter_verbatim(vp_fp.read_text(encoding="utf-8"))
+        if "js_include" in body:
+          continue
         vp_clean = re.sub(r"</?(?:div|details|summary)[^>]*>", "", body).strip()
         pb = normalize_phonetic(vp_clean, include_accents=False, fold_orthography=True)
         if len(pb) < 16:
@@ -462,6 +451,7 @@ def _promote_inline_target(
   is_rk_like: bool,
   dry_run: bool,
   url_index: UrlCallerIndex | None = None,
+  prefer_2part: bool = False,
 ) -> list[str]:
   """Promote an upstream inline block (`VS-M`, `TS`, `TB`) into upstream static `{Rk,yajuH}/` before sharing."""
   sp, host_fp, g_idx = inline_hosts[ent.slot_key]
@@ -473,13 +463,16 @@ def _promote_inline_target(
     g for g in grps if not g.is_vp_include and normalize_phonetic(g.vp_text, include_accents=False, fold_orthography=True) == ent.pb
   )
   rel_parent = host_fp.relative_to(sp.content_dir).with_suffix("").as_posix()  # type: ignore[arg-type]
-  stem = _short_stem_name(grp.vp_text, ent.rel)
-  rel = f"{rel_parent}/{g_idx + 1:02d}_{stem}.md"
-  title_line = f'+++\ntitle = "{stem}"\nunicode_script = "devanagari"\n+++\n\n'
+  num_str = f"{g_idx + 1:02d}"
+  title_txt, stem = format_static_title_and_stem(grp.vp_text, num_prefix=num_str)
+  if stem == "mantraH" and ent.rel:
+    stem = ent.rel.replace("/", "_").replace(".md", "")
+  rel = f"{rel_parent}/{num_str}_{stem}.md"
+  title_line = f'+++\ntitle = "{title_txt}"\nunicode_script = "devanagari"\n+++\n\n'
   h_lvl = _detect_heading_level(raw, sp)
   sarva_blocks_md = "\n\n".join(format_details_block(t, b) for t, b in grp.inline_tika_items)
 
-  if not is_rk_like and is_exact and sp.yajuh_sarva_prastuti_dir:
+  if not is_rk_like and is_exact and sp.yajuh_sarva_prastuti_dir and not prefer_2part:
     dest = sp.yajuh_sarva_prastuti_dir / rel
     if not dry_run:
       dest.parent.mkdir(parents=True, exist_ok=True)
@@ -682,27 +675,34 @@ def run_stage_cascade(
       if not sarva_fp.is_file():
         continue
       vp_raw = split_frontmatter_verbatim(vp_fp.read_text(encoding="utf-8"))[1]
+      if "js_include" in vp_raw:
+        continue
       vp_text = re.sub(r"</?(?:div|details|summary)[^>]*>", "", vp_raw).strip()
-      hit = index.find_best(vp_text, src_summary="ऋक्" if vp_dir == src_spec.vp_dir else "", src_corpus=src_name)
+      is_rk_like = (vp_dir == src_spec.vp_dir) if src_name != "EK" else ("\n" in vp_text.strip())
+      hit = index.find_best(vp_text, src_summary="ऋक्" if is_rk_like else "", src_corpus=src_name)
       if hit is None:
         continue
       ent, ratio, is_exact = hit
+      src_vp_url = f"{vp_pref}/{rel}"
+      src_sarva_url = f"{sarva_pref}/{rel}"
+      has_vp_only_callers = bool(set(url_index.files_for(src_vp_url)) - set(url_index.files_for(src_sarva_url)))
       if ent.kind == "inline":
         promoted = _promote_inline_target(
-          ent, is_exact, all_specs, inline_hosts, caller_roots, is_rk_like=(vp_dir == src_spec.vp_dir), dry_run=dry_run, url_index=url_index,
+          ent, is_exact, all_specs, inline_hosts, caller_roots,
+          is_rk_like=is_rk_like, dry_run=dry_run, url_index=url_index, prefer_2part=has_vp_only_callers,
         )
         changed_paths.extend(promoted)
         stats["promoted_targets"] += 1
-      elif ent.kind == "yajuh_combined" and not is_exact:
+      elif ent.kind == "yajuh_combined" and (not is_exact or has_vp_only_callers):
         _, _, _, _, split_ch = _split_combined_yajuh_target(ent, all_specs[ent.corpus], caller_roots, dry_run=dry_run, url_index=url_index)
         changed_paths.extend(split_ch)
 
       src_sarva_raw = sarva_fp.read_text(encoding="utf-8")
-      if ent.sarva_url and ent.sarva_url in src_sarva_raw:
-        continue
       tika_items = [
         (d[0], d[1]) for k, d in _split_top_level_chunks(split_frontmatter_verbatim(src_sarva_raw)[1]) if k == "details"  # type: ignore[index]
       ]
+      if ent.sarva_url and ent.sarva_url in src_sarva_raw and not tika_items:
+        continue
       target_sarva_fp = pathlib.Path(ent.sarva_path)
       if ent.kind == "yajuh_combined" and is_exact:
         # Merge into combined's inner सर्वाष् टीकाः block
@@ -827,8 +827,15 @@ def run_stage_cascade(
         changed_paths.extend(promoted)
         stats["promoted_targets"] += 1
       elif ent.kind == "yajuh_combined" and not is_exact:
-        _, _, _, _, split_ch = _split_combined_yajuh_target(ent, all_specs[ent.corpus], caller_roots, dry_run=dry_run, url_index=url_index)
+        old_comb_url = ent.combined_url
+        _, _, u_vp, u_tk, split_ch = _split_combined_yajuh_target(ent, all_specs[ent.corpus], caller_roots, dry_run=dry_run, url_index=url_index)
         changed_paths.extend(split_ch)
+        if old_comb_url:
+          rep_v, rep_s = render_host_include_pair(exact_reading=True, vp_url=u_vp, sarva_url=u_tk, heading_level=h_lvl)
+          for p_tok in tokens:
+            if p_tok.kind == "include" and old_comb_url in p_tok.raw:
+              p_tok.raw = f"{rep_v}\n{rep_s}"
+              p_tok.url = u_vp
 
       target_fp = pathlib.Path(ent.sarva_path)
       if ent.kind == "yajuh_combined" and is_exact:
@@ -845,6 +852,8 @@ def run_stage_cascade(
           changed_paths.append(str(target_fp))
         new_vp, new_tk = render_host_include_pair(exact_reading=True, combined_url=ent.combined_url, heading_level=h_lvl)
         replace_group_tokens(tokens, grp, new_vp_raw=new_vp, new_sarva_stub=new_tk, drop_inline_tika=True, drop_sarva_include=True)
+        if not dry_run and ent.combined_url:
+          url_index.by_url.setdefault(ent.combined_url, set()).add(c_fp)
         if merged_pair:
           _clear_group_tokens(tokens, groups[gi + 1])
         stats["content_exact"] += 1
@@ -869,6 +878,11 @@ def run_stage_cascade(
         vp_url=ent.vp_url, sarva_url=ent.sarva_url, heading_level=h_lvl,
       )
       replace_group_tokens(tokens, grp, new_vp_raw=new_vp, new_sarva_stub=new_tk, drop_inline_tika=True)
+      if not dry_run:
+        if ent.sarva_url:
+          url_index.by_url.setdefault(ent.sarva_url, set()).add(c_fp)
+        if is_exact and ent.vp_url:
+          url_index.by_url.setdefault(ent.vp_url, set()).add(c_fp)
       if merged_pair:
         _clear_group_tokens(tokens, groups[gi + 1])
       stats["content_exact" if is_exact else "content_variant"] += 1

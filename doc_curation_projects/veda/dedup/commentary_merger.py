@@ -119,7 +119,7 @@ def _disambiguate_incoming_entry(
       if any(_similar_text(b, ex, threshold=0.88) for ex in existing_by_title["सायण-टीका"]):
         return None
       return src_spec.sayana_variant_label, b
-    return (src_spec.sayana_variant_label if target_spec.name in ("VS-M", "TS", "TB", "TK", "MS") else "सायण-टीका"), b
+    return (src_spec.sayana_variant_label if target_spec.name in ("VS-M", "TS", "TB", "TK", "MS", "KS", "EK", "TA") else "सायण-टीका"), b
 
   if t == "भट्टभास्कर-टीका":
     if "भट्टभास्कर-टीका" in existing_by_title:
@@ -269,7 +269,12 @@ def merge_tika_additions(
   rendered = _insert_after(
     rendered,
     comm_new,
-    lambda t: any(x in t for x in ("उवट", "महीधर", "सायण", "भट्टभास्कर", "आनन्दबोध", "अनन्ताचार्य", "Schroeder")),
+    lambda t: any(
+      x in t for x in (
+        "उवट", "महीधर", "सायण", "भट्टभास्कर", "आनन्दबोध", "अनन्ताचार्य", "Schroeder",
+        "हरदत्त", "त्रिभुवन", "रङ्ग", "विश्वास-टिप्पनी",
+      )
+    ),
   )
 
   new_body = "\n\n".join(blk for _, blk in rendered).strip()

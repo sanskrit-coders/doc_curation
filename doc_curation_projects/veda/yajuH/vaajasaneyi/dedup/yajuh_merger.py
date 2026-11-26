@@ -6,18 +6,18 @@ import re
 from collections import defaultdict
 from typing import Sequence
 
-from curation_utils import file_helper
 from doc_curation.sanskrit.accent import us_converter
-from doc_curation.sanskrit.accent.samhita_splitter import strip_vedic_accents
-from indic_transliteration import sanscript
 
 from doc_curation_projects.veda.yajuH.vaajasaneyi.dedup.norm import (
+  _DEVA_DIGITS,
   STATIC_URL_YAJUH,
   VSK_SARVA_DIR,
   VSM_SARVA_DIR,
   VSM_YAJUH_DIR,
   chapter_distance,
+  format_static_title_and_stem,
   normalize_phonetic,
+  short_opening_words,
 )
 from doc_curation_projects.veda.yajuH.vaajasaneyi.dedup.section_parser import (
   VskSubBlock,
@@ -30,24 +30,8 @@ from doc_curation_projects.veda.yajuH.vaajasaneyi.dedup.tika_merger import (
   merge_sarva_tikaa_chunks,
 )
 
-_DEVA_DIGITS = str.maketrans("0123456789", "०१२३४५६७८९")
-
-
-def _short_opening_words(vp: str, *, max_words: int = 3, max_chars: int = 36) -> str:
-  bare = strip_vedic_accents(re.sub(r"\+\+\+.*?\+\+\+|\[\^[^\]]+\]", "", vp, flags=re.S))
-  bare = re.sub(r"[०-९0-9\*।\.\,\!\?\|\-—–\(\)]+", " ", bare)
-  out: list[str] = []
-  total = 0
-  for w in [x for x in bare.split() if x][:max_words]:
-    if out and total + len(w) + 1 > max_chars:
-      break
-    out.append(w)
-    total += len(w) + (1 if len(out) > 1 else 0)
-  return " ".join(out) or "मन्त्रः"
-
-
 def _make_yajuh_rel_path(vsm_ch: int, vsm_k: int, vp: str, used_rels: set[str]) -> str:
-  stem = file_helper.get_storage_name(_short_opening_words(vp), source_script=sanscript.DEVANAGARI, max_length=45) or "mantraH"
+  _, stem = format_static_title_and_stem(vp, max_slug_len=45)
   cand = f"{vsm_ch:02d}/{vsm_k:02d}_{stem}.md"
   suffix = 2
   while cand in used_rels:
@@ -282,7 +266,7 @@ def _write_shared_yajuh_file(
   vp_us = us_converter.to_us_accents_markdown(slot["vp"], pauses=r"[।॥,;]+", preserve_existing_us=True).strip()
   dev_k = f"{slot['k']:02d}".translate(_DEVA_DIGITS)
   content = (
-    f'+++\ntitle = "{dev_k} {_short_opening_words(vp_us)}"\nunicode_script = "devanagari"\n+++\n'
+    f'+++\ntitle = "{dev_k} {short_opening_words(vp_us)}"\nunicode_script = "devanagari"\n+++\n'
     f"<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\n{vp_us}\n</details>\n\n"
     "<details><summary>सर्वाष् टीकाः</summary>\n" + "\n".join(merged_tika_blocks) + "\n</details>\n"
   )
