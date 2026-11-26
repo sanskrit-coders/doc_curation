@@ -265,3 +265,108 @@ def test_strip_pune_margin_numbers_ocr_noise_and_dir_clean(tmp_path):
   assert "V.." not in out and "कण्वाभिमतो" in out
 
 
+def test_clean_kanva_sayana_block_and_corpus_soft_breaks(tmp_path):
+  raw = (
+    "सायणाचार्य - आनन्दबोध- माष्य-समेता\n"
+    "सा - कात्यायन: 'इषे त्वा' इति ।\n\n"
+    "[ प्रथमो ऽनुवाकः १-१० ]\n\n"
+    "हे देव:\u200d! अत्र अग्निर् यजमानस्य\nरक्षिता भवति ।\n\n"
+    "द्वितीयो ऽपि मन्त्रः ।\n\n"
+    "अथ पञ्चमी-\n"
+    "क्षत्रेण ।\n\nअग्ने ।\n\nसु ।\n\nआयुः ।\n\n"
+    "इति प्रथमाध्याये द्वितीयो ऽनुवाकः ।\n\n"
+    "अग्रे व्याख्यायते ।"
+  )
+  cleaned = vsk.clean_kanva_sayana_block(raw)
+  assert "माष्य-समेता" not in cleaned
+  assert "सा -" not in cleaned
+  assert "\u200d" not in cleaned
+  assert "कात्यायनः" in cleaned and "हे देवः!" in cleaned
+  assert "रक्षिता भवति ।  \nद्वितीयो ऽपि मन्त्रः ।" in cleaned
+  assert "अथ पञ्चमी —  \nक्षत्रेण ।  \nअग्ने । सु । आयुः ।" in cleaned
+  assert "\n\n[ प्रथमो ऽनुवाकः १-१० ]\n\n" in cleaned
+  assert "इति प्रथमाध्याये द्वितीयो ऽनुवाकः ।\n\nअग्रे व्याख्यायते ।" in cleaned
+
+  md_file = tmp_path / "canonical.md"
+  md_file.write_text(
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nइषे᳓ त्वा।\n</details>\n"
+    "<details><summary>सर्वाष् टीकाः</summary>\n\n"
+    "<details><summary>सायण-टीका</summary>\n\nतैत्तिरीयम्।\n\nद्वितीयम्।\n</details>\n"
+    "<details><summary>सायण-टीका (काण्वी)</summary>\n\n"
+    "प्रथम: ।\n\nद्वितीयः ।\n</details>\n"
+    "</details>\n"
+    '<div class="js_include" url="/some/path" newLevelForH1="2"><details><summary>सायण-टीका (काण्वी)</summary>\n\n'
+    "अन्तः:\n\nमिरर् ।\n</details></div>\n",
+    encoding="utf-8",
+  )
+  stats = vsk.clean_canonical_kanva_sayana_in_roots([tmp_path])
+  assert stats == {"files_scanned": 1, "files_changed": 1, "blocks_changed": 1, "blocks_seen": 1}
+  result = md_file.read_text(encoding="utf-8")
+  assert "प्रथमः ।  \nद्वितीयः ।" in result
+  assert "तैत्तिरीयम्।\n\nद्वितीयम्।" in result
+  assert "अन्तः:\n\nमिरर् ।" in result
+  assert result.count("<details") == result.count("</details>")
+
+
+def test_proofread_canonical_kanva_sayana_in_roots_mocked(tmp_path, monkeypatch):
+  from types import SimpleNamespace
+  from doc_curation_projects.veda.yajuH.vaajasaneyi.kaanva.samhitaa import prose_clean
+
+  md = tmp_path / "mantra.md"
+  md.write_text(
+    "<details open><summary>मूलम्</summary>\n\nअ᳓ग्ने न᳓य।\n</details>\n"
+    "<details><summary>सायण-टीका (काण्वी)</summary>\n\nहे अने नय।\n</details>\n",
+    encoding="utf-8",
+  )
+
+  class _FakeModels:
+    def generate_content(self, *, model, contents, config):
+      return SimpleNamespace(text="<<<ITEM 0>>>\nहे [[अने|अग्ने]] नय ।\n\nद्वितीयम् ।\n\nतृतीयम् ।\n<<<END 0>>>")
+
+  monkeypatch.setattr(prose_clean, "_load_working_gemini_clients", lambda m, t: [("k1", SimpleNamespace(models=_FakeModels()))])
+  ckpt = tmp_path / "ckpt.jsonl"
+  st1 = prose_clean.proofread_canonical_kanva_sayana_in_roots([tmp_path], checkpoint_path=ckpt, max_workers=1)
+  assert st1 == {"targets": 1, "already_done": 0, "newly_proofread": 1, "files_changed": 1, "blocks_changed": 1}
+  txt = md.read_text(encoding="utf-8")
+  assert "हे [[अने|अग्ने]] नय ।  \nद्वितीयम् ।  \nतृतीयम् ।" in txt
+  assert "अ᳓ग्ने न᳓य।" in txt
+
+  # Re-run uses JSONL checkpoint with zero extra API calls
+  st2 = prose_clean.proofread_canonical_kanva_sayana_in_roots([tmp_path], checkpoint_path=ckpt, max_workers=1)
+  assert st2["already_done"] == 1 and st2["newly_proofread"] == 0
+
+
+def test_export_and_ingest_kanvi_shards(tmp_path):
+  md = tmp_path / "mantra2.md"
+  md.write_text(
+    "<details open><summary>मूलम्</summary>\n\nदे᳓वः सविता᳓।\n</details>\n"
+    "<details><summary>सायण-टीका (काण्वी)</summary>\n\nहे देवः सविता पच सेवने ।\n</details>\n"
+    "<details><summary>सायण-टीका (काण्वी)</summary>\n\nस्पष्टम् ॥\n</details>\n"
+    "<details><summary>सायण-टीका (काण्वी)</summary>\n\n\n</details>\n",
+    encoding="utf-8",
+  )
+  ckpt = tmp_path / "ckpt.jsonl"
+  shard_dir = tmp_path / "shards"
+  shards = vsk.export_pending_kanvi_shards([tmp_path], ckpt, shard_dir, max_shard_chars=5000)
+  assert len(shards) == 1
+  content = shards[0].read_text(encoding="utf-8")
+  assert "<<<ITEM 0>>>" in content and "दे᳓वः सविता᳓।" in content
+  (shard_dir / "shard_00.out.txt").write_text(
+    "<<<ITEM 0>>>\nहे देवः सविता [[पच|षच]] [[नरदष्टिः|[[नरदष्टिः|जरदष्टिः]]]] [[१० |]]सेवने ।\n<<<END 0>>>\n"
+    "<<<ITEM 1>>>\nस्पष्टम् ॥\n<<<END 1>>>\n"
+    "<<<ITEM 2>>>\n\n<<<END 2>>>\n",
+    encoding="utf-8",
+  )
+  res = vsk.ingest_kanvi_shards_and_apply([tmp_path], shard_dir, ckpt, apply_to_files=True)
+  assert res["done_total"] == 3 and res["missing"] == 0 and res["rejected_short"] == 0 and res["files_changed"] == 1
+  out_txt = md.read_text(encoding="utf-8")
+  assert "[[पच|षच]]" in out_txt and "[[नरदष्टिः|जरदष्टिः]]" in out_txt and "[[१०" not in out_txt
+  # Re-running ingestion after applying [[OLD|NEW]] suggestions is a clean no-op
+  res2 = vsk.ingest_kanvi_shards_and_apply([tmp_path], shard_dir, ckpt, apply_to_files=True)
+  assert res2["newly_ingested"] == 0 and res2["files_changed"] == 0
+  assert md.read_text(encoding="utf-8") == out_txt
+
+
+
+
+

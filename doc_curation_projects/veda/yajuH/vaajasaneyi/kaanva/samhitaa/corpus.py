@@ -83,7 +83,7 @@ def plan_kanva_kandika_alignment(
         by_role[item["role"]].append(item["text"])
       for role in ("avatarika", "viniyoga", "tika"):
         if by_role[role]:
-          clusters[real_i][auth][role] = "\n\n".join(by_role[role])
+          clusters[real_i][auth][role] = "  \n".join(by_role[role])
   return clusters
 
 

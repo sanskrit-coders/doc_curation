@@ -44,9 +44,16 @@ from doc_curation_projects.veda.yajuH.vaajasaneyi.kaanva.samhitaa.padapatha impo
   reconcile_and_split_padapatha,
 )
 from doc_curation_projects.veda.yajuH.vaajasaneyi.kaanva.samhitaa.prose_clean import (
+  CANONICAL_KANVA_SAYANA_SUMMARY,
+  clean_canonical_kanva_sayana_in_roots,
+  clean_kanva_sayana_block,
   clean_raw_bhashya_text,
   clean_vsk_commentary_blocks_in_dir,
+  export_pending_kanvi_shards,
+  ingest_kanvi_shards_and_apply,
+  proofread_canonical_kanva_sayana_in_roots,
   strip_pune_margin_numbers,
+  transform_canonical_kanva_sayana_in_text,
 )
 from doc_curation_projects.veda.yajuH.vaajasaneyi.kaanva.samhitaa.repair import (
   _convert_indike_to_vp_mula,
