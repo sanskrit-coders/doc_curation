@@ -255,16 +255,17 @@ def transform_canonical_kanva_sayana_in_text(
   summary_title: str = CANONICAL_KANVA_SAYANA_SUMMARY,
 ) -> tuple[str, int]:
   """Apply ``transform_fn(body, ref_mantra)`` to every non-included canonical ``summary_title`` block."""
-  ref_mantra = extract_reference_mantra(content)
+  file_ref_mantra = extract_reference_mantra(content)
   changed = 0
 
-  def _walk(segment: str) -> str:
+  def _walk(segment: str, active_ref: str) -> str:
     nonlocal changed
     spans = parse_top_level_details(segment, skip_js_includes=True)
     if not spans:
       return segment
     pieces: list[str] = []
     cursor = 0
+    prev_mantra_blk = ""
     for start, end, title, body in spans:
       pieces.append(segment[cursor:start])
       blk = segment[start:end]
@@ -273,30 +274,38 @@ def transform_canonical_kanva_sayana_in_text(
       if m_sum is None or close_idx == -1:
         pieces.append(blk)
       elif title == summary_title:
-        new_body = transform_fn(body, ref_mantra).strip()
+        new_body = transform_fn(body, active_ref).strip()
         if new_body != body.strip():
           changed += 1
         head = blk[: m_sum.end()]
         pieces.append(f"{head}\n\n{new_body}\n</details>")
       elif summary_title in body:
+        local_ctx = f"{prev_mantra_blk}\n{blk}" if prev_mantra_blk else blk
+        local_ref = extract_reference_mantra(local_ctx) or active_ref
         inner_raw = blk[m_sum.end() : close_idx]
         lead_ws = inner_raw[: len(inner_raw) - len(inner_raw.lstrip())]
         trail_ws = inner_raw[len(inner_raw.rstrip()) :]
-        updated_sub = _walk(body)
+        updated_sub = _walk(body, local_ref)
         pieces.append(f"{blk[: m_sum.end()]}{lead_ws}{updated_sub}{trail_ws}</details>")
       else:
         pieces.append(blk)
+      if title.startswith("विश्वास-प्रस्तुतिः") or title.startswith("मूलम्"):
+        prev_mantra_blk = blk
       cursor = end
     pieces.append(segment[cursor:])
     return "".join(pieces)
 
-  updated = _walk(content)
+  updated = _walk(content, file_ref_mantra)
   assert updated.count("<details") == updated.count("</details>"), "Unbalanced <details> tags after update"
   return updated, changed
 
 
-def clean_canonical_kanva_sayana_in_roots(roots: Sequence[pathlib.Path]) -> dict[str, int]:
-  """Deterministically clean fake paragraphs & noise across all canonical `सायण-टीका (काण्वी)` blocks."""
+def clean_canonical_kanva_sayana_in_roots(
+  roots: Sequence[pathlib.Path],
+  *,
+  summary_title: str = CANONICAL_KANVA_SAYANA_SUMMARY,
+) -> dict[str, int]:
+  """Deterministically clean fake paragraphs & noise across all non-included ``summary_title`` blocks."""
   counters = {"files_scanned": 0, "files_changed": 0, "blocks_changed": 0, "blocks_seen": 0}
 
   def _clean(body: str, _ref: str) -> str:
@@ -306,10 +315,10 @@ def clean_canonical_kanva_sayana_in_roots(roots: Sequence[pathlib.Path]) -> dict
   for root in roots:
     for p in sorted(pathlib.Path(root).rglob("*.md")):
       txt = p.read_text(encoding="utf-8")
-      if CANONICAL_KANVA_SAYANA_SUMMARY not in txt:
+      if summary_title not in txt:
         continue
       counters["files_scanned"] += 1
-      updated, n_changed = transform_canonical_kanva_sayana_in_text(txt, _clean)
+      updated, n_changed = transform_canonical_kanva_sayana_in_text(txt, _clean, summary_title=summary_title)
       counters["blocks_changed"] += n_changed
       if updated != txt:
         p.write_text(updated, encoding="utf-8")
@@ -344,20 +353,23 @@ def _load_working_gemini_clients(
   return clients
 
 
-def _collect_kanva_sayana_targets(roots: Sequence[pathlib.Path]) -> list[dict]:
-  """Collect deterministic target descriptors for all canonical `सायण-टीका (काण्वी)` blocks."""
+def _collect_kanva_sayana_targets(
+  roots: Sequence[pathlib.Path],
+  *,
+  summary_title: str = CANONICAL_KANVA_SAYANA_SUMMARY,
+) -> list[dict]:
+  """Collect deterministic target descriptors for all non-included ``summary_title`` blocks."""
   targets: list[dict] = []
   for root in roots:
     for p in sorted(pathlib.Path(root).rglob("*.md")):
       if not p.is_file():
         continue
       txt = p.read_text(encoding="utf-8")
-      if CANONICAL_KANVA_SAYANA_SUMMARY not in txt:
+      if summary_title not in txt:
         continue
-      ref_mantra = extract_reference_mantra(txt)
       idx_in_file = 0
 
-      def _collect(body: str, _ref: str) -> str:
+      def _collect(body: str, ref: str) -> str:
         nonlocal idx_in_file
         targets.append(
           {
@@ -365,13 +377,13 @@ def _collect_kanva_sayana_targets(roots: Sequence[pathlib.Path]) -> list[dict]:
             "path": p,
             "idx_in_file": idx_in_file,
             "raw": body,
-            "ref_mantra": ref_mantra,
+            "ref_mantra": ref,
           }
         )
         idx_in_file += 1
         return body
 
-      transform_canonical_kanva_sayana_in_text(txt, _collect)
+      transform_canonical_kanva_sayana_in_text(txt, _collect, summary_title=summary_title)
   return targets
 
 
@@ -430,8 +442,13 @@ def _postprocess_proofread_output(raw: str, raw_llm: str) -> str:
   return guarded.strip() or raw
 
 
-def _apply_checkpoint_to_roots(targets: Sequence[dict], done: dict[int, str]) -> tuple[int, int]:
-  """Write completed `done` records back into canonical `<details><summary>सायण-टीका (काण्वी)</summary>` blocks."""
+def _apply_checkpoint_to_roots(
+  targets: Sequence[dict],
+  done: dict[int, str],
+  *,
+  summary_title: str = CANONICAL_KANVA_SAYANA_SUMMARY,
+) -> tuple[int, int]:
+  """Write completed `done` records back into non-included ``summary_title`` blocks."""
   by_file: dict[pathlib.Path, dict[int, str]] = {}
   for t in targets:
     if t["id"] in done:
@@ -449,7 +466,7 @@ def _apply_checkpoint_to_roots(targets: Sequence[dict], done: dict[int, str]) ->
       cur_idx += 1
       return new_b
 
-    updated, n_changed = transform_canonical_kanva_sayana_in_text(txt, _apply)
+    updated, n_changed = transform_canonical_kanva_sayana_in_text(txt, _apply, summary_title=summary_title)
     blocks_changed += n_changed
     if updated != txt:
       p.write_text(updated, encoding="utf-8")
@@ -460,6 +477,7 @@ def _apply_checkpoint_to_roots(targets: Sequence[dict], done: dict[int, str]) ->
 def proofread_canonical_kanva_sayana_in_roots(
   roots: Sequence[pathlib.Path],
   *,
+  summary_title: str = CANONICAL_KANVA_SAYANA_SUMMARY,
   model_id: str = "gemini-3-flash-preview",
   thinking_level: str = "LOW",
   batch_size: int = 10,
@@ -468,11 +486,11 @@ def proofread_canonical_kanva_sayana_in_roots(
   min_key_interval_sec: float = 10.0,
   timeout_ms: int = 60000,
 ) -> dict[str, int]:
-  """Proofread & hyphenate canonical `सायण-टीका (काण्वी)` blocks with mantra context and post-guards."""
+  """Proofread & hyphenate non-included ``summary_title`` blocks with mantra context and post-guards."""
   from google.genai import types
   from doc_curation.llm.proofreader import build_system_prompt
 
-  targets = _collect_kanva_sayana_targets(roots)
+  targets = _collect_kanva_sayana_targets(roots, summary_title=summary_title)
   done = _load_checkpoint_records(checkpoint_path)
 
   pending = [t for t in targets if t["id"] not in done]
@@ -584,7 +602,7 @@ def proofread_canonical_kanva_sayana_in_roots(
       for fut in as_completed(futs):
         fut.result()
 
-  files_changed, blocks_changed = _apply_checkpoint_to_roots(targets, done)
+  files_changed, blocks_changed = _apply_checkpoint_to_roots(targets, done, summary_title=summary_title)
 
   return {
     "targets": len(targets),
@@ -600,10 +618,11 @@ def export_pending_kanvi_shards(
   checkpoint_path: pathlib.Path | None,
   shard_dir: pathlib.Path,
   *,
+  summary_title: str = CANONICAL_KANVA_SAYANA_SUMMARY,
   max_shard_chars: int = 18000,
 ) -> list[pathlib.Path]:
-  """Export unfinished canonical `(काण्वी)` blocks into size-bounded `shard_XX.txt` files."""
-  targets = _collect_kanva_sayana_targets(roots)
+  """Export unfinished non-included ``summary_title`` blocks into size-bounded `shard_XX.txt` files."""
+  targets = _collect_kanva_sayana_targets(roots, summary_title=summary_title)
   done = _load_checkpoint_records(checkpoint_path)
   pending = [t for t in targets if t["id"] not in done]
 
@@ -642,10 +661,11 @@ def ingest_kanvi_shards_and_apply(
   shard_out_dir: pathlib.Path,
   checkpoint_path: pathlib.Path | None,
   *,
+  summary_title: str = CANONICAL_KANVA_SAYANA_SUMMARY,
   apply_to_files: bool = True,
 ) -> dict[str, int]:
   """Ingest `shard_*.out.txt` responses through post-guards, update checkpoint, and optionally write files."""
-  targets = _collect_kanva_sayana_targets(roots)
+  targets = _collect_kanva_sayana_targets(roots, summary_title=summary_title)
   by_id = {t["id"]: t for t in targets}
   done = _load_checkpoint_records(checkpoint_path)
 
@@ -673,7 +693,7 @@ def ingest_kanvi_shards_and_apply(
 
   files_changed, blocks_changed = (0, 0)
   if apply_to_files:
-    files_changed, blocks_changed = _apply_checkpoint_to_roots(targets, done)
+    files_changed, blocks_changed = _apply_checkpoint_to_roots(targets, done, summary_title=summary_title)
 
   missing = len(targets) - len(done)
   return {

@@ -367,6 +367,43 @@ def test_export_and_ingest_kanvi_shards(tmp_path):
   assert md.read_text(encoding="utf-8") == out_txt
 
 
+def test_clean_and_collect_inline_sayana_per_mantra_context(tmp_path):
+  from doc_curation_projects.veda.yajuH.vaajasaneyi.kaanva.samhitaa import prose_clean
+
+  md = tmp_path / "01.md"
+  md.write_text(
+    "## 01\n"
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nइषे᳓ त्वा।\n</details>\n"
+    "<details><summary>सर्वाष् टीकाः</summary>\n"
+    "<details><summary>मूलम्</summary>\n\nइषे त्वा।\n</details>\n"
+    "<details><summary>सायण-टीका</summary>\n\nप्रथम: ।\n\nद्वितीयः ।\n</details>\n"
+    "<details><summary>सायण-टीका (काण्वी)</summary>\n\nमा स्पृक्षः ।\n\nनानम् ।\n</details>\n"
+    "</details>\n"
+    "## 02\n"
+    "<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\nवाय᳓वः स्थ।\n</details>\n"
+    "<details><summary>सर्वाष् टीकाः</summary>\n"
+    "<details><summary>मूलम्</summary>\n\nवायवः स्थ।\n</details>\n"
+    "<details><summary>सायण-टीका</summary>\n\nतृतीय: ।\n\nचतुर्थः ।\n</details>\n"
+    "</details>\n"
+    '<div class="js_include" url="/some/shared" newLevelForH1="2"><details><summary>सायण-टीका</summary>\n\n'
+    "अन्तः:\n\nमिरर् ।\n</details></div>\n",
+    encoding="utf-8",
+  )
+
+  targets = prose_clean._collect_kanva_sayana_targets([tmp_path], summary_title="सायण-टीका")
+  assert len(targets) == 2
+  assert "इषे᳓ त्वा।" in targets[0]["ref_mantra"] and "वाय᳓वः स्थ।" not in targets[0]["ref_mantra"]
+  assert "वाय᳓वः स्थ।" in targets[1]["ref_mantra"] and "इषे᳓ त्वा।" not in targets[1]["ref_mantra"]
+
+  stats = prose_clean.clean_canonical_kanva_sayana_in_roots([tmp_path], summary_title="सायण-टीका")
+  assert stats == {"files_scanned": 1, "files_changed": 1, "blocks_changed": 2, "blocks_seen": 2}
+  out = md.read_text(encoding="utf-8")
+  assert "प्रथमः ।  \nद्वितीयः ।" in out
+  assert "तृतीयः ।  \nचतुर्थः ।" in out
+  assert "मा स्पृक्षः ।\n\nनानम् ।" in out
+  assert "अन्तः:\n\nमिरर् ।" in out
+
+
 
 
 
