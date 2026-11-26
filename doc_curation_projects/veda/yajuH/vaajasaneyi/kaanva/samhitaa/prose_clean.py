@@ -220,13 +220,18 @@ def clean_prose_block(body: str, *, mode: str = "vsk") -> str:
   t = body.replace("\r\n", "\n").replace("\u200d", "").strip()
   if not t:
     return ""
-  t = re.sub(r"(?<=ः)\s*:(?:\s*:)*", "", t)
-  t = re.sub(r"(?<=[\u0900-\u097f])\s*:(?:\s*:)*", "ः", t)
-  if mode == "uvata":
+  t = re.sub(r"(?m)^[ \t]*:[ \t]*", "", t)
+  t = re.sub(r"(?<=ः)[ \t]*:(?:[ \t]*:)*", "", t)
+  t = re.sub(r"(?<=[\u0900-\u097f])[ \t]*:(?:[ \t]*:)*", "ः", t)
+  if mode in ("uvata", "mahidhara"):
     # Fix OCR virama+ā-mātrā ligature loss (e.g. `आज्यम्ाज्यशब्देन` -> `आज्यम् । आज्यशब्देन`)
     t = re.sub(r"(?<=[\u0900-\u097f]्)ा", " । आ", t)
-    t = _UVATA_PAREN_FN_RE.sub("", t)
-    t = re.sub(r"^(?:उ[०॰।.]+\s*)+", "", t.lstrip())
+    t = re.sub(r"।\s+।", "।", t)
+    if mode == "uvata":
+      t = _UVATA_PAREN_FN_RE.sub("", t)
+      t = re.sub(r"^(?:उ[०॰।.]+\s*)+", "", t.lstrip())
+    else:
+      t = re.sub(r"^(?:मा?[०॰।.]+\s*)+", "", t.lstrip())
   else:
     t = strip_pune_margin_numbers(t)
     t = _SA_PREFIX_RE.sub("", t.lstrip())
@@ -556,10 +561,10 @@ def _collapse_relapsed_single_sentence_breaks(text: str) -> str:
     return text.strip()
   is_prose_line = (
     lambda p: not p.startswith(">")
-    and not p.startswith("[")
+    and not re.match(r"^\[(?!\[)", p)
     and not re.match(r"^[-*]\s", p)
     and not _COLOPHON_RE.search(p)
-    and _TERM_END_RE.search(p)
+    and _TERM_END_RE.search(re.sub(r"\[\[[^|\[\]]*\|([^\[\]]*)\]\]", r"\1", p))
     and len(re.findall(r"[।॥?!]+", re.sub(r"\[\[[^|\[\]]*\|([^\[\]]*)\]\]", r"\1", p))) <= 1
   )
   out: list[str] = []
@@ -593,13 +598,25 @@ def _postprocess_proofread_output(raw: str, raw_llm: str) -> str:
     "",
     guarded,
   )
-  guarded = re.sub(r"\[\[\s*[०-९A-Za-z0-9\s'\"*.,:;\-]+\s*\|\s*\]\]", "", guarded)
+  guarded = re.sub(r"\[\[\s*[०-९A-Za-z0-9\s'\"‘’“”*.,:;\-]+\s*\|\s*\]\]", "", guarded)
   guarded = re.sub(r"\[\[([^|\[\]]*[\u0900-\u097f][^|\[\]]*)\|\s*\]\]", r"\1", guarded)
   guarded = re.sub(
     r"\[\[([^|\[\]]+)\|([^|\[\]]+)\]\]",
     lambda m: m.group(2) if re.sub(r"[\s\-–—]+", "", m.group(1)) == re.sub(r"[\s\-–—]+", "", m.group(2)) else m.group(0),
     guarded,
   )
+  sugg_bag: list[str] = []
+
+  def _mask_sugg(m: re.Match[str]) -> str:
+    sugg_bag.append(m.group(0))
+    return f"\x00SUGG{len(sugg_bag) - 1}\x00"
+
+  guarded_masked = re.sub(r"\[\[[^|\[\]]*\|[^|\[\]]*\]\]", _mask_sugg, guarded)
+  guarded_masked = re.sub(r"([।॥])[ \t]*\|", r"\1", guarded_masked)
+  guarded_masked = re.sub(r"\|[ \t]*([।॥])", r"\1", guarded_masked)
+  guarded = re.sub(r"\x00SUGG(\d+)\x00", lambda m: sugg_bag[int(m.group(1))], guarded_masked)
+  guarded = re.sub(r"(?m)^[ \t]*:[ \t]*", "", guarded)
+  guarded = re.sub(r"।\s+।", "।", guarded)
   guarded = normalize_panini_abbreviations(_collapse_relapsed_single_sentence_breaks(guarded))
   return guarded.strip() or raw
 
@@ -877,23 +894,30 @@ def split_text_for_llm(text: str, max_chars: int = 5200) -> list[str]:
   parts: list[str] = []
   cur: list[str] = []
   cur_len = 0
-  # Prefer splitting on blank lines first; if a single paragraph exceeds max_chars, split on newlines.
-  units: list[str] = []
+  # Prefer splitting on blank lines first; if a single paragraph exceeds max_chars, split on single newlines.
+  units: list[tuple[str, str]] = []
   for para in re.split(r"\n\s*\n+", t):
     p = para.strip()
+    if not p:
+      continue
     if len(p) <= max_chars:
-      units.append(p)
+      units.append(("\n\n", p))
     else:
-      units.extend(ln for ln in p.splitlines() if ln.strip())
-  for u in units:
-    if cur and cur_len + len(u) + 2 > max_chars:
-      parts.append("\n\n".join(cur))
-      cur = []
-      cur_len = 0
-    cur.append(u)
-    cur_len += len(u) + 2
+      for idx, ln in enumerate(ln for ln in p.splitlines() if ln.strip()):
+        units.append(("\n\n" if idx == 0 else "\n", ln))
+  for sep, u in units:
+    if cur and cur_len + len(u) + len(sep) > max_chars:
+      parts.append("".join(cur))
+      cur = [u]
+      cur_len = len(u)
+    elif cur:
+      cur.append(sep + u)
+      cur_len += len(sep) + len(u)
+    else:
+      cur.append(u)
+      cur_len = len(u)
   if cur:
-    parts.append("\n\n".join(cur))
+    parts.append("".join(cur))
   return parts
 
 

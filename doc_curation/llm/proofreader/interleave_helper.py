@@ -90,6 +90,22 @@ def sanitize_details_footnotes(text: str) -> str:
   return regex.sub(r"\[\^([^\]]+)\]", r"[\1]", text)
 
 
+def join_prose_segments(segments: list[str] | tuple[str, ...]) -> str:
+  """Join prose segments using Markdown soft breaks (`  \\n`) after punctuation or spaces mid-sentence."""
+  out: list[str] = []
+  for seg in segments:
+    s = seg.strip()
+    if not s:
+      continue
+    if not out:
+      out.append(s)
+    elif regex.search(r"[।॥?!'’”\)]$", out[-1]):
+      out.append(f"  \n{s}")
+    else:
+      out.append(f" {s}")
+  return "".join(out)
+
+
 _TM_WORDS_SECTION_RE = regex.compile(
   r"(TRANSLATION WORDS:\n)(.*?)(\n\n(?:UPCOMING CORES|Reply with ONLY this JSON))",
   flags=regex.DOTALL,

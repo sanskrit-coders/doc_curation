@@ -265,3 +265,13 @@ def test_aligner_uses_soft_breaks_and_cleans_uvata_and_um():
   assert "मन्त्राणामकारादिवर्णक्रमकोशः" not in um_cleaned
   assert "म॰ अन् तरात्मा भवति।" in um_cleaned
   assert "> [टिप्पणी] १ पादटिप्पणी।" in um_cleaned
+
+  mh_dirty = "निदध्यात्ाहवनीयात्।\n\n: मरुत्वन्तं। ।\n\nतथाच श्रुतिः\n\n‘सोमो वै राजा’।"
+  mh_clean = prose_clean.clean_prose_block(mh_dirty, mode="mahidhara")
+  assert "निदध्यात् । आहवनीयात्।" in mh_clean
+  assert "मरुत्वन्तं।" in mh_clean and ": " not in mh_clean and "।ः" not in mh_clean
+  assert "तथाच श्रुतिः ‘सोमो वै राजा’।" in mh_clean
+  assert "\n\n" not in mh_clean and "  \n" in mh_clean
+
+  rendered_mh = ba.interleave_helper.join_prose_segments(["प्रथमं वाक्यम्।", "द्वितीयं वाक्यम्।"])
+  assert rendered_mh == "प्रथमं वाक्यम्।  \nद्वितीयं वाक्यम्।"

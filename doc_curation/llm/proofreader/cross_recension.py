@@ -25,7 +25,7 @@ from .interleave_aligner import (
   _ITI_RE,
   align_commentary_segments,
 )
-from .interleave_helper import parse_markdown_clusters, split_quote_safe_segments
+from .interleave_helper import join_prose_segments, parse_markdown_clusters, split_quote_safe_segments
 
 _TRAILING_ORD_RE = regex.compile(
   r"^(?:प्रथमा|द्वितीया|तृतीया|चतुर्थी|पञ्चमी|षष्ठी|सप्तमी|अष्टमी|नवमी|दशमी|"
@@ -400,15 +400,15 @@ def _format_cluster(
   if pre.strip():
     parts.append(pre.strip())
   if avatarika:
-    parts.append("<details><summary>महीधरः - अवतारिका</summary>\n\n" + "\n\n".join(avatarika) + "\n</details>")
+    parts.append("<details><summary>महीधरः - अवतारिका</summary>\n\n" + join_prose_segments(avatarika) + "\n</details>")
   if viniyoga:
-    parts.append("<details><summary>महीधरः - विनियोगः</summary>\n\n" + "\n\n".join(viniyoga) + "\n</details>")
+    parts.append("<details><summary>महीधरः - विनियोगः</summary>\n\n" + join_prose_segments(viniyoga) + "\n</details>")
   parts.append(f"<details open><summary>विश्वास-प्रस्तुतिः</summary>\n\n{vp.strip()}\n</details>")
   parts.append(f"<details><summary>मूलम्</summary>\n\n{mula.strip()}\n</details>")
   if post.strip():
     parts.append(post.strip())
   if tika:
-    parts.append("<details><summary>महीधरः - टीका</summary>\n\n" + "\n\n".join(tika) + "\n</details>")
+    parts.append("<details><summary>महीधरः - टीका</summary>\n\n" + join_prose_segments(tika) + "\n</details>")
   return "\n\n".join(parts)
 
 

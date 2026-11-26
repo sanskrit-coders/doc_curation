@@ -481,6 +481,16 @@ def test_forward_avatarika_context_anandabodha_clean_and_split_wf(tmp_path):
   assert "निघ॰ ३.४। १०।" in pw_txt
   assert "पा० १.१।" in pw_txt  # skipped prefilled js_include div!
 
+  long_para = "  \n".join(f"वाक्यम् {i}।" for i in range(10))
+  sp_chunks = prose_clean.split_text_for_llm(long_para, max_chars=45)
+  assert len(sp_chunks) >= 2 and all("\n\n" not in c for c in sp_chunks)
+
+  rel = prose_clean._collapse_relapsed_single_sentence_breaks("[[श्रुतेः|श्रुतेः।]]\n\nतत्र।")
+  assert rel == "[[श्रुतेः|श्रुतेः।]]  \nतत्र।"
+  pp = prose_clean._postprocess_proofread_output("’ क", "[[’ |]]क |।")
+  assert pp == "क ।", f"unexpected pp={pp!r}"
+  assert prose_clean._postprocess_proofread_output("अत्र।", "[[अत्र।|तत्र।]]") == "[[अत्र।|तत्र।]]"
+
 
 
 

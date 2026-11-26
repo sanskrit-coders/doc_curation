@@ -187,20 +187,7 @@ def pratika_overlap_score(comm: str, mula: str) -> float:
   return hits / len(targets)
 
 
-def join_prose_segments(segments: list[str] | tuple[str, ...]) -> str:
-  """Join prose segments using Markdown soft breaks (`  \\n`) after punctuation or spaces mid-sentence."""
-  out: list[str] = []
-  for seg in segments:
-    s = seg.strip()
-    if not s:
-      continue
-    if not out:
-      out.append(s)
-    elif regex.search(r"[।॥?!'’”\)]$", out[-1]):
-      out.append(f"  \n{s}")
-    else:
-      out.append(f" {s}")
-  return "".join(out)
+join_prose_segments = interleave_helper.join_prose_segments
 
 
 def clean_commentary_boilerplate(text: str, *, keep_vedadipa_colophon: bool = True) -> str:
@@ -516,7 +503,7 @@ def parse_wikisource_bhashya_dir(
         if body:
           target = u_out if cur_auth == "उ" else m_out
           target[(ch, cur_v)] = (
-            f"{target[(ch, cur_v)]}\n\n{body}".strip() if (ch, cur_v) in target else body
+            join_prose_segments([target[(ch, cur_v)], body]) if (ch, cur_v) in target else body
           )
       buf = []
 
@@ -654,7 +641,7 @@ def parse_uvatamahidharau_dir(
         if body:
           target = u_out if cur_auth == "उ" else m_out
           target[(ch, cur_v)] = (
-            f"{target[(ch, cur_v)]}\n\n{body}".strip() if (ch, cur_v) in target else body
+            join_prose_segments([target[(ch, cur_v)], body]) if (ch, cur_v) in target else body
           )
       buf = []
 
