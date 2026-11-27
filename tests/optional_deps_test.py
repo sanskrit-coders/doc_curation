@@ -71,9 +71,10 @@ def test_imports_work_without_optional_deps():
 
 
 def test_ci_installs_test_only_deps():
-  # The mail_stream tests import selenium and lxml directly, but those stay
-  # out of requirements.txt (extras only); the CI pytest step must install
-  # them explicitly instead of relying on transitive deps.
+  # The mail_stream tests import selenium and lxml directly, and the (mocked)
+  # vsk_bhashya proofreading test imports google.genai, but those stay out of
+  # requirements.txt (extras only); the CI pytest step must install them
+  # explicitly instead of relying on transitive deps.
   workflow = Path(__file__).resolve().parent.parent / ".github/workflows/pythonpackage.yml"
   test_step = workflow.read_text().split("Test with pytest", 1)[1]
-  assert "selenium" in test_step and "lxml" in test_step
+  assert "selenium" in test_step and "lxml" in test_step and "google-genai" in test_step

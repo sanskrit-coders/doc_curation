@@ -16,7 +16,7 @@ from doc_curation.sanskrit.accent import (
   run_solver_corpus_pass,
   verify_and_apply_adjudications,
 )
-from doc_curation.sanskrit.accent.shatapatha_solver import default_data_available
+from doc_curation.sanskrit.accent.shatapatha_solver import default_data_available, vidyut_kosha_available
 
 PILOT_SB_ROOT = Path(
   "/home/vvasuki/gitland/vishvAsa/vedAH_yajuH/content/vAjasaneyam/mAdhyandinam/shatapatha-brAhmaNam/sarva-prastutiH"
@@ -26,6 +26,10 @@ PILOT_01_01_1 = PILOT_SB_ROOT / "01/01/1.md"
 needs_local_data = pytest.mark.skipif(
   not default_data_available(),
   reason="indic-dict padasvara lexica / VS corpus not installed locally",
+)
+needs_vidyut_kosha = pytest.mark.skipif(
+  not vidyut_kosha_available(),
+  reason="vidyut.kosha FST data not installed locally",
 )
 
 
@@ -965,6 +969,8 @@ title = "12.1.1"
     assert any(f.kind == "zero_corpus_count" for f in aud_bad.failures)
 
 
+@needs_local_data
+@needs_vidyut_kosha
 def test_kanva_single_witness_bootstrap_and_sbm_tags(tmp_path):
   """Single-witness Kāṇva files (मूलम् + C R Swaminathan) solve, insert open VP, collapse मूलम्, and pass audit."""
   from doc_curation.sanskrit.accent import VedicCorpusCounter, annotate_padapatha_markdown_counts, word_to_key_and_marks
@@ -1041,6 +1047,8 @@ He collects those waters.
   assert "*SB-K*-9" in enriched_with_k
 
 
+@needs_local_data
+@needs_vidyut_kosha
 def test_kanva_orthography_quirks_and_unaccented_yantra(tmp_path):
   """Kāṇva ꣳ/:/ZWJ/line-wrap quirks normalize cleanly and unaccented blocks verify via (यन्त्र-स्वरः)."""
   from doc_curation.sanskrit.accent import (

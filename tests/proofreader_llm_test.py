@@ -2,6 +2,9 @@
 import json
 import random
 
+import pytest
+
+from doc_curation.sanskrit.hyphenator.neural_slp1 import is_neural_hyphenator_available
 from doc_curation.llm.proofreader import (
   DEFAULT_LOCAL_ADAPTER_DIR,
   INTERLEAVER_SYSTEM_PROMPT,
@@ -645,6 +648,15 @@ def test_block_splitter_kanvam_regressions():
   assert out31.count("<summary>मूलम्</summary>") == 1
 
 
+# The distilled ONNX model is git-ignored and only exists on machines that
+# trained/fetched it (a clean CI checkout has no local model file).
+needs_hyphenator_model = pytest.mark.skipif(
+  not is_neural_hyphenator_available(),
+  reason="local ONNX hyphenator model / onnxruntime not installed",
+)
+
+
+@needs_hyphenator_model
 def test_clause_newline_guards_kanvam():
   from doc_curation.sanskrit.hyphenator.neural_slp1 import predict_slp1_probs
   from doc_curation.sanskrit.hyphenator.slp1_codec import apply_slp1_predictions_to_paragraph

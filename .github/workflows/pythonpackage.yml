@@ -58,8 +58,9 @@ jobs:
     - name: Test with pytest
       run: |
         # Test-only deps (stay out of requirements.txt): the mail_stream tests
-        # import selenium and lxml directly, and ks_ms/paippalada tests import chandas.
-        pip install pytest lxml selenium "chandas @ git+https://github.com/sanskrit-coders/chandas.git"
+        # import selenium and lxml directly, ks_ms/paippalada tests import chandas,
+        # and the (mocked) vsk_bhashya proofreading test imports google.genai.
+        pip install pytest lxml selenium google-genai "chandas @ git+https://github.com/sanskrit-coders/chandas.git"
         pytest
     - name: Upload package
       if: ${{ github.event_name != 'pull_request'}}

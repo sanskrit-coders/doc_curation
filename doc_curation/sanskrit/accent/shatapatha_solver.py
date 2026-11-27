@@ -158,6 +158,23 @@ def default_data_available(
   )
 
 
+def vidyut_kosha_available(kosha_path: str = DEFAULT_VIDYUT_KOSHA) -> bool:
+  """Whether the ``vidyut.kosha`` FST data is installed and importable.
+
+  Tests asserting on kosha-backed morphology skip when this is ``False``
+  (a clean CI checkout has neither the ``vidyut`` package nor its data).
+  This check is deliberately cheap (no FST load); use
+  :func:`get_vidyut_kosha` when the loaded kosha itself is needed.
+  """
+  if not os.path.isdir(kosha_path):
+    return False
+  try:
+    import vidyut.kosha  # noqa: F401
+  except Exception:
+    return False
+  return True
+
+
 SCHEME = sanscript.SCHEMES[sanscript.DEVANAGARI]
 
 # Canonical upasargas (SLP1 -> Devanagari, and Devanagari -> accented US form)

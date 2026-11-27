@@ -6,7 +6,7 @@ import os
 import pytest
 
 from doc_curation.sanskrit.accent.provenance import VedicCorpusCounter
-from doc_curation.sanskrit.accent.shatapatha_solver import UnifiedVedicLexicon
+from doc_curation.sanskrit.accent.shatapatha_solver import UnifiedVedicLexicon, default_data_available
 from doc_curation_projects.veda.yajuH.ks_ms.padapatha_builder import (
   build_block_padapatha_full,
   render_anuvaka_markdown,
@@ -31,6 +31,15 @@ from doc_curation_projects.veda.yajuH.ks_ms.splitter import (
   classify_is_brahmana,
   split_ks_anuvaka,
   split_ms_anuvaka,
+)
+
+
+# Tests below asserting on corpus-derived splits/counts need the local Vedic
+# checkouts (a clean CI checkout has no local Sanskrit data); other tests in
+# this file keep running in CI.
+needs_ks_ms_data = pytest.mark.skipif(
+  not (default_data_available() and os.path.isdir(DEFAULT_KS_SCHROEDER_ROOT)),
+  reason="indic-dict padasvara lexica / vishvAsa KS-MS corpus not installed locally",
 )
 
 
@@ -61,6 +70,7 @@ def _make_ms_anu(kanda: str, prap: str, num: int, raw_lines: list[str]) -> MsAnu
   )
 
 
+@needs_ks_ms_data
 def test_ms_1_1_1_and_1_1_2_viniyoga_splits_and_rk_merging(shared_resources):
   idx, lex, counter = shared_resources
   anu1 = _make_ms_anu("1", "01", 1, [
@@ -132,6 +142,7 @@ def test_ms_brahmana_correlatives_and_quotes(shared_resources):
   assert any("च᳓क्षुर् आदा᳓याजुहोत्" in b.vp_text and "इ᳓ति" in b.vp_text for b in blks)
 
 
+@needs_ks_ms_data
 def test_ks_schroeder_ocr_repair_fused_splits_and_apparatus(shared_resources):
   idx, lex, counter = shared_resources
   p1 = os.path.join(DEFAULT_KS_SCHROEDER_ROOT, "1_iThimikA", "01_puroDAshasthAnakam", "01.md")
@@ -172,6 +183,7 @@ def test_ks_schroeder_ocr_repair_fused_splits_and_apparatus(shared_resources):
   assert "*MS*-" in md1     # Sister-śākhā MS counts present!
 
 
+@needs_ks_ms_data
 def test_ks_unaccented_ta_mode_yantra_svara(shared_resources):
   idx, lex, counter = shared_resources
   p5 = os.path.join(DEFAULT_KS_SCHROEDER_ROOT, "1_iThimikA", "05_yajamAnam", "01.md")
@@ -189,6 +201,7 @@ def test_ks_unaccented_ta_mode_yantra_svara(shared_resources):
   assert validate_rendered_markdown(md5) == []
 
 
+@needs_ks_ms_data
 def test_ks_ashvamedha_svaha_litany_lossless(shared_resources):
   idx, lex, counter = shared_resources
   p10 = os.path.join(DEFAULT_KS_SCHROEDER_ROOT, "5_ashvamedhaH", "01_panthAnuvachanam", "10.md")
@@ -203,6 +216,7 @@ def test_ks_ashvamedha_svaha_litany_lossless(shared_resources):
   assert validate_rendered_markdown(md10) == []
 
 
+@needs_ks_ms_data
 def test_ms_2_07_savitra_yv_rks_and_2_01_duplicate_heading_lossless(shared_resources, tmp_path):
   idx, lex, counter = shared_resources
   # Test duplicate-heading merging (mirroring MS 2/01 `## 2 -> ## 3 (stray) -> ## 2 -> ## 3`)
@@ -229,6 +243,7 @@ def test_ms_2_07_savitra_yv_rks_and_2_01_duplicate_heading_lossless(shared_resou
   assert blks[1].is_rk and "युक्ते᳓न" in blks[1].vp_text and "श᳓क्तये" in blks[1].vp_text
 
 
+@needs_ks_ms_data
 def test_ks_katha_svarita_litanies_brahmana_and_ms_whole_rk_rescue(shared_resources):
   idx, lex, counter = shared_resources
 

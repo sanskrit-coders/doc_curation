@@ -5,11 +5,13 @@ from __future__ import annotations
 import pytest
 
 from doc_curation.sanskrit.accent import taittiriya_padapatha as tp
-from doc_curation.sanskrit.accent.shatapatha_solver import UnifiedVedicLexicon
+from doc_curation.sanskrit.accent.shatapatha_solver import UnifiedVedicLexicon, default_data_available
 
 
 @pytest.fixture(scope="module")
 def lex() -> UnifiedVedicLexicon:
+  if not default_data_available():
+    pytest.skip("indic-dict padasvara lexica / VS corpus not installed locally")
   return UnifiedVedicLexicon.load_or_build(include_sb_m=True, force_rebuild=False)
 
 

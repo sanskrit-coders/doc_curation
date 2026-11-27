@@ -3,6 +3,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+from doc_curation.sanskrit.accent.shatapatha_solver import default_data_available
 from doc_curation_projects.veda.atharva.paippalaadam.dedup import (
   _self_repeat_key,
   run_paippalada_dedup,
@@ -31,6 +34,13 @@ from doc_curation_projects.veda.dedup.matcher import (
 )
 from doc_curation_projects.veda.dedup.targets import VedaCorpusSpec, load_corpus_specs
 from doc_curation_projects.veda.yajuH.vaajasaneyi.dedup.norm import normalize_phonetic
+
+# Solver tests below assert on corpus-derived accents/counts and need the local
+# Vedic checkouts (a clean CI checkout has no local Sanskrit data).
+needs_local_data = pytest.mark.skipif(
+  not default_data_available(),
+  reason="indic-dict padasvara lexica / VS corpus not installed locally",
+)
 
 
 def test_contract_gretil_line_hyphens_and_typos():
@@ -435,6 +445,7 @@ def test_dedup_paippalada_cross_and_self_repeat_isolated(tmp_path, monkeypatch):
   assert _self_repeat_key("हिरण्यवर्णा इति चतस्रः ॥") is None
 
 
+@needs_local_data
 def test_solve_avp_mantra_manual_bold_lacuna_and_parallel():
   from doc_curation.sanskrit.accent.provenance import VedicCorpusCounter
   from doc_curation.sanskrit.accent.shatapatha_solver import UnifiedVedicLexicon
@@ -611,6 +622,7 @@ def test_run_paippalada_padapatha_and_accent_isolated(tmp_path):
   assert "पु᳓नर् नᳶ पित᳓रो म᳓नो" in man_vp.read_text(encoding="utf-8")
 
 
+@needs_local_data
 def test_avp_step4_repairs_ote_enclitics_verbs_and_par_map():
   from doc_curation.sanskrit.accent import validator
   from doc_curation.sanskrit.accent.provenance import VedicCorpusCounter

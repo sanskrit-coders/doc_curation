@@ -1,3 +1,6 @@
+import pytest
+
+from doc_curation.sanskrit.accent.shatapatha_solver import vidyut_kosha_available
 from doc_curation.sanskrit.accent.validator import (
   check_padapatha_header,
   find_bad_gati_kta_purvapadas,
@@ -600,6 +603,10 @@ def test_vp_integrity_catches_bolding_splits_and_quadruple_stars():
   assert any("malformed_bold_stars" in i for i in find_vp_integrity_issues("त᳓तो नो ****अ᳓भयं कृधि** ।"))
 
 
+@pytest.mark.skipif(
+  not vidyut_kosha_available(),
+  reason="vidyut.kosha FST data not installed locally",
+)
 def test_tinanta_homograph_and_tas_adverbs_guards():
   from doc_curation.sanskrit.accent.validator import find_tinanta_sutra_on_non_tinanta
 
