@@ -316,9 +316,9 @@ def test_auditor_guards_kan_amredita_and_yad_clause_8128():
 
   good_md = """<details><summary>मूलम्</summary>
 
-धेनुका मा मा आपम् आपाम् यावत् वा यावत् नमः यद् भवति तद् एति ।
+धेनुका मा मा आपम् आपाम् यावत् वा यावत् नमः यद् भवति तद् एति यदि कामयेत जुहुयात् यत्किञ्चित् विद्धि याः ताः मुञ्चति ।
 </details>
-<details><summary>पद-पाठः (यान्त्रिकः - 3/10 व्यत्यस्त-स्वराः)</summary>
+<details><summary>पद-पाठः (यान्त्रिकः - 5/22 व्यत्यस्त-स्वराः)</summary>
 
 - धेनुका᳓ (स्वार्थे कः पा॰ ५.३.७०, प्रत्ययस्वरः पा॰ ३.१.३)
 - मा᳓ (*TS*-10)
@@ -333,6 +333,16 @@ def test_auditor_guards_kan_amredita_and_yad_clause_8128():
 - भ᳓वति (यद्वृत्तान्नित्यम्, पा॰ ८.१.६६)
 - त᳓त् (*TS*-10)
 - ए᳓ति → **एति** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+- य᳓दि (*TS*-10)
+- काम᳓येत (निपातैर्यद्यदि... पा॰ ८.१.३०)
+- जुहुया᳓त् → **जुहुयात्** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+- य᳓त् (*TS*-10)
+- कि᳓म् (*TS*-10)
+- चि᳓त् (*TS*-10)
+- वि᳓द्धि → **विद्धि** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+- याः᳓ (*TS*-10)
+- ताः᳓ (*TS*-10)
+- मुञ्च᳓ति → **मुञ्चति** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
 </details>
 """
   good_findings, _ = audit_padapatha_markdown(good_md, path="good_guards.md", include_validator_issues=False)
@@ -362,3 +372,59 @@ def test_auditor_vp_line_boundary_and_concat_compound_guards():
   cats = {f.category for f in findings}
   assert "non_initial_61198_vocative" not in cats
   assert "false_compound_candidate" not in cats
+
+
+def test_auditor_guards_lut_8129_8156_57_8173_62116_61182():
+  bad_md = """<details><summary>मूलम्</summary>
+
+कर्ता पचति चित् पचति अग्ने गृहपते अमृतः गवा ब्रह्मबन्ध्वा ।
+</details>
+<details><summary>पद-पाठः (यान्त्रिकः - 6/9 व्यत्यस्त-स्वराः)</summary>
+
+- कर्ता᳓ → **कर्ता** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+- प᳓चति → **पचति** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+- चित् (*TS*-10)
+- प᳓चति (यद्धितुपरं छन्दसि पा॰ ८.१.५६)
+- अ᳓ग्ने (पादादिः आमन्त्रितम् आद्युदात्तम्, पा॰ ६.१.१९८)
+- गृ᳓हपते → **गृहपते** (आमन्त्रितं पूर्वमविद्यमानवत् पा॰ ८.१.७२)
+- अ-मृ᳓तः → **अ-मृतः᳓** (नञ्सुभ्याम् पा॰ ६.२.१७२)
+- ग᳓वा → **गवा᳓** (सावेकाचस्तृतीयादिर्विभक्तिः पा॰ ६.१.१६८)
+- ब्र᳓ह्मबन्ध्वा → **ब्रह्मबन्ध्वा᳓** (उदात्तयणो हल्पूर्वात् पा॰ ६.१.१७४)
+</details>
+"""
+  bad_findings, _ = audit_padapatha_markdown(bad_md, path="bad_padasvara.md", include_validator_issues=False)
+  anti = [f for f in bad_findings if f.category == "known_false_svara_antipattern"]
+  assert any("८.१.२९" in f.detail and "कर्ता" in f.line for f in anti)
+  assert any("८.१.५७" in f.detail and "पचति" in f.line for f in anti)
+  assert any("८.१.५६" in f.detail and "प᳓चति" in f.line for f in anti)
+  assert any("८.१.७३" in f.detail and "गृहपते" in f.line for f in anti)
+  assert any("६.२.११६" in f.detail and "अ-मृतः᳓" in f.line for f in anti)
+  assert any("६.१.१८२" in f.detail and "गवा᳓" in f.line for f in anti)
+  assert any("६.१.१७५" in f.detail and "ब्रह्मबन्ध्वा᳓" in f.line for f in anti)
+
+  good_md = """<details><summary>मूलम्</summary>
+
+श्वः कर्ता । उदसृजो यद् अङ्गिरः । पचति चित् ।
+अग्ने इन्द्र ।
+अग्ने गृहपते अमृतः गवा ब्रह्मबन्ध्वा ।
+</details>
+<details><summary>पद-पाठः (यान्त्रिकः)</summary>
+
+- श्वः᳓ (*TS*-10)
+- कर्ता᳓ (न लुट् पा॰ ८.१.२९, *TS*-10)
+- उद᳓सृजः (यद्धितुपरं छन्दसि पा॰ ८.१.५६, *RV*-1)
+- य᳓त् (*TS*-10)
+- अङ्गिरः (अपादादिः आमन्त्रितम् अनुदात्तम्, पा॰ ८.१.१९)
+- प᳓चति (चनचिदिवगोत्रादितद्धिताम्रेडितेष्वगतेः पा॰ ८.१.५७)
+- चित् (*TS*-10)
+- अ᳓ग्ने (पादादिः आमन्त्रितम् आद्युदात्तम्, पा॰ ६.१.१९८)
+- इ᳓न्द्र (आमन्त्रितं पूर्वमविद्यमानवत् पा॰ ८.१.७२, पा॰ ६.१.१९८)
+- अ᳓ग्ने (पादादिः आमन्त्रितम् आद्युदात्तम्, पा॰ ६.१.१९८)
+- गृहपते (नामन्त्रिते समानाधिकरणे सामान्यवचनम् पा॰ ८.१.७३, पा॰ ८.१.१९)
+- अ-मृ᳓तः (नञो जरमरमित्रमृताः पा॰ ६.२.११६, *TS*-10)
+- ग᳓वा (न गोश्वन्त्साववर्णराडङ्क्रुङ्कृद्भ्यः पा॰ ६.१.१८२, *TS*-10)
+- ब्रह्मबन्ध्वा᳙ (नोङ्धात्वोः पा॰ ६.१.१७५, पा॰ ८.२.४)
+</details>
+"""
+  good_findings, _ = audit_padapatha_markdown(good_md, path="good_padasvara.md", include_validator_issues=False)
+  assert not [f for f in good_findings if f.category in ("known_false_svara_antipattern", "non_initial_61198_vocative")]

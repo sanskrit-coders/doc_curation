@@ -1902,8 +1902,17 @@ class UnifiedVedicLexicon:
           src_set.update(srcs.keys())
           if word_hyph and not old_h:
             results[proj] = (src_set, word_hyph)
-        # Weak-case oxytonic shift for consonant/monosyllabic stems (पा॰ ६.१.१६८ / ६.१.१७१)
-        if acc_idx == n_st - 1 and n_w > n_st and (st_slp[-1] not in "aA" or n_st == 1):
+        # Weak-case oxytonic shift for consonant/monosyllabic stems (पा॰ ६.१.१६८ / ६.१.१७१),
+        # blocked for सर्वनामस्थान (`-अम्`/`-औ`) and पा॰ ६.१.१८२ (`गो`, `श्वन्`, `राज्`, `क्रुञ्च्`, `-अञ्च्`, pronouns).
+        _blocked_61182 = ("go", "Svan", "rAj", "rAjan", "kruYc", "yad", "tad", "kim", "etad")
+        if (
+          acc_idx == n_st - 1
+          and n_w > n_st
+          and (st_slp[-1] not in "aA" or n_st == 1)
+          and st_slp not in _blocked_61182
+          and not st_slp.endswith(("aYc", "ac", "rAj"))
+          and not slp.endswith(("am", "O"))
+        ):
           proj_end = tuple("U" if i == n_w - 1 else "" for i in range(n_w))
           src_set, old_h = results.setdefault(proj_end, (set(), word_hyph))
           src_set.update(srcs.keys())
@@ -3681,7 +3690,7 @@ def _derive_paninian_tinanta_accent(
       if n_syl >= 2 and slp.endswith(("et", "eyuH", "eta", "eran", "eH", "em", "ema")):
         _add(n_syl - 2, "णिच् पा॰ ३.१.३")
       continue
-    # 4. Future `स्य` (पा॰ ३.१.३३, पा॰ ३.१.३)
+    # 4. Future `स्य` (पा॰ ३.१.३३, पा॰ ३.१.३) & periphrastic `लुट्` (`न लुट्` पा॰ ८.१.२९, `तासि` पा॰ ३.१.३, पा॰ ६.१.१८६)
     if lak == "lf~w":
       if ks is None:
         ks, _ = syllables_with_marks(bare)
@@ -3689,6 +3698,12 @@ def _derive_paninian_tinanta_accent(
         if "स" in ks[idx][0] or "य" in ks[idx][0]:
           _add(idx, "स्यतासी पा॰ ३.१.३३, पा॰ ३.१.३")
           break
+      continue
+    if lak == "lu~w":
+      if slp.endswith(("tA", "tAsmi", "tAsvaH", "tAsmaH", "tAsi", "tAsTaH", "tAsTa", "tArO", "tAraH", "tAhe", "tAse", "tADve")):
+        t_idx = n_syl - 1 if slp.endswith("tA") else max(0, n_syl - 2)
+        mks = tuple("U" if i == t_idx else "" for i in range(n_syl))
+        out.setdefault(mks, "न लुट् पा॰ ८.१.२९, तासि पा॰ ३.१.३, पा॰ ६.१.१८६")
       continue
     # 5. Athematic optative `-यात्` (पा॰ ३.४.१०३ यासुट् परस्मैपदेषूदात्तो ङिच्च)
     if lak == "viDili~N" and slp.endswith(("yAt", "yAtAm", "yuH", "yAH", "yAm", "yAma")):
@@ -3779,11 +3794,22 @@ def _derive_paninian_krdanta_and_compound_accents(
       # Unprefixed `क्त` participle (`गृहीत᳓म्`): प्रत्ययस्वर पा॰ ३.१.३ on stem-final syllable
       end_idx = _stem_final_syl_idx(bare, n_syl)
       out.setdefault(tuple("U" if i == end_idx else "" for i in range(n_syl)), "क्तः प्रत्ययस्वरः पा॰ ३.१.३")
-    elif "tfc" in krt or "tfn" in krt:
-      # तृच् (`अपहन्ता᳓रम्`): प्रत्ययस्वर पा॰ ३.१.३ on `-तृ-/-तार्-` syllable
-      if n_syl >= 2:
+    elif "tfn" in krt:
+      # तृन् = नित् (पा॰ ६.१.१९७ आद्युदात्तम्, e.g. `दा᳓ता`)
+      out.setdefault(tuple("U" if i == 0 else "" for i in range(n_syl)), "तृन् नित् आद्युदात्तम् पा॰ ६.१.१९७")
+    elif "tfc" in krt:
+      # तृच् (`अपहन्ता᳓रम्`): पा॰ ३.१.३ on `-तृ-/-तार्-`; vowel/ङीप् weak endings (`कर्त्री᳓`, `कर्त्रा᳓`, `प्रसवित्रा᳓`) take पा॰ ६.१.१७४ उदात्तयणो हल्पूर्वात्
+      if slp.endswith(("trIBiH", "trIByaH", "trIRAm")) and n_syl >= 2:
+        out.setdefault(tuple("U" if i == n_syl - 2 else "" for i in range(n_syl)), "उदात्तयणो हल्पूर्वात् पा॰ ६.१.१७४")
+      elif slp.endswith(("trA", "tre", "traH", "tri", "trI", "tryA", "tryE", "tryAH", "tryAm", "trIm", "tryoH")) and n_syl >= 2:
+        out.setdefault(tuple("U" if i == n_syl - 1 else "" for i in range(n_syl)), "उदात्तयणो हल्पूर्वात् पा॰ ६.१.१७४")
+      elif n_syl >= 2:
         t_idx = n_syl - 2 if slp.endswith(("tAram", "tAraH", "tArO", "tfBiH", "tfByaH", "tFRAm")) else n_syl - 1
         out.setdefault(tuple("U" if i == t_idx else "" for i in range(n_syl)), "तृच् प्रत्ययस्वरः पा॰ ३.१.३")
+    elif "Satf" in krt and k["gana"] not in ("BvAdi", "divAdi") and "nt" not in slp and slp.endswith(("tI", "tIm", "tyA", "tyE", "tyAH", "tyAm", "tInAm", "tA", "te", "taH", "ti", "toH")):
+      # Non-नुम् अन्तोदात्त शतृ before नदी/vowel weak endings (`तुदती᳓`, `तुदता᳓`, `प्र-मृशतः᳓`): पा॰ ६.१.१७३ शतुरनुमो नद्यजादी
+      idx = n_syl - 2 if slp.endswith("tInAm") else n_syl - 1
+      out.setdefault(tuple("U" if i == idx else "" for i in range(n_syl)), "शतुरनुमो नद्यजादी पा॰ ६.१.१७३")
     elif ("SAnac" in krt or "Satf" in krt) and not k["prefixes"] and not k["sanadi"] and k["gana"] in ("BvAdi", "divAdi") and k["prayoga"] == "kartari":
       # Active present participle of bhvādi/divādi (`श्रा᳓म्यन्तः`, `दी᳓प्यमानः`): root udātta पा॰ ३.१.४ / ३.१.६९ / ६.१.१९७
       rule = "दिवादिभ्यः श्यन् पा॰ ३.१.६९, पा॰ ६.१.१९७" if k["gana"] == "divAdi" else "शतृ पा॰ ३.१.४ / ६.१.१९७"
@@ -3817,16 +3843,23 @@ def _derive_paninian_krdanta_and_compound_accents(
   if slp.endswith(("IyAMsaH", "IyAMsam", "IyasaH", "IyasA", "IyasI", "IyAn")) and n_syl >= 3:
     out.setdefault(tuple("U" if i == 0 else "" for i in range(n_syl)), "ईयसुन् नित् आद्युदात्तम् पा॰ ६.१.१९७")
 
+  # 1d. बृहन्महतोरुपसंख्यानम् (वा॰ on पा॰ ६.१.१७३): `बृहते᳓`, `महते᳓`, `बृहतः᳓`, `महतः᳓` (never `नुम्` `महान्त*`/`बृहन्त*`)
+  if re.fullmatch(r"(?:बृह|मह)(?:ता|ते|तः|ति|ती|तीम्|त्या|त्यै|त्याः|त्याम्)", bare) and n_syl >= 2:
+    out.setdefault(tuple("U" if i == n_syl - 1 else "" for i in range(n_syl)), "शतुरनुमो नद्यजादी पा॰ ६.१.१७३, बृहन्महतोरुपसंख्यानम् वा॰")
+
   # 2. Hyphenated compound rules (`p0 - p1 ...`)
   if "-" in pada_deva:
     parts = [p for p in pada_deva.split("-") if p]
     if len(parts) >= 2:
       p0, p_rest = parts[0], "-".join(parts[1:])
       n0 = _fast_syllable_count(p0)
-      # (a) नञ् compound (`अ-`, `अन्-`): पा॰ ६.२.२ (ādyudātta) vs पा॰ ६.२.१७२ (bahuvrīhi antodātta)
+      # (a) नञ् compound (`अ-`, `अन्-`): पा॰ ६.२.२ (ādyudātta), पा॰ ६.२.११६ (`जर/मर/मित्र/मृत`), vs पा॰ ६.२.१७२ (antodātta)
       if p0 in ("अ", "अन्"):
         mks_init = tuple("U" if i == 0 else "" for i in range(n_syl))
         out.setdefault(mks_init, "नञ्तत्पुरुषे पूर्वपदप्रकृतिस्वरः पा॰ ६.२.२")
+        if p0 == "अ" and p_rest.startswith(("जर", "मर", "मित्र", "मृत")) and n0 < n_syl:
+          mks_62116 = tuple("U" if i == n0 else "" for i in range(n_syl))
+          out.setdefault(mks_62116, "नञो जरमरमित्रमृताः पा॰ ६.२.११६")
         end_idx = _stem_final_syl_idx(bare, n_syl)
         mks_end = tuple("U" if i == end_idx else "" for i in range(n_syl))
         out.setdefault(mks_end, "नञ्सुभ्याम् पा॰ ६.२.१७२")
@@ -3993,12 +4026,27 @@ def _detect_clause_contexts(
         and bare.endswith(("ति", "ते", "न्ति", "न्ते", "मि", "सि", "यात्", "येत्", "ईत्", "ध्वे", "ताम्", "न्तु", "स्यति", "स्यते"))
       )
     )
-    eff_in_sub = in_sub or (is_verb_like and nxt_bare == "हि")
-    eff_sub_rule = ("हि च पा॰ ८.१.३४" if (not in_sub and is_verb_like and nxt_bare == "हि") else (sub_rule or "यद्वृत्तान्नित्यम् पा॰ ८.१.६६"))
+    post_8156 = is_verb_like and nxt_bare in ("यत्", "यद्", "तु")
+    post_8157 = is_verb_like and nxt_bare in ("चन", "चित्", "इव") and prev_bare not in UPASARGA_DEVA_SET
+    after_initial_voc = (
+      i > 0
+      and bool(ctx[-1].get("is_clause_start"))
+      and _can_be_vocative(prev_bare, lex.analyze_morph(prev_bare))
+    )
+    eff_in_sub = in_sub or (is_verb_like and nxt_bare == "हि") or post_8157
+    if not in_sub and is_verb_like and nxt_bare == "हि":
+      eff_sub_rule = "हि च पा॰ ८.१.३४"
+    elif not in_sub and post_8157:
+      eff_sub_rule = "चनचिदिवगोत्रादितद्धिताम्रेडितेष्वगतेः पा॰ ८.१.५७"
+    else:
+      eff_sub_rule = sub_rule or "यद्वृत्तान्नित्यम् पा॰ ८.१.६६"
     ctx.append({
       "is_clause_start": is_start,
       "in_subordinate": eff_in_sub,
       "sub_rule": eff_sub_rule,
+      "post_8156": post_8156,
+      "post_8157": post_8157,
+      "after_initial_voc": after_initial_voc,
       "is_amredita": is_amredita,
       "seen_verb_in_sub": in_sub and is_verb_like,
     })
@@ -4137,6 +4185,7 @@ def generate_pada_candidates(
     or bare in _MISSING_VEDIC_TINANTAS_HOMOGRAPHS_DEVA
   )
   if is_tin:
+    has_only_lut = bool(morph["tin_entries"]) and all(t["lakara"] == "lu~w" for t in morph["tin_entries"])
     src_zero = _format_corpus_prov(form_hits.get(zero_marks, {}))
     p_main = f"तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८{', ' + src_zero if src_zero else ''}"
     is_unattested_nominal_homograph = (
@@ -4155,15 +4204,32 @@ def generate_pada_candidates(
         )
       )
     )
-    if ctx["in_subordinate"] or ctx["is_clause_start"]:
-      main_cost = 1.4 if is_unattested_nominal_homograph else 1.2
-    else:
-      main_cost = 0.75 if is_unattested_nominal_homograph else 0.05
-    _add(zero_marks, p_main, "tinanta_main", main_cost)
+    if not has_only_lut:
+      if ctx["in_subordinate"] or ctx["is_clause_start"]:
+        main_cost = 1.4 if is_unattested_nominal_homograph else 1.2
+      else:
+        main_cost = 0.75 if is_unattested_nominal_homograph else 0.05
+      _add(zero_marks, p_main, "tinanta_main", main_cost)
 
     # Accented finite verb candidates (Pāṇinian verb derivation + clean corpus attestations)
-    sub_rule = "वाक्यादिः तिङन्तम्, पा॰ ८.१.१८" if ctx["is_clause_start"] else ctx["sub_rule"]
-    sub_cost_base = 0.05 if (ctx["in_subordinate"] or ctx["is_clause_start"]) else 1.4
+    if has_only_lut:
+      sub_rule = "न लुट् पा॰ ८.१.२९"
+      sub_cost_base = 0.05
+    elif ctx["is_clause_start"]:
+      sub_rule = "वाक्यादिः तिङन्तम्, पा॰ ८.१.१८"
+      sub_cost_base = 0.05
+    elif ctx["in_subordinate"]:
+      sub_rule = ctx["sub_rule"]
+      sub_cost_base = 0.05
+    elif ctx.get("post_8156"):
+      sub_rule = "यद्धितुपरं छन्दसि पा॰ ८.१.५६"
+      sub_cost_base = 0.65
+    elif ctx.get("after_initial_voc"):
+      sub_rule = "आमन्त्रितं पूर्वमविद्यमानवत् पा॰ ८.१.७२"
+      sub_cost_base = 1.0
+    else:
+      sub_rule = ctx["sub_rule"]
+      sub_cost_base = 1.4
     pan_verb_cands = _derive_paninian_tinanta_accent(bare, morph, sub_rule=sub_rule)
     pan_verb_marks = {mks for mks, _ in pan_verb_cands}
 
@@ -4241,9 +4307,14 @@ def generate_pada_candidates(
     z_srcs = form_hits[zero_marks]
     if any(k in z_srcs for k in ("SB-M", "SB-K", "TS", "RV", "AV", "TB", "VS-M", "VS-K", "VS")):
       if morph["voc_possible"] and not morph["has_non_voc_subanta"] and not ctx["is_clause_start"]:
+        vn_rule = (
+          "नामन्त्रिते समानाधिकरणे सामान्यवचनम्, पा॰ ८.१.७३, पा॰ ८.१.१९"
+          if ctx.get("after_initial_voc")
+          else "अपादादिः आमन्त्रितम् अनुदात्तम्, पा॰ ८.१.१९"
+        )
         _add(
           zero_marks,
-          f"अपादादिः आमन्त्रितम् अनुदात्तम्, पा॰ ८.१.१९, {_format_corpus_prov(z_srcs)}",
+          f"{vn_rule}, {_format_corpus_prov(z_srcs)}",
           "voc_noninit",
           0.35,
         )
@@ -4261,15 +4332,24 @@ def generate_pada_candidates(
       prior = 0.48 if (prov == "समासस्य पा॰ ६.१.२२३" and pada_deva.startswith(("स-", "स᳓-"))) else 0.45
       _add(mks, prov, "compound", prior)
 
-  # 9. Vocative candidates (`आमन्त्रित`: पा॰ ६.१.१९८ initial vs पा॰ ८.१.१९ non-initial)
+  # 9. Vocative candidates (`आमन्त्रित`: पा॰ ६.१.१९८ initial vs पा॰ ८.१.१९/८.१.७२/८.१.७३ non-initial)
   if _can_be_vocative(bare, morph) and (not is_tin or morph["voc_possible"]):
     voc_init_mks = tuple("U" if i == 0 else "" for i in range(n_syl))
     src_vi = _format_corpus_prov(form_hits.get(voc_init_mks, {}))
-    prov_vi = f"पादादिः आमन्त्रितम् आद्युदात्तम्, पा॰ ६.१.१९८{', ' + src_vi if src_vi else ''}"
-    _add(voc_init_mks, prov_vi, "voc_init", 1.8 if ctx["is_clause_start"] else 8.0)
+    if ctx.get("after_initial_voc") and not ctx["is_clause_start"]:
+      prov_vi = f"आमन्त्रितं पूर्वमविद्यमानवत्, पा॰ ८.१.७२, पा॰ ६.१.१९८{', ' + src_vi if src_vi else ''}"
+      vi_cost = 2.2
+      vn_rule = "नामन्त्रिते समानाधिकरणे सामान्यवचनम्, पा॰ ८.१.७३, पा॰ ८.१.१९"
+      vn_cost = 2.5
+    else:
+      prov_vi = f"पादादिः आमन्त्रितम् आद्युदात्तम्, पा॰ ६.१.१९८{', ' + src_vi if src_vi else ''}"
+      vi_cost = 1.8 if ctx["is_clause_start"] else 8.0
+      vn_rule = "अपादादिः आमन्त्रितम् अनुदात्तम्, पा॰ ८.१.१९"
+      vn_cost = 8.0 if ctx["is_clause_start"] else 4.5
+    _add(voc_init_mks, prov_vi, "voc_init", vi_cost)
     src_vn = _format_corpus_prov(form_hits.get(zero_marks, {}))
-    prov_vn = f"अपादादिः आमन्त्रितम् अनुदात्तम्, पा॰ ८.१.१९{', ' + src_vn if src_vn else ''}"
-    _add(zero_marks, prov_vn, "voc_noninit", 8.0 if ctx["is_clause_start"] else 4.5)
+    prov_vn = f"{vn_rule}{', ' + src_vn if src_vn else ''}"
+    _add(zero_marks, prov_vn, "voc_noninit", vn_cost)
 
   # 10. Āmreḍita (`पा॰ ८.१.३ अनुदात्तं च`)
   if ctx["is_amredita"]:

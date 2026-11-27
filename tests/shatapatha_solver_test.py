@@ -839,3 +839,40 @@ def test_mw_crossref_stubs_and_kta_nominal_homograph_regressions(lex: UnifiedVed
   assert not any("३.१.६७" in prov for _, prov in c_dipy)
   assert top("हिंसीः").ref == "हिंसीः"
   assert "८.१.२८" in top("हिंसीः").prov
+
+  # 6. New Pāṇinian rules mirrored from `pada-svaraH.md`:
+  # (a) पा॰ ८.१.२९ न लुट् (never de-accented by पा॰ ८.१.२८)
+  bhav_cands = ss.generate_pada_candidates("भवितासि", ctx, "", lex)
+  assert bhav_cands and all(c.role != "tinanta_main" for c in bhav_cands)
+  assert any(c.ref == "भविता᳓सि" and "८.१.२९" in c.prov for c in bhav_cands)
+  # (b) पा॰ ८.१.५६ / ८.१.५७ / ८.१.७२ / ८.१.७३ clause contexts
+  ctxs_57 = ss._detect_clause_contexts(["देवदत्तः", "पचति", "चित्"], "देवदत्तः पचति चित्", lex)
+  assert ctxs_57[1]["in_subordinate"] and "८.१.५७" in ctxs_57[1]["sub_rule"]
+  ctxs_56 = ss._detect_clause_contexts(["उदसृजः", "यत्", "अङ्गिरः"], "उदसृजो यदङ्गिरः", lex)
+  assert ctxs_56[0]["post_8156"]
+  ctxs_voc = ss._detect_clause_contexts(["अग्ने", "गृहपते"], "अग्ने गृहपते", lex)
+  assert ctxs_voc[1]["after_initial_voc"]
+  voc2_cands = ss.generate_pada_candidates("गृहपते", ctxs_voc[1], "", lex)
+  assert any("८.१.७२" in c.prov and c.role == "voc_init" for c in voc2_cands)
+  assert any("८.१.७३" in c.prov and c.role == "voc_noninit" for c in voc2_cands)
+  # (c) पा॰ ६.२.११६ नञो जरमरमित्रमृताः
+  c_amr = ss._derive_paninian_krdanta_and_compound_accents("अ-मृतः", lex)
+  assert any(mks == ("", "U", "") and "६.२.११६" in prov for mks, prov in c_amr)
+  # (d) पा॰ ६.१.१७३ / ६.१.१७४ / वा॰ बृहन्महतोरुपसंख्यानम् & पा॰ ६.१.१८२ block on `project_stem_accents`
+  assert any(mks == ("", "", "U") and "६.१.१७३" in prov for mks, prov in ss._derive_paninian_krdanta_and_compound_accents("बृहते", lex))
+  assert any(mks == ("", "", "U") and "६.१.१७३" in prov for mks, prov in ss._derive_paninian_krdanta_and_compound_accents("तुदती", lex))
+  assert any(mks == ("", "U") and "६.१.१७४" in prov for mks, prov in ss._derive_paninian_krdanta_and_compound_accents("कर्त्री", lex))
+  # पा॰ ६.१.१८२ blocks oxytonic shift on `गो`/`श्वन्`, whereas `वाच्` (`६.१.१६८`) shifts on 3rd–7th endings (not `सर्वनामस्थान`).
+  mw_61182 = tmp_path / "mw_61182.babylon"
+  mw_61182.write_text(
+    "गो\nगो॑ m. f. ox, cow, RV.\n\n"
+    "श्वन्\nश्व॑न् m. dog, RV.\n\n"
+    "वाच्\nवा॑च् f. speech, RV.\n",
+    encoding="utf-8",
+  )
+  lex_182 = UnifiedVedicLexicon()
+  lex_182._ingest_mw_babylon(str(mw_61182))
+  assert lex_182.project_stem_accents("गवा") == [(("U", ""), "*MW*", None)]
+  assert lex_182.project_stem_accents("श्वभिः") == [(("U", ""), "*MW*", None)]
+  assert {mks for mks, _, _ in lex_182.project_stem_accents("वाचा")} == {("U", ""), ("", "U")}
+  assert lex_182.project_stem_accents("वाचौ") == [(("U", ""), "*MW*", None)]
