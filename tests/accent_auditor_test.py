@@ -428,3 +428,70 @@ def test_auditor_guards_lut_8129_8156_57_8173_62116_61182():
 """
   good_findings, _ = audit_padapatha_markdown(good_md, path="good_padasvara.md", include_validator_issues=False)
   assert not [f for f in good_findings if f.category in ("known_false_svara_antipattern", "non_initial_61198_vocative")]
+
+
+def test_ekagnikanda_8170_8166_and_vocative_audits():
+  md = """<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+स᳓मा᳓ धावन्तु । अयं᳓ वाम् [[अश्विनौ|अश्वि᳓नौ]] । त᳓त् सत्यं᳓ य᳓द् अहं᳓ ब्र᳓वीम्य् अ᳓धरो म᳓द् असौ᳓ [[वदात्|व᳓दात्]] ।
+</details>
+<details><summary>मूलम्</summary>
+
+सँस्र॑वन्तु॒ म॒हीस्समा धा॑वन्तु । अ॒यं वा॑म॒श्विनौ॒ रथो॒ । तत्स॒त्यं यद॒हं ब्रवी॒म्यध॑रो॒ मद॒सौ व॑दात् ।
+</details>
+<details><summary>पद-पाठः (यान्त्रिकः - 2/11 व्यत्यस्त-स्वराः)</summary>
+
+- स᳓म् (*TS*-13)
+- आ᳓ → **आ** (गतिर्गतौ, पा॰ ८.१.७०)
+- अनु → **अ᳓नु** (गतिर्गतौ पा॰ ८.१.७०, *RV*-475)
+- अय᳓म् (*TS*-92/968)
+- अश्वि᳓नौ (*TS*-21/63)
+- त᳓त् (*TS*-687/4763)
+- य᳓त् (*TS*-1461/3383)
+- ब्र᳓वीमि (यद्वृत्तान्नित्यम् पा॰ ८.१.६६)
+- अ᳓धरः (*TS*-0/10)
+- म᳓त् (*TS*-3/565)
+- वदात् → **व᳓दात्** (यद्वृत्तान्नित्यम्, पा॰ ८.१.६६)
+</details>
+<details><summary>हरदत्तः</summary>
+
+हे अश्विना अश्विनौ अयं रथः ।
+</details>
+"""
+  findings, _ = audit_padapatha_markdown(md, path="ek_regressions.md", include_validator_issues=False)
+  anti = [f for f in findings if f.category == "known_false_svara_antipattern"]
+  voc = [f for f in findings if f.category == "possible_missed_vocative"]
+  assert any("de-accents preceding गति" in f.detail and "आ᳓ → **आ**" in f.line for f in anti)
+  assert any("never restores an accent" in f.detail and "अनु → **अ᳓नु**" in f.line for f in anti)
+  assert any("without same-clause यद्-word" in f.detail and "वदात्" in f.line for f in anti)
+  assert any("अश्वि᳓नौ" in f.line for f in voc)
+
+  ok_md = """<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+अ᳓हिँस । या᳓म् ज᳓नाः प्रतिन᳓न्दन्ति । य᳓स्यै म᳓नः ता᳓साम् त्व᳓म् नि᳓र्दह ।
+</details>
+<details><summary>मूलम्</summary>
+
+अहिँस । यां जनाः॑ प्रतिनन्द॒न्ति । यस्यै॒ मनः॑ तासां॒ निर्द॑ह ।
+</details>
+<details><summary>पद-पाठः (यान्त्रिकः - 2/11 व्यत्यस्त-स्वराः)</summary>
+
+- अ᳓-हिँस (पादादावामन्त्रितम् आद्युदात्तम्, पा॰ ६.१.१९८)
+- या᳓म् (*TS*-29/3383)
+- ज᳓नाः (*TS*-3/33)
+- प्रति-नन्दन्ति᳓ → **प्रति-न᳓न्दन्ति** (यद्वृत्तान्नित्यम् पा॰ ८.१.६६, तिङि चोदात्तवति पा॰ ८.१.७१)
+- य᳓स्यै (*TS*-5/3383)
+- म᳓नः (*TS*-65/141)
+- ता᳓साम् (*TS*-25/4763)
+- त्व᳓म् (*TS*-158/313)
+- निः (*TS*-292)
+- द᳓ह → **दह** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+- स्वा᳓हा (*TS*-875)
+</details>
+<details><summary>हरदत्तः</summary>
+
+हे अहिँस मा हिंसीः ।
+</details>
+"""
+  ok_findings, _ = audit_padapatha_markdown(ok_md, path="ek_ok.md", include_validator_issues=False)
+  assert not [f for f in ok_findings if f.category in ("known_false_svara_antipattern", "possible_missed_vocative")]

@@ -664,3 +664,18 @@ def test_avp_enclitic_simplex_hiatus_and_augmented_dual_guards():
 
 
 
+
+
+def test_fake_gati_gatau_and_inverted_8170_phrases():
+  from doc_curation.sanskrit.accent.validator import find_invalid_or_rubberstamp_provenance
+
+  bad = [
+    "- आ᳓ → **आ** (गतिर्गतावत्, पा॰ ८.१.७०, *KS*-122)",
+    "- उ᳓प → **उप** (पा॰ ८.१.७० गतिर्गता; मूले उप॒मेहि॑)",
+    "- सम् (द्विरुपसर्गे परो गतिरनुदात्तः, पा॰ ८.१.७० गतिर्गतौ)",
+  ]
+  assert find_invalid_or_rubberstamp_provenance(bad) == bad
+  assert find_invalid_or_rubberstamp_provenance([
+    "- सम् (गतिर्गतौ, पा॰ ८.१.७०, *KS*-51)",
+    "- अनु (गतिर्गतौ पा॰ ८.१.७०, *MS*-179)",
+  ]) == []

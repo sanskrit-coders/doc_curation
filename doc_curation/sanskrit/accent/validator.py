@@ -1691,6 +1691,9 @@ def find_invalid_or_rubberstamp_provenance(pp_lines: Sequence[str]) -> list[str]
     "ल्युट् नित्",
     "ल्यु नित्",
     "उदात्तं शुनः",
+    "गतिर्गतावत्",
+    "परो गतिरनुदात्तः",
+    "द्विरुपसर्गे परो गति",
   )
   lyut_re = re.compile(r"ल्यु(?:ट्|ः|(?![अ-ह\u093e-\u094d]))")
   lyut_antodatta_allow = (
@@ -1732,7 +1735,7 @@ def find_invalid_or_rubberstamp_provenance(pp_lines: Sequence[str]) -> list[str]
       if not (1 <= s1 <= pmax and s1 <= s2 <= pmax):
         bad_sutra = True
         break
-    if bad_sutra or any(fp in prov for fp in fake_sutra_phrases):
+    if bad_sutra or any(fp in prov for fp in fake_sutra_phrases) or re.search(r"गतिर्गता(?!वत)(?=[,\s;)]|$)", prov):
       hits.append(ln)
       continue
 
