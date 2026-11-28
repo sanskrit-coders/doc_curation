@@ -1,0 +1,8 @@
+---
+description: Drafts or sends emails (Gmail) and social posts/statuses (LinkedIn, X, Instagram, WhatsApp/Telegram) via the comm skill.
+---
+Load the comm skill and carry out the requested communication task:
+
+$ARGUMENTS
+
+Always inspect target context first (e.g. `latest` thread for email replies), prepend `Sent by <LLM name> on behest of vishvAsa's prompt - {<PROMPT>}` for non-short messages using the actual underlying LLM model name (never a harness/client name like Antigravity, OpenCode, Copilot, Kilo, Muse, Vibe, Junie, or IntelliJ Air; skip attribution for short messages like X posts / WA Status), preview with `--dry-run`, and wait for explicit user approval before sending or publishing. X API posting requires payment — unless the user confirms paid X API credits, treat X and WhatsApp/Telegram Status as draft-only (`<= 280` chars so X drafts double as WA Status). If no channel, target, or message topic is given, ask the user.

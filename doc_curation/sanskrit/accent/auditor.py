@@ -28,7 +28,11 @@ Vedic corpora (*EK*, *TA*, *TB*, *TS*, *ŚB*, etc.) for adjudication:
 - ``known_false_svara_antipattern``: ``मा ... हिंसीः᳓`` (``पा॰ ८.१.२८`` finite verb mis-marked),
   ``दीप्य᳓मान`` (``यक् पा॰ ३.१.६७`` instead of ``श्यन् पा॰ ३.१.६९``), ``कन्`` cited with
   ``पा॰ ३.१.३`` (omitting ``पा॰ ६.१.१९७``), false ``पा॰ ८.१.३`` on enclitics or unmatched
-  words, and relative ``यद्``-clause verbs stripped via ``पा॰ ८.१.२८``.
+  words, relative ``यद्``-clause verbs stripped via ``पा॰ ८.१.२८``, ``लुट्`` forms marked
+  ``पा॰ ८.१.२८``, and inverted ``पा॰ ८.१.७०`` / ``पा॰ ८.१.५७`` citations (arrows and non-arrows).
+- ``non_arrow_8166_without_yad`` / ``non_tinanta_8128_8166``: direct-bullet ``पा॰ ८.१.६६`` with
+  no preceding ``यद्``-word/conjunction in the block, and non-verbal pronouns/participles/nominals
+  erroneously citing ``पा॰ ८.१.२८ तिङन्तम्`` or ``पा॰ ८.१.६६``.
 - ``vp_includes_tiikaa``: ``vishvAsa-prastutiH/`` files including ``sarvASh_TIkAH/`` or embedding
   ``पद-पाठः (यान्त्रिकः)`` blocks.
 - ``redundant_ek_external_padapatha``: ``ekAgnikANDam/sarvASh_TIkAH`` files retaining canonical
@@ -85,26 +89,35 @@ _PARTICLE_P0_SET = frozenset({
 _AMREDITA_ENCLITIC_SET = frozenset({"ते", "मे", "नः", "वः", "त्वा"})
 _YAD_RELATIVE_SET = frozenset({
   "यः", "या", "यत्", "यद्", "यम्", "याम्", "येन", "यया", "यस्मै", "यस्यै", "यस्मात्",
-  "यस्याः", "यस्य", "यस्मिन्", "यस्याम्", "यत्र", "यदा", "यदि", "यथा", "यतः",
-  "ये", "यौ", "याः", "यानि", "याभ्याम्", "यैः", "याभिः", "येषाम्", "यासाम्", "येभ्यः", "याभ्यः", "येषु", "यासु",
+  "यस्याः", "यस्य", "यस्मिन्", "यस्याम्", "यत्र", "यत्रा", "यदा", "यदि", "यदी", "यथा", "यतः",
+  "ये", "यौ", "याः", "यान्", "यानि", "याभ्याम्", "यैः", "येभिः", "याभिः", "येषाम्", "यासाम्",
+  "येभ्यः", "याभ्यः", "ययोः", "येषु", "यासु",
+  "यतमः", "यतमम्", "यतमा", "यतरः", "यतरम्", "यतमेन", "यावत्", "यावती", "यतिथः", "यतिथम्", "यतिथ्याम्", "यादृश्", "यादृक्", "यद्वा",
 })
 _CLAUSE_BOUNDARY_SET = frozenset({
-  "तत्", "तद्", "सः", "सा", "तत्र", "तदा", "तस्मात्", "ततः", "तथा", "अथ", "तेन", "तया", "एवम्", "इति",
+  "तत्", "तद्", "सः", "सा", "तत्र", "तदा", "तस्मात्", "ततः", "तथा", "अथ", "तेन", "तया", "इति",
   "तम्", "ताम्", "तस्मै", "तस्यै", "तस्मिन्", "तस्य", "तस्याः", "तस्याम्", "ताः", "ते", "तौ", "तानि",
   "तैः", "ताभिः", "तेभ्यः", "ताभ्यः", "तेषाम्", "तासाम्", "तेषु", "तासु",
 })
 _FINITE_VERB_PROV_RE = re.compile(
-  r"(?:तिङन्त|८\.१\.(?:२[८९]|[३-६][०-९]|७[०१])|लट्|लिट्|लङ्|लोट्|लुङ्|लृट्|लेट्|विधिलिङ्|आशीर्लिङ्|√)"
+  r"(?:तिङन्त|८\.१\.(?:२[८९]|[३-६][०-९]|७१)|लट्|लिट्|लङ्|लोट्|लुङ्|लृट्|लेट्|विधिलिङ्|आशीर्लिङ्|√)"
 )
 _AMREDITA_PROV_RE = re.compile(r"८\.१\.३(?!\d)|द्विर्वचने|आम्रेडित")
 _KAN_PROV_RE = re.compile(r"(?<![अ-औक-ह])कन्(?![अ-औक-ह])")
 _VOWEL_CASE_TAIL_RE = re.compile(r"(?:ाम्|म्|ः|ा|ि|ी|ु|ू|े|ो)$")
 _LUT_EXEMPT_FORMS = frozenset({
   "कर्ता", "कर्तारौ", "कर्तारः", "कर्तासि", "कर्तास्मः", "कर्तास्मि",
-  "हन्ता", "हन्तारौ", "हन्तारः", "दाता", "दातारौ", "दातारः",
+  "हन्ता", "हन्तारौ", "हन्तारः", "हन्तासि",
+  "दाता", "दातारौ", "दातारः",
   "भविता", "भवितारौ", "भवितारः", "भवितासि", "भवितास्मः", "भवितास्मि",
   "वक्ता", "वक्तारौ", "वक्तारः", "भोक्ता", "भोक्तारौ", "भोक्तारः", "द्रष्टा", "स्रष्टा",
+  "वेत्ता", "वेत्तासि", "जाता", "जातासि", "जातास्मि", "मातासि", "जनिता", "जनितासि",
 })
+_LUT_FINITE_RE = re.compile(r"(?:ता|्धा|ोढा|ूढा|ष्टा)(?:सि|स्मि|स्वः|स्मः|स्थः|स्थ)$")
+_KIM_INDEF_RE = re.compile(
+  r"^(?:कः|किम्|कम्|का|काम्|केन|कया|कस्मै|कस्यै|कस्मात्|कस्याः|कस्य|कस्मिन्|कस्याम्|के|कौ|काः|कानि|कति|कदा|कथम्|कुतः|कुत्र|क्व)$"
+)
+_NON_TINANTA_CASE_TAIL_RE = re.compile(r"(?:भ्यः|भिः|एषु|आसु|आयै|स्यै|ानाम्|ईनाम्|आनाम्|त्वम्)$")
 _UPASARGA_BARE_SET = frozenset({
   "प्र", "परा", "अप", "सम्", "अनु", "अव", "निस्", "निर्", "दुस्", "दुर्",
   "वि", "आ", "नि", "अधि", "अपि", "अति", "सु", "उत्", "उद्", "अभि", "प्रति", "परि", "उप",
@@ -124,12 +137,43 @@ def _same_clause_preceding_words(flat: Sequence[tuple[str, object]], idx_it: int
   for k in range(idx_it - 1, max(-1, idx_it - window), -1):
     prev_it = flat[k][1]
     prev_bare = _strip_marks_for_probe(prev_it.ref)
-    if _FINITE_VERB_PROV_RE.search(prev_it.prov) or prev_bare in _CLAUSE_BOUNDARY_SET:
+    prev_prov = prev_it.prov or ""
+    if prev_bare in _UPASARGA_BARE_SET or prev_bare in ("निः", "दुः"):
+      words.append(prev_bare)
+      continue
+    if prev_bare == "ते" and ("८.१.१८" in prev_prov or not SVARA_MARK_RE.search(prev_it.ref)):
+      words.append(prev_bare)
+      continue
+    if _FINITE_VERB_PROV_RE.search(prev_prov):
       break
-    # Skip indefinite relative phrases like `य᳓त् कि᳓म् चि᳓त्` / `यः᳓ क᳓श् चन᳓`.
-    if prev_bare in _YAD_RELATIVE_SET and any(
-      _strip_marks_for_probe(flat[m][1].ref) in ("चित्", "चन")
-      for m in range(k + 1, min(idx_it, k + 3))
+    if prev_bare in _CLAUSE_BOUNDARY_SET:
+      # If adverbial `तत्`/`तद्` resumes a leading `यद्`-word across discourse
+      # particles (e.g. `य᳓त् वै᳓ त᳓त् न᳓ रस᳓यते`), stay in the relative clause;
+      # bare adjacent correlatives like `याः᳓ ताः᳓` still start a new clause.
+      if prev_bare in ("तत्", "तद्"):
+        m = k - 1
+        limit = max(0, idx_it - window)
+        while m >= limit and _strip_marks_for_probe(flat[m][1].ref) in (
+          _PARTICLE_P0_SET | frozenset({"किल", "खलु", "स्म", "नाम", "नूनम्", "तु"})
+        ):
+          if _FINITE_VERB_PROV_RE.search(flat[m][1].prov or ""):
+            break
+          m -= 1
+        if m < k - 1 and m >= limit and _strip_marks_for_probe(flat[m][1].ref) in _YAD_RELATIVE_SET:
+          words.append(prev_bare)
+          continue
+      break
+    # Skip indefinite relative phrases like `य᳓त् कि᳓म् चि᳓त्` / `यः᳓ क᳓श् चन᳓` / `य᳓त् कि᳓ञ् च`.
+    if prev_bare in _YAD_RELATIVE_SET and (
+      any(
+        _strip_marks_for_probe(flat[m][1].ref) in ("चित्", "चन")
+        for m in range(k + 1, min(idx_it, k + 3))
+      )
+      or (
+        k + 2 < idx_it
+        and _KIM_INDEF_RE.match(_strip_marks_for_probe(flat[k + 1][1].ref))
+        and _strip_marks_for_probe(flat[k + 2][1].ref) == "च"
+      )
     ):
       continue
     words.append(prev_bare)
@@ -345,6 +389,7 @@ def _check_provenance_guards(
   counter: VedicCorpusCounter | None,
   *,
   same_clause_bare_words: Sequence[str] | None = None,
+  block_preceding_bare_words: Sequence[str] | None = None,
   prev_bare: str = "",
   next_bare: str = "",
 ) -> list[AuditFinding]:
@@ -449,7 +494,7 @@ def _check_provenance_guards(
   if (
     "८.१.२८" in prov
     and not SVARA_MARK_RE.search(new_w)
-    and ("लुट्" in prov or new_bare in _LUT_EXEMPT_FORMS)
+    and ("लुट्" in prov or new_bare in _LUT_EXEMPT_FORMS or _LUT_FINITE_RE.search(new_bare))
     and "८.१.२९" not in prov
   ):
     findings.append(
@@ -472,11 +517,12 @@ def _check_provenance_guards(
     )
 
   if (
-    it.vyat
-    and "८.१.२८" in prov
+    "८.१.२८" in prov
     and not SVARA_MARK_RE.search(new_w)
     and next_bare in ("चन", "चित्", "इव")
     and prev_bare not in _UPASARGA_BARE_SET
+    and prev_bare != "निः"
+    and "-" not in new_bare
     and "८.१.५७" not in prov
   ):
     findings.append(
@@ -487,13 +533,13 @@ def _check_provenance_guards(
         f"Verb without preceding गति keeps accent before '{next_bare}' by पा॰ ८.१.५७",
       )
     )
-  elif "८.१.५७" in prov and prev_bare in _UPASARGA_BARE_SET:
+  elif "८.१.५७" in prov and (prev_bare in _UPASARGA_BARE_SET or prev_bare == "निः" or "-" in new_bare):
     findings.append(
       AuditFinding(
         "known_false_svara_antipattern",
         path,
         ln,
-        f"पा॰ ८.१.५७ applies only without preceding गति (found '{prev_bare}')",
+        f"पा॰ ८.१.५७ applies only without preceding गति (found '{prev_bare}' / '{new_bare}')",
       )
     )
 
@@ -542,7 +588,7 @@ def _check_provenance_guards(
       )
     )
 
-  if it.vyat and SVARA_MARK_RE.search(new_w) and "८.१.७०" in prov:
+  if SVARA_MARK_RE.search(new_w) and "८.१.७०" in prov and "कर्मप्रवचनीय" not in prov:
     findings.append(
       AuditFinding(
         "known_false_svara_antipattern",
@@ -553,22 +599,64 @@ def _check_provenance_guards(
     )
 
   if (
-    it.vyat
-    and "८.१.६६" in prov
-    and SVARA_MARK_RE.search(new_w)
-    and not any(tok in prov for tok in ("८.१.२८", "८.१.५९", "८.१.६४", "मुख्यवाक्य", "अनेकाख्यात", "चवायोग"))
-    and not any(w in _YAD_RELATIVE_SET for w in clause_words)
-    and "च" not in clause_words
-    and "वा" not in clause_words
+    ("८.१.६६" in prov or ("८.१.२८" in prov and "तिङन्त" in prov))
+    and "न तिङन्त" not in prov
+    and (
+      new_bare == "अस्यै"
+      or (
+        new_bare == "अस्य"
+        and "८.१.२८" in prov
+        and ("२.४.३२" in prov or bool(re.search(r"\*(?:RV|TS|AV|MS|SB-[KM])\*-[1-9]\d{2,}", prov)))
+      )
+      or _NON_TINANTA_CASE_TAIL_RE.search(new_bare)
+      or any(k in prov for k in ("शतृ", "शानच्", "फि॰", "प्रातिपदिक"))
+    )
   ):
     findings.append(
       AuditFinding(
-        "known_false_svara_antipattern",
+        "non_tinanta_8128_8166",
         path,
         ln,
-        "पा॰ ८.१.६६ arrow without same-clause यद्-word (preceding finite verb already closed clause)",
+        f"'{new_w}' appears nominal/participle/pronoun rather than a तिङन्तम् for पा॰ ८.१.२८ / ८.१.६६",
       )
     )
+
+  if (
+    "८.१.६६" in prov
+    and SVARA_MARK_RE.search(new_w)
+    and not any(tok in prov for tok in ("८.१.२८", "८.१.५९", "८.१.६४", "मुख्यवाक्य", "अनेकाख्यात", "चवायोग"))
+  ):
+    if (
+      it.vyat
+      and not any(w in _YAD_RELATIVE_SET for w in clause_words)
+      and "च" not in clause_words
+      and "वा" not in clause_words
+    ):
+      findings.append(
+        AuditFinding(
+          "known_false_svara_antipattern",
+          path,
+          ln,
+          "पा॰ ८.१.६६ arrow without same-clause यद्-word (preceding finite verb already closed clause)",
+        )
+      )
+    elif (
+      not it.vyat
+      and block_preceding_bare_words is not None
+      and "पादादि" not in prov
+      and not any(
+        w in _YAD_RELATIVE_SET or w.startswith(("यद", "यद्", "याव")) or w in ("च", "वा")
+        for w in block_preceding_bare_words
+      )
+    ):
+      findings.append(
+        AuditFinding(
+          "non_arrow_8166_without_yad",
+          path,
+          ln,
+          "पा॰ ८.१.६६ cited on direct bullet with no preceding यद्-word or च/वा in this block",
+        )
+      )
 
   corpus_mentions = [(m.group(1), m.group(2)) for m in _TAG_TOKEN_RE.finditer(prov)]
   if not corpus_mentions:
@@ -750,7 +838,12 @@ def audit_padapatha_markdown(
       has_8172_after_init_voc = (
         "८.१.७२" in prov and idx_it > 0 and ("६.१.१९८" in prev_prov or "पादादि" in prev_prov)
       )
-      if idx_it > 0 and ("६.१.१९८" in prov or re.search(r"(?<!अ)पादादावामन्त्रित", prov) is not None) and not has_8172_after_init_voc:
+      if (
+        idx_it > 0
+        and SVARA_MARK_RE.search(ref)
+        and ("६.१.१९८" in prov or re.search(r"(?<!अ)पादादावामन्त्रित", prov) is not None)
+        and not has_8172_after_init_voc
+      ):
         # Quick check: does bare word start a line or follow a danda in mula or vp?
         bare_w = _strip_marks_for_probe(ref)
         stem = bare_w[:-1] if len(bare_w) >= 4 else bare_w
@@ -844,24 +937,27 @@ def audit_padapatha_markdown(
 
       # 8. Provenance guard checks (known antipatterns, weak RV/AV overrides, bare/missing YV citations)
       recent_bare = [_strip_marks_for_probe(flat[k][1].ref) for k in range(max(0, idx_it - 3), idx_it)]
+      block_preceding_bare = [_strip_marks_for_probe(flat[k][1].ref) for k in range(idx_it)]
       clause_bare = _same_clause_preceding_words(flat, idx_it)
       prev_bare = _strip_marks_for_probe(flat[idx_it - 1][1].ref) if idx_it > 0 else ""
       next_bare = _strip_marks_for_probe(flat[idx_it + 1][1].ref) if idx_it + 1 < len(flat) else ""
       new_tok = ref.strip("* ")
+      prev_prov_gati = (flat[idx_it - 1][1].prov or "") if idx_it > 0 else ""
       if (
         idx_it > 0
-        and is_arrow
         and not SVARA_MARK_RE.search(new_tok)
         and "८.१.७०" in prov
         and prev_bare in _UPASARGA_BARE_SET
         and SVARA_MARK_RE.search(flat[idx_it - 1][1].ref)
+        and "कर्मप्रवचनीय" not in prev_prov_gati
+        and "कर्मप्रवचनीय" not in prov
       ):
         findings.append(
           AuditFinding(
             "known_false_svara_antipattern",
             path,
             ln,
-            f"पा॰ ८.१.७० गतिर्गतौ de-accents preceding गति ('{flat[idx_it - 1][1].ref}'), not '{ar.strip('* ')}'",
+            f"पा॰ ८.१.७० गतिर्गतौ de-accents preceding गति ('{flat[idx_it - 1][1].ref}'), not '{(ar if is_arrow else ref).strip('* ')}'",
           )
         )
       findings.extend(
@@ -872,6 +968,7 @@ def audit_padapatha_markdown(
           path,
           counter,
           same_clause_bare_words=clause_bare,
+          block_preceding_bare_words=block_preceding_bare,
           prev_bare=prev_bare,
           next_bare=next_bare,
         )

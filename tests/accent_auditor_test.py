@@ -495,3 +495,123 @@ def test_ekagnikanda_8170_8166_and_vocative_audits():
 """
   ok_findings, _ = audit_padapatha_markdown(ok_md, path="ek_ok.md", include_validator_issues=False)
   assert not [f for f in ok_findings if f.category in ("known_false_svara_antipattern", "possible_missed_vocative")]
+
+
+def test_clause_boundary_precision_and_non_arrow_yantra_guards():
+  bad_md = """<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+स᳓मा᳓ हन्तासि । दीप्यते इव । र᳓क्षत दधासि द्विषते᳓ अस्यै वि᳓ ।
+</details>
+<details><summary>मूलम्</summary>
+
+समा हन्तासि । दीप्यत इव । रक्षत दधासि द्विषते अस्यै वि ।
+</details>
+<details><summary>पद-पाठः (यान्त्रिकः - 0/12 व्यत्यस्त-स्वराः)</summary>
+
+- स᳓म् (*TS*-13)
+- आ (गतिर्गतौ, पा॰ ८.१.७०)
+- वि᳓ (गतिः, पा॰ ८.१.७०)
+- हन्तासि (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+- दधासि (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+- दीप्यते (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+- इव (निपातः, पा॰ ८.१.१८)
+- र᳓क्षत (यद्वृत्तान्नित्यम्, पा॰ ८.१.६६)
+- द्विषते᳓ (शतृ, यद्वृत्तान्नित्यम्, पा॰ ८.१.६६)
+- अस्यै (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+</details>
+"""
+  findings, _ = audit_padapatha_markdown(bad_md, path="non_arrow_bad.md", include_validator_issues=False)
+  cats = [(f.category, f.line, f.detail) for f in findings]
+  assert any(c == "known_false_svara_antipattern" and "de-accents preceding गति" in d for c, _, d in cats)
+  assert any(c == "known_false_svara_antipattern" and "never restores an accent" in d for c, _, d in cats)
+  assert any(c == "known_false_svara_antipattern" and "८.१.२९" in d and "हन्तासि" in l for c, l, d in cats)
+  assert not any("दधासि" in l and c == "known_false_svara_antipattern" for c, l, _ in cats)
+  assert any(c == "known_false_svara_antipattern" and "८.१.५७" in d and "दीप्यते" in l for c, l, d in cats)
+  assert any(c == "non_arrow_8166_without_yad" and "र᳓क्षत" in l for c, l, _ in cats)
+  assert any(c == "non_tinanta_8128_8166" and "द्विषते᳓" in l for c, l, _ in cats)
+  assert any(c == "non_tinanta_8128_8166" and "अस्यै" in l for c, l, _ in cats)
+
+  ok_md = """<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+यः᳓ एवं᳓ वे᳓द याः᳓ ते प्र य᳓न्ति उ᳓प पर्या᳓वर्तन्ते य᳓त् कि᳓ञ् च गच्छति ।
+</details>
+<details><summary>मूलम्</summary>
+
+य एवं वेद यास्ते प्रयन्त्युप पर्यावर्तन्ते यत्किञ्च गच्छति ।
+</details>
+<details><summary>पद-पाठः (यान्त्रिकः - 4/14 व्यत्यस्त-स्वराः)</summary>
+
+- यः᳓ (*TS*-10)
+- एवम् → **एव᳓म्** (*TS*-10)
+- वेद → **वे᳓द** (यद्वृत्तान्नित्यम्, पा॰ ८.१.६६)
+- याः᳓ (*TS*-10)
+- ते (अनुदात्तम्, पा॰ ८.१.१८)
+- प्र (तिङि चोदात्तवति, पा॰ ८.१.७१)
+- यन्ति → **य᳓न्ति** (यद्वृत्तान्नित्यम्, पा॰ ८.१.६६)
+- उ᳓प (कर्मप्रवचनीयः, प्रादिप्रसङ्गे कर्मप्रवचनीयानां प्रतिषेधः)
+- परि (गतिर्गतौ, पा॰ ८.१.७०)
+- आ᳓ (*TS*-10)
+- वर्तन्ते (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+- य᳓त् (*TS*-10)
+- कि᳓म् (*TS*-10)
+- च (निपातः, पा॰ ८.१.१८)
+- ग᳓च्छति → **गच्छति** (तिङन्तम् अनुदात्तम्, पा॰ ८.१.२८)
+</details>
+"""
+  ok_findings, _ = audit_padapatha_markdown(ok_md, path="clause_ok.md", include_validator_issues=False)
+  assert not [
+    f for f in ok_findings
+    if f.category in ("known_false_svara_antipattern", "non_arrow_8166_without_yad", "non_tinanta_8128_8166")
+  ]
+
+
+def test_yad_vai_tad_keeps_8166_in_same_clause():
+  ok_md = """<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+य᳓त् वै᳓ त᳓त् न᳓ रस᳓यते । वे᳓त्थ य᳓तिथ्याम् व᳓दन्ती३ ।
+</details>
+<details><summary>मूलम्</summary>
+
+यद्वै तन्न रसयते । वेत्थ यतिथ्यां वदन्ती३ ।
+</details>
+<details><summary>पद-पाठः (यान्त्रिकः)</summary>
+
+- य᳓त् (*SB-M*-10)
+- वै᳓ (*TS*-10)
+- त᳓त् (*TS*-10)
+- न᳓ (*RV*-10)
+- रसयते → **रस᳓यते** (यद्वृत्तान्नित्यम् पा॰ ८.१.६६, णिच् पा॰ ३.१.३)
+- वे᳓त्थ (*TS*-1)
+- य᳓तिथ्याम् (*SB-K*-1)
+- व᳓दन्ती३ (यद्वृत्तान्नित्यम् पा॰ ८.१.६६, पा॰ ६.१.१९७, *TB*-1)
+</details>
+"""
+  ok_findings, _ = audit_padapatha_markdown(ok_md, path="yad_vai_tad_ok.md", include_validator_issues=False)
+  assert not [
+    f for f in ok_findings
+    if f.category in ("known_false_svara_antipattern", "non_arrow_8166_without_yad")
+  ]
+
+  bad_md = """<details open><summary>विश्वास-प्रस्तुतिः</summary>
+
+य᳓त् ब्र᳓ह्म त᳓त् वे᳓द ।
+</details>
+<details><summary>मूलम्</summary>
+
+यद्ब्रह्म तद्वेद ।
+</details>
+<details><summary>पद-पाठः (यान्त्रिकः)</summary>
+
+- य᳓त् (*SB-M*-10)
+- ब्र᳓ह्म (*TS*-10)
+- त᳓त् (*TS*-10)
+- वेद → **वे᳓द** (यद्वृत्तान्नित्यम् पा॰ ८.१.६६)
+</details>
+"""
+  bad_findings, _ = audit_padapatha_markdown(bad_md, path="yad_vai_tad_bad.md", include_validator_issues=False)
+  assert any(
+    f.category == "known_false_svara_antipattern" and "वे᳓द" in f.line
+    for f in bad_findings
+  )
+
+
