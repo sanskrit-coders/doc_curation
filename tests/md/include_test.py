@@ -1050,6 +1050,263 @@ def test_fix_include_titles_tree_dry_run_and_propagate_transitive(tmp_path):
   assert include_helper.check_tag_balance(host_new) is None
 
 
+def test_detail_content_pattern_and_filtering_before_second_order_includes(tmp_path):
+  static_dir = tmp_path / "notes" / "static" / "sub"
+  static_dir.mkdir(parents=True)
+
+  (static_dir / "child_alpha.md").write_text(
+    '+++\ntitle = "Child Alpha"\n+++\nTARGET_MARKER hidden in second-order alpha.\n',
+    encoding="utf-8",
+  )
+  (static_dir / "child_beta.md").write_text(
+    textwrap.dedent("""\
+      +++
+      title = "Child Beta"
+      +++
+      <details><summary>Second Order Child</summary>
+
+      Second order text without marker.
+      </details>
+    """),
+    encoding="utf-8",
+  )
+  (static_dir / "parent.md").write_text(
+    textwrap.dedent("""\
+      +++
+      title = "Parent"
+      +++
+      Bare intro outside details.
+
+      <details><summary>Alpha</summary>
+
+      Alpha **plain** body.
+
+      <div class="js_include" url="child_alpha.md" newLevelForH1="4" includeTitle="false"></div>
+      </details>
+
+      <details><summary>Beta</summary>
+
+      Beta **bold** body with TARGET_MARKER.
+
+      <div class="js_include" url="child_beta.md" newLevelForH1="4" includeTitle="false"></div>
+
+      <details><summary>Nested Child</summary>
+
+      Inner leaf text.
+      </details>
+      </details>
+
+      <details><summary>Empty Detail</summary>
+
+      <p></p>
+      </details>
+
+      <div class="js_include collapsed" newlevelforh1="4" title="सर्वाष् टीकाः" url="/notes/sub/child_alpha.md">
+      <details><summary><h4>सर्वाष् टीकाः …{Loading}…</h4></summary>
+      <details><summary>गङ्गानथ-मूलानुवादः</summary>
+
+      Defiling a maiden, selling a tank.
+      </details>
+
+      <details><summary>मेधातिथिः</summary>
+
+      कन्याया दूषणम्।
+      </details>
+      </details>
+      </div>
+
+      <details><summary>अन्य-टीकाः</summary>
+
+      <details><summary>गङ्गानथ-मूलानुवादः</summary>
+
+      Other block that must NOT match path.
+      </details>
+      </details>
+    """),
+    encoding="utf-8",
+  )
+
+  # Direct filter_details_by_pattern checks:
+  parent_raw = (static_dir / "parent.md").read_text(encoding="utf-8")
+  # 1. detailContentPattern alone (markdown **bold** matches rendered text; summary excluded)
+  only_beta = include_helper.filter_details_by_pattern(parent_raw, ".*", "Beta bold body")
+  assert "<summary>Beta</summary>" in only_beta
+  assert "<summary>Alpha</summary>" not in only_beta
+  assert "<summary>Empty Detail</summary>" not in only_beta
+  # 2. Anchored child pattern skips Beta and recurses to Nested Child
+  only_nested = include_helper.filter_details_by_pattern(parent_raw, None, "^Inner leaf")
+  assert "<summary>Nested Child</summary>" in only_nested
+  assert "<summary>Beta</summary>" not in only_nested
+  # 3. Non-empty filter excludes Empty Detail (<p></p>)
+  non_empty = include_helper.filter_details_by_pattern(parent_raw, ".*", r"\S")
+  assert "<summary>Empty Detail</summary>" not in non_empty
+  # 4. Path-based detailsPattern across nested <details> (including inside prefilled wrapper)
+  sarva_ganga = include_helper.filter_details_by_pattern(parent_raw, "सर्वाष् टीकाः.*/गङ्गानथ-मूलानुवादः.*")
+  assert sarva_ganga.strip().startswith("<details><summary>गङ्गानथ-मूलानुवादः</summary>")
+  assert "Defiling a maiden, selling a tank." in sarva_ganga
+  assert "सर्वाष् टीकाः" not in sarva_ganga
+  assert "मेधातिथिः" not in sarva_ganga
+  assert "Other block that must NOT match path." not in sarva_ganga
+  # 5. Non-slash pattern does NOT cross ancestor/child boundary
+  assert include_helper.filter_details_by_pattern(parent_raw, "सर्वाष् टीकाः.*गङ्गानथ") == ""
+  # 6. Summary match + content mismatch returns empty
+  assert include_helper.filter_details_by_pattern(parent_raw, "Alpha", "NO_MATCH") == ""
+  # 7. Summary text is NOT treated as detail content
+  assert include_helper.filter_details_by_pattern(parent_raw, ".*", "^Alpha$") == ""
+
+  content_dir = tmp_path / "notes" / "content" / "host"
+  content_dir.mkdir(parents=True)
+
+  # prefill_includes: filtering happens BEFORE 2nd-order includes are handled
+  prefill_host = content_dir / "prefill_host.md"
+  prefill_host.write_text(
+    '+++\ntitle = "H"\n+++\n'
+    '<div class="js_include" url="/notes/sub/parent.md" newLevelForH1="3" includeTitle="false" '
+    'detailContentPattern="Beta bold body with TARGET_MARKER"></div>\n',
+    encoding="utf-8",
+  )
+  include_helper.prefill_includes(dir_path=str(prefill_host), hugo_base_dir=str(tmp_path))
+  prefill_out = prefill_host.read_text(encoding="utf-8")
+  assert "<summary>Beta</summary>" in prefill_out
+  assert "<summary>Alpha</summary>" not in prefill_out
+  assert "hidden in second-order alpha" not in prefill_out
+  assert "<summary>Second Order Child</summary>" in prefill_out
+  assert "Second order text without marker." in prefill_out
+
+  # surgical_prefill_content parity (path detailsPattern + detailContentPattern)
+  surg_host = content_dir / "surg_host.md"
+  surg_in = (
+    '+++\ntitle = "S"\n+++\n'
+    '<div class="js_include" url="/notes/sub/parent.md" newLevelForH1="3" includeTitle="false" '
+    'detailsPattern="Beta" detailContentPattern="Inner leaf"></div>\n'
+    '<div class="js_include" url="/notes/sub/parent.md" newLevelForH1="3" includeTitle="false" '
+    'detailsPattern="सर्वाष् टीकाः.*/गङ्गानथ-मूलानुवादः.*"></div>\n'
+  )
+  surg_out, n_surg = include_helper.surgical_prefill_content(surg_in, str(surg_host), hugo_base_dir=str(tmp_path))
+  assert n_surg == 2
+  assert "<summary>Beta</summary>" in surg_out
+  assert "<summary>Alpha</summary>" not in surg_out
+  assert "Defiling a maiden, selling a tank." in surg_out
+  assert "Other block that must NOT match path." not in surg_out
+
+  # deinclude_content(prefill=True): filtering MUST happen BEFORE surgical_prefill_content handles 2nd-order includes
+  deinc_prefill_out, _ = include_helper.deinclude_content(
+    '<div class="js_include" url="/notes/sub/parent.md" newLevelForH1="3" includeTitle="false" '
+    'detailContentPattern="TARGET_MARKER"></div>\n',
+    str(prefill_host),
+    prefill=True,
+    hugo_base_dir=str(tmp_path),
+  )
+  assert "<summary>Alpha</summary>" not in deinc_prefill_out
+  assert "hidden in second-order alpha" not in deinc_prefill_out
+  assert "<summary>Beta</summary>" in deinc_prefill_out
+  assert "<summary>Second Order Child</summary>" in deinc_prefill_out
+
+  # deinclude_content(prefill=False): respects detailContentPattern on already-prefilled body
+  deinc_noprefill_out, _ = include_helper.deinclude_content(
+    '<div class="js_include" url="/notes/sub/parent.md" newLevelForH1="3" includeTitle="false" '
+    'detailContentPattern="KeepBody">\n'
+    '<details><summary>One</summary>SkipBody</details>\n'
+    '<details><summary>Two</summary>KeepBody</details>\n'
+    '</div>\n',
+    str(prefill_host),
+    prefill=False,
+    hugo_base_dir=str(tmp_path),
+  )
+  assert "KeepBody" in deinc_noprefill_out and "SkipBody" not in deinc_noprefill_out
+
+  # fix_include_titles preserves custom title when detailContentPattern is set on sarvASh_TIkAH/
+  fixed_txt, fixed_changes = include_helper.fix_include_titles_in_content(
+    '<div class="js_include" detailContentPattern=".*मूलम्.*" title="मूलम्" url="/site/text/sarvASh_TIkAH/01/05.md"> </div>\n',
+    file_path="/repo/content/text/sarva-prastutiH/01.md",
+  )
+  assert fixed_changes == []
+  assert 'title="मूलम्"' in fixed_txt
+
+
+def test_quote_parameter_prefill_surgical_deinclude_and_fixer(tmp_path):
+  static_dir = tmp_path / "notes" / "static" / "sub"
+  static_dir.mkdir(parents=True)
+  (static_dir / "q.md").write_text(
+    textwrap.dedent("""\
+      +++
+      title = "Quoted Leaf"
+      +++
+      Line one.
+
+      > Inner quote.
+    """),
+    encoding="utf-8",
+  )
+
+  content_dir = tmp_path / "notes" / "content" / "host"
+  content_dir.mkdir(parents=True)
+  host = content_dir / "host.md"
+  host.write_text(
+    textwrap.dedent("""\
+      +++
+      title = "Host"
+      +++
+      <div id="q0" class="js_include" url="/notes/sub/q.md" newLevelForH1="4" includeTitle="false" quote="0"></div>
+
+      <div id="q1" class="js_include" url="/notes/sub/q.md" newLevelForH1="4" includeTitle="false" quote="1"></div>
+
+      <div id="q2" class="js_include" url="/notes/sub/q.md" newLevelForH1="4" includeTitle="true" quote="2"></div>
+    """),
+    encoding="utf-8",
+  )
+
+  include_helper.prefill_includes(dir_path=str(host), hugo_base_dir=str(tmp_path))
+  after = host.read_text(encoding="utf-8")
+  assert "Line one.\n\n> Inner quote." in after
+  assert "> Line one.\n>\n> > Inner quote." in after
+  assert '>> <details open><summary><h4>Quoted Leaf …{Loading}…</h4></summary>\n>>\n>> Line one.\n>>\n>> > Inner quote.\n>>\n>> </details>' in after
+
+  # surgical_prefill_content leaves q1 and q2 byte-identical (only normalizes q0's outer blank lines) and is idempotent
+  surg_q2, n_first = include_helper.surgical_prefill_content(after, str(host), hugo_base_dir=str(tmp_path))
+  assert n_first == 1
+  surg_q2_again, n_unchanged = include_helper.surgical_prefill_content(surg_q2, str(host), hugo_base_dir=str(tmp_path))
+  assert n_unchanged == 0 and surg_q2_again == surg_q2
+
+  changed_to_1 = after.replace('quote="2"', 'quote="1"')
+  surg_q1, n1 = include_helper.surgical_prefill_content(changed_to_1, str(host), hugo_base_dir=str(tmp_path))
+  assert n1 >= 1
+  assert '> <details open><summary><h4>Quoted Leaf …{Loading}…</h4></summary>\n>\n> Line one.\n>\n> > Inner quote.\n>\n> </details>' in surg_q1
+
+  changed_to_0 = surg_q1.replace('quote="1"', 'quote="0"')
+  surg_q0, _ = include_helper.surgical_prefill_content(changed_to_0, str(host), hugo_base_dir=str(tmp_path))
+  assert '<details open><summary><h4>Quoted Leaf …{Loading}…</h4></summary>\n\nLine one.\n\n> Inner quote.\n\n</details>' in surg_q0
+
+  # deinclude_content(prefill=False) & deinclude_content(prefill=True) with quote
+  deinc_np, _ = include_helper.deinclude_content(
+    '<div class="js_include" url="/notes/sub/q.md" newLevelForH1="4" includeTitle="false" quote="2">\n\n>> Line one.\n>>\n>> > Inner quote.\n\n</div>\n',
+    str(host),
+    prefill=False,
+    hugo_base_dir=str(tmp_path),
+  )
+  assert deinc_np.strip() == ">> Line one.\n>>\n>> > Inner quote."
+
+  deinc_p, _ = include_helper.deinclude_content(
+    '<div class="js_include" url="/notes/sub/q.md" newLevelForH1="4" includeTitle="true" quote="1"></div>\n',
+    str(host),
+    prefill=True,
+    hugo_base_dir=str(tmp_path),
+  )
+  assert deinc_p.strip() == "> <details open><summary>Quoted Leaf</summary>\n>\n> Line one.\n>\n> > Inner quote.\n> </details>"
+
+  # fix_include_titles preserves quote wrapper cleanly
+  sarva_quoted = (
+    '<div class="js_include" newlevelforh1="4" quote="1" title="सर्वाः टीकाः" url="/site/text/sarvASh_TIkAH/01/01.md">\n\n'
+    '> <details open><summary><h4>सर्वाः टीकाः …{Loading}…</h4></summary>\n>\n> टीका\n>\n> </details>\n\n'
+    '</div>\n'
+  )
+  fixed_q, changes_q = include_helper.fix_include_titles_in_content(
+    sarva_quoted, file_path="/repo/content/text/sarva-prastutiH/01.md"
+  )
+  assert [c.reason for c in changes_q] == ["SARVA_ALIAS_TITLE"]
+  assert '> <details><summary><h4>सर्वाष् टीकाः …{Loading}…</h4></summary>\n>\n> टीका\n>\n> </details>' in fixed_q
+
+
 
 
 

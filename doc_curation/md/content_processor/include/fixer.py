@@ -16,6 +16,9 @@ from doc_curation.md.content_processor.include.transformer import (
   _LOADING_WRAPPER_RE,
   _effective_h1_level,
   _has_balanced_details,
+  _parse_quote_level,
+  _quote_markdown,
+  _strip_leading_blockquote,
   find_js_include_divs,
   surgical_prefill_transitive,
 )
@@ -360,7 +363,8 @@ def _fix_sarva_div(
   it = _get_attr(attrs, "includetitle")
   it_low = it.strip().lower() if it is not None else None
   dp = (_get_attr(attrs, "detailspattern") or "").strip()
-  has_custom_filter = bool(dp and dp != ".*")
+  dcp = (_get_attr(attrs, "detailcontentpattern") or "").strip()
+  has_custom_filter = bool((dp and dp != ".*") or (dcp and dcp != ".*"))
   nl = _get_attr(attrs, "newlevelforh1")
   cls_tokens = (_get_attr(attrs, "class") or "js_include").split()
   is_idx = clean_url.rstrip("/").endswith("/_index.md") or clean_url.endswith("/")
@@ -501,7 +505,9 @@ def fix_include_titles_in_content(
         continue
 
     clean_url = url.split("#", 1)[0].split("?", 1)[0]
-    body = content[b_start:b_end]
+    raw_body = content[b_start:b_end]
+    unquoted_body, stripped_levels = _strip_leading_blockquote(raw_body)
+    body = unquoted_body if stripped_levels > 0 else raw_body
     reason: str | None = None
     new_attrs = attrs
     new_body = body
@@ -552,6 +558,12 @@ def fix_include_titles_in_content(
 
     if reason is None:
       continue
+
+    eff_quote = _parse_quote_level(_get_attr(new_attrs, "quote")) or stripped_levels
+    if eff_quote > 0 and new_body.strip():
+      new_body = "\n\n" + _quote_markdown(new_body.strip("\n"), eff_quote) + "\n\n"
+    elif stripped_levels > 0 and new_body != body and new_body.strip():
+      new_body = "\n" + new_body.strip("\n") + "\n"
 
     new_open = _format_open_tag(new_attrs)
     new_block = new_open + new_body + "</div>"

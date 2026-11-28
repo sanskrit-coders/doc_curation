@@ -1,9 +1,11 @@
+import html
 import json
 import logging
 import os
 
 import regex
 from bs4 import BeautifulSoup
+from markdown_it import MarkdownIt
 from doc_curation.md import content_processor, library
 from doc_curation.md.content_processor.details import common as details_common
 from doc_curation.md.content_processor.include.maker import make_alt_include
@@ -155,28 +157,77 @@ def _extract_bs_attrs(tag) -> dict[str, str]:
   return attrs
 
 
-def filter_details_by_pattern(content: str, details_pattern: str | None) -> str:
-  """Keep only ``<details>`` blocks whose trimmed ``<summary>`` matches ``details_pattern`` (matching JS ``handleIncludes.js``)."""
-  if not details_pattern or details_pattern.strip() == ".*":
-    return content
+_MD_RENDERER = MarkdownIt()
+
+
+def _extract_detail_content_text(body_raw: str) -> str:
+  """Extract rendered visible text of a ``<details>`` body (excluding tags/attributes, matching JS ``textContent``)."""
+  # Insert blank lines around nested <details>/<summary> tags so CommonMark parses Markdown inside them.
+  normalized = regex.sub(r"</?(?:details|summary)\b[^>]*>", "\n\n", body_raw).strip()
+  if not normalized:
+    return ""
+  rendered = _MD_RENDERER.render(normalized)
+  return html.unescape(_INNER_HTML_TAG_RE.sub("", rendered)).strip()
+
+
+def _compile_optional_detail_pattern(pattern: str | None, attr_name: str):
+  if not pattern or pattern.strip() == ".*":
+    return None
   try:
-    pat = regex.compile(details_pattern, flags=regex.DOTALL)
+    return regex.compile(pattern, flags=regex.DOTALL)
   except regex.error as exc:
-    logging.error(f"Invalid detailsPattern regex {details_pattern!r}: {exc}")
+    logging.error(f"Invalid {attr_name} regex {pattern!r}: {exc}")
+    raise ValueError(exc) from exc
+
+
+def filter_details_by_pattern(
+  content: str,
+  details_pattern: str | None = None,
+  detail_content_pattern: str | None = None,
+) -> str:
+  """Keep only ``<details>`` blocks whose ``<summary>`` and content match ``details_pattern`` and ``detail_content_pattern``."""
+  try:
+    details_pat = _compile_optional_detail_pattern(details_pattern, "detailsPattern")
+    content_pat = _compile_optional_detail_pattern(detail_content_pattern, "detailContentPattern")
+  except ValueError:
+    return content
+  if details_pat is None and content_pat is None:
     return content
 
-  def _collect(text: str, out: list[str]) -> None:
+  use_summary_path = bool(details_pat is not None and details_pattern and "/" in details_pattern)
+
+  def _collect(text: str, out: list[str], summary_prefix: str = "") -> None:
     for start, end in details_common.get_top_level_detail_spans(text):
       block = text[start:end]
-      m_sum = _SUMMARY_TAG_RE.search(block)
+      m_open = regex.match(r"<details\b[^>]*>", block, flags=regex.IGNORECASE)
+      after_open = m_open.end() if m_open else 0
+      m_sum = _SUMMARY_TAG_RE.search(block, after_open)
+      if m_sum and "<details" in block[after_open:m_sum.start()].lower():
+        m_sum = None
       summary_raw = m_sum.group(1) if m_sum else ""
       summary_text = _INNER_HTML_TAG_RE.sub("", summary_raw).strip()
-      if pat.search(summary_text):
+      summary_path = (
+        (f"{summary_prefix}/{summary_text}" if summary_text else summary_prefix)
+        if summary_prefix
+        else summary_text
+      )
+      close_idx = block.rfind("</details>")
+      body_start = m_sum.end() if m_sum else after_open
+      body_raw = block[body_start:close_idx] if close_idx > body_start else ""
+      summary_matches = (
+        details_pat is None
+        or bool(details_pat.search(summary_text))
+        or (use_summary_path and bool(details_pat.search(summary_path)))
+      )
+      content_matches = (
+        True
+        if not summary_matches or content_pat is None
+        else bool(content_pat.search(_extract_detail_content_text(body_raw)))
+      )
+      if summary_matches and content_matches:
         out.append(block)
-      elif m_sum:
-        close_idx = block.rfind("</details>")
-        if close_idx > m_sum.end():
-          _collect(block[m_sum.end():close_idx], out)
+      elif body_raw:
+        _collect(body_raw, out, summary_path)
 
   matched: list[str] = []
   _collect(content, matched)
@@ -286,10 +337,32 @@ def _relativize_html_attrs(content: str, from_path: str, to_path: str, parent_h1
   return regex.sub(r"<div\b[^>]*>", _fix_nested_inc, content, flags=regex.IGNORECASE)
 
 
-def _prepare_included_content(inc_meta, inc_content, attrs, url, target_fp, container_fp, h1_level, strip_rel_url_shift=False):
-  """Apply JS-equivalent ``js_include`` transforms (frontmatter fields/details, ``detailsPattern``, headers, relative URLs)."""
+def _prepare_included_content(
+  inc_meta,
+  inc_content,
+  attrs,
+  url,
+  target_fp,
+  container_fp,
+  h1_level,
+  strip_rel_url_shift=False,
+  prefill_nested=False,
+  hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
+):
+  """Apply JS-equivalent ``js_include`` transforms (frontmatter fields/details, ``detailsPattern``, ``detailContentPattern``, optional nested prefill, headers, relative URLs)."""
   rendered = _apply_md_frontmatter_options(inc_meta, inc_content, attrs, url)
-  rendered = filter_details_by_pattern(rendered, attrs.get("detailspattern"))
+  # Filter before handling 2nd-order includes so dropped <details> never fetch/expand nested includes.
+  rendered = filter_details_by_pattern(
+    rendered,
+    attrs.get("detailspattern"),
+    attrs.get("detailcontentpattern"),
+  )
+  if prefill_nested and "js_include" in rendered:
+    rendered, _ = surgical_prefill_content(
+      rendered,
+      target_fp,
+      hugo_base_dir=hugo_base_dir,
+    )
   rendered = fix_headers(rendered, h1_level)
   rendered = _relativize_html_attrs(
     rendered,
@@ -298,6 +371,44 @@ def _prepare_included_content(inc_meta, inc_content, attrs, url, target_fp, cont
     parent_h1_level=None if strip_rel_url_shift else h1_level,
   )
   return rendered
+
+def _parse_quote_level(raw_quote: str | None) -> int:
+  raw = (raw_quote or "").strip()
+  if not raw:
+    return 0
+  try:
+    n = int(raw)
+    return n if n > 0 else 0
+  except ValueError:
+    return 0
+
+
+def _quote_markdown(text: str, quote_level: int) -> str:
+  """Prefix every line of ``text`` with ``quote_level`` Markdown ``>`` blockquote markers."""
+  if quote_level <= 0 or not text:
+    return text
+  prefix = ">" * quote_level
+  lines = text.strip("\n").splitlines()
+  return "\n".join(f"{prefix} {ln}" if ln else prefix for ln in lines)
+
+
+def _strip_leading_blockquote(text: str, max_levels: int | None = None) -> tuple[str, int]:
+  """Strip uniform leading ``>`` blockquote markers shared by all non-empty lines."""
+  stripped = text.strip("\n")
+  if not stripped:
+    return text, 0
+  lines = stripped.splitlines()
+  levels = 0
+  while max_levels is None or levels < max_levels:
+    non_empty = [ln for ln in lines if ln.strip()]
+    if not non_empty or not all(ln.lstrip().startswith(">") for ln in non_empty):
+      break
+    lines = [regex.sub(r"^\s*> ?", "", ln, count=1) if ln.strip() else "" for ln in lines]
+    levels += 1
+  if levels == 0:
+    return text, 0
+  return "\n".join(lines), levels
+
 
 def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="/home/vvasuki/gitland/vishvAsa",
                     dynamic_loading=True, hash_title=False):
@@ -341,7 +452,11 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
     return
 
   content = _apply_md_frontmatter_options(metadata, content, attrs, url)
-  content = filter_details_by_pattern(content, attrs.get("detailspattern"))
+  content = filter_details_by_pattern(
+    content,
+    attrs.get("detailspattern"),
+    attrs.get("detailcontentpattern"),
+  )
   content = fix_headers(content, h1_level)
   content = transform_includes_with_soup(content=content, metadata=metadata, h1_level_offset=h1_level, transformer=prefill_include, dynamic_loading=dynamic_loading, hugo_base_dir=hugo_base_dir)
   # TODO: Handle spreadsheets in includes
@@ -356,6 +471,7 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
   title = title.strip()
   hash_title = hash_title or os.path.basename(container_file_path) == "full.md"
   classes = attrs.get("class", "").split()
+  quote_level = _parse_quote_level(attrs.get("quote"))
 
   if title != "":
     if "collapsed" not in classes and hash_title:
@@ -363,17 +479,24 @@ def prefill_include(inc, container_file_path, h1_level_offset=0, hugo_base_dir="
         title = f"{'#' * h1_level} {title}"
       else:
         title = f"**{title}**"
-      details = BeautifulSoup(f"{title}\n\n{content}", 'html.parser')
+      raw_block = f"{title}\n\n{content}"
     else:
       if is_plain or h1_level == "b[]":
         summary_html = title
       else:
         summary_html = f"<h{h1_level}>{title}</h{h1_level}>"
-      details = BeautifulSoup(f"<body><details><summary>{summary_html}</summary>\n\n{content}\n</details></body>", 'html.parser').select_one("details")
-      if "collapsed" not in classes:
-        details["open"] = ""
+      open_attr = ' open=""' if "collapsed" not in classes else ""
+      raw_block = f"<details{open_attr}><summary>{summary_html}</summary>\n\n{content}\n</details>"
   else:
-    details = BeautifulSoup(f"{content}", 'html.parser')
+    raw_block = content
+
+  if quote_level > 0:
+    raw_block = _quote_markdown(raw_block, quote_level)
+
+  if title != "" and not ("collapsed" not in classes and hash_title) and quote_level == 0:
+    details = BeautifulSoup(f"<body>{raw_block}</body>", 'html.parser').select_one("details")
+  else:
+    details = BeautifulSoup(raw_block, 'html.parser')
 
   # Guard against missing / invalid include content.
   if details is None:
@@ -482,10 +605,12 @@ def surgical_prefill_content(
   for (_, _, b_start, b_end, _, open_tok), url, attrs, target_fp in target_divs:
     inc_meta, inc_content = MdFile(file_path=target_fp).read()
     cur_body = content[b_start:b_end]
-    m_wrap = _LOADING_WRAPPER_RE.match(cur_body)
+    unquoted_body, stripped_levels = _strip_leading_blockquote(cur_body)
+    body_for_match = unquoted_body if stripped_levels > 0 else cur_body
+    m_wrap = _LOADING_WRAPPER_RE.match(body_for_match)
     if m_wrap and not _has_balanced_details(m_wrap.group(3)):
       m_wrap = None
-    m_hash = None if m_wrap else _HASH_LOADING_RE.match(cur_body)
+    m_hash = None if m_wrap else _HASH_LOADING_RE.match(body_for_match)
     if m_wrap:
       wrap_head, h_lvl_str, old_inner, wrap_tail = m_wrap.group(1), m_wrap.group(2), m_wrap.group(3), m_wrap.group(4)
       raw_nl = h_lvl_str if h_lvl_str else attrs.get("newlevelforh1")
@@ -505,6 +630,13 @@ def surgical_prefill_content(
       h1_level = _effective_h1_level(attrs.get("newlevelforh1"), default_level=2)
       rendered = _prepare_included_content(inc_meta, inc_content, attrs, url, target_fp, container_file_path, h1_level)
       new_body = "\n" + rendered.strip() + "\n"
+
+    quote_level = _parse_quote_level(attrs.get("quote"))
+    if quote_level > 0:
+      quoted = _quote_markdown(new_body.strip("\n"), quote_level)
+      new_body = "\n\n" + quoted + "\n\n" if quoted else "\n"
+    elif stripped_levels > 0 and (m_wrap or m_hash):
+      new_body = "\n" + new_body.strip("\n") + "\n"
 
     if new_body != cur_body:
       edits.append((b_start, b_end, new_body))
@@ -753,9 +885,11 @@ def _clean_loading_title(raw_title: str) -> str:
   return cleaned.strip()
 
 
-def _extract_existing_wrapper(cur_body: str):
+def _extract_existing_wrapper(cur_body: str, max_quote_levels: int = 0):
   """Return ``(inner_body, summary_title, h1_level, is_open_or_none)`` from a prefilled ``js_include`` body."""
-  m_wrap = _LOADING_WRAPPER_RE.match(cur_body)
+  unquoted_body, stripped_levels = _strip_leading_blockquote(cur_body)
+  candidate = unquoted_body if stripped_levels > 0 else cur_body
+  m_wrap = _LOADING_WRAPPER_RE.match(candidate)
   if m_wrap and not _has_balanced_details(m_wrap.group(3)):
     m_wrap = None
   if m_wrap:
@@ -765,11 +899,15 @@ def _extract_existing_wrapper(cur_body: str):
     h1_level = int(h_lvl_str) if h_lvl_str else None
     is_open = bool(regex.search(r"<details\b[^>]*\bopen\b", wrap_head))
     return old_inner.strip(), summary_title, h1_level, is_open
-  m_hash = _HASH_LOADING_RE.match(cur_body)
+  m_hash = _HASH_LOADING_RE.match(candidate)
   if m_hash:
     wrap_head, hashes, old_inner = m_hash.group(1), m_hash.group(2), m_hash.group(3)
     raw_title = regex.sub(r"^\s*#+\s*", "", wrap_head).strip()
     return old_inner.strip(), _clean_loading_title(raw_title), len(hashes), True
+  if max_quote_levels > 0:
+    stripped_body, n_stripped = _strip_leading_blockquote(cur_body, max_levels=max_quote_levels)
+    if n_stripped > 0:
+      return stripped_body.strip(), "", None, None
   return cur_body.strip(), "", None, None
 
 
@@ -838,7 +976,10 @@ def deinclude_content(
   deincluded_paths = []
   for (s_open, _, b_start, b_end, e_close, open_tok), url, attrs, target_fp in target_divs:
     cur_body = content[b_start:b_end]
-    existing_inner, existing_summary, existing_h1, existing_open = _extract_existing_wrapper(cur_body)
+    quote_level = _parse_quote_level(attrs.get("quote"))
+    existing_inner, existing_summary, existing_h1, existing_open = _extract_existing_wrapper(
+      cur_body, max_quote_levels=quote_level
+    )
 
     has_class_attr = "class" in attrs
     classes = attrs.get("class", "").split()
@@ -849,16 +990,24 @@ def deinclude_content(
     inc_meta = {}
     if prefill:
       inc_meta, inc_content = MdFile(file_path=target_fp).read()
-      if "js_include" in inc_content:
-        inc_content, _ = surgical_prefill_content(
-          inc_content,
-          target_fp,
-          hugo_base_dir=hugo_base_dir,
-        )
-      rendered = _prepare_included_content(inc_meta, inc_content, attrs, url, target_fp, container_file_path, h1_level)
+      rendered = _prepare_included_content(
+        inc_meta,
+        inc_content,
+        attrs,
+        url,
+        target_fp,
+        container_file_path,
+        h1_level,
+        prefill_nested=True,
+        hugo_base_dir=hugo_base_dir,
+      )
       inner_body = rendered.strip()
     else:
-      inner_body = filter_details_by_pattern(existing_inner, attrs.get("detailspattern"))
+      inner_body = filter_details_by_pattern(
+        existing_inner,
+        attrs.get("detailspattern"),
+        attrs.get("detailcontentpattern"),
+      )
 
     default_title, _ = _resolve_title_from_attrs(attrs, inc_meta, fallback_title=existing_summary)
 
@@ -879,6 +1028,8 @@ def deinclude_content(
       replacement = f"<details{open_attr}><summary>{final_title}</summary>{sep}{inner_body}\n</details>"
     else:
       replacement = inner_body
+    if quote_level > 0:
+      replacement = _quote_markdown(replacement, quote_level)
 
     edits.append((s_open, e_close, replacement))
     if target_fp:
